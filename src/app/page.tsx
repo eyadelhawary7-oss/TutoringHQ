@@ -1,4 +1,10 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'CenterHQ - نظام إدارة السناتر',
+  description: 'منصة متكاملة لإدارة المراكز التعليمية في مصر',
+};
 
 export default function LandingPage() {
   return (
