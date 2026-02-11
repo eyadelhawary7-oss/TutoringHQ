@@ -1,18 +1,12 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
-// Force dynamic rendering so we get runtime logs on Vercel
-export const dynamic = 'force-dynamic';
-
 export const metadata: Metadata = {
   title: 'CenterHQ - نظام إدارة السناتر',
   description: 'منصة متكاملة لإدارة المراكز التعليمية في مصر',
 };
 
 export default function LandingPage() {
-  // #region agent log
-  console.log('[DEBUG] page.tsx / LandingPage rendering', { timestamp: Date.now(), route: '/' });
-  // #endregion
   return (
     <div dir="rtl" className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900">
       <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
