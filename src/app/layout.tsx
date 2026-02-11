@@ -4,18 +4,15 @@ import './globals.css';
 
 type Props = {
   children: ReactNode;
-  params?: Promise<{ locale?: string }>;
 };
 
-export default async function RootLayout({ children, params }: Props) {
-  // Get locale from params if it exists (for [locale] routes)
-  const resolvedParams = params ? await params : null;
-  const locale = resolvedParams?.locale || 'ar';
-  
-  // Determine direction and font based on locale
-  const dir = locale === 'ar' ? 'rtl' : 'ltr';
-  const fontClass = locale === 'ar' ? cairo.variable : inter.variable;
-  const fontFamily = locale === 'ar' ? 'var(--font-cairo)' : 'var(--font-inter)';
+export default function RootLayout({ children }: Props) {
+  // Default to Arabic for root layout
+  // Locale-specific routes will have their own layout in [locale]/layout.tsx
+  const locale = 'ar';
+  const dir = 'rtl';
+  const fontClass = cairo.variable;
+  const fontFamily = 'var(--font-cairo)';
 
   return (
     <html lang={locale} dir={dir} className={fontClass} suppressHydrationWarning>
