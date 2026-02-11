@@ -8,8 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-cairo: var(--font-cairo);
+  --font-inter: var(--font-inter);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +22,18 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 
+  RTL Support with Logical Properties
+  Tailwind CSS 4 natively supports logical properties.
+  Use these classes for RTL-aware layouts:
+  - ms-* instead of ml-* (margin-inline-start)
+  - me-* instead of mr-* (margin-inline-end)
+  - ps-* instead of pl-* (padding-inline-start)
+  - pe-* instead of pr-* (padding-inline-end)
+  - start-* instead of left-* (inset-inline-start)
+  - end-* instead of right-* (inset-inline-end)
+  - text-start instead of text-left
+  - text-end instead of text-right
+*/

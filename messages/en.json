@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "students": "Students",
+    "scanner": "Scanner",
+    "payments": "Payments",
+    "schedule": "Schedule",
+    "messages": "Messages",
+    "settings": "Settings"
+  },
+  "common": {
+    "welcome": "Welcome",
+    "language": "Language",
+    "home": "Home",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading..."
+  },
+  "demo": {
+    "title": "Internationalization Demo",
+    "description": "This page demonstrates how the i18n system works with full RTL support",
+    "features": "Features",
+    "rtlSupport": "Full Arabic RTL support",
+    "fontSwitching": "Automatic font switching (Cairo for Arabic, Inter for English)",
+    "localStorage": "Language preference saved in browser",
+    "tailwindLogical": "Tailwind CSS with logical properties"
+  }
+}

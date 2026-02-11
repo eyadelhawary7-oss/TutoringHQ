@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "students": "الطلاب",
+    "scanner": "الماسح",
+    "payments": "المدفوعات",
+    "schedule": "المواعيد",
+    "messages": "الرسائل",
+    "settings": "الإعدادات"
+  },
+  "common": {
+    "welcome": "مرحبا",
+    "language": "اللغة",
+    "home": "الرئيسية",
+    "back": "رجوع",
+    "next": "التالي",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "loading": "جاري التحميل..."
+  },
+  "demo": {
+    "title": "عرض توضيحي للتعريب",
+    "description": "هذه الصفحة توضح كيفية عمل نظام التعريب مع دعم RTL الكامل",
+    "features": "الميزات",
+    "rtlSupport": "دعم كامل للغة العربية من اليمين إلى اليسار",
+    "fontSwitching": "تبديل الخطوط تلقائياً (Cairo للعربية، Inter للإنجليزية)",
+    "localStorage": "حفظ اللغة المختارة في المتصفح",
+    "tailwindLogical": "استخدام Tailwind CSS مع الخصائص المنطقية"
+  }
+}
