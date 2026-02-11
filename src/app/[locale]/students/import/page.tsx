@@ -1,0 +1,289 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import { supabase } from '@/lib/supabase';
+import { Link } from '@/i18n/routing';
+import Navbar from '@/components/Navbar';
+import FileUploadZone from '@/components/FileUploadZone';
+import ColumnMapper from '@/components/ColumnMapper';
+import { parseFile, autoDetectMapping, type ParsedData, type ColumnMapping } from '@/lib/excel-parser';
+import QRCode from 'qrcode';
+
+type ImportStep = 'upload' | 'preview' | 'mapping' | 'importing' | 'success';
+
+export default function ImportStudentsPage() {
+  const t = useTranslations('import');
+  const tCommon = useTranslations('common');
+
+  const [step, setStep] = useState<ImportStep>('upload');
+  const [parsedData, setParsedData] = useState<ParsedData | null>(null);
+  const [mapping, setMapping] = useState<ColumnMapping>({
+    studentName: null,
+    phone: null,
+    parentPhone: null,
+    subject: null,
+    monthlyFee: null,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [importedCount, setImportedCount] = useState(0);
+  const [centerId, setCenterId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadCenterId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userRecord } = await supabase
+          .from('users')
+          .select('center_id')
+          .eq('id', user.id)
+          .single();
+        if (userRecord) setCenterId(userRecord.center_id);
+      }
+    };
+    loadCenterId();
+  }, []);
+
+  const handleFileSelected = async (file: File) => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const data = parseFile(buffer, file.name);
+
+      if (data.rows.length === 0) {
+        setError(t('error'));
+        return;
+      }
+
+      setParsedData(data);
+      const detectedMapping = autoDetectMapping(data.headers);
+      setMapping(detectedMapping);
+      setStep('preview');
+    } catch {
+      setError(t('error'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!parsedData || !centerId || !mapping.studentName) return;
+
+    setIsLoading(true);
+    setError('');
+    setStep('importing');
+
+    try {
+      const students = parsedData.rows.map((row) => ({
+        center_id: centerId,
+        name: String(row[mapping.studentName!] || '').trim(),
+        phone: mapping.phone ? String(row[mapping.phone] || '').trim() : null,
+        parent_phone: mapping.parentPhone ? String(row[mapping.parentPhone] || '').trim() : null,
+        subject_name: mapping.subject ? String(row[mapping.subject] || '').trim() : null,
+        monthly_fee: mapping.monthlyFee ? Number(row[mapping.monthlyFee]) || 0 : 0,
+        payment_status: 'unpaid',
+      }));
+
+      // Filter out empty rows
+      const validStudents = students.filter(s => s.name.length > 0);
+
+      // Insert in batches of 50
+      let insertedTotal = 0;
+      for (let i = 0; i < validStudents.length; i += 50) {
+        const batch = validStudents.slice(i, i + 50);
+        const { data: inserted, error: insertError } = await supabase
+          .from('students')
+          .insert(batch)
+          .select();
+
+        if (insertError) throw insertError;
+
+        // Generate QR codes for inserted students
+        if (inserted) {
+          for (const student of inserted) {
+            try {
+              const qrDataURL = await QRCode.toDataURL(student.id, {
+                width: 300,
+                margin: 2,
+                errorCorrectionLevel: 'H',
+              });
+
+              await supabase
+                .from('students')
+                .update({ qr_code: qrDataURL })
+                .eq('id', student.id);
+            } catch {
+              // QR generation failure is non-critical
+            }
+          }
+          insertedTotal += inserted.length;
+        }
+      }
+
+      setImportedCount(insertedTotal);
+      setStep('success');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setError(message);
+      setStep('mapping');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('title')}
+            </h1>
+            <Link
+              href="/students"
+              className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              {tCommon('back')}
+            </Link>
+          </div>
+
+          {/* Step: Upload */}
+          {step === 'upload' && (
+            <FileUploadZone onFileSelected={handleFileSelected} isLoading={isLoading} />
+          )}
+
+          {/* Step: Preview */}
+          {step === 'preview' && parsedData && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    {t('preview')}
+                  </h2>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('rowsFound', { count: parsedData.rows.length })}
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm" dir="auto">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        {parsedData.headers.map((header) => (
+                          <th key={header} className="px-3 py-2 text-start font-medium text-gray-600 dark:text-gray-400">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parsedData.rows.slice(0, 10).map((row, i) => (
+                        <tr key={i} className="border-b border-gray-100 dark:border-gray-700/50">
+                          {parsedData.headers.map((header) => (
+                            <td key={header} className="px-3 py-2 text-gray-800 dark:text-gray-200">
+                              {String(row[header] || '')}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {parsedData.rows.length > 10 && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    +{parsedData.rows.length - 10} ...
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={() => setStep('mapping')}
+                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors"
+              >
+                {tCommon('next')}
+              </button>
+            </div>
+          )}
+
+          {/* Step: Column Mapping */}
+          {step === 'mapping' && parsedData && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                <ColumnMapper
+                  headers={parsedData.headers}
+                  mapping={mapping}
+                  onMappingChange={setMapping}
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep('preview')}
+                  className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  {tCommon('back')}
+                </button>
+                <button
+                  onClick={handleConfirmImport}
+                  disabled={!mapping.studentName || isLoading}
+                  className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('confirm')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step: Importing */}
+          {step === 'importing' && (
+            <div className="text-center py-16">
+              <svg className="animate-spin h-12 w-12 text-indigo-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <p className="text-lg text-gray-700 dark:text-gray-300">{t('importing')}</p>
+            </div>
+          )}
+
+          {/* Step: Success */}
+          {step === 'success' && (
+            <div className="text-center py-16">
+              <div className="w-20 h-20 mx-auto bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-6">
+                <svg className="w-10 h-10 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {t('success', { count: importedCount })}
+              </h2>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+                <Link
+                  href="/students"
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  {t('viewStudents')}
+                </Link>
+                <Link
+                  href="/students/print"
+                  className="px-6 py-3 border border-indigo-600 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors"
+                >
+                  {t('generateQR')}
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

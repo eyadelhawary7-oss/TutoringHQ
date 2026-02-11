@@ -1,0 +1,192 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import { supabase } from '@/lib/supabase';
+import Navbar from '@/components/Navbar';
+
+interface Student {
+  id: string;
+  name: string;
+  subject_name: string;
+  qr_code: string;
+}
+
+export default function PrintStudentsPage() {
+  const t = useTranslations('print');
+  const tStudents = useTranslations('students');
+
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState('all');
+
+  useEffect(() => {
+    const loadStudents = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: userRecord } = await supabase
+        .from('users')
+        .select('center_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!userRecord) return;
+
+      const { data } = await supabase
+        .from('students')
+        .select('id, name, subject_name, qr_code')
+        .eq('center_id', userRecord.center_id)
+        .not('qr_code', 'is', null)
+        .order('name');
+
+      if (data) {
+        setStudents(data);
+        const uniqueSubjects = [...new Set(data.map(s => s.subject_name).filter(Boolean))];
+        setSubjects(uniqueSubjects);
+      }
+      setIsLoading(false);
+    };
+
+    loadStudents();
+  }, []);
+
+  const filteredStudents = selectedSubject === 'all'
+    ? students
+    : students.filter(s => s.subject_name === selectedSubject);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <>
+      {/* Nav hidden in print */}
+      <div className="print:hidden">
+        <Navbar />
+      </div>
+
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 print:bg-white print:dark:bg-white">
+        {/* Controls - hidden in print */}
+        <div className="print:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('title')}
+            </h1>
+            <div className="flex gap-3 items-center">
+              <select
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm dark:bg-gray-700 dark:text-white"
+              >
+                <option value="all">{t('allSubjects')}</option>
+                {subjects.map((subject) => (
+                  <option key={subject} value={subject}>{subject}</option>
+                ))}
+              </select>
+              <button
+                onClick={handlePrint}
+                className="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                {t('printButton')}
+              </button>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            {t('cardsPerPage')} — {filteredStudents.length} {tStudents('title')}
+          </p>
+        </div>
+
+        {/* Printable Cards Grid */}
+        {isLoading ? (
+          <div className="text-center py-16 print:hidden">
+            <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <div className="text-center py-16 print:hidden">
+            <p className="text-gray-600 dark:text-gray-400">{t('noCards')}</p>
+          </div>
+        ) : (
+          <div className="printable-cards max-w-[210mm] mx-auto px-[10mm] print:px-[10mm]">
+            <div className="grid grid-cols-2 gap-4 print:gap-[4mm]">
+              {filteredStudents.map((student) => (
+                <div
+                  key={student.id}
+                  className="border border-gray-300 rounded-lg p-4 print:p-[3mm] print:border-gray-400 flex flex-col items-center justify-center text-center bg-white dark:bg-gray-800 print:dark:bg-white"
+                  style={{
+                    width: '90mm',
+                    height: '55mm',
+                    pageBreakInside: 'avoid',
+                    breakInside: 'avoid',
+                  }}
+                >
+                  {/* Logo placeholder */}
+                  <div className="text-xs font-bold text-indigo-600 print:text-indigo-600 mb-1">
+                    CenterHQ
+                  </div>
+
+                  {/* Student Name */}
+                  <p className="text-sm font-bold text-gray-900 print:text-gray-900 dark:text-white print:dark:text-gray-900 mb-0.5 line-clamp-1">
+                    {student.name}
+                  </p>
+
+                  {/* Subject */}
+                  {student.subject_name && (
+                    <p className="text-xs text-gray-600 print:text-gray-600 dark:text-gray-400 print:dark:text-gray-600 mb-2">
+                      {student.subject_name}
+                    </p>
+                  )}
+
+                  {/* QR Code */}
+                  {student.qr_code && (
+                    <img
+                      src={student.qr_code}
+                      alt={`QR: ${student.name}`}
+                      className="w-24 h-24 print:w-[22mm] print:h-[22mm]"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .printable-cards,
+          .printable-cards * {
+            visibility: visible !important;
+          }
+          .printable-cards {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+          nav, .print\\:hidden {
+            display: none !important;
+          }
+          @page {
+            size: A4;
+            margin: 10mm;
+          }
+          .dark\\:bg-gray-800 {
+            background-color: white !important;
+          }
+          .dark\\:text-white {
+            color: #111827 !important;
+          }
+        }
+      `}</style>
+    </>
+  );
+}

@@ -1,0 +1,17 @@
+{
+  "name": "CenterHQ - RevenueGuard",
+  "short_name": "CenterHQ",
+  "description": "نظام إدارة المراكز التعليمية",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
