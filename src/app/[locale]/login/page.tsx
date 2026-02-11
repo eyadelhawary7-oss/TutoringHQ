@@ -1,8 +1,18 @@
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
+import LanguageToggle from '@/components/LanguageToggle';
 
 export default function LoginPage() {
+  const t = useTranslations('login');
+  const tLanding = useTranslations('landing');
+
   return (
-    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900">
+      {/* Language Toggle - Top Corner */}
+      <div className="absolute top-4 end-4 z-10">
+        <LanguageToggle />
+      </div>
+
       <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
           {/* Header */}
@@ -12,11 +22,11 @@ export default function LoginPage() {
                 CenterHQ
               </h1>
               <p className="text-xl text-indigo-600 dark:text-indigo-400">
-                سنتر إتش كيو
+                {tLanding('subtitle')}
               </p>
             </Link>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              تسجيل الدخول
+              {t('title')}
             </h2>
           </div>
 
@@ -29,7 +39,7 @@ export default function LoginPage() {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                 >
-                  البريد الإلكتروني
+                  {t('email')}
                 </label>
                 <input
                   id="email"
@@ -47,7 +57,7 @@ export default function LoginPage() {
                   htmlFor="password"
                   className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                 >
-                  كلمة المرور
+                  {t('password')}
                 </label>
                 <input
                   id="password"
@@ -66,15 +76,15 @@ export default function LoginPage() {
                     type="checkbox"
                     className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                   />
-                  <span className="mr-2 text-gray-700 dark:text-gray-300">
-                    تذكرني
+                  <span className="ms-2 text-gray-700 dark:text-gray-300">
+                    {t('rememberMe')}
                   </span>
                 </label>
                 <a
                   href="#"
                   className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
-                  نسيت كلمة المرور؟
+                  {t('forgotPassword')}
                 </a>
               </div>
 
@@ -83,7 +93,7 @@ export default function LoginPage() {
                 type="submit"
                 className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
               >
-                دخول
+                {t('submit')}
               </button>
             </form>
 
@@ -94,7 +104,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-white dark:bg-gray-800 text-gray-500">
-                  أو
+                  {t('or')}
                 </span>
               </div>
             </div>
@@ -102,12 +112,12 @@ export default function LoginPage() {
             {/* Sign Up Link */}
             <div className="text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                ليس لديك حساب؟{' '}
+                {t('noAccount')}{' '}
                 <a
                   href="#"
                   className="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
-                  إنشاء حساب جديد
+                  {t('createAccount')}
                 </a>
               </p>
             </div>
@@ -119,7 +129,7 @@ export default function LoginPage() {
               href="/"
               className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
             >
-              ← العودة للصفحة الرئيسية
+              ← {t('backToHome')}
             </Link>
           </div>
         </div>

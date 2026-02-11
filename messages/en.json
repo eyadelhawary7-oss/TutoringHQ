@@ -18,13 +18,26 @@
     "cancel": "Cancel",
     "loading": "Loading..."
   },
-  "demo": {
-    "title": "Internationalization Demo",
-    "description": "This page demonstrates how the i18n system works with full RTL support",
-    "features": "Features",
-    "rtlSupport": "Full Arabic RTL support",
-    "fontSwitching": "Automatic font switching (Cairo for Arabic, Inter for English)",
-    "localStorage": "Language preference saved in browser",
-    "tailwindLogical": "Tailwind CSS with logical properties"
+  "landing": {
+    "subtitle": "CenterHQ",
+    "tagline": "Center Management System",
+    "description": "A complete platform for managing tutoring centers in Egypt",
+    "featureStudents": "Student Management",
+    "featurePayments": "Payments",
+    "featureSchedule": "Schedules",
+    "loginButton": "Log In",
+    "footer": "Smart solutions for tutoring center management"
+  },
+  "login": {
+    "title": "Log In",
+    "email": "Email Address",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "submit": "Sign In",
+    "or": "or",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create a new account",
+    "backToHome": "Back to Home"
   }
 }

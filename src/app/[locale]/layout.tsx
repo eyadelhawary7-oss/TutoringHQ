@@ -2,6 +2,8 @@ import { routing } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
 import { getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
+import { cairo, inter } from '@/lib/fonts';
+import '../globals.css';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -23,9 +25,22 @@ export default async function LocaleLayout({
 
   const messages = await getMessages();
 
+  // Determine direction and font based on locale
+  const dir = locale === 'ar' ? 'rtl' : 'ltr';
+  const fontClass = locale === 'ar' ? cairo.variable : inter.variable;
+  const fontFamily = locale === 'ar' ? 'var(--font-cairo)' : 'var(--font-inter)';
+
   return (
-    <NextIntlClientProvider messages={messages}>
-      {children}
-    </NextIntlClientProvider>
+    <html lang={locale} dir={dir} className={fontClass} suppressHydrationWarning>
+      <body
+        className="antialiased"
+        style={{ fontFamily }}
+        suppressHydrationWarning
+      >
+        <NextIntlClientProvider messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
+    </html>
   );
 }

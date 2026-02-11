@@ -18,13 +18,26 @@
     "cancel": "إلغاء",
     "loading": "جاري التحميل..."
   },
-  "demo": {
-    "title": "عرض توضيحي للتعريب",
-    "description": "هذه الصفحة توضح كيفية عمل نظام التعريب مع دعم RTL الكامل",
-    "features": "الميزات",
-    "rtlSupport": "دعم كامل للغة العربية من اليمين إلى اليسار",
-    "fontSwitching": "تبديل الخطوط تلقائياً (Cairo للعربية، Inter للإنجليزية)",
-    "localStorage": "حفظ اللغة المختارة في المتصفح",
-    "tailwindLogical": "استخدام Tailwind CSS مع الخصائص المنطقية"
+  "landing": {
+    "subtitle": "سنتر إتش كيو",
+    "tagline": "نظام إدارة السناتر",
+    "description": "منصة متكاملة لإدارة المراكز التعليمية في مصر",
+    "featureStudents": "إدارة الطلاب",
+    "featurePayments": "المدفوعات",
+    "featureSchedule": "الجداول",
+    "loginButton": "تسجيل الدخول",
+    "footer": "حلول ذكية لإدارة المراكز التعليمية"
+  },
+  "login": {
+    "title": "تسجيل الدخول",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "rememberMe": "تذكرني",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "submit": "دخول",
+    "or": "أو",
+    "noAccount": "ليس لديك حساب؟",
+    "createAccount": "إنشاء حساب جديد",
+    "backToHome": "العودة للصفحة الرئيسية"
   }
 }
