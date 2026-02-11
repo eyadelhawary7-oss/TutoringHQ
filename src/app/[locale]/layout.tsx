@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { cairo, inter } from '@/lib/fonts';
 import '../globals.css';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
+import { UserProvider } from '@/contexts/UserContext';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -44,7 +45,9 @@ export default async function LocaleLayout({
         suppressHydrationWarning
       >
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <UserProvider>
+            {children}
+          </UserProvider>
         </NextIntlClientProvider>
         <ServiceWorkerRegistrar />
       </body>

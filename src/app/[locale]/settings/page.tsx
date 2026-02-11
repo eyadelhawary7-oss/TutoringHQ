@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { dbSelect, dbInsert, dbUpdate, dbDelete, dbCount } from '@/lib/db-proxy';
+import { useUser } from '@/contexts/UserContext';
 import Navbar from '@/components/Navbar';
 
 interface Subject {
@@ -27,6 +30,8 @@ interface CenterInfo {
 export default function SettingsPage() {
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
+  const router = useRouter();
+  const { user: currentUser } = useUser();
 
   const [center, setCenter] = useState<CenterInfo | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -47,51 +52,64 @@ export default function SettingsPage() {
   const [editName, setEditName] = useState('');
   const [editFee, setEditFee] = useState('');
 
+  // Redirect assistants away from settings
+  useEffect(() => {
+    if (currentUser && currentUser.role === 'assistant') {
+      router.replace('/dashboard');
+    }
+  }, [currentUser, router]);
+
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setUserId(user.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      setUserId(session.user.id);
 
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('center_id')
-        .eq('id', user.id)
-        .single();
+      // Use /api/me to bypass RLS on users table
+      const meRes = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const meData = await meRes.json();
 
-      if (!userRecord) return;
-      setCenterId(userRecord.center_id);
+      if (!meData?.user?.center_id) return;
+      setCenterId(meData.user.center_id);
+      const userCenterId = meData.user.center_id;
 
-      // Load center info
-      const { data: centerData } = await supabase
-        .from('centers')
-        .select('*')
-        .eq('id', userRecord.center_id)
-        .single();
+      // Load center info (bypass RLS)
+      const { data: centerData } = await dbSelect({
+        table: 'centers',
+        select: '*',
+        filters: [{ column: 'id', op: 'eq', value: userCenterId }],
+        single: true,
+      });
 
       if (centerData) {
-        setCenter(centerData);
-        setCenterName(centerData.name || '');
-        setScannerMode(centerData.scanner_default_mode || 'camera');
+        setCenter(centerData as CenterInfo);
+        setCenterName((centerData as CenterInfo).name || '');
+        setScannerMode((centerData as CenterInfo).scanner_default_mode || 'camera');
       }
 
-      // Load subjects
-      const { data: subjectsData } = await supabase
-        .from('subjects')
-        .select('*')
-        .eq('center_id', userRecord.center_id)
-        .order('name');
+      // Load subjects (bypass RLS)
+      const { data: subjectsData } = await dbSelect({
+        table: 'subjects',
+        select: '*',
+        filters: [{ column: 'center_id', op: 'eq', value: userCenterId }],
+        order: { column: 'name' },
+      });
 
-      if (subjectsData) setSubjects(subjectsData);
+      if (subjectsData) setSubjects(subjectsData as Subject[]);
 
-      // Load assistants
-      const { data: assistantsData } = await supabase
-        .from('users')
-        .select('id, phone, role')
-        .eq('center_id', userRecord.center_id)
-        .neq('id', user.id);
+      // Load assistants (bypass RLS)
+      const { data: assistantsData } = await dbSelect({
+        table: 'users',
+        select: 'id, phone, role',
+        filters: [
+          { column: 'center_id', op: 'eq', value: userCenterId },
+          { column: 'id', op: 'neq', value: session.user.id },
+        ],
+      });
 
-      if (assistantsData) setAssistants(assistantsData);
+      if (assistantsData) setAssistants(assistantsData as Assistant[]);
 
       setIsLoading(false);
     };
@@ -105,8 +123,12 @@ export default function SettingsPage() {
 
   const handleSaveCenterName = async () => {
     if (!centerId || !centerName.trim()) return;
-    await supabase.from('centers').update({ name: centerName.trim() }).eq('id', centerId);
-    showSaved();
+    const { error } = await dbUpdate({
+      table: 'centers',
+      data: { name: centerName.trim() },
+      filters: [{ column: 'id', op: 'eq', value: centerId }],
+    });
+    if (!error) showSaved();
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,7 +148,11 @@ export default function SettingsPage() {
     }
 
     const { data: publicData } = supabase.storage.from('center-logos').getPublicUrl(path);
-    await supabase.from('centers').update({ logo_url: publicData.publicUrl }).eq('id', centerId);
+    await dbUpdate({
+      table: 'centers',
+      data: { logo_url: publicData.publicUrl },
+      filters: [{ column: 'id', op: 'eq', value: centerId }],
+    });
     setCenter(prev => prev ? { ...prev, logo_url: publicData.publicUrl } : null);
     showSaved();
   };
@@ -135,18 +161,18 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!centerId || !newSubjectName.trim()) return;
 
-    const { data, error } = await supabase
-      .from('subjects')
-      .insert({
+    const { data, error } = await dbInsert({
+      table: 'subjects',
+      data: {
         center_id: centerId,
         name: newSubjectName.trim(),
         monthly_fee: Number(newSubjectFee) || 0,
-      })
-      .select()
-      .single();
+      },
+      single: true,
+    });
 
     if (!error && data) {
-      setSubjects(prev => [...prev, data]);
+      setSubjects(prev => [...prev, data as Subject]);
       setNewSubjectName('');
       setNewSubjectFee('');
       showSaved();
@@ -154,10 +180,11 @@ export default function SettingsPage() {
   };
 
   const handleUpdateSubject = async (id: string) => {
-    await supabase
-      .from('subjects')
-      .update({ name: editName.trim(), monthly_fee: Number(editFee) || 0 })
-      .eq('id', id);
+    await dbUpdate({
+      table: 'subjects',
+      data: { name: editName.trim(), monthly_fee: Number(editFee) || 0 },
+      filters: [{ column: 'id', op: 'eq', value: id }],
+    });
 
     setSubjects(prev => prev.map(s => s.id === id ? { ...s, name: editName.trim(), monthly_fee: Number(editFee) || 0 } : s));
     setEditingSubject(null);
@@ -168,17 +195,20 @@ export default function SettingsPage() {
     if (!confirm(t('deleteConfirm'))) return;
 
     // Check if any students use this subject
-    const { count } = await supabase
-      .from('students')
-      .select('*', { count: 'exact', head: true })
-      .eq('subject_id', id);
+    const { count } = await dbCount({
+      table: 'students',
+      filters: [{ column: 'subject_id', op: 'eq', value: id }],
+    });
 
     if (count && count > 0) {
       alert(t('subjectInUse'));
       return;
     }
 
-    await supabase.from('subjects').delete().eq('id', id);
+    await dbDelete({
+      table: 'subjects',
+      filters: [{ column: 'id', op: 'eq', value: id }],
+    });
     setSubjects(prev => prev.filter(s => s.id !== id));
   };
 
@@ -186,18 +216,19 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!centerId || !invitePhone.trim()) return;
 
-    const { data, error } = await supabase
-      .from('users')
-      .insert({
+    const { data, error } = await dbInsert({
+      table: 'users',
+      data: {
         phone: invitePhone.trim(),
         center_id: centerId,
         role: inviteRole,
-      })
-      .select()
-      .single();
+      },
+      select: 'id, phone, role',
+      single: true,
+    });
 
     if (!error && data) {
-      setAssistants(prev => [...prev, data]);
+      setAssistants(prev => [...prev, data as Assistant]);
       setInvitePhone('');
       showSaved();
     }
@@ -206,8 +237,12 @@ export default function SettingsPage() {
   const handleScannerMode = async (mode: string) => {
     if (!centerId) return;
     setScannerMode(mode);
-    await supabase.from('centers').update({ scanner_default_mode: mode }).eq('id', centerId);
-    showSaved();
+    const { error } = await dbUpdate({
+      table: 'centers',
+      data: { scanner_default_mode: mode },
+      filters: [{ column: 'id', op: 'eq', value: centerId }],
+    });
+    if (!error) showSaved();
   };
 
   if (isLoading) {
@@ -429,6 +464,55 @@ export default function SettingsPage() {
                 >
                   {t('bluetooth')}
                 </button>
+              </div>
+            </section>
+
+            {/* WhatsApp Integration */}
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.243-1.217l-.271-.162-2.87.853.853-2.87-.162-.271A8 8 0 1112 20z"/>
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">WhatsApp Business API</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Setup Instructions</h3>
+                  <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-decimal list-inside">
+                    <li>Create a Meta Business App at <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 underline">developers.facebook.com</a></li>
+                    <li>Add WhatsApp product to your app</li>
+                    <li>Get your permanent access token and Phone Number ID</li>
+                    <li>Create a message template named <code className="px-1 bg-gray-200 dark:bg-gray-600 rounded text-xs">payment_reminder</code></li>
+                    <li>Add the env vars to your deployment (Vercel)</li>
+                    <li>Set webhook URL to: <code className="px-1 bg-gray-200 dark:bg-gray-600 rounded text-xs break-all">{typeof window !== 'undefined' ? window.location.origin : ''}/api/whatsapp/webhook</code></li>
+                  </ol>
+                </div>
+
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <h3 className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">Required Environment Variables</h3>
+                  <div className="space-y-1 font-mono text-xs text-green-700 dark:text-green-400">
+                    <p>WHATSAPP_ACCESS_TOKEN=your_token</p>
+                    <p>WHATSAPP_PHONE_NUMBER_ID=your_phone_id</p>
+                    <p>WHATSAPP_VERIFY_TOKEN=your_verify_token</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">Template Format</h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-400">
+                    Create a template named <strong>payment_reminder</strong> with 4 body parameters:
+                  </p>
+                  <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-mono">
+                    {'{{1}}'} = Student Name<br/>
+                    {'{{2}}'} = Center Name<br/>
+                    {'{{3}}'} = Amount Due<br/>
+                    {'{{4}}'} = Subject Name
+                  </div>
+                </div>
               </div>
             </section>
           </div>

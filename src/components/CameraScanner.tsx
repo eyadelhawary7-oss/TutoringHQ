@@ -12,17 +12,31 @@ export default function CameraScanner({ onScan, isActive }: CameraScannerProps) 
   const t = useTranslations('scan');
   const scannerRef = useRef<any>(null);
   const [error, setError] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
+  const startedRef = useRef(false);
 
   useEffect(() => {
     if (!isActive) return;
 
-    let html5QrCode: any = null;
+    let cancelled = false;
 
     const startScanner = async () => {
+      // Wait for the DOM element to be available
+      await new Promise(resolve => requestAnimationFrame(resolve));
+
+      if (cancelled) return;
+
+      const element = document.getElementById('qr-reader');
+      if (!element) {
+        console.error('CameraScanner: qr-reader element not found');
+        return;
+      }
+
       try {
         const { Html5Qrcode } = await import('html5-qrcode');
-        html5QrCode = new Html5Qrcode('qr-reader');
+
+        if (cancelled) return;
+
+        const html5QrCode = new Html5Qrcode('qr-reader');
         scannerRef.current = html5QrCode;
 
         await html5QrCode.start(
@@ -38,17 +52,33 @@ export default function CameraScanner({ onScan, isActive }: CameraScannerProps) 
             // Ignore scan failures (expected when no QR in frame)
           }
         );
-      } catch (err) {
-        console.error('Camera error:', err);
-        setError(t('scanError'));
+        startedRef.current = true;
+      } catch (err: any) {
+        const errMsg = String(err);
+        if (errMsg.includes('NotFoundError') || errMsg.includes('device not found')) {
+          setError(t('scanError') + ' (No camera found)');
+        } else {
+          console.error('Camera error:', err);
+          setError(t('scanError'));
+        }
       }
     };
 
     startScanner();
 
     return () => {
-      if (html5QrCode) {
-        html5QrCode.stop().catch(() => {});
+      cancelled = true;
+      const scanner = scannerRef.current;
+      if (scanner && startedRef.current) {
+        scanner.stop().then(() => {
+          startedRef.current = false;
+          scannerRef.current = null;
+        }).catch(() => {
+          startedRef.current = false;
+          scannerRef.current = null;
+        });
+      } else {
+        scannerRef.current = null;
       }
     };
   }, [isActive, onScan, t]);
@@ -56,7 +86,7 @@ export default function CameraScanner({ onScan, isActive }: CameraScannerProps) 
   if (!isActive) return null;
 
   return (
-    <div ref={containerRef} className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto">
       <div id="qr-reader" className="rounded-xl overflow-hidden" />
       {error && (
         <p className="text-center text-red-500 mt-2 text-sm">{error}</p>

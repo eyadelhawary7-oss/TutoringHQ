@@ -4,18 +4,26 @@ import { useTranslations } from 'next-intl';
 import LanguageToggle from './LanguageToggle';
 import SyncIndicator from './SyncIndicator';
 import { Link, usePathname } from '@/i18n/routing';
+import { useUser } from '@/contexts/UserContext';
 
 export default function Navbar() {
   const t = useTranslations('nav');
   const pathname = usePathname();
+  const { user } = useUser();
 
-  const navItems = [
-    { key: 'dashboard', href: '/dashboard' },
-    { key: 'students', href: '/students' },
-    { key: 'scanner', href: '/scan' },
-    { key: 'payments', href: '/payments' },
-    { key: 'settings', href: '/settings' },
-  ] as const;
+  const allNavItems: { key: string; href: string; roles: string[] }[] = [
+    { key: 'dashboard', href: '/dashboard', roles: ['owner', 'admin', 'assistant'] },
+    { key: 'students', href: '/students', roles: ['owner', 'admin'] },
+    { key: 'scanner', href: '/scan', roles: ['owner', 'admin', 'assistant'] },
+    { key: 'payments', href: '/payments', roles: ['owner', 'admin', 'assistant'] },
+    { key: 'messages', href: '/messages', roles: ['owner', 'admin'] },
+    { key: 'settings', href: '/settings', roles: ['owner', 'admin'] },
+  ];
+
+  // Filter nav items based on role (show all while loading)
+  const navItems = user
+    ? allNavItems.filter(item => item.roles.includes(user.role))
+    : allNavItems;
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">

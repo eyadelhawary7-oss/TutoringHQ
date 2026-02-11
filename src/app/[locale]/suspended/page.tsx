@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { dbSelect } from '@/lib/db-proxy';
 import LanguageToggle from '@/components/LanguageToggle';
 
 export default function SuspendedPage() {
@@ -12,22 +13,23 @@ export default function SuspendedPage() {
 
   useEffect(() => {
     const loadSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('center_id')
-        .eq('id', user.id)
-        .single();
+      // Use /api/me to bypass RLS on users table
+      const meRes = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const meData = await meRes.json();
 
-      if (!userRecord) return;
+      if (!meData?.user?.center_id) return;
 
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('fawry_reference')
-        .eq('center_id', userRecord.center_id)
-        .single();
+      const { data: subscription } = await dbSelect({
+        table: 'subscriptions',
+        select: 'fawry_reference',
+        filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+        single: true,
+      });
 
       if (subscription?.fawry_reference) {
         setFawryCode(subscription.fawry_reference);

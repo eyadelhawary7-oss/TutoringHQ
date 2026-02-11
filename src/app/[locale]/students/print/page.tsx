@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { dbSelect } from '@/lib/db-proxy';
 import Navbar from '@/components/Navbar';
 
 interface Student {
@@ -23,27 +24,22 @@ export default function PrintStudentsPage() {
 
   useEffect(() => {
     const loadStudents = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('center_id')
-        .eq('id', user.id)
-        .single();
+      // Use /api/me to bypass RLS on users table
+      const meRes = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const meData = await meRes.json();
 
-      if (!userRecord) return;
+      if (!meData?.user?.center_id) return;
 
-      const { data } = await supabase
-        .from('students')
-        .select('id, name, subject_name, qr_code')
-        .eq('center_id', userRecord.center_id)
-        .not('qr_code', 'is', null)
-        .order('name');
+      const { data } = await dbSelect({ table: 'students', select: 'id, name, subject_name, qr_code', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }, { column: 'qr_code', op: 'not_is', value: null }], order: { column: 'name' } });
 
       if (data) {
         setStudents(data);
-        const uniqueSubjects = [...new Set(data.map(s => s.subject_name).filter(Boolean))];
+        const uniqueSubjects = [...new Set((data as { subject_name: string }[]).map(s => s.subject_name).filter(Boolean))];
         setSubjects(uniqueSubjects);
       }
       setIsLoading(false);

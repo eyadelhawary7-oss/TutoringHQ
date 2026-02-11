@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
 import Navbar from '@/components/Navbar';
 import FileUploadZone from '@/components/FileUploadZone';
@@ -32,15 +33,15 @@ export default function ImportStudentsPage() {
 
   useEffect(() => {
     const loadCenterId = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userRecord } = await supabase
-          .from('users')
-          .select('center_id')
-          .eq('id', user.id)
-          .single();
-        if (userRecord) setCenterId(userRecord.center_id);
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Use /api/me to bypass RLS on users table
+      const meRes = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const meData = await meRes.json();
+      if (meData?.user?.center_id) setCenterId(meData.user.center_id);
     };
     loadCenterId();
   }, []);
@@ -94,10 +95,7 @@ export default function ImportStudentsPage() {
       let insertedTotal = 0;
       for (let i = 0; i < validStudents.length; i += 50) {
         const batch = validStudents.slice(i, i + 50);
-        const { data: inserted, error: insertError } = await supabase
-          .from('students')
-          .insert(batch)
-          .select();
+        const { data: inserted, error: insertError } = await dbInsert({ table: 'students', data: batch, select: '*' });
 
         if (insertError) throw insertError;
 
@@ -111,10 +109,7 @@ export default function ImportStudentsPage() {
                 errorCorrectionLevel: 'H',
               });
 
-              await supabase
-                .from('students')
-                .update({ qr_code: qrDataURL })
-                .eq('id', student.id);
+              await dbUpdate({ table: 'students', data: { qr_code: qrDataURL }, filters: [{ column: 'id', op: 'eq', value: student.id }] });
             } catch {
               // QR generation failure is non-critical
             }

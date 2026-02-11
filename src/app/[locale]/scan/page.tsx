@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { dbSelect, dbInsert, dbUpdate } from '@/lib/db-proxy';
 import Navbar from '@/components/Navbar';
 import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
@@ -32,17 +33,19 @@ export default function ScanPage() {
 
   useEffect(() => {
     const loadUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setUserId(user.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      setUserId(session.user.id);
 
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('center_id')
-        .eq('id', user.id)
-        .single();
+      // Use /api/me to bypass RLS on users table
+      const meRes = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const meData = await meRes.json();
 
-      if (userRecord) setCenterId(userRecord.center_id);
+      if (meData?.user?.center_id) {
+        setCenterId(meData.user.center_id);
+      }
     };
     loadUser();
 
@@ -59,12 +62,12 @@ export default function ScanPage() {
 
     try {
       // Lookup student by ID (QR encodes the UUID)
-      const { data: student, error: lookupError } = await supabase
-        .from('students')
-        .select('*')
-        .eq('id', code)
-        .eq('center_id', centerId)
-        .single();
+      const { data: student, error: lookupError } = await dbSelect({
+        table: 'students',
+        select: '*',
+        filters: [{ column: 'id', op: 'eq', value: code }, { column: 'center_id', op: 'eq', value: centerId }],
+        single: true,
+      });
 
       if (lookupError || !student) {
         setError(t('studentNotFound'));
@@ -76,11 +79,15 @@ export default function ScanPage() {
       setScannedStudent(student);
 
       // Record attendance
-      await supabase.from('attendance_scans').insert({
-        student_id: student.id,
-        center_id: centerId,
-        scanned_by: userId,
-        scanned_at: new Date().toISOString(),
+      await dbInsert({
+        table: 'attendance_scans',
+        data: {
+          student_id: student.id,
+          center_id: centerId,
+          scanned_by: userId,
+          scanned_at: new Date().toISOString(),
+        },
+        select: false,
       });
 
       // Auto-dismiss for paid students after 3 seconds
@@ -102,32 +109,41 @@ export default function ScanPage() {
 
     try {
       // Update student payment status
-      await supabase
-        .from('students')
-        .update({
+      await dbUpdate({
+        table: 'students',
+        data: {
           payment_status: 'paid',
           last_paid_date: new Date().toISOString(),
-        })
-        .eq('id', scannedStudent.id);
+        },
+        filters: [{ column: 'id', op: 'eq', value: scannedStudent.id }],
+      });
 
       // Create payment record
-      await supabase.from('payments').insert({
-        student_id: scannedStudent.id,
-        center_id: centerId,
-        amount: scannedStudent.monthly_fee,
-        payment_method: method,
-        payment_date: new Date().toISOString(),
-        created_by: userId,
+      await dbInsert({
+        table: 'payments',
+        data: {
+          student_id: scannedStudent.id,
+          center_id: centerId,
+          amount: scannedStudent.monthly_fee,
+          payment_method: method,
+          payment_date: new Date().toISOString(),
+          created_by: userId,
+        },
+        select: false,
       });
 
       // Log to audit
-      await supabase.from('audit_log').insert({
-        center_id: centerId,
-        user_id: userId,
-        action: 'payment_on_scan',
-        entity_type: 'payment',
-        entity_id: scannedStudent.id,
-        details: { method, amount: scannedStudent.monthly_fee },
+      await dbInsert({
+        table: 'audit_log',
+        data: {
+          center_id: centerId,
+          user_id: userId,
+          action: 'payment_on_scan',
+          entity_type: 'payment',
+          entity_id: scannedStudent.id,
+          details: { method, amount: scannedStudent.monthly_fee },
+        },
+        select: false,
       });
 
       // Show green screen then dismiss

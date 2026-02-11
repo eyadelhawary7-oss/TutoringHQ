@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { dbSelect, dbCount } from '@/lib/db-proxy';
 import Navbar from '@/components/Navbar';
 import AttendanceCard from '@/components/dashboard/AttendanceCard';
 import PaymentDonut from '@/components/dashboard/PaymentDonut';
@@ -46,34 +47,42 @@ export default function DashboardPage() {
   const loadDashboard = useCallback(async (cId: string) => {
     try {
       // Today's attendance count
-      const { count: attendanceCount } = await supabase
-        .from('attendance_scans')
-        .select('*', { count: 'exact', head: true })
-        .eq('center_id', cId)
-        .gte('scanned_at', startOfToday());
+      const { count: attendanceCount } = await dbCount({
+        table: 'attendance_scans',
+        filters: [
+          { column: 'center_id', op: 'eq', value: cId },
+          { column: 'scanned_at', op: 'gte', value: startOfToday() },
+        ],
+      });
 
       // Student payment stats
-      const { data: students } = await supabase
-        .from('students')
-        .select('id, name, subject_name, monthly_fee, payment_status')
-        .eq('center_id', cId);
+      const { data: studentsRaw } = await dbSelect({
+        table: 'students',
+        select: 'id, name, subject_name, monthly_fee, payment_status',
+        filters: [{ column: 'center_id', op: 'eq', value: cId }],
+      });
+      const students = (studentsRaw || []) as { id: string; name: string; subject_name: string; monthly_fee: number; payment_status: string }[];
 
-      const paidCount = students?.filter(s => s.payment_status === 'paid').length || 0;
-      const unpaidCount = students?.filter(s => s.payment_status === 'unpaid').length || 0;
-      const unpaidStudents = students?.filter(s => s.payment_status === 'unpaid') || [];
+      const paidCount = students.filter(s => s.payment_status === 'paid').length;
+      const unpaidCount = students.filter(s => s.payment_status === 'unpaid').length;
+      const unpaidStudents = students.filter(s => s.payment_status === 'unpaid');
 
       // Today's revenue
-      const { data: todayPayments } = await supabase
-        .from('payments')
-        .select('amount, payment_method')
-        .eq('center_id', cId)
-        .gte('payment_date', startOfToday());
+      const { data: todayPayments } = await dbSelect({
+        table: 'payments',
+        select: 'amount, payment_method',
+        filters: [
+          { column: 'center_id', op: 'eq', value: cId },
+          { column: 'payment_date', op: 'gte', value: startOfToday() },
+        ],
+      });
 
-      const todayRevenue = todayPayments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      const payments = (todayPayments || []) as { amount: number; payment_method: string }[];
+      const todayRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
       // Revenue by method
       const methodMap = new Map<string, number>();
-      todayPayments?.forEach(p => {
+      payments.forEach(p => {
         const current = methodMap.get(p.payment_method) || 0;
         methodMap.set(p.payment_method, current + (p.amount || 0));
       });
@@ -89,12 +98,14 @@ export default function DashboardPage() {
         const dayEnd = new Date(day);
         dayEnd.setHours(23, 59, 59, 999);
 
-        const { count } = await supabase
-          .from('attendance_scans')
-          .select('*', { count: 'exact', head: true })
-          .eq('center_id', cId)
-          .gte('scanned_at', dayStart.toISOString())
-          .lte('scanned_at', dayEnd.toISOString());
+        const { count } = await dbCount({
+          table: 'attendance_scans',
+          filters: [
+            { column: 'center_id', op: 'eq', value: cId },
+            { column: 'scanned_at', op: 'gte', value: dayStart.toISOString() },
+            { column: 'scanned_at', op: 'lte', value: dayEnd.toISOString() },
+          ],
+        });
 
         trendData.push({
           date: `${day.getDate()}/${day.getMonth() + 1}`,
@@ -104,7 +115,7 @@ export default function DashboardPage() {
 
       setData({
         todayAttendance: attendanceCount || 0,
-        totalStudents: students?.length || 0,
+        totalStudents: students.length,
         paidCount,
         unpaidCount,
         todayRevenue,
@@ -121,18 +132,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('center_id')
-        .eq('id', user.id)
-        .single();
+      // Use /api/me to bypass RLS on users table
+      const meRes = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const meData = await meRes.json();
 
-      if (userRecord?.center_id) {
-        setCenterId(userRecord.center_id);
-        await loadDashboard(userRecord.center_id);
+      if (meData?.user?.center_id) {
+        setCenterId(meData.user.center_id);
+        await loadDashboard(meData.user.center_id);
       }
     };
     init();

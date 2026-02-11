@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { dbSelect, dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { exportToExcel } from '@/lib/excel-export';
 import Navbar from '@/components/Navbar';
 
@@ -50,30 +51,43 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setUserId(user.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      setUserId(session.user.id);
 
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('center_id')
-        .eq('id', user.id)
-        .single();
+      // Use /api/me to bypass RLS on users table
+      const meRes = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const meData = await meRes.json();
 
-      if (!userRecord) return;
-      setCenterId(userRecord.center_id);
+      if (!meData?.user?.center_id) return;
+      setCenterId(meData.user.center_id);
 
-      const { data } = await supabase
-        .from('students')
-        .select('id, name, subject_name, payment_status, last_paid_date, monthly_fee')
-        .eq('center_id', userRecord.center_id)
-        .order('name');
+      // Load students and subjects table in parallel
+      const [studentsRes, subjectsRes] = await Promise.all([
+        dbSelect({
+          table: 'students',
+          select: 'id, name, subject_name, payment_status, last_paid_date, monthly_fee',
+          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+          order: { column: 'name' },
+        }),
+        dbSelect({
+          table: 'subjects',
+          select: 'name',
+          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+          order: { column: 'name' },
+        }),
+      ]);
 
-      if (data) {
-        setStudents(data);
-        const uniqueSubjects = [...new Set(data.map(s => s.subject_name).filter(Boolean))];
-        setSubjects(uniqueSubjects);
+      if (studentsRes.data) {
+        setStudents(studentsRes.data);
       }
+      // Merge subjects from subjects table + any subject_name on students
+      const subjectTableNames = (subjectsRes.data || []).map((s: { name: string }) => s.name);
+      const studentSubjectNames = (studentsRes.data || []).map((s: Student) => s.subject_name).filter(Boolean);
+      const allSubjects = [...new Set([...subjectTableNames, ...studentSubjectNames])];
+      setSubjects(allSubjects);
       setIsLoading(false);
     };
     load();
@@ -120,10 +134,11 @@ export default function PaymentsPage() {
       const selectedIds = Array.from(selected);
 
       // Update payment status
-      await supabase
-        .from('students')
-        .update({ payment_status: 'paid', last_paid_date: new Date().toISOString() })
-        .in('id', selectedIds);
+      await dbUpdate({
+        table: 'students',
+        data: { payment_status: 'paid', last_paid_date: new Date().toISOString() },
+        filters: [{ column: 'id', op: 'in', value: selectedIds }],
+      });
 
       // Create payment records
       const paymentRecords = selectedIds.map(id => {
@@ -137,15 +152,18 @@ export default function PaymentsPage() {
           created_by: userId,
         };
       });
-      await supabase.from('payments').insert(paymentRecords);
+      await dbInsert({ table: 'payments', data: paymentRecords });
 
       // Audit log
-      await supabase.from('audit_log').insert({
-        center_id: centerId,
-        user_id: userId,
-        action: 'bulk_payment_update',
-        entity_type: 'students',
-        details: { ids: selectedIds, method },
+      await dbInsert({
+        table: 'audit_log',
+        data: {
+          center_id: centerId,
+          user_id: userId,
+          action: 'bulk_payment_update',
+          entity_type: 'students',
+          details: { ids: selectedIds, method },
+        },
       });
 
       // Update local state
@@ -168,6 +186,53 @@ export default function PaymentsPage() {
     }
   };
 
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
+  const [reminderResult, setReminderResult] = useState<{ sent: number; failed: number } | null>(null);
+
+  const handleSendReminders = async () => {
+    if (!centerId) return;
+    setIsSendingReminders(true);
+    setReminderResult(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const unpaidIds = selected.size > 0
+        ? Array.from(selected).filter(id => students.find(s => s.id === id)?.payment_status === 'unpaid')
+        : [];
+
+      const response = await fetch('/api/whatsapp/remind', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          centerId,
+          studentIds: unpaidIds.length > 0 ? unpaidIds : undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setReminderResult({ sent: result.sent, failed: result.failed });
+        setSuccessMessage(`WhatsApp reminders sent: ${result.sent} success, ${result.failed} failed`);
+        setTimeout(() => setSuccessMessage(''), 6000);
+      } else {
+        setSuccessMessage(result.error || 'Failed to send reminders');
+        setTimeout(() => setSuccessMessage(''), 6000);
+      }
+    } catch (err) {
+      console.error('Reminder error:', err);
+      setSuccessMessage('Failed to send WhatsApp reminders');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } finally {
+      setIsSendingReminders(false);
+    }
+  };
+
   const handleExport = () => {
     exportToExcel(filteredStudents);
   };
@@ -179,12 +244,25 @@ export default function PaymentsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('title')}</h1>
-            <button
-              onClick={handleExport}
-              className="px-4 py-2 text-sm font-medium border border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
-            >
-              {t('export')}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSendReminders}
+                disabled={isSendingReminders}
+                className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.243-1.217l-.271-.162-2.87.853.853-2.87-.162-.271A8 8 0 1112 20z"/>
+                </svg>
+                {isSendingReminders ? 'Sending...' : 'Send Reminders'}
+              </button>
+              <button
+                onClick={handleExport}
+                className="px-4 py-2 text-sm font-medium border border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
+              >
+                {t('export')}
+              </button>
+            </div>
           </div>
 
           {/* Success Message */}
