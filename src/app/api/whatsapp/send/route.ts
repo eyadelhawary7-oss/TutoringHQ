@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { whatsappSendSchema } from '@/lib/validations';
 
 /**
  * Send a WhatsApp message via Meta Cloud API.
@@ -42,11 +43,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { to, type, template, text, centerId } = body;
-
-    if (!to || !centerId) {
-      return NextResponse.json({ error: 'Missing required fields: to, centerId' }, { status: 400 });
+    const validation = whatsappSendSchema.safeParse(body);
+    if (!validation.success) {
+      const msg = validation.error.issues[0]?.message || 'Invalid input';
+      return NextResponse.json({ error: msg, details: validation.error.format() }, { status: 400 });
     }
+    const { to, type, template, text, centerId } = validation.data;
 
     // Format phone number - ensure it has country code, no + prefix
     const formattedPhone = to.replace(/[^0-9]/g, '');

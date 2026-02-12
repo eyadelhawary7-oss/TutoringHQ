@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { onboardingSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
@@ -51,14 +52,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { centerName } = body;
-
-    if (!centerName || centerName.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Center name is required' },
-        { status: 400 }
-      );
+    const validation = onboardingSchema.safeParse(body);
+    if (!validation.success) {
+      const msg = validation.error.issues[0]?.message || 'Invalid input';
+      return NextResponse.json({ error: msg, details: validation.error.format() }, { status: 400 });
     }
+    const { centerName } = validation.data;
 
     // Service role key is REQUIRED to bypass RLS for onboarding
     if (!supabaseServiceKey) {
@@ -82,6 +81,12 @@ export async function POST(request: Request) {
       .single();
 
     if (existingUser?.center_id) {
+      if (centerName?.trim()) {
+        await supabase
+          .from('centers')
+          .update({ name: centerName.trim() })
+          .eq('id', existingUser.center_id);
+      }
       return NextResponse.json({
         success: true,
         centerId: existingUser.center_id,

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { dbSelect } from '@/lib/db-proxy';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -10,16 +11,32 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [existingCenterId, setExistingCenterId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is authenticated
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/login');
-      } else {
-        setIsCheckingAuth(false);
+        return;
       }
+      const res = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (data?.user?.center_id) {
+        setExistingCenterId(data.user.center_id);
+        const { data: centerData } = await dbSelect({
+          table: 'centers',
+          select: 'name',
+          filters: [{ column: 'id', op: 'eq', value: data.user.center_id }],
+          single: true,
+        });
+        if (centerData && (centerData as { name?: string }).name) {
+          setCenterName((centerData as { name: string }).name);
+        }
+      }
+      setIsCheckingAuth(false);
     };
     checkAuth();
   }, [router]);
@@ -109,7 +126,9 @@ export default function OnboardingPage() {
         </div>
 
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700">
-          <h2 className="text-2xl font-bold text-white mb-6">Create a New Center</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">
+            {existingCenterId ? 'Complete Your Center Setup' : 'Create a New Center'}
+          </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbInsert, dbUpdate } from '@/lib/db-proxy';
+import { dbInsert, dbUpdate, auditLog } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
 import Navbar from '@/components/Navbar';
 import FileUploadZone from '@/components/FileUploadZone';
@@ -30,6 +30,7 @@ export default function ImportStudentsPage() {
   const [error, setError] = useState('');
   const [importedCount, setImportedCount] = useState(0);
   const [centerId, setCenterId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadCenterId = async () => {
@@ -42,6 +43,7 @@ export default function ImportStudentsPage() {
       });
       const meData = await meRes.json();
       if (meData?.user?.center_id) setCenterId(meData.user.center_id);
+      if (meData?.user?.id) setUserId(meData.user.id);
     };
     loadCenterId();
   }, []);
@@ -71,7 +73,7 @@ export default function ImportStudentsPage() {
   };
 
   const handleConfirmImport = async () => {
-    if (!parsedData || !centerId || !mapping.studentName) return;
+    if (!parsedData || !centerId || !userId || !mapping.studentName) return;
 
     setIsLoading(true);
     setError('');
@@ -119,6 +121,15 @@ export default function ImportStudentsPage() {
       }
 
       setImportedCount(insertedTotal);
+
+      await auditLog({
+        centerId,
+        userId,
+        action: 'student_import',
+        entityType: 'students',
+        details: { count: insertedTotal, source: 'file_import' },
+      });
+
       setStep('success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';

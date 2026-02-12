@@ -67,8 +67,59 @@ export async function GET(request: Request) {
       );
     }
 
+    // Fetch center logo/name when user has center
+    let center: { logo_url?: string; name?: string } | null = null;
+    if (userRecord?.center_id) {
+      const { data: centerRow } = await supabaseAdmin
+        .from('centers')
+        .select('logo_url, name')
+        .eq('id', userRecord.center_id)
+        .single();
+      if (centerRow) {
+        center = { logo_url: centerRow.logo_url ?? undefined, name: centerRow.name ?? undefined };
+      }
+    }
+
+    // Owner and admin have full access; assistant/teacher use permissions table
+    let permissions: Record<string, boolean> = {};
+    const role = userRecord?.role as string;
+
+    if (role === 'owner' || role === 'admin') {
+      permissions = {
+        can_send_whatsapp: true,
+        can_add_subjects: true,
+        can_view_calendar: true,
+        can_manage_payments: true,
+      };
+    } else if (role === 'teacher') {
+      permissions = {
+        can_send_whatsapp: false,
+        can_add_subjects: false,
+        can_view_calendar: true,
+        can_manage_payments: false,
+      };
+    } else if (role === 'assistant' && userRecord?.center_id) {
+      try {
+        const { data: permRows } = await supabaseAdmin
+          .from('permissions')
+          .select('permission_key, enabled')
+          .eq('user_id', user.id)
+          .eq('center_id', userRecord.center_id);
+
+        permissions = {
+          can_send_whatsapp: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_send_whatsapp')?.enabled ?? false,
+          can_add_subjects: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_add_subjects')?.enabled ?? false,
+          can_view_calendar: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_view_calendar')?.enabled ?? false,
+          can_manage_payments: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_manage_payments')?.enabled ?? false,
+        };
+      } catch {
+        permissions = { can_send_whatsapp: false, can_add_subjects: false, can_view_calendar: false, can_manage_payments: false };
+      }
+    }
+
     return NextResponse.json({
-      user: userRecord,
+      user: { ...userRecord, center },
+      permissions,
     });
 
   } catch (error) {

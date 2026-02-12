@@ -9,20 +9,29 @@ import { useUser } from '@/contexts/UserContext';
 export default function Navbar() {
   const t = useTranslations('nav');
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user, hasPermission } = useUser();
 
-  const allNavItems: { key: string; href: string; roles: string[] }[] = [
-    { key: 'dashboard', href: '/dashboard', roles: ['owner', 'admin', 'assistant'] },
+  const allNavItems: { key: string; href: string; roles: string[]; permission?: string }[] = [
+    { key: 'dashboard', href: '/dashboard', roles: ['owner', 'admin', 'assistant', 'teacher'] },
     { key: 'students', href: '/students', roles: ['owner', 'admin'] },
-    { key: 'scanner', href: '/scan', roles: ['owner', 'admin', 'assistant'] },
-    { key: 'payments', href: '/payments', roles: ['owner', 'admin', 'assistant'] },
-    { key: 'messages', href: '/messages', roles: ['owner', 'admin'] },
+    { key: 'scanner', href: '/scan', roles: ['owner', 'admin', 'assistant', 'teacher'] },
+    { key: 'payments', href: '/payments', roles: ['owner', 'admin', 'assistant'], permission: 'can_manage_payments' },
+    { key: 'groups', href: '/groups', roles: ['owner', 'admin', 'assistant'], permission: 'can_send_whatsapp' },
+    { key: 'messages', href: '/messages', roles: ['owner', 'admin', 'assistant'], permission: 'can_send_whatsapp' },
+    { key: 'rooms', href: '/rooms', roles: ['owner', 'admin'] },
+    { key: 'schedule', href: '/schedule', roles: ['owner', 'admin', 'assistant', 'teacher'], permission: 'can_view_calendar' },
     { key: 'settings', href: '/settings', roles: ['owner', 'admin'] },
   ];
 
-  // Filter nav items based on role (show all while loading)
+  // Filter nav items: role must match, and for assistants/teachers check permission if required
   const navItems = user
-    ? allNavItems.filter(item => item.roles.includes(user.role))
+    ? allNavItems.filter(item => {
+        if (!item.roles.includes(user.role)) return false;
+        if (item.permission && (user.role === 'assistant' || user.role === 'teacher')) {
+          return hasPermission(item.permission as 'can_manage_payments' | 'can_send_whatsapp' | 'can_view_calendar');
+        }
+        return true;
+      })
     : allNavItems;
 
   return (
@@ -30,7 +39,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center gap-8">
-            <div className="flex-shrink-0 flex items-center">
+            <div className="flex-shrink-0 flex items-center gap-2">
+              {user?.center?.logo_url ? (
+                <img
+                  src={user.center.logo_url}
+                  alt={user.center.name || 'Center'}
+                  className="h-10 w-auto object-contain"
+                />
+              ) : null}
               <Link href="/dashboard" className="text-xl font-bold text-gray-900 dark:text-white">
                 CenterHQ
               </Link>

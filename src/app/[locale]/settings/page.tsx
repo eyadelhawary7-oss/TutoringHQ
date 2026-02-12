@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, dbUpdate, dbDelete, dbCount } from '@/lib/db-proxy';
+import { dbSelect, dbInsert, dbUpdate, dbDelete, dbCount, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import Navbar from '@/components/Navbar';
+import { Link } from '@/i18n/routing';
 
 interface Subject {
   id: string;
@@ -19,6 +20,13 @@ interface Assistant {
   phone: string;
   role: string;
 }
+
+const PERMISSION_KEYS = [
+  { key: 'can_send_whatsapp' as const, labelKey: 'permWhatsApp' },
+  { key: 'can_add_subjects' as const, labelKey: 'permSubjects' },
+  { key: 'can_view_calendar' as const, labelKey: 'permCalendar' },
+  { key: 'can_manage_payments' as const, labelKey: 'permPayments' },
+];
 
 interface CenterInfo {
   id: string;
@@ -51,6 +59,7 @@ export default function SettingsPage() {
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editFee, setEditFee] = useState('');
+  const [assistantPermissions, setAssistantPermissions] = useState<Record<string, Record<string, boolean>>>({});
 
   // Redirect assistants away from settings
   useEffect(() => {
@@ -111,6 +120,20 @@ export default function SettingsPage() {
 
       if (assistantsData) setAssistants(assistantsData as Assistant[]);
 
+      // Load permissions for assistants
+      const { data: permData } = await dbSelect({
+        table: 'permissions',
+        select: 'user_id, permission_key, enabled',
+        filters: [{ column: 'center_id', op: 'eq', value: userCenterId }],
+      });
+
+      const permMap: Record<string, Record<string, boolean>> = {};
+      (permData || []).forEach((p: { user_id: string; permission_key: string; enabled: boolean }) => {
+        if (!permMap[p.user_id]) permMap[p.user_id] = {};
+        permMap[p.user_id][p.permission_key] = p.enabled;
+      });
+      setAssistantPermissions(permMap);
+
       setIsLoading(false);
     };
     load();
@@ -122,18 +145,21 @@ export default function SettingsPage() {
   };
 
   const handleSaveCenterName = async () => {
-    if (!centerId || !centerName.trim()) return;
+    if (!centerId || !userId || !centerName.trim()) return;
     const { error } = await dbUpdate({
       table: 'centers',
       data: { name: centerName.trim() },
       filters: [{ column: 'id', op: 'eq', value: centerId }],
     });
-    if (!error) showSaved();
+    if (!error) {
+      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'name', value: centerName.trim() } });
+      showSaved();
+    }
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !centerId) return;
+    if (!file || !centerId || !userId) return;
 
     const ext = file.name.split('.').pop();
     const path = `${centerId}/logo.${ext}`;
@@ -148,18 +174,21 @@ export default function SettingsPage() {
     }
 
     const { data: publicData } = supabase.storage.from('center-logos').getPublicUrl(path);
-    await dbUpdate({
+    const { error } = await dbUpdate({
       table: 'centers',
       data: { logo_url: publicData.publicUrl },
       filters: [{ column: 'id', op: 'eq', value: centerId }],
     });
-    setCenter(prev => prev ? { ...prev, logo_url: publicData.publicUrl } : null);
-    showSaved();
+    if (!error) {
+      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'logo' } });
+      setCenter(prev => prev ? { ...prev, logo_url: publicData.publicUrl } : null);
+      showSaved();
+    }
   };
 
   const handleAddSubject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!centerId || !newSubjectName.trim()) return;
+    if (!centerId || !userId || !newSubjectName.trim()) return;
 
     const { data, error } = await dbInsert({
       table: 'subjects',
@@ -172,7 +201,16 @@ export default function SettingsPage() {
     });
 
     if (!error && data) {
-      setSubjects(prev => [...prev, data as Subject]);
+      const subject = data as Subject;
+      await auditLog({
+        centerId,
+        userId,
+        action: 'subject_create',
+        entityType: 'subjects',
+        entityId: subject.id,
+        details: { name: subject.name, monthly_fee: subject.monthly_fee },
+      });
+      setSubjects(prev => [...prev, subject]);
       setNewSubjectName('');
       setNewSubjectFee('');
       showSaved();
@@ -180,41 +218,63 @@ export default function SettingsPage() {
   };
 
   const handleUpdateSubject = async (id: string) => {
-    await dbUpdate({
+    if (!centerId || !userId) return;
+    const { error } = await dbUpdate({
       table: 'subjects',
       data: { name: editName.trim(), monthly_fee: Number(editFee) || 0 },
       filters: [{ column: 'id', op: 'eq', value: id }],
     });
 
-    setSubjects(prev => prev.map(s => s.id === id ? { ...s, name: editName.trim(), monthly_fee: Number(editFee) || 0 } : s));
-    setEditingSubject(null);
-    showSaved();
+    if (!error) {
+      await auditLog({
+        centerId,
+        userId,
+        action: 'subject_update',
+        entityType: 'subjects',
+        entityId: id,
+        details: { name: editName.trim(), monthly_fee: Number(editFee) || 0 },
+      });
+      setSubjects(prev => prev.map(s => s.id === id ? { ...s, name: editName.trim(), monthly_fee: Number(editFee) || 0 } : s));
+      setEditingSubject(null);
+      showSaved();
+    }
   };
 
   const handleDeleteSubject = async (id: string) => {
-    if (!confirm(t('deleteConfirm'))) return;
+    if (!confirm(t('deleteConfirm')) || !centerId || !userId) return;
 
-    // Check if any students use this subject
-    const { count } = await dbCount({
+    // Check if any students use this subject (by subject_name, not subject_id - students have subject_name string)
+    const { data: studentsWithSubject } = await dbSelect({
       table: 'students',
-      filters: [{ column: 'subject_id', op: 'eq', value: id }],
+      select: 'id',
+      filters: [{ column: 'subject_name', op: 'eq', value: subjects.find(s => s.id === id)?.name ?? '' }],
+      limit: 1,
     });
-
-    if (count && count > 0) {
+    if (studentsWithSubject && (studentsWithSubject as unknown[]).length > 0) {
       alert(t('subjectInUse'));
       return;
     }
 
-    await dbDelete({
+    const { error } = await dbDelete({
       table: 'subjects',
       filters: [{ column: 'id', op: 'eq', value: id }],
     });
-    setSubjects(prev => prev.filter(s => s.id !== id));
+    if (!error) {
+      await auditLog({
+        centerId,
+        userId,
+        action: 'subject_delete',
+        entityType: 'subjects',
+        entityId: id,
+        details: { name: subjects.find(s => s.id === id)?.name },
+      });
+      setSubjects(prev => prev.filter(s => s.id !== id));
+    }
   };
 
   const handleInviteAssistant = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!centerId || !invitePhone.trim()) return;
+    if (!centerId || !userId || !invitePhone.trim()) return;
 
     const { data, error } = await dbInsert({
       table: 'users',
@@ -228,21 +288,58 @@ export default function SettingsPage() {
     });
 
     if (!error && data) {
-      setAssistants(prev => [...prev, data as Assistant]);
+      const assistant = data as Assistant;
+      await auditLog({
+        centerId,
+        userId,
+        action: 'assistant_invite',
+        entityType: 'users',
+        entityId: assistant.id,
+        details: { phone: assistant.phone, role: assistant.role },
+      });
+      setAssistants(prev => [...prev, assistant]);
       setInvitePhone('');
       showSaved();
     }
   };
 
-  const handleScannerMode = async (mode: string) => {
+  const handlePermissionToggle = async (assistantId: string, key: string, enabled: boolean) => {
     if (!centerId) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const res = await fetch('/api/permissions', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ targetUserId: assistantId, permissionKey: key, enabled, centerId }),
+    });
+
+    if (res.ok) {
+      setAssistantPermissions(prev => ({
+        ...prev,
+        [assistantId]: {
+          ...prev[assistantId],
+          [key]: enabled,
+        },
+      }));
+    }
+  };
+
+  const handleScannerMode = async (mode: string) => {
+    if (!centerId || !userId) return;
     setScannerMode(mode);
     const { error } = await dbUpdate({
       table: 'centers',
       data: { scanner_default_mode: mode },
       filters: [{ column: 'id', op: 'eq', value: centerId }],
     });
-    if (!error) showSaved();
+    if (!error) {
+      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'scanner_mode', value: mode } });
+      showSaved();
+    }
   };
 
   if (isLoading) {
@@ -395,15 +492,34 @@ export default function SettingsPage() {
               {/* Existing assistants */}
               <div className="space-y-2 mb-4">
                 {assistants.map((assistant) => (
-                  <div key={assistant.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                    <span className="flex-1 text-sm text-gray-900 dark:text-white" dir="ltr">{assistant.phone}</span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      assistant.role === 'admin'
-                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
-                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
-                    }`}>
-                      {assistant.role === 'admin' ? t('admin') : t('assistant')}
-                    </span>
+                  <div key={assistant.id} className="p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg space-y-2">
+                    <div className="flex items-center gap-3">
+                      <span className="flex-1 text-sm text-gray-900 dark:text-white" dir="ltr">{assistant.phone}</span>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        assistant.role === 'admin'
+                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
+                          : assistant.role === 'teacher'
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
+                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+                      }`}>
+                        {assistant.role === 'admin' ? t('admin') : assistant.role === 'teacher' ? t('teacher') : t('assistant')}
+                      </span>
+                    </div>
+                    {assistant.role === 'assistant' && (
+                      <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-200 dark:border-gray-600">
+                        {PERMISSION_KEYS.map(({ key, labelKey }) => (
+                          <label key={key} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={assistantPermissions[assistant.id]?.[key] ?? false}
+                              onChange={(e) => handlePermissionToggle(assistant.id, key, e.target.checked)}
+                              className="w-3.5 h-3.5 rounded text-indigo-600"
+                            />
+                            {t(labelKey)}
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {assistants.length === 0 && (
@@ -428,6 +544,7 @@ export default function SettingsPage() {
                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
                 >
                   <option value="assistant">{t('assistant')}</option>
+                  <option value="teacher">{t('teacher')}</option>
                   <option value="admin">{t('admin')}</option>
                 </select>
                 <button
@@ -465,6 +582,30 @@ export default function SettingsPage() {
                   {t('bluetooth')}
                 </button>
               </div>
+            </section>
+
+            {/* Reminders link */}
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('reminders')}</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('remindersDesc')}</p>
+              <Link
+                href="/settings/reminders"
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
+              >
+                {t('remindersLink')} →
+              </Link>
+            </section>
+
+            {/* WhatsApp Settings link */}
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('whatsappSettings')}</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('whatsappSettingsDesc')}</p>
+              <Link
+                href="/settings/whatsapp"
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
+              >
+                {t('whatsappSettingsLink')} →
+              </Link>
             </section>
 
             {/* WhatsApp Integration */}

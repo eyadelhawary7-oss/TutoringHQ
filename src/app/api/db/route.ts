@@ -42,7 +42,9 @@ export async function POST(request: Request) {
     const allowedTables = [
       'centers', 'subjects', 'students', 'payments', 
       'attendance_scans', 'audit_log', 'subscriptions', 'users',
-      'whatsapp_messages', 'whatsapp_incoming'
+      'whatsapp_messages', 'whatsapp_incoming', 'permissions',
+      'demo_requests', 'center_invites',       'student_groups', 'student_group_members',
+      'wa_templates', 'paid_parents', 'rooms', 'schedule_slots', 'reminder_settings'
     ];
 
     if (!allowedTables.includes(table)) {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
+import { Link } from '@/i18n/routing';
 import Navbar from '@/components/Navbar';
 
 interface WhatsAppMessage {
@@ -28,12 +29,14 @@ interface IncomingMessage {
 
 export default function MessagesPage() {
   const t = useTranslations('nav');
+  const tMsg = useTranslations('messages');
   
   const [outbound, setOutbound] = useState<WhatsAppMessage[]>([]);
   const [incoming, setIncoming] = useState<IncomingMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'outbound' | 'incoming'>('outbound');
   const [centerId, setCenterId] = useState<string | null>(null);
+  const [monthlyUsage, setMonthlyUsage] = useState<number>(0);
 
   useEffect(() => {
     const load = async () => {
@@ -48,7 +51,11 @@ export default function MessagesPage() {
       if (!meData?.user?.center_id) return;
       setCenterId(meData.user.center_id);
 
-      const [outboundRes, incomingRes] = await Promise.all([
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+
+      const [outboundRes, incomingRes, usageRes] = await Promise.all([
         dbSelect({
           table: 'whatsapp_messages',
           select: 'id, to_phone, message_type, template_name, body, status, created_at, student_id',
@@ -62,14 +69,26 @@ export default function MessagesPage() {
           order: { column: 'timestamp', ascending: false },
           limit: 100,
         }),
+        dbSelect({
+          table: 'whatsapp_messages',
+          select: 'id',
+          filters: [
+            { column: 'center_id', op: 'eq', value: meData.user.center_id },
+            { column: 'created_at', op: 'gte', value: monthStart.toISOString() },
+          ],
+        }),
       ]);
 
       if (outboundRes.data) setOutbound(outboundRes.data as WhatsAppMessage[]);
+      if (usageRes.data) setMonthlyUsage((usageRes.data as unknown[]).length);
       if (incomingRes.data) setIncoming(incomingRes.data as IncomingMessage[]);
       setIsLoading(false);
     };
     load();
   }, []);
+
+  const MESSAGE_QUOTA = 1000;
+  const isOverQuota = monthlyUsage >= MESSAGE_QUOTA;
 
   const statusColors: Record<string, string> = {
     sent: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
@@ -84,7 +103,8 @@ export default function MessagesPage() {
       <Navbar />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
@@ -92,7 +112,30 @@ export default function MessagesPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">WhatsApp Messages</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className={`rounded-lg border px-4 py-2 ${isOverQuota ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-600' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'}`}>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Messages this month</span>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {monthlyUsage} {isOverQuota && `/ ${MESSAGE_QUOTA} (over quota)`}
+                </p>
+              </div>
+              <Link
+                href="/messages/compose"
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg"
+              >
+                {tMsg('compose')}
+              </Link>
+            </div>
           </div>
+
+          {isOverQuota && (
+            <div className="mb-6 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 p-4">
+              <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
+                You have exceeded your monthly message quota ({MESSAGE_QUOTA}). Contact support to upgrade your plan or resolve overage billing.
+              </p>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow p-1 mb-6 w-fit">

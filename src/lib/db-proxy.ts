@@ -100,3 +100,26 @@ export async function dbCount(options: QueryOptions) {
     filters: options.filters,
   });
 }
+
+/** Log an audit entry */
+export async function auditLog(params: {
+  centerId: string;
+  userId: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  details?: Record<string, unknown>;
+}) {
+  return dbInsert({
+    table: 'audit_log',
+    data: {
+      center_id: params.centerId,
+      user_id: params.userId,
+      action: params.action,
+      entity_type: params.entityType,
+      entity_id: params.entityId ?? null,
+      details: params.details ?? {},
+    },
+    select: false,
+  });
+}

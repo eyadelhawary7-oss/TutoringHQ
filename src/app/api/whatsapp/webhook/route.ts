@@ -65,22 +65,95 @@ export async function POST(request: Request) {
             .eq('wa_message_id', status.id);
         }
 
-        // Process incoming messages
+        // Process incoming messages (including parent check-up)
         const messages = value.messages || [];
         const contacts = value.contacts || [];
+        const waToken = process.env.WHATSAPP_ACCESS_TOKEN;
+        const waPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+        const thisMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
         for (let i = 0; i < messages.length; i++) {
           const msg = messages[i];
           const contact = contacts[i] || {};
+          const fromPhone = msg.from;
+          const bodyText = (msg.text?.body || '').trim();
 
           await supabaseAdmin.from('whatsapp_incoming').insert({
-            from_phone: msg.from,
+            from_phone: fromPhone,
             from_name: contact.profile?.name || null,
             message_type: msg.type,
-            body: msg.text?.body || msg.type,
+            body: bodyText || msg.type,
             wa_message_id: msg.id,
             timestamp: msg.timestamp ? new Date(parseInt(msg.timestamp) * 1000).toISOString() : new Date().toISOString(),
           });
+
+          // Parent check-up: body is student ID
+          if (bodyText && waToken && waPhoneId) {
+            const { data: parent } = await supabaseAdmin
+              .from('paid_parents')
+              .select('id, center_id, student_id, check_ups_used')
+              .eq('parent_phone', fromPhone)
+              .eq('month', thisMonth)
+              .eq('active', true)
+              .maybeSingle();
+
+            let replyText = '';
+
+            if (!parent) {
+              replyText = 'هذه الخدمة للمشتركين فقط. تواصل مع السنتر للاشتراك. 9.99 جنيه/شهر.';
+            } else if (parent.check_ups_used >= 10) {
+              replyText = 'استنفدت الاستعلامات الشهرية.';
+            } else {
+              const studentId = bodyText;
+              const { data: student } = await supabaseAdmin
+                .from('students')
+                .select('id, name, subject_name')
+                .eq('id', studentId)
+                .eq('center_id', parent.center_id)
+                .maybeSingle();
+
+              if (!student) {
+                replyText = 'لم يتم العثور على الطالب.';
+              } else {
+                const { data: scans } = await supabaseAdmin
+                  .from('attendance_scans')
+                  .select('scanned_at')
+                  .eq('student_id', studentId)
+                  .order('scanned_at', { ascending: false });
+
+                const total = (scans || []).length;
+                const lastDate = scans?.[0]?.scanned_at
+                  ? new Date(scans[0].scanned_at).toLocaleDateString('ar-EG')
+                  : '—';
+
+                replyText = `الطالب: ${(student as { name: string }).name} | المادة: ${(student as { subject_name: string }).subject_name || '—'} | الحصص: ${total} | آخر حضور: ${lastDate}`;
+
+                await supabaseAdmin
+                  .from('paid_parents')
+                  .update({ check_ups_used: parent.check_ups_used + 1 })
+                  .eq('id', parent.id);
+              }
+            }
+
+            if (replyText) {
+              await fetch(
+                `https://graph.facebook.com/v21.0/${waPhoneId}/messages`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${waToken}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    messaging_product: 'whatsapp',
+                    to: fromPhone,
+                    type: 'text',
+                    text: { body: replyText, preview_url: false },
+                  }),
+                }
+              );
+            }
+          }
         }
       }
     }

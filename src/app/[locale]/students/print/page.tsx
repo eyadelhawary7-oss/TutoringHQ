@@ -18,6 +18,7 @@ export default function PrintStudentsPage() {
   const tStudents = useTranslations('students');
 
   const [students, setStudents] = useState<Student[]>([]);
+  const [centerLogo, setCenterLogo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('all');
@@ -34,6 +35,11 @@ export default function PrintStudentsPage() {
       const meData = await meRes.json();
 
       if (!meData?.user?.center_id) return;
+
+      // Center logo for QR cards
+      if (meData?.user?.center?.logo_url) {
+        setCenterLogo(meData.user.center.logo_url);
+      }
 
       const { data } = await dbSelect({ table: 'students', select: 'id, name, subject_name, qr_code', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }, { column: 'qr_code', op: 'not_is', value: null }], order: { column: 'name' } });
 
@@ -120,10 +126,18 @@ export default function PrintStudentsPage() {
                     breakInside: 'avoid',
                   }}
                 >
-                  {/* Logo placeholder */}
-                  <div className="text-xs font-bold text-indigo-600 print:text-indigo-600 mb-1">
-                    CenterHQ
-                  </div>
+                  {/* Center Logo or fallback */}
+                  {centerLogo ? (
+                    <img
+                      src={centerLogo}
+                      alt="Logo"
+                      className="h-8 w-auto object-contain mb-1"
+                    />
+                  ) : (
+                    <div className="text-xs font-bold text-indigo-600 print:text-indigo-600 mb-1">
+                      CenterHQ
+                    </div>
+                  )}
 
                   {/* Student Name */}
                   <p className="text-sm font-bold text-gray-900 print:text-gray-900 dark:text-white print:dark:text-gray-900 mb-0.5 line-clamp-1">

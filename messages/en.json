@@ -5,7 +5,9 @@
     "scanner": "Scanner",
     "payments": "Payments",
     "schedule": "Schedule",
+    "groups": "Groups",
     "messages": "Messages",
+    "rooms": "Rooms",
     "settings": "Settings"
   },
   "common": {
@@ -25,7 +27,8 @@
     "add": "Add",
     "search": "Search",
     "noData": "No data available",
-    "actions": "Actions"
+    "actions": "Actions",
+    "select": "Select..."
   },
   "landing": {
     "subtitle": "CenterHQ",
@@ -55,7 +58,8 @@
     "google": "Sign in with Google",
     "facebook": "Sign in with Facebook",
     "backToHome": "Back to Home",
-    "welcome": "Welcome to CenterHQ"
+    "welcome": "Welcome to CenterHQ",
+    "contactSales": "Your phone number is not registered. Please contact our sales team to get access."
   },
   "onboarding": {
     "title": "Welcome to CenterHQ",
@@ -136,7 +140,8 @@
     "paymentRecorded": "Payment recorded",
     "scanError": "Scan error",
     "studentNotFound": "Student not found",
-    "attendanceRecorded": "Attendance recorded"
+    "attendanceRecorded": "Attendance recorded",
+    "pending": "pending"
   },
   "sync": {
     "online": "Online",
@@ -160,7 +165,17 @@
     "collectedToday": "Collected Today",
     "pendingAmount": "Pending Amount",
     "paymentBreakdown": "Payment Method Breakdown",
-    "currency": "EGP"
+    "currency": "EGP",
+    "scanNow": "Scan QR",
+    "scanSubtitle": "Record attendance or collect payment",
+    "unpaidCount": "Unpaid Students",
+    "goToPayments": "Go to Payments",
+    "whatsapp": "WhatsApp",
+    "teacherDashboard": "Teacher Dashboard",
+    "mySchedule": "My Schedule",
+    "viewCalendar": "View your classes and book time slots",
+    "exportData": "Export Data",
+    "exporting": "Exporting..."
   },
   "payments": {
     "title": "Payment Management",
@@ -168,6 +183,9 @@
     "filterUnpaid": "Unpaid",
     "filterAll": "All",
     "filterBySubject": "By Subject",
+    "filterByGroup": "By Group",
+    "allSubjects": "All Subjects",
+    "allGroups": "All Groups",
     "filterByDate": "By Date",
     "fromDate": "From Date",
     "toDate": "To Date",
@@ -201,14 +219,133 @@
     "role": "Role",
     "admin": "Admin",
     "assistant": "Assistant",
+    "teacher": "Teacher",
     "invite": "Send Invite",
     "scanner": "Scanner Settings",
     "defaultMode": "Default Mode",
     "camera": "Camera",
     "bluetooth": "Bluetooth Scanner",
     "saved": "Saved",
+    "whatsappSettings": "WhatsApp",
+    "whatsappSettingsDesc": "Enable individual check-in alerts and view usage.",
+    "whatsappSettingsLink": "Configure WhatsApp",
+    "reminders": "Auto Reminders",
+    "remindersDesc": "Configure payment reminder messages (Day 5, 10, 15)",
+    "remindersLink": "Configure Reminders",
     "deleteConfirm": "Are you sure you want to delete?",
-    "subjectInUse": "Cannot delete subject because it is used by students"
+    "subjectInUse": "Cannot delete subject because it is used by students",
+    "permWhatsApp": "WhatsApp",
+    "permSubjects": "Subjects",
+    "permCalendar": "Calendar",
+    "permPayments": "Payments"
+  },
+  "messages": {
+    "compose": "Compose Message",
+    "backToMessages": "Back to Messages",
+    "target": "Send To",
+    "targetGroup": "Group",
+    "targetAll": "All Students",
+    "targetStudents": "Select Students",
+    "selectGroup": "Select Group",
+    "selectStudents": "Select Students",
+    "message": "Message",
+    "messagePlaceholder": "Type your message. Use {student_name}, {center_name}, {subject}, {amount}, {date} for variables.",
+    "send": "Send",
+    "sending": "Sending...",
+    "sentResult": "Sent: {sent}, Failed: {failed}"
+  },
+  "groups": {
+    "title": "Student Groups",
+    "createGroup": "Create Group",
+    "groupName": "Group Name",
+    "description": "Description",
+    "allGroups": "All Groups",
+    "members": "Members",
+    "addStudent": "Add Student",
+    "remove": "Remove",
+    "selectGroup": "Select a group to manage members",
+    "deleteConfirm": "Delete this group?"
+  },
+  "rooms": {
+    "title": "Rooms",
+    "createRoom": "Create Room",
+    "roomName": "Room Name",
+    "capacity": "Capacity",
+    "allRooms": "All Rooms",
+    "noRooms": "No rooms yet. Create one to get started.",
+    "deleteConfirm": "Delete this room?"
+  },
+  "schedule": {
+    "title": "Schedule",
+    "addSlot": "Add Slot",
+    "day": "Day",
+    "room": "Room",
+    "subject": "Subject",
+    "teacher": "Teacher",
+    "start": "Start",
+    "end": "End",
+    "conflictRoom": "This room is already booked at this time.",
+    "conflictTeacher": "This teacher is already scheduled at this time.",
+    "deleteConfirm": "Delete this slot?",
+    "noRooms": "Add rooms first in Settings or Rooms.",
+    "workingHours": "Working Hours",
+    "startHour": "Start hour (0-23)",
+    "endHour": "End hour (1-24)"
+  },
+  "admin": {
+    "title": "Super Admin",
+    "createCenter": "Create New Center",
+    "centerName": "Center Name",
+    "ownerPhone": "Owner Phone",
+    "plan": "Plan",
+    "create": "Create Center",
+    "creating": "Creating...",
+    "centers": "Centers",
+    "noCenters": "No centers yet",
+    "demoRequests": "Demo Requests",
+    "name": "Name",
+    "phone": "Phone",
+    "status": "Status",
+    "date": "Date",
+    "noDemoRequests": "No demo requests"
+  },
+  "whatsapp": {
+    "title": "WhatsApp Settings",
+    "individualAlerts": "Individual Check-In Alerts",
+    "alertsDescription": "Send WhatsApp message to parent when student is scanned",
+    "alertsActive": "Individual alerts are enabled",
+    "monthlyUsage": "Monthly Usage",
+    "messagesSent": "Messages Sent",
+    "sent": "Sent",
+    "included": "Included",
+    "overage": "Overage",
+    "yourPlan": "Your Plan",
+    "includedPerStudent": "Included per student",
+    "messagesMonth": "messages/month",
+    "overageCost": "Overage cost",
+    "perMessage": "per message",
+    "updateError": "Update failed",
+    "loading": "Loading...",
+    "backToSettings": "Back to Settings"
+  },
+  "reminders": {
+    "title": "Auto Payment Reminders",
+    "description": "Automatically send reminder messages to unpaid students based on days since last payment.",
+    "day5Title": "Day 5 - Gentle Reminder",
+    "day5Desc": "Friendly message after 5 days since last payment",
+    "day10Title": "Day 10 - Firm Reminder",
+    "day10Desc": "Firmer message after 10 days",
+    "day15Title": "Day 15 - Final Warning",
+    "day15Desc": "Final warning + mark student as overdue",
+    "preview": "Preview",
+    "save": "Save Settings",
+    "saving": "Saving...",
+    "saveSuccess": "Settings saved successfully",
+    "saveError": "Failed to save",
+    "loading": "Loading...",
+    "note": "Note",
+    "cronNote": "Students are checked and reminders sent automatically every day at 9 AM Egypt time.",
+    "backToSettings": "Back to Settings"
   },
   "suspended": {
     "title": "Subscription Expired",
@@ -216,6 +353,7 @@
     "fawryCode": "Fawry Code: {code}",
     "whatsapp": "For support: Contact via WhatsApp",
     "renewButton": "Renew Now",
-    "contactUs": "Contact Us"
+    "contactUs": "Contact Us",
+    "logout": "Logout"
   }
 }

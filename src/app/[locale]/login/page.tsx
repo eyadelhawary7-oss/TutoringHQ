@@ -65,15 +65,19 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        // Check if user exists in users table
-        const { data: userRecord } = await supabase
-          .from('users')
-          .select('id, center_id')
-          .eq('id', data.user.id)
-          .single();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
 
-        if (userRecord?.center_id) {
-          router.push('/dashboard');
+        const res = await fetch('/api/auth/check-invite', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+        const result = await res.json();
+
+        if (result.centerId) {
+          router.push(result.needsOnboarding ? '/onboarding' : '/dashboard');
+        } else if (result.contactSales) {
+          setError(t('contactSales'));
         } else {
           router.push('/onboarding');
         }

@@ -5,7 +5,9 @@
     "scanner": "الماسح",
     "payments": "المدفوعات",
     "schedule": "المواعيد",
+    "groups": "المجموعات",
     "messages": "الرسائل",
+    "rooms": "القاعات",
     "settings": "الإعدادات"
   },
   "common": {
@@ -25,7 +27,8 @@
     "add": "إضافة",
     "search": "بحث",
     "noData": "لا توجد بيانات",
-    "actions": "الإجراءات"
+    "actions": "الإجراءات",
+    "select": "اختر..."
   },
   "landing": {
     "subtitle": "سنتر إتش كيو",
@@ -55,7 +58,8 @@
     "google": "تسجيل الدخول بجوجل",
     "facebook": "تسجيل الدخول بفيسبوك",
     "backToHome": "العودة للصفحة الرئيسية",
-    "welcome": "مرحبا بك في CenterHQ"
+    "welcome": "مرحبا بك في CenterHQ",
+    "contactSales": "رقم هاتفك غير مسجل. يرجى التواصل مع فريق المبيعات للحصول على الوصول."
   },
   "onboarding": {
     "title": "مرحبا بك في CenterHQ",
@@ -136,7 +140,8 @@
     "paymentRecorded": "تم تسجيل الدفع",
     "scanError": "خطأ في المسح",
     "studentNotFound": "الطالب غير موجود",
-    "attendanceRecorded": "تم تسجيل الحضور"
+    "attendanceRecorded": "تم تسجيل الحضور",
+    "pending": "معلق"
   },
   "sync": {
     "online": "متصل",
@@ -160,7 +165,17 @@
     "collectedToday": "تم تحصيله اليوم",
     "pendingAmount": "المبلغ المستحق",
     "paymentBreakdown": "توزيع طرق الدفع",
-    "currency": "ج.م"
+    "currency": "ج.م",
+    "scanNow": "مسح QR",
+    "scanSubtitle": "تسجيل الحضور أو استلام الدفع",
+    "unpaidCount": "الطلاب غير المسددين",
+    "goToPayments": "انتقل للمدفوعات",
+    "whatsapp": "واتساب",
+    "teacherDashboard": "لوحة المعلم",
+    "mySchedule": "جدولي",
+    "viewCalendar": "عرض حصصك وحجز المواعيد",
+    "exportData": "تصدير البيانات",
+    "exporting": "جاري التصدير..."
   },
   "payments": {
     "title": "إدارة المدفوعات",
@@ -168,6 +183,9 @@
     "filterUnpaid": "غير مسدد",
     "filterAll": "الكل",
     "filterBySubject": "حسب المادة",
+    "filterByGroup": "حسب المجموعة",
+    "allSubjects": "كل المواد",
+    "allGroups": "كل المجموعات",
     "filterByDate": "حسب التاريخ",
     "fromDate": "من تاريخ",
     "toDate": "إلى تاريخ",
@@ -201,14 +219,133 @@
     "role": "الدور",
     "admin": "مشرف",
     "assistant": "مساعد",
+    "teacher": "معلم",
     "invite": "إرسال دعوة",
     "scanner": "إعدادات الماسح",
     "defaultMode": "الوضع الافتراضي",
     "camera": "الكاميرا",
     "bluetooth": "الماسح الضوئي",
     "saved": "تم الحفظ",
+    "whatsappSettings": "الواتساب",
+    "whatsappSettingsDesc": "تفعيل تنبيهات الحضور الفردية وعرض الاستخدام.",
+    "whatsappSettingsLink": "إعدادات الواتساب",
+    "reminders": "التذكيرات التلقائية",
+    "remindersDesc": "إعداد رسائل التذكير بالدفع (يوم 5، 10، 15)",
+    "remindersLink": "إعداد التذكيرات",
     "deleteConfirm": "هل أنت متأكد من الحذف؟",
-    "subjectInUse": "لا يمكن حذف المادة لأنها مستخدمة من قبل طلاب"
+    "subjectInUse": "لا يمكن حذف المادة لأنها مستخدمة من قبل طلاب",
+    "permWhatsApp": "واتساب",
+    "permSubjects": "المواد",
+    "permCalendar": "المواعيد",
+    "permPayments": "المدفوعات"
+  },
+  "messages": {
+    "compose": "كتابة رسالة",
+    "backToMessages": "العودة للرسائل",
+    "target": "الإرسال إلى",
+    "targetGroup": "مجموعة",
+    "targetAll": "كل الطلاب",
+    "targetStudents": "اختيار طلاب",
+    "selectGroup": "اختر المجموعة",
+    "selectStudents": "اختر الطلاب",
+    "message": "الرسالة",
+    "messagePlaceholder": " اكتب رسالتك. استخدم {student_name}، {center_name}، {subject}، {amount}، {date} للمتغيرات.",
+    "send": "إرسال",
+    "sending": "جاري الإرسال...",
+    "sentResult": "تم إرسال: {sent}، فشل: {failed}"
+  },
+  "groups": {
+    "title": "مجموعات الطلاب",
+    "createGroup": "إنشاء مجموعة",
+    "groupName": "اسم المجموعة",
+    "description": "الوصف",
+    "allGroups": "كل المجموعات",
+    "members": "الأعضاء",
+    "addStudent": "إضافة طالب",
+    "remove": "إزالة",
+    "selectGroup": "اختر مجموعة لإدارة الأعضاء",
+    "deleteConfirm": "حذف هذه المجموعة؟"
+  },
+  "rooms": {
+    "title": "القاعات",
+    "createRoom": "إنشاء قاعة",
+    "roomName": "اسم القاعة",
+    "capacity": "السعة",
+    "allRooms": "كل القاعات",
+    "noRooms": "لا توجد قاعات. أنشئ واحدة للبدء.",
+    "deleteConfirm": "حذف هذه القاعة؟"
+  },
+  "schedule": {
+    "title": "المواعيد",
+    "addSlot": "إضافة حصة",
+    "day": "اليوم",
+    "room": "القاعة",
+    "subject": "المادة",
+    "teacher": "المدرس",
+    "start": "البداية",
+    "end": "النهاية",
+    "conflictRoom": "هذه القاعة محجوزة في هذا الوقت.",
+    "conflictTeacher": "هذا المدرس لديه حصة أخرى في هذا الوقت.",
+    "deleteConfirm": "حذف هذه الحصة؟",
+    "noRooms": "أضف قاعات أولاً من الإعدادات أو القاعات.",
+    "workingHours": "ساعات العمل",
+    "startHour": "ساعة البداية (0-23)",
+    "endHour": "ساعة النهاية (1-24)"
+  },
+  "admin": {
+    "title": "المشرف الأعلى",
+    "createCenter": "إنشاء مركز جديد",
+    "centerName": "اسم المركز",
+    "ownerPhone": "هاتف المالك",
+    "plan": "الباقة",
+    "create": "إنشاء المركز",
+    "creating": "جاري الإنشاء...",
+    "centers": "المراكز",
+    "noCenters": "لا توجد مراكز بعد",
+    "demoRequests": "طلبات التجربة",
+    "name": "الاسم",
+    "phone": "الهاتف",
+    "status": "الحالة",
+    "date": "التاريخ",
+    "noDemoRequests": "لا توجد طلبات"
+  },
+  "whatsapp": {
+    "title": "إعدادات الواتساب",
+    "individualAlerts": "تنبيهات الحضور الفردية",
+    "alertsDescription": "إرسال رسالة واتساب لولي الأمر عند مسح الطالب",
+    "alertsActive": "التنبيهات الفردية مفعّلة",
+    "monthlyUsage": "الاستخدام الشهري",
+    "messagesSent": "الرسائل المرسلة",
+    "sent": "مرسل",
+    "included": "مشمول",
+    "overage": "إضافي",
+    "yourPlan": "خطتك",
+    "includedPerStudent": "المشمول لكل طالب",
+    "messagesMonth": "رسالة/شهر",
+    "overageCost": "تكلفة الإضافي",
+    "perMessage": "للرسالة",
+    "updateError": "فشل التحديث",
+    "loading": "جاري التحميل...",
+    "backToSettings": "العودة للإعدادات"
+  },
+  "reminders": {
+    "title": "إعدادات التذكيرات التلقائية",
+    "description": "يتم إرسال رسائل التذكير تلقائياً للطلاب غير المسددين حسب عدد الأيام منذ آخر دفعة.",
+    "day5Title": "اليوم الخامس - تذكير لطيف",
+    "day5Desc": "رسالة ودية بعد 5 أيام من آخر دفعة",
+    "day10Title": "اليوم العاشر - تذكير حازم",
+    "day10Desc": "رسالة أكثر حزماً بعد 10 أيام",
+    "day15Title": "اليوم الخامس عشر - إنذار نهائي",
+    "day15Desc": "إنذار نهائي + وضع علامة تحذير على الطالب",
+    "preview": "معاينة",
+    "save": "حفظ الإعدادات",
+    "saving": "جاري الحفظ...",
+    "saveSuccess": "تم الحفظ بنجاح",
+    "saveError": "خطأ في الحفظ",
+    "loading": "جاري التحميل...",
+    "note": "ملاحظة",
+    "cronNote": "يتم فحص الطلاب وإرسال التذكيرات تلقائياً كل يوم في الساعة 9 صباحاً بتوقيت القاهرة.",
+    "backToSettings": "العودة للإعدادات"
   },
   "suspended": {
     "title": "انتهى اشتراكك",
@@ -216,6 +353,7 @@
     "fawryCode": "كود فوري: {code}",
     "whatsapp": "للدعم: اتصل واتساب",
     "renewButton": "تجديد الآن",
-    "contactUs": "تواصل معنا"
+    "contactUs": "تواصل معنا",
+    "logout": "تسجيل الخروج"
   }
 }

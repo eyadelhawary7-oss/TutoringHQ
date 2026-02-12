@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbCount } from '@/lib/db-proxy';
+import { exportDashboardToExcel } from '@/lib/excel-export';
+import { useUser } from '@/contexts/UserContext';
+import { Link } from '@/i18n/routing';
 import Navbar from '@/components/Navbar';
 import AttendanceCard from '@/components/dashboard/AttendanceCard';
 import PaymentDonut from '@/components/dashboard/PaymentDonut';
@@ -24,6 +27,7 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
+  const { user, hasPermission } = useUser();
 
   const [data, setData] = useState<DashboardData>({
     todayAttendance: 0,
@@ -37,6 +41,7 @@ export default function DashboardPage() {
   });
   const [centerId, setCenterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   const startOfToday = () => {
     const now = new Date();
@@ -172,14 +177,158 @@ export default function DashboardPage() {
     };
   }, [centerId, loadDashboard]);
 
+  const handleExport = useCallback(async () => {
+    if (!centerId) return;
+    setIsExporting(true);
+    try {
+      const [studentsRes, attendanceRes, paymentsRes] = await Promise.all([
+        dbSelect({
+          table: 'students',
+          select: 'id, name, phone, parent_phone, subject_name, payment_status, qr_code',
+          filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+          order: { column: 'name' },
+        }),
+        dbSelect({
+          table: 'attendance_scans',
+          select: 'student_id, scanned_at',
+          filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+          order: { column: 'scanned_at', ascending: false },
+          limit: 500,
+        }),
+        dbSelect({
+          table: 'payments',
+          select: 'student_id, amount, payment_method, payment_date, created_by',
+          filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+          order: { column: 'payment_date', ascending: false },
+          limit: 500,
+        }),
+      ]);
+      const students = (studentsRes.data || []) as { id: string; name: string; phone?: string; parent_phone?: string; subject_name?: string; payment_status: string; qr_code?: string }[];
+      const attendanceRaw = (attendanceRes.data || []) as { student_id: string; scanned_at: string }[];
+      const paymentsRaw = (paymentsRes.data || []) as { student_id: string; amount: number; payment_method: string; payment_date: string; created_by: string }[];
+      const studentMap = new Map(students.map(s => [s.id, s]));
+      exportDashboardToExcel({
+        students,
+        attendance: attendanceRaw.map(a => ({
+          student_name: studentMap.get(a.student_id)?.name || '',
+          scanned_at: a.scanned_at,
+          payment_status_at_scan: '',
+        })),
+        payments: paymentsRaw.map(p => ({
+          student_name: studentMap.get(p.student_id)?.name || '',
+          amount: p.amount,
+          method: p.payment_method,
+          paid_at: p.payment_date,
+          recorded_by: '',
+        })),
+      });
+    } catch (err) {
+      console.error('Export error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [centerId]);
+
+  // Assistant dashboard: scan CTA + payment quick actions
+  if (user?.role === 'assistant' && !isLoading) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+              {t('title')}
+            </h1>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Link
+                href="/scan"
+                className="block p-8 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-lg text-center transition-colors"
+              >
+                <svg className="w-16 h-16 mx-auto text-white mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                </svg>
+                <h2 className="text-xl font-bold text-white">{t('scanNow')}</h2>
+                <p className="text-indigo-100 text-sm mt-2">{t('scanSubtitle')}</p>
+              </Link>
+              <Link
+                href="/payments"
+                className="block p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 hover:border-indigo-500 transition-colors"
+              >
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('unpaidCount')}</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.unpaidCount}</p>
+                <p className="text-indigo-600 dark:text-indigo-400 text-sm mt-2">{t('goToPayments')}</p>
+              </Link>
+              {hasPermission('can_send_whatsapp') && (
+                <Link
+                  href="/messages"
+                  className="block p-8 bg-green-600 hover:bg-green-700 rounded-2xl shadow-lg text-center transition-colors"
+                >
+                  <svg className="w-12 h-12 mx-auto text-white mb-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+                  </svg>
+                  <h2 className="text-lg font-bold text-white">{t('whatsapp')}</h2>
+                </Link>
+              )}
+            </div>
+            <div className="mt-6">
+              <AttendanceCard count={data.todayAttendance} label={t('attendance')} />
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Teacher dashboard: calendar focus + their schedule
+  if (user?.role === 'teacher' && !isLoading) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+              {t('teacherDashboard')}
+            </h1>
+            <div className="space-y-6">
+              <Link
+                href="/schedule"
+                className="block p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 hover:border-indigo-500"
+              >
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('mySchedule')}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('viewCalendar')}</p>
+              </Link>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <AttendanceCard count={data.todayAttendance} label={t('attendance')} />
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalStudents')}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.totalStudents}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <Navbar />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            {t('title')}
-          </h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('title')}
+            </h1>
+            <button
+              onClick={handleExport}
+              disabled={isExporting || isLoading}
+              className="px-4 py-2 text-sm font-medium border border-indigo-600 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/50 disabled:opacity-50"
+            >
+              {isExporting ? t('exporting') : t('exportData')}
+            </button>
+          </div>
 
           {isLoading ? (
             <div className="text-center py-16">
