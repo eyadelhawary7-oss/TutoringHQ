@@ -4,8 +4,8 @@ import { getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { cairo, inter } from '@/lib/fonts';
 import '../globals.css';
-import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 import { UserProvider } from '@/contexts/UserContext';
+import ServiceWorkerRegistrarWrapper from '@/components/ServiceWorkerRegistrarWrapper';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -25,7 +25,9 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  const messages = await getMessages();
+  const messagesRaw = await getMessages();
+  // Ensure plain object for Client Component serialization (fixes context-not-found with non-plain objects)
+  const messages = JSON.parse(JSON.stringify(messagesRaw)) as typeof messagesRaw;
 
   // Determine direction and font based on locale
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
@@ -49,7 +51,7 @@ export default async function LocaleLayout({
             {children}
           </UserProvider>
         </NextIntlClientProvider>
-        <ServiceWorkerRegistrar />
+        <ServiceWorkerRegistrarWrapper />
       </body>
     </html>
   );

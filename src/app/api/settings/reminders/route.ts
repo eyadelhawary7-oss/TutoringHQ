@@ -53,6 +53,9 @@ export async function GET(request: NextRequest) {
       day5_enabled: true,
       day10_enabled: true,
       day15_enabled: true,
+      day5: 5,
+      day10: 10,
+      day15: 15,
     };
 
     return NextResponse.json({ settings: data ? { ...defaults, ...data } : defaults });
@@ -77,7 +80,7 @@ export async function PUT(request: NextRequest) {
       const msg = validation.error.issues[0]?.message || 'Invalid input';
       return NextResponse.json({ error: msg }, { status: 400 });
     }
-    const { day5_enabled, day10_enabled, day15_enabled } = validation.data;
+    const { day5_enabled, day10_enabled, day15_enabled, day5, day10, day15 } = validation.data;
 
     const { error } = await ctx.supabaseAdmin
       .from('reminder_settings')
@@ -87,6 +90,9 @@ export async function PUT(request: NextRequest) {
           day5_enabled: day5_enabled ?? true,
           day10_enabled: day10_enabled ?? true,
           day15_enabled: day15_enabled ?? true,
+          day5: day5 ?? 5,
+          day10: day10 ?? 10,
+          day15: day15 ?? 15,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'center_id' }

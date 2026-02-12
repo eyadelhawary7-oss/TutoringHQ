@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 const intlMiddleware = createMiddleware(routing);
 
 // Routes that don't require authentication
-const publicRoutes = ['/login', '/onboarding', '/suspended', '/auth/callback', '/'];
+const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/'];
 
 // Routes that should not have locale prefix handling  
 const apiRoutes = ['/auth/callback'];
@@ -85,16 +85,32 @@ export default async function middleware(request: NextRequest) {
         .single();
 
       if (userRecord?.center_id) {
+        const { data: center } = await supabase
+          .from('centers')
+          .select('status')
+          .eq('id', userRecord.center_id)
+          .single();
+
+        const cleanPath = pathname.replace(/^\/(ar|en)/, '') || '/';
+        const localePrefix = pathname.startsWith('/en') ? '/en' : '';
+        const suspendedPath = `${localePrefix}/suspended`;
+
+        if (!cleanPath.startsWith('/suspended')) {
+          if (center?.status === 'suspended') {
+            const suspendedUrl = new URL(suspendedPath, request.url);
+            suspendedUrl.searchParams.set('reason', 'center_suspended');
+            return NextResponse.redirect(suspendedUrl);
+          }
+        }
+
         const { data: subscription } = await supabase
           .from('subscriptions')
           .select('status')
           .eq('center_id', userRecord.center_id)
           .single();
 
-        // If subscription is suspended and not already on suspended page
-        const cleanPath = pathname.replace(/^\/(ar|en)/, '') || '/';
         if (subscription?.status === 'suspended' && !cleanPath.startsWith('/suspended')) {
-          const suspendedUrl = new URL('/suspended', request.url);
+          const suspendedUrl = new URL(suspendedPath, request.url);
           return NextResponse.redirect(suspendedUrl);
         }
       }

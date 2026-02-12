@@ -5,13 +5,25 @@ import LanguageToggle from './LanguageToggle';
 import SyncIndicator from './SyncIndicator';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
+import type { PermissionKey } from '@/contexts/UserContext';
+import type { UserRole } from '@/contexts/UserContext';
+
+const getRoleBadge = (role: UserRole) => {
+  const badges = {
+    owner: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    admin: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    assistant: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    teacher: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  };
+  return badges[role] || badges.assistant;
+};
 
 export default function Navbar() {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const { user, hasPermission } = useUser();
 
-  const allNavItems: { key: string; href: string; roles: string[]; permission?: string }[] = [
+  const allNavItems: { key: string; href: string; roles: string[]; permission?: string; skipPermissionForTeacher?: boolean }[] = [
     { key: 'dashboard', href: '/dashboard', roles: ['owner', 'admin', 'assistant', 'teacher'] },
     { key: 'students', href: '/students', roles: ['owner', 'admin'] },
     { key: 'scanner', href: '/scan', roles: ['owner', 'admin', 'assistant', 'teacher'] },
@@ -19,20 +31,33 @@ export default function Navbar() {
     { key: 'groups', href: '/groups', roles: ['owner', 'admin', 'assistant'], permission: 'can_send_whatsapp' },
     { key: 'messages', href: '/messages', roles: ['owner', 'admin', 'assistant'], permission: 'can_send_whatsapp' },
     { key: 'rooms', href: '/rooms', roles: ['owner', 'admin'] },
-    { key: 'schedule', href: '/schedule', roles: ['owner', 'admin', 'assistant', 'teacher'], permission: 'can_view_calendar' },
+    { key: 'schedule', href: '/schedule', roles: ['owner', 'admin', 'assistant', 'teacher'], permission: 'can_view_calendar', skipPermissionForTeacher: true },
     { key: 'settings', href: '/settings', roles: ['owner', 'admin'] },
   ];
 
-  // Filter nav items: role must match, and for assistants/teachers check permission if required
   const navItems = user
     ? allNavItems.filter(item => {
         if (!item.roles.includes(user.role)) return false;
-        if (item.permission && (user.role === 'assistant' || user.role === 'teacher')) {
-          return hasPermission(item.permission as 'can_manage_payments' | 'can_send_whatsapp' | 'can_view_calendar');
+
+        if (user.role === 'teacher') {
+          if (item.skipPermissionForTeacher) return true;
+          if (item.permission) {
+            return hasPermission(item.permission as PermissionKey);
+          }
+          return true;
         }
+
+        if (user.role === 'assistant' && item.permission) {
+          return hasPermission(item.permission as PermissionKey);
+        }
+
         return true;
       })
-    : allNavItems;
+    : [];
+
+  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : null;
+  const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  const isLimitedAccess = user?.role === 'assistant' || user?.role === 'teacher';
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -70,7 +95,25 @@ export default function Navbar() {
               })}
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                  <span className="hidden md:inline">{user.name || user.phone || 'User'}</span>
+                  {roleLabelKey && (
+                    <span className={`inline-flex items-center justify-center min-w-[1.5rem] px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`} title={`${user.name || user.phone || 'User'} (${t(roleLabelKey)})`}>
+                      <span className="hidden md:inline">({t(roleLabelKey)})</span>
+                      <span className="md:hidden">{t(roleLabelKey).slice(0, 1)}</span>
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+            {isLimitedAccess && (
+              <span className="hidden sm:inline-flex px-2 py-0.5 text-xs font-medium rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" title={t('limitedAccess')}>
+                {t('limitedAccess')}
+              </span>
+            )}
             <SyncIndicator />
             <LanguageToggle />
           </div>

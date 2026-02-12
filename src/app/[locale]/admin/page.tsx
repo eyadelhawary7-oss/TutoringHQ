@@ -10,6 +10,15 @@ interface Center {
   id: string;
   name: string;
   created_at: string;
+  status?: string;
+  phone?: string;
+  email?: string | null;
+  plan?: string;
+  requested_at?: string;
+}
+
+interface PendingCenter extends Center {
+  status: 'pending';
 }
 
 interface DemoRequest {
@@ -27,7 +36,9 @@ export default function AdminPage() {
   const t = useTranslations('admin');
   const router = useRouter();
   const [centers, setCenters] = useState<Center[]>([]);
+  const [pendingCenters, setPendingCenters] = useState<PendingCenter[]>([]);
   const [demoRequests, setDemoRequests] = useState<DemoRequest[]>([]);
+  const [actionCenterId, setActionCenterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
@@ -64,6 +75,7 @@ export default function AdminPage() {
         if (centersRes.ok) {
           const data = await centersRes.json();
           setCenters(data.centers || []);
+          setPendingCenters(data.pendingCenters || []);
         }
         if (demoRes.ok) {
           const data = await demoRes.json();
@@ -78,6 +90,55 @@ export default function AdminPage() {
     };
     load();
   }, [router]);
+
+  const handleApprove = async (centerId: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    setActionCenterId(centerId);
+    try {
+      const res = await fetch('/api/admin/centers', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ centerId, action: 'approve' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPendingCenters(prev => prev.filter(c => c.id !== centerId));
+        setCenters(prev => [...prev.filter(c => c.id !== centerId)]);
+        // Could show toast with password here
+      } else {
+        alert(data.error || 'Failed');
+      }
+    } catch { alert('Network error'); }
+    finally { setActionCenterId(null); }
+  };
+
+  const handleReject = async (centerId: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    if (!confirm(t('confirmReject'))) return;
+    setActionCenterId(centerId);
+    try {
+      const res = await fetch('/api/admin/centers', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ centerId, action: 'reject' }),
+      });
+      if (res.ok) {
+        setPendingCenters(prev => prev.filter(c => c.id !== centerId));
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed');
+      }
+    } catch { alert('Network error'); }
+    finally { setActionCenterId(null); }
+  };
 
   const handleCreateCenter = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,6 +200,62 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
             {t('title')}
           </h1>
+
+          {/* Pending Center Requests */}
+          {pendingCenters.length > 0 && (
+            <section className="mb-8 bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                {t('pendingCenters')} ({pendingCenters.length})
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('centerName')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('phone')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('email')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('requestedPlan')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('requestedAt')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingCenters.map((c) => (
+                      <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700/50">
+                        <td className="px-4 py-3 text-gray-900 dark:text-white">{c.name}</td>
+                        <td className="px-4 py-3" dir="ltr">{c.phone || '—'}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{c.email || '—'}</td>
+                        <td className="px-4 py-3">{c.plan || 'starter'}</td>
+                        <td className="px-4 py-3 text-gray-500">
+                          {c.requested_at ? new Date(c.requested_at).toLocaleDateString() : '—'}
+                        </td>
+                        <td className="px-4 py-3 flex gap-2">
+                          <button
+                            onClick={() => handleApprove(c.id)}
+                            disabled={actionCenterId === c.id}
+                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                          >
+                            {actionCenterId === c.id ? '...' : t('approve')}
+                          </button>
+                          <button
+                            onClick={() => handleReject(c.id)}
+                            disabled={actionCenterId === c.id}
+                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                          >
+                            {t('reject')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {pendingCenters.length === 0 && (
+            <p className="mb-8 text-gray-500 dark:text-gray-400">{t('noPending')}</p>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Create Center */}

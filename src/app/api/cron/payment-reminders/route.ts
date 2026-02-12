@@ -44,13 +44,16 @@ export async function GET(req: NextRequest) {
     for (const center of centers || []) {
       const { data: settings } = await supabase
         .from('reminder_settings')
-        .select('day5_enabled, day10_enabled, day15_enabled')
+        .select('day5_enabled, day10_enabled, day15_enabled, day5, day10, day15')
         .eq('center_id', center.id)
         .single();
 
       const day5Enabled = settings?.day5_enabled ?? true;
       const day10Enabled = settings?.day10_enabled ?? true;
       const day15Enabled = settings?.day15_enabled ?? true;
+      const day5 = settings?.day5 ?? 5;
+      const day10 = settings?.day10 ?? 10;
+      const day15 = settings?.day15 ?? 15;
 
       const { data: students, error: studentsError } = await supabase
         .from('students')
@@ -83,11 +86,11 @@ export async function GET(req: NextRequest) {
 
         let templateName: string | null = null;
 
-        if (day5Enabled && daysSincePayment === 5) {
+        if (day5Enabled && daysSincePayment === day5) {
           templateName = 'payment_reminder_day5';
-        } else if (day10Enabled && daysSincePayment === 10) {
+        } else if (day10Enabled && daysSincePayment === day10) {
           templateName = 'payment_reminder_day10';
-        } else if (day15Enabled && daysSincePayment === 15) {
+        } else if (day15Enabled && daysSincePayment === day15) {
           templateName = 'payment_reminder_day15';
           await supabase
             .from('students')

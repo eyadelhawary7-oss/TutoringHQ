@@ -2,10 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
+import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog, type Filter } from '@/lib/db-proxy';
 import Navbar from '@/components/Navbar';
 import { useUser } from '@/contexts/UserContext';
+
+function isTeacher(role?: string): boolean {
+  return role === 'teacher';
+}
+
+function isOwnerOrAdmin(role?: string): boolean {
+  return role === 'owner' || role === 'admin';
+}
+
+function canEditSchedule(role?: string): boolean {
+  return role === 'owner' || role === 'admin';
+}
 
 interface Room {
   id: string;
@@ -64,7 +77,8 @@ function formatTime(minutes: number): string {
 export default function SchedulePage() {
   const t = useTranslations('schedule');
   const tCommon = useTranslations('common');
-  const { user } = useUser();
+  const router = useRouter();
+  const { user, hasPermission } = useUser();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teachers, setTeachers] = useState<User[]>([]);
@@ -91,7 +105,14 @@ export default function SchedulePage() {
 
   const hours = getHoursRange(scheduleStartHour, scheduleEndHour);
 
-  const canEdit = user?.role === 'owner' || user?.role === 'admin';
+  const canEdit = canEditSchedule(user?.role);
+  const isTeacherRole = isTeacher(user?.role);
+
+  useEffect(() => {
+    if (user?.role === 'assistant' && !hasPermission('can_view_calendar')) {
+      router.replace('/dashboard');
+    }
+  }, [user, hasPermission, router]);
 
   useEffect(() => {
     const load = async () => {
@@ -106,38 +127,46 @@ export default function SchedulePage() {
       setCenterId(meData.user.center_id);
       setUserId(meData.user.id);
 
+      const userRole = meData.user.role;
+      const slotFilters: Filter[] = [
+        { column: 'center_id', op: 'eq' as const, value: meData.user.center_id },
+      ];
+      if (isTeacher(userRole)) {
+        slotFilters.push({ column: 'teacher_id', op: 'eq' as const, value: session.user.id });
+      }
+
       const [centerRes, roomsRes, subjectsRes, usersRes, slotsRes] = await Promise.all([
         dbSelect({
           table: 'centers',
           select: 'schedule_start_hour, schedule_end_hour',
-          filters: [{ column: 'id', op: 'eq', value: meData.user.center_id }],
+          filters: [{ column: 'id', op: 'eq' as const, value: meData.user.center_id }],
           single: true,
         }),
         dbSelect({
           table: 'rooms',
           select: 'id, name',
-          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+          filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
           order: { column: 'name' },
         }),
         dbSelect({
           table: 'subjects',
           select: 'id, name',
-          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+          filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
           order: { column: 'name' },
         }),
         dbSelect({
           table: 'users',
           select: 'id, name, role',
           filters: [
-            { column: 'center_id', op: 'eq', value: meData.user.center_id },
-            { column: 'role', op: 'eq', value: 'teacher' },
+            { column: 'center_id', op: 'eq' as const, value: meData.user.center_id },
+            { column: 'role', op: 'eq' as const, value: 'teacher' },
           ],
           order: { column: 'name' },
         }),
         dbSelect({
           table: 'schedule_slots',
           select: 'id, room_id, subject_id, teacher_id, day_of_week, start_time, end_time',
-          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+          filters: slotFilters,
         }),
       ]);
 
@@ -162,6 +191,10 @@ export default function SchedulePage() {
           teacher_name: teachersData.find((u) => u.id === s.teacher_id)?.name ?? '',
         }));
         setSlots(withNames);
+        if (isTeacher(userRole) && slotsData.length > 0) {
+          const roomIdsInSlots = [...new Set(slotsData.map((s) => s.room_id))];
+          setRooms(roomsData.filter((r) => roomIdsInSlots.includes(r.id)));
+        }
       }
       setIsLoading(false);
     };
@@ -169,6 +202,25 @@ export default function SchedulePage() {
   }, []);
 
   const slotsForDay = slots.filter((s) => s.day_of_week === selectedDay);
+
+  const scheduleTitle = isTeacherRole
+    ? t('yourSchedule')
+    : t('centerSchedule');
+  const showViewOnly = (user?.role === 'assistant' && hasPermission('can_view_calendar')) || isTeacherRole;
+
+  if (user?.role === 'assistant' && !hasPermission('can_view_calendar')) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+      </>
+    );
+  }
 
   const checkConflict = (
     roomId: string,
@@ -257,7 +309,7 @@ export default function SchedulePage() {
     if (!centerId || !userId || !confirm(t('deleteConfirm'))) return;
     await dbDelete({
       table: 'schedule_slots',
-      filters: [{ column: 'id', op: 'eq', value: id }],
+      filters: [{ column: 'id', op: 'eq' as const, value: id }],
     });
     await auditLog({ centerId, userId, action: 'schedule_slot_delete', entityType: 'schedule_slots', entityId: id });
     setSlots((prev) => prev.filter((s) => s.id !== id));
@@ -280,7 +332,10 @@ export default function SchedulePage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('title')}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {scheduleTitle}
+              {showViewOnly && <span className="text-base font-normal text-gray-500 dark:text-gray-400 ml-2">{t('viewOnly')}</span>}
+            </h1>
             <div className="flex gap-2">
               {canEdit && (
                 <>
@@ -536,7 +591,7 @@ export default function SchedulePage() {
                     const { error } = await dbUpdate({
                       table: 'centers',
                       data: { schedule_start_hour: editStartHour, schedule_end_hour: editEndHour },
-                      filters: [{ column: 'id', op: 'eq', value: centerId }],
+                      filters: [{ column: 'id', op: 'eq' as const, value: centerId }],
                       select: false,
                     });
                     if (!error) {

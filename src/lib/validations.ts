@@ -7,6 +7,18 @@ const egyptianPhone = z
   .optional()
   .nullable();
 
+export const egyptianPhoneRequired = z
+  .string()
+  .regex(/^01\d{9}$/, 'رقم الهاتف يجب أن يكون 11 رقم ويبدأ بـ 01');
+
+export const signupSchema = z.object({
+  centerName: z.string().min(1, 'Center name is required').max(200),
+  phone: egyptianPhoneRequired,
+  email: z.string().email().optional().or(z.literal('')),
+  plan: z.enum(['starter', 'pro', 'enterprise']).default('starter'),
+  termsAccepted: z.boolean().refine((v) => v === true, 'Terms must be accepted'),
+});
+
 export const onboardingSchema = z.object({
   centerName: z.string().min(1, 'Center name is required').max(200),
 });
@@ -15,6 +27,9 @@ export const reminderSettingsSchema = z.object({
   day5_enabled: z.boolean().optional().default(true),
   day10_enabled: z.boolean().optional().default(true),
   day15_enabled: z.boolean().optional().default(true),
+  day5: z.number().int().min(1).max(31).optional().default(5),
+  day10: z.number().int().min(1).max(31).optional().default(10),
+  day15: z.number().int().min(1).max(31).optional().default(15),
 });
 
 export const whatsappSendSchema = z.object({
@@ -53,4 +68,8 @@ export const studentImportRowSchema = z.object({
 
 export const whatsappSettingsSchema = z.object({
   individual_alerts_enabled: z.boolean(),
+});
+
+export const billingPeriodSchema = z.object({
+  billing_period: z.enum(['monthly', 'quarterly', 'half_yearly', 'yearly']),
 });

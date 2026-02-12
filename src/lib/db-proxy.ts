@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-interface Filter {
+export interface Filter {
   column: string;
   op: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'is' | 'not_is' | 'in';
   value: unknown;

@@ -15,6 +15,9 @@ export default function RemindersSettingsPage() {
     day5_enabled: true,
     day10_enabled: true,
     day15_enabled: true,
+    day5: 5,
+    day10: 10,
+    day15: 15,
   });
 
   useEffect(() => {
@@ -36,6 +39,9 @@ export default function RemindersSettingsPage() {
           day5_enabled: data.settings.day5_enabled ?? true,
           day10_enabled: data.settings.day10_enabled ?? true,
           day15_enabled: data.settings.day15_enabled ?? true,
+          day5: data.settings.day5 ?? 5,
+          day10: data.settings.day10 ?? 10,
+          day15: data.settings.day15 ?? 15,
         });
       }
     } catch (err) {
@@ -111,33 +117,57 @@ export default function RemindersSettingsPage() {
               {t('description')}
             </p>
 
-            {[5, 10, 15].map((day) => {
-              const key = `day${day}_enabled` as keyof typeof settings;
-              const titleKey = `day${day}Title` as keyof typeof t;
-              const descKey = `day${day}Desc` as keyof typeof t;
+            {([
+              { slot: 'day5' as const, defaultDay: 5 },
+              { slot: 'day10' as const, defaultDay: 10 },
+              { slot: 'day15' as const, defaultDay: 15 },
+            ]).map(({ slot, defaultDay }) => {
+              const enabledKey = `${slot}_enabled` as keyof typeof settings;
+              const dayKey = slot as keyof typeof settings;
+              const titleKey = `${slot}Title` as 'day5Title' | 'day10Title' | 'day15Title';
+              const descKey = `${slot}Desc` as 'day5Desc' | 'day10Desc' | 'day15Desc';
+              const dayVal = Number(settings[dayKey]) || defaultDay;
               return (
-                <div key={day} className={`mb-6 p-4 border rounded-lg ${day === 15 ? 'border-red-200 dark:border-red-800' : 'border-gray-200 dark:border-gray-700'}`}>
-                  <div className="flex items-center justify-between mb-3">
+                <div key={slot} className={`mb-6 p-4 border rounded-lg ${slot === 'day15' ? 'border-red-200 dark:border-red-800' : 'border-gray-200 dark:border-gray-700'}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                     <div>
-                      <h3 className={`text-lg font-semibold ${day === 15 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                      <h3 className={`text-lg font-semibold ${slot === 'day15' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                         {t(titleKey)}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">{t(descKey)}</p>
                     </div>
-                    <button
-                      onClick={() => setSettings({ ...settings, [key]: !settings[key] })}
-                      role="switch"
-                      aria-checked={settings[key]}
-                      className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-                        settings[key] ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-7 w-7 transform rounded-full bg-white shadow transition ${
-                          settings[key] ? 'translate-x-6' : 'translate-x-1'
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span>{t('dayLabel')}</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={31}
+                          value={dayVal}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            if (!isNaN(v) && v >= 1 && v <= 31) {
+                              setSettings({ ...settings, [dayKey]: v });
+                            }
+                          }}
+                          className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white text-center"
+                        />
+                      </label>
+                      <button
+                        onClick={() => setSettings({ ...settings, [enabledKey]: !settings[enabledKey] })}
+                        role="switch"
+                        aria-checked={settings[enabledKey]}
+                        className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+                          settings[enabledKey] ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'
                         }`}
-                      />
-                    </button>
+                      >
+                        <span
+                          className={`inline-block h-7 w-7 transform rounded-full bg-white shadow transition ${
+                            settings[enabledKey] ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

@@ -54,7 +54,7 @@ export default function GroupsPage() {
       const [groupsRes, studentsRes] = await Promise.all([
         dbSelect({
           table: 'student_groups',
-          select: 'id, name, description',
+          select: 'id, name',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         }),
@@ -75,7 +75,7 @@ export default function GroupsPage() {
               select: 'id',
               filters: [{ column: 'group_id', op: 'eq', value: g.id }],
             });
-            return { ...g, member_count: (membersData || []).length };
+            return { ...g, description: (g as Group).description ?? null, member_count: (membersData || []).length };
           })
         );
         setGroups(withCount);
@@ -116,7 +116,7 @@ export default function GroupsPage() {
     try {
       const { data, error } = await dbInsert({
         table: 'student_groups',
-        data: { center_id: centerId, name: newGroupName.trim(), description: newGroupDesc.trim() || null, created_by: userId },
+        data: { center_id: centerId, name: newGroupName.trim() },
         single: true,
       });
       if (error) {
@@ -136,7 +136,7 @@ export default function GroupsPage() {
             details: { name: inserted.name },
           });
         } catch {}
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, description: inserted.description ?? null, member_count: 0 }]);
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, description: newGroupDesc.trim() || null, member_count: 0 }]);
         setNewGroupName('');
         setNewGroupDesc('');
       } else {

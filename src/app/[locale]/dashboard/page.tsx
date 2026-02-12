@@ -14,6 +14,14 @@ import RevenueBar from '@/components/dashboard/RevenueBar';
 import AttendanceTrend from '@/components/dashboard/AttendanceTrend';
 import UnpaidList from '@/components/dashboard/UnpaidList';
 
+function isTeacher(role?: string): boolean {
+  return role === 'teacher';
+}
+
+function isOwnerOrAdmin(role?: string): boolean {
+  return role === 'owner' || role === 'admin';
+}
+
 interface DashboardData {
   todayAttendance: number;
   totalStudents: number;
@@ -25,9 +33,25 @@ interface DashboardData {
   unpaidStudents: { id: string; name: string; subject_name: string; monthly_fee: number }[];
 }
 
+interface TeacherSlot {
+  id: string;
+  room_name?: string;
+  subject_name?: string;
+  start_time: string;
+  end_time: string;
+}
+
+interface TeacherDashboardData {
+  todaySlots: TeacherSlot[];
+  totalBookingsCount: number;
+  studentsInClasses: number;
+}
+
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
   const { user, hasPermission } = useUser();
+  const isTeacherRole = isTeacher(user?.role);
+  const isOwnerOrAdminRole = isOwnerOrAdmin(user?.role);
 
   const [data, setData] = useState<DashboardData>({
     todayAttendance: 0,
@@ -42,6 +66,11 @@ export default function DashboardPage() {
   const [centerId, setCenterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [teacherData, setTeacherData] = useState<TeacherDashboardData>({
+    todaySlots: [],
+    totalBookingsCount: 0,
+    studentsInClasses: 0,
+  });
 
   const startOfToday = () => {
     const now = new Date();
@@ -135,12 +164,82 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const loadTeacherDashboard = useCallback(async (cId: string, teacherId: string) => {
+    try {
+      const todayDay = new Date().getDay();
+      const { data: slotsRaw } = await dbSelect({
+        table: 'schedule_slots',
+        select: 'id, room_id, subject_id, start_time, end_time',
+        filters: [
+          { column: 'center_id', op: 'eq', value: cId },
+          { column: 'teacher_id', op: 'eq', value: teacherId },
+          { column: 'day_of_week', op: 'eq', value: todayDay },
+        ],
+      });
+      const slots = (slotsRaw || []) as { id: string; room_id: string; subject_id: string; start_time: string; end_time: string }[];
+
+      const { count: totalBookings } = await dbCount({
+        table: 'schedule_slots',
+        filters: [
+          { column: 'center_id', op: 'eq', value: cId },
+          { column: 'teacher_id', op: 'eq', value: teacherId },
+        ],
+      });
+
+      const roomIds = [...new Set(slots.map(s => s.room_id))];
+      const subjectIds = [...new Set(slots.map(s => s.subject_id))];
+
+      const [roomsRes, subjectsRes] = await Promise.all([
+        roomIds.length ? dbSelect({ table: 'rooms', select: 'id, name', filters: [{ column: 'id', op: 'in', value: roomIds }] }) : { data: [] },
+        subjectIds.length ? dbSelect({ table: 'subjects', select: 'id, name', filters: [{ column: 'id', op: 'in', value: subjectIds }] }) : { data: [] },
+      ]);
+
+      const rooms = (roomsRes.data || []) as { id: string; name: string }[];
+      const subjects = (subjectsRes.data || []) as { id: string; name: string }[];
+      const roomMap = new Map(rooms.map(r => [r.id, r.name]));
+      const subjectMap = new Map(subjects.map(s => [s.id, s.name]));
+      const subjectNames = subjects.map(s => s.name);
+
+      const todaySlots: TeacherSlot[] = slots
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))
+        .map(s => ({
+          id: s.id,
+          room_name: roomMap.get(s.room_id) ?? '',
+          subject_name: subjectMap.get(s.subject_id) ?? '',
+          start_time: s.start_time,
+          end_time: s.end_time,
+        }));
+
+      let studentsInClasses = 0;
+      if (subjectNames.length > 0) {
+        const { data: studentsRaw } = await dbSelect({
+          table: 'students',
+          select: 'id',
+          filters: [
+            { column: 'center_id', op: 'eq', value: cId },
+            { column: 'subject_name', op: 'in', value: subjectNames },
+          ],
+        });
+        studentsInClasses = (studentsRaw || []).length;
+      }
+
+      setTeacherData({
+        todaySlots,
+        totalBookingsCount: totalBookings ?? 0,
+        studentsInClasses,
+      });
+    } catch (err) {
+      console.error('Teacher dashboard load error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Use /api/me to bypass RLS on users table
       const meRes = await fetch('/api/me', {
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
@@ -148,11 +247,16 @@ export default function DashboardPage() {
 
       if (meData?.user?.center_id) {
         setCenterId(meData.user.center_id);
-        await loadDashboard(meData.user.center_id);
+        const userRole = meData.user.role;
+        if (isTeacher(userRole)) {
+          await loadTeacherDashboard(meData.user.center_id, session.user.id);
+        } else {
+          await loadDashboard(meData.user.center_id);
+        }
       }
     };
     init();
-  }, [loadDashboard]);
+  }, [loadDashboard, loadTeacherDashboard]);
 
   // Real-time updates
   useEffect(() => {
@@ -280,8 +384,8 @@ export default function DashboardPage() {
     );
   }
 
-  // Teacher dashboard: calendar focus + their schedule
-  if (user?.role === 'teacher' && !isLoading) {
+  // Teacher dashboard: their schedule today + quick scan
+  if (isTeacherRole && !isLoading) {
     return (
       <>
         <Navbar />
@@ -291,19 +395,55 @@ export default function DashboardPage() {
               {t('teacherDashboard')}
             </h1>
             <div className="space-y-6">
-              <Link
-                href="/schedule"
-                className="block p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 hover:border-indigo-500"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('mySchedule')}</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('viewCalendar')}</p>
-              </Link>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <AttendanceCard count={data.todayAttendance} label={t('attendance')} />
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Link
+                  href="/scan"
+                  className="block p-8 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-lg text-center transition-colors"
+                >
+                  <svg className="w-16 h-16 mx-auto text-white mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  </svg>
+                  <h2 className="text-xl font-bold text-white">{t('scanNow')}</h2>
+                  <p className="text-indigo-100 text-sm mt-2">{t('scanSubtitle')}</p>
+                </Link>
+                <Link
+                  href="/schedule"
+                  className="block p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 hover:border-indigo-500"
+                >
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('mySchedule')}</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('viewCalendar')}</p>
+                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">{teacherData.totalBookingsCount}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('yourClasses')}</p>
+                </Link>
+                <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalStudents')}</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.totalStudents}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{teacherData.studentsInClasses}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('yourClasses')}</p>
                 </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('yourScheduleToday')}</h2>
+                {teacherData.todaySlots.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400">{t('noClassesToday')}</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {teacherData.todaySlots.map((slot) => (
+                      <li
+                        key={slot.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                      >
+                        <div>
+                          <span className="font-medium text-gray-900 dark:text-white">{slot.subject_name}</span>
+                          <span className="text-gray-500 dark:text-gray-400 ml-2">— {slot.room_name}</span>
+                        </div>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>

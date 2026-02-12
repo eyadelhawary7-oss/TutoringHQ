@@ -6,17 +6,23 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import LanguageToggle from '@/components/LanguageToggle';
 
+const SUPPORT_WHATSAPP = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || '201234567890';
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@centerhq.com';
+
 export default function SuspendedPage() {
   const t = useTranslations('suspended');
 
   const [fawryCode, setFawryCode] = useState('');
+  const isCenterSuspended =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('reason') === 'center_suspended';
 
   useEffect(() => {
+    if (isCenterSuspended) return;
+
     const loadSubscription = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Use /api/me to bypass RLS on users table
       const meRes = await fetch('/api/me', {
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
@@ -43,35 +49,84 @@ export default function SuspendedPage() {
     window.location.href = '/login';
   };
 
+  const waMessage = isCenterSuspended ? t('centerSuspendedWhatsappMessage') : t('whatsappMessage');
+  const waHref = `https://wa.me/${SUPPORT_WHATSAPP.replace(/\D/g, '')}?text=${encodeURIComponent(waMessage)}`;
+
+  if (isCenterSuspended) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-red-100 dark:from-gray-900 dark:via-red-950 dark:to-gray-900">
+        <div className="absolute top-4 end-4 z-10">
+          <LanguageToggle />
+        </div>
+
+        <div className="min-h-screen flex flex-col items-center justify-center px-4">
+          <div className="max-w-md w-full text-center">
+            <div className="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mb-6">
+              <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+              {t('centerSuspendedTitle')}
+            </h1>
+
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {t('centerSuspendedMessage')}
+            </p>
+
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 space-y-4">
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors text-center"
+              >
+                {t('whatsapp')}
+              </a>
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="block w-full py-3 px-4 border border-indigo-600 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors text-center"
+              >
+                {t('contactUs')}
+              </a>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="mt-6 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              {t('logout')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-red-100 dark:from-gray-900 dark:via-red-950 dark:to-gray-900">
-      {/* Language Toggle */}
       <div className="absolute top-4 end-4 z-10">
         <LanguageToggle />
       </div>
 
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
-          {/* Icon */}
           <div className="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mb-6">
             <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
 
-          {/* Title */}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
             {t('title')}
           </h1>
 
-          {/* Message */}
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {t('message')}
           </p>
 
-          {/* Card */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 space-y-4">
-            {/* Fawry Code */}
             {fawryCode && (
               <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                 <p className="text-sm text-orange-700 dark:text-orange-400 font-medium">
@@ -80,9 +135,8 @@ export default function SuspendedPage() {
               </div>
             )}
 
-            {/* Renew Button */}
             <a
-              href="https://wa.me/201234567890?text=%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%AA%D8%AC%D8%AF%D9%8A%D8%AF%20%D8%A7%D8%B4%D8%AA%D8%B1%D8%A7%D9%83%D9%8A"
+              href={waHref}
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors text-center"
@@ -90,9 +144,8 @@ export default function SuspendedPage() {
               {t('renewButton')}
             </a>
 
-            {/* WhatsApp Contact */}
             <a
-              href="https://wa.me/201234567890"
+              href={waHref}
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full py-3 px-4 border border-green-600 text-green-600 dark:text-green-400 font-medium rounded-lg hover:bg-green-50 dark:hover:bg-green-950 transition-colors text-center"
@@ -101,7 +154,6 @@ export default function SuspendedPage() {
             </a>
           </div>
 
-          {/* Logout */}
           <button
             onClick={handleLogout}
             className="mt-6 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"

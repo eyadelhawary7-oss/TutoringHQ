@@ -6,6 +6,11 @@ function isSuperAdmin(phone: string | null): boolean {
   return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
 }
 
+async function isAdminUser(supabaseAdmin: ReturnType<typeof createClient>, userId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin.from('admin_users').select('id').eq('id', userId).single();
+  return !!data;
+}
+
 export async function GET(request: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -36,13 +41,11 @@ export async function GET(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: userRecord } = await supabaseAdmin
-      .from('users')
-      .select('phone')
-      .eq('id', user.id)
-      .single();
+    const adminByTable = await isAdminUser(supabaseAdmin, user.id);
+    const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', user.id).single();
+    const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
 
-    if (!isSuperAdmin(userRecord?.phone)) {
+    if (!adminByTable && !adminByPhone) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
