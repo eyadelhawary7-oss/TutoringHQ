@@ -6,7 +6,8 @@ function isSuperAdmin(phone: string | null): boolean {
   return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
 }
 
-async function isAdminUser(supabaseAdmin: ReturnType<typeof createClient>, userId: string): Promise<boolean> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function isAdminUser(supabaseAdmin: any, userId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from('admin_users')
     .select('id')

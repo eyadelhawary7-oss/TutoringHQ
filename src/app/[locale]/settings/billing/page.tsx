@@ -348,17 +348,17 @@ export default function BillingPage() {
               </p>
               {(data?.whatsapp_monthly_charges?.individual ?? 0) > 0 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Individual: {data.whatsapp_monthly_charges.individual} {t('egp')}
+                  Individual: {data?.whatsapp_monthly_charges?.individual ?? 0} {t('egp')}
                 </p>
               )}
               {(data?.whatsapp_monthly_charges?.group ?? 0) > 0 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Group: {data.whatsapp_monthly_charges.group} {t('egp')}
+                  Group: {data?.whatsapp_monthly_charges?.group ?? 0} {t('egp')}
                 </p>
               )}
               {(data?.whatsapp_monthly_charges?.parent_checkup ?? 0) > 0 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Parent Check-up: {data.whatsapp_monthly_charges.parent_checkup} {t('egp')}
+                  Parent Check-up: {data?.whatsapp_monthly_charges?.parent_checkup ?? 0} {t('egp')}
                 </p>
               )}
             </div>

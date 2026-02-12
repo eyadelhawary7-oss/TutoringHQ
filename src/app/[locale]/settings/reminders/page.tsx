@@ -156,7 +156,7 @@ export default function RemindersSettingsPage() {
                       <button
                         onClick={() => setSettings({ ...settings, [enabledKey]: !settings[enabledKey] })}
                         role="switch"
-                        aria-checked={settings[enabledKey]}
+                        aria-checked={!!settings[enabledKey]}
                         className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
                           settings[enabledKey] ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'
                         }`}
