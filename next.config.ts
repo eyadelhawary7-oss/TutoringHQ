@@ -14,22 +14,15 @@ export default withSentryConfig(withNextIntl(nextConfig), {
   project: "javascript-nextjs",
   silent: true,
   widenClientFileUpload: true,
-  hideSourceMaps: true,
-  disableLogger: true,
-
-  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
+  sourcemaps: {
+    disable: true,
+  },
+  // Route browser requests to Sentry through a Next.js rewrite
   tunnelRoute: "/monitoring",
-
+  // Hides source maps from generated client bundles
+  // Automatically tree-shake Sentry logger statements to reduce bundle size
   webpack: {
-    // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
-    // See the following for more information:
-    // https://docs.sentry.io/product/crons/
-    // https://vercel.com/docs/cron-jobs
-    automaticVercelMonitors: true,
-
-    // Tree-shaking options for reducing bundle size
     treeshake: {
-      // Automatically tree-shake Sentry logger statements to reduce bundle size
       removeDebugLogging: true,
     },
   },
