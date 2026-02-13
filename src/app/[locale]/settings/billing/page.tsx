@@ -13,7 +13,7 @@ interface PricingPlan {
   name_en: string;
   name_ar: string;
   students_per_week_limit: number;
-  monthly_fee_egp: number;
+  monthly_fee: number;
   per_student_at_capacity_egp: number;
   setup_fee_egp: number;
   is_custom: boolean;
@@ -26,10 +26,10 @@ interface PaygRate {
 }
 
 const FALLBACK_PLANS: PricingPlan[] = [
-  { id: 'starter', name_en: 'Starter', name_ar: 'أساسي', students_per_week_limit: 200, monthly_fee_egp: 4000, per_student_at_capacity_egp: 5, setup_fee_egp: 2500, is_custom: false },
-  { id: 'pro', name_en: 'Pro', name_ar: 'محترف', students_per_week_limit: 600, monthly_fee_egp: 7200, per_student_at_capacity_egp: 3, setup_fee_egp: 5000, is_custom: false },
-  { id: 'enterprise', name_en: 'Enterprise', name_ar: 'مؤسسات', students_per_week_limit: 1500, monthly_fee_egp: 9000, per_student_at_capacity_egp: 1.5, setup_fee_egp: 10000, is_custom: false },
-  { id: 'top_centers', name_en: 'Top Centers', name_ar: 'كبار السناتر', students_per_week_limit: 1500, monthly_fee_egp: 0, per_student_at_capacity_egp: 0, setup_fee_egp: 0, is_custom: true },
+  { id: 'starter', name_en: 'Starter', name_ar: 'أساسي', students_per_week_limit: 200, monthly_fee: 4000, per_student_at_capacity_egp: 5, setup_fee_egp: 2500, is_custom: false },
+  { id: 'pro', name_en: 'Pro', name_ar: 'محترف', students_per_week_limit: 600, monthly_fee: 7200, per_student_at_capacity_egp: 3, setup_fee_egp: 5000, is_custom: false },
+  { id: 'enterprise', name_en: 'Enterprise', name_ar: 'مؤسسات', students_per_week_limit: 1500, monthly_fee: 9000, per_student_at_capacity_egp: 1.5, setup_fee_egp: 10000, is_custom: false },
+  { id: 'top_centers', name_en: 'Top Centers', name_ar: 'كبار السناتر', students_per_week_limit: 1500, monthly_fee: 0, per_student_at_capacity_egp: 0, setup_fee_egp: 0, is_custom: true },
 ];
 
 const FALLBACK_PAYG: PaygRate[] = [
@@ -39,27 +39,33 @@ const FALLBACK_PAYG: PaygRate[] = [
   { min_students_per_week: 1501, max_students_per_week: 10000, rate_per_student_egp: 1.25 },
 ];
 
-/** Graduated (marginal) pricing: each tier applies only to students in that tier */
+const MONTHLY_MULTIPLIER = 4.333;
+
+/** Graduated (marginal) pricing with 4.333 weekly-to-monthly multiplier */
 function calculatePaygCost(rates: PaygRate[], students: number): { weekly: number; monthly: number; effectiveRate: number; breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] } {
-  const sortedRates = [...rates].sort((a, b) => a.min_students_per_week - b.min_students_per_week);
+  const tierDefs = [
+    { upTo: 200, rate: 6.0 },
+    { upTo: 600, rate: 3.75 },
+    { upTo: 1500, rate: 2.0 },
+    { upTo: Infinity, rate: 1.25 },
+  ];
   let weeklyCost = 0;
   const breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] = [];
   let remaining = students;
   let prevLimit = 0;
 
-  for (const tier of sortedRates) {
-    const tierSize = tier.max_students_per_week - prevLimit;
-    const studentsInTier = Math.min(remaining, tierSize);
+  for (const tier of tierDefs) {
+    const studentsInTier = Math.min(remaining, tier.upTo - prevLimit);
     if (studentsInTier <= 0) break;
-    const tierCost = studentsInTier * tier.rate_per_student_egp;
+    const tierCost = studentsInTier * tier.rate;
     weeklyCost += tierCost;
-    breakdown.push({ from: prevLimit + 1, to: prevLimit + studentsInTier, count: studentsInTier, rate: tier.rate_per_student_egp, cost: tierCost });
+    breakdown.push({ from: prevLimit + 1, to: prevLimit + studentsInTier, count: studentsInTier, rate: tier.rate, cost: tierCost });
     remaining -= studentsInTier;
-    prevLimit = tier.max_students_per_week;
+    prevLimit = tier.upTo;
   }
 
-  const monthly = weeklyCost * 4;
-  const effectiveRate = students > 0 ? weeklyCost / students : 0;
+  const monthly = Math.round(weeklyCost * MONTHLY_MULTIPLIER);
+  const effectiveRate = students > 0 ? Math.round((weeklyCost / students) * 100) / 100 : 0;
   return { weekly: weeklyCost, monthly, effectiveRate, breakdown };
 }
 
@@ -68,9 +74,9 @@ function getFixedPlanComparison(plans: PricingPlan[], students: number): { planN
   const pro = plans.find(p => p.id === 'pro');
   const enterprise = plans.find(p => p.id === 'enterprise');
   const top = plans.find(p => p.id === 'top_centers');
-  if (students <= 200) return { planName: starter?.name_en ?? 'Starter', planNameAr: starter?.name_ar ?? 'أساسي', planFee: starter?.monthly_fee_egp ?? 4000, isCustom: false };
-  if (students <= 600) return { planName: pro?.name_en ?? 'Pro', planNameAr: pro?.name_ar ?? 'محترف', planFee: pro?.monthly_fee_egp ?? 7200, isCustom: false };
-  if (students <= 1500) return { planName: enterprise?.name_en ?? 'Enterprise', planNameAr: enterprise?.name_ar ?? 'مؤسسات', planFee: enterprise?.monthly_fee_egp ?? 9000, isCustom: false };
+  if (students <= 200) return { planName: starter?.name_en ?? 'Starter', planNameAr: starter?.name_ar ?? 'أساسي', planFee: starter?.monthly_fee ?? 4000, isCustom: false };
+  if (students <= 600) return { planName: pro?.name_en ?? 'Pro', planNameAr: pro?.name_ar ?? 'محترف', planFee: pro?.monthly_fee ?? 7200, isCustom: false };
+  if (students <= 1500) return { planName: enterprise?.name_en ?? 'Enterprise', planNameAr: enterprise?.name_ar ?? 'مؤسسات', planFee: enterprise?.monthly_fee ?? 9000, isCustom: false };
   return { planName: top?.name_en ?? 'Top Centers', planNameAr: top?.name_ar ?? 'كبار السناتر', planFee: 0, isCustom: true };
 }
 
@@ -81,10 +87,16 @@ export default function BillingPage() {
   const [data, setData] = useState<{
     plan: string;
     pricing_type: string;
+    billing_type?: string;
     weekly_student_limit: number;
     plans: PricingPlan[];
     payg_rates: PaygRate[];
     current_plan_details?: PricingPlan;
+    pending_plan_change?: string;
+    pending_billing_type?: string;
+    center_name?: string;
+    invoices?: { id: string; invoice_number: string; period_start: string; period_end: string; billing_type: string; total_amount: number; status: string; paid_at?: string }[];
+    current_usage?: { total_checkins: number; weekly_average: number; estimated_bill: number };
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -128,11 +140,17 @@ export default function BillingPage() {
       const paygRates = (json.payg_rates?.length ? json.payg_rates : FALLBACK_PAYG) as PaygRate[];
       setData({
         plan: json.plan || 'starter',
-        pricing_type: json.pricing_type || 'fixed',
+        pricing_type: json.pricing_type || json.billing_type || 'fixed',
+        billing_type: json.billing_type || json.pricing_type,
         weekly_student_limit: json.weekly_student_limit ?? 200,
         plans,
         payg_rates: paygRates,
         current_plan_details: json.current_plan_details,
+        pending_plan_change: json.pending_plan_change,
+        pending_billing_type: json.pending_billing_type,
+        center_name: json.center_name,
+        invoices: json.invoices || [],
+        current_usage: json.current_usage,
       });
       setPaygSlider(json.weekly_student_limit ?? 200);
     } catch (err) {
@@ -149,38 +167,78 @@ export default function BillingPage() {
     }
   }
 
-  async function handleChoosePlan(planId: string) {
-    if (planId === 'top_centers') {
-      window.location.href = 'mailto:support@centerhq.com?subject=Top Centers Plan Inquiry';
-      return;
-    }
-    if (saving || currentUser?.role !== 'owner') return;
+  const [changePlanSelect, setChangePlanSelect] = useState('');
+  const [paymentRef, setPaymentRef] = useState('');
 
+  async function handleRequestChange() {
+    if (!changePlanSelect) return;
+    if (saving || currentUser?.role !== 'owner') return;
     try {
       setSaving(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-
-      const plan = plans.find(p => p.id === planId);
+      const isPayg = changePlanSelect === 'payg';
       const res = await fetch('/api/settings/billing', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({
-          plan: planId,
-          pricing_type: 'fixed',
-          weekly_student_limit: plan?.students_per_week_limit ?? 200,
+          action: 'request_change',
+          new_plan: isPayg ? undefined : changePlanSelect,
+          new_billing_type: isPayg ? 'payg' : 'fixed',
         }),
       });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      setData(prev => prev ? {
+        ...prev,
+        pending_plan_change: changePlanSelect,
+        pending_billing_type: isPayg ? 'payg' : 'fixed',
+      } : null);
+      setSavedMessage(t('requestSubmitted', { defaultValue: 'Request submitted. Change takes effect from 1st of next month.' }));
+      setChangePlanSelect('');
+      setTimeout(() => setSavedMessage(''), 4000);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : t('updateFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to update');
-      }
-      setData(prev => prev ? { ...prev, plan: planId, pricing_type: 'fixed', weekly_student_limit: plan?.students_per_week_limit ?? 200 } : null);
-      setSavedMessage(t('planUpdated'));
+  async function handleCancelChange() {
+    if (saving) return;
+    try {
+      setSaving(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/settings/billing', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: 'cancel_change' }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      setData(prev => prev ? { ...prev, pending_plan_change: undefined, pending_billing_type: undefined } : null);
+      setSavedMessage(t('cancelRequestSuccess', { defaultValue: 'Change request cancelled.' }));
+      setTimeout(() => setSavedMessage(''), 3000);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : t('updateFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSubmitPaymentRef() {
+    if (!paymentRef.trim() || saving) return;
+    try {
+      setSaving(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/settings/billing', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: 'submit_payment_reference', reference: paymentRef.trim() }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      setSavedMessage(t('referenceSubmitted', { defaultValue: 'Reference submitted. Admin will verify.' }));
+      setPaymentRef('');
       setTimeout(() => setSavedMessage(''), 3000);
     } catch (err) {
       alert(err instanceof Error ? err.message : t('updateFailed'));
@@ -237,6 +295,23 @@ export default function BillingPage() {
             </div>
           )}
 
+          {data?.pending_plan_change && (
+            <div className="mb-4 p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-lg text-sm flex items-center justify-between gap-4">
+              <span>
+                {t('pendingChange', { defaultValue: 'Pending plan change to' })} {data.pending_plan_change} / {data.pending_billing_type === 'payg' ? 'PAYG' : data.pending_billing_type || 'fixed'}. {t('changeNotice', { defaultValue: 'Takes effect from 1st of next month.' })}
+              </span>
+              {currentUser?.role === 'owner' && (
+                <button
+                  onClick={handleCancelChange}
+                  disabled={saving}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg bg-amber-200 dark:bg-amber-800 hover:bg-amber-300 dark:hover:bg-amber-700"
+                >
+                  {t('cancelRequest', { defaultValue: 'Cancel Request' })}
+                </button>
+              )}
+            </div>
+          )}
+
           {/* SECTION 1 - Current Plan Card */}
           <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border-2 border-indigo-500 dark:border-indigo-400">
             <div className="flex items-center gap-2 mb-4">
@@ -247,7 +322,7 @@ export default function BillingPage() {
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
               {t('currentPlanCard')}
             </h2>
-            {data?.pricing_type === 'payg' ? (
+            {data?.pricing_type === 'payg' || data?.billing_type === 'payg' ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('plan')}</span>
@@ -255,15 +330,12 @@ export default function BillingPage() {
                 </div>
                 <div>
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('studentsPerWeek')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">{data.weekly_student_limit?.toLocaleString('ar-EG') ?? 0}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">~{(data?.current_usage?.weekly_average ?? data?.weekly_student_limit ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('rateTier')}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('estimatedBill', { defaultValue: 'Estimated bill' })}</span>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {(() => {
-                      const r = calculatePaygCost(paygRates, data.weekly_student_limit ?? 0);
-                      return r.effectiveRate > 0 ? `${Number(r.effectiveRate).toLocaleString('ar-EG')} ${t('egp')}/${t('perStudent')}` : '—';
-                    })()}
+                    {(data?.current_usage?.estimated_bill ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}
                   </p>
                 </div>
               </div>
@@ -278,7 +350,7 @@ export default function BillingPage() {
                 <div>
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('monthlyFeeLabel')}</span>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {currentPlanDetails?.is_custom ? t('custom') : `${Number(currentPlanDetails?.monthly_fee_egp ?? 0).toLocaleString('ar-EG')} ${t('egp')}`}
+                    {currentPlanDetails?.is_custom ? t('custom') : `${Number(currentPlanDetails?.monthly_fee ?? 0).toLocaleString('ar-EG')} ${t('egp')}`}
                   </p>
                 </div>
                 <div>
@@ -338,7 +410,7 @@ export default function BillingPage() {
                       <div className="flex justify-between">
                         <span className="text-gray-500 dark:text-gray-400">{t('monthlyFeeLabel')}</span>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {plan.is_custom ? t('custom') : `${Number(plan.monthly_fee_egp).toLocaleString('ar-EG')} ${t('egp')}`}
+                          {plan.is_custom ? t('custom') : `${Number(plan.monthly_fee).toLocaleString('ar-EG')} ${t('egp')}`}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -354,21 +426,10 @@ export default function BillingPage() {
                         </span>
                       </div>
                     </div>
-                    {isOwner && (
-                      <button
-                        type="button"
-                        onClick={() => handleChoosePlan(plan.id)}
-                        disabled={saving || isCurrent}
-                        className={`w-full py-2.5 rounded-lg font-medium transition-colors ${
-                          isTopCenters
-                            ? 'bg-gray-600 hover:bg-gray-700 text-white'
-                            : isCurrent
-                            ? 'bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 cursor-default'
-                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                        } disabled:opacity-60`}
-                      >
-                        {isTopCenters ? t('contactUs') : isCurrent ? '✓ ' + t('currentPlan') : t('choosePlan')}
-                      </button>
+                    {isCurrent && (
+                      <div className="text-center py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                        ✓ {t('currentPlan')}
+                      </div>
                     )}
                   </div>
                 );
@@ -452,47 +513,123 @@ export default function BillingPage() {
                 </div>
               )}
             </div>
-            {isOwner && (
-              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 italic">
+              {t('sliderInfoOnly', { defaultValue: 'For information only. Use Request Plan Change to switch.' })}
+            </p>
+          </section>
+
+          {/* SECTION 4 - Request Plan Change */}
+          {currentUser?.role === 'owner' && (
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                {t('changeQuestion', { defaultValue: 'Want to change your plan?' })}
+              </h2>
+              <div className="flex flex-wrap gap-4 items-end">
+                <div>
+                  <label className="block text-sm text-gray-500 dark:text-gray-400 mb-1">{t('selectPlan', { defaultValue: 'Select plan' })}</label>
+                  <select
+                    value={changePlanSelect}
+                    onChange={(e) => setChangePlanSelect(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">—</option>
+                    {plans.filter(p => p.id !== 'top_centers').map(p => (
+                      <option key={p.id} value={p.id}>{p.name_en} / {p.name_ar}</option>
+                    ))}
+                    <option value="payg">Pay-As-You-Go</option>
+                  </select>
+                </div>
                 <button
-                  type="button"
-                  onClick={async () => {
-                    if (saving) return;
-                    setSaving(true);
-                    try {
-                      const { data: { session } } = await supabase.auth.getSession();
-                      if (!session) return;
-                      const res = await fetch('/api/settings/billing', {
-                        method: 'PUT',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          Authorization: `Bearer ${session.access_token}`,
-                        },
-                        body: JSON.stringify({
-                          pricing_type: 'payg',
-                          weekly_student_limit: paygSlider,
-                        }),
-                      });
-                      if (!res.ok) {
-                        const err = await res.json();
-                        throw new Error(err.error || 'Failed');
-                      }
-                      setData(prev => prev ? { ...prev, pricing_type: 'payg', weekly_student_limit: paygSlider } : null);
-                      setSavedMessage(t('planUpdated'));
-                      setTimeout(() => setSavedMessage(''), 3000);
-                    } catch (err) {
-                      alert(err instanceof Error ? err.message : t('updateFailed'));
-                    } finally {
-                      setSaving(false);
-                    }
-                  }}
-                  disabled={saving || (data?.pricing_type === 'payg' && data?.weekly_student_limit === paygSlider)}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-medium rounded-lg transition-colors"
+                  onClick={handleRequestChange}
+                  disabled={saving || !changePlanSelect}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg"
                 >
-                  {data?.pricing_type === 'payg' ? t('currentPlan') + ' (PAYG)' : `Switch to Pay-As-You-Go (${paygSlider} students/week)`}
+                  {t('submitRequest', { defaultValue: 'Request Change' })}
                 </button>
               </div>
+              <div className="mt-4">
+                <a
+                  href={`https://wa.me/201001963432?text=${encodeURIComponent(`مرحباً، أريد تغيير خطة سنتر ${data?.center_name || ''}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  {t('requestViaWhatsapp', { defaultValue: 'Request via WhatsApp' })}
+                </a>
+              </div>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {t('changeNotice', { defaultValue: 'Changes take effect from the 1st of next month only.' })}
+              </p>
+            </section>
+          )}
+
+          {/* SECTION 5 - Invoice History */}
+          <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+              {t('invoiceHistory', { defaultValue: 'Invoice History' })}
+            </h2>
+            {(data?.invoices?.length ?? 0) > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-600">
+                      <th className="text-left py-2">{t('invoiceNumber', { defaultValue: 'Invoice #' })}</th>
+                      <th className="text-left py-2">{t('period', { defaultValue: 'Period' })}</th>
+                      <th className="text-left py-2">{t('amount', { defaultValue: 'Amount' })}</th>
+                      <th className="text-left py-2">{t('status', { defaultValue: 'Status' })}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data?.invoices?.map((inv: { invoice_number?: string; period_start: string; period_end: string; total_amount: number; status: string; paid_at?: string }) => (
+                      <tr key={inv.invoice_number || inv.period_start} className="border-b border-gray-100 dark:border-gray-700">
+                        <td className="py-2">{inv.invoice_number || '—'}</td>
+                        <td className="py-2">{inv.period_start} – {inv.period_end}</td>
+                        <td className="py-2">{Number(inv.total_amount).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}</td>
+                        <td className="py-2">
+                          {inv.status === 'paid' && '✅'}
+                          {inv.status === 'pending' && '⏳'}
+                          {inv.status === 'overdue' && '🔴'}
+                          {' '}{inv.status}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">{t('noInvoices', { defaultValue: 'No invoices yet.' })}</p>
             )}
+          </section>
+
+          {/* SECTION 6 - Payment Methods */}
+          <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+              {t('paymentMethods', { defaultValue: 'Payment Methods' })}
+            </h2>
+            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-6">
+              <p><strong>InstaPay:</strong> 01001963432</p>
+              <p><strong>Vodafone Cash:</strong> 01XXXXXXXXX</p>
+              <p><strong>Bank Transfer:</strong> {t('contactUs', { defaultValue: 'Contact us for details' })}</p>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              {t('enterReference', { defaultValue: 'After transfer, enter transaction reference below:' })}
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={paymentRef}
+                onChange={(e) => setPaymentRef(e.target.value)}
+                placeholder={t('instapayRef', { defaultValue: 'InstaPay reference' })}
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+              />
+              <button
+                onClick={handleSubmitPaymentRef}
+                disabled={saving || !paymentRef.trim()}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg"
+              >
+                {t('submitReference', { defaultValue: 'Submit' })}
+              </button>
+            </div>
           </section>
         </div>
       </div>

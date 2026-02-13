@@ -5,7 +5,7 @@ interface StudentExport {
   subject_name: string;
   payment_status: string;
   last_paid_date: string | null;
-  monthly_fee: number;
+  fee: number;
   payment_method?: string | null;
   last_payment_method?: string | null;
 }
@@ -26,7 +26,7 @@ export function exportToExcel(students: StudentExport[], filename?: string) {
       'المادة': s.subject_name || '',
       'الحالة': s.payment_status === 'paid' ? 'مسدد' : 'غير مسدد',
       'تاريخ آخر دفعة': s.last_paid_date ? new Date(s.last_paid_date).toLocaleDateString('ar-EG') : '',
-      'المبلغ': s.monthly_fee || 0,
+      'المبلغ': s.fee || 0,
       'طريقة الدفع': s.last_payment_method ? (METHOD_LABELS[s.last_payment_method] || s.last_payment_method) : '',
     }))
   );

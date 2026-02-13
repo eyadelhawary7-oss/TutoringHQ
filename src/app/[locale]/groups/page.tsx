@@ -346,7 +346,7 @@ export default function GroupsPage() {
                       >
                         <span className="font-medium text-gray-900 dark:text-white">{g.name}</span>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
-                          EGP {(g.fee ?? 0).toLocaleString('ar-EG')}/mo · {(g as Group & { member_count?: number }).member_count ?? 0} {t('members')}
+                          {(g.fee ?? 0).toLocaleString()} {t('feePerLessonShort', { defaultValue: 'EGP/lesson' })} · {(g as Group & { member_count?: number }).member_count ?? 0} {t('members')}
                         </span>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteGroup(g.id); }}

@@ -13,7 +13,7 @@ interface Student {
   subject_name: string;
   payment_status: string;
   last_paid_date: string | null;
-  monthly_fee: number;
+  fee: number;
   last_payment_method?: string | null;
 }
 
@@ -80,7 +80,7 @@ export default function PaymentsPage() {
       const [studentsRes, subjectsRes, groupsRes, membersRes, paymentsRes] = await Promise.all([
         dbSelect({
           table: 'students',
-          select: 'id, name, subject_name, payment_status, last_paid_date, monthly_fee',
+          select: 'id, name, subject_name, payment_status, last_paid_date, fee',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         }),
@@ -194,7 +194,7 @@ export default function PaymentsPage() {
 
   const handleBulkMarkPaid = async () => {
     if (!centerId || !userId || selected.size === 0) return;
-    const firstAmount = students.find(s => selected.has(s.id))?.monthly_fee || 0;
+    const firstAmount = students.find(s => selected.has(s.id))?.fee || 0;
     const amount = paymentModalAmount ? Number(paymentModalAmount) : firstAmount;
     if (amount <= 0) return;
     setIsProcessing(true);
@@ -350,7 +350,7 @@ export default function PaymentsPage() {
               <button
                 onClick={() => {
                   const first = students.find(s => selected.has(s.id));
-                  setPaymentModalAmount(first ? String(first.monthly_fee) : '');
+                  setPaymentModalAmount(first ? String(first.fee) : '');
                   setPaymentModalDate(new Date().toISOString().slice(0, 10));
                   setShowPaymentModal(true);
                 }}
@@ -440,7 +440,7 @@ export default function PaymentsPage() {
                             {student.payment_status === 'paid' ? t('filterPaid') : t('filterUnpaid')}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.monthly_fee}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.fee}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                           {student.last_paid_date
                             ? new Date(student.last_paid_date).toLocaleDateString('ar-EG')
@@ -494,7 +494,7 @@ export default function PaymentsPage() {
                   step="0.01"
                   value={paymentModalAmount}
                   onChange={(e) => setPaymentModalAmount(e.target.value)}
-                  placeholder={String(students.find(s => selected.has(s.id))?.monthly_fee || '')}
+                  placeholder={String(students.find(s => selected.has(s.id))?.fee || '')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                 />
               </div>

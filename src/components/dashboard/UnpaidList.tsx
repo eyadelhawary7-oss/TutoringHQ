@@ -6,7 +6,7 @@ interface Student {
   id: string;
   name: string;
   subject_name: string;
-  monthly_fee: number;
+  fee: number;
 }
 
 interface UnpaidListProps {
@@ -46,7 +46,7 @@ export default function UnpaidList({ students }: UnpaidListProps) {
                 <p className="text-xs text-gray-500 dark:text-gray-400">{student.subject_name}</p>
               </td>
               <td className="px-3 py-3 text-gray-600 dark:text-gray-400">
-                {student.monthly_fee} {t('currency')}
+                {student.fee} {t('currency')}
               </td>
               <td className="px-3 py-3 text-end">
                 <button className="text-xs px-3 py-1.5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors">

@@ -96,6 +96,7 @@ export default function SchedulePage() {
   const [formEnd, setFormEnd] = useState('10:00');
   const [formDay, setFormDay] = useState(6);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [slotError, setSlotError] = useState('');
   const [scheduleStartHour, setScheduleStartHour] = useState(8);
   const [scheduleEndHour, setScheduleEndHour] = useState(20);
   const [showHoursModal, setShowHoursModal] = useState(false);
@@ -233,7 +234,11 @@ export default function SchedulePage() {
 
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!centerId || !userId || !formRoom || !formSubject || !formGroup) return;
+    setSlotError('');
+    if (!centerId || !userId || !formRoom || !formSubject || !formGroup) {
+      setSlotError('Room, subject, and group are required');
+      return;
+    }
     setConflictError('');
     const conflict = checkConflict(formRoom, formGroup || null, formDay, formStart, formEnd);
     if (conflict) {
@@ -241,23 +246,31 @@ export default function SchedulePage() {
       return;
     }
     setIsSubmitting(true);
-    const { data, error } = await dbInsert({
-      table: 'schedule_slots',
-      data: {
-        center_id: centerId,
-        room_id: formRoom,
-        subject_id: formSubject,
-        group_id: formGroup || null,
-        teacher_id: userId,
-        day_of_week: formDay,
-        start_time: formStart,
-        end_time: formEnd,
-        recurring: formRecurring,
-      },
-      single: true,
-    });
-    if (!error && data) {
-      const slot = data as ScheduleSlot;
+    try {
+      const { data, error } = await dbInsert({
+        table: 'schedule_slots',
+        data: {
+          center_id: centerId,
+          room_id: formRoom,
+          subject_id: formSubject,
+          group_id: formGroup || null,
+          teacher_id: userId,
+          day_of_week: formDay,
+          start_time: formStart,
+          end_time: formEnd,
+          recurring: formRecurring,
+        },
+        single: true,
+      });
+      if (error) {
+        console.error('[Schedule] Slot insert failed:', error);
+        setSlotError(typeof error === 'object' && error !== null && 'message' in error
+          ? (error as { message: string }).message
+          : String(error));
+        return;
+      }
+      if (data) {
+        const slot = data as ScheduleSlot;
       const groupName = groups.find((g) => g.id === formGroup)?.name ?? '';
       setSlots((prev) => [
         ...prev,
@@ -281,8 +294,10 @@ export default function SchedulePage() {
       setFormSubject('');
       setFormGroup('');
       setFormRecurring(false);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleDeleteSlot = async (id: string) => {
@@ -334,6 +349,7 @@ export default function SchedulePage() {
                       setFormDay(selectedDay);
                       setShowAddModal(true);
                       setConflictError('');
+                      setSlotError('');
                     }}
                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                   >
@@ -523,9 +539,9 @@ export default function SchedulePage() {
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">{t('recurring')}</span>
               </label>
-              {conflictError && (
+              {(conflictError || slotError) && (
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
-                  {conflictError}
+                  {conflictError || slotError}
                 </div>
               )}
               <div className="flex gap-3 pt-2">

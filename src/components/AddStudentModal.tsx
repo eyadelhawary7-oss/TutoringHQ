@@ -89,6 +89,10 @@ export default function AddStudentModal({
       setError(t('nameRequired', { defaultValue: 'Student name is required' }));
       return;
     }
+    if (!groupId) {
+      setError(t('groupRequiredError', { defaultValue: 'Group is required' }));
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -103,7 +107,7 @@ export default function AddStudentModal({
           phone: phone.trim() || null,
           parent_phone: parentPhone.trim() || null,
           subject_name: subjects.find((s) => s.id === subjectId)?.name || group?.subject || null,
-          monthly_fee: fee,
+          fee,
           payment_status: 'unpaid',
         },
         select: 'id, name, student_number',
@@ -251,7 +255,7 @@ export default function AddStudentModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('parentPhone')}
+                {t('parentPhoneOptional', { defaultValue: 'Parent Phone (optional)' })}
               </label>
               <input
                 type="tel"
@@ -265,61 +269,66 @@ export default function AddStudentModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('subject')}
-              </label>
-              <select
-                value={subjectId}
-                onChange={(e) => {
-                  setSubjectId(e.target.value);
-                  setGroupId('');
-                }}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">{tCommon('select')}</option>
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('monthlyFee')}
-              </label>
-              <input
-                type="number"
-                value={monthlyFee}
-                onChange={(e) => setMonthlyFee(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                min={0}
-                step={0.01}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('group', { defaultValue: 'Group' })}
+                {t('groupRequired', { defaultValue: 'Group *' })}
               </label>
               <select
                 value={groupId}
-                onChange={(e) => setGroupId(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setGroupId(val);
+                  if (val) {
+                    const g = groups.find((gr) => gr.id === val);
+                    if (g) {
+                      const subj = subjects.find((s) => s.name === g.subject);
+                      setSubjectId(subj?.id ?? '');
+                      setMonthlyFee(String(g.fee ?? 0));
+                    }
+                  } else {
+                    setSubjectId('');
+                    setMonthlyFee('');
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                required
               >
                 <option value="">{tCommon('select')}</option>
-                {filteredGroups.map((g) => (
+                {groups.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}
                   </option>
                 ))}
-                {subjectId && filteredGroups.length === 0 && (
-                  <option value="" disabled>
-                    {t('noGroupsForSubject', { defaultValue: 'No groups for this subject' })}
-                  </option>
-                )}
               </select>
             </div>
+
+            {groupId && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('subject')}
+                  </label>
+                  <input
+                    type="text"
+                    value={groups.find((g) => g.id === groupId)?.subject ?? ''}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white bg-gray-100 dark:bg-gray-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('feePerLesson')}
+                  </label>
+                  <input
+                    type="number"
+                    value={monthlyFee}
+                    onChange={(e) => setMonthlyFee(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    min={0}
+                    step={0.01}
+                  />
+                </div>
+              </>
+            )}
 
             <div className="flex gap-3 pt-2">
               <button

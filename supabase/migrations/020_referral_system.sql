@@ -52,7 +52,7 @@ DECLARE
   fee NUMERIC;
 BEGIN
   IF NEW.referred_by IS NOT NULL AND COALESCE(NEW.subscription_status, 'active') = 'active' THEN
-    SELECT monthly_fee_egp INTO fee FROM pricing_plans WHERE id = COALESCE(NEW.plan, 'starter');
+    SELECT monthly_fee INTO fee FROM pricing_plans WHERE id = COALESCE(NEW.plan, 'starter');
     IF fee IS NULL OR fee <= 0 THEN
       fee := CASE COALESCE(NEW.plan, 'starter')
         WHEN 'starter' THEN 4000

@@ -7,7 +7,7 @@ interface Student {
   id: string;
   name: string;
   payment_status: string;
-  monthly_fee: number;
+  fee: number;
   subject_name: string;
 }
 

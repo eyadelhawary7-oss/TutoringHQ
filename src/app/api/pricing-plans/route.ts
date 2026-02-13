@@ -17,7 +17,7 @@ export async function GET() {
 
     const { data: plans, error } = await supabase
       .from('pricing_plans')
-      .select('id, name_en, name_ar, students_per_week_limit, monthly_fee_egp, is_custom')
+      .select('id, name_en, name_ar, students_per_week_limit, monthly_fee, is_custom')
       .order('sort_order', { ascending: true });
 
     if (error) {

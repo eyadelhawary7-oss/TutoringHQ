@@ -22,7 +22,7 @@ interface Student {
   id: string;
   name: string;
   payment_status: string;
-  monthly_fee: number;
+  fee: number;
   subject_name: string;
   parent_phone?: string | null;
 }
@@ -54,7 +54,7 @@ export default function ScanPage() {
 
       const { data } = await dbSelect({
         table: 'students',
-        select: 'id, name, phone, parent_phone, subject_name, payment_status, monthly_fee, qr_code, student_number',
+        select: 'id, name, phone, parent_phone, subject_name, payment_status, fee, qr_code, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
       });
       if (data && Array.isArray(data)) {
@@ -157,7 +157,7 @@ export default function ScanPage() {
           : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
         const { data, error: lookupError } = await dbSelect({
           table: 'students',
-          select: 'id, name, phone, parent_phone, subject_name, payment_status, monthly_fee',
+          select: 'id, name, phone, parent_phone, subject_name, payment_status, fee',
           filters,
           single: true,
         });
@@ -237,7 +237,7 @@ export default function ScanPage() {
           data: {
             student_id: scannedStudent.id,
             center_id: centerId,
-            amount: scannedStudent.monthly_fee,
+            amount: scannedStudent.fee,
             payment_method: method,
             payment_date: scannedAt,
             created_by: userId,
@@ -252,7 +252,7 @@ export default function ScanPage() {
             action: 'payment_on_scan',
             entity_type: 'payment',
             entity_id: scannedStudent.id,
-            details: { method, amount: scannedStudent.monthly_fee },
+            details: { method, amount: scannedStudent.fee },
           },
           select: false,
         });
@@ -262,7 +262,7 @@ export default function ScanPage() {
           center_id: centerId,
           scanned_by: userId,
           scanned_at: scannedAt,
-          payment_action: { method, amount: scannedStudent.monthly_fee },
+          payment_action: { method, amount: scannedStudent.fee },
         });
         const count = await getUnsyncedCount();
         setPendingCount(count);

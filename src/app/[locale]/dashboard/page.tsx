@@ -26,7 +26,7 @@ interface DashboardData {
   todayRevenue: number;
   revenueByMethod: { method: string; amount: number }[];
   trendData: { date: string; count: number }[];
-  unpaidStudents: { id: string; name: string; subject_name: string; monthly_fee: number }[];
+  unpaidStudents: { id: string; name: string; subject_name: string; fee: number }[];
 }
 
 export default function DashboardPage() {
@@ -68,10 +68,10 @@ export default function DashboardPage() {
       // Student payment stats
       const { data: studentsRaw } = await dbSelect({
         table: 'students',
-        select: 'id, name, subject_name, monthly_fee, payment_status',
+        select: 'id, name, subject_name, fee, payment_status',
         filters: [{ column: 'center_id', op: 'eq', value: cId }],
       });
-      const students = (studentsRaw || []) as { id: string; name: string; subject_name: string; monthly_fee: number; payment_status: string }[];
+      const students = (studentsRaw || []) as { id: string; name: string; subject_name: string; fee: number; payment_status: string }[];
 
       const paidCount = students.filter(s => s.payment_status === 'paid').length;
       const unpaidCount = students.filter(s => s.payment_status === 'unpaid').length;
@@ -315,7 +315,7 @@ export default function DashboardPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('pendingAmount')}</p>
                   <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">
-                    {data.unpaidStudents.reduce((s, st) => s + (st.monthly_fee || 0), 0)} <span className="text-lg">{t('currency')}</span>
+                    {data.unpaidStudents.reduce((s, st) => s + (st.fee || 0), 0)} <span className="text-lg">{t('currency')}</span>
                   </p>
                 </div>
               </div>

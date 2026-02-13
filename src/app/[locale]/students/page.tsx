@@ -14,7 +14,7 @@ interface Student {
   phone: string;
   parent_phone: string;
   subject_name: string;
-  monthly_fee: number;
+  fee: number;
   payment_status: string;
   student_number?: string;
 }
@@ -126,7 +126,7 @@ export default function StudentsPage() {
         phone: addForm.phone.trim() || null,
         parent_phone: addForm.parentPhone.trim() || null,
         subject_name: subjects.find((s) => s.id === addForm.subjectId)?.name ?? null,
-        monthly_fee: Number(addForm.monthlyFee) || 0,
+        fee: Number(addForm.monthlyFee) || 0,
         payment_status: 'unpaid',
       };
       const { data: inserted, error } = await dbInsert({
@@ -276,7 +276,7 @@ export default function StudentsPage() {
                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{student.name}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">{student.phone}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.subject_name}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.monthly_fee}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.fee}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             student.payment_status === 'paid'
