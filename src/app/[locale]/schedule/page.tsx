@@ -65,8 +65,36 @@ function getHoursRange(start: number, end: number): number[] {
 }
 
 function timeToMinutes(t: string): number {
-  const [h, m] = t.split(':').map(Number);
+  // Handle full ISO timestamp (e.g. "2000-01-01T09:00:00.000Z") - extract time part
+  let timeStr = t;
+  if (t.includes('T')) {
+    const d = new Date(t);
+    if (!isNaN(d.getTime())) {
+      const h = d.getHours();
+      const m = d.getMinutes();
+      return h * 60 + m;
+    }
+    timeStr = t.split('T')[1]?.slice(0, 5) ?? t;
+  }
+  const [h, m] = timeStr.split(':').map(Number);
   return (h || 0) * 60 + (m || 0);
+}
+
+function timeToTimestamp(timeStr: string): string {
+  let hours: number;
+  let minutes: number;
+  if (timeStr.includes('AM') || timeStr.includes('PM')) {
+    const [time, period] = timeStr.split(/\s+/);
+    const [h, m] = (time || '').split(':').map(Number);
+    hours = period === 'PM' && h !== 12 ? (h || 0) + 12 : (period === 'AM' && h === 12 ? 0 : h || 0);
+    minutes = m || 0;
+  } else {
+    const [h, m] = timeStr.split(':').map(Number);
+    hours = h ?? 0;
+    minutes = m ?? 0;
+  }
+  const date = new Date(2000, 0, 1, hours, minutes, 0);
+  return date.toISOString();
 }
 
 function formatTime(minutes: number): string {
@@ -263,8 +291,8 @@ export default function SchedulePage() {
           group_id: formGroup || null,
           teacher_id: userId,
           day_of_week: formDay,
-          start_time: formStart,
-          end_time: formEnd,
+          start_time: timeToTimestamp(formStart),
+          end_time: timeToTimestamp(formEnd),
           recurring: formRecurring,
         },
         single: true,

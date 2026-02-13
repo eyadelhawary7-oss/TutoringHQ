@@ -10,6 +10,7 @@ interface Student {
   fee: number;
   subject: string;
   student_number?: string | null;
+  last_payment_method?: string | null;
 }
 
 interface ScanResultScreenProps {
@@ -33,12 +34,13 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
 
   const isPaid = student.payment_status === 'paid';
+  const isPending = student.payment_status === 'pending';
+
+  const bgColor = isPaid ? 'bg-emerald-500' : isPending ? 'bg-amber-500' : 'bg-red-500';
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-colors duration-300 min-h-screen w-full ${
-        isPaid ? 'bg-emerald-500' : 'bg-red-500'
-      }`}
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-colors duration-300 min-h-screen w-full ${bgColor}`}
       dir="rtl"
       onClick={isPaid ? onDismiss : undefined}
     >
@@ -73,11 +75,21 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
         className="text-xl sm:text-2xl text-white/80 text-center mb-8"
         style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
       >
-        {isPaid ? `✓ ${t('studentPaid')}` : t('studentUnpaid')}
+        {isPaid ? `✓ ${t('studentPaid')}` : isPending ? t('pendingPayment') : t('studentUnpaid')}
       </p>
 
+      {/* Pending: show payment method */}
+      {isPending && student.last_payment_method && (
+        <p
+          className="text-lg sm:text-xl text-white/90 text-center mb-4"
+          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+        >
+          {t(paymentMethods.find(m => m.value === student.last_payment_method)?.key ?? 'instapay')}
+        </p>
+      )}
+
       {/* Pay Now Section (unpaid only) */}
-      {!isPaid && !showPaymentMethods && (
+      {!isPaid && !isPending && !showPaymentMethods && (
         <button
           onClick={() => setShowPaymentMethods(true)}
           className="px-12 py-5 bg-white text-red-600 text-2xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200"
@@ -87,7 +99,7 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
       )}
 
       {/* Payment Methods Dropdown */}
-      {!isPaid && showPaymentMethods && (
+      {!isPaid && !isPending && showPaymentMethods && (
         <div className="w-full max-w-sm px-4">
           <h3 className="text-xl text-white font-bold text-center mb-4">
             {t('selectMethod')}
@@ -117,10 +129,10 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
         </div>
       )}
 
-      {/* Dismiss hint for paid */}
-      {isPaid && (
+      {/* Dismiss hint for paid / pending */}
+      {(isPaid || isPending) && (
         <p className="text-white/60 text-sm mt-8">
-          {t('attendanceRecorded')}
+          {isPaid ? t('attendanceRecorded') : t('pendingPayment')}
         </p>
       )}
     </div>

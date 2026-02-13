@@ -23,6 +23,7 @@ interface DashboardData {
   totalStudents: number;
   paidCount: number;
   unpaidCount: number;
+  pendingCount: number;
   todayRevenue: number;
   revenueByMethod: { method: string; amount: number }[];
   trendData: { date: string; count: number }[];
@@ -39,6 +40,7 @@ export default function DashboardPage() {
     totalStudents: 0,
     paidCount: 0,
     unpaidCount: 0,
+    pendingCount: 0,
     todayRevenue: 0,
     revenueByMethod: [],
     trendData: [],
@@ -75,6 +77,7 @@ export default function DashboardPage() {
 
       const paidCount = students.filter(s => s.payment_status === 'paid').length;
       const unpaidCount = students.filter(s => s.payment_status === 'unpaid').length;
+      const pendingCount = students.filter(s => s.payment_status === 'pending').length;
       const unpaidStudents = students.filter(s => s.payment_status === 'unpaid');
 
       // Today's revenue
@@ -128,6 +131,7 @@ export default function DashboardPage() {
         totalStudents: students.length,
         paidCount,
         unpaidCount,
+        pendingCount,
         todayRevenue,
         revenueByMethod,
         trendData,
@@ -326,7 +330,7 @@ export default function DashboardPage() {
                   <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                     {t('paid')} / {t('unpaid')}
                   </h2>
-                  <PaymentDonut paid={data.paidCount} unpaid={data.unpaidCount} />
+                  <PaymentDonut paid={data.paidCount} unpaid={data.unpaidCount} pending={data.pendingCount} />
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                   <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">

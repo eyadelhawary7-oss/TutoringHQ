@@ -180,7 +180,8 @@
     "scanError": "Scan error",
     "studentNotFound": "Student not found",
     "attendanceRecorded": "Attendance recorded",
-    "pending": "pending"
+    "pending": "pending",
+    "pendingPayment": "Payment Pending Confirmation"
   },
   "sync": {
     "online": "Online",
@@ -196,6 +197,7 @@
     "studentsAttended": "students attended today",
     "paid": "Paid",
     "unpaid": "Unpaid",
+    "pending": "Pending",
     "revenue": "Today's Revenue",
     "trend": "Attendance Trend (7 days)",
     "unpaidStudents": "Unpaid Students",
@@ -222,7 +224,9 @@
     "title": "Payment Management",
     "filterPaid": "Paid",
     "filterUnpaid": "Unpaid",
+    "filterPending": "Pending",
     "filterAll": "All",
+    "confirm": "Confirm",
     "filterBySubject": "By Subject",
     "filterByGroup": "By Group",
     "allSubjects": "All Subjects",

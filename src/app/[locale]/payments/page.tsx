@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate } from '@/lib/db-proxy';
+import { useUser } from '@/contexts/UserContext';
 import { exportToExcel } from '@/lib/excel-export';
 import Navbar from '@/components/Navbar';
 
@@ -17,7 +18,7 @@ interface Student {
   last_payment_method?: string | null;
 }
 
-type StatusFilter = 'all' | 'paid' | 'unpaid';
+type StatusFilter = 'all' | 'paid' | 'unpaid' | 'pending';
 
 const PAYMENT_METHODS = [
   { key: 'cash', value: 'cash' },
@@ -32,6 +33,8 @@ export default function PaymentsPage() {
   const t = useTranslations('payments');
   const tScan = useTranslations('scan');
   const tCommon = useTranslations('common');
+  const { user, hasPermission } = useUser();
+  const canConfirmPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_manage_payments');
 
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -147,9 +150,14 @@ export default function PaymentsPage() {
     load();
   }, []);
 
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
-      if (statusFilter !== 'all' && s.payment_status !== statusFilter) return false;
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'pending' && s.payment_status !== 'pending') return false;
+        if (statusFilter !== 'pending' && s.payment_status !== statusFilter) return false;
+      }
       if (subjectFilter !== 'all' && s.subject !== subjectFilter) return false;
       if (groupFilter !== 'all') {
         const studentGroups = studentGroupIds[s.id] || [];
@@ -166,6 +174,40 @@ export default function PaymentsPage() {
       return true;
     });
   }, [students, statusFilter, subjectFilter, groupFilter, studentGroupIds, dateFrom, dateTo]);
+
+  const handleConfirmPending = async (studentId: string) => {
+    if (!centerId || !userId || !canConfirmPayments) return;
+    setConfirmingId(studentId);
+    try {
+      const paidDate = new Date().toISOString();
+      await dbUpdate({
+        table: 'students',
+        data: { payment_status: 'paid', last_paid_date: paidDate },
+        filters: [{ column: 'id', op: 'eq', value: studentId }],
+      });
+      await dbUpdate({
+        table: 'payments',
+        data: { status: 'paid' },
+        filters: [
+          { column: 'student_id', op: 'eq', value: studentId },
+          { column: 'status', op: 'eq', value: 'pending' },
+        ],
+      });
+      setStudents(prev =>
+        prev.map(s =>
+          s.id === studentId
+            ? { ...s, payment_status: 'paid', last_paid_date: paidDate }
+            : s
+        )
+      );
+      setSuccessMessage(t('confirmed', { count: 1 }));
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('Confirm payment error:', err);
+    } finally {
+      setConfirmingId(null);
+    }
+  };
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selected);
@@ -286,7 +328,7 @@ export default function PaymentsPage() {
           <div className="flex flex-wrap gap-3 mb-6">
             {/* Status filter tabs */}
             <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow p-1">
-              {(['all', 'paid', 'unpaid'] as StatusFilter[]).map((status) => (
+              {(['all', 'paid', 'unpaid', 'pending'] as StatusFilter[]).map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
@@ -296,7 +338,7 @@ export default function PaymentsPage() {
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
-                  {status === 'all' ? t('filterAll') : status === 'paid' ? t('filterPaid') : t('filterUnpaid')}
+                  {status === 'all' ? t('filterAll') : status === 'paid' ? t('filterPaid') : status === 'unpaid' ? t('filterUnpaid') : t('filterPending')}
                 </button>
               ))}
             </div>
@@ -411,6 +453,7 @@ export default function PaymentsPage() {
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('amount')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('lastPaidDate')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('paymentMethod')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -435,9 +478,11 @@ export default function PaymentsPage() {
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             student.payment_status === 'paid'
                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                              : student.payment_status === 'pending'
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
                               : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
                           }`}>
-                            {student.payment_status === 'paid' ? t('filterPaid') : t('filterUnpaid')}
+                            {student.payment_status === 'paid' ? t('filterPaid') : student.payment_status === 'pending' ? t('filterPending') : t('filterUnpaid')}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.fee}</td>
@@ -449,11 +494,22 @@ export default function PaymentsPage() {
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                           {student.last_payment_method ? (PAYMENT_METHODS.find(m => m.value === student.last_payment_method) ? tScan(PAYMENT_METHODS.find(m => m.value === student.last_payment_method)!.key) : student.last_payment_method) : '—'}
                         </td>
+                        <td className="px-4 py-3">
+                          {student.payment_status === 'pending' && canConfirmPayments && (
+                            <button
+                              onClick={() => handleConfirmPending(student.id)}
+                              disabled={confirmingId === student.id}
+                              className="px-3 py-1.5 text-sm font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800 disabled:opacity-50"
+                            >
+                              {confirmingId === student.id ? tCommon('loading') : t('confirm')}
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                     {filteredStudents.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                        <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                           ---
                         </td>
                       </tr>

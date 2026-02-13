@@ -666,9 +666,9 @@ export default function BillingPage() {
             {/* InstaPay Info - always visible */}
             <div className="mb-6">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {locale === 'ar' ? 'حوّل على رقم إنستاباي:' : 'Transfer to InstaPay:'}
+                {locale === 'ar' ? 'حوّل على إنستاباي (رقم الموبايل):' : 'Transfer to InstaPay (Mobile Number):'}
               </p>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap items-baseline">
                 <span className="font-mono text-xl font-bold text-indigo-600 dark:text-indigo-400">01001963432</span>
                 <button
                   type="button"

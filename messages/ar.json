@@ -180,7 +180,8 @@
     "scanError": "خطأ في المسح",
     "studentNotFound": "الطالب غير موجود",
     "attendanceRecorded": "تم تسجيل الحضور",
-    "pending": "معلق"
+    "pending": "معلق",
+    "pendingPayment": "في انتظار تأكيد الدفع"
   },
   "sync": {
     "online": "متصل",
@@ -196,6 +197,7 @@
     "studentsAttended": "طالب حضر اليوم",
     "paid": "مسدد",
     "unpaid": "غير مسدد",
+    "pending": "معلق",
     "revenue": "الإيرادات اليوم",
     "trend": "اتجاه الحضور (7 أيام)",
     "unpaidStudents": "الطلاب غير المسددين",
@@ -222,7 +224,9 @@
     "title": "إدارة المدفوعات",
     "filterPaid": "مسدد",
     "filterUnpaid": "غير مسدد",
+    "filterPending": "معلق",
     "filterAll": "الكل",
+    "confirm": "تأكيد",
     "filterBySubject": "حسب المادة",
     "filterByGroup": "حسب المجموعة",
     "allSubjects": "كل المواد",

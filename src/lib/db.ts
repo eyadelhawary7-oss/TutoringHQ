@@ -70,6 +70,7 @@ export async function queueScan(scanData: {
   payment_action?: {
     method: string;
     amount: number;
+    isPending?: boolean;
   };
 }) {
   const db = await getDB();

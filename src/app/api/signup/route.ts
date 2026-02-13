@@ -33,9 +33,8 @@ export async function POST(request: Request) {
         .single();
       if (refCenter) {
         referredBy = refCenter.id;
-      } else {
-        return NextResponse.json({ error: 'referralCodeInvalid' }, { status: 400 });
       }
+      // If invalid referral code, ignore and proceed without referral (don't fail signup)
     }
 
     const insertData: Record<string, unknown> = {

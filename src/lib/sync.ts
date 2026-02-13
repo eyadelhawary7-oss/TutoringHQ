@@ -31,17 +31,18 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
 
       // If there was a payment action, process it
       if (scan.payment_action) {
-        // Update student payment status
+        const isPending = (scan.payment_action as { isPending?: boolean }).isPending ?? false;
+        const paymentStatus = isPending ? 'pending' : 'paid';
+
         await dbUpdate({
           table: 'students',
           data: {
-            payment_status: 'paid',
-            last_paid_date: scan.scanned_at,
+            payment_status: paymentStatus,
+            ...(paymentStatus === 'paid' ? { last_paid_date: scan.scanned_at } : {}),
           },
           filters: [{ column: 'id', op: 'eq', value: scan.student_id }],
         });
 
-        // Create payment record
         await dbInsert({
           table: 'payments',
           data: {
@@ -51,6 +52,7 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
             payment_method: scan.payment_action.method,
             payment_date: scan.scanned_at,
             created_by: scan.scanned_by,
+            status: paymentStatus,
           },
           select: false,
         });

@@ -26,6 +26,7 @@ interface Student {
   subject: string;
   parent_phone?: string | null;
   student_number?: string | null;
+  last_payment_method?: string | null;
 }
 
 export default function ScanPage() {
@@ -223,12 +224,17 @@ export default function ScanPage() {
     setIsProcessing(true);
 
     const scannedAt = new Date().toISOString();
+    const isCash = method === 'cash';
+    const paymentStatus = isCash ? 'paid' : 'pending';
 
     try {
       if (navigator.onLine) {
         await dbUpdate({
           table: 'students',
-          data: { payment_status: 'paid', last_paid_date: scannedAt },
+          data: {
+            payment_status: paymentStatus,
+            ...(isCash ? { last_paid_date: scannedAt } : {}),
+          },
           filters: [{ column: 'id', op: 'eq', value: scannedStudent.id }],
         });
         await dbInsert({
@@ -240,6 +246,7 @@ export default function ScanPage() {
             payment_method: method,
             payment_date: scannedAt,
             created_by: userId,
+            status: paymentStatus,
           },
           select: false,
         });
@@ -263,7 +270,7 @@ export default function ScanPage() {
             action: 'payment_on_scan',
             entity_type: 'payment',
             entity_id: scannedStudent.id,
-            details: { method, amount: scannedStudent.fee },
+            details: { method, amount: scannedStudent.fee, status: paymentStatus },
           },
           select: false,
         });
@@ -273,22 +280,21 @@ export default function ScanPage() {
           center_id: centerId,
           scanned_by: userId,
           scanned_at: scannedAt,
-          payment_action: { method, amount: scannedStudent.fee },
+          payment_action: { method, amount: scannedStudent.fee, isPending: !isCash },
         });
         const count = await getUnsyncedCount();
         setPendingCount(count);
-        // Update local IndexedDB student so next scan shows green
         const { getDB } = await import('@/lib/db');
         const db = await getDB();
         const tx = db.transaction('students', 'readwrite');
         const existing = await tx.store.get(scannedStudent.id);
         if (existing) {
-          await tx.store.put({ ...existing, payment_status: 'paid' });
+          await tx.store.put({ ...existing, payment_status: paymentStatus });
         }
         await tx.done;
       }
 
-      setScannedStudent({ ...scannedStudent, payment_status: 'paid' });
+      setScannedStudent({ ...scannedStudent, payment_status: paymentStatus, last_payment_method: method });
       setIsProcessing(false);
 
       dismissTimerRef.current = setTimeout(() => {
