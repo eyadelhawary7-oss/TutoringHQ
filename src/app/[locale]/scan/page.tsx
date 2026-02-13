@@ -176,8 +176,8 @@ export default function ScanPage() {
       setScannedStudent(student);
       const scannedAt = new Date().toISOString();
 
-      if (student.payment_status === 'paid') {
-        // Paid: record attendance immediately with payment_status_at_scan
+      if (student.payment_status === 'paid' || student.payment_status === 'pending') {
+        // Paid or pending: record attendance only, no payment needed; status persists until next billing period
         if (navigator.onLine) {
           await dbInsert({
             table: 'attendance_scans',
@@ -225,18 +225,10 @@ export default function ScanPage() {
 
     const scannedAt = new Date().toISOString();
     const isCash = method === 'cash';
-    const paymentStatus = isCash ? 'paid' : 'pending';
 
     try {
       if (navigator.onLine) {
-        await dbUpdate({
-          table: 'students',
-          data: {
-            payment_status: paymentStatus,
-            ...(isCash ? { last_paid_date: scannedAt } : {}),
-          },
-          filters: [{ column: 'id', op: 'eq', value: scannedStudent.id }],
-        });
+        // 1. Create payment record (log of scanner activity)
         await dbInsert({
           table: 'payments',
           data: {
@@ -246,11 +238,21 @@ export default function ScanPage() {
             payment_method: method,
             payment_date: scannedAt,
             created_by: userId,
-            status: paymentStatus,
+            status: isCash ? 'paid' : 'pending',
             confirmed: isCash,
           },
           select: false,
         });
+        // 2. Update student: stays PAID for the rest of billing period
+        await dbUpdate({
+          table: 'students',
+          data: {
+            payment_status: 'paid',
+            ...(isCash ? { last_paid_date: scannedAt } : {}),
+          },
+          filters: [{ column: 'id', op: 'eq', value: scannedStudent.id }],
+        });
+        // 3. Create attendance_scan record (payment_status_at_scan: unpaid at scan time, we collected)
         await dbInsert({
           table: 'attendance_scans',
           data: {
@@ -271,7 +273,7 @@ export default function ScanPage() {
             action: 'payment_on_scan',
             entity_type: 'payment',
             entity_id: scannedStudent.id,
-            details: { method, amount: scannedStudent.fee, status: paymentStatus },
+            details: { method, amount: scannedStudent.fee, status: method === 'cash' ? 'confirmed' : 'pending' },
           },
           select: false,
         });
@@ -290,12 +292,12 @@ export default function ScanPage() {
         const tx = db.transaction('students', 'readwrite');
         const existing = await tx.store.get(scannedStudent.id);
         if (existing) {
-          await tx.store.put({ ...existing, payment_status: paymentStatus });
+          await tx.store.put({ ...existing, payment_status: 'paid', last_payment_method: method });
         }
         await tx.done;
       }
 
-      setScannedStudent({ ...scannedStudent, payment_status: paymentStatus, last_payment_method: method });
+      setScannedStudent({ ...scannedStudent, payment_status: 'paid', last_payment_method: method });
       setIsProcessing(false);
 
       dismissTimerRef.current = setTimeout(() => {

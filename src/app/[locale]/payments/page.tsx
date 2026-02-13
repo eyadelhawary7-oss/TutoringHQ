@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, dbUpdate } from '@/lib/db-proxy';
+import { dbSelect, dbInsert, dbUpdate, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { exportToExcel } from '@/lib/excel-export';
 import Navbar from '@/components/Navbar';
@@ -99,6 +99,9 @@ export default function PaymentsPage() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [quickPayOpenId, setQuickPayOpenId] = useState<string | null>(null);
   const [recordingPaymentId, setRecordingPaymentId] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const isOwner = user?.role === 'owner';
 
   const loadData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -404,6 +407,42 @@ export default function PaymentsPage() {
     setSelected(new Set(unpaidIds));
   };
 
+  const handleResetAllPayments = async () => {
+    if (!centerId || !userId || !isOwner) return;
+    if (!confirm(t('resetAllPaymentsConfirm'))) return;
+    setIsResetting(true);
+    try {
+      const { error } = await dbUpdate({
+        table: 'students',
+        data: { payment_status: 'unpaid' },
+        filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+        select: false,
+      });
+      if (error) {
+        console.error('[Payments] Reset all failed:', error);
+        setSuccessMessage(tCommon('error'));
+        setTimeout(() => setSuccessMessage(''), 4000);
+      } else {
+        await auditLog({
+          centerId,
+          userId: userId!,
+          action: 'payments_reset_all',
+          entityType: 'students',
+          details: { reset_all: true },
+        });
+        await loadData();
+        setSuccessMessage(t('resetAllPayments') + ' ✓');
+        setTimeout(() => setSuccessMessage(''), 4000);
+      }
+    } catch (err) {
+      console.error('[Payments] Reset all error:', err);
+      setSuccessMessage(tCommon('error'));
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const handleExport = () => {
     const forExport = filteredStudents.map(s => {
       const latest = getLatestPayment(s);
@@ -439,16 +478,27 @@ export default function PaymentsPage() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('title')}</h1>
-            <button
-              onClick={handleExport}
-              className="px-4 py-2 text-sm font-medium border border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950"
-            >
-              {t('export')}
-            </button>
+            <div className="flex gap-2">
+              {isOwner && (
+                <button
+                  onClick={handleResetAllPayments}
+                  disabled={isResetting || isLoading}
+                  className="px-4 py-2 text-sm font-medium border border-amber-600 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950 disabled:opacity-50"
+                >
+                  {isResetting ? tCommon('loading') : t('resetAllPayments')}
+                </button>
+              )}
+              <button
+                onClick={handleExport}
+                className="px-4 py-2 text-sm font-medium border border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950"
+              >
+                {t('export')}
+              </button>
+            </div>
           </div>
 
           {successMessage && (

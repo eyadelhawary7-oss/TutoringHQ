@@ -29,16 +29,15 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
 
       if (attendanceError) throw new Error(attendanceError.message);
 
-      // If there was a payment action, process it
+      // If there was a payment action, process it — student stays PAID for billing period
       if (scan.payment_action) {
         const isPending = (scan.payment_action as { isPending?: boolean }).isPending ?? false;
-        const paymentStatus = isPending ? 'pending' : 'paid';
 
         await dbUpdate({
           table: 'students',
           data: {
-            payment_status: paymentStatus,
-            ...(paymentStatus === 'paid' ? { last_paid_date: scan.scanned_at } : {}),
+            payment_status: 'paid',
+            ...(isPending ? {} : { last_paid_date: scan.scanned_at }),
           },
           filters: [{ column: 'id', op: 'eq', value: scan.student_id }],
         });
@@ -52,7 +51,7 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
             payment_method: scan.payment_action.method,
             payment_date: scan.scanned_at,
             created_by: scan.scanned_by,
-            status: paymentStatus,
+            status: isPending ? 'pending' : 'paid',
             confirmed: !scan.payment_action.isPending,
           },
           select: false,

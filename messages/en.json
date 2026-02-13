@@ -262,7 +262,9 @@
     "vodacash": "Vodafone Cash",
     "orange": "Orange Cash",
     "fawry": "Fawry",
-    "bank": "Bank Transfer"
+    "bank": "Bank Transfer",
+    "resetAllPayments": "Reset All Payments",
+    "resetAllPaymentsConfirm": "Reset all students to unpaid for the new billing period? This cannot be undone."
   },
   "settings": {
     "title": "Settings",

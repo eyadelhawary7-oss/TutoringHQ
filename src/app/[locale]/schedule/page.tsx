@@ -80,21 +80,10 @@ function timeToMinutes(t: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
-function timeToTimestamp(timeStr: string): string {
-  let hours: number;
-  let minutes: number;
-  if (timeStr.includes('AM') || timeStr.includes('PM')) {
-    const [time, period] = timeStr.split(/\s+/);
-    const [h, m] = (time || '').split(':').map(Number);
-    hours = period === 'PM' && h !== 12 ? (h || 0) + 12 : (period === 'AM' && h === 12 ? 0 : h || 0);
-    minutes = m || 0;
-  } else {
-    const [h, m] = timeStr.split(':').map(Number);
-    hours = h ?? 0;
-    minutes = m ?? 0;
-  }
-  const date = new Date(2000, 0, 1, hours, minutes, 0);
-  return date.toISOString();
+/** Format TIME column value (e.g. '09:00:00') for display as '09:00' */
+function formatTimeForDisplay(t: string | undefined): string {
+  if (!t) return '';
+  return t.substring(0, 5);
 }
 
 function formatTime(minutes: number): string {
@@ -127,6 +116,7 @@ export default function SchedulePage() {
   const [formDay, setFormDay] = useState(6);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slotError, setSlotError] = useState('');
+  const [slotSuccessMessage, setSlotSuccessMessage] = useState('');
   const [scheduleStartHour, setScheduleStartHour] = useState(8);
   const [scheduleEndHour, setScheduleEndHour] = useState(20);
   const [showHoursModal, setShowHoursModal] = useState(false);
@@ -291,44 +281,53 @@ export default function SchedulePage() {
           group_id: formGroup || null,
           teacher_id: userId,
           day_of_week: formDay,
-          start_time: timeToTimestamp(formStart),
-          end_time: timeToTimestamp(formEnd),
+          start_time: formStart,
+          end_time: formEnd,
           recurring: formRecurring,
         },
         single: true,
       });
       if (error) {
         console.error('[Schedule] Slot insert failed:', error);
-        setSlotError(typeof error === 'object' && error !== null && 'message' in error
+        const errMsg = typeof error === 'object' && error !== null && 'message' in error
           ? (error as { message: string }).message
-          : String(error));
+          : String(error);
+        setSlotError(errMsg);
         return;
       }
       if (data) {
         const slot = data as ScheduleSlot;
-        const groupName = groups.find((g) => g.id === formGroup)?.name ?? '';
-        setSlots((prev) => [
-          ...prev,
-          {
-            ...slot,
-            room_name: rooms.find((r) => r.id === slot.room_id)?.name ?? '',
-            subject_name: (slot as { subject?: string }).subject ?? selectedSubjectName ?? subjects.find((s) => s.id === slot.subject_id)?.name ?? '',
-            group_name: groupName,
-          },
-        ]);
-      await auditLog({
-        centerId,
-        userId,
-        action: 'schedule_slot_create',
-        entityType: 'schedule_slots',
-        entityId: slot.id,
-        details: { room_id: formRoom, subject_id: formSubject, group_id: formGroup, day: formDay },
-      });
-      setShowAddModal(false);
-      setFormRoom('');
-      setFormSubject('');
-      setFormGroup('');
-      setFormRecurring(false);
+        await auditLog({
+          centerId,
+          userId,
+          action: 'schedule_slot_create',
+          entityType: 'schedule_slots',
+          entityId: slot.id,
+          details: { room_id: formRoom, subject_id: formSubject, group_id: formGroup, day: formDay },
+        });
+        setShowAddModal(false);
+        setFormRoom('');
+        setFormSubject('');
+        setFormGroup('');
+        setFormRecurring(false);
+        setSlotError('');
+        setSlotSuccessMessage(t('slotSaved', { defaultValue: 'Slot saved successfully.' }));
+        setTimeout(() => setSlotSuccessMessage(''), 4000);
+        const slotsRes = await dbSelect({
+          table: 'schedule_slots',
+          select: 'id, room_id, subject, subject_id, group_id, teacher_id, day_of_week, start_time, end_time, recurring, recurring_until',
+          filters: [{ column: 'center_id', op: 'eq' as const, value: centerId }],
+        });
+        if (slotsRes?.data) {
+          const slotsData = slotsRes.data as ScheduleSlot[];
+          const withNames = slotsData.map((s) => ({
+            ...s,
+            room_name: rooms.find((r) => r.id === s.room_id)?.name ?? '',
+            subject_name: (s.subject || subjects.find((sub) => sub.id === s.subject_id)?.name) ?? '',
+            group_name: s.group_id ? groups.find((g) => g.id === s.group_id)?.name ?? '' : '',
+          }));
+          setSlots(withNames);
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -395,6 +394,11 @@ export default function SchedulePage() {
             </div>
           </div>
 
+          {slotSuccessMessage && (
+            <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm">
+              {slotSuccessMessage}
+            </div>
+          )}
           {isLoading ? (
             <div className="text-center py-16">
               <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -450,7 +454,7 @@ export default function SchedulePage() {
                               {slot && (
                                 <div
                                   className="text-xs p-2 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-200"
-                                  title={slot.group_name ? `${slot.group_name} - ${slot.room_name}` : slot.subject_name}
+                                  title={`${formatTimeForDisplay(slot.start_time)} - ${formatTimeForDisplay(slot.end_time)} ${slot.group_name ? `| ${slot.group_name} - ${slot.room_name}` : `| ${slot.subject_name ?? ''}`}`}
                                 >
                                   <div className="font-medium truncate">
                                     {slot.group_name ? `${slot.group_name} - ${slot.room_name}` : `${slot.subject_name ?? ''} - ${slot.room_name ?? ''}`}
