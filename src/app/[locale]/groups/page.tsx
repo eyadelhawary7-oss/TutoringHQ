@@ -20,7 +20,7 @@ interface Group {
 interface Student {
   id: string;
   name: string;
-  subject_name: string | null;
+  subject: string | null;
 }
 
 interface Subject {
@@ -71,7 +71,7 @@ export default function GroupsPage() {
         }),
         dbSelect({
           table: 'students',
-          select: 'id, name, subject_name',
+          select: 'id, name, subject',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         }),
@@ -213,7 +213,7 @@ export default function GroupsPage() {
 
   const selectedGroupData = selectedGroup ? groups.find((g) => g.id === selectedGroup) : null;
   const studentsForGroup = selectedGroupData?.subject
-    ? students.filter((s) => s.subject_name === selectedGroupData.subject)
+    ? students.filter((s) => s.subject === selectedGroupData.subject)
     : students;
 
   const handleRemoveMember = async (studentId: string) => {

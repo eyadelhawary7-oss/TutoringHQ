@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 
 interface StudentExport {
   name: string;
-  subject_name: string;
+  subject: string;
   payment_status: string;
   last_paid_date: string | null;
   fee: number;
@@ -23,7 +23,7 @@ export function exportToExcel(students: StudentExport[], filename?: string) {
   const worksheet = XLSX.utils.json_to_sheet(
     students.map(s => ({
       'اسم الطالب': s.name,
-      'المادة': s.subject_name || '',
+      'المادة': s.subject || '',
       'الحالة': s.payment_status === 'paid' ? 'مسدد' : 'غير مسدد',
       'تاريخ آخر دفعة': s.last_paid_date ? new Date(s.last_paid_date).toLocaleDateString('ar-EG') : '',
       'المبلغ': s.fee || 0,
@@ -37,7 +37,7 @@ export function exportToExcel(students: StudentExport[], filename?: string) {
 }
 
 export interface DashboardExportData {
-  students: { id: string; name: string; phone?: string; parent_phone?: string; subject_name?: string; payment_status: string; qr_code?: string }[];
+  students: { id: string; name: string; phone?: string; parent_phone?: string; subject?: string; payment_status: string; qr_code?: string }[];
   attendance: { student_name: string; scanned_at: string; payment_status_at_scan?: string }[];
   payments: { student_name: string; amount: number; method: string; paid_at: string; recorded_by?: string }[];
 }
@@ -52,7 +52,7 @@ export function exportDashboardToExcel(data: DashboardExportData) {
       'اسم الطالب': s.name,
       'الهاتف': s.phone || '',
       'هاتف ولي الأمر': s.parent_phone || '',
-      'المادة': s.subject_name || '',
+      'المادة': s.subject || '',
       'الحالة': s.payment_status === 'paid' ? 'مسدد' : 'غير مسدد',
       'رمز QR': s.qr_code || '',
     }))

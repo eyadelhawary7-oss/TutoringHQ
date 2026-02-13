@@ -23,7 +23,7 @@ interface Student {
   name: string;
   payment_status: string;
   fee: number;
-  subject_name: string;
+  subject: string;
   parent_phone?: string | null;
 }
 
@@ -54,7 +54,7 @@ export default function ScanPage() {
 
       const { data } = await dbSelect({
         table: 'students',
-        select: 'id, name, phone, parent_phone, subject_name, payment_status, fee, qr_code, student_number',
+        select: 'id, name, phone, parent_phone, subject, payment_status, fee, qr_code, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
       });
       if (data && Array.isArray(data)) {
@@ -157,7 +157,7 @@ export default function ScanPage() {
           : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
         const { data, error: lookupError } = await dbSelect({
           table: 'students',
-          select: 'id, name, phone, parent_phone, subject_name, payment_status, fee',
+          select: 'id, name, phone, parent_phone, subject, payment_status, fee',
           filters,
           single: true,
         });

@@ -8,7 +8,7 @@ interface Student {
   name: string;
   payment_status: string;
   fee: number;
-  subject_name: string;
+  subject: string;
 }
 
 interface ScanResultScreenProps {
@@ -53,7 +53,7 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
         className="text-2xl sm:text-3xl text-white/90 text-center mb-2"
         style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
       >
-        {student.subject_name}
+        {student.subject}
       </p>
 
       {/* Status */}

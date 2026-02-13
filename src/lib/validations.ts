@@ -64,7 +64,7 @@ export const studentImportRowSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
   phone: egyptianPhone,
   parent_phone: egyptianPhone,
-  subject_name: z.string().optional().nullable(),
+  subject: z.string().optional().nullable(),
   monthly_fee: z.number().min(0).optional().default(0),
 });
 

@@ -82,6 +82,7 @@ function getFixedPlanComparison(plans: PricingPlan[], students: number): { planN
 
 export default function BillingPage() {
   const t = useTranslations('billing');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const { user: currentUser } = useUser();
   const [data, setData] = useState<{
@@ -586,10 +587,11 @@ export default function BillingPage() {
                         <td className="py-2">{inv.period_start} – {inv.period_end}</td>
                         <td className="py-2">{Number(inv.total_amount).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}</td>
                         <td className="py-2">
-                          {inv.status === 'paid' && '✅'}
-                          {inv.status === 'pending' && '⏳'}
-                          {inv.status === 'overdue' && '🔴'}
-                          {' '}{inv.status}
+                          {inv.status === 'paid' && t('paidStatus')}
+                          {inv.status === 'pending' && t('pendingStatus')}
+                          {inv.status === 'overdue' && t('overdueStatus')}
+                          {inv.status === 'due' && t('dueStatus')}
+                          {!['paid','pending','overdue','due'].includes(inv.status) && inv.status}
                         </td>
                       </tr>
                     ))}
@@ -606,10 +608,19 @@ export default function BillingPage() {
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
               {t('paymentMethods', { defaultValue: 'Payment Methods' })}
             </h2>
-            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-6">
-              <p><strong>InstaPay:</strong> 01001963432</p>
-              <p><strong>Vodafone Cash:</strong> 01XXXXXXXXX</p>
-              <p><strong>Bank Transfer:</strong> {t('contactUs', { defaultValue: 'Contact us for details' })}</p>
+            <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-6">
+              <div className="flex items-center gap-2 flex-wrap">
+                <strong>{t('instapay')}:</strong>
+                <span className="font-mono text-base">{t('instapayNumber')}</span>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText('01001963432'); setSavedMessage(locale === 'ar' ? 'تم النسخ!' : 'Copied!'); setTimeout(() => setSavedMessage(''), 2000); }}
+                  className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
+                >
+                  {tCommon('copy')}
+                </button>
+              </div>
+              <p className="text-gray-500 dark:text-gray-400"><strong>{t('bankTransfer')}:</strong> {t('bankTransferComingSoon')}</p>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
               {t('enterReference', { defaultValue: 'After transfer, enter transaction reference below:' })}

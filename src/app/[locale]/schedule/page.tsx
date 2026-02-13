@@ -35,10 +35,11 @@ interface Group {
 interface ScheduleSlot {
   id: string;
   room_id: string;
-  subject_id: string;
+  subject_id?: string;
+  subject?: string;
   group_id?: string | null;
   teacher_id: string;
-  day_of_week: number;
+  day_of_week: number | string; // SMALLINT 0-6 or TEXT 'sat','sun','mon',...
   start_time: string;
   end_time: string;
   recurring?: boolean;
@@ -49,14 +50,15 @@ interface ScheduleSlot {
 }
 
 const DAYS = [
-  { d: 6, label: 'Sat' },
-  { d: 0, label: 'Sun' },
-  { d: 1, label: 'Mon' },
-  { d: 2, label: 'Tue' },
-  { d: 3, label: 'Wed' },
-  { d: 4, label: 'Thu' },
-  { d: 5, label: 'Fri' },
+  { d: 6, label: 'Sat', key: 'sat' },
+  { d: 0, label: 'Sun', key: 'sun' },
+  { d: 1, label: 'Mon', key: 'mon' },
+  { d: 2, label: 'Tue', key: 'tue' },
+  { d: 3, label: 'Wed', key: 'wed' },
+  { d: 4, label: 'Thu', key: 'thu' },
+  { d: 5, label: 'Fri', key: 'fri' },
 ];
+const DAY_NUM_TO_KEY: Record<number, string> = Object.fromEntries(DAYS.map(x => [x.d, x.key]));
 
 function getHoursRange(start: number, end: number): number[] {
   return Array.from({ length: end - start }, (_, i) => i + start);
@@ -186,7 +188,11 @@ export default function SchedulePage() {
     load();
   }, []);
 
-  const slotsForDay = slots.filter((s) => s.day_of_week === selectedDay);
+  const slotsForDay = slots.filter((s) => {
+    const d = s.day_of_week;
+    if (typeof d === 'number') return d === selectedDay;
+    return DAY_NUM_TO_KEY[selectedDay] === d;
+  });
 
   const scheduleTitle = t('centerSchedule');
   const showViewOnly = user?.role === 'assistant' && hasPermission('can_view_calendar');
@@ -217,7 +223,8 @@ export default function SchedulePage() {
     const endM = timeToMinutes(end);
     for (const s of slots) {
       if (s.id === excludeId) continue;
-      if (s.day_of_week !== day) continue;
+      const slotDay = typeof s.day_of_week === 'number' ? s.day_of_week : DAYS.find(x => x.key === s.day_of_week)?.d;
+      if (slotDay !== day) continue;
       const sStart = timeToMinutes(s.start_time);
       const sEnd = timeToMinutes(s.end_time);
       const overlaps = startM < sEnd && endM > sStart;
@@ -255,7 +262,7 @@ export default function SchedulePage() {
           subject_id: formSubject,
           group_id: formGroup || null,
           teacher_id: userId,
-          day_of_week: formDay,
+          day_of_week: DAY_NUM_TO_KEY[formDay] ?? String(formDay),
           start_time: formStart,
           end_time: formEnd,
           recurring: formRecurring,
@@ -277,7 +284,7 @@ export default function SchedulePage() {
         {
           ...slot,
           room_name: rooms.find((r) => r.id === slot.room_id)?.name ?? '',
-          subject_name: subjects.find((s) => s.id === slot.subject_id)?.name ?? '',
+          subject_name: (slot as { subject?: string }).subject ?? subjects.find((s) => s.id === slot.subject_id)?.name ?? '',
           group_name: groupName,
         },
       ]);
@@ -548,9 +555,19 @@ export default function SchedulePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {tCommon('save')}
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      {tCommon('loading')}
+                    </>
+                  ) : (
+                    tCommon('save')
+                  )}
                 </button>
                 <button
                   type="button"

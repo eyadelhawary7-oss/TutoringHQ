@@ -26,7 +26,7 @@ interface DashboardData {
   todayRevenue: number;
   revenueByMethod: { method: string; amount: number }[];
   trendData: { date: string; count: number }[];
-  unpaidStudents: { id: string; name: string; subject_name: string; fee: number }[];
+  unpaidStudents: { id: string; name: string; subject: string; fee: number }[];
 }
 
 export default function DashboardPage() {
@@ -68,10 +68,10 @@ export default function DashboardPage() {
       // Student payment stats
       const { data: studentsRaw } = await dbSelect({
         table: 'students',
-        select: 'id, name, subject_name, fee, payment_status',
+        select: 'id, name, subject, fee, payment_status',
         filters: [{ column: 'center_id', op: 'eq', value: cId }],
       });
-      const students = (studentsRaw || []) as { id: string; name: string; subject_name: string; fee: number; payment_status: string }[];
+      const students = (studentsRaw || []) as { id: string; name: string; subject: string; fee: number; payment_status: string }[];
 
       const paidCount = students.filter(s => s.payment_status === 'paid').length;
       const unpaidCount = students.filter(s => s.payment_status === 'unpaid').length;
@@ -188,7 +188,7 @@ export default function DashboardPage() {
       const [studentsRes, attendanceRes, paymentsRes] = await Promise.all([
         dbSelect({
           table: 'students',
-          select: 'id, name, phone, parent_phone, subject_name, payment_status, qr_code',
+          select: 'id, name, phone, parent_phone, subject, payment_status, qr_code',
           filters: [{ column: 'center_id', op: 'eq', value: centerId }],
           order: { column: 'name' },
         }),
@@ -207,7 +207,7 @@ export default function DashboardPage() {
           limit: 500,
         }),
       ]);
-      const students = (studentsRes.data || []) as { id: string; name: string; phone?: string; parent_phone?: string; subject_name?: string; payment_status: string; qr_code?: string }[];
+      const students = (studentsRes.data || []) as { id: string; name: string; phone?: string; parent_phone?: string; subject?: string; payment_status: string; qr_code?: string }[];
       const attendanceRaw = (attendanceRes.data || []) as { student_id: string; scanned_at: string }[];
       const paymentsRaw = (paymentsRes.data || []) as { student_id: string; amount: number; payment_method: string; payment_date: string; created_by: string }[];
       const studentMap = new Map(students.map(s => [s.id, s]));

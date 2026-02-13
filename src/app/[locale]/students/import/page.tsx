@@ -107,7 +107,7 @@ export default function ImportStudentsPage() {
           name: String(row[mapping.studentName!] || '').trim(),
           phone: mapping.phone ? String(row[mapping.phone] || '').trim() : null,
           parent_phone: mapping.parentPhone ? String(row[mapping.parentPhone] || '').trim() : null,
-          subject_name: mapping.subject ? String(row[mapping.subject] || '').trim() : null,
+          subject: mapping.subject ? String(row[mapping.subject] || '').trim() : null,
           fee: monthlyFee,
           payment_status: 'unpaid',
         };

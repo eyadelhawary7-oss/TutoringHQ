@@ -269,11 +269,11 @@ export default function SettingsPage() {
   const handleDeleteSubject = async (id: string) => {
     if (!confirm(t('deleteConfirm')) || !centerId || !userId) return;
 
-    // Check if any students use this subject (by subject_name, not subject_id - students have subject_name string)
+    // Check if any students use this subject (by subject, not subject_id - students have subject string)
     const { data: studentsWithSubject } = await dbSelect({
       table: 'students',
       select: 'id',
-      filters: [{ column: 'subject_name', op: 'eq', value: subjects.find(s => s.id === id)?.name ?? '' }],
+      filters: [{ column: 'subject', op: 'eq', value: subjects.find(s => s.id === id)?.name ?? '' }],
       limit: 1,
     });
     if (studentsWithSubject && (studentsWithSubject as unknown[]).length > 0) {

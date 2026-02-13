@@ -10,7 +10,7 @@ import Navbar from '@/components/Navbar';
 interface Student {
   id: string;
   name: string;
-  subject_name: string;
+  subject: string;
   payment_status: string;
   last_paid_date: string | null;
   fee: number;
@@ -80,7 +80,7 @@ export default function PaymentsPage() {
       const [studentsRes, subjectsRes, groupsRes, membersRes, paymentsRes] = await Promise.all([
         dbSelect({
           table: 'students',
-          select: 'id, name, subject_name, payment_status, last_paid_date, fee',
+          select: 'id, name, subject, payment_status, last_paid_date, fee',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         }),
@@ -125,7 +125,7 @@ export default function PaymentsPage() {
       }
       // Merge subjects from subjects table + any subject_name on students
       const subjectTableNames = (subjectsRes.data || []).map((s: { name: string }) => s.name);
-      const studentSubjectNames = (studentsRes.data || []).map((s: Student) => s.subject_name).filter(Boolean);
+      const studentSubjectNames = (studentsRes.data || []).map((s: Student) => s.subject).filter(Boolean);
       const allSubjects = [...new Set([...subjectTableNames, ...studentSubjectNames])];
       setSubjects(allSubjects);
       if (groupsRes.data) {
@@ -150,7 +150,7 @@ export default function PaymentsPage() {
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
       if (statusFilter !== 'all' && s.payment_status !== statusFilter) return false;
-      if (subjectFilter !== 'all' && s.subject_name !== subjectFilter) return false;
+      if (subjectFilter !== 'all' && s.subject !== subjectFilter) return false;
       if (groupFilter !== 'all') {
         const studentGroups = studentGroupIds[s.id] || [];
         if (!studentGroups.includes(groupFilter)) return false;
@@ -430,7 +430,7 @@ export default function PaymentsPage() {
                           />
                         </td>
                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{student.name}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.subject_name}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.subject}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             student.payment_status === 'paid'

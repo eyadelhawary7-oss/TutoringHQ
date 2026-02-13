@@ -9,7 +9,7 @@ import Navbar from '@/components/Navbar';
 interface Student {
   id: string;
   name: string;
-  subject_name: string;
+  subject: string;
   qr_code: string;
 }
 
@@ -41,11 +41,11 @@ export default function PrintStudentsPage() {
         setCenterLogo(meData.user.center.logo_url);
       }
 
-      const { data } = await dbSelect({ table: 'students', select: 'id, name, subject_name, qr_code', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }, { column: 'qr_code', op: 'not_is', value: null }], order: { column: 'name' } });
+      const { data } = await dbSelect({ table: 'students', select: 'id, name, subject, qr_code', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }, { column: 'qr_code', op: 'not_is', value: null }], order: { column: 'name' } });
 
       if (data) {
         setStudents(data);
-        const uniqueSubjects = [...new Set((data as { subject_name: string }[]).map(s => s.subject_name).filter(Boolean))];
+        const uniqueSubjects = [...new Set((data as { subject: string }[]).map(s => s.subject).filter(Boolean))];
         setSubjects(uniqueSubjects);
       }
       setIsLoading(false);
@@ -56,7 +56,7 @@ export default function PrintStudentsPage() {
 
   const filteredStudents = selectedSubject === 'all'
     ? students
-    : students.filter(s => s.subject_name === selectedSubject);
+    : students.filter(s => s.subject === selectedSubject);
 
   const handlePrint = () => {
     window.print();
@@ -145,9 +145,9 @@ export default function PrintStudentsPage() {
                   </p>
 
                   {/* Subject */}
-                  {student.subject_name && (
+                  {student.subject && (
                     <p className="text-xs text-gray-600 print:text-gray-600 dark:text-gray-400 print:dark:text-gray-600 mb-2">
-                      {student.subject_name}
+                      {student.subject}
                     </p>
                   )}
 

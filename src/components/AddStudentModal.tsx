@@ -106,7 +106,7 @@ export default function AddStudentModal({
           name: name.trim(),
           phone: phone.trim() || null,
           parent_phone: parentPhone.trim() || null,
-          subject_name: subjects.find((s) => s.id === subjectId)?.name || group?.subject || null,
+          subject: subjects.find((s) => s.id === subjectId)?.name || group?.subject || null,
           fee,
           payment_status: 'unpaid',
         },

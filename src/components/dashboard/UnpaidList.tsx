@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 interface Student {
   id: string;
   name: string;
-  subject_name: string;
+  subject: string;
   fee: number;
 }
 
@@ -43,7 +43,7 @@ export default function UnpaidList({ students }: UnpaidListProps) {
             <tr key={student.id} className="border-b border-gray-100 dark:border-gray-700/50">
               <td className="px-3 py-3">
                 <p className="font-medium text-gray-900 dark:text-white">{student.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{student.subject_name}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{student.subject}</p>
               </td>
               <td className="px-3 py-3 text-gray-600 dark:text-gray-400">
                 {student.fee} {t('currency')}

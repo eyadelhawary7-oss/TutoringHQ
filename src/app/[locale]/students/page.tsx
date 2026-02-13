@@ -13,7 +13,7 @@ interface Student {
   name: string;
   phone: string;
   parent_phone: string;
-  subject_name: string;
+  subject: string;
   fee: number;
   payment_status: string;
   student_number?: string;
@@ -115,18 +115,24 @@ export default function StudentsPage() {
     const centerId = meData?.user?.center_id;
     const userId = meData?.user?.id;
     if (!centerId || !userId || !addForm.name.trim()) {
-      setAddError('Name is required');
+      setAddError(t('nameRequired', { defaultValue: 'Name is required' }));
+      return;
+    }
+    if (!addForm.groupId) {
+      setAddError(t('groupRequiredError'));
       return;
     }
     setIsAdding(true);
     try {
+      const selectedGroup = groups.find((g) => g.id === addForm.groupId);
+      const subjectValue = selectedGroup?.subject ?? subjects.find((s) => s.id === addForm.subjectId)?.name ?? null;
       const insertPayload = {
         center_id: centerId,
         name: addForm.name.trim(),
         phone: addForm.phone.trim() || null,
         parent_phone: addForm.parentPhone.trim() || null,
-        subject_name: subjects.find((s) => s.id === addForm.subjectId)?.name ?? null,
-        fee: Number(addForm.monthlyFee) || 0,
+        subject: subjectValue,
+        fee: Number(addForm.monthlyFee) || (selectedGroup?.fee ?? 0),
         payment_status: 'unpaid',
       };
       const { data: inserted, error } = await dbInsert({
@@ -168,11 +174,6 @@ export default function StudentsPage() {
       setIsAdding(false);
     }
   };
-
-  const selectedSubjectName = subjects.find((s) => s.id === addForm.subjectId)?.name;
-  const filteredGroupsBySubject = addForm.subjectId
-    ? groups.filter((g) => !g.subject || g.subject === selectedSubjectName)
-    : groups;
 
   return (
     <>
@@ -275,7 +276,7 @@ export default function StudentsPage() {
                         <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-400" dir="ltr">{student.student_number || '—'}</td>
                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{student.name}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">{student.phone}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.subject_name}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.subject}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.fee}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -324,7 +325,7 @@ export default function StudentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('parentPhone')}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('parentPhoneOptional')}</label>
                   <input
                     type="tel"
                     value={addForm.parentPhone}
@@ -334,49 +335,52 @@ export default function StudentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subject')}</label>
-                  <select
-                    value={addForm.subjectId}
-                    onChange={(e) => setAddForm((f) => ({ ...f, subjectId: e.target.value, groupId: '' }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">—</option>
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('monthlyFee')}</label>
-                  <input
-                    type="number"
-                    value={addForm.monthlyFee}
-                    onChange={(e) => setAddForm((f) => ({ ...f, monthlyFee: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                    min={0}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('selectGroup')}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('groupRequired')}</label>
                   <select
                     value={addForm.groupId}
                     onChange={(e) => {
                       const gId = e.target.value;
-                      const g = filteredGroupsBySubject.find((gr) => gr.id === gId);
+                      const g = groups.find((gr) => gr.id === gId);
                       setAddForm((f) => ({
                         ...f,
                         groupId: gId,
-                        monthlyFee: g?.fee != null ? String(g.fee) : f.monthlyFee,
+                        subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '',
+                        monthlyFee: g?.fee != null ? String(g.fee) : '',
                       }));
                     }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    required
                   >
-                    <option value="">—</option>
-                    {filteredGroupsBySubject.map((g) => (
+                    <option value="">{tCommon('select')}</option>
+                    {groups.map((g) => (
                       <option key={g.id} value={g.id}>{g.name} {g.fee != null ? `(EGP ${g.fee})` : ''}</option>
                     ))}
                   </select>
                 </div>
+                {addForm.groupId && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subject')}</label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={groups.find((g) => g.id === addForm.groupId)?.subject ?? ''}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-100 dark:bg-gray-800 dark:text-white bg-gray-50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('feePerLesson')}</label>
+                      <input
+                        type="number"
+                        value={addForm.monthlyFee}
+                        onChange={(e) => setAddForm((f) => ({ ...f, monthlyFee: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                        min={0}
+                        step={0.01}
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
