@@ -46,8 +46,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name, phone, and role are required' }, { status: 400 });
     }
 
-    if (!['assistant', 'teacher'].includes(role)) {
-      return NextResponse.json({ error: 'Invalid role. Must be assistant or teacher' }, { status: 400 });
+    if (role !== 'assistant') {
+      return NextResponse.json({ error: 'Invalid role. Must be assistant' }, { status: 400 });
     }
 
     const phoneRegex = /^01[0-9]{9}$/;

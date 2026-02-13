@@ -65,8 +65,6 @@ export default function SettingsPage() {
   const [editName, setEditName] = useState('');
   const [editFee, setEditFee] = useState('');
   const [assistantPermissions, setAssistantPermissions] = useState<Record<string, Record<string, boolean>>>({});
-  const [teacherLimits, setTeacherLimits] = useState({ current: 0, max: 8, canAdd: true });
-  const [limitsLoading, setLimitsLoading] = useState(false);
   const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[]; totalEarned: number } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
 
@@ -151,32 +149,6 @@ export default function SettingsPage() {
     };
     load();
   }, []);
-
-  useEffect(() => {
-    const fetchLimits = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      setLimitsLoading(true);
-      try {
-        const res = await fetch('/api/settings/limits', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setTeacherLimits({
-            current: data.currentTeachers ?? 0,
-            max: data.maxTeachers ?? 8,
-            canAdd: data.canAddTeacher ?? true,
-          });
-        }
-      } catch (err) {
-        console.error('Limits fetch error:', err);
-      } finally {
-        setLimitsLoading(false);
-      }
-    };
-    if (centerId) fetchLimits();
-  }, [centerId, teamMembers]);
 
   useEffect(() => {
     const fetchReferral = async () => {
@@ -343,10 +315,6 @@ export default function SettingsPage() {
       return;
     }
 
-    if (inviteRole === 'teacher' && !teacherLimits.canAdd) {
-      setInviteError(t('limitReached'));
-      return;
-    }
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -385,9 +353,6 @@ export default function SettingsPage() {
       setInvitePhone('');
       setInviteRole('assistant');
       setLastInvitePassword(result.tempPassword ?? null);
-      if (inviteRole === 'teacher') {
-        setTeacherLimits(prev => ({ ...prev, current: prev.current + 1, canAdd: prev.current + 1 < prev.max }));
-      }
       showSaved();
     } else {
       setInviteError(result.error || 'Failed to add member');
@@ -414,13 +379,6 @@ export default function SettingsPage() {
         details: { name: member.name, phone: member.phone, role: member.role },
       });
       setTeamMembers(prev => prev.filter(m => m.id !== member.id));
-      if (member.role === 'teacher') {
-        setTeacherLimits(prev => ({
-          ...prev,
-          current: Math.max(0, prev.current - 1),
-          canAdd: prev.current - 1 < prev.max,
-        }));
-      }
       setSavedMessage(t('memberRemoved'));
       setTimeout(() => setSavedMessage(''), 2000);
     }
@@ -621,42 +579,6 @@ export default function SettingsPage() {
             <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('teamMembers')}</h2>
 
-              {/* Teacher limit display with progress */}
-              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                {limitsLoading ? (
-                  <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-32" />
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className={`font-medium ${
-                        teacherLimits.current >= teacherLimits.max
-                          ? 'text-red-600 dark:text-red-400'
-                          : teacherLimits.current >= teacherLimits.max - 1
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-green-600 dark:text-green-400'
-                      }`}>
-                        {t('teacherLimit', { current: teacherLimits.current, max: teacherLimits.max })}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all ${
-                          teacherLimits.current >= teacherLimits.max
-                            ? 'bg-red-500'
-                            : teacherLimits.current >= teacherLimits.max - 1
-                            ? 'bg-amber-500'
-                            : 'bg-green-500'
-                        }`}
-                        style={{ width: `${teacherLimits.max > 0 ? Math.min(100, (teacherLimits.current / teacherLimits.max) * 100) : 0}%` }}
-                      />
-                    </div>
-                    {!teacherLimits.canAdd && (
-                      <p className="text-xs text-red-600 dark:text-red-400 mt-2">{t('limitReached')}. {t('upgradeToAddMore')}</p>
-                    )}
-                  </>
-                )}
-              </div>
-
               {/* Team members list - grouped by role with section headers */}
               <div className="space-y-4 mb-6">
                 {teamMembers.length === 0 ? (
@@ -666,7 +588,6 @@ export default function SettingsPage() {
                     {[
                       { role: 'admin', label: t('admins'), members: teamMembers.filter(m => m.role === 'admin' || m.role === 'owner') },
                       { role: 'assistant', label: t('assistants'), members: teamMembers.filter(m => m.role === 'assistant') },
-                      { role: 'teacher', label: t('teachers'), members: teamMembers.filter(m => m.role === 'teacher') },
                     ].map(({ label, members }) =>
                       members.length > 0 ? (
                         <div key={label}>
@@ -677,20 +598,12 @@ export default function SettingsPage() {
                               const roleBadgeClass =
                                 member.role === 'admin' || member.role === 'owner'
                                   ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
-                                  : member.role === 'assistant'
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                  : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-                              const permKeys =
-                                member.role === 'teacher'
-                                  ? [PERMISSION_KEYS.find(k => k.key === 'can_view_calendar') ?? { key: 'can_view_calendar', labelKey: 'permCalendar' }]
-                                  : PERMISSION_KEYS;
-                              const isPermReadOnly =
-                                member.role === 'admin' || member.role === 'owner' || member.role === 'teacher' || isSelf;
+                                  : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+                              const permKeys = PERMISSION_KEYS;
+                              const isPermReadOnly = member.role === 'admin' || member.role === 'owner' || isSelf;
                               const permChecked =
                                 member.role === 'admin' || member.role === 'owner'
                                   ? true
-                                  : member.role === 'teacher'
-                                  ? (k: string) => k === 'can_view_calendar'
                                   : (k: string) => assistantPermissions[member.id]?.[k] ?? false;
 
                               return (
@@ -713,7 +626,7 @@ export default function SettingsPage() {
                               )}
                             </div>
                             <span className={`px-2.5 py-1 text-xs font-medium rounded-full shrink-0 ${roleBadgeClass}`}>
-                              {member.role === 'owner' ? t('admin') : member.role === 'admin' ? t('admin') : member.role === 'teacher' ? t('teacher') : t('assistant')}
+                              {member.role === 'owner' ? t('admin') : member.role === 'admin' ? t('admin') : t('assistant')}
                             </span>
                             {!isSelf && (
                               <button
@@ -792,12 +705,10 @@ export default function SettingsPage() {
                     className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
                   >
                     <option value="assistant">{t('assistant')}</option>
-                    <option value="teacher">{t('teacher')}</option>
                   </select>
                   <button
                     type="submit"
-                    disabled={inviteRole === 'teacher' && !teacherLimits.canAdd}
-                    title={inviteRole === 'teacher' && !teacherLimits.canAdd ? t('upgradeToAddMore') : undefined}
+                    disabled={false}
                     className="px-4 py-2 bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap"
                   >
                     {t('invite')}
@@ -910,18 +821,6 @@ export default function SettingsPage() {
                   )}
                 </>
               )}
-            </section>
-
-            {/* Reminders link */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('reminders')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('remindersDesc')}</p>
-              <Link
-                href="/settings/reminders"
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
-              >
-                {t('remindersLink')} →
-              </Link>
             </section>
 
             {/* Billing link */}

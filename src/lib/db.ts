@@ -34,10 +34,25 @@ export async function syncStudentsToLocal(students: Record<string, unknown>[]) {
   await tx.done;
 }
 
-// Get a student from IndexedDB (offline lookup)
-export async function getStudentOffline(id: string) {
+// Get a student from IndexedDB (offline lookup by id or student_number)
+export async function getStudentOffline(idOrStudentNumber: string): Promise<Record<string, unknown> | undefined> {
   const db = await getDB();
-  return await db.get('students', id);
+  const byId = await db.get('students', idOrStudentNumber);
+  if (byId) return byId as Record<string, unknown>;
+  const normalized = normalizeStudentNumberInput(idOrStudentNumber);
+  const all = await db.getAll('students');
+  return all.find((s: Record<string, unknown>) => {
+    const sn = s.student_number as string | undefined;
+    if (!sn) return false;
+    return sn === normalized || sn.toUpperCase() === normalized.toUpperCase();
+  }) as Record<string, unknown> | undefined;
+}
+
+function normalizeStudentNumberInput(input: string): string {
+  const trimmed = input.trim();
+  if (/^\d+$/.test(trimmed)) return 'STU-' + trimmed.padStart(5, '0');
+  if (trimmed.toUpperCase().startsWith('STU-')) return trimmed.toUpperCase();
+  return trimmed;
 }
 
 // Get all students from IndexedDB

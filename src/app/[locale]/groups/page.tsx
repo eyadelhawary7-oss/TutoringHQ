@@ -12,6 +12,7 @@ interface Group {
   id: string;
   name: string;
   description: string | null;
+  subject: string | null;
   member_count?: number;
 }
 
@@ -21,6 +22,11 @@ interface Student {
   subject_name: string | null;
 }
 
+interface Subject {
+  id: string;
+  name: string;
+}
+
 export default function GroupsPage() {
   const t = useTranslations('groups');
   const tCommon = useTranslations('common');
@@ -28,12 +34,15 @@ export default function GroupsPage() {
   const { user } = useUser();
   const [groups, setGroups] = useState<Group[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
+  const [newGroupSubject, setNewGroupSubject] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState('');
   const [members, setMembers] = useState<{ student_id: string; student_name: string }[]>([]);
@@ -51,16 +60,22 @@ export default function GroupsPage() {
       setCenterId(meData.user.center_id);
       setUserId(meData.user.id);
 
-      const [groupsRes, studentsRes] = await Promise.all([
+      const [groupsRes, studentsRes, subjectsRes] = await Promise.all([
         dbSelect({
           table: 'student_groups',
-          select: 'id, name',
+          select: 'id, name, description, subject',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         }),
         dbSelect({
           table: 'students',
           select: 'id, name, subject_name',
+          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+          order: { column: 'name' },
+        }),
+        dbSelect({
+          table: 'subjects',
+          select: 'id, name',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         }),
@@ -75,12 +90,13 @@ export default function GroupsPage() {
               select: 'id',
               filters: [{ column: 'group_id', op: 'eq', value: g.id }],
             });
-            return { ...g, description: (g as Group).description ?? null, member_count: (membersData || []).length };
+            return { ...g, subject: (g as Group).subject ?? null, member_count: (membersData || []).length };
           })
         );
         setGroups(withCount);
       }
       if (studentsRes.data) setStudents(studentsRes.data as Student[]);
+      if (subjectsRes.data) setSubjects(subjectsRes.data as Subject[]);
       setIsLoading(false);
     };
     load();
@@ -112,11 +128,16 @@ export default function GroupsPage() {
       setAddError('Group name is required');
       return;
     }
+    if (!newGroupSubject) {
+      setAddError('Subject is required');
+      return;
+    }
+    const subjectName = subjects.find((s) => s.id === newGroupSubject)?.name ?? '';
     setIsAdding(true);
     try {
       const { data, error } = await dbInsert({
         table: 'student_groups',
-        data: { center_id: centerId, name: newGroupName.trim() },
+        data: { center_id: centerId, name: newGroupName.trim(), subject: subjectName },
         single: true,
       });
       if (error) {
@@ -136,9 +157,11 @@ export default function GroupsPage() {
             details: { name: inserted.name },
           });
         } catch {}
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, description: newGroupDesc.trim() || null, member_count: 0 }]);
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, description: newGroupDesc.trim() || null, subject: subjectName, member_count: 0 }]);
         setNewGroupName('');
         setNewGroupDesc('');
+        setNewGroupSubject('');
+        setNewGroupSubject('');
       } else {
         setAddError('Group created but could not refresh. Please reload the page.');
       }
@@ -177,6 +200,15 @@ export default function GroupsPage() {
     }
   };
 
+  const filteredGroups = subjectFilter
+    ? groups.filter((g) => g.subject === subjectFilter)
+    : groups;
+
+  const selectedGroupData = selectedGroup ? groups.find((g) => g.id === selectedGroup) : null;
+  const studentsForGroup = selectedGroupData?.subject
+    ? students.filter((s) => s.subject_name === selectedGroupData.subject)
+    : students;
+
   const handleRemoveMember = async (studentId: string) => {
     if (!selectedGroup || !centerId) return;
     await dbDelete({
@@ -196,6 +228,39 @@ export default function GroupsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('title')}</h1>
 
+          {/* Subject filter pills */}
+          {!isLoading && (
+            <div className="mb-6 flex flex-wrap gap-2">
+              <button
+                onClick={() => setSubjectFilter(null)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  subjectFilter === null
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                {t('all')} ({groups.length})
+              </button>
+              {subjects.map((sub) => {
+                const count = groups.filter((g) => g.subject === sub.name).length;
+                if (count === 0) return null;
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => setSubjectFilter(sub.name)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      subjectFilter === sub.name
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {sub.name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {isLoading ? (
             <div className="text-center py-16">
               <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -208,6 +273,20 @@ export default function GroupsPage() {
               <div className="space-y-4">
                 <form onSubmit={handleAddGroup} className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                   <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('createGroup')}</h2>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{t('subject')} *</label>
+                    <select
+                      value={newGroupSubject}
+                      onChange={(e) => { setNewGroupSubject(e.target.value); setAddError(''); }}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      required
+                    >
+                      <option value="">—</option>
+                      {subjects.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
                   <input
                     type="text"
                     value={newGroupName}
@@ -238,7 +317,7 @@ export default function GroupsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                   <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('allGroups')}</h2>
                   <div className="space-y-2">
-                    {groups.map((g) => (
+                    {filteredGroups.map((g) => (
                       <div
                         key={g.id}
                         className={`flex items-center justify-between p-3 rounded-lg cursor-pointer ${
@@ -276,7 +355,7 @@ export default function GroupsPage() {
                     </div>
                     <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{t('addStudent')}</h3>
                     <div className="flex flex-wrap gap-2">
-                      {students
+                      {studentsForGroup
                         .filter(s => !members.some(m => m.student_id === s.id))
                         .map((s) => (
                           <button

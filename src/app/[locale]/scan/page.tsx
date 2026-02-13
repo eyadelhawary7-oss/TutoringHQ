@@ -16,7 +16,7 @@ import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
 
-type ScanMode = 'camera' | 'bluetooth';
+type ScanMode = 'camera' | 'bluetooth' | 'manual';
 
 interface Student {
   id: string;
@@ -32,6 +32,8 @@ export default function ScanPage() {
   const tSync = useTranslations('sync');
 
   const [mode, setMode] = useState<ScanMode>('camera');
+  const [manualIdInput, setManualIdInput] = useState('');
+  const manualInputRef = useRef<HTMLInputElement>(null);
   const [scannedStudent, setScannedStudent] = useState<Student | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -52,7 +54,7 @@ export default function ScanPage() {
 
       const { data } = await dbSelect({
         table: 'students',
-        select: 'id, name, phone, parent_phone, subject_name, payment_status, monthly_fee, qr_code',
+        select: 'id, name, phone, parent_phone, subject_name, payment_status, monthly_fee, qr_code, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
       });
       if (data && Array.isArray(data)) {
@@ -128,21 +130,35 @@ export default function ScanPage() {
     };
   }, []);
 
+  const normalizeForLookup = (input: string): { byId: boolean; value: string } => {
+    const trimmed = input.trim();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(trimmed)) return { byId: true, value: trimmed };
+    if (/^\d+$/.test(trimmed)) return { byId: false, value: 'STU-' + trimmed.padStart(5, '0') };
+    if (trimmed.toUpperCase().startsWith('STU-')) return { byId: false, value: trimmed.toUpperCase() };
+    return { byId: false, value: trimmed };
+  };
+
   const handleScan = useCallback(async (code: string) => {
     if (isProcessingRef.current || !centerId || !userId) return;
     isProcessingRef.current = true;
     setError('');
 
+    const { byId, value } = normalizeForLookup(code);
+
     try {
       // Offline-first: try IndexedDB first
-      let student: Student | null = (await getStudentOffline(code) as Student | undefined) || null;
+      let student: Student | null = (await getStudentOffline(value) as Student | undefined) || null;
 
       // If not in IndexedDB and online, fetch from API
       if (!student && navigator.onLine) {
+        const filters = byId
+          ? [{ column: 'id', op: 'eq' as const, value }, { column: 'center_id', op: 'eq' as const, value: centerId }]
+          : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
         const { data, error: lookupError } = await dbSelect({
           table: 'students',
           select: 'id, name, phone, parent_phone, subject_name, payment_status, monthly_fee',
-          filters: [{ column: 'id', op: 'eq', value: code }, { column: 'center_id', op: 'eq', value: centerId }],
+          filters,
           single: true,
         });
         if (!lookupError && data) student = data as Student;
@@ -187,13 +203,21 @@ export default function ScanPage() {
         dismissTimerRef.current = setTimeout(() => {
           setScannedStudent(null);
           isProcessingRef.current = false;
+          if (mode === 'manual') {
+            setManualIdInput('');
+            manualInputRef.current?.focus();
+          }
         }, 3000);
+      }
+      if (mode === 'manual') {
+        setManualIdInput('');
+        manualInputRef.current?.focus();
       }
     } catch {
       setError(t('scanError'));
       isProcessingRef.current = false;
     }
-  }, [centerId, userId, t]);
+  }, [centerId, userId, t, mode]);
 
   const handlePaymentSelect = async (method: string) => {
     if (!scannedStudent || !centerId || !userId) return;
@@ -270,6 +294,10 @@ export default function ScanPage() {
     if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
     setScannedStudent(null);
     isProcessingRef.current = false;
+    if (mode === 'manual') {
+      setManualIdInput('');
+      setTimeout(() => manualInputRef.current?.focus(), 100);
+    }
   };
 
   const syncIndicatorColor = isSyncing
@@ -300,7 +328,7 @@ export default function ScanPage() {
             </div>
           </div>
 
-          <div className="flex bg-white dark:bg-gray-800 rounded-xl shadow p-1 mb-6 max-w-sm mx-auto">
+          <div className="flex bg-white dark:bg-gray-800 rounded-xl shadow p-1 mb-6 max-w-lg mx-auto">
             <button
               onClick={() => setMode('camera')}
               className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
@@ -321,6 +349,16 @@ export default function ScanPage() {
             >
               {t('bluetoothMode')}
             </button>
+            <button
+              onClick={() => { setMode('manual'); setManualIdInput(''); setTimeout(() => manualInputRef.current?.focus(), 100); }}
+              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
+                mode === 'manual'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              }`}
+            >
+              {t('manualIdMode')}
+            </button>
           </div>
 
           {error && (
@@ -329,6 +367,39 @@ export default function ScanPage() {
             </div>
           )}
 
+          {mode === 'manual' && !scannedStudent && (
+            <div className="max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-xl shadow space-y-4">
+              <div>
+                <label htmlFor="manual-id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('manualIdPlaceholder')}
+                </label>
+                <input
+                  ref={manualInputRef}
+                  id="manual-id"
+                  type="text"
+                  value={manualIdInput}
+                  onChange={(e) => setManualIdInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && manualIdInput.trim()) {
+                      e.preventDefault();
+                      handleScan(manualIdInput.trim());
+                    }
+                  }}
+                  placeholder="STU-00042 or 42"
+                  className="w-full px-4 py-3 text-lg border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  dir="ltr"
+                  autoFocus
+                />
+              </div>
+              <button
+                onClick={() => manualIdInput.trim() && handleScan(manualIdInput.trim())}
+                disabled={!manualIdInput.trim()}
+                className="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-lg transition-colors"
+              >
+                {t('checkIn')}
+              </button>
+            </div>
+          )}
           <CameraScanner onScan={handleScan} isActive={mode === 'camera' && !scannedStudent} />
           <BluetoothScanner onScan={handleScan} isActive={mode === 'bluetooth' && !scannedStudent} />
         </div>

@@ -28,7 +28,7 @@ export default function ColumnMapper({ headers, mapping, onMappingChange }: Colu
     monthlyFee: t('monthlyFee'),
   };
 
-  const requiredFields: (keyof ColumnMapping)[] = ['studentName', 'phone'];
+  const requiredFields: (keyof ColumnMapping)[] = ['studentName'];
 
   const handleChange = (field: keyof ColumnMapping, value: string) => {
     onMappingChange({

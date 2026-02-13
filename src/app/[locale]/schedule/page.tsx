@@ -8,10 +8,6 @@ import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog, type Filter } from '@
 import Navbar from '@/components/Navbar';
 import { useUser } from '@/contexts/UserContext';
 
-function isTeacher(role?: string): boolean {
-  return role === 'teacher';
-}
-
 function isOwnerOrAdmin(role?: string): boolean {
   return role === 'owner' || role === 'admin';
 }
@@ -28,12 +24,6 @@ interface Room {
 interface Subject {
   id: string;
   name: string;
-}
-
-interface User {
-  id: string;
-  name: string | null;
-  role: string;
 }
 
 interface ScheduleSlot {
@@ -81,7 +71,6 @@ export default function SchedulePage() {
   const { user, hasPermission } = useUser();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [teachers, setTeachers] = useState<User[]>([]);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -91,7 +80,6 @@ export default function SchedulePage() {
   const [conflictError, setConflictError] = useState('');
   const [formRoom, setFormRoom] = useState('');
   const [formSubject, setFormSubject] = useState('');
-  const [formTeacher, setFormTeacher] = useState('');
   const [formStart, setFormStart] = useState('09:00');
   const [formEnd, setFormEnd] = useState('10:00');
   const [formDay, setFormDay] = useState(6);
@@ -106,7 +94,6 @@ export default function SchedulePage() {
   const hours = getHoursRange(scheduleStartHour, scheduleEndHour);
 
   const canEdit = canEditSchedule(user?.role);
-  const isTeacherRole = isTeacher(user?.role);
 
   useEffect(() => {
     if (user?.role === 'assistant' && !hasPermission('can_view_calendar')) {
@@ -127,15 +114,7 @@ export default function SchedulePage() {
       setCenterId(meData.user.center_id);
       setUserId(meData.user.id);
 
-      const userRole = meData.user.role;
-      const slotFilters: Filter[] = [
-        { column: 'center_id', op: 'eq' as const, value: meData.user.center_id },
-      ];
-      if (isTeacher(userRole)) {
-        slotFilters.push({ column: 'teacher_id', op: 'eq' as const, value: session.user.id });
-      }
-
-      const [centerRes, roomsRes, subjectsRes, usersRes, slotsRes] = await Promise.all([
+      const [centerRes, roomsRes, subjectsRes, slotsRes] = await Promise.all([
         dbSelect({
           table: 'centers',
           select: 'schedule_start_hour, schedule_end_hour',
@@ -155,18 +134,9 @@ export default function SchedulePage() {
           order: { column: 'name' },
         }),
         dbSelect({
-          table: 'users',
-          select: 'id, name, role',
-          filters: [
-            { column: 'center_id', op: 'eq' as const, value: meData.user.center_id },
-            { column: 'role', op: 'eq' as const, value: 'teacher' },
-          ],
-          order: { column: 'name' },
-        }),
-        dbSelect({
           table: 'schedule_slots',
           select: 'id, room_id, subject_id, teacher_id, day_of_week, start_time, end_time',
-          filters: slotFilters,
+          filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
         }),
       ]);
 
@@ -177,24 +147,17 @@ export default function SchedulePage() {
       }
       if (roomsRes.data) setRooms(roomsRes.data as Room[]);
       if (subjectsRes.data) setSubjects(subjectsRes.data as Subject[]);
-      if (usersRes.data) setTeachers(usersRes.data as User[]);
 
       if (slotsRes.data) {
         const slotsData = slotsRes.data as ScheduleSlot[];
         const roomsData = (roomsRes.data || []) as Room[];
         const subjectsData = (subjectsRes.data || []) as Subject[];
-        const teachersData = (usersRes.data || []) as User[];
         const withNames = slotsData.map((s) => ({
           ...s,
           room_name: roomsData.find((r) => r.id === s.room_id)?.name ?? '',
           subject_name: subjectsData.find((sub) => sub.id === s.subject_id)?.name ?? '',
-          teacher_name: teachersData.find((u) => u.id === s.teacher_id)?.name ?? '',
         }));
         setSlots(withNames);
-        if (isTeacher(userRole) && slotsData.length > 0) {
-          const roomIdsInSlots = [...new Set(slotsData.map((s) => s.room_id))];
-          setRooms(roomsData.filter((r) => roomIdsInSlots.includes(r.id)));
-        }
       }
       setIsLoading(false);
     };
@@ -203,10 +166,8 @@ export default function SchedulePage() {
 
   const slotsForDay = slots.filter((s) => s.day_of_week === selectedDay);
 
-  const scheduleTitle = isTeacherRole
-    ? t('yourSchedule')
-    : t('centerSchedule');
-  const showViewOnly = (user?.role === 'assistant' && hasPermission('can_view_calendar')) || isTeacherRole;
+  const scheduleTitle = t('centerSchedule');
+  const showViewOnly = user?.role === 'assistant' && hasPermission('can_view_calendar');
 
   if (user?.role === 'assistant' && !hasPermission('can_view_calendar')) {
     return (
@@ -224,7 +185,6 @@ export default function SchedulePage() {
 
   const checkConflict = (
     roomId: string,
-    teacherId: string,
     day: number,
     start: string,
     end: string,
@@ -237,13 +197,8 @@ export default function SchedulePage() {
       if (s.day_of_week !== day) continue;
       const sStart = timeToMinutes(s.start_time);
       const sEnd = timeToMinutes(s.end_time);
-      if (startM < sEnd && endM > sStart) {
-        if (s.room_id === roomId) {
-          return t('conflictRoom');
-        }
-        if (s.teacher_id === teacherId) {
-          return t('conflictTeacher');
-        }
+      if (startM < sEnd && endM > sStart && s.room_id === roomId) {
+        return t('conflictRoom');
       }
     }
     return null;
@@ -251,15 +206,9 @@ export default function SchedulePage() {
 
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!centerId || !userId || !formRoom || !formSubject || !formTeacher) return;
+    if (!centerId || !userId || !formRoom || !formSubject) return;
     setConflictError('');
-    const conflict = checkConflict(
-      formRoom,
-      formTeacher,
-      formDay,
-      formStart,
-      formEnd
-    );
+    const conflict = checkConflict(formRoom, formDay, formStart, formEnd);
     if (conflict) {
       setConflictError(conflict);
       return;
@@ -271,7 +220,7 @@ export default function SchedulePage() {
         center_id: centerId,
         room_id: formRoom,
         subject_id: formSubject,
-        teacher_id: formTeacher,
+        teacher_id: userId,
         day_of_week: formDay,
         start_time: formStart,
         end_time: formEnd,
@@ -286,7 +235,6 @@ export default function SchedulePage() {
           ...slot,
           room_name: rooms.find((r) => r.id === slot.room_id)?.name ?? '',
           subject_name: subjects.find((s) => s.id === slot.subject_id)?.name ?? '',
-          teacher_name: teachers.find((u) => u.id === slot.teacher_id)?.name ?? '',
         },
       ]);
       await auditLog({
@@ -300,7 +248,6 @@ export default function SchedulePage() {
       setShowAddModal(false);
       setFormRoom('');
       setFormSubject('');
-      setFormTeacher('');
     }
     setIsSubmitting(false);
   };
@@ -419,10 +366,9 @@ export default function SchedulePage() {
                               {slot && (
                                 <div
                                   className="text-xs p-2 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-200"
-                                  title={`${slot.subject_name} - ${slot.teacher_name}`}
+                                  title={slot.subject_name}
                                 >
                                   <div className="font-medium truncate">{slot.subject_name}</div>
-                                  <div className="text-indigo-600 dark:text-indigo-400 truncate">{slot.teacher_name}</div>
                                   {canEdit && (
                                     <button
                                       onClick={() => handleDeleteSlot(slot.id)}
@@ -492,20 +438,6 @@ export default function SchedulePage() {
                   <option value="">{tCommon('select')}</option>
                   {subjects.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('teacher')}</label>
-                <select
-                  value={formTeacher}
-                  onChange={(e) => setFormTeacher(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">{tCommon('select')}</option>
-                  {teachers.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name || u.id}</option>
                   ))}
                 </select>
               </div>

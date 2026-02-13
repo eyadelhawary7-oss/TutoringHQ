@@ -23,40 +23,30 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, hasPermission } = useUser();
 
-  const allNavItems: { key: string; href: string; roles: string[]; permission?: string; skipPermissionForTeacher?: boolean }[] = [
-    { key: 'dashboard', href: '/dashboard', roles: ['owner', 'admin', 'assistant', 'teacher'] },
+  const allNavItems: { key: string; href: string; roles: string[]; permission?: string }[] = [
+    { key: 'dashboard', href: '/dashboard', roles: ['owner', 'admin', 'assistant'] },
     { key: 'students', href: '/students', roles: ['owner', 'admin'] },
-    { key: 'scanner', href: '/scan', roles: ['owner', 'admin', 'assistant', 'teacher'] },
+    { key: 'scanner', href: '/scan', roles: ['owner', 'admin', 'assistant'] },
     { key: 'payments', href: '/payments', roles: ['owner', 'admin', 'assistant'], permission: 'can_manage_payments' },
     { key: 'groups', href: '/groups', roles: ['owner', 'admin', 'assistant'] },
     { key: 'rooms', href: '/rooms', roles: ['owner', 'admin'] },
-    { key: 'schedule', href: '/schedule', roles: ['owner', 'admin', 'assistant', 'teacher'], permission: 'can_view_calendar', skipPermissionForTeacher: true },
+    { key: 'schedule', href: '/schedule', roles: ['owner', 'admin', 'assistant'], permission: 'can_view_calendar' },
     { key: 'settings', href: '/settings', roles: ['owner', 'admin'] },
   ];
 
   const navItems = user
     ? allNavItems.filter(item => {
         if (!item.roles.includes(user.role)) return false;
-
-        if (user.role === 'teacher') {
-          if (item.skipPermissionForTeacher) return true;
-          if (item.permission) {
-            return hasPermission(item.permission as PermissionKey);
-          }
-          return true;
-        }
-
         if (user.role === 'assistant' && item.permission) {
           return hasPermission(item.permission as PermissionKey);
         }
-
         return true;
       })
     : [];
 
-  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : null;
+  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : null;
   const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-  const isLimitedAccess = user?.role === 'assistant' || user?.role === 'teacher';
+  const isLimitedAccess = user?.role === 'assistant';
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">

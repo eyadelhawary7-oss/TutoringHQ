@@ -14,16 +14,37 @@ export function parseFile(file: ArrayBuffer, fileName: string): ParsedData {
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
 
-  const jsonData = XLSX.utils.sheet_to_json<Record<string, string | number>>(sheet, {
+  // Use header: 1 to get raw arrays - FIRST ROW is always headers
+  const rawData = XLSX.utils.sheet_to_json<(string | number)[]>(sheet, {
+    header: 1,
     defval: '',
-  });
+  }) as (string | number)[][];
 
-  if (jsonData.length === 0) {
+  if (rawData.length === 0) {
     return { headers: [], rows: [] };
   }
 
-  const headers = Object.keys(jsonData[0]);
-  return { headers, rows: jsonData };
+  const headerRow = rawData[0];
+  const maxCols = Math.max(...rawData.map((r) => r.length), headerRow.length);
+  const headers = Array.from({ length: maxCols }, (_, i) => {
+    const v = headerRow[i];
+    const s = v != null ? String(v).trim() : '';
+    return s || `Column ${i + 1}`;
+  });
+
+  const rows: Record<string, string | number>[] = [];
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r] as (string | number)[];
+    const obj: Record<string, string | number> = {};
+    for (let c = 0; c < headers.length; c++) {
+      const key = headers[c];
+      const val = row[c];
+      obj[key] = val != null ? val : '';
+    }
+    rows.push(obj);
+  }
+
+  return { headers, rows };
 }
 
 export interface ColumnMapping {
