@@ -420,7 +420,7 @@ export default function PaymentsPage() {
 
   const formatMethod = (method: string) => {
     const key = METHOD_KEYS[method] || method;
-    return t(key as keyof IntlMessages['payments']) || method;
+    return t(String(key) as any) || method;
   };
 
   const StatusBadge = ({ status }: { status: PaymentDisplayStatus }) => {
@@ -656,7 +656,7 @@ export default function PaymentsPage() {
                                               onClick={() => handleQuickPay(student.id, m.value)}
                                               className="py-2 px-2 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                              {t(m.key as keyof IntlMessages['payments'])}
+                                              {t(String(m.key) as any)}
                                             </button>
                                           ))}
                                         </div>
@@ -725,7 +725,7 @@ export default function PaymentsPage() {
                                     onClick={() => handleQuickPay(student.id, m.value)}
                                     className="py-2 text-sm font-medium rounded-lg bg-white dark:bg-gray-700 border"
                                   >
-                                    {t(m.key as keyof IntlMessages['payments'])}
+                                    {t(String(m.key) as any)}
                                   </button>
                                 ))}
                               </div>
@@ -764,7 +764,7 @@ export default function PaymentsPage() {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                 >
                   {PAYMENT_METHODS_QUICK.map(m => (
-                    <option key={m.value} value={m.value}>{t(m.key as keyof IntlMessages['payments'])}</option>
+                    <option key={m.value} value={m.value}>{t(String(m.key) as any)}</option>
                   ))}
                 </select>
               </div>
