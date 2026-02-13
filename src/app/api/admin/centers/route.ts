@@ -65,19 +65,78 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { data: centersData, error } = await supabaseAdmin
+    const { searchParams } = new URL(request.url);
+    const statusFilter = searchParams.get('status') || 'all';
+    const planFilter = searchParams.get('plan') || 'all';
+    const search = searchParams.get('search') || '';
+
+    let query = supabaseAdmin
       .from('centers')
-      .select('id, name, created_at, status, phone, email, plan, requested_at')
+      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by')
+      .neq('status', 'deleted')
       .order('created_at', { ascending: false });
+
+    if (statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
+    }
+    if (planFilter !== 'all') {
+      query = query.eq('plan', planFilter);
+    }
+    if (search.trim()) {
+      const term = `%${search.trim()}%`;
+      query = query.or(`name.ilike.${term},phone.ilike.${term}`);
+    }
+
+    const { data: centersData, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     const centers = centersData || [];
-    const pendingCenters = centers.filter((c: { status?: string }) => c.status === 'pending');
 
-    return NextResponse.json({ centers, pendingCenters });
+    const centerIds = centers.map((c: { id: string }) => c.id);
+    const { data: counts } = await supabaseAdmin
+      .from('students')
+      .select('center_id')
+      .in('center_id', centerIds);
+    const studentCounts: Record<string, number> = {};
+    for (const row of counts || []) {
+      const cid = (row as { center_id: string }).center_id;
+      studentCounts[cid] = (studentCounts[cid] ?? 0) + 1;
+    }
+
+    const { data: owners } = await supabaseAdmin
+      .from('users')
+      .select('center_id, name, phone')
+      .eq('role', 'owner')
+      .in('center_id', centerIds);
+    const ownerMap = new Map((owners || []).map((o: { center_id: string; name?: string; phone?: string }) => [o.center_id, { name: o.name, phone: o.phone }]));
+
+    let lastPaymentByCenter: Record<string, string> = {};
+    const { data: latestPayments } = await supabaseAdmin
+      .from('admin_payments')
+      .select('center_id, paid_at')
+      .in('center_id', centerIds)
+      .order('paid_at', { ascending: false });
+    if (latestPayments) {
+      for (const p of latestPayments) {
+        const cid = (p as { center_id: string; paid_at: string }).center_id;
+        if (!lastPaymentByCenter[cid]) lastPaymentByCenter[cid] = (p as { paid_at: string }).paid_at;
+      }
+    }
+
+    const rows = centers.map((c: Record<string, unknown>) => ({
+      ...c,
+      students_count: studentCounts[c.id as string] ?? 0,
+      owner: ownerMap.get(c.id as string) ?? null,
+      last_payment: lastPaymentByCenter[c.id as string] ?? null,
+      next_due: (c as { next_payment_due?: string }).next_payment_due || (c as { next_billing_date?: string }).next_billing_date,
+    }));
+
+    const pendingCenters = rows.filter((c: Record<string, unknown>) => c.status === 'pending');
+
+    return NextResponse.json({ centers: rows, pendingCenters });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
@@ -211,24 +270,117 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { centerId, action } = body as { centerId?: string; action?: string };
-    if (!centerId || !action || !['approve', 'reject'].includes(action)) {
+    const { centerId, action, newPlan, confirmName, billing_period, next_payment_due } = body as {
+      centerId?: string; action?: string; newPlan?: string; confirmName?: string;
+      billing_period?: string; next_payment_due?: string;
+    };
+    if (!centerId || !action) {
       return NextResponse.json({ error: 'Invalid centerId or action' }, { status: 400 });
+    }
+
+    const validActions = ['approve', 'reject', 'change_plan', 'suspend', 'reactivate', 'delete', 'update_billing'];
+    if (!validActions.includes(action)) {
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
     const { data: center, error: centerError } = await supabaseAdmin
       .from('centers')
-      .select('id, name, phone, email, plan')
+      .select('id, name, phone, email, plan, status')
       .eq('id', centerId)
-      .eq('status', 'pending')
       .single();
 
     if (centerError || !center) {
-      return NextResponse.json({ error: 'Center not found or not pending' }, { status: 404 });
+      return NextResponse.json({ error: 'Center not found' }, { status: 404 });
+    }
+
+    if (action === 'change_plan') {
+      if (!newPlan || !['starter', 'pro', 'enterprise', 'payg'].includes(newPlan)) {
+        return NextResponse.json({ error: 'Valid newPlan required' }, { status: 400 });
+      }
+      const oldPlan = center.plan || 'starter';
+      await supabaseAdmin.from('centers').update({ plan: newPlan }).eq('id', centerId);
+      try {
+        await supabaseAdmin.from('audit_log').insert({
+          center_id: centerId,
+          user_id: user.id,
+          action: 'admin_plan_change',
+          entity_type: 'center',
+          details: { center_id: centerId, old_plan: oldPlan, new_plan: newPlan },
+        });
+      } catch { /* ignore */ }
+      return NextResponse.json({ success: true, action: 'change_plan' });
+    }
+
+    if (action === 'suspend') {
+      await supabaseAdmin.from('centers').update({ status: 'suspended' }).eq('id', centerId);
+      try {
+        await supabaseAdmin.from('audit_log').insert({
+          center_id: centerId,
+          user_id: user.id,
+          action: 'admin_suspend',
+          entity_type: 'center',
+          details: { center_id: centerId, reason: 'manual' },
+        });
+      } catch { /* ignore */ }
+      return NextResponse.json({ success: true, action: 'suspend' });
+    }
+
+    if (action === 'reactivate') {
+      await supabaseAdmin.from('centers').update({ status: 'active' }).eq('id', centerId);
+      try {
+        await supabaseAdmin.from('audit_log').insert({
+          center_id: centerId,
+          user_id: user.id,
+          action: 'admin_reactivate',
+          entity_type: 'center',
+          details: { center_id: centerId },
+        });
+      } catch { /* ignore */ }
+      return NextResponse.json({ success: true, action: 'reactivate' });
+    }
+
+    if (action === 'delete') {
+      if (confirmName !== center.name) {
+        return NextResponse.json({ error: 'Center name confirmation does not match' }, { status: 400 });
+      }
+      await supabaseAdmin
+        .from('centers')
+        .update({ status: 'deleted', deleted_at: new Date().toISOString() })
+        .eq('id', centerId);
+      try {
+        await supabaseAdmin.from('audit_log').insert({
+          center_id: centerId,
+          user_id: user.id,
+          action: 'admin_delete_center',
+          entity_type: 'center',
+          details: { center_id: centerId, center_name: center.name },
+        });
+      } catch { /* ignore */ }
+      return NextResponse.json({ success: true, action: 'delete' });
+    }
+
+    if (action === 'update_billing') {
+      const updates: Record<string, unknown> = {};
+      if (billing_period) updates.billing_period = billing_period;
+      if (next_payment_due) {
+        updates.next_payment_due = next_payment_due;
+        updates.next_billing_date = next_payment_due;
+      }
+      if (Object.keys(updates).length === 0) {
+        return NextResponse.json({ error: 'No billing updates provided' }, { status: 400 });
+      }
+      await supabaseAdmin.from('centers').update(updates).eq('id', centerId);
+      return NextResponse.json({ success: true, action: 'update_billing' });
+    }
+
+    if (action === 'approve' || action === 'reject') {
+      if (center.status !== 'pending') {
+        return NextResponse.json({ error: 'Center is not pending' }, { status: 400 });
+      }
     }
 
     const phone = (center.phone as string || '').trim();
-    if (!phone) {
+    if (action === 'approve' && !phone) {
       return NextResponse.json({ error: 'Center has no phone number' }, { status: 400 });
     }
 

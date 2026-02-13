@@ -169,6 +169,7 @@ export default function BillingPage() {
   }
 
   const [changePlanSelect, setChangePlanSelect] = useState('');
+  const [showPlanRequestModal, setShowPlanRequestModal] = useState(false);
   const [paymentRef, setPaymentRef] = useState('');
   const [proofAmount, setProofAmount] = useState('');
   const [proofReference, setProofReference] = useState('');
@@ -225,32 +226,24 @@ export default function BillingPage() {
     }
   }
 
-  async function handleRequestChange() {
+  async function handleRequestPlanChange() {
     if (!changePlanSelect) return;
     if (saving || currentUser?.role !== 'owner') return;
     try {
       setSaving(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const isPayg = changePlanSelect === 'payg';
-      const res = await fetch('/api/settings/billing', {
-        method: 'PUT',
+      const res = await fetch('/api/settings/plan-request', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({
-          action: 'request_change',
-          new_plan: isPayg ? undefined : changePlanSelect,
-          new_billing_type: isPayg ? 'payg' : 'fixed',
-        }),
+        body: JSON.stringify({ requested_plan: changePlanSelect }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
-      setData(prev => prev ? {
-        ...prev,
-        pending_plan_change: changePlanSelect,
-        pending_billing_type: isPayg ? 'payg' : 'fixed',
-      } : null);
-      setSavedMessage(t('requestSubmitted', { defaultValue: 'Request submitted. Change takes effect from 1st of next month.' }));
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed');
+      setSavedMessage(json.message || t('requestSubmitted', { defaultValue: 'Your request has been submitted. It will be reviewed within 24 hours.' }));
       setChangePlanSelect('');
-      setTimeout(() => setSavedMessage(''), 4000);
+      setShowPlanRequestModal(false);
+      setTimeout(() => setSavedMessage(''), 5000);
     } catch (err) {
       alert(err instanceof Error ? err.message : t('updateFailed'));
     } finally {
@@ -258,27 +251,6 @@ export default function BillingPage() {
     }
   }
 
-  async function handleCancelChange() {
-    if (saving) return;
-    try {
-      setSaving(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const res = await fetch('/api/settings/billing', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ action: 'cancel_change' }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
-      setData(prev => prev ? { ...prev, pending_plan_change: undefined, pending_billing_type: undefined } : null);
-      setSavedMessage(t('cancelRequestSuccess', { defaultValue: 'Change request cancelled.' }));
-      setTimeout(() => setSavedMessage(''), 3000);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : t('updateFailed'));
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function handleSubmitPaymentRef() {
     if (!paymentRef.trim() || saving) return;
@@ -350,22 +322,6 @@ export default function BillingPage() {
             </div>
           )}
 
-          {data?.pending_plan_change && (
-            <div className="mb-4 p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-lg text-sm flex items-center justify-between gap-4">
-              <span>
-                {t('pendingChange', { defaultValue: 'Pending plan change to' })} {data.pending_plan_change} / {data.pending_billing_type === 'payg' ? 'PAYG' : data.pending_billing_type || 'fixed'}. {t('changeNotice', { defaultValue: 'Takes effect from 1st of next month.' })}
-              </span>
-              {currentUser?.role === 'owner' && (
-                <button
-                  onClick={handleCancelChange}
-                  disabled={saving}
-                  className="px-3 py-1.5 text-sm font-medium rounded-lg bg-amber-200 dark:bg-amber-800 hover:bg-amber-300 dark:hover:bg-amber-700"
-                >
-                  {t('cancelRequest', { defaultValue: 'Cancel Request' })}
-                </button>
-              )}
-            </div>
-          )}
 
           {/* SECTION 1 - Current Plan Card */}
           <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border-2 border-indigo-500 dark:border-indigo-400">
@@ -579,29 +535,15 @@ export default function BillingPage() {
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                 {t('changeQuestion', { defaultValue: 'Want to change your plan?' })}
               </h2>
-              <div className="flex flex-wrap gap-4 items-end">
-                <div>
-                  <label className="block text-sm text-gray-500 dark:text-gray-400 mb-1">{t('selectPlan', { defaultValue: 'Select plan' })}</label>
-                  <select
-                    value={changePlanSelect}
-                    onChange={(e) => setChangePlanSelect(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">—</option>
-                    {plans.filter(p => p.id !== 'top_centers').map(p => (
-                      <option key={p.id} value={p.id}>{p.name_en} / {p.name_ar}</option>
-                    ))}
-                    <option value="payg">Pay-As-You-Go</option>
-                  </select>
-                </div>
-                <button
-                  onClick={handleRequestChange}
-                  disabled={saving || !changePlanSelect}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg"
-                >
-                  {t('submitRequest', { defaultValue: 'Request Change' })}
-                </button>
-              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                {t('changeNotice', { defaultValue: 'Submit a request and we will review it within 24 hours.' })}
+              </p>
+              <button
+                onClick={() => setShowPlanRequestModal(true)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium"
+              >
+                {t('requestPlanChange')}
+              </button>
               <div className="mt-4">
                 <a
                   href={`https://wa.me/201001963432?text=${encodeURIComponent(`مرحباً، أريد تغيير خطة سنتر ${data?.center_name || ''}`)}`}
@@ -612,10 +554,58 @@ export default function BillingPage() {
                   {t('requestViaWhatsapp', { defaultValue: 'Request via WhatsApp' })}
                 </a>
               </div>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                {t('changeNotice', { defaultValue: 'Changes take effect from the 1st of next month only.' })}
-              </p>
             </section>
+          )}
+
+          {showPlanRequestModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPlanRequestModal(false)}>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('requestPlanChange')}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('selectPlan')}</p>
+                <div className="space-y-2 mb-6">
+                  {plans.filter(p => p.id !== 'top_centers').map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setChangePlanSelect(p.id)}
+                      className={`w-full px-3 py-2 text-left rounded-lg border ${
+                        changePlanSelect === p.id
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                          : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {p.name_en} / {p.name_ar} — {p.monthly_fee > 0 ? `${Number(p.monthly_fee).toLocaleString('ar-EG')} ${t('egp')}/mo` : t('custom')}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setChangePlanSelect('payg')}
+                    className={`w-full px-3 py-2 text-left rounded-lg border ${
+                      changePlanSelect === 'payg'
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                        : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Pay-As-You-Go
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleRequestPlanChange}
+                    disabled={saving || !changePlanSelect}
+                    className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg"
+                  >
+                    {saving ? t('saving') : t('submitRequest')}
+                  </button>
+                  <button
+                    onClick={() => { setShowPlanRequestModal(false); setChangePlanSelect(''); }}
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg"
+                  >
+                    {tCommon('cancel')}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* SECTION 5 - Invoice History */}
