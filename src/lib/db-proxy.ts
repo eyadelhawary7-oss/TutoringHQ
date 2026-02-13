@@ -43,7 +43,8 @@ async function dbRequest(body: Record<string, unknown>) {
 
   const result = await res.json();
   if (result.error) {
-    return { data: null, error: { message: result.error }, count: result.count };
+    const err = new Error(typeof result.error === 'string' ? result.error : (result.error?.message ?? 'Unknown error'));
+    return { data: null, error: err, count: result.count };
   }
   return { data: result.data, error: null, count: result.count };
 }

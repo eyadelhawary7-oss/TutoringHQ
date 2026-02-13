@@ -39,13 +39,39 @@ const FALLBACK_PAYG: PaygRate[] = [
   { min_students_per_week: 1501, max_students_per_week: 10000, rate_per_student_egp: 1.25 },
 ];
 
-function getPaygRateForStudents(rates: PaygRate[], students: number): PaygRate | undefined {
-  return rates.find(r => students >= r.min_students_per_week && students <= r.max_students_per_week);
+/** Graduated (marginal) pricing: each tier applies only to students in that tier */
+function calculatePaygCost(rates: PaygRate[], students: number): { weekly: number; monthly: number; effectiveRate: number; breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] } {
+  const sortedRates = [...rates].sort((a, b) => a.min_students_per_week - b.min_students_per_week);
+  let weeklyCost = 0;
+  const breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] = [];
+  let remaining = students;
+  let prevLimit = 0;
+
+  for (const tier of sortedRates) {
+    const tierSize = tier.max_students_per_week - prevLimit;
+    const studentsInTier = Math.min(remaining, tierSize);
+    if (studentsInTier <= 0) break;
+    const tierCost = studentsInTier * tier.rate_per_student_egp;
+    weeklyCost += tierCost;
+    breakdown.push({ from: prevLimit + 1, to: prevLimit + studentsInTier, count: studentsInTier, rate: tier.rate_per_student_egp, cost: tierCost });
+    remaining -= studentsInTier;
+    prevLimit = tier.max_students_per_week;
+  }
+
+  const monthly = weeklyCost * 4;
+  const effectiveRate = students > 0 ? weeklyCost / students : 0;
+  return { weekly: weeklyCost, monthly, effectiveRate, breakdown };
 }
 
-function getFixedPlanForStudents(plans: PricingPlan[], students: number): PricingPlan | undefined {
-  const fixedPlans = plans.filter(p => !p.is_custom).sort((a, b) => b.students_per_week_limit - a.students_per_week_limit);
-  return fixedPlans.find(p => students <= p.students_per_week_limit) ?? fixedPlans[fixedPlans.length - 1];
+function getFixedPlanComparison(plans: PricingPlan[], students: number): { planName: string; planNameAr: string; planFee: number; isCustom: boolean } {
+  const starter = plans.find(p => p.id === 'starter');
+  const pro = plans.find(p => p.id === 'pro');
+  const enterprise = plans.find(p => p.id === 'enterprise');
+  const top = plans.find(p => p.id === 'top_centers');
+  if (students <= 200) return { planName: starter?.name_en ?? 'Starter', planNameAr: starter?.name_ar ?? 'أساسي', planFee: starter?.monthly_fee_egp ?? 4000, isCustom: false };
+  if (students <= 600) return { planName: pro?.name_en ?? 'Pro', planNameAr: pro?.name_ar ?? 'محترف', planFee: pro?.monthly_fee_egp ?? 7200, isCustom: false };
+  if (students <= 1500) return { planName: enterprise?.name_en ?? 'Enterprise', planNameAr: enterprise?.name_ar ?? 'مؤسسات', planFee: enterprise?.monthly_fee_egp ?? 9000, isCustom: false };
+  return { planName: top?.name_en ?? 'Top Centers', planNameAr: top?.name_ar ?? 'كبار السناتر', planFee: 0, isCustom: true };
 }
 
 export default function BillingPage() {
@@ -170,14 +196,11 @@ export default function BillingPage() {
   const isRTL = locale === 'ar';
   const isOwner = currentUser?.role === 'owner';
 
-  const paygRate = useMemo(() => getPaygRateForStudents(paygRates, paygSlider), [paygRates, paygSlider]);
-  const paygWeeklyCost = useMemo(() => (paygRate ? paygSlider * paygRate.rate_per_student_egp : 0), [paygSlider, paygRate]);
-  const matchingFixedPlan = useMemo(() => getFixedPlanForStudents(plans, paygSlider), [plans, paygSlider]);
-  const fixedWeeklyCost = useMemo(() => matchingFixedPlan ? (matchingFixedPlan.monthly_fee_egp * 12) / 52 : 0, [matchingFixedPlan]);
-  const premiumPercent = useMemo(() => {
-    if (fixedWeeklyCost <= 0) return 0;
-    return Math.round(((paygWeeklyCost - fixedWeeklyCost) / fixedWeeklyCost) * 100);
-  }, [paygWeeklyCost, fixedWeeklyCost]);
+  const paygResult = useMemo(() => calculatePaygCost(paygRates, paygSlider), [paygRates, paygSlider]);
+  const fixedComparison = useMemo(() => getFixedPlanComparison(plans, paygSlider), [plans, paygSlider]);
+  const paygSavesMoney = fixedComparison.isCustom ? false : paygResult.monthly < fixedComparison.planFee;
+  const fixedSavesMoney = !fixedComparison.isCustom && fixedComparison.planFee < paygResult.monthly;
+  const savingsAmount = fixedSavesMoney ? fixedComparison.planFee - paygResult.monthly : paygResult.monthly - fixedComparison.planFee;
 
   if (loading) {
     return (
@@ -237,9 +260,10 @@ export default function BillingPage() {
                 <div>
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('rateTier')}</span>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {getPaygRateForStudents(paygRates, data.weekly_student_limit ?? 0)
-                      ? `${Number(getPaygRateForStudents(paygRates, data.weekly_student_limit ?? 0)!.rate_per_student_egp).toLocaleString('ar-EG')} ${t('egp')}/${t('perStudent')}`
-                      : '—'}
+                    {(() => {
+                      const r = calculatePaygCost(paygRates, data.weekly_student_limit ?? 0);
+                      return r.effectiveRate > 0 ? `${Number(r.effectiveRate).toLocaleString('ar-EG')} ${t('egp')}/${t('perStudent')}` : '—';
+                    })()}
                   </p>
                 </div>
               </div>
@@ -368,7 +392,7 @@ export default function BillingPage() {
                 </label>
                 <input
                   type="range"
-                  min={0}
+                  min={50}
                   max={2000}
                   step={10}
                   value={paygSlider}
@@ -381,30 +405,52 @@ export default function BillingPage() {
                 <div>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{t('weeklyCost')}</span>
                   <p className="text-xl font-bold text-gray-900 dark:text-white">
-                    {paygWeeklyCost.toLocaleString('ar-EG')} {t('egp')}/<span className="text-sm">week</span>
+                    {paygResult.weekly.toLocaleString('ar-EG')} {t('egp')}/<span className="text-sm">week</span>
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('monthlyFeeLabel')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {(paygResult.monthly).toLocaleString('ar-EG')} {t('egp')}/month
                   </p>
                 </div>
                 <div>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{t('rateTier')}</span>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {paygRate ? `${Number(paygRate.rate_per_student_egp).toLocaleString('ar-EG')} ${t('egp')}/${t('perStudent')}` : '—'}
+                    {paygResult.effectiveRate > 0 ? `${Number(paygResult.effectiveRate).toLocaleString('ar-EG')} ${t('egp')}/${t('perStudent')}` : '—'}
                   </p>
                 </div>
                 <div>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{t('premiumVsFixed')}</span>
-                  <p className={`font-semibold ${premiumPercent > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
-                    {premiumPercent > 0 ? `+${premiumPercent}%` : premiumPercent === 0 ? '0%' : `${premiumPercent}%`}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('fixedWouldCost')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                    {matchingFixedPlan
-                      ? `${fixedWeeklyCost.toLocaleString('ar-EG')} ${t('egp')} ${t('vsPayg')} ${paygWeeklyCost.toLocaleString('ar-EG')} ${t('egp')}`
-                      : '—'}
+                  <p className={`font-semibold ${fixedSavesMoney ? 'text-green-600 dark:text-green-400' : fixedComparison.isCustom ? 'text-gray-500' : 'text-amber-600 dark:text-amber-400'}`}>
+                    {fixedComparison.isCustom ? t('contactUs') : fixedSavesMoney ? t('fixedPlanBetter') : t('paygCostsMore', { amount: `${savingsAmount.toLocaleString('ar-EG')} ${t('egp')}` })}
                   </p>
                 </div>
               </div>
+
+              {paygResult.breakdown.length > 0 && (
+                <div className="p-4 bg-white dark:bg-gray-700/30 rounded-lg text-sm">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block mb-2">Tier breakdown</span>
+                  <div className="space-y-1">
+                    {paygResult.breakdown.map((tier, i) => {
+                      const range = tier.to > 10000 ? `${tier.from}+` : tier.from === tier.to ? `${tier.from}` : `${tier.from}-${tier.to}`;
+                      return (
+                        <div key={i} className="flex justify-between">
+                          <span>{range} × {Number(tier.rate).toLocaleString('ar-EG')} {t('egp')} =</span>
+                          <span>{Number(tier.cost).toLocaleString('ar-EG')} {t('egp')}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {fixedSavesMoney && !fixedComparison.isCustom && (
+                <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm flex items-center gap-2">
+                  <span>✓</span>
+                  <span>PAYG: {paygResult.monthly.toLocaleString('ar-EG')} {t('egp')}/month vs {fixedComparison.planName}: {fixedComparison.planFee.toLocaleString('ar-EG')} {t('egp')}/month. You save {savingsAmount.toLocaleString('ar-EG')} {t('egp')} with the fixed plan.</span>
+                </div>
+              )}
             </div>
             {isOwner && (
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">

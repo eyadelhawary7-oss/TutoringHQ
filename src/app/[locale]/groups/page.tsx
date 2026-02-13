@@ -13,6 +13,7 @@ interface Group {
   name: string;
   description: string | null;
   subject: string | null;
+  fee?: number;
   member_count?: number;
 }
 
@@ -43,6 +44,7 @@ export default function GroupsPage() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [newGroupSubject, setNewGroupSubject] = useState('');
+  const [newGroupFee, setNewGroupFee] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState('');
   const [members, setMembers] = useState<{ student_id: string; student_name: string }[]>([]);
@@ -63,7 +65,7 @@ export default function GroupsPage() {
       const [groupsRes, studentsRes, subjectsRes] = await Promise.all([
         dbSelect({
           table: 'student_groups',
-          select: 'id, name, description, subject',
+          select: 'id, name, description, subject, fee',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         }),
@@ -132,12 +134,17 @@ export default function GroupsPage() {
       setAddError('Subject is required');
       return;
     }
+    const fee = Number(newGroupFee);
+    if (isNaN(fee) || fee < 0) {
+      setAddError('Valid monthly fee is required');
+      return;
+    }
     const subjectName = subjects.find((s) => s.id === newGroupSubject)?.name ?? '';
     setIsAdding(true);
     try {
       const { data, error } = await dbInsert({
         table: 'student_groups',
-        data: { center_id: centerId, name: newGroupName.trim(), subject: subjectName },
+        data: { center_id: centerId, name: newGroupName.trim(), subject: subjectName, fee: Number(newGroupFee) || 0 },
         single: true,
       });
       if (error) {
@@ -157,11 +164,11 @@ export default function GroupsPage() {
             details: { name: inserted.name },
           });
         } catch {}
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, description: newGroupDesc.trim() || null, subject: subjectName, member_count: 0 }]);
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, description: newGroupDesc.trim() || null, subject: subjectName, fee: Number(newGroupFee) || 0, member_count: 0 }]);
         setNewGroupName('');
         setNewGroupDesc('');
         setNewGroupSubject('');
-        setNewGroupSubject('');
+        setNewGroupFee('');
       } else {
         setAddError('Group created but could not refresh. Please reload the page.');
       }
@@ -302,6 +309,18 @@ export default function GroupsPage() {
                     placeholder={t('description')}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white mb-3"
                   />
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{t('monthlyFee')} *</label>
+                    <input
+                      type="number"
+                      value={newGroupFee}
+                      onChange={(e) => setNewGroupFee(e.target.value)}
+                      placeholder="0"
+                      min={0}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      required
+                    />
+                  </div>
                   {addError && (
                     <p className="mb-3 text-sm text-red-600 dark:text-red-400">{addError}</p>
                   )}
@@ -326,7 +345,9 @@ export default function GroupsPage() {
                         onClick={() => setSelectedGroup(g.id)}
                       >
                         <span className="font-medium text-gray-900 dark:text-white">{g.name}</span>
-                        <span className="text-xs text-gray-500">{(g as Group & { member_count?: number }).member_count ?? 0}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          EGP {(g.fee ?? 0).toLocaleString('ar-EG')}/mo · {(g as Group & { member_count?: number }).member_count ?? 0} {t('members')}
+                        </span>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteGroup(g.id); }}
                           className="text-red-600 text-xs"

@@ -26,16 +26,25 @@ interface Subject {
   name: string;
 }
 
+interface Group {
+  id: string;
+  name: string;
+  subject: string | null;
+}
+
 interface ScheduleSlot {
   id: string;
   room_id: string;
   subject_id: string;
+  group_id?: string | null;
   teacher_id: string;
   day_of_week: number;
   start_time: string;
   end_time: string;
+  recurring?: boolean;
   room_name?: string;
   subject_name?: string;
+  group_name?: string;
   teacher_name?: string;
 }
 
@@ -71,6 +80,7 @@ export default function SchedulePage() {
   const { user, hasPermission } = useUser();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -80,6 +90,8 @@ export default function SchedulePage() {
   const [conflictError, setConflictError] = useState('');
   const [formRoom, setFormRoom] = useState('');
   const [formSubject, setFormSubject] = useState('');
+  const [formGroup, setFormGroup] = useState('');
+  const [formRecurring, setFormRecurring] = useState(false);
   const [formStart, setFormStart] = useState('09:00');
   const [formEnd, setFormEnd] = useState('10:00');
   const [formDay, setFormDay] = useState(6);
@@ -114,7 +126,7 @@ export default function SchedulePage() {
       setCenterId(meData.user.center_id);
       setUserId(meData.user.id);
 
-      const [centerRes, roomsRes, subjectsRes, slotsRes] = await Promise.all([
+      const [centerRes, roomsRes, subjectsRes, grpRes, slotsRes] = await Promise.all([
         dbSelect({
           table: 'centers',
           select: 'schedule_start_hour, schedule_end_hour',
@@ -134,8 +146,14 @@ export default function SchedulePage() {
           order: { column: 'name' },
         }),
         dbSelect({
+          table: 'student_groups',
+          select: 'id, name, subject',
+          filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
+          order: { column: 'name' },
+        }),
+        dbSelect({
           table: 'schedule_slots',
-          select: 'id, room_id, subject_id, teacher_id, day_of_week, start_time, end_time',
+          select: 'id, room_id, subject_id, group_id, teacher_id, day_of_week, start_time, end_time, recurring',
           filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
         }),
       ]);
@@ -147,15 +165,18 @@ export default function SchedulePage() {
       }
       if (roomsRes.data) setRooms(roomsRes.data as Room[]);
       if (subjectsRes.data) setSubjects(subjectsRes.data as Subject[]);
+      if (grpRes?.data) setGroups(grpRes.data as Group[]);
 
       if (slotsRes.data) {
         const slotsData = slotsRes.data as ScheduleSlot[];
         const roomsData = (roomsRes.data || []) as Room[];
         const subjectsData = (subjectsRes.data || []) as Subject[];
+        const groupsData = (grpRes?.data || []) as Group[];
         const withNames = slotsData.map((s) => ({
           ...s,
           room_name: roomsData.find((r) => r.id === s.room_id)?.name ?? '',
           subject_name: subjectsData.find((sub) => sub.id === s.subject_id)?.name ?? '',
+          group_name: s.group_id ? groupsData.find((g) => g.id === s.group_id)?.name ?? '' : '',
         }));
         setSlots(withNames);
       }
@@ -185,6 +206,7 @@ export default function SchedulePage() {
 
   const checkConflict = (
     roomId: string,
+    groupId: string | null,
     day: number,
     start: string,
     end: string,
@@ -197,18 +219,23 @@ export default function SchedulePage() {
       if (s.day_of_week !== day) continue;
       const sStart = timeToMinutes(s.start_time);
       const sEnd = timeToMinutes(s.end_time);
-      if (startM < sEnd && endM > sStart && s.room_id === roomId) {
-        return t('conflictRoom');
-      }
+      const overlaps = startM < sEnd && endM > sStart;
+      if (overlaps && s.room_id === roomId) return t('conflict');
+      if (overlaps && groupId && s.group_id === groupId) return t('conflict');
     }
     return null;
   };
 
+  const selectedSubjectName = subjects.find((s) => s.id === formSubject)?.name ?? '';
+  const filteredGroups = formSubject
+    ? groups.filter((g) => g.subject === selectedSubjectName)
+    : [];
+
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!centerId || !userId || !formRoom || !formSubject) return;
+    if (!centerId || !userId || !formRoom || !formSubject || !formGroup) return;
     setConflictError('');
-    const conflict = checkConflict(formRoom, formDay, formStart, formEnd);
+    const conflict = checkConflict(formRoom, formGroup || null, formDay, formStart, formEnd);
     if (conflict) {
       setConflictError(conflict);
       return;
@@ -220,21 +247,25 @@ export default function SchedulePage() {
         center_id: centerId,
         room_id: formRoom,
         subject_id: formSubject,
+        group_id: formGroup || null,
         teacher_id: userId,
         day_of_week: formDay,
         start_time: formStart,
         end_time: formEnd,
+        recurring: formRecurring,
       },
       single: true,
     });
     if (!error && data) {
       const slot = data as ScheduleSlot;
+      const groupName = groups.find((g) => g.id === formGroup)?.name ?? '';
       setSlots((prev) => [
         ...prev,
         {
           ...slot,
           room_name: rooms.find((r) => r.id === slot.room_id)?.name ?? '',
           subject_name: subjects.find((s) => s.id === slot.subject_id)?.name ?? '',
+          group_name: groupName,
         },
       ]);
       await auditLog({
@@ -243,11 +274,13 @@ export default function SchedulePage() {
         action: 'schedule_slot_create',
         entityType: 'schedule_slots',
         entityId: slot.id,
-        details: { room_id: formRoom, subject_id: formSubject, day: formDay },
+        details: { room_id: formRoom, subject_id: formSubject, group_id: formGroup, day: formDay },
       });
       setShowAddModal(false);
       setFormRoom('');
       setFormSubject('');
+      setFormGroup('');
+      setFormRecurring(false);
     }
     setIsSubmitting(false);
   };
@@ -366,9 +399,14 @@ export default function SchedulePage() {
                               {slot && (
                                 <div
                                   className="text-xs p-2 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-200"
-                                  title={slot.subject_name}
+                                  title={slot.group_name ? `${slot.group_name} - ${slot.room_name}` : slot.subject_name}
                                 >
-                                  <div className="font-medium truncate">{slot.subject_name}</div>
+                                  <div className="font-medium truncate">
+                                    {slot.group_name ? `${slot.group_name} - ${slot.room_name}` : `${slot.subject_name ?? ''} - ${slot.room_name ?? ''}`}
+                                  </div>
+                                  {slot.recurring && (
+                                    <span className="text-indigo-500" title={t('recurring')}>↻</span>
+                                  )}
                                   {canEdit && (
                                     <button
                                       onClick={() => handleDeleteSlot(slot.id)}
@@ -414,6 +452,35 @@ export default function SchedulePage() {
                 </select>
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subject')}</label>
+                <select
+                  value={formSubject}
+                  onChange={(e) => { setFormSubject(e.target.value); setFormGroup(''); }}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">{tCommon('select')}</option>
+                  {subjects.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('group')}</label>
+                <select
+                  value={formGroup}
+                  onChange={(e) => setFormGroup(e.target.value)}
+                  required
+                  disabled={!formSubject}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                >
+                  <option value="">{formSubject ? tCommon('select') : '—'}</option>
+                  {filteredGroups.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('room')}</label>
                 <select
                   value={formRoom}
@@ -424,20 +491,6 @@ export default function SchedulePage() {
                   <option value="">{tCommon('select')}</option>
                   {rooms.map((r) => (
                     <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subject')}</label>
-                <select
-                  value={formSubject}
-                  onChange={(e) => setFormSubject(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">{tCommon('select')}</option>
-                  {subjects.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
               </div>
@@ -461,6 +514,15 @@ export default function SchedulePage() {
                   />
                 </div>
               </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formRecurring}
+                  onChange={(e) => setFormRecurring(e.target.checked)}
+                  className="rounded border-gray-300 dark:border-gray-600"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t('recurring')}</span>
+              </label>
               {conflictError && (
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
                   {conflictError}

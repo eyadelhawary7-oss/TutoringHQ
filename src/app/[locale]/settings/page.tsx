@@ -12,7 +12,7 @@ import { Link } from '@/i18n/routing';
 interface Subject {
   id: string;
   name: string;
-  monthly_fee: number;
+  monthly_fee?: number; // deprecated - fee is now on groups
 }
 
 interface TeamMember {
@@ -54,7 +54,6 @@ export default function SettingsPage() {
   // Form states
   const [centerName, setCenterName] = useState('');
   const [newSubjectName, setNewSubjectName] = useState('');
-  const [newSubjectFee, setNewSubjectFee] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [invitePhone, setInvitePhone] = useState('');
   const [inviteRole, setInviteRole] = useState('assistant');
@@ -63,7 +62,6 @@ export default function SettingsPage() {
   const [scannerMode, setScannerMode] = useState('camera');
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [editFee, setEditFee] = useState('');
   const [assistantPermissions, setAssistantPermissions] = useState<Record<string, Record<string, boolean>>>({});
   const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[]; totalEarned: number } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
@@ -225,7 +223,6 @@ export default function SettingsPage() {
       data: {
         center_id: centerId,
         name: newSubjectName.trim(),
-        monthly_fee: Number(newSubjectFee) || 0,
       },
       single: true,
     });
@@ -238,11 +235,10 @@ export default function SettingsPage() {
         action: 'subject_create',
         entityType: 'subjects',
         entityId: subject.id,
-        details: { name: subject.name, monthly_fee: subject.monthly_fee },
+        details: { name: subject.name },
       });
-      setSubjects(prev => [...prev, subject]);
+      setSubjects(prev => [...prev, { ...subject, monthly_fee: 0 }]);
       setNewSubjectName('');
-      setNewSubjectFee('');
       showSaved();
     }
   };
@@ -251,7 +247,7 @@ export default function SettingsPage() {
     if (!centerId || !userId) return;
     const { error } = await dbUpdate({
       table: 'subjects',
-      data: { name: editName.trim(), monthly_fee: Number(editFee) || 0 },
+      data: { name: editName.trim() },
       filters: [{ column: 'id', op: 'eq', value: id }],
     });
 
@@ -262,9 +258,9 @@ export default function SettingsPage() {
         action: 'subject_update',
         entityType: 'subjects',
         entityId: id,
-        details: { name: editName.trim(), monthly_fee: Number(editFee) || 0 },
+        details: { name: editName.trim() },
       });
-      setSubjects(prev => prev.map(s => s.id === id ? { ...s, name: editName.trim(), monthly_fee: Number(editFee) || 0 } : s));
+      setSubjects(prev => prev.map(s => s.id === id ? { ...s, name: editName.trim() } : s));
       setEditingSubject(null);
       showSaved();
     }
@@ -514,12 +510,6 @@ export default function SettingsPage() {
                           onChange={(e) => setEditName(e.target.value)}
                           className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm dark:bg-gray-700 dark:text-white"
                         />
-                        <input
-                          type="number"
-                          value={editFee}
-                          onChange={(e) => setEditFee(e.target.value)}
-                          className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm dark:bg-gray-700 dark:text-white"
-                        />
                         <button onClick={() => handleUpdateSubject(subject.id)} className="text-green-600 text-sm font-medium">
                           {tCommon('save')}
                         </button>
@@ -530,9 +520,8 @@ export default function SettingsPage() {
                     ) : (
                       <>
                         <span className="flex-1 text-sm text-gray-900 dark:text-white font-medium">{subject.name}</span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{subject.monthly_fee} EGP</span>
                         <button
-                          onClick={() => { setEditingSubject(subject.id); setEditName(subject.name); setEditFee(String(subject.monthly_fee)); }}
+                          onClick={() => { setEditingSubject(subject.id); setEditName(subject.name); }}
                           className="text-indigo-600 dark:text-indigo-400 text-xs"
                         >
                           {tCommon('edit')}
@@ -549,7 +538,7 @@ export default function SettingsPage() {
                 ))}
               </div>
 
-              {/* Add subject form */}
+              {/* Add subject form - subjects are categories only, fee is set per group */}
               <form onSubmit={handleAddSubject} className="flex gap-2">
                 <input
                   type="text"
@@ -558,13 +547,6 @@ export default function SettingsPage() {
                   placeholder={t('subjectName')}
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
                   required
-                />
-                <input
-                  type="number"
-                  value={newSubjectFee}
-                  onChange={(e) => setNewSubjectFee(e.target.value)}
-                  placeholder={t('monthlyFee')}
-                  className="w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
                 />
                 <button
                   type="submit"

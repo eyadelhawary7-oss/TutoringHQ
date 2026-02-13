@@ -14,6 +14,7 @@ const mappingFields: (keyof ColumnMapping)[] = [
   'phone',
   'parentPhone',
   'subject',
+  'group',
   'monthlyFee',
 ];
 
@@ -25,6 +26,7 @@ export default function ColumnMapper({ headers, mapping, onMappingChange }: Colu
     phone: t('phone'),
     parentPhone: t('parentPhone'),
     subject: t('subject'),
+    group: t('group'),
     monthlyFee: t('monthlyFee'),
   };
 

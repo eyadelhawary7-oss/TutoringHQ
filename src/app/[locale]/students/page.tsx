@@ -28,6 +28,7 @@ interface Group {
   id: string;
   name: string;
   subject: string | null;
+  fee?: number;
 }
 
 export default function StudentsPage() {
@@ -87,7 +88,7 @@ export default function StudentsPage() {
       if (!meData?.user?.center_id) return;
       const [subRes, grpRes] = await Promise.all([
         dbSelect({ table: 'subjects', select: 'id, name', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }], order: { column: 'name' } }),
-        dbSelect({ table: 'student_groups', select: 'id, name, subject', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }], order: { column: 'name' } }),
+        dbSelect({ table: 'student_groups', select: 'id, name, subject, fee', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }], order: { column: 'name' } }),
       ]);
       if (subRes.data) setSubjects(subRes.data as Subject[]);
       if (grpRes.data) setGroups(grpRes.data as Group[]);
@@ -119,20 +120,27 @@ export default function StudentsPage() {
     }
     setIsAdding(true);
     try {
+      const insertPayload = {
+        center_id: centerId,
+        name: addForm.name.trim(),
+        phone: addForm.phone.trim() || null,
+        parent_phone: addForm.parentPhone.trim() || null,
+        subject_name: subjects.find((s) => s.id === addForm.subjectId)?.name ?? null,
+        monthly_fee: Number(addForm.monthlyFee) || 0,
+        payment_status: 'unpaid',
+      };
       const { data: inserted, error } = await dbInsert({
         table: 'students',
-        data: {
-          center_id: centerId,
-          name: addForm.name.trim(),
-          phone: addForm.phone.trim() || null,
-          parent_phone: addForm.parentPhone.trim() || null,
-          subject_name: subjects.find((s) => s.id === addForm.subjectId)?.name ?? null,
-          monthly_fee: Number(addForm.monthlyFee) || 0,
-          payment_status: 'unpaid',
-        },
+        data: insertPayload,
         select: '*',
       });
-      if (error) throw error;
+      if (error) {
+        const errMsg = typeof error === 'object' && error !== null && 'message' in error
+          ? (error as { message: string }).message
+          : String(error);
+        console.error('[AddStudent] Supabase insert failed:', errMsg, insertPayload);
+        throw new Error(errMsg);
+      }
       const student = Array.isArray(inserted) ? inserted[0] : inserted;
       if (!student?.id) throw new Error('Insert failed');
       const studentNumber = (student as Student).student_number ?? '—';
@@ -154,7 +162,8 @@ export default function StudentsPage() {
       setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '' });
       setShowAddModal(false);
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : 'Failed to add student');
+      const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: string }).message) : 'Failed to add student');
+      setAddError(msg);
     } finally {
       setIsAdding(false);
     }
@@ -351,12 +360,20 @@ export default function StudentsPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('selectGroup')}</label>
                   <select
                     value={addForm.groupId}
-                    onChange={(e) => setAddForm((f) => ({ ...f, groupId: e.target.value }))}
+                    onChange={(e) => {
+                      const gId = e.target.value;
+                      const g = filteredGroupsBySubject.find((gr) => gr.id === gId);
+                      setAddForm((f) => ({
+                        ...f,
+                        groupId: gId,
+                        monthlyFee: g?.fee != null ? String(g.fee) : f.monthlyFee,
+                      }));
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                   >
                     <option value="">—</option>
                     {filteredGroupsBySubject.map((g) => (
-                      <option key={g.id} value={g.id}>{g.name}</option>
+                      <option key={g.id} value={g.id}>{g.name} {g.fee != null ? `(EGP ${g.fee})` : ''}</option>
                     ))}
                   </select>
                 </div>

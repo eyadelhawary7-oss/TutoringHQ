@@ -9,13 +9,13 @@ import QRCode from 'qrcode';
 interface Subject {
   id: string;
   name: string;
-  monthly_fee: number;
 }
 
 interface Group {
   id: string;
   name: string;
   subject?: string | null;
+  fee?: number;
 }
 
 interface AddStudentModalProps {
@@ -54,13 +54,13 @@ export default function AddStudentModal({
       const [subjRes, grpRes] = await Promise.all([
         dbSelect({
           table: 'subjects',
-          select: 'id, name, monthly_fee',
+          select: 'id, name',
           filters: [{ column: 'center_id', op: 'eq', value: centerId }],
           order: { column: 'name' },
         }),
         dbSelect({
           table: 'student_groups',
-          select: 'id, name, subject',
+          select: 'id, name, subject, fee',
           filters: [{ column: 'center_id', op: 'eq', value: centerId }],
           order: { column: 'name' },
         }),
@@ -75,6 +75,13 @@ export default function AddStudentModal({
     ? groups.filter((g) => (g as Group & { subject?: string }).subject === subjects.find((s) => s.id === subjectId)?.name)
     : groups;
 
+  useEffect(() => {
+    if (groupId) {
+      const g = groups.find((gr) => gr.id === groupId);
+      if (g) setMonthlyFee(String(g.fee ?? 0));
+    }
+  }, [groupId, groups]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -85,8 +92,8 @@ export default function AddStudentModal({
 
     setIsLoading(true);
     try {
-      const subject = subjects.find((s) => s.id === subjectId);
-      const fee = Number(monthlyFee) || subject?.monthly_fee || 0;
+      const group = groups.find((g) => g.id === groupId);
+      const fee = monthlyFee !== '' ? Number(monthlyFee) || 0 : (group?.fee ?? 0);
 
       const { data: inserted, error: insertError } = await dbInsert({
         table: 'students',
@@ -95,7 +102,7 @@ export default function AddStudentModal({
           name: name.trim(),
           phone: phone.trim() || null,
           parent_phone: parentPhone.trim() || null,
-          subject_name: subject?.name || null,
+          subject_name: subjects.find((s) => s.id === subjectId)?.name || group?.subject || null,
           monthly_fee: fee,
           payment_status: 'unpaid',
         },
@@ -265,15 +272,13 @@ export default function AddStudentModal({
                 onChange={(e) => {
                   setSubjectId(e.target.value);
                   setGroupId('');
-                  const subj = subjects.find((s) => s.id === e.target.value);
-                  if (subj) setMonthlyFee(String(subj.monthly_fee));
                 }}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
               >
                 <option value="">{tCommon('select')}</option>
                 {subjects.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name} ({s.monthly_fee} EGP)
+                    {s.name}
                   </option>
                 ))}
               </select>

@@ -123,9 +123,20 @@ export async function POST(request: Request) {
 
     const result = await query;
 
+    // Include full error details for debugging (Supabase returns code, details, hint)
+    const errorPayload = result.error
+      ? {
+          message: result.error.message,
+          code: result.error.code,
+          details: result.error.details,
+          hint: result.error.hint,
+        }
+      : null;
+
     return NextResponse.json({
       data: result.data,
-      error: result.error?.message || null,
+      error: errorPayload?.message || null,
+      errorDetails: errorPayload,
       count: result.count ?? null,
     });
 

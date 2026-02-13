@@ -9,9 +9,12 @@ import Navbar from '@/components/Navbar';
 import FileUploadZone from '@/components/FileUploadZone';
 import ColumnMapper from '@/components/ColumnMapper';
 import { parseFile, autoDetectMapping, type ParsedData, type ColumnMapping } from '@/lib/excel-parser';
+import { dbSelect } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
 
 type ImportStep = 'upload' | 'preview' | 'mapping' | 'importing' | 'success';
+
+interface Group { id: string; name: string; fee?: number }
 
 export default function ImportStudentsPage() {
   const t = useTranslations('import');
@@ -24,6 +27,7 @@ export default function ImportStudentsPage() {
     phone: null,
     parentPhone: null,
     subject: null,
+    group: null,
     monthlyFee: null,
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +35,7 @@ export default function ImportStudentsPage() {
   const [importedCount, setImportedCount] = useState(0);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [groups, setGroups] = useState<Group[]>([]);
 
   useEffect(() => {
     const loadCenterId = async () => {
@@ -42,7 +47,15 @@ export default function ImportStudentsPage() {
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
       const meData = await meRes.json();
-      if (meData?.user?.center_id) setCenterId(meData.user.center_id);
+      if (meData?.user?.center_id) {
+        setCenterId(meData.user.center_id);
+        const { data: groupsData } = await dbSelect({
+          table: 'student_groups',
+          select: 'id, name, fee',
+          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+        });
+        if (groupsData) setGroups(groupsData as Group[]);
+      }
       if (meData?.user?.id) setUserId(meData.user.id);
     };
     loadCenterId();
@@ -80,15 +93,25 @@ export default function ImportStudentsPage() {
     setStep('importing');
 
     try {
-      const students = parsedData.rows.map((row) => ({
-        center_id: centerId,
-        name: String(row[mapping.studentName!] || '').trim(),
-        phone: mapping.phone ? String(row[mapping.phone] || '').trim() : null,
-        parent_phone: mapping.parentPhone ? String(row[mapping.parentPhone] || '').trim() : null,
-        subject_name: mapping.subject ? String(row[mapping.subject] || '').trim() : null,
-        monthly_fee: mapping.monthlyFee ? Number(row[mapping.monthlyFee]) || 0 : 0,
-        payment_status: 'unpaid',
-      }));
+      const students = parsedData.rows.map((row) => {
+        let monthlyFee = 0;
+        if (mapping.monthlyFee) {
+          monthlyFee = Number(row[mapping.monthlyFee]) || 0;
+        } else if (mapping.group) {
+          const groupName = String(row[mapping.group] || '').trim();
+          const g = groups.find((gr) => gr.name === groupName);
+          monthlyFee = g?.fee ?? 0;
+        }
+        return {
+          center_id: centerId,
+          name: String(row[mapping.studentName!] || '').trim(),
+          phone: mapping.phone ? String(row[mapping.phone] || '').trim() : null,
+          parent_phone: mapping.parentPhone ? String(row[mapping.parentPhone] || '').trim() : null,
+          subject_name: mapping.subject ? String(row[mapping.subject] || '').trim() : null,
+          monthly_fee: monthlyFee,
+          payment_status: 'unpaid',
+        };
+      });
 
       // Filter out empty rows
       const validStudents = students.filter(s => s.name.length > 0);

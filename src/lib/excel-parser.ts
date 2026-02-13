@@ -52,6 +52,7 @@ export interface ColumnMapping {
   phone: string | null;
   parentPhone: string | null;
   subject: string | null;
+  group: string | null;
   monthlyFee: string | null;
 }
 
@@ -61,6 +62,7 @@ export function autoDetectMapping(headers: string[]): ColumnMapping {
     phone: null,
     parentPhone: null,
     subject: null,
+    group: null,
     monthlyFee: null,
   };
 
@@ -68,6 +70,7 @@ export function autoDetectMapping(headers: string[]): ColumnMapping {
   const phonePatterns = ['phone', 'هاتف', 'رقم', 'موبايل', 'تليفون', 'mobile', 'رقم الطالب'];
   const parentPatterns = ['parent', 'ولي', 'ولي الأمر', 'رقم ولي', 'parent phone', 'رقم ولي الأمر'];
   const subjectPatterns = ['subject', 'مادة', 'المادة', 'الماده', 'course'];
+  const groupPatterns = ['group', 'مجموعة', 'المجموعة', 'شعبة'];
   const feePatterns = ['fee', 'اشتراك', 'رسوم', 'مبلغ', 'monthly', 'الاشتراك', 'المبلغ'];
 
   for (const header of headers) {
@@ -81,6 +84,8 @@ export function autoDetectMapping(headers: string[]): ColumnMapping {
       mapping.studentName = header;
     } else if (!mapping.subject && subjectPatterns.some(p => lower.includes(p))) {
       mapping.subject = header;
+    } else if (!mapping.group && groupPatterns.some(p => lower.includes(p))) {
+      mapping.group = header;
     } else if (!mapping.monthlyFee && feePatterns.some(p => lower.includes(p))) {
       mapping.monthlyFee = header;
     }
