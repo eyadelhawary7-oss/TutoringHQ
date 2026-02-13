@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase';
 import LanguageToggle from '@/components/LanguageToggle';
 import PhoneInput from '@/components/PhoneInput';
 import OTPInput from '@/components/OTPInput';
-import SocialLoginButtons from '@/components/SocialLoginButtons';
 
 type LoginStep = 'phone' | 'otp';
 
@@ -164,25 +163,6 @@ export default function LoginPage() {
                   error={error}
                   phone={phone}
                 />
-              </>
-            )}
-
-            {/* Divider */}
-            {step === 'phone' && (
-              <>
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300 dark:border-gray-600" />
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white dark:bg-gray-800 text-gray-500">
-                      {t('orDivider')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Social Login Buttons */}
-                <SocialLoginButtons />
               </>
             )}
           </div>

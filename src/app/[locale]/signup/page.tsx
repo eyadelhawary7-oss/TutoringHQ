@@ -18,6 +18,7 @@ export default function SignupPage() {
     email: '',
     plan: 'starter' as Plan,
     termsAccepted: false,
+    referralCode: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,6 +36,11 @@ export default function SignupPage() {
       setError(t('invalidPhone'));
       return;
     }
+    const code = formData.referralCode.trim();
+    if (code && code.length !== 8) {
+      setError(t('referralCodeInvalid'));
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await fetch('/api/signup', {
@@ -46,11 +52,12 @@ export default function SignupPage() {
           email: formData.email.trim() || undefined,
           plan: formData.plan,
           termsAccepted: formData.termsAccepted,
+          referralCode: formData.referralCode.trim() || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || t('error'));
+        setError(data.error === 'referralCodeInvalid' ? t('referralCodeInvalid') : (data.error || t('error')));
         return;
       }
       setSuccess(true);
@@ -161,6 +168,20 @@ export default function SignupPage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                   placeholder="email@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('referralCode')}
+                </label>
+                <input
+                  type="text"
+                  maxLength={8}
+                  value={formData.referralCode}
+                  onChange={(e) => { setFormData({ ...formData, referralCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }); setError(''); }}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white font-mono tracking-widest"
+                  placeholder="XXXXXXXX"
                 />
               </div>
 

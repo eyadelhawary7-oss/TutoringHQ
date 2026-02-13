@@ -81,6 +81,24 @@
     "centerCreated": "تم إنشاء المركز بنجاح",
     "joinedCenter": "تم الانضمام للمركز بنجاح"
   },
+  "referral": {
+    "referralCodeOptional": "كود الإحالة (اختياري)",
+    "invalidCode": "كود غير صحيح",
+    "title": "برنامج الإحالة",
+    "yourCode": "كود الإحالة الخاص بك",
+    "copyCode": "نسخ",
+    "copied": "تم النسخ!",
+    "shareText": "Share the code with another center and earn 20% of their first month!",
+    "shareTextAr": "شارك الكود مع سنتر تاني واحصل على 20% من أول شهر!",
+    "rewardsTable": "مكافآت الإحالة",
+    "referredCenter": "المركز المُحال",
+    "plan": "الخطة",
+    "rewardAmount": "المكافأة",
+    "status": "الحالة",
+    "date": "التاريخ",
+    "totalEarned": "إجمالي المكتسب من الإحالات",
+    "noRewards": "لا توجد مكافآت إحالة بعد"
+  },
   "import": {
     "title": "استيراد الطلاب",
     "upload": "ارفع الملف",

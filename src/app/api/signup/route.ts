@@ -17,24 +17,43 @@ export async function POST(request: Request) {
       const msg = validation.error.issues[0]?.message || 'Invalid input';
       return NextResponse.json({ error: msg }, { status: 400 });
     }
-    const { centerName, phone, email, plan } = validation.data;
+    const { centerName, phone, email, plan, referralCode } = validation.data;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const verificationCode = String(Math.floor(100000 + Math.random() * 900000));
+    let referredBy: string | null = null;
+    if (referralCode && referralCode.trim().length === 8) {
+      const code = referralCode.trim().toUpperCase();
+      const { data: refCenter } = await supabase
+        .from('centers')
+        .select('id')
+        .eq('referral_code', code)
+        .single();
+      if (refCenter) {
+        referredBy = refCenter.id;
+      } else {
+        return NextResponse.json({ error: 'referralCodeInvalid' }, { status: 400 });
+      }
+    }
+
+    const insertData: Record<string, unknown> = {
+      name: centerName.trim(),
+      phone: phone.trim(),
+      email: email?.trim() || null,
+      plan: plan || 'starter',
+      status: 'pending',
+      requested_at: new Date().toISOString(),
+    };
+    if (referredBy) {
+      insertData.referred_by = referredBy;
+      insertData.referral_code_used_at = new Date().toISOString();
+    }
 
     const { data: center, error: centerError } = await supabase
       .from('centers')
-      .insert({
-        name: centerName.trim(),
-        phone: phone.trim(),
-        email: email?.trim() || null,
-        plan: plan || 'starter',
-        status: 'pending',
-        requested_at: new Date().toISOString(),
-      })
+      .insert(insertData)
       .select('id')
       .single();
 

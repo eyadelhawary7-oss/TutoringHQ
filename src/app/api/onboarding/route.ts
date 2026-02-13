@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       const msg = validation.error.issues[0]?.message || 'Invalid input';
       return NextResponse.json({ error: msg, details: validation.error.format() }, { status: 400 });
     }
-    const { centerName } = validation.data;
+    const { centerName, referralCode } = validation.data;
 
     // Service role key is REQUIRED to bypass RLS for onboarding
     if (!supabaseServiceKey) {
@@ -97,14 +97,43 @@ export async function POST(request: Request) {
     console.log('Creating center for user:', user.id);
     console.log('Center name:', centerName);
 
+    let referredById: string | null = null;
+    if (referralCode?.trim()) {
+      const code = referralCode.trim().toUpperCase();
+      if (code.length !== 8) {
+        return NextResponse.json(
+          { error: 'Invalid code', details: 'Referral code must be 8 characters' },
+          { status: 400 }
+        );
+      }
+      const { data: refCenter } = await supabase
+        .from('centers')
+        .select('id')
+        .eq('referral_code', code)
+        .single();
+      if (!refCenter) {
+        return NextResponse.json(
+          { error: 'Invalid code', details: 'Referral code not found' },
+          { status: 400 }
+        );
+      }
+      referredById = refCenter.id;
+    }
+
+    const insertData: Record<string, unknown> = {
+      name: centerName.trim(),
+      phone: user.phone || '',
+      plan: 'starter',
+      subscription_status: 'active',
+    };
+    if (referredById) {
+      insertData.referred_by = referredById;
+      insertData.referral_code_used_at = new Date().toISOString();
+    }
+
     const { data: center, error: centerError } = await supabase
       .from('centers')
-      .insert({
-        name: centerName.trim(),
-        phone: user.phone || '',
-        plan: 'starter',
-        subscription_status: 'active'
-      })
+      .insert(insertData)
       .select()
       .single();
 

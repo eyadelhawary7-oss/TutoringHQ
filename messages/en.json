@@ -81,6 +81,24 @@
     "centerCreated": "Center created successfully",
     "joinedCenter": "Joined center successfully"
   },
+  "referral": {
+    "referralCodeOptional": "Referral Code (optional)",
+    "invalidCode": "Invalid code",
+    "title": "Referral Program",
+    "yourCode": "Your referral code",
+    "copyCode": "Copy",
+    "copied": "Copied!",
+    "shareText": "Share the code with another center and earn 20% of their first month!",
+    "shareTextAr": "شارك الكود مع سنتر تاني واحصل على 20% من أول شهر!",
+    "rewardsTable": "Referral rewards",
+    "referredCenter": "Referred center",
+    "plan": "Plan",
+    "rewardAmount": "Reward",
+    "status": "Status",
+    "date": "Date",
+    "totalEarned": "Total earned from referrals",
+    "noRewards": "No referral rewards yet"
+  },
   "import": {
     "title": "Import Students",
     "upload": "Upload File",

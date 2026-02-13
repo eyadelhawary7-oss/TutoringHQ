@@ -17,10 +17,12 @@ export const signupSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   plan: z.enum(['starter', 'pro', 'enterprise']).default('starter'),
   termsAccepted: z.boolean().refine((v) => v === true, 'Terms must be accepted'),
+  referralCode: z.string().optional(),
 });
 
 export const onboardingSchema = z.object({
   centerName: z.string().min(1, 'Center name is required').max(200),
+  referralCode: z.string().max(8).optional().or(z.literal('')),
 });
 
 export const reminderSettingsSchema = z.object({

@@ -39,6 +39,7 @@ interface CenterInfo {
 export default function SettingsPage() {
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
+  const tReferral = useTranslations('referral');
   const router = useRouter();
   const { user: currentUser } = useUser();
 
@@ -66,6 +67,8 @@ export default function SettingsPage() {
   const [assistantPermissions, setAssistantPermissions] = useState<Record<string, Record<string, boolean>>>({});
   const [teacherLimits, setTeacherLimits] = useState({ current: 0, max: 8, canAdd: true });
   const [limitsLoading, setLimitsLoading] = useState(false);
+  const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[]; totalEarned: number } | null>(null);
+  const [referralCopied, setReferralCopied] = useState(false);
 
   // Redirect assistants away from settings
   useEffect(() => {
@@ -174,6 +177,25 @@ export default function SettingsPage() {
     };
     if (centerId) fetchLimits();
   }, [centerId, teamMembers]);
+
+  useEffect(() => {
+    const fetchReferral = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !centerId) return;
+      try {
+        const res = await fetch('/api/referral', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setReferralData(data);
+        }
+      } catch (err) {
+        console.error('Referral fetch error:', err);
+      }
+    };
+    if (centerId) fetchReferral();
+  }, [centerId]);
 
   const showSaved = () => {
     setSavedMessage(t('saved'));
@@ -810,6 +832,84 @@ export default function SettingsPage() {
                   {t('bluetooth')}
                 </button>
               </div>
+            </section>
+
+            {/* Referral */}
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{tReferral('title')}</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4" dir="ltr">
+                {tReferral('shareText')}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4" dir="rtl">
+                {tReferral('shareTextAr')}
+              </p>
+              {referralData && (
+                <>
+                  <div className="flex items-center gap-3 mb-4">
+                    <code className="text-2xl font-mono font-bold text-indigo-600 dark:text-indigo-400 tracking-widest bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg">
+                      {referralData.referralCode || '—'}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (referralData.referralCode) {
+                          await navigator.clipboard.writeText(referralData.referralCode);
+                          setReferralCopied(true);
+                          setTimeout(() => setReferralCopied(false), 2000);
+                        }
+                      }}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
+                    >
+                      {referralCopied ? tReferral('copied') : tReferral('copyCode')}
+                    </button>
+                  </div>
+                  <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{tReferral('totalEarned')}</span>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">
+                      {Number(referralData.totalEarned || 0).toLocaleString('ar-EG')} EGP
+                    </p>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tReferral('rewardsTable')}</h3>
+                  {referralData.rewards.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{tReferral('noRewards')}</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200 dark:border-gray-600">
+                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('referredCenter')}</th>
+                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('plan')}</th>
+                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('rewardAmount')}</th>
+                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('status')}</th>
+                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('date')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {referralData.rewards.map((r) => (
+                            <tr key={r.id || r.created_at + r.referred_center_name} className="border-b border-gray-100 dark:border-gray-700/50">
+                              <td className="py-2 text-gray-900 dark:text-white">{r.referred_center_name}</td>
+                              <td className="py-2 text-gray-600 dark:text-gray-400">{r.referred_center_plan}</td>
+                              <td className="py-2 text-gray-900 dark:text-white">{Number(r.reward_amount).toLocaleString('ar-EG')} EGP</td>
+                              <td className="py-2">
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                  r.reward_status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
+                                  r.reward_status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' :
+                                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                }`}>
+                                  {r.reward_status}
+                                </span>
+                              </td>
+                              <td className="py-2 text-gray-600 dark:text-gray-400">
+                                {new Date(r.created_at).toLocaleDateString('ar-EG')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
             </section>
 
             {/* Reminders link */}

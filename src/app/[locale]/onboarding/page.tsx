@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 
 export default function OnboardingPage() {
+  const t = useTranslations('onboarding');
+  const tReferral = useTranslations('referral');
   const router = useRouter();
   const [centerName, setCenterName] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -65,7 +69,10 @@ export default function OnboardingPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ centerName: centerName.trim() }),
+        body: JSON.stringify({
+          centerName: centerName.trim(),
+          referralCode: referralCode.trim() || undefined,
+        }),
       });
 
       let data;
@@ -76,7 +83,7 @@ export default function OnboardingPage() {
       }
 
       if (!response.ok) {
-        const errorMessage = data?.details || data?.error || `Server error: ${response.status}`;
+        const errorMessage = data?.error === 'Invalid code' ? tReferral('invalidCode') : (data?.details || data?.error || `Server error: ${response.status}`);
         throw new Error(errorMessage);
       }
 
@@ -132,7 +139,7 @@ export default function OnboardingPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-slate-300 mb-2">Center Name</label>
+              <label className="block text-slate-300 mb-2">{t('centerName')}</label>
               <input
                 type="text"
                 value={centerName}
@@ -146,10 +153,26 @@ export default function OnboardingPage() {
               />
             </div>
 
+            <div>
+              <label className="block text-slate-300 mb-2">{tReferral('referralCodeOptional')}</label>
+              <input
+                type="text"
+                value={referralCode}
+                onChange={(e) => {
+                  setReferralCode(e.target.value.toUpperCase().slice(0, 8));
+                  setError('');
+                }}
+                placeholder="XXXXXXXX"
+                maxLength={8}
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase font-mono tracking-widest"
+                disabled={loading}
+              />
+            </div>
+
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4">
                 <p className="text-red-400 text-sm font-medium">
-                  Error: {error}
+                  {error}
                 </p>
               </div>
             )}
