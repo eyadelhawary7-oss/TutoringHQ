@@ -1,7 +1,7 @@
 import { openDB, type IDBPDatabase } from 'idb';
 
 const DB_NAME = 'revenueguard';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -17,6 +17,11 @@ export function getDB() {
         // Sync queue for offline scan events
         if (!db.objectStoreNames.contains('syncQueue')) {
           db.createObjectStore('syncQueue', { keyPath: 'localId', autoIncrement: true });
+        }
+
+        // Today's payments for offline scan check (per-session payment cycle)
+        if (!db.objectStoreNames.contains('todayPayments')) {
+          db.createObjectStore('todayPayments', { keyPath: 'key' });
         }
       },
     });
@@ -105,6 +110,23 @@ export async function getUnsyncedCount(): Promise<number> {
   const db = await getDB();
   const all = await db.getAll('syncQueue');
   return all.filter((item: Record<string, unknown>) => !item.synced).length;
+}
+
+// Mark student as paid today (offline cache for per-session flow)
+export async function markPaidTodayOffline(centerId: string, studentId: string) {
+  const today = new Date().toISOString().split('T')[0];
+  const key = `${centerId}:${studentId}:${today}`;
+  const db = await getDB();
+  await db.put('todayPayments', { key, studentId, centerId, paidAt: Date.now() });
+}
+
+// Check if student paid today (offline - used when navigator.onLine is false)
+export async function hasPaidTodayOffline(centerId: string, studentId: string): Promise<boolean> {
+  const today = new Date().toISOString().split('T')[0];
+  const key = `${centerId}:${studentId}:${today}`;
+  const db = await getDB();
+  const rec = await db.get('todayPayments', key);
+  return !!rec;
 }
 
 // Clear all synced scans

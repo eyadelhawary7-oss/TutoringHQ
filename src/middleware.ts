@@ -87,7 +87,7 @@ export default async function middleware(request: NextRequest) {
       if (userRecord?.center_id) {
         const { data: center } = await supabase
           .from('centers')
-          .select('status')
+          .select('status, billing_status, auto_suspend_at')
           .eq('id', userRecord.center_id)
           .single();
 
@@ -100,6 +100,16 @@ export default async function middleware(request: NextRequest) {
             const suspendedUrl = new URL(suspendedPath, request.url);
             suspendedUrl.searchParams.set('reason', 'center_suspended');
             return NextResponse.redirect(suspendedUrl);
+          }
+          const billingStatus = (center as { billing_status?: string })?.billing_status;
+          const autoSuspendAt = (center as { auto_suspend_at?: string })?.auto_suspend_at;
+          if (autoSuspendAt && billingStatus !== 'paid') {
+            const suspendDate = new Date(autoSuspendAt);
+            if (new Date() >= suspendDate) {
+              const suspendedUrl = new URL(suspendedPath, request.url);
+              suspendedUrl.searchParams.set('reason', 'payment_overdue');
+              return NextResponse.redirect(suspendedUrl);
+            }
           }
         }
 

@@ -9,6 +9,8 @@ import {
   getStudentOffline,
   queueScan,
   getUnsyncedCount,
+  hasPaidTodayOffline,
+  markPaidTodayOffline,
 } from '@/lib/db';
 import { syncQueuedScans } from '@/lib/sync';
 import Navbar from '@/components/Navbar';
@@ -27,6 +29,23 @@ interface Student {
   parent_phone?: string | null;
   student_number?: string | null;
   last_payment_method?: string | null;
+}
+
+/** Check if student paid TODAY (per-session payment logic). payments table is source of truth. */
+async function hasPaidToday(studentId: string, centerId: string): Promise<boolean> {
+  const today = new Date().toISOString().split('T')[0];
+  const { data } = await dbSelect({
+    table: 'payments',
+    select: 'id',
+    filters: [
+      { column: 'student_id', op: 'eq', value: studentId },
+      { column: 'center_id', op: 'eq', value: centerId },
+      { column: 'payment_date', op: 'gte', value: today + 'T00:00:00' },
+      { column: 'payment_date', op: 'lte', value: today + 'T23:59:59' },
+    ],
+    limit: 1,
+  });
+  return Array.isArray(data) ? data.length > 0 : !!data;
 }
 
 export default function ScanPage() {
@@ -56,7 +75,7 @@ export default function ScanPage() {
 
       const { data } = await dbSelect({
         table: 'students',
-        select: 'id, name, phone, parent_phone, subject, payment_status, fee, qr_code, student_number',
+        select: 'id, name, phone, parent_phone, subject, fee, qr_code, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
       });
       if (data && Array.isArray(data)) {
@@ -159,7 +178,7 @@ export default function ScanPage() {
           : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
         const { data, error: lookupError } = await dbSelect({
           table: 'students',
-          select: 'id, name, phone, parent_phone, subject, payment_status, fee, student_number',
+          select: 'id, name, phone, parent_phone, subject, fee, student_number',
           filters,
           single: true,
         });
@@ -173,11 +192,42 @@ export default function ScanPage() {
         return;
       }
 
-      setScannedStudent(student);
+      // Per-session payment: check if paid TODAY (payments table is source of truth)
+      let paidToday = false;
+      let lastPaymentMethod: string | null = null;
+      if (navigator.onLine) {
+        paidToday = await hasPaidToday(student.id, centerId);
+        if (paidToday) {
+          const { data: todayPay } = await dbSelect({
+            table: 'payments',
+            select: 'payment_method',
+            filters: [
+              { column: 'student_id', op: 'eq', value: student.id },
+              { column: 'center_id', op: 'eq', value: centerId },
+              { column: 'payment_date', op: 'gte', value: new Date().toISOString().split('T')[0] + 'T00:00:00' },
+              { column: 'payment_date', op: 'lte', value: new Date().toISOString().split('T')[0] + 'T23:59:59' },
+            ],
+            order: { column: 'payment_date', ascending: false },
+            limit: 1,
+          });
+          const pay = Array.isArray(todayPay) ? todayPay[0] : todayPay;
+          lastPaymentMethod = (pay as { payment_method?: string })?.payment_method ?? null;
+        }
+      } else {
+        paidToday = await hasPaidTodayOffline(centerId, student.id);
+      }
+
+      const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
+      const studentForDisplay: Student = {
+        ...student,
+        payment_status: displayStatus,
+        last_payment_method: lastPaymentMethod,
+      };
+      setScannedStudent(studentForDisplay);
       const scannedAt = new Date().toISOString();
 
-      if (student.payment_status === 'paid' || student.payment_status === 'pending') {
-        // Paid or pending: record attendance only, no payment needed; status persists until next billing period
+      if (paidToday) {
+        // Already paid today: record attendance only
         if (navigator.onLine) {
           await dbInsert({
             table: 'attendance_scans',
@@ -209,7 +259,7 @@ export default function ScanPage() {
           }
         }, 3000);
       }
-      if (mode === 'manual') {
+      if (mode === 'manual' && !paidToday) {
         setManualIdInput('');
         manualInputRef.current?.focus();
       }
@@ -228,7 +278,7 @@ export default function ScanPage() {
 
     try {
       if (navigator.onLine) {
-        // 1. Create payment record (log of scanner activity)
+        // 1. Create payment record (per-session: payments table is source of truth)
         await dbInsert({
           table: 'payments',
           data: {
@@ -243,16 +293,7 @@ export default function ScanPage() {
           },
           select: false,
         });
-        // 2. Update student: stays PAID for the rest of billing period
-        await dbUpdate({
-          table: 'students',
-          data: {
-            payment_status: 'paid',
-            ...(isCash ? { last_paid_date: scannedAt } : {}),
-          },
-          filters: [{ column: 'id', op: 'eq', value: scannedStudent.id }],
-        });
-        // 3. Create attendance_scan record (payment_status_at_scan: unpaid at scan time, we collected)
+        // 2. Create attendance_scan record (payment_status_at_scan: unpaid at scan time, we collected)
         await dbInsert({
           table: 'attendance_scans',
           data: {
@@ -285,19 +326,12 @@ export default function ScanPage() {
           scanned_at: scannedAt,
           payment_action: { method, amount: scannedStudent.fee, isPending: !isCash },
         });
+        await markPaidTodayOffline(centerId, scannedStudent.id);
         const count = await getUnsyncedCount();
         setPendingCount(count);
-        const { getDB } = await import('@/lib/db');
-        const db = await getDB();
-        const tx = db.transaction('students', 'readwrite');
-        const existing = await tx.store.get(scannedStudent.id);
-        if (existing) {
-          await tx.store.put({ ...existing, payment_status: 'paid', last_payment_method: method });
-        }
-        await tx.done;
       }
 
-      setScannedStudent({ ...scannedStudent, payment_status: 'paid', last_payment_method: method });
+      setScannedStudent({ ...scannedStudent, payment_status: isCash ? 'paid' : 'pending', last_payment_method: method });
       setIsProcessing(false);
 
       dismissTimerRef.current = setTimeout(() => {

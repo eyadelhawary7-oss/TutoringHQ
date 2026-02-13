@@ -28,6 +28,7 @@ interface PaygRate {
 const FALLBACK_PLANS: PricingPlan[] = [
   { id: 'starter', name_en: 'Starter', name_ar: 'أساسي', students_per_week_limit: 200, monthly_fee: 4000, per_student_at_capacity_egp: 5, setup_fee_egp: 2500, is_custom: false },
   { id: 'pro', name_en: 'Pro', name_ar: 'محترف', students_per_week_limit: 600, monthly_fee: 7200, per_student_at_capacity_egp: 3, setup_fee_egp: 5000, is_custom: false },
+  { id: 'pro_plus', name_en: 'Pro+', name_ar: 'برو+', students_per_week_limit: 1000, monthly_fee: 8000, per_student_at_capacity_egp: 2.25, setup_fee_egp: 7500, is_custom: false },
   { id: 'enterprise', name_en: 'Enterprise', name_ar: 'مؤسسات', students_per_week_limit: 1500, monthly_fee: 9000, per_student_at_capacity_egp: 1.5, setup_fee_egp: 10000, is_custom: false },
   { id: 'top_centers', name_en: 'Top Centers', name_ar: 'كبار السناتر', students_per_week_limit: 1500, monthly_fee: 0, per_student_at_capacity_egp: 0, setup_fee_egp: 0, is_custom: true },
 ];
@@ -72,10 +73,12 @@ function calculatePaygCost(rates: PaygRate[], students: number): { weekly: numbe
 function getFixedPlanComparison(plans: PricingPlan[], students: number): { planName: string; planNameAr: string; planFee: number; isCustom: boolean } {
   const starter = plans.find(p => p.id === 'starter');
   const pro = plans.find(p => p.id === 'pro');
+  const proPlus = plans.find(p => p.id === 'pro_plus');
   const enterprise = plans.find(p => p.id === 'enterprise');
   const top = plans.find(p => p.id === 'top_centers');
   if (students <= 200) return { planName: starter?.name_en ?? 'Starter', planNameAr: starter?.name_ar ?? 'أساسي', planFee: starter?.monthly_fee ?? 4000, isCustom: false };
   if (students <= 600) return { planName: pro?.name_en ?? 'Pro', planNameAr: pro?.name_ar ?? 'محترف', planFee: pro?.monthly_fee ?? 7200, isCustom: false };
+  if (students <= 1000) return { planName: proPlus?.name_en ?? 'Pro+', planNameAr: proPlus?.name_ar ?? 'برو+', planFee: proPlus?.monthly_fee ?? 8000, isCustom: false };
   if (students <= 1500) return { planName: enterprise?.name_en ?? 'Enterprise', planNameAr: enterprise?.name_ar ?? 'مؤسسات', planFee: enterprise?.monthly_fee ?? 9000, isCustom: false };
   return { planName: top?.name_en ?? 'Top Centers', planNameAr: top?.name_ar ?? 'كبار السناتر', planFee: 0, isCustom: true };
 }

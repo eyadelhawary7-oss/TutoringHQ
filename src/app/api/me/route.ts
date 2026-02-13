@@ -67,16 +67,22 @@ export async function GET(request: Request) {
       );
     }
 
-    // Fetch center logo/name when user has center
-    let center: { logo_url?: string; name?: string } | null = null;
+    // Fetch center logo/name and billing when user has center
+    let center: { logo_url?: string; name?: string; payment_due_date?: string; auto_suspend_at?: string; billing_status?: string } | null = null;
     if (userRecord?.center_id) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
-        .select('logo_url, name')
+        .select('logo_url, name, payment_due_date, auto_suspend_at, billing_status')
         .eq('id', userRecord.center_id)
         .single();
       if (centerRow) {
-        center = { logo_url: centerRow.logo_url ?? undefined, name: centerRow.name ?? undefined };
+        center = {
+          logo_url: centerRow.logo_url ?? undefined,
+          name: centerRow.name ?? undefined,
+          payment_due_date: centerRow.payment_due_date ?? undefined,
+          auto_suspend_at: centerRow.auto_suspend_at ?? undefined,
+          billing_status: centerRow.billing_status ?? undefined,
+        };
       }
     }
 

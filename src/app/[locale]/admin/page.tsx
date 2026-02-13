@@ -46,6 +46,8 @@ interface CenterRow {
   billing_period?: string;
   referral_code?: string | null;
   referred_by?: string | null;
+  referral_code_used?: string | null;
+  referring_center_name?: string | null;
 }
 
 interface PlanRequestRow {
@@ -87,6 +89,7 @@ interface PaymentRecord {
 const PLAN_LABELS: Record<string, string> = {
   starter: 'Starter',
   pro: 'Pro',
+  pro_plus: 'Pro+',
   enterprise: 'Enterprise',
   payg: 'PAYG',
 };
@@ -101,6 +104,7 @@ const BILLING_LABELS: Record<string, string> = {
 const PLAN_PRICE: Record<string, number> = {
   starter: 4000,
   pro: 7200,
+  pro_plus: 8000,
   enterprise: 9000,
 };
 
@@ -332,6 +336,7 @@ export default function AdminPage() {
       if (res.ok) {
         setPendingCenters((prev) => prev.filter((c) => c.id !== centerId));
         fetchCenters();
+        if (data.referralMessage) alert(data.referralMessage);
       } else {
         alert(data.error || 'Failed');
       }
@@ -514,6 +519,7 @@ export default function AdminPage() {
                   <option value="all">{t('filterAll')}</option>
                   <option value="starter">Starter</option>
                   <option value="pro">Pro</option>
+                  <option value="pro_plus">Pro+</option>
                   <option value="enterprise">Enterprise</option>
                   <option value="payg">PAYG</option>
                 </select>
@@ -624,6 +630,9 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Discount</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Monthly Equiv</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('nextDue')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Days Until Due</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Auto-Suspend Date</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Referral Credits</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
                     </tr>
@@ -642,6 +651,21 @@ export default function AdminPage() {
                           <td className="px-4 py-3">{c.discount ?? 0}%</td>
                           <td className="px-4 py-3">{c.monthlyEquivalent?.toLocaleString('ar-EG') ?? '—'}</td>
                           <td className="px-4 py-3">{nextDue ? new Date(nextDue).toLocaleDateString() : '—'}</td>
+                          <td className="px-4 py-3">
+                            {(() => {
+                              const d = (c as { daysUntilDue?: number }).daysUntilDue;
+                              if (d === undefined) return '—';
+                              if (d > 5) return <span className="text-green-600 dark:text-green-400">{d}</span>;
+                              if (d >= 1) return <span className="text-amber-600 dark:text-amber-400">{d}</span>;
+                              return <span className="text-red-600 dark:text-red-400">{d}</span>;
+                            })()}
+                          </td>
+                          <td className="px-4 py-3 text-xs">{(() => { const a = (c as { autoSuspendAt?: string }).autoSuspendAt; return a ? new Date(a).toLocaleString() : '—'; })()}</td>
+                          <td className="px-4 py-3 text-green-600 dark:text-green-400">
+                            {((c as { referralCredits?: number }).referralCredits ?? 0) > 0
+                              ? `${((c as { referralCredits?: number }).referralCredits ?? 0).toLocaleString('ar-EG')} EGP`
+                              : '—'}
+                          </td>
                           <td className="px-4 py-3">
                             {status === 'overdue' && '🔴'}
                             {status === 'due_soon' && '🟡'}
@@ -770,6 +794,7 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('email')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('requestedPlan')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('referralCode')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('referredBy')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('date')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
                     </tr>
@@ -780,8 +805,9 @@ export default function AdminPage() {
                         <td className="px-4 py-3 text-gray-900 dark:text-white">{c.name}</td>
                         <td className="px-4 py-3" dir="ltr">{c.phone || '—'}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{c.email || '—'}</td>
-                        <td className="px-4 py-3">{PLAN_LABELS[c.plan || 'starter']}</td>
-                        <td className="px-4 py-3">{c.referral_code || '—'}</td>
+                        <td className="px-4 py-3">{PLAN_LABELS[c.plan || 'starter'] || c.plan}</td>
+                        <td className="px-4 py-3 font-mono">{c.referral_code_used || '—'}</td>
+                        <td className="px-4 py-3">{c.referring_center_name || '—'}</td>
                         <td className="px-4 py-3 text-gray-500">{new Date(c.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-3 flex gap-2">
                           <button
@@ -835,7 +861,7 @@ export default function AdminPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('changePlan')}</h3>
             <div className="space-y-2">
-              {(['starter', 'pro', 'enterprise', 'payg'] as const).map((plan) => (
+              {(['starter', 'pro', 'pro_plus', 'enterprise', 'payg'] as const).map((plan) => (
                 <button
                   key={plan}
                   onClick={() => handleCenterAction(changePlanCenter.id, 'change_plan', { newPlan: plan })}

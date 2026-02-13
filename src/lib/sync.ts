@@ -1,4 +1,4 @@
-import { dbInsert, dbUpdate } from './db-proxy';
+import { dbInsert } from './db-proxy';
 import { getUnsyncedScans, markScanSynced, clearSyncedScans } from './db';
 
 export type SyncStatus = 'online' | 'offline' | 'syncing';
@@ -29,18 +29,9 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
 
       if (attendanceError) throw new Error(attendanceError.message);
 
-      // If there was a payment action, process it — student stays PAID for billing period
+      // If there was a payment action, record it (per-session: payments table is source of truth)
       if (scan.payment_action) {
         const isPending = (scan.payment_action as { isPending?: boolean }).isPending ?? false;
-
-        await dbUpdate({
-          table: 'students',
-          data: {
-            payment_status: 'paid',
-            ...(isPending ? {} : { last_paid_date: scan.scanned_at }),
-          },
-          filters: [{ column: 'id', op: 'eq', value: scan.student_id }],
-        });
 
         await dbInsert({
           table: 'payments',

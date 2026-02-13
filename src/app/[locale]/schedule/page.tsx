@@ -178,6 +178,7 @@ export default function SchedulePage() {
           filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
         }),
       ]);
+      if (slotsRes?.error) console.log('Slots error:', slotsRes.error);
 
       if (centerRes?.data) {
         const c = centerRes.data as { schedule_start_hour?: number | null; schedule_end_hour?: number | null };
@@ -209,7 +210,8 @@ export default function SchedulePage() {
   const slotsForDay = slots.filter((s) => {
     const d = s.day_of_week;
     if (typeof d === 'number') return d === selectedDay;
-    return DAY_NUM_TO_KEY[selectedDay] === d;
+    const key = DAY_NUM_TO_KEY[selectedDay];
+    return key === d || key === String(d).toLowerCase() || DAYS.find(x => x.label === d)?.d === selectedDay;
   });
 
   const scheduleTitle = t('centerSchedule');
@@ -272,6 +274,8 @@ export default function SchedulePage() {
     }
     setIsSubmitting(true);
     try {
+      const startTime = formStart.includes(':') && formStart.length === 5 ? formStart + ':00' : formStart;
+      const endTime = formEnd.includes(':') && formEnd.length === 5 ? formEnd + ':00' : formEnd;
       const { data, error } = await dbInsert({
         table: 'schedule_slots',
         data: {
@@ -281,8 +285,8 @@ export default function SchedulePage() {
           group_id: formGroup || null,
           teacher_id: userId,
           day_of_week: formDay,
-          start_time: formStart,
-          end_time: formEnd,
+          start_time: startTime,
+          end_time: endTime,
           recurring: formRecurring,
         },
         single: true,
@@ -311,7 +315,7 @@ export default function SchedulePage() {
         setFormGroup('');
         setFormRecurring(false);
         setSlotError('');
-        setSlotSuccessMessage(t('slotSaved', { defaultValue: 'Slot saved successfully.' }));
+        setSlotSuccessMessage(t('slotSaved'));
         setTimeout(() => setSlotSuccessMessage(''), 4000);
         const slotsRes = await dbSelect({
           table: 'schedule_slots',
@@ -320,6 +324,7 @@ export default function SchedulePage() {
         });
         if (slotsRes?.data) {
           const slotsData = slotsRes.data as ScheduleSlot[];
+          console.log('All slots for center:', slotsData);
           const withNames = slotsData.map((s) => ({
             ...s,
             room_name: rooms.find((r) => r.id === s.room_id)?.name ?? '',

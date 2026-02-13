@@ -137,6 +137,28 @@ export default function StudentsPage() {
     }
   };
 
+  const handleRegenerateQR = async () => {
+    if (!qrModalStudent || !confirm(t('regenerateQRConfirm', { defaultValue: 'This will invalidate the printed card. Are you sure?' }))) return;
+    try {
+      const dataUrl = await QRCode.toDataURL(qrModalStudent.id, {
+        width: 300,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' },
+      });
+      await dbUpdate({
+        table: 'students',
+        data: { qr_code: dataUrl },
+        filters: [{ column: 'id', op: 'eq', value: qrModalStudent.id }],
+      });
+      setStudents((prev) =>
+        prev.map((s) => (s.id === qrModalStudent.id ? { ...s, qr_code: dataUrl } : s))
+      );
+      setQrDataUrl(dataUrl);
+    } catch (err) {
+      console.error('QR regenerate error:', err);
+    }
+  };
+
   const downloadQR = () => {
     if (!qrDataUrl || !qrModalStudent) return;
     const link = document.createElement('a');
@@ -188,7 +210,7 @@ export default function StudentsPage() {
   const handleGenerateAllQR = async () => {
     const needQR = students.filter((s) => !s.qr_code);
     if (needQR.length === 0) {
-      setGenerateSuccess(t('qrGenerated', { count: 0 }));
+      setGenerateSuccess(t('allStudentsHaveQR', { defaultValue: 'All students already have QR codes' }));
       setTimeout(() => setGenerateSuccess(null), 3000);
       return;
     }
@@ -212,7 +234,7 @@ export default function StudentsPage() {
           prev.map((s) => (s.id === student.id ? { ...s, qr_code: dataUrl } : s))
         );
       }
-      setGenerateSuccess(t('qrGenerated', { count: needQR.length }));
+      setGenerateSuccess(t('qrGeneratedNew', { count: needQR.length, defaultValue: `Generating QR codes for ${needQR.length} new students...` }));
       setTimeout(() => setGenerateSuccess(null), 4000);
     } catch (err) {
       console.error('Bulk QR error:', err);
@@ -315,7 +337,9 @@ export default function StudentsPage() {
                 disabled={isGeneratingAll}
                 className="px-4 py-2 text-sm font-medium border border-indigo-600 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors disabled:opacity-50"
               >
-                {isGeneratingAll ? `${t('generatingQR')} ${generateProgress.current}/${generateProgress.total}` : t('generateAllQR')}
+                {isGeneratingAll
+                  ? t('generatingQRNew', { current: generateProgress.current, total: generateProgress.total, defaultValue: `Generating QR codes for ${generateProgress.current}/${generateProgress.total} new students...` })
+                  : t('generateAllQR')}
               </button>
               <Link
                 href="/students/print"
@@ -583,6 +607,14 @@ export default function StudentsPage() {
               >
                 {tCommon('cancel')}
               </button>
+              {qrDataUrl && (
+                <button
+                  onClick={handleRegenerateQR}
+                  className="mt-2 w-full py-1 text-xs text-amber-600 dark:text-amber-400 hover:underline"
+                >
+                  {t('regenerateQR', { defaultValue: 'Regenerate' })}
+                </button>
+              )}
             </div>
           </div>
         </div>

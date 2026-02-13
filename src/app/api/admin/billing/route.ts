@@ -4,6 +4,7 @@ import { getAdminContext } from '@/lib/admin-auth';
 const PLAN_MONTHLY: Record<string, number> = {
   starter: 4000,
   pro: 7200,
+  pro_plus: 8000,
   enterprise: 9000,
   payg: 0,
   top_centers: 0,
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
 
     const { data: centers, error: centersError } = await supabaseAdmin
       .from('centers')
-      .select('id, name, plan, phone, billing_period, next_payment_due, next_billing_date, billing_status, status')
+      .select('id, name, plan, phone, billing_period, next_payment_due, next_billing_date, billing_status, status, payment_due_date, auto_suspend_at')
       .in('status', ['active', 'suspended']);
 
     if (centersError) {
@@ -42,6 +43,16 @@ export async function GET(request: Request) {
     }
 
     const centerIds = (centers || []).map((c: { id: string }) => c.id);
+
+    const { data: referralCredits } = centerIds.length > 0
+      ? await supabaseAdmin.from('referral_rewards').select('referring_center_id, reward_amount, reward_status').in('referring_center_id', centerIds)
+      : { data: [] };
+    const creditsByCenter: Record<string, number> = {};
+    (referralCredits || []).forEach((r: { referring_center_id: string; reward_amount: number; reward_status: string }) => {
+      if (r.reward_status === 'approved' || r.reward_status === 'paid' || r.reward_status === 'pending') {
+        creditsByCenter[r.referring_center_id] = (creditsByCenter[r.referring_center_id] ?? 0) + Number(r.reward_amount);
+      }
+    });
     const billingRows = centers || [];
     for (const row of billingRows) {
       const bp = (row as { billing_period?: string }).billing_period || 'monthly';
@@ -55,6 +66,15 @@ export async function GET(request: Request) {
       (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
       (row as Record<string, unknown>).discount = discount;
       (row as Record<string, unknown>).nextDue = nextDue;
+      (row as Record<string, unknown>).referralCredits = creditsByCenter[(row as { id: string }).id] ?? 0;
+      const dueDate = (row as { payment_due_date?: string }).payment_due_date || nextDue;
+      const suspendAt = (row as { auto_suspend_at?: string }).auto_suspend_at;
+      if (dueDate) {
+        const due = new Date(dueDate);
+        const daysUntil = Math.ceil((due.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        (row as Record<string, unknown>).daysUntilDue = daysUntil;
+      }
+      (row as Record<string, unknown>).autoSuspendAt = suspendAt;
     }
 
     const { data: payments, error: payError } = await supabaseAdmin
@@ -136,13 +156,18 @@ export async function POST(request: Request) {
     }
 
     const nextDueStr = nextDueDate.toISOString().slice(0, 10);
+    const nextSuspend = new Date(nextDueDate);
+    nextSuspend.setDate(nextSuspend.getDate() + 1);
     await supabaseAdmin
       .from('centers')
       .update({
         next_payment_due: nextDueStr,
         next_billing_date: nextDueStr,
+        payment_due_date: nextDueStr,
+        auto_suspend_at: nextSuspend.toISOString(),
         billing_status: 'paid',
         last_payment_date: new Date().toISOString().slice(0, 10),
+        status: 'active',
       })
       .eq('id', center_id);
 

@@ -14,9 +14,11 @@ const METHOD_LABELS: Record<string, string> = {
   cash: 'كاش',
   instapay: 'إنستاباي',
   vodafone_cash: 'فودافون كاش',
+  vodacash: 'فودافون كاش',
   orange: 'أورانج',
   fawry: 'فوري',
   bank_transfer: 'تحويل بنكي',
+  bank: 'تحويل بنكي',
 };
 
 export function exportToExcel(students: StudentExport[], filename?: string) {
@@ -80,4 +82,31 @@ export function exportDashboardToExcel(data: DashboardExportData) {
   XLSX.utils.book_append_sheet(workbook, paymentsSheet, 'Payments');
 
   XLSX.writeFile(workbook, filename);
+}
+
+export interface PaymentExportRecord {
+  id: string;
+  student_name?: string;
+  subject?: string;
+  amount: number;
+  payment_method: string;
+  payment_date: string;
+  status: string;
+  confirmed?: boolean;
+}
+
+export function exportPaymentsToExcel(records: PaymentExportRecord[], filename?: string) {
+  const worksheet = XLSX.utils.json_to_sheet(
+    records.map(r => ({
+      'التاريخ': r.payment_date ? new Date(r.payment_date).toLocaleDateString('ar-EG') : '',
+      'اسم الطالب': r.student_name || '',
+      'المادة': r.subject || '',
+      'المبلغ': r.amount,
+      'طريقة الدفع': METHOD_LABELS[r.payment_method] || r.payment_method,
+      'الحالة': r.confirmed !== false && r.status === 'paid' ? 'مسدد' : 'معلق',
+    }))
+  );
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'المدفوعات');
+  XLSX.writeFile(workbook, filename || `CenterHQ_Payments_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }

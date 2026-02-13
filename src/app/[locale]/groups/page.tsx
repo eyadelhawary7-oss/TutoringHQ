@@ -83,6 +83,7 @@ export default function GroupsPage() {
         }),
       ]);
 
+      console.log('Groups query result:', groupsRes.data, groupsRes.error);
       if (groupsRes.data) {
         const groupsData = groupsRes.data as Group[];
         const withCount = await Promise.all(
@@ -98,7 +99,10 @@ export default function GroupsPage() {
         setGroups(withCount);
       }
       if (studentsRes.data) setStudents(studentsRes.data as Student[]);
-      if (subjectsRes.data) setSubjects(subjectsRes.data as Subject[]);
+      if (subjectsRes.data) {
+        setSubjects(subjectsRes.data as Subject[]);
+        console.log('Subjects loaded for Create Group:', (subjectsRes.data as Subject[]).length);
+      }
       setIsLoading(false);
     };
     load();

@@ -402,6 +402,7 @@ export default function SettingsPage() {
           [key]: enabled,
         },
       }));
+      showSaved();
     }
   };
 
@@ -623,19 +624,20 @@ export default function SettingsPage() {
                               </button>
                             )}
                           </div>
-                          {permKeys.length > 0 && (
+                            {permKeys.length > 0 && (
                             <div className="flex flex-wrap gap-4 pt-2 border-t border-gray-200 dark:border-gray-600">
                               {permKeys.map(({ key, labelKey }) => (
                                 <label
                                   key={key}
-                                  className={`flex items-center gap-1.5 text-xs ${isPermReadOnly ? 'cursor-default opacity-75' : 'cursor-pointer'}`}
+                                  className={`flex items-center gap-1.5 text-xs select-none ${isPermReadOnly ? 'cursor-default opacity-75' : 'cursor-pointer hover:opacity-90'}`}
+                                  style={!isPermReadOnly ? { pointerEvents: 'auto' } : undefined}
                                 >
                                   <input
                                     type="checkbox"
                                     checked={typeof permChecked === 'function' ? permChecked(key) : permChecked}
                                     onChange={(e) => !isPermReadOnly && handlePermissionToggle(member.id, key, e.target.checked)}
                                     disabled={isPermReadOnly}
-                                    className="w-3.5 h-3.5 rounded text-indigo-600 disabled:opacity-60"
+                                    className="w-4 h-4 rounded text-indigo-600 disabled:opacity-60 cursor-pointer"
                                   />
                                   {t(labelKey)}
                                 </label>

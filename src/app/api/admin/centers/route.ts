@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 
     let query = supabaseAdmin
       .from('centers')
-      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by')
+      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
@@ -126,13 +126,25 @@ export async function GET(request: Request) {
       }
     }
 
-    const rows = centers.map((c: Record<string, unknown>) => ({
-      ...c,
-      students_count: studentCounts[c.id as string] ?? 0,
-      owner: ownerMap.get(c.id as string) ?? null,
-      last_payment: lastPaymentByCenter[c.id as string] ?? null,
-      next_due: (c as { next_payment_due?: string }).next_payment_due || (c as { next_billing_date?: string }).next_billing_date,
-    }));
+    const referredByIds = [...new Set((centers || []).map((c: { referred_by?: string }) => c.referred_by).filter(Boolean))];
+    const { data: referringCenters } = referredByIds.length > 0
+      ? await supabaseAdmin.from('centers').select('id, name, referral_code').in('id', referredByIds)
+      : { data: [] };
+    const referringMap = new Map((referringCenters || []).map((r: { id: string; name: string; referral_code: string }) => [r.id, { name: r.name, referral_code: r.referral_code }]));
+
+    const rows = centers.map((c: Record<string, unknown>) => {
+      const referredBy = (c as { referred_by?: string }).referred_by;
+      const referring = referredBy ? referringMap.get(referredBy) : null;
+      return {
+        ...c,
+        students_count: studentCounts[c.id as string] ?? 0,
+        owner: ownerMap.get(c.id as string) ?? null,
+        last_payment: lastPaymentByCenter[c.id as string] ?? null,
+        next_due: (c as { next_payment_due?: string }).next_payment_due || (c as { next_billing_date?: string }).next_billing_date,
+        referring_center_name: referring?.name ?? null,
+        referral_code_used: referring?.referral_code ?? null,
+      };
+    });
 
     const pendingCenters = rows.filter((c: Record<string, unknown>) => c.status === 'pending');
 
@@ -294,7 +306,7 @@ export async function PUT(request: Request) {
     }
 
     if (action === 'change_plan') {
-      if (!newPlan || !['starter', 'pro', 'enterprise', 'payg'].includes(newPlan)) {
+      if (!newPlan || !['starter', 'pro', 'pro_plus', 'enterprise', 'payg'].includes(newPlan)) {
         return NextResponse.json({ error: 'Valid newPlan required' }, { status: 400 });
       }
       const oldPlan = center.plan || 'starter';
@@ -436,15 +448,45 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 });
     }
 
+    const now = new Date();
+    const dueDate = now.toISOString().slice(0, 10);
+    const suspendAt = new Date(now);
+    suspendAt.setDate(suspendAt.getDate() + 1);
+
     await supabaseAdmin
       .from('centers')
       .update({
         status: 'active',
-        approved_at: new Date().toISOString(),
+        approved_at: now.toISOString(),
         approved_by: user.id,
         subscription_status: 'active',
+        payment_due_date: dueDate,
+        auto_suspend_at: suspendAt.toISOString(),
+        billing_start_date: dueDate,
       })
       .eq('id', centerId);
+
+    let referralMessage: string | null = null;
+    const referredBy = (center as { referred_by?: string }).referred_by;
+    if (referredBy) {
+      const PLAN_FEES: Record<string, number> = { starter: 4000, pro: 7200, pro_plus: 8000, enterprise: 9000 };
+      const plan = (center.plan as string) || 'starter';
+      const fee = PLAN_FEES[plan] ?? 4000;
+      const reward = Math.round(fee * 0.2);
+      const { data: referringCenter } = await supabaseAdmin.from('centers').select('name').eq('id', referredBy).single();
+      await supabaseAdmin.from('referral_rewards').upsert(
+        {
+          referring_center_id: referredBy,
+          referred_center_id: centerId,
+          referred_center_plan: plan,
+          first_month_fee: fee,
+          reward_amount: reward,
+          reward_status: 'approved',
+        },
+        { onConflict: 'referring_center_id,referred_center_id' }
+      );
+      referralMessage = `Referral reward of EGP ${reward.toLocaleString()} credited to ${(referringCenter as { name?: string })?.name ?? 'referring center'}`;
+    }
 
     if (center.email) {
       // TODO: Send email if email service is configured
@@ -455,6 +497,7 @@ export async function PUT(request: Request) {
       success: true,
       action: 'approved',
       credentials: { password },
+      referralMessage,
     });
   } catch (error) {
     return NextResponse.json(

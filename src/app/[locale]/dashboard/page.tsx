@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const { user, hasPermission } = useUser();
   const isOwnerOrAdminRole = isOwnerOrAdmin(user?.role);
 
+  const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string } | null>(null);
   const [data, setData] = useState<DashboardData>({
     todayAttendance: 0,
     totalStudents: 0,
@@ -156,6 +157,11 @@ export default function DashboardPage() {
 
       if (meData?.user?.center_id) {
         setCenterId(meData.user.center_id);
+        setCenterBilling(meData.user.center ? {
+          payment_due_date: meData.user.center.payment_due_date,
+          billing_status: meData.user.center.billing_status,
+          name: meData.user.center.name,
+        } : null);
         await loadDashboard(meData.user.center_id);
       }
     };
@@ -276,11 +282,47 @@ export default function DashboardPage() {
     );
   }
 
+  const paymentDueBanner = (() => {
+    if (!centerBilling?.payment_due_date || centerBilling.billing_status === 'paid') return null;
+    const dueDate = new Date(centerBilling.payment_due_date);
+    const now = new Date();
+    const diffMs = dueDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+    const payNowUrl = `https://wa.me/201220601410?text=${encodeURIComponent(`أريد سداد اشتراك CenterHQ - اسم السنتر: ${centerBilling.name || ''}`)}`;
+    if (diffDays > 0 && diffDays <= 5) {
+      return (
+        <div className="mb-6 p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-400 dark:border-amber-600 rounded-xl flex flex-wrap items-center justify-between gap-4">
+          <span className="text-amber-800 dark:text-amber-200 font-medium">
+            {t('paymentDue', { days: diffDays, defaultValue: `Payment due in ${diffDays} days` })}
+          </span>
+          <a href={payNowUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg">
+            {t('payNow', { defaultValue: 'Pay Now' })}
+          </a>
+        </div>
+      );
+    }
+    if (diffDays <= 0) {
+      return (
+        <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 rounded-xl flex flex-wrap items-center justify-between gap-4">
+          <span className="text-red-800 dark:text-red-200 font-medium">
+            {t('paymentOverdue', { hours: Math.abs(diffHours), defaultValue: `Payment overdue! Account will be suspended in ${Math.abs(diffHours)} hours` })}
+          </span>
+          <a href={payNowUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg">
+            {t('payNow', { defaultValue: 'Pay Now' })}
+          </a>
+        </div>
+      );
+    }
+    return null;
+  })();
+
   return (
     <>
       <Navbar />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {paymentDueBanner}
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {t('title')}

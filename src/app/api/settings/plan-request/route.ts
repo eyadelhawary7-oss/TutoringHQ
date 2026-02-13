@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { requested_plan } = body;
 
-    if (!requested_plan || !['starter', 'pro', 'enterprise', 'payg'].includes(requested_plan)) {
-      return NextResponse.json({ error: 'requested_plan must be starter, pro, enterprise, or payg' }, { status: 400 });
+    if (!requested_plan || !['starter', 'pro', 'pro_plus', 'enterprise', 'payg'].includes(requested_plan)) {
+      return NextResponse.json({ error: 'requested_plan must be starter, pro, pro_plus, enterprise, or payg' }, { status: 400 });
     }
 
     const { data: center } = await ctx.supabaseAdmin

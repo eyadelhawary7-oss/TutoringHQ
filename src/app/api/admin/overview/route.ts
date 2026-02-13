@@ -4,6 +4,7 @@ import { getAdminContext } from '@/lib/admin-auth';
 const PLAN_MRR: Record<string, number> = {
   starter: 4000,
   pro: 7200,
+  pro_plus: 8000,
   enterprise: 9000,
   payg: 0,
   top_centers: 0,
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
     const byPlan: Record<string, number> = {
       starter: 0,
       pro: 0,
+      pro_plus: 0,
       enterprise: 0,
       payg: 0,
     };
