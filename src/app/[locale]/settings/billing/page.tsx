@@ -170,6 +170,60 @@ export default function BillingPage() {
 
   const [changePlanSelect, setChangePlanSelect] = useState('');
   const [paymentRef, setPaymentRef] = useState('');
+  const [proofAmount, setProofAmount] = useState('');
+  const [proofReference, setProofReference] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const [proofUploading, setProofUploading] = useState(false);
+
+  async function uploadProof(file: File, cId: string): Promise<string> {
+    const fileName = `${cId}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from('payment-proofs').upload(fileName, file);
+    if (error) throw error;
+    const { data: { publicUrl } } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
+    return publicUrl;
+  }
+
+  async function handleSubmitPaymentProof() {
+    const amount = parseFloat(proofAmount);
+    if (isNaN(amount) || amount <= 0 || !proofReference.trim() || saving) return;
+    try {
+      setSaving(true);
+      let proofUrl: string | null = null;
+      if (proofFile) {
+        setProofUploading(true);
+        const centerId = currentUser?.center_id;
+        if (!centerId) throw new Error('Center not found');
+        proofUrl = await uploadProof(proofFile, centerId);
+        setProofUploading(false);
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/settings/billing', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          action: 'submit_payment_proof',
+          amount,
+          reference: proofReference.trim(),
+          proof_url: proofUrl,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      setSavedMessage(t('proofSubmittedSuccess', { defaultValue: 'Payment proof submitted. Will be confirmed within 24 hours.' }));
+      setProofAmount('');
+      setProofReference('');
+      setProofFile(null);
+      setProofPreview(null);
+      fetchBilling();
+      setTimeout(() => setSavedMessage(''), 5000);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : t('updateFailed'));
+    } finally {
+      setSaving(false);
+      setProofUploading(false);
+    }
+  }
 
   async function handleRequestChange() {
     if (!changePlanSelect) return;
@@ -603,44 +657,117 @@ export default function BillingPage() {
             )}
           </section>
 
-          {/* SECTION 6 - Payment Methods */}
+          {/* SECTION 6 - Payment Methods & Proof Submission */}
           <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
               {t('paymentMethods', { defaultValue: 'Payment Methods' })}
             </h2>
-            <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-6">
+
+            {/* InstaPay Info - always visible */}
+            <div className="mb-6">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {locale === 'ar' ? 'حوّل على رقم إنستاباي:' : 'Transfer to InstaPay:'}
+              </p>
               <div className="flex items-center gap-2 flex-wrap">
-                <strong>{t('instapay')}:</strong>
-                <span className="font-mono text-base">{t('instapayNumber')}</span>
+                <span className="font-mono text-xl font-bold text-indigo-600 dark:text-indigo-400">01001963432</span>
                 <button
                   type="button"
                   onClick={() => { navigator.clipboard.writeText('01001963432'); setSavedMessage(locale === 'ar' ? 'تم النسخ!' : 'Copied!'); setTimeout(() => setSavedMessage(''), 2000); }}
-                  className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
+                  className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500"
                 >
                   {tCommon('copy')}
                 </button>
               </div>
-              <p className="text-gray-500 dark:text-gray-400"><strong>{t('bankTransfer')}:</strong> {t('bankTransferComingSoon')}</p>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-              {t('enterReference', { defaultValue: 'After transfer, enter transaction reference below:' })}
+
+            {/* Bank Transfer - Coming Soon */}
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              <strong>{t('bankTransfer')}:</strong> {locale === 'ar' ? 'قريباً' : 'Coming Soon'}
             </p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={paymentRef}
-                onChange={(e) => setPaymentRef(e.target.value)}
-                placeholder={t('instapayRef', { defaultValue: 'InstaPay reference' })}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-              />
-              <button
-                onClick={handleSubmitPaymentRef}
-                disabled={saving || !paymentRef.trim()}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg"
-              >
-                {t('submitReference', { defaultValue: 'Submit' })}
-              </button>
-            </div>
+
+            {/* Payment Proof Form */}
+            <div className="space-y-4">
+                <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                  {t('submitProofTitle', { defaultValue: 'Submit Payment Proof' })}
+                </h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('transferAmountLabel', { defaultValue: 'Transfer Amount (EGP)' })} *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={proofAmount}
+                    onChange={(e) => setProofAmount(e.target.value)}
+                    placeholder={t('transferAmountPlaceholder', { defaultValue: '0.00' })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('instapayRefLabel', { defaultValue: 'InstaPay Transaction Reference' })} *
+                  </label>
+                  <input
+                    type="text"
+                    value={proofReference}
+                    onChange={(e) => setProofReference(e.target.value)}
+                    placeholder={t('instapayRef', { defaultValue: 'e.g. 123456789' })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('proofLabel', { defaultValue: 'Transfer Screenshot' })} ({locale === 'ar' ? 'اختياري' : 'optional'})
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f && f.size <= 5 * 1024 * 1024) {
+                        setProofFile(f);
+                        setProofPreview(URL.createObjectURL(f));
+                      }
+                      e.target.value = '';
+                    }}
+                    className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300"
+                  />
+                  {proofPreview && (
+                    <img src={proofPreview} alt="Preview" className="mt-2 max-h-32 rounded-lg border border-gray-200 dark:border-gray-600" />
+                  )}
+                </div>
+                <button
+                  onClick={handleSubmitPaymentProof}
+                  disabled={saving || proofUploading || !proofAmount || parseFloat(proofAmount) <= 0 || !proofReference.trim()}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg"
+                >
+                  {proofUploading ? tCommon('loading') : t('submitPaymentProof')}
+                </button>
+              </div>
+
+            {/* Payment Status Display - after submission */}
+            {data?.invoices && (data.invoices as { status?: string }[]).length > 0 && (
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{locale === 'ar' ? 'حالة الدفع' : 'Payment Status'}:</p>
+                {((data.invoices as { status?: string }[]).map((inv, i) => (
+                  <span
+                    key={i}
+                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      inv.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200' :
+                      inv.status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' :
+                      inv.status === 'overdue' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200' :
+                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                    }`}
+                  >
+                    {inv.status === 'paid' ? (locale === 'ar' ? 'تم التأكيد ✅' : 'Confirmed ✅') :
+                     inv.status === 'pending' ? (locale === 'ar' ? 'في انتظار التأكيد ⏳' : 'Pending Confirmation ⏳') :
+                     inv.status === 'overdue' ? (locale === 'ar' ? 'مرفوض ❌ تواصل مع الدعم' : 'Rejected ❌ Contact Support') :
+                     inv.status || ''}
+                  </span>
+                )))}
+              </div>
+            )}
           </section>
         </div>
       </div>

@@ -156,7 +156,7 @@ export default function SchedulePage() {
         }),
         dbSelect({
           table: 'schedule_slots',
-          select: 'id, room_id, subject_id, group_id, teacher_id, day_of_week, start_time, end_time, recurring',
+          select: 'id, room_id, subject, subject_id, group_id, teacher_id, day_of_week, start_time, end_time, recurring, recurring_until',
           filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
         }),
       ]);
@@ -178,7 +178,7 @@ export default function SchedulePage() {
         const withNames = slotsData.map((s) => ({
           ...s,
           room_name: roomsData.find((r) => r.id === s.room_id)?.name ?? '',
-          subject_name: subjectsData.find((sub) => sub.id === s.subject_id)?.name ?? '',
+          subject_name: (s.subject || subjectsData.find((sub) => sub.id === s.subject_id)?.name) ?? '',
           group_name: s.group_id ? groupsData.find((g) => g.id === s.group_id)?.name ?? '' : '',
         }));
         setSlots(withNames);
@@ -259,10 +259,10 @@ export default function SchedulePage() {
         data: {
           center_id: centerId,
           room_id: formRoom,
-          subject_id: formSubject,
+          subject: selectedSubjectName,
           group_id: formGroup || null,
           teacher_id: userId,
-          day_of_week: DAY_NUM_TO_KEY[formDay] ?? String(formDay),
+          day_of_week: formDay,
           start_time: formStart,
           end_time: formEnd,
           recurring: formRecurring,
@@ -278,16 +278,16 @@ export default function SchedulePage() {
       }
       if (data) {
         const slot = data as ScheduleSlot;
-      const groupName = groups.find((g) => g.id === formGroup)?.name ?? '';
-      setSlots((prev) => [
-        ...prev,
-        {
-          ...slot,
-          room_name: rooms.find((r) => r.id === slot.room_id)?.name ?? '',
-          subject_name: (slot as { subject?: string }).subject ?? subjects.find((s) => s.id === slot.subject_id)?.name ?? '',
-          group_name: groupName,
-        },
-      ]);
+        const groupName = groups.find((g) => g.id === formGroup)?.name ?? '';
+        setSlots((prev) => [
+          ...prev,
+          {
+            ...slot,
+            room_name: rooms.find((r) => r.id === slot.room_id)?.name ?? '',
+            subject_name: (slot as { subject?: string }).subject ?? selectedSubjectName ?? subjects.find((s) => s.id === slot.subject_id)?.name ?? '',
+            group_name: groupName,
+          },
+        ]);
       await auditLog({
         centerId,
         userId,

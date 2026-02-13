@@ -9,6 +9,7 @@ interface Student {
   payment_status: string;
   fee: number;
   subject: string;
+  student_number?: string | null;
 }
 
 interface ScanResultScreenProps {
@@ -35,18 +36,29 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-colors duration-300 ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-colors duration-300 min-h-screen w-full ${
         isPaid ? 'bg-emerald-500' : 'bg-red-500'
       }`}
+      dir="rtl"
       onClick={isPaid ? onDismiss : undefined}
     >
       {/* Student Name */}
       <h1
-        className="text-5xl sm:text-7xl md:text-8xl font-bold text-white text-center px-4 mb-4"
+        className="text-5xl sm:text-7xl md:text-8xl font-bold text-white text-center px-4 mb-2"
         style={{ textShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
       >
         {student.name}
       </h1>
+
+      {/* Student ID */}
+      {student.student_number && (
+        <p
+          className="text-xl sm:text-2xl text-white/95 text-center mb-2"
+          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+        >
+          {student.student_number}
+        </p>
+      )}
 
       {/* Subject */}
       <p

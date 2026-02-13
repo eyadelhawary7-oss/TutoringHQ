@@ -25,6 +25,7 @@ interface Student {
   fee: number;
   subject: string;
   parent_phone?: string | null;
+  student_number?: string | null;
 }
 
 export default function ScanPage() {
@@ -157,7 +158,7 @@ export default function ScanPage() {
           : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
         const { data, error: lookupError } = await dbSelect({
           table: 'students',
-          select: 'id, name, phone, parent_phone, subject, payment_status, fee',
+          select: 'id, name, phone, parent_phone, subject, payment_status, fee, student_number',
           filters,
           single: true,
         });
@@ -174,32 +175,30 @@ export default function ScanPage() {
       setScannedStudent(student);
       const scannedAt = new Date().toISOString();
 
-      if (navigator.onLine) {
-        // Online: record immediately
-        await dbInsert({
-          table: 'attendance_scans',
-          data: {
+      if (student.payment_status === 'paid') {
+        // Paid: record attendance immediately with payment_status_at_scan
+        if (navigator.onLine) {
+          await dbInsert({
+            table: 'attendance_scans',
+            data: {
+              student_id: student.id,
+              center_id: centerId,
+              scanned_by: userId,
+              scanned_at: scannedAt,
+              payment_status_at_scan: 'paid',
+            },
+            select: false,
+          });
+        } else {
+          await queueScan({
             student_id: student.id,
             center_id: centerId,
             scanned_by: userId,
             scanned_at: scannedAt,
-          },
-          select: false,
-        });
-
-      } else {
-        // Offline: queue for sync
-        await queueScan({
-          student_id: student.id,
-          center_id: centerId,
-          scanned_by: userId,
-          scanned_at: scannedAt,
-        });
-        const count = await getUnsyncedCount();
-        setPendingCount(count);
-      }
-
-      if (student.payment_status === 'paid') {
+          });
+          const count = await getUnsyncedCount();
+          setPendingCount(count);
+        }
         dismissTimerRef.current = setTimeout(() => {
           setScannedStudent(null);
           isProcessingRef.current = false;
@@ -241,6 +240,18 @@ export default function ScanPage() {
             payment_method: method,
             payment_date: scannedAt,
             created_by: userId,
+          },
+          select: false,
+        });
+        await dbInsert({
+          table: 'attendance_scans',
+          data: {
+            student_id: scannedStudent.id,
+            center_id: centerId,
+            scanned_by: userId,
+            scanned_at: scannedAt,
+            payment_status_at_scan: 'unpaid',
+            payment_method: method,
           },
           select: false,
         });

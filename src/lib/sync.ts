@@ -11,14 +11,19 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
   for (const scan of unsyncedScans) {
     try {
       // Insert attendance record
+      const scanData: Record<string, unknown> = {
+        student_id: scan.student_id,
+        center_id: scan.center_id,
+        scanned_by: scan.scanned_by,
+        scanned_at: scan.scanned_at,
+      };
+      if (scan.payment_action) {
+        scanData.payment_status_at_scan = 'unpaid';
+        scanData.payment_method = scan.payment_action.method;
+      }
       const { error: attendanceError } = await dbInsert({
         table: 'attendance_scans',
-        data: {
-          student_id: scan.student_id,
-          center_id: scan.center_id,
-          scanned_by: scan.scanned_by,
-          scanned_at: scan.scanned_at,
-        },
+        data: scanData,
         select: false,
       });
 

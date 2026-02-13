@@ -197,6 +197,39 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
+    if (action === 'submit_payment_proof') {
+      const { amount, reference, proof_url } = body;
+      if (!reference || !reference.trim()) {
+        return NextResponse.json({ error: 'Reference is required' }, { status: 400 });
+      }
+      const numAmount = Number(amount);
+      if (isNaN(numAmount) || numAmount <= 0) {
+        return NextResponse.json({ error: 'Valid amount is required' }, { status: 400 });
+      }
+
+      const { data: pendingInvoice } = await ctx.supabaseAdmin
+        .from('invoices')
+        .select('id')
+        .eq('center_id', ctx.user.center_id)
+        .in('status', ['pending', 'overdue'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (pendingInvoice) {
+        const { error: updateErr } = await ctx.supabaseAdmin
+          .from('invoices')
+          .update({
+            payment_reference: String(reference).trim(),
+            payment_amount: numAmount,
+            payment_proof_url: proof_url || null,
+          })
+          .eq('id', (pendingInvoice as { id: string }).id);
+        if (updateErr) throw updateErr;
+      }
+      return NextResponse.json({ success: true });
+    }
+
     if (action === 'submit_payment_reference' && reference) {
       const { data: pendingInvoice } = await ctx.supabaseAdmin
         .from('invoices')

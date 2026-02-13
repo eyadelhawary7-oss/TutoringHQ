@@ -25,6 +25,7 @@ export default function RoomsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editCapacity, setEditCapacity] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -93,14 +94,17 @@ export default function RoomsPage() {
     setEditingId(r.id);
     setEditName(r.name);
     setEditCapacity(r.capacity != null ? String(r.capacity) : '');
+    setSaveError('');
   };
 
   const handleSaveEdit = async () => {
     if (!editingId || !centerId || !userId || !editName.trim()) return;
-    const capacity = editCapacity.trim() ? parseInt(editCapacity, 10) : null;
+    setSaveError('');
+    const capVal = editCapacity.trim();
+    const capacity = capVal ? (parseInt(capVal, 10) || null) : null;
     const { error } = await dbUpdate({
       table: 'rooms',
-      data: { name: editName.trim(), capacity, updated_at: new Date().toISOString() },
+      data: { name: editName.trim(), capacity },
       filters: [{ column: 'id', op: 'eq', value: editingId }],
       select: false,
     });
@@ -113,8 +117,12 @@ export default function RoomsPage() {
         action: 'room_update',
         entityType: 'rooms',
         entityId: editingId,
-        details: { name: editName.trim() },
+        details: { name: editName.trim(), capacity },
       });
+    } else {
+      setSaveError(typeof error === 'object' && error !== null && 'message' in error
+        ? (error as { message: string }).message
+        : String(error));
     }
   };
 
@@ -167,6 +175,11 @@ export default function RoomsPage() {
                 </button>
               </form>
 
+              {saveError && (
+                <div className="mb-4 p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm">
+                  {saveError}
+                </div>
+              )}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('allRooms')}</h2>
                 <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
