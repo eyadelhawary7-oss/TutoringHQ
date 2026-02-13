@@ -247,6 +247,7 @@ export default function ScanPage() {
             payment_date: scannedAt,
             created_by: userId,
             status: paymentStatus,
+            confirmed: isCash,
           },
           select: false,
         });
@@ -300,6 +301,10 @@ export default function ScanPage() {
       dismissTimerRef.current = setTimeout(() => {
         setScannedStudent(null);
         isProcessingRef.current = false;
+        if (mode === 'manual') {
+          setManualIdInput('');
+          setTimeout(() => manualInputRef.current?.focus(), 100);
+        }
       }, 3000);
     } catch {
       setError(t('scanError'));
@@ -417,8 +422,8 @@ export default function ScanPage() {
               </button>
             </div>
           )}
-          <CameraScanner onScan={handleScan} isActive={mode === 'camera' && !scannedStudent} />
-          <BluetoothScanner onScan={handleScan} isActive={mode === 'bluetooth' && !scannedStudent} />
+          <CameraScanner key={scannedStudent ? 'camera-hidden' : 'camera-active'} onScan={handleScan} isActive={mode === 'camera' && !scannedStudent} />
+          <BluetoothScanner key={scannedStudent ? 'bt-hidden' : 'bt-active'} onScan={handleScan} isActive={mode === 'bluetooth' && !scannedStudent} />
         </div>
       </div>
 

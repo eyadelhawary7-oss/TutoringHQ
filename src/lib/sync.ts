@@ -53,6 +53,7 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
             payment_date: scan.scanned_at,
             created_by: scan.scanned_by,
             status: paymentStatus,
+            confirmed: !scan.payment_action.isPending,
           },
           select: false,
         });

@@ -148,7 +148,12 @@
     "groupOptional": "Group (optional)",
     "parentPhoneOptional": "Parent Phone (optional)",
     "groupRequiredError": "Group is required",
-    "nameRequired": "Name is required"
+    "nameRequired": "Name is required",
+    "viewQR": "View QR",
+    "downloadQR": "Download QR",
+    "printCard": "Print Card",
+    "generateAllQR": "Generate All QR Codes",
+    "generatingQR": "Generating QR codes..."
   },
   "print": {
     "title": "Print Student Cards",
@@ -181,7 +186,8 @@
     "studentNotFound": "Student not found",
     "attendanceRecorded": "Attendance recorded",
     "pending": "pending",
-    "pendingPayment": "Payment Pending Confirmation"
+    "pendingPayment": "Payment Pending Confirmation",
+    "recordedAwaitingTransfer": "Recorded — awaiting transfer"
   },
   "sync": {
     "online": "Online",
@@ -246,7 +252,17 @@
     "subject": "Subject",
     "status": "Status",
     "amount": "Amount",
-    "selected": "{count} selected"
+    "selected": "{count} selected",
+    "recorded": "Recorded",
+    "confirmSelected": "Confirm Selected",
+    "recordPayment": "Record Payment",
+    "awaitingConfirmation": "Payment recorded — awaiting confirmation",
+    "cash": "Cash",
+    "instapay": "InstaPay",
+    "vodacash": "Vodafone Cash",
+    "orange": "Orange Cash",
+    "fawry": "Fawry",
+    "bank": "Bank Transfer"
   },
   "settings": {
     "title": "Settings",

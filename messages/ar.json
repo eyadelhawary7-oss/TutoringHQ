@@ -148,7 +148,12 @@
     "groupOptional": "المجموعة (اختياري)",
     "parentPhoneOptional": "رقم ولي الأمر (اختياري)",
     "groupRequiredError": "المجموعة مطلوبة",
-    "nameRequired": "الاسم مطلوب"
+    "nameRequired": "الاسم مطلوب",
+    "viewQR": "عرض QR",
+    "downloadQR": "تحميل QR",
+    "printCard": "طباعة الكارت",
+    "generateAllQR": "إنشاء كل أكواد QR",
+    "generatingQR": "جاري إنشاء أكواد QR..."
   },
   "print": {
     "title": "طباعة بطاقات الطلاب",
@@ -181,7 +186,8 @@
     "studentNotFound": "الطالب غير موجود",
     "attendanceRecorded": "تم تسجيل الحضور",
     "pending": "معلق",
-    "pendingPayment": "في انتظار تأكيد الدفع"
+    "pendingPayment": "في انتظار تأكيد الدفع",
+    "recordedAwaitingTransfer": "تم التسجيل — في انتظار التحويل"
   },
   "sync": {
     "online": "متصل",
@@ -246,7 +252,17 @@
     "subject": "المادة",
     "status": "الحالة",
     "amount": "المبلغ",
-    "selected": "{count} محدد"
+    "selected": "{count} محدد",
+    "recorded": "تم التسجيل",
+    "confirmSelected": "تأكيد المحددين",
+    "recordPayment": "تسجيل دفعة",
+    "awaitingConfirmation": "تم التسجيل — في انتظار التحويل",
+    "cash": "كاش",
+    "instapay": "إنستاباي",
+    "vodacash": "فودافون كاش",
+    "orange": "أورانج كاش",
+    "fawry": "فوري",
+    "bank": "تحويل بنكي"
   },
   "settings": {
     "title": "الإعدادات",

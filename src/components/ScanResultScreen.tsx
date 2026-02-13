@@ -35,55 +35,42 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
 
   const isPaid = student.payment_status === 'paid';
   const isPending = student.payment_status === 'pending';
-
+  // GREEN = paid/confirmed (cash), YELLOW/AMBER = pending (non-cash recorded), RED = unpaid
   const bgColor = isPaid ? 'bg-emerald-500' : isPending ? 'bg-amber-500' : 'bg-red-500';
+  const isAmberScreen = isPending; // Use dark text on amber for better contrast
 
   return (
     <div
       className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-colors duration-300 min-h-screen w-full ${bgColor}`}
+      style={isAmberScreen ? { backgroundColor: '#F59E0B' } : undefined}
       dir="rtl"
       onClick={isPaid ? onDismiss : undefined}
     >
-      {/* Student Name */}
+      {/* For amber (pending) screen use dark text per spec */}
       <h1
-        className="text-5xl sm:text-7xl md:text-8xl font-bold text-white text-center px-4 mb-2"
-        style={{ textShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
+        className={`text-5xl sm:text-7xl md:text-8xl font-bold text-center px-4 mb-2 ${isAmberScreen ? 'text-gray-900' : 'text-white'}`}
+        style={isAmberScreen ? undefined : { textShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
       >
         {student.name}
       </h1>
 
-      {/* Student ID */}
       {student.student_number && (
-        <p
-          className="text-xl sm:text-2xl text-white/95 text-center mb-2"
-          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
-        >
+        <p className={`text-xl sm:text-2xl text-center mb-2 ${isAmberScreen ? 'text-gray-800' : 'text-white/95'}`}>
           {student.student_number}
         </p>
       )}
 
-      {/* Subject */}
-      <p
-        className="text-2xl sm:text-3xl text-white/90 text-center mb-2"
-        style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
-      >
+      <p className={`text-2xl sm:text-3xl text-center mb-2 ${isAmberScreen ? 'text-gray-800' : 'text-white/90'}`}>
         {student.subject}
       </p>
 
-      {/* Status */}
-      <p
-        className="text-xl sm:text-2xl text-white/80 text-center mb-8"
-        style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
-      >
-        {isPaid ? `✓ ${t('studentPaid')}` : isPending ? t('pendingPayment') : t('studentUnpaid')}
+      {/* Status: paid=green check, pending=amber "Recorded — awaiting transfer", unpaid=red */}
+      <p className={`text-xl sm:text-2xl text-center mb-8 ${isAmberScreen ? 'text-gray-900 font-semibold' : 'text-white/80'}`}>
+        {isPaid ? `✓ ${t('studentPaid')}` : isPending ? t('recordedAwaitingTransfer') : t('studentUnpaid')}
       </p>
 
-      {/* Pending: show payment method */}
       {isPending && student.last_payment_method && (
-        <p
-          className="text-lg sm:text-xl text-white/90 text-center mb-4"
-          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
-        >
+        <p className={`text-lg sm:text-xl text-center mb-4 ${isAmberScreen ? 'text-gray-800' : 'text-white/90'}`}>
           {t(paymentMethods.find(m => m.value === student.last_payment_method)?.key ?? 'instapay')}
         </p>
       )}
@@ -129,9 +116,8 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
         </div>
       )}
 
-      {/* Dismiss hint for paid / pending */}
       {(isPaid || isPending) && (
-        <p className="text-white/60 text-sm mt-8">
+        <p className={`text-sm mt-8 ${isAmberScreen ? 'text-gray-700' : 'text-white/60'}`}>
           {isPaid ? t('attendanceRecorded') : t('pendingPayment')}
         </p>
       )}

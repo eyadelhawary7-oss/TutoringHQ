@@ -23,18 +23,18 @@ export async function POST(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // Resolve referral code to center UUID (referred_by is UUID, not text)
     let referredBy: string | null = null;
-    if (referralCode && referralCode.trim().length === 8) {
-      const code = referralCode.trim().toUpperCase();
-      const { data: refCenter } = await supabase
+    if (referralCode && referralCode.trim() !== '') {
+      const { data: referringCenter } = await supabase
         .from('centers')
         .select('id')
-        .eq('referral_code', code)
+        .eq('referral_code', referralCode.trim().toUpperCase())
         .single();
-      if (refCenter) {
-        referredBy = refCenter.id;
+      if (referringCenter) {
+        referredBy = referringCenter.id; // UUID, not text
       }
-      // If invalid referral code, ignore and proceed without referral (don't fail signup)
+      // If code is invalid, silently ignore — don't block signup
     }
 
     const insertData: Record<string, unknown> = {
@@ -44,9 +44,9 @@ export async function POST(request: Request) {
       plan: plan || 'starter',
       status: 'pending',
       requested_at: new Date().toISOString(),
+      referred_by: referredBy, // null or valid UUID
     };
     if (referredBy) {
-      insertData.referred_by = referredBy;
       insertData.referral_code_used_at = new Date().toISOString();
     }
 
@@ -60,13 +60,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: centerError.message }, { status: 500 });
     }
 
+    // Log referral in audit_log if used
+    if (referredBy && center && referralCode?.trim()) {
+      try {
+        const { error: auditErr } = await supabase.from('audit_log').insert({
+          center_id: center.id,
+          user_id: null,
+          action: 'referral_used',
+          entity_type: 'center',
+          details: { referral_code: referralCode.trim(), referred_by: referredBy },
+        });
+        if (auditErr) console.warn('Audit log referral_used:', auditErr.message);
+      } catch {
+        // Don't fail signup if audit log fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'تم إرسال طلبك بنجاح. سيتم التواصل معك خلال 24 ساعة.',
     });
   } catch (error) {
+    console.error('Signup error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { error: error instanceof Error ? error.message : 'Signup failed' },
       { status: 500 }
     );
   }
