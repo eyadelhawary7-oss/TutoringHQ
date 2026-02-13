@@ -23,29 +23,6 @@ function generatePassword(len = 8): string {
   return s;
 }
 
-/** Send WhatsApp to a phone (optional) */
-async function sendWhatsApp(toPhone: string, message: string) {
-  const waToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  const waPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  if (!waToken || !waPhoneId) return;
-  const to = toPhone.replace(/[^0-9]/g, '');
-  if (!to) return;
-  try {
-    await fetch(`https://graph.facebook.com/v21.0/${waPhoneId}/messages`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to,
-        type: 'text',
-        text: { body: message, preview_url: false },
-      }),
-    });
-  } catch (e) {
-    console.error('WhatsApp send error:', e);
-  }
-}
-
 export async function GET(request: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -316,10 +293,6 @@ export async function PUT(request: Request) {
         subscription_status: 'active',
       })
       .eq('id', centerId);
-
-    const loginUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
-    const credsMsg = `تم الموافقة على طلبك!\nمرحباً بك في CenterHQ.\n\nسجّل الدخول عبر: ${loginUrl}\nرقم الهاتف: ${phone}\nكلمة المرور: ${password}\n\nيمكنك تغيير كلمة المرور من الإعدادات.`;
-    await sendWhatsApp(phone, credsMsg);
 
     if (center.email) {
       // TODO: Send email if email service is configured

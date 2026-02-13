@@ -1,0 +1,33 @@
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905237239,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905237698,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905237826,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905239801,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905240012,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905240116,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905240541,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905240730,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905240822,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905516781,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905517090,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905517189,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905517609,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905518526,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905518632,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905518802,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905519004,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905519100,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905548218,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905548641,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905548805,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905549200,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905549407,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905549510,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905549531,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905549731,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905549835,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905571610,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905571990,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905572103,"hypothesisId":"H2_H3"}
+{"location":"limits/route.ts:GET:entry","message":"limits GET called","data":{},"timestamp":1770905572532,"hypothesisId":"H4"}
+{"location":"limits/route.ts:before_center","message":"before center query","data":{"centerId":"a836efdc-3ff9-4d0e-930d-58d72fd83403"},"timestamp":1770905572750,"hypothesisId":"H2"}
+{"location":"limits/route.ts:after_center","message":"after center query","data":{"hasCenter":false,"centerError":"column centers.max_teachers does not exist","centerCode":"42703"},"timestamp":1770905572871,"hypothesisId":"H2_H3"}

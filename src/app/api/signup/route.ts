@@ -2,42 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { signupSchema } from '@/lib/validations';
 
-/** Send WhatsApp to admin (optional - fails gracefully if not configured) */
-async function notifyAdminWhatsApp(message: string) {
-  const waToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  const waPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const adminPhone = process.env.ADMIN_WHATSAPP_NUMBER;
-  if (!waToken || !waPhoneId || !adminPhone) {
-    console.warn('WhatsApp or ADMIN_WHATSAPP_NUMBER not configured, skipping admin notification');
-    return;
-  }
-  const to = adminPhone.replace(/[^0-9]/g, '');
-  try {
-    const res = await fetch(
-      `https://graph.facebook.com/v21.0/${waPhoneId}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${waToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to,
-          type: 'text',
-          text: { body: message, preview_url: false },
-        }),
-      }
-    );
-    if (!res.ok) {
-      const err = await res.json();
-      console.error('WhatsApp admin notify error:', err);
-    }
-  } catch (e) {
-    console.error('WhatsApp admin notify error:', e);
-  }
-}
-
 export async function POST(request: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -77,14 +41,6 @@ export async function POST(request: Request) {
     if (centerError) {
       return NextResponse.json({ error: centerError.message }, { status: 500 });
     }
-
-    const planLabels: Record<string, string> = {
-      starter: 'أساسي',
-      pro: 'متقدم',
-      enterprise: 'مؤسسات',
-    };
-    const msg = `طلب تسجيل سنتر جديد\nالسنتر: ${centerName}\nالهاتف: ${phone}\nالبريد: ${email || 'غير متوفر'}\nالخطة: ${planLabels[plan] || plan}\nرمز التحقق: ${verificationCode}`;
-    await notifyAdminWhatsApp(msg);
 
     return NextResponse.json({
       success: true,

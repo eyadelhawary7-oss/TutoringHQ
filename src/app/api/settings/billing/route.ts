@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { billingPeriodSchema } from '@/lib/validations';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -47,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     const { data: center, error: centerError } = await ctx.supabaseAdmin
       .from('centers')
-      .select('plan, billing_period, billing_amount, next_billing_date, billing_cycle_start')
+      .select('plan, pricing_type, weekly_student_limit, max_students')
       .eq('id', ctx.user.center_id)
       .single();
 
@@ -55,32 +54,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Center not found' }, { status: 404 });
     }
 
-    // Current month WhatsApp charges from whatsapp_subscriptions
-    const thisMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-    const { data: waSub } = await ctx.supabaseAdmin
-      .from('whatsapp_subscriptions')
-      .select('individual_monthly_charge, group_monthly_charge, parent_monthly_charge, individual_overage_charge, group_overage_charge')
-      .eq('center_id', ctx.user.center_id)
-      .eq('billing_month', thisMonth)
-      .single();
+    const { data: plans, error: plansError } = await ctx.supabaseAdmin
+      .from('pricing_plans')
+      .select('*')
+      .order('sort_order', { ascending: true });
 
-    const whatsappIndividual = Number(waSub?.individual_monthly_charge ?? 0) + Number(waSub?.individual_overage_charge ?? 0);
-    const whatsappGroup = Number(waSub?.group_monthly_charge ?? 0) + Number(waSub?.group_overage_charge ?? 0);
-    const whatsappParentCheckup = Number(waSub?.parent_monthly_charge ?? 0);
-    const whatsappMonthlyTotal = whatsappIndividual + whatsappGroup + whatsappParentCheckup;
+    if (plansError) {
+      return NextResponse.json({ error: 'Failed to fetch plans' }, { status: 500 });
+    }
+
+    const { data: paygRates, error: paygError } = await ctx.supabaseAdmin
+      .from('payg_rates')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (paygError) {
+      return NextResponse.json({ error: 'Failed to fetch PAYG rates' }, { status: 500 });
+    }
+
+    const currentPlan = (plans || []).find(
+      (p: { id: string }) => p.id === (center.plan || 'starter')
+    );
 
     return NextResponse.json({
       plan: center.plan || 'starter',
-      billing_period: center.billing_period || 'quarterly',
-      billing_amount: Number(center.billing_amount ?? 0),
-      next_billing_date: center.next_billing_date,
-      billing_cycle_start: center.billing_cycle_start,
-      whatsapp_monthly_charges: {
-        individual: whatsappIndividual,
-        group: whatsappGroup,
-        parent_checkup: whatsappParentCheckup,
-        total: whatsappMonthlyTotal,
-      },
+      pricing_type: center.pricing_type || 'fixed',
+      weekly_student_limit: center.weekly_student_limit ?? center.max_students ?? 200,
+      plans: plans || [],
+      payg_rates: paygRates || [],
+      current_plan_details: currentPlan,
     });
   } catch (error) {
     return NextResponse.json(
@@ -97,38 +99,49 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only owners can update billing period (not assistants or admins - spec says "only owners")
     if (ctx.user.role !== 'owner') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
-    const validation = billingPeriodSchema.safeParse(body);
-    if (!validation.success) {
-      const msg = validation.error.issues[0]?.message || 'Invalid input';
-      return NextResponse.json({ error: msg }, { status: 400 });
+    const { plan, pricing_type, weekly_student_limit } = body;
+
+    const updates: Record<string, unknown> = {};
+
+    if (plan !== undefined) {
+      if (!['starter', 'pro', 'enterprise', 'top_centers'].includes(plan)) {
+        return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+      }
+      updates.plan = plan;
     }
-    const { billing_period } = validation.data;
+
+    if (pricing_type !== undefined) {
+      if (!['fixed', 'payg'].includes(pricing_type)) {
+        return NextResponse.json({ error: 'Invalid pricing_type' }, { status: 400 });
+      }
+      updates.pricing_type = pricing_type;
+    }
+
+    if (weekly_student_limit !== undefined) {
+      const limit = Number(weekly_student_limit);
+      if (isNaN(limit) || limit < 0 || limit > 10000) {
+        return NextResponse.json({ error: 'Invalid weekly_student_limit' }, { status: 400 });
+      }
+      updates.weekly_student_limit = limit;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
 
     const { error } = await ctx.supabaseAdmin
       .from('centers')
-      .update({ billing_period })
+      .update(updates)
       .eq('id', ctx.user.center_id);
 
     if (error) throw error;
 
-    // Fetch updated values (trigger will have updated billing_amount and next_billing_date)
-    const { data: updated } = await ctx.supabaseAdmin
-      .from('centers')
-      .select('billing_amount, next_billing_date')
-      .eq('id', ctx.user.center_id)
-      .single();
-
-    return NextResponse.json({
-      success: true,
-      billing_amount: Number(updated?.billing_amount ?? 0),
-      next_billing_date: updated?.next_billing_date,
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

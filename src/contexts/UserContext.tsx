@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 export type UserRole = 'owner' | 'admin' | 'assistant' | 'teacher';
 
-export type PermissionKey = 'can_send_whatsapp' | 'can_add_subjects' | 'can_view_calendar' | 'can_manage_payments';
+export type PermissionKey = 'can_add_subjects' | 'can_view_calendar' | 'can_manage_payments';
 
 interface UserProfile {
   id: string;
@@ -24,7 +24,6 @@ interface UserContextType {
 }
 
 const defaultPermissions: Record<PermissionKey, boolean> = {
-  can_send_whatsapp: false,
   can_add_subjects: false,
   can_view_calendar: false,
   can_manage_payments: false,
@@ -60,7 +59,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
           setUser(data.user);
           if (data.permissions) {
             setPermissions({
-              can_send_whatsapp: data.permissions.can_send_whatsapp ?? false,
               can_add_subjects: data.permissions.can_add_subjects ?? false,
               can_view_calendar: data.permissions.can_view_calendar ?? false,
               can_manage_payments: data.permissions.can_manage_payments ?? false,

@@ -23,7 +23,6 @@ interface TeamMember {
 }
 
 const PERMISSION_KEYS = [
-  { key: 'can_send_whatsapp' as const, labelKey: 'permWhatsApp' },
   { key: 'can_add_subjects' as const, labelKey: 'permSubjects' },
   { key: 'can_view_calendar' as const, labelKey: 'permCalendar' },
   { key: 'can_manage_payments' as const, labelKey: 'permPayments' },
@@ -309,15 +308,6 @@ export default function SettingsPage() {
     }
   };
 
-  function generateTempPassword(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    let pwd = '';
-    for (let i = 0; i < 8; i++) {
-      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return pwd;
-  }
-
   const handleInviteTeamMember = async (e: React.FormEvent) => {
     e.preventDefault();
     setInviteError('');
@@ -336,40 +326,49 @@ export default function SettingsPage() {
       return;
     }
 
-    const tempPassword = generateTempPassword();
-    const { data, error } = await dbInsert({
-      table: 'users',
-      data: {
-        name: inviteName.trim() || null,
-        phone,
-        center_id: centerId,
-        role: inviteRole,
-      },
-      select: 'id, name, phone, role',
-      single: true,
-    });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setInviteError(t('error'));
+      return;
+    }
 
-    if (!error && data) {
-      const member = data as TeamMember;
-      await auditLog({
-        centerId,
-        userId,
-        action: 'team_member_invite',
-        entityType: 'users',
-        entityId: member.id,
-        details: { name: member.name, phone: member.phone, role: member.role },
+    let result: { success?: boolean; member?: TeamMember; tempPassword?: string; error?: string } = {};
+    try {
+      const res = await fetch('/api/invite-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          name: inviteName.trim() || '',
+          phone,
+          role: inviteRole,
+        }),
       });
+      result = await res.json();
+      if (!res.ok) {
+        setInviteError(result.error || res.statusText || 'Failed to add member');
+        return;
+      }
+    } catch (fetchError) {
+      setInviteError(t('error'));
+      return;
+    }
+
+    if (result.success && result.member) {
+      const member = result.member;
       setTeamMembers(prev => [...prev, member]);
       setInviteName('');
       setInvitePhone('');
       setInviteRole('assistant');
-      setLastInvitePassword(tempPassword);
+      setLastInvitePassword(result.tempPassword ?? null);
       if (inviteRole === 'teacher') {
         setTeacherLimits(prev => ({ ...prev, current: prev.current + 1, canAdd: prev.current + 1 < prev.max }));
       }
       showSaved();
     } else {
-      setInviteError('Failed to add member');
+      setInviteError(result.error || 'Failed to add member');
     }
   };
 
@@ -837,64 +836,15 @@ export default function SettingsPage() {
               </Link>
             </section>
 
-            {/* WhatsApp Settings link */}
+            {/* WhatsApp Integration Placeholder */}
             <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('whatsappSettings')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('whatsappSettingsDesc')}</p>
-              <Link
-                href="/settings/whatsapp"
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
-              >
-                {t('whatsappSettingsLink')} →
-              </Link>
-            </section>
-
-            {/* WhatsApp Integration */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                    <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.243-1.217l-.271-.162-2.87.853.853-2.87-.162-.271A8 8 0 1112 20z"/>
-                  </svg>
-                </div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">WhatsApp Business API</h2>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Setup Instructions</h3>
-                  <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-decimal list-inside">
-                    <li>Create a Meta Business App at <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 underline">developers.facebook.com</a></li>
-                    <li>Add WhatsApp product to your app</li>
-                    <li>Get your permanent access token and Phone Number ID</li>
-                    <li>Create a message template named <code className="px-1 bg-gray-200 dark:bg-gray-600 rounded text-xs">payment_reminder</code></li>
-                    <li>Add the env vars to your deployment (Vercel)</li>
-                    <li>Set webhook URL to: <code className="px-1 bg-gray-200 dark:bg-gray-600 rounded text-xs break-all">{typeof window !== 'undefined' ? window.location.origin : ''}/api/whatsapp/webhook</code></li>
-                  </ol>
-                </div>
-
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <h3 className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">Required Environment Variables</h3>
-                  <div className="space-y-1 font-mono text-xs text-green-700 dark:text-green-400">
-                    <p>WHATSAPP_ACCESS_TOKEN=your_token</p>
-                    <p>WHATSAPP_PHONE_NUMBER_ID=your_phone_id</p>
-                    <p>WHATSAPP_VERIFY_TOKEN=your_verify_token</p>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">Template Format</h3>
-                  <p className="text-sm text-blue-700 dark:text-blue-400">
-                    Create a template named <strong>payment_reminder</strong> with 4 body parameters:
-                  </p>
-                  <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-mono">
-                    {'{{1}}'} = Student Name<br/>
-                    {'{{2}}'} = Center Name<br/>
-                    {'{{3}}'} = Amount Due<br/>
-                    {'{{4}}'} = Subject Name
-                  </div>
-                </div>
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
+                <p className="text-amber-800 dark:text-amber-200 text-sm" dir="ltr">
+                  For WhatsApp integration, contact our support team: support@centerhq.com
+                </p>
+                <p className="text-amber-700 dark:text-amber-300 text-sm mt-2" dir="rtl">
+                  لتفعيل خدمة الواتساب، تواصل مع فريق الدعم: support@centerhq.com
+                </p>
               </div>
             </section>
           </div>

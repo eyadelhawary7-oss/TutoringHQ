@@ -171,26 +171,6 @@ export default function ScanPage() {
           select: false,
         });
 
-        // Check-in alert for paid student with parent_phone
-        if (student.payment_status === 'paid' && student.parent_phone) {
-          try {
-            await fetch('/api/whatsapp/send-checkin-alert', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-              },
-              body: JSON.stringify({
-                student_id: student.id,
-                student_name: student.name,
-                parent_phone: student.parent_phone,
-                subject: student.subject_name || '',
-              }),
-            });
-          } catch {
-            // Non-blocking
-          }
-        }
       } else {
         // Offline: queue for sync
         await queueScan({

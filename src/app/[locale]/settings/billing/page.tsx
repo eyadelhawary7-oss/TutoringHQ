@@ -1,64 +1,68 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useState, useEffect, useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import Navbar from '@/components/Navbar';
 import { Link } from '@/i18n/routing';
 
-type BillingPeriod = 'monthly' | 'quarterly' | 'half_yearly' | 'yearly';
-type PlanType = 'starter' | 'pro' | 'enterprise';
+interface PricingPlan {
+  id: string;
+  name_en: string;
+  name_ar: string;
+  students_per_week_limit: number;
+  monthly_fee_egp: number;
+  per_student_at_capacity_egp: number;
+  setup_fee_egp: number;
+  is_custom: boolean;
+}
 
-const PLAN_NAMES: Record<PlanType, string> = {
-  starter: 'starter',
-  pro: 'pro',
-  enterprise: 'enterprise',
-};
+interface PaygRate {
+  min_students_per_week: number;
+  max_students_per_week: number;
+  rate_per_student_egp: number;
+}
 
-const PRICING: Record<PlanType, Record<BillingPeriod, { amount: number; savings?: number }>> = {
-  starter: {
-    monthly: { amount: 1075 },
-    quarterly: { amount: 3000 },
-    half_yearly: { amount: 5700, savings: 300 },
-    yearly: { amount: 10800, savings: 1200 },
-  },
-  pro: {
-    monthly: { amount: 1935 },
-    quarterly: { amount: 5400 },
-    half_yearly: { amount: 10260, savings: 540 },
-    yearly: { amount: 19440, savings: 2160 },
-  },
-  enterprise: {
-    monthly: { amount: 3763 },
-    quarterly: { amount: 10500 },
-    half_yearly: { amount: 19950, savings: 1050 },
-    yearly: { amount: 37800, savings: 4200 },
-  },
-};
+const FALLBACK_PLANS: PricingPlan[] = [
+  { id: 'starter', name_en: 'Starter', name_ar: 'أساسي', students_per_week_limit: 200, monthly_fee_egp: 4000, per_student_at_capacity_egp: 5, setup_fee_egp: 2500, is_custom: false },
+  { id: 'pro', name_en: 'Pro', name_ar: 'محترف', students_per_week_limit: 600, monthly_fee_egp: 7200, per_student_at_capacity_egp: 3, setup_fee_egp: 5000, is_custom: false },
+  { id: 'enterprise', name_en: 'Enterprise', name_ar: 'مؤسسات', students_per_week_limit: 1500, monthly_fee_egp: 9000, per_student_at_capacity_egp: 1.5, setup_fee_egp: 10000, is_custom: false },
+  { id: 'top_centers', name_en: 'Top Centers', name_ar: 'كبار السناتر', students_per_week_limit: 1500, monthly_fee_egp: 0, per_student_at_capacity_egp: 0, setup_fee_egp: 0, is_custom: true },
+];
 
-interface BillingData {
-  plan: PlanType;
-  billing_period: BillingPeriod;
-  billing_amount: number;
-  next_billing_date: string | null;
-  whatsapp_monthly_charges: {
-    individual: number;
-    group: number;
-    parent_checkup: number;
-    total: number;
-  };
+const FALLBACK_PAYG: PaygRate[] = [
+  { min_students_per_week: 0, max_students_per_week: 200, rate_per_student_egp: 6 },
+  { min_students_per_week: 201, max_students_per_week: 600, rate_per_student_egp: 3.75 },
+  { min_students_per_week: 601, max_students_per_week: 1500, rate_per_student_egp: 2 },
+  { min_students_per_week: 1501, max_students_per_week: 10000, rate_per_student_egp: 1.25 },
+];
+
+function getPaygRateForStudents(rates: PaygRate[], students: number): PaygRate | undefined {
+  return rates.find(r => students >= r.min_students_per_week && students <= r.max_students_per_week);
+}
+
+function getFixedPlanForStudents(plans: PricingPlan[], students: number): PricingPlan | undefined {
+  const fixedPlans = plans.filter(p => !p.is_custom).sort((a, b) => b.students_per_week_limit - a.students_per_week_limit);
+  return fixedPlans.find(p => students <= p.students_per_week_limit) ?? fixedPlans[fixedPlans.length - 1];
 }
 
 export default function BillingPage() {
   const t = useTranslations('billing');
   const router = useRouter();
   const { user: currentUser } = useUser();
-  const [data, setData] = useState<BillingData | null>(null);
+  const [data, setData] = useState<{
+    plan: string;
+    pricing_type: string;
+    weekly_student_limit: number;
+    plans: PricingPlan[];
+    payg_rates: PaygRate[];
+    current_plan_details?: PricingPlan;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | null>(null);
+  const [paygSlider, setPaygSlider] = useState(200);
   const [savedMessage, setSavedMessage] = useState('');
 
   useEffect(() => {
@@ -70,10 +74,6 @@ export default function BillingPage() {
   useEffect(() => {
     fetchBilling();
   }, []);
-
-  useEffect(() => {
-    if (data) setSelectedPeriod(data.billing_period);
-  }, [data]);
 
   async function fetchBilling() {
     try {
@@ -88,61 +88,96 @@ export default function BillingPage() {
       });
       if (!res.ok) {
         if (res.status === 401) router.replace('/login');
+        setData({
+          plan: 'starter',
+          pricing_type: 'fixed',
+          weekly_student_limit: 200,
+          plans: FALLBACK_PLANS,
+          payg_rates: FALLBACK_PAYG,
+        });
         return;
       }
       const json = await res.json();
-      setData(json);
+      const plans = (json.plans?.length ? json.plans : FALLBACK_PLANS) as PricingPlan[];
+      const paygRates = (json.payg_rates?.length ? json.payg_rates : FALLBACK_PAYG) as PaygRate[];
+      setData({
+        plan: json.plan || 'starter',
+        pricing_type: json.pricing_type || 'fixed',
+        weekly_student_limit: json.weekly_student_limit ?? 200,
+        plans,
+        payg_rates: paygRates,
+        current_plan_details: json.current_plan_details,
+      });
+      setPaygSlider(json.weekly_student_limit ?? 200);
     } catch (err) {
       console.error('Fetch billing error:', err);
+      setData({
+        plan: 'starter',
+        pricing_type: 'fixed',
+        weekly_student_limit: 200,
+        plans: FALLBACK_PLANS,
+        payg_rates: FALLBACK_PAYG,
+      });
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleSave() {
-    if (!selectedPeriod || selectedPeriod === data?.billing_period || saving) return;
+  async function handleChoosePlan(planId: string) {
+    if (planId === 'top_centers') {
+      window.location.href = 'mailto:support@centerhq.com?subject=Top Centers Plan Inquiry';
+      return;
+    }
+    if (saving || currentUser?.role !== 'owner') return;
 
     try {
       setSaving(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      const plan = plans.find(p => p.id === planId);
       const res = await fetch('/api/settings/billing', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ billing_period: selectedPeriod }),
+        body: JSON.stringify({
+          plan: planId,
+          pricing_type: 'fixed',
+          weekly_student_limit: plan?.students_per_week_limit ?? 200,
+        }),
       });
 
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Failed to update');
       }
-      const json = await res.json();
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              billing_period: selectedPeriod,
-              billing_amount: json.billing_amount ?? prev.billing_amount,
-              next_billing_date: json.next_billing_date ?? prev.next_billing_date,
-            }
-          : null
-      );
-      setSavedMessage(t('saveSuccess'));
-      setTimeout(() => setSavedMessage(''), 2000);
+      setData(prev => prev ? { ...prev, plan: planId, pricing_type: 'fixed', weekly_student_limit: plan?.students_per_week_limit ?? 200 } : null);
+      setSavedMessage(t('planUpdated'));
+      setTimeout(() => setSavedMessage(''), 3000);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Unknown error');
+      alert(err instanceof Error ? err.message : t('updateFailed'));
     } finally {
       setSaving(false);
     }
   }
 
-  const planNameKey = data?.plan ? PLAN_NAMES[data.plan] : 'starter';
-  const planLabel = t(planNameKey);
+  const plans = data?.plans ?? FALLBACK_PLANS;
+  const paygRates = data?.payg_rates ?? FALLBACK_PAYG;
+  const currentPlanDetails = data?.current_plan_details ?? plans.find(p => p.id === data?.plan);
+  const locale = useLocale();
+  const isRTL = locale === 'ar';
   const isOwner = currentUser?.role === 'owner';
+
+  const paygRate = useMemo(() => getPaygRateForStudents(paygRates, paygSlider), [paygRates, paygSlider]);
+  const paygWeeklyCost = useMemo(() => (paygRate ? paygSlider * paygRate.rate_per_student_egp : 0), [paygSlider, paygRate]);
+  const matchingFixedPlan = useMemo(() => getFixedPlanForStudents(plans, paygSlider), [plans, paygSlider]);
+  const fixedWeeklyCost = useMemo(() => matchingFixedPlan ? (matchingFixedPlan.monthly_fee_egp * 12) / 52 : 0, [matchingFixedPlan]);
+  const premiumPercent = useMemo(() => {
+    if (fixedWeeklyCost <= 0) return 0;
+    return Math.round(((paygWeeklyCost - fixedWeeklyCost) / fixedWeeklyCost) * 100);
+  }, [paygWeeklyCost, fixedWeeklyCost]);
 
   if (loading) {
     return (
@@ -158,8 +193,8 @@ export default function BillingPage() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
             <Link
               href="/settings"
@@ -179,189 +214,239 @@ export default function BillingPage() {
             </div>
           )}
 
-          {/* Current plan & billing info */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-              {t('currentPlan')}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{t('plan')}</span>
-                <p className="font-semibold text-gray-900 dark:text-white">{planLabel}</p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{t('period')}</span>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {t(data?.billing_period ?? 'quarterly')}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{t('amount')}</span>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {data?.billing_amount?.toLocaleString('ar-EG')} {t('egp')}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{t('nextDue')}</span>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {data?.next_billing_date
-                    ? new Date(data.next_billing_date).toLocaleDateString('ar-EG')
-                    : '—'}
-                </p>
-              </div>
+          {/* SECTION 1 - Current Plan Card */}
+          <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border-2 border-indigo-500 dark:border-indigo-400">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200">
+                {t('currentPlan')}
+              </span>
             </div>
-          </section>
-
-          {/* Billing period options */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-              {t('changePeriod')}
+              {t('currentPlanCard')}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Monthly */}
-              <button
-                type="button"
-                onClick={() => isOwner && setSelectedPeriod('monthly')}
-                disabled={!isOwner}
-                className={`text-start p-4 rounded-xl border-2 transition-all ${
-                  selectedPeriod === 'monthly'
-                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                } ${!isOwner ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-900 dark:text-white">{t('monthly')}</span>
-                  <span className="text-xs font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded">
-                    +7.5% {t('monthlyFee')}
-                  </span>
+            {data?.pricing_type === 'payg' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('plan')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">Pay-As-You-Go</p>
                 </div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  {PRICING[data?.plan ?? 'starter'].monthly.amount.toLocaleString('ar-EG')}{' '}
-                  {t('egp')}/{t('perMonth')}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('paymentEvery')} 1 {t('perMonth')}</p>
-              </button>
-
-              {/* Quarterly - Recommended */}
-              <button
-                type="button"
-                onClick={() => isOwner && setSelectedPeriod('quarterly')}
-                disabled={!isOwner}
-                className={`text-start p-4 rounded-xl border-2 transition-all ${
-                  selectedPeriod === 'quarterly'
-                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                } ${!isOwner ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-900 dark:text-white">{t('quarterly')}</span>
-                  <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-0.5 rounded">
-                    {t('recommended')}
-                  </span>
+                <div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('studentsPerWeek')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">{data.weekly_student_limit?.toLocaleString('ar-EG') ?? 0}</p>
                 </div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  {PRICING[data?.plan ?? 'starter'].quarterly.amount.toLocaleString('ar-EG')}{' '}
-                  {t('egp')}/{t('perQuarter')}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('paymentEvery')} 3 {t('perMonth')}</p>
-              </button>
-
-              {/* Half-Yearly - 5% discount */}
-              <button
-                type="button"
-                onClick={() => isOwner && setSelectedPeriod('half_yearly')}
-                disabled={!isOwner}
-                className={`text-start p-4 rounded-xl border-2 transition-all ${
-                  selectedPeriod === 'half_yearly'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                } ${!isOwner ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-900 dark:text-white">{t('halfYearly')}</span>
-                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded">
-                    5% {t('discount')}
-                  </span>
+                <div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('rateTier')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {getPaygRateForStudents(paygRates, data.weekly_student_limit ?? 0)
+                      ? `${Number(getPaygRateForStudents(paygRates, data.weekly_student_limit ?? 0)!.rate_per_student_egp).toLocaleString('ar-EG')} ${t('egp')}/${t('perStudent')}`
+                      : '—'}
+                  </p>
                 </div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  {PRICING[data?.plan ?? 'starter'].half_yearly.amount.toLocaleString('ar-EG')}{' '}
-                  {t('egp')}/{t('perHalfYear')}
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                  {t('save')} {PRICING[data?.plan ?? 'starter'].half_yearly.savings?.toLocaleString('ar-EG')} {t('egp')}
-                </p>
-              </button>
-
-              {/* Yearly - Best Value */}
-              <button
-                type="button"
-                onClick={() => isOwner && setSelectedPeriod('yearly')}
-                disabled={!isOwner}
-                className={`text-start p-4 rounded-xl border-2 transition-all ${
-                  selectedPeriod === 'yearly'
-                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                } ${!isOwner ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-900 dark:text-white">{t('yearly')}</span>
-                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 rounded">
-                    {t('bestValue')}
-                  </span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('plan')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {currentPlanDetails?.name_en ?? data?.plan} / {currentPlanDetails?.name_ar ?? ''}
+                  </p>
                 </div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  {PRICING[data?.plan ?? 'starter'].yearly.amount.toLocaleString('ar-EG')}{' '}
-                  {t('egp')}/{t('perYear')}
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                  10% {t('discount')} — {t('save')} {PRICING[data?.plan ?? 'starter'].yearly.savings?.toLocaleString('ar-EG')} {t('egp')}
-                </p>
-              </button>
-            </div>
-
-            {isOwner && selectedPeriod !== data?.billing_period && (
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium rounded-lg transition-colors"
-                >
-                  {saving ? t('saving') : t('saveChanges')}
-                </button>
+                <div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('monthlyFeeLabel')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {currentPlanDetails?.is_custom ? t('custom') : `${Number(currentPlanDetails?.monthly_fee_egp ?? 0).toLocaleString('ar-EG')} ${t('egp')}`}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('studentsPerWeek')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {currentPlanDetails?.is_custom ? '1,500+' : `≤${currentPlanDetails?.students_per_week_limit?.toLocaleString('ar-EG') ?? 0}`}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('costPerStudent')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {currentPlanDetails?.is_custom ? t('negotiated') : `${Number(currentPlanDetails?.per_student_at_capacity_egp ?? 0).toLocaleString('ar-EG')} ${t('egp')}`}
+                  </p>
+                </div>
               </div>
             )}
           </section>
 
-          {/* WhatsApp add-ons */}
+          {/* SECTION 2 - Fixed Monthly Plans */}
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+              {t('fixedPlans')}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {plans.map((plan) => {
+                const isCurrent = data?.plan === plan.id && data?.pricing_type === 'fixed';
+                const isBestValue = plan.id === 'enterprise';
+                const isTopCenters = plan.id === 'top_centers';
+
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative rounded-xl p-6 shadow-lg border-2 transition-all ${
+                      isCurrent
+                        ? 'border-indigo-500 dark:border-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/30'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    {isBestValue && !isTopCenters && (
+                      <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                        {t('bestValue')}
+                      </span>
+                    )}
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        {plan.name_en}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{plan.name_ar}</p>
+                    </div>
+                    <div className="space-y-2 text-sm mb-6">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">{t('studentsPerWeek')}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {plan.is_custom ? '1,500+' : `≤${plan.students_per_week_limit.toLocaleString('ar-EG')}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">{t('monthlyFeeLabel')}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {plan.is_custom ? t('custom') : `${Number(plan.monthly_fee_egp).toLocaleString('ar-EG')} ${t('egp')}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">{t('perStudent')}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {plan.is_custom ? t('negotiated') : `${Number(plan.per_student_at_capacity_egp).toLocaleString('ar-EG')} ${t('egp')}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">{t('setup')}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {plan.is_custom ? t('custom') : `${Number(plan.setup_fee_egp).toLocaleString('ar-EG')} ${t('egp')}`}
+                        </span>
+                      </div>
+                    </div>
+                    {isOwner && (
+                      <button
+                        type="button"
+                        onClick={() => handleChoosePlan(plan.id)}
+                        disabled={saving || isCurrent}
+                        className={`w-full py-2.5 rounded-lg font-medium transition-colors ${
+                          isTopCenters
+                            ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                            : isCurrent
+                            ? 'bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 cursor-default'
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        } disabled:opacity-60`}
+                      >
+                        {isTopCenters ? t('contactUs') : isCurrent ? '✓ ' + t('currentPlan') : t('choosePlan')}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* SECTION 3 - Pay-As-You-Go Slider */}
           <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-              {t('whatsappAddons')}
+              {t('paygTitle')}
             </h2>
-            <p className="text-sm text-amber-600 dark:text-amber-400 mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-              ⚠ {t('whatsappNote')}
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              {t('paygSubtitle')}
             </p>
-            <div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">{t('monthlyCharges')}</span>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
-                {data?.whatsapp_monthly_charges?.total?.toLocaleString('ar-EG') ?? 0} {t('egp')}/{t('perMonth')}
-              </p>
-              {(data?.whatsapp_monthly_charges?.individual ?? 0) > 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Individual: {data?.whatsapp_monthly_charges?.individual ?? 0} {t('egp')}
-                </p>
-              )}
-              {(data?.whatsapp_monthly_charges?.group ?? 0) > 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Group: {data?.whatsapp_monthly_charges?.group ?? 0} {t('egp')}
-                </p>
-              )}
-              {(data?.whatsapp_monthly_charges?.parent_checkup ?? 0) > 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Parent Check-up: {data?.whatsapp_monthly_charges?.parent_checkup ?? 0} {t('egp')}
-                </p>
-              )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('studentsPerWeekSlider')}: <strong>{paygSlider.toLocaleString('ar-EG')}</strong>
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={2000}
+                  step={10}
+                  value={paygSlider}
+                  onChange={(e) => setPaygSlider(Number(e.target.value))}
+                  className="w-full h-3 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('weeklyCost')}</span>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    {paygWeeklyCost.toLocaleString('ar-EG')} {t('egp')}/<span className="text-sm">week</span>
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('rateTier')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {paygRate ? `${Number(paygRate.rate_per_student_egp).toLocaleString('ar-EG')} ${t('egp')}/${t('perStudent')}` : '—'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('premiumVsFixed')}</span>
+                  <p className={`font-semibold ${premiumPercent > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
+                    {premiumPercent > 0 ? `+${premiumPercent}%` : premiumPercent === 0 ? '0%' : `${premiumPercent}%`}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('fixedWouldCost')}</span>
+                  <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                    {matchingFixedPlan
+                      ? `${fixedWeeklyCost.toLocaleString('ar-EG')} ${t('egp')} ${t('vsPayg')} ${paygWeeklyCost.toLocaleString('ar-EG')} ${t('egp')}`
+                      : '—'}
+                  </p>
+                </div>
+              </div>
             </div>
+            {isOwner && (
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (saving) return;
+                    setSaving(true);
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) return;
+                      const res = await fetch('/api/settings/billing', {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${session.access_token}`,
+                        },
+                        body: JSON.stringify({
+                          pricing_type: 'payg',
+                          weekly_student_limit: paygSlider,
+                        }),
+                      });
+                      if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || 'Failed');
+                      }
+                      setData(prev => prev ? { ...prev, pricing_type: 'payg', weekly_student_limit: paygSlider } : null);
+                      setSavedMessage(t('planUpdated'));
+                      setTimeout(() => setSavedMessage(''), 3000);
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : t('updateFailed'));
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving || (data?.pricing_type === 'payg' && data?.weekly_student_limit === paygSlider)}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-medium rounded-lg transition-colors"
+                >
+                  {data?.pricing_type === 'payg' ? t('currentPlan') + ' (PAYG)' : `Switch to Pay-As-You-Go (${paygSlider} students/week)`}
+                </button>
+              </div>
+            )}
           </section>
         </div>
       </div>
