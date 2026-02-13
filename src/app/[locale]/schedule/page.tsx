@@ -35,7 +35,6 @@ interface Group {
 interface ScheduleSlot {
   id: string;
   room_id: string;
-  subject_id?: string;
   subject?: string;
   group_id?: string | null;
   teacher_id: string;
@@ -174,7 +173,7 @@ export default function SchedulePage() {
         }),
         dbSelect({
           table: 'schedule_slots',
-          select: 'id, room_id, subject, subject_id, group_id, teacher_id, day_of_week, start_time, end_time, recurring, recurring_until',
+          select: 'id, room_id, subject, group_id, teacher_id, day_of_week, start_time, end_time, recurring, recurring_until',
           filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
         }),
       ]);
@@ -197,7 +196,7 @@ export default function SchedulePage() {
         const withNames = slotsData.map((s) => ({
           ...s,
           room_name: roomsData.find((r) => r.id === s.room_id)?.name ?? '',
-          subject_name: (s.subject || subjectsData.find((sub) => sub.id === s.subject_id)?.name) ?? '',
+          subject_name: s.subject ?? '',
           group_name: s.group_id ? groupsData.find((g) => g.id === s.group_id)?.name ?? '' : '',
         }));
         setSlots(withNames);
@@ -317,9 +316,9 @@ export default function SchedulePage() {
         setSlotError('');
         setSlotSuccessMessage(t('slotSaved'));
         setTimeout(() => setSlotSuccessMessage(''), 4000);
-        const slotsRes = await dbSelect({
+        const slotsRes = await         dbSelect({
           table: 'schedule_slots',
-          select: 'id, room_id, subject, subject_id, group_id, teacher_id, day_of_week, start_time, end_time, recurring, recurring_until',
+          select: 'id, room_id, subject, group_id, teacher_id, day_of_week, start_time, end_time, recurring, recurring_until',
           filters: [{ column: 'center_id', op: 'eq' as const, value: centerId }],
         });
         if (slotsRes?.data) {
@@ -328,7 +327,7 @@ export default function SchedulePage() {
           const withNames = slotsData.map((s) => ({
             ...s,
             room_name: rooms.find((r) => r.id === s.room_id)?.name ?? '',
-            subject_name: (s.subject || subjects.find((sub) => sub.id === s.subject_id)?.name) ?? '',
+            subject_name: s.subject ?? '',
             group_name: s.group_id ? groups.find((g) => g.id === s.group_id)?.name ?? '' : '',
           }));
           setSlots(withNames);

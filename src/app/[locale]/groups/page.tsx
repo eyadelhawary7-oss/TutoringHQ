@@ -11,7 +11,6 @@ import { useUser } from '@/contexts/UserContext';
 interface Group {
   id: string;
   name: string;
-  description: string | null;
   subject: string | null;
   fee?: number;
   member_count?: number;
@@ -42,7 +41,6 @@ export default function GroupsPage() {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
-  const [newGroupDesc, setNewGroupDesc] = useState('');
   const [newGroupSubject, setNewGroupSubject] = useState('');
   const [newGroupFee, setNewGroupFee] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -65,7 +63,7 @@ export default function GroupsPage() {
       const [groupsRes, studentsRes, subjectsRes] = await Promise.all([
         dbSelect({
           table: 'student_groups',
-          select: 'id, name, description, subject, fee',
+          select: 'id, name, subject, fee',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         }),
@@ -168,9 +166,8 @@ export default function GroupsPage() {
             details: { name: inserted.name },
           });
         } catch {}
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, description: newGroupDesc.trim() || null, subject: subjectName, fee: Number(newGroupFee) || 0, member_count: 0 }]);
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee: Number(newGroupFee) || 0, member_count: 0 }]);
         setNewGroupName('');
-        setNewGroupDesc('');
         setNewGroupSubject('');
         setNewGroupFee('');
       } else {
@@ -305,13 +302,6 @@ export default function GroupsPage() {
                     placeholder={t('groupName')}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white mb-3"
                     required
-                  />
-                  <input
-                    type="text"
-                    value={newGroupDesc}
-                    onChange={(e) => setNewGroupDesc(e.target.value)}
-                    placeholder={t('description')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white mb-3"
                   />
                   <div className="mb-3">
                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{t('monthlyFee')} *</label>
