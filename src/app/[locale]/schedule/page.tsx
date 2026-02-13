@@ -48,16 +48,14 @@ interface ScheduleSlot {
   teacher_name?: string;
 }
 
-const DAYS = [
-  { d: 6, label: 'Sat', key: 'sat' },
-  { d: 0, label: 'Sun', key: 'sun' },
-  { d: 1, label: 'Mon', key: 'mon' },
-  { d: 2, label: 'Tue', key: 'tue' },
-  { d: 3, label: 'Wed', key: 'wed' },
-  { d: 4, label: 'Thu', key: 'thu' },
-  { d: 5, label: 'Fri', key: 'fri' },
-];
-const DAY_NUM_TO_KEY: Record<number, string> = Object.fromEntries(DAYS.map(x => [x.d, x.key]));
+// DB stores day_of_week as 0-6: 0=Sat, 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri
+const DAY_MAP: Record<string, string> = {
+  Sun: '0', Mon: '1', Tue: '2', Wed: '3', Thu: '4', Fri: '5', Sat: '6',
+};
+const DAY_REVERSE: Record<string, string> = {
+  '0': 'Sun', '1': 'Mon', '2': 'Tue', '3': 'Wed', '4': 'Thu', '5': 'Fri', '6': 'Sat',
+};
+const DAY_LABELS = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
 
 function getHoursRange(start: number, end: number): number[] {
   return Array.from({ length: end - start }, (_, i) => i + start);
@@ -102,7 +100,7 @@ export default function SchedulePage() {
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState(6);
+  const [selectedDay, setSelectedDay] = useState<string>('Sat');
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [conflictError, setConflictError] = useState('');
@@ -112,7 +110,7 @@ export default function SchedulePage() {
   const [formRecurring, setFormRecurring] = useState(false);
   const [formStart, setFormStart] = useState('09:00');
   const [formEnd, setFormEnd] = useState('10:00');
-  const [formDay, setFormDay] = useState(6);
+  const [formDay, setFormDay] = useState<string>('Sat');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slotError, setSlotError] = useState('');
   const [slotSuccessMessage, setSlotSuccessMessage] = useState('');
@@ -206,12 +204,10 @@ export default function SchedulePage() {
     load();
   }, []);
 
-  const slotsForDay = slots.filter((s) => {
-    const d = s.day_of_week;
-    if (typeof d === 'number') return d === selectedDay;
-    const key = DAY_NUM_TO_KEY[selectedDay];
-    return key === d || key === String(d).toLowerCase() || DAYS.find(x => x.label === d)?.d === selectedDay;
-  });
+  const dbDayValue = DAY_MAP[selectedDay];
+  const slotsForDay = slots.filter((s) => String(s.day_of_week) === dbDayValue);
+  console.log('Selected day:', selectedDay, '→ DB value:', dbDayValue);
+  console.log('Filtered slots for this day:', slotsForDay);
 
   const scheduleTitle = t('centerSchedule');
   const showViewOnly = user?.role === 'assistant' && hasPermission('can_view_calendar');
@@ -233,17 +229,17 @@ export default function SchedulePage() {
   const checkConflict = (
     roomId: string,
     groupId: string | null,
-    day: number,
+    dayLabel: string,
     start: string,
     end: string,
     excludeId?: string
   ): string | null => {
     const startM = timeToMinutes(start);
     const endM = timeToMinutes(end);
+    const dbDay = DAY_MAP[dayLabel];
     for (const s of slots) {
       if (s.id === excludeId) continue;
-      const slotDay = typeof s.day_of_week === 'number' ? s.day_of_week : DAYS.find(x => x.key === s.day_of_week)?.d;
-      if (slotDay !== day) continue;
+      if (String(s.day_of_week) !== dbDay) continue;
       const sStart = timeToMinutes(s.start_time);
       const sEnd = timeToMinutes(s.end_time);
       const overlaps = startM < sEnd && endM > sStart;
@@ -283,7 +279,7 @@ export default function SchedulePage() {
           subject: selectedSubjectName,
           group_id: formGroup || null,
           teacher_id: userId,
-          day_of_week: formDay,
+          day_of_week: Number(DAY_MAP[formDay]),
           start_time: startTime,
           end_time: endTime,
           recurring: formRecurring,
@@ -306,7 +302,7 @@ export default function SchedulePage() {
           action: 'schedule_slot_create',
           entityType: 'schedule_slots',
           entityId: slot.id,
-          details: { room_id: formRoom, subject_id: formSubject, group_id: formGroup, day: formDay },
+          details: { room_id: formRoom, subject_id: formSubject, group_id: formGroup, day: formDay, day_of_week: Number(DAY_MAP[formDay]) },
         });
         setShowAddModal(false);
         setFormRoom('');
@@ -413,12 +409,12 @@ export default function SchedulePage() {
           ) : (
             <>
               <div className="flex gap-1 mb-4">
-                {DAYS.map(({ d, label }) => (
+                {DAY_LABELS.map((label) => (
                   <button
-                    key={d}
-                    onClick={() => setSelectedDay(d)}
+                    key={label}
+                    onClick={() => setSelectedDay(label)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      selectedDay === d
+                      selectedDay === label
                         ? 'bg-indigo-600 text-white'
                         : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
@@ -502,11 +498,11 @@ export default function SchedulePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('day')}</label>
                 <select
                   value={formDay}
-                  onChange={(e) => setFormDay(Number(e.target.value))}
+                  onChange={(e) => setFormDay(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                 >
-                  {DAYS.map(({ d, label }) => (
-                    <option key={d} value={d}>{label}</option>
+                  {DAY_LABELS.map((label) => (
+                    <option key={label} value={label}>{label}</option>
                   ))}
                 </select>
               </div>
