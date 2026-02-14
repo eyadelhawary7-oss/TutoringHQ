@@ -248,6 +248,29 @@ export default function AdminPage() {
     if (activeTab === 'billing') fetchBilling();
   }, [activeTab, fetchBilling]);
 
+  const sortedCenters = useMemo(() => {
+    const arr = [...centers];
+    return arr.sort((a, b) => {
+      if (sortBy === 'next_payment_due') {
+        const dateA = a.next_due ? new Date(a.next_due).getTime() : Number.MAX_SAFE_INTEGER;
+        const dateB = b.next_due ? new Date(b.next_due).getTime() : Number.MAX_SAFE_INTEGER;
+        return sortDir === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      if (sortBy === 'students_count') {
+        return sortDir === 'asc' ? (a.students_count - b.students_count) : (b.students_count - a.students_count);
+      }
+      if (sortBy === 'created_at') {
+        const tA = new Date(a.created_at).getTime();
+        const tB = new Date(b.created_at).getTime();
+        return sortDir === 'asc' ? tA - tB : tB - tA;
+      }
+      // name
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      return sortDir === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+    });
+  }, [centers, sortBy, sortDir]);
+
   const handleCenterAction = async (
     centerId: string,
     action: string,
@@ -451,29 +474,6 @@ export default function AdminPage() {
   const byPlanData = overview
     ? Object.entries(overview.byPlan || {}).map(([plan, count]) => ({ name: PLAN_LABELS[plan] || plan, count }))
     : [];
-
-  const sortedCenters = useMemo(() => {
-    const arr = [...centers];
-    return arr.sort((a, b) => {
-      if (sortBy === 'next_payment_due') {
-        const dateA = a.next_due ? new Date(a.next_due).getTime() : Number.MAX_SAFE_INTEGER;
-        const dateB = b.next_due ? new Date(b.next_due).getTime() : Number.MAX_SAFE_INTEGER;
-        return sortDir === 'asc' ? dateA - dateB : dateB - dateA;
-      }
-      if (sortBy === 'students_count') {
-        return sortDir === 'asc' ? (a.students_count - b.students_count) : (b.students_count - a.students_count);
-      }
-      if (sortBy === 'created_at') {
-        const tA = new Date(a.created_at).getTime();
-        const tB = new Date(b.created_at).getTime();
-        return sortDir === 'asc' ? tA - tB : tB - tA;
-      }
-      // name
-      const nameA = (a.name || '').toLowerCase();
-      const nameB = (b.name || '').toLowerCase();
-      return sortDir === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
-    });
-  }, [centers, sortBy, sortDir]);
 
   return (
     <>
