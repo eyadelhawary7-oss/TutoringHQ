@@ -44,6 +44,7 @@ interface CenterRow {
   last_payment?: string | null;
   next_due?: string | null;
   billing_period?: string;
+  billing_status?: string;
   referral_code?: string | null;
   referred_by?: string | null;
   referral_code_used?: string | null;
@@ -72,6 +73,8 @@ interface BillingCenter {
   monthlyEquivalent?: number;
   discount?: number;
   nextDue?: string;
+  billing_status?: string;
+  status?: string;
 }
 
 interface PaymentRecord {
@@ -122,6 +125,59 @@ const BILLING_LABELS: Record<string, string> = {
   annual: 'Annual',
   yearly: 'Annual',
 };
+
+function getCenterDueDisplay(
+  center: CenterRow,
+  t: (key: string) => string
+): { nextDueText: string; daysText: string; dueColor: string } {
+  if (center.status === 'pending') {
+    return { nextDueText: '—', daysText: '—', dueColor: 'text-gray-500' };
+  }
+  if (center.status === 'suspended') {
+    return { nextDueText: t('suspended'), daysText: t('suspended'), dueColor: 'text-red-500 dark:text-red-400 font-bold' };
+  }
+  const hasPaid = center.billing_status === 'paid' || !!center.last_payment;
+  const nextDue = center.next_due;
+  if (!nextDue || !hasPaid) {
+    return { nextDueText: t('awaitingPayment'), daysText: t('awaitingPayment'), dueColor: 'text-amber-600 dark:text-amber-400' };
+  }
+  const days = Math.ceil((new Date(nextDue).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const dateStr = new Date(nextDue).toLocaleDateString();
+  if (days <= 0) {
+    return { nextDueText: dateStr, daysText: `${Math.abs(days)} ${t('overdue')}`, dueColor: 'text-red-600 dark:text-red-400 font-bold' };
+  }
+  if (days <= 5) {
+    return { nextDueText: dateStr, daysText: String(days), dueColor: 'text-red-600 dark:text-red-400' };
+  }
+  if (days <= 14) {
+    return { nextDueText: dateStr, daysText: String(days), dueColor: 'text-amber-600 dark:text-amber-400' };
+  }
+  return { nextDueText: dateStr, daysText: String(days), dueColor: 'text-green-600 dark:text-green-400' };
+}
+
+function getBillingDueDisplay(
+  center: BillingCenter,
+  t: (key: string) => string
+): { nextDueText: string; daysText: string; dueColor: string; statusDisplay: 'overdue' | 'due_soon' | 'paid' | 'suspended' | 'awaiting' } {
+  if (center.status === 'suspended') {
+    return { nextDueText: t('suspended'), daysText: t('suspended'), dueColor: 'text-red-500 dark:text-red-400 font-bold', statusDisplay: 'suspended' };
+  }
+  const nextDue = center.nextDue || center.next_payment_due || center.next_billing_date;
+  const hasPaid = center.billing_status === 'paid';
+  if (!nextDue || !hasPaid) {
+    return { nextDueText: t('awaitingPayment'), daysText: t('awaitingPayment'), dueColor: 'text-amber-600 dark:text-amber-400', statusDisplay: 'awaiting' };
+  }
+  const days = Math.ceil((new Date(nextDue).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const dateStr = new Date(nextDue).toLocaleDateString();
+  if (days <= 0) {
+    return { nextDueText: dateStr, daysText: `${Math.abs(days)} ${t('overdue')}`, dueColor: 'text-red-600 dark:text-red-400 font-bold', statusDisplay: 'overdue' };
+  }
+  if (days <= 5) {
+    return { nextDueText: dateStr, daysText: String(days), dueColor: 'text-red-600 dark:text-red-400', statusDisplay: 'due_soon' };
+  }
+  return { nextDueText: dateStr, daysText: String(days), dueColor: days <= 14 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400', statusDisplay: 'paid' };
+}
+
 const PLAN_PRICE: Record<string, number> = {
   starter: 4000,
   pro: 7200,
@@ -726,16 +782,7 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {sortedCenters.map((c) => {
-                      const nextDue = c.next_due ? new Date(c.next_due) : null;
-                      const daysUntilDue = nextDue
-                        ? Math.ceil((nextDue.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-                        : null;
-                      const dueColor =
-                        daysUntilDue === null ? 'text-gray-500' :
-                        daysUntilDue > 14 ? 'text-green-600 dark:text-green-400' :
-                        daysUntilDue > 5 ? 'text-amber-600 dark:text-amber-400' :
-                        daysUntilDue > 0 ? 'text-red-600 dark:text-red-400' :
-                        'text-red-700 dark:text-red-300 font-bold';
+                      const due = getCenterDueDisplay(c, t);
                       return (
                       <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700/50">
                         <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{c.name}</td>
@@ -753,22 +800,11 @@ export default function AdminPage() {
                         <td className="px-4 py-3">
                           {BILLING_LABELS[c.billing_period || 'monthly'] || c.billing_period}
                         </td>
-                        <td className={`px-4 py-3 ${dueColor}`}>
-                          {c.next_due ? (
-                            <>
-                              {new Date(c.next_due).toLocaleDateString()}
-                              {daysUntilDue !== null && (
-                                <span className="ml-1">
-                                  {daysUntilDue <= 0 ? `(${t('overdue')})` : `(${daysUntilDue} ${t('daysRemaining')})`}
-                                </span>
-                              )}
-                            </>
-                          ) : '—'}
+                        <td className={`px-4 py-3 ${due.dueColor}`}>
+                          {due.nextDueText}
                         </td>
-                        <td className={`px-4 py-3 font-medium ${dueColor}`}>
-                          {daysUntilDue !== null
-                            ? daysUntilDue <= 0 ? `-${Math.abs(daysUntilDue)} ${t('overdue')}` : String(daysUntilDue)
-                            : '—'}
+                        <td className={`px-4 py-3 font-medium ${due.dueColor}`}>
+                          {due.daysText}
                         </td>
                         <td className="px-4 py-3">{new Date(c.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-3">
@@ -844,10 +880,7 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {billingCenters.map((c) => {
-                      const nextDue = c.nextDue || c.next_payment_due || c.next_billing_date;
-                      const dueDate = nextDue ? new Date(nextDue) : null;
-                      const now = new Date();
-                      const status = !dueDate ? '—' : dueDate < now ? 'overdue' : dueDate.getTime() - now.getTime() < 7 * 24 * 60 * 60 * 1000 ? 'due_soon' : 'paid';
+                      const due = getBillingDueDisplay(c, t);
                       return (
                         <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700/50">
                           <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{c.name}</td>
@@ -855,16 +888,8 @@ export default function AdminPage() {
                           <td className="px-4 py-3">{BILLING_LABELS[c.billing_period || 'monthly']}</td>
                           <td className="px-4 py-3">{c.discount ?? 0}%</td>
                           <td className="px-4 py-3">{c.monthlyEquivalent?.toLocaleString('ar-EG') ?? '—'}</td>
-                          <td className="px-4 py-3">{nextDue ? new Date(nextDue).toLocaleDateString() : '—'}</td>
-                          <td className="px-4 py-3">
-                            {(() => {
-                              const d = (c as { daysUntilDue?: number }).daysUntilDue;
-                              if (d === undefined) return '—';
-                              if (d > 5) return <span className="text-green-600 dark:text-green-400">{d}</span>;
-                              if (d >= 1) return <span className="text-amber-600 dark:text-amber-400">{d}</span>;
-                              return <span className="text-red-600 dark:text-red-400">{d}</span>;
-                            })()}
-                          </td>
+                          <td className={`px-4 py-3 ${due.dueColor}`}>{due.nextDueText}</td>
+                          <td className={`px-4 py-3 font-medium ${due.dueColor}`}>{due.daysText}</td>
                           <td className="px-4 py-3 text-xs">{(() => { const a = (c as { autoSuspendAt?: string }).autoSuspendAt; return a ? new Date(a).toLocaleString() : '—'; })()}</td>
                           <td className="px-4 py-3 text-green-600 dark:text-green-400">
                             {((c as { referralCredits?: number }).referralCredits ?? 0) > 0
@@ -872,10 +897,11 @@ export default function AdminPage() {
                               : '—'}
                           </td>
                           <td className="px-4 py-3">
-                            {status === 'overdue' && '🔴'}
-                            {status === 'due_soon' && '🟡'}
-                            {status === 'paid' && '✅'}
-                            {status}
+                            {due.statusDisplay === 'overdue' && '🔴 overdue'}
+                            {due.statusDisplay === 'due_soon' && '🟡 due_soon'}
+                            {due.statusDisplay === 'paid' && '✅ paid'}
+                            {due.statusDisplay === 'suspended' && '🔴 ' + t('suspended')}
+                            {due.statusDisplay === 'awaiting' && '🟡 ' + t('awaitingPayment')}
                           </td>
                           <td className="px-4 py-3 flex gap-2">
                             <button

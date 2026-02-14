@@ -544,7 +544,9 @@
     "sortCreated": "تاريخ الإنشاء",
     "daysRemaining": "يوم متبقي",
     "overdue": "متأخر",
-    "noActivity": "لا يوجد نشاط حديث"
+    "noActivity": "لا يوجد نشاط حديث",
+    "awaitingPayment": "بانتظار أول دفعة",
+    "suspended": "موقوف"
   },
   "suspended": {
     "title": "انتهى اشتراكك",

@@ -541,7 +541,9 @@
     "sortCreated": "Created",
     "daysRemaining": "days remaining",
     "overdue": "OVERDUE",
-    "noActivity": "No recent activity"
+    "noActivity": "No recent activity",
+    "awaitingPayment": "Awaiting first payment",
+    "suspended": "Suspended"
   },
   "suspended": {
     "title": "Subscription Expired",

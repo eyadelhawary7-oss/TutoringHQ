@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 
     let query = supabaseAdmin
       .from('centers')
-      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at')
+      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at, billing_status')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
