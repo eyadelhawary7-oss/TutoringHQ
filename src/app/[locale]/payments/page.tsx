@@ -84,14 +84,20 @@ export default function PaymentsPage() {
 
     const { data: paymentsData, error: payErr } = await dbSelect({
       table: 'payments',
-      select: 'id, student_id, center_id, amount, method, paid_at, status, confirmed, recorded_by, group_id',
+      select: 'id, student_id, center_id, amount, method, recorded_by, paid_at, status, confirmed, confirmed_by, confirmed_at, group_id, students(name, student_number, phone), student_groups(name)',
       filters: [{ column: 'center_id', op: 'eq', value: cid }],
       order: { column: 'paid_at', ascending: false },
     });
 
-    console.log('Payments query result:', Array.isArray(paymentsData) ? paymentsData.length : 0, 'Error:', payErr);
+    console.log('Payments fetched:', paymentsData?.length, payErr);
 
-    const payments = (paymentsData || []) as (PaymentRecord & { student_id: string; group_id?: string })[];
+    type PaymentRow = PaymentRecord & {
+      student_id: string;
+      group_id?: string | null;
+      students?: { name?: string; student_number?: string; phone?: string } | null;
+      student_groups?: { name?: string } | null;
+    };
+    const payments = (paymentsData || []) as PaymentRow[];
     const { data: scansDataPre } = await dbSelect({
       table: 'attendance_scans',
       select: 'student_id',
@@ -124,9 +130,9 @@ export default function PaymentsPage() {
 
     setRecords(payments.map(p => ({
       ...p,
-      student_name: studentMap[p.student_id]?.name ?? '—',
-      student_number: studentMap[p.student_id]?.student_number ?? '—',
-      group_name: p.group_id ? (groupMap[p.group_id] ?? '—') : '—',
+      student_name: p.students?.name ?? studentMap[p.student_id]?.name ?? '—',
+      student_number: p.students?.student_number ?? studentMap[p.student_id]?.student_number ?? '—',
+      group_name: p.student_groups?.name ?? (p.group_id ? (groupMap[p.group_id] ?? '—') : '—'),
     })));
 
     // Load student summary (attendance + payment aggregates)
@@ -164,6 +170,12 @@ export default function PaymentsPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    const onFocus = () => loadData();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadData]);
 
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
@@ -417,7 +429,7 @@ export default function PaymentsPage() {
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('amount')}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('paymentMethod')}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('group', { defaultValue: 'Group' })}</th>
+                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('group')}</th>
                             {canConfirmPayments && <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>}
                           </tr>
                         </thead>

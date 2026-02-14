@@ -295,6 +295,7 @@
     "noPaymentsYet": "لا توجد مدفوعات بعد. ستظهر المدفوعات هنا بعد مسح الطلاب.",
     "lateEntry": "دخول مؤجل",
     "date": "التاريخ",
+    "group": "المجموعة",
     "exportExcel": "تصدير Excel"
   },
   "settings": {

@@ -295,6 +295,7 @@
     "noPaymentsYet": "No payments yet. Payments will appear here after scanning students.",
     "lateEntry": "Late Entry",
     "date": "Date",
+    "group": "Group",
     "exportExcel": "Export Excel"
   },
   "settings": {
