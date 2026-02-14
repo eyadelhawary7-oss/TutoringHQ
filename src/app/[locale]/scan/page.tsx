@@ -17,6 +17,7 @@ import Navbar from '@/components/Navbar';
 import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
+import { useUser } from '@/contexts/UserContext';
 
 type ScanMode = 'camera' | 'bluetooth' | 'manual';
 
@@ -32,18 +33,20 @@ interface Student {
   groups?: { id: string; name: string; fee: number }[];
 }
 
-/** Check if student paid TODAY (per-session payment logic). payments table is source of truth. */
-async function hasPaidToday(studentId: string, centerId: string): Promise<boolean> {
+/** Check if student paid TODAY for a specific group (per-session payment logic). payments table is source of truth. */
+async function hasPaidToday(studentId: string, centerId: string, groupId?: string | null): Promise<boolean> {
   const today = new Date().toISOString().split('T')[0];
+  const filters: { column: string; op: 'eq' | 'gte' | 'lte'; value: string }[] = [
+    { column: 'student_id', op: 'eq', value: studentId },
+    { column: 'center_id', op: 'eq', value: centerId },
+    { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
+    { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
+  ];
+  if (groupId) filters.push({ column: 'group_id', op: 'eq', value: groupId });
   const { data } = await dbSelect({
     table: 'payments',
     select: 'id',
-    filters: [
-      { column: 'student_id', op: 'eq', value: studentId },
-      { column: 'center_id', op: 'eq', value: centerId },
-      { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
-      { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
-    ],
+    filters,
     limit: 1,
   });
   return Array.isArray(data) ? data.length > 0 : !!data;
@@ -52,11 +55,15 @@ async function hasPaidToday(studentId: string, centerId: string): Promise<boolea
 export default function ScanPage() {
   const t = useTranslations('scan');
   const tSync = useTranslations('sync');
+  const tCommon = useTranslations('common');
+  const { user, hasPermission } = useUser();
 
   const [mode, setMode] = useState<ScanMode>('camera');
   const [manualIdInput, setManualIdInput] = useState('');
   const manualInputRef = useRef<HTMLInputElement>(null);
   const [scannedStudent, setScannedStudent] = useState<Student | null>(null);
+  const [needGroupSelection, setNeedGroupSelection] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee: number } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -86,6 +93,8 @@ export default function ScanPage() {
       console.error('Failed to sync students:', err);
     }
   }, [centerId]);
+
+  const canAllowLateEntry = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_allow_late_entry');
 
   useEffect(() => {
     const loadUser = async () => {
@@ -220,21 +229,42 @@ export default function ScanPage() {
         return;
       }
 
-      // Per-session payment: check if paid TODAY (payments table is source of truth)
+      const groups = student.groups ?? [];
+      const hasMultipleGroups = groups.length >= 2;
+
+      // If 2+ groups: show group selector BEFORE checking payment
+      if (hasMultipleGroups && navigator.onLine) {
+        setSelectedGroup(null);
+        setNeedGroupSelection(true);
+        setScannedStudent({ ...student, payment_status: '', last_payment_method: null });
+        isProcessingRef.current = false;
+        if (mode === 'manual') setManualIdInput('');
+        return;
+      }
+
+      // Single group (or offline): use first group or null
+      const grp = groups[0] ?? null;
+      setSelectedGroup(grp);
+      setNeedGroupSelection(false);
+
+      // Per-session payment: check if paid TODAY for THIS GROUP (payments table is source of truth)
       let paidToday = false;
       let lastPaymentMethod: string | null = null;
       if (navigator.onLine) {
-        paidToday = await hasPaidToday(student.id, centerId);
+        paidToday = await hasPaidToday(student.id, centerId, grp?.id ?? null);
         if (paidToday) {
+          const today = new Date().toISOString().split('T')[0];
+          const payFilters: { column: string; op: 'eq' | 'gte' | 'lte'; value: string }[] = [
+            { column: 'student_id', op: 'eq', value: student.id },
+            { column: 'center_id', op: 'eq', value: centerId },
+            { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
+            { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
+          ];
+          if (grp?.id) payFilters.push({ column: 'group_id', op: 'eq', value: grp.id });
           const { data: todayPay } = await dbSelect({
             table: 'payments',
             select: 'method',
-            filters: [
-              { column: 'student_id', op: 'eq', value: student.id },
-              { column: 'center_id', op: 'eq', value: centerId },
-              { column: 'paid_at', op: 'gte', value: new Date().toISOString().split('T')[0] + 'T00:00:00' },
-              { column: 'paid_at', op: 'lte', value: new Date().toISOString().split('T')[0] + 'T23:59:59' },
-            ],
+            filters: payFilters,
             order: { column: 'paid_at', ascending: false },
             limit: 1,
           });
@@ -248,6 +278,8 @@ export default function ScanPage() {
       const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
       const studentForDisplay: Student = {
         ...student,
+        fee: grp?.fee ?? student.fee ?? 0,
+        subject: grp?.name ?? student.subject ?? '',
         payment_status: displayStatus,
         last_payment_method: lastPaymentMethod,
       };
@@ -267,7 +299,7 @@ export default function ScanPage() {
               payment_status_at_scan: 'paid',
               session_date: scannedAt.split('T')[0],
               payment_recorded: false,
-              group_id: null,
+              group_id: grp?.id ?? null,
             },
             select: false,
           });
@@ -284,6 +316,7 @@ export default function ScanPage() {
         }
         dismissTimerRef.current = setTimeout(() => {
           setScannedStudent(null);
+          setSelectedGroup(null);
           isProcessingRef.current = false;
           if (mode === 'manual') {
             setManualIdInput('');
@@ -301,6 +334,140 @@ export default function ScanPage() {
     }
   }, [centerId, userId, t, mode]);
 
+  const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee: number }) => {
+    if (!scannedStudent || !centerId || !userId) return;
+    setSelectedGroup(group);
+    setNeedGroupSelection(false);
+
+    const student = scannedStudent;
+    let paidToday = false;
+    let lastPaymentMethod: string | null = null;
+
+    if (navigator.onLine) {
+      paidToday = await hasPaidToday(student.id, centerId, group.id);
+      if (paidToday) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayPay } = await dbSelect({
+          table: 'payments',
+          select: 'method',
+          filters: [
+            { column: 'student_id', op: 'eq', value: student.id },
+            { column: 'center_id', op: 'eq', value: centerId },
+            { column: 'group_id', op: 'eq', value: group.id },
+            { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
+            { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
+          ],
+          order: { column: 'paid_at', ascending: false },
+          limit: 1,
+        });
+        const pay = Array.isArray(todayPay) ? todayPay[0] : todayPay;
+        lastPaymentMethod = (pay as { method?: string })?.method ?? null;
+      }
+    }
+
+    const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
+    const studentForDisplay: Student = {
+      ...student,
+      fee: group.fee,
+      subject: group.name,
+      payment_status: displayStatus,
+      last_payment_method: lastPaymentMethod,
+    };
+    setScannedStudent(studentForDisplay);
+    const scannedAt = new Date().toISOString();
+
+    if (paidToday && navigator.onLine) {
+      const { error: attendErr } = await dbInsert({
+        table: 'attendance_scans',
+        data: {
+          student_id: student.id,
+          center_id: centerId,
+          scanned_by: userId,
+          scanned_at: scannedAt,
+          payment_status_at_scan: 'paid',
+          session_date: scannedAt.split('T')[0],
+          payment_recorded: false,
+          group_id: group.id,
+        },
+        select: false,
+      });
+      if (attendErr) console.error('Attendance scan insert FAILED:', attendErr);
+      dismissTimerRef.current = setTimeout(() => {
+        setScannedStudent(null);
+        setSelectedGroup(null);
+        isProcessingRef.current = false;
+        if (mode === 'manual') {
+          setManualIdInput('');
+          manualInputRef.current?.focus();
+        }
+      }, 3000);
+    } else if (!paidToday && mode === 'manual') {
+      setManualIdInput('');
+      manualInputRef.current?.focus();
+    }
+  }, [scannedStudent, centerId, userId, mode]);
+
+  const handleAllowLateEntry = async () => {
+    if (!scannedStudent || !centerId || !userId || !canAllowLateEntry) return;
+    setIsProcessing(true);
+    const grp = selectedGroup ?? scannedStudent.groups?.[0];
+    const fee = grp?.fee ?? scannedStudent.fee ?? 0;
+    const scannedAt = new Date().toISOString();
+    const sessionDate = scannedAt.split('T')[0];
+
+    try {
+      if (navigator.onLine) {
+        await dbInsert({
+          table: 'attendance_scans',
+          data: {
+            student_id: scannedStudent.id,
+            center_id: centerId,
+            scanned_by: userId,
+            scanned_at: scannedAt,
+            payment_status_at_scan: 'unpaid',
+            session_date: sessionDate,
+            payment_recorded: false,
+            group_id: grp?.id ?? null,
+          },
+          select: false,
+        });
+        await dbInsert({
+          table: 'payments',
+          data: {
+            student_id: scannedStudent.id,
+            center_id: centerId,
+            amount: fee,
+            method: 'late_entry',
+            recorded_by: userId,
+            paid_at: scannedAt,
+            status: 'late',
+            confirmed: false,
+            group_id: grp?.id ?? null,
+          },
+          select: false,
+        });
+      }
+      setScannedStudent({
+        ...scannedStudent,
+        payment_status: 'late_entry_granted',
+        last_payment_method: null,
+      });
+    } catch {
+      setError(t('scanError'));
+    } finally {
+      setIsProcessing(false);
+      dismissTimerRef.current = setTimeout(() => {
+        setScannedStudent(null);
+        setSelectedGroup(null);
+        isProcessingRef.current = false;
+        if (mode === 'manual') {
+          setManualIdInput('');
+          setTimeout(() => manualInputRef.current?.focus(), 100);
+        }
+      }, 3000);
+    }
+  };
+
   const handlePaymentSelect = async (method: string, groupId?: string, amount?: number) => {
     if (!scannedStudent || !centerId || !userId) return;
     setIsProcessing(true);
@@ -309,6 +476,7 @@ export default function ScanPage() {
     const sessionDate = scannedAt.split('T')[0];
     const isCash = method === 'cash';
     const paymentAmount = amount ?? scannedStudent.fee ?? 0;
+    const effectiveGroupId = groupId ?? selectedGroup?.id ?? scannedStudent.groups?.[0]?.id ?? null;
 
     try {
       if (navigator.onLine) {
@@ -321,7 +489,7 @@ export default function ScanPage() {
           paid_at: scannedAt,
           status: isCash ? 'confirmed' : 'pending',
           confirmed: isCash,
-          group_id: groupId || null,
+          group_id: effectiveGroupId,
         };
 
         console.log('Recording payment:', { student_id: scannedStudent.id, center_id: centerId, amount: paymentAmount, method });
@@ -346,7 +514,7 @@ export default function ScanPage() {
           payment_method: method,
           session_date: sessionDate,
           payment_recorded: true,
-          group_id: groupId || null,
+          group_id: effectiveGroupId,
         };
 
         const { error: scanErr } = await dbInsert({
@@ -363,7 +531,7 @@ export default function ScanPage() {
             action: 'payment_on_scan',
             entity_type: 'payment',
             entity_id: scannedStudent.id,
-            details: { method, amount: paymentAmount, group_id: groupId ?? null, status: method === 'cash' ? 'confirmed' : 'pending' },
+            details: { method, amount: paymentAmount, group_id: effectiveGroupId, status: method === 'cash' ? 'confirmed' : 'pending' },
           },
           select: false,
         });
@@ -373,7 +541,7 @@ export default function ScanPage() {
           center_id: centerId,
           scanned_by: userId,
           scanned_at: scannedAt,
-          payment_action: { method, amount: paymentAmount, isPending: !isCash, group_id: groupId },
+          payment_action: { method, amount: paymentAmount, isPending: !isCash, group_id: effectiveGroupId ?? undefined },
         });
         await markPaidTodayOffline(centerId, scannedStudent.id);
         const count = await getUnsyncedCount();
@@ -400,6 +568,8 @@ export default function ScanPage() {
   const handleDismiss = () => {
     if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
     setScannedStudent(null);
+    setNeedGroupSelection(false);
+    setSelectedGroup(null);
     isProcessingRef.current = false;
     if (mode === 'manual') {
       setManualIdInput('');
@@ -512,10 +682,47 @@ export default function ScanPage() {
         </div>
       </div>
 
-      {scannedStudent && (
+      {/* Group Selector - show when student has 2+ groups, before green/red */}
+      {needGroupSelection && scannedStudent && scannedStudent.groups && scannedStudent.groups.length >= 2 && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-800 dark:bg-slate-900 min-h-screen w-full"
+          dir="rtl"
+        >
+          <h1 className="text-4xl sm:text-6xl font-bold text-white text-center px-4 mb-2">
+            {scannedStudent.name}
+          </h1>
+          <p className="text-xl text-white/90 text-center mb-6">
+            {t('chooseLesson')}
+          </p>
+          <div className="w-full max-w-md px-4 grid grid-cols-1 gap-4">
+            {scannedStudent.groups.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => handleGroupSelect(g)}
+                className="py-5 px-6 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-bold rounded-xl border-2 border-white/30 transition-all text-lg text-center"
+              >
+                <div>{g.name}</div>
+                <div className="text-base font-normal opacity-90 mt-1">
+                  {g.fee} EGP {t('perLesson')}
+                </div>
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleDismiss}
+            className="mt-8 px-6 py-2 text-white/80 hover:text-white text-sm"
+          >
+            {tCommon('cancel')}
+          </button>
+        </div>
+      )}
+
+      {scannedStudent && !needGroupSelection && (
         <ScanResultScreen
           student={scannedStudent}
+          selectedGroup={selectedGroup ?? scannedStudent.groups?.[0]}
           onPaymentSelect={handlePaymentSelect}
+          onAllowLateEntry={canAllowLateEntry ? handleAllowLateEntry : undefined}
           onDismiss={handleDismiss}
           isProcessing={isProcessing}
         />

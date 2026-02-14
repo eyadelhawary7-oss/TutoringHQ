@@ -453,7 +453,7 @@ export default function SchedulePage() {
                               {slot && (
                                 <div
                                   className="text-xs p-2 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-200"
-                                  title={`${formatTimeForDisplay(slot.start_time)} - ${formatTimeForDisplay(slot.end_time)} ${slot.group_name ? `| ${slot.group_name} - ${slot.room_name}` : `| ${slot.subject_name ?? ''}`}`}
+                                  title={`${slot.group_name || slot.subject_name || ''} - ${slot.room_name ?? ''} | ${formatTimeForDisplay(slot.start_time)} - ${formatTimeForDisplay(slot.end_time)}`}
                                 >
                                   <div className="font-medium truncate">
                                     {slot.group_name ? `${slot.group_name} - ${slot.room_name}` : `${slot.subject_name ?? ''} - ${slot.room_name ?? ''}`}

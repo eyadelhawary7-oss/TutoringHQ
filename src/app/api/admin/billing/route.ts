@@ -93,6 +93,26 @@ export async function GET(request: Request) {
     const paymentRows = (payments || []).map((p: { center_id: string; [k: string]: unknown }) => ({
       ...p,
       centerName: billingRows.find((c: { id: string }) => c.id === p.center_id)?.name ?? '—',
+      source: 'admin_payment' as const,
+    }));
+
+    const { data: allInvoices } = await supabaseAdmin
+      .from('invoices')
+      .select('id, center_id, payment_amount, payment_reference, status, paid_at, updated_at')
+      .in('status', ['approved', 'rejected'])
+      .order('updated_at', { ascending: false })
+      .limit(50);
+
+    const invoiceRows = (allInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => ({
+      id: inv.id,
+      center_id: inv.center_id,
+      centerName: billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? '—',
+      amount: inv.payment_amount ?? 0,
+      billing_period: 'payment_proof',
+      paid_at: inv.paid_at ?? inv.updated_at,
+      notes: `Invoice ${inv.payment_reference ?? inv.id}`,
+      source: 'invoice' as const,
+      invoiceStatus: inv.status,
     }));
 
     const { data: pendingInvoices } = await supabaseAdmin
@@ -108,7 +128,13 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       centers: billingRows,
-      paymentHistory: paymentRows,
+      paymentHistory: [...paymentRows, ...invoiceRows].sort((a, b) => {
+        const aPaid = (a as { paid_at?: string }).paid_at;
+        const bPaid = (b as { paid_at?: string }).paid_at;
+        const aT = aPaid ? new Date(aPaid).getTime() : 0;
+        const bT = bPaid ? new Date(bPaid).getTime() : 0;
+        return bT - aT;
+      }),
       pendingInvoices: pendingInvoiceRows,
     });
   } catch (error) {
@@ -219,7 +245,7 @@ export async function PUT(request: Request) {
 
     const { data: inv } = await supabaseAdmin
       .from('invoices')
-      .select('id, center_id, status')
+      .select('id, center_id, status, payment_amount, payment_reference')
       .eq('id', invoiceId)
       .single();
 
@@ -235,6 +261,7 @@ export async function PUT(request: Request) {
         .update({
           status: 'approved',
           paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', invoiceId);
 
@@ -246,10 +273,27 @@ export async function PUT(request: Request) {
         .from('centers')
         .update({ billing_status: 'paid', last_payment_date: new Date().toISOString().slice(0, 10) })
         .eq('id', centerId);
+
+      const amount = Number((inv as { payment_amount?: number }).payment_amount ?? 0);
+      const ref = (inv as { payment_reference?: string }).payment_reference ?? '';
+      const { data: centerRow } = await supabaseAdmin
+        .from('centers')
+        .select('billing_period')
+        .eq('id', centerId)
+        .single();
+      const billingPeriod = (centerRow as { billing_period?: string })?.billing_period ?? 'quarterly';
+      await supabaseAdmin.from('admin_payments').insert({
+        center_id: centerId,
+        amount,
+        billing_period: billingPeriod === 'half_yearly' ? 'semi_annual' : billingPeriod === 'yearly' ? 'annual' : billingPeriod,
+        paid_at: new Date().toISOString(),
+        notes: `Payment proof approved - Ref: ${ref}`,
+        recorded_by: userId,
+      });
     } else {
       const { error: updErr } = await supabaseAdmin
         .from('invoices')
-        .update({ status: 'rejected' })
+        .update({ status: 'rejected', updated_at: new Date().toISOString() })
         .eq('id', invoiceId);
 
       if (updErr) {

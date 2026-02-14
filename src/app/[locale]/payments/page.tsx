@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbUpdate } from '@/lib/db-proxy';
@@ -33,6 +33,7 @@ const METHOD_KEYS: Record<string, string> = {
   fawry: 'fawry',
   bank_transfer: 'bank',
   bank: 'bank',
+  late_entry: 'lateEntry',
 };
 
 type StatusFilter = 'all' | 'confirmed' | 'pending';
@@ -56,6 +57,17 @@ export default function PaymentsPage() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
+  const [viewMode, setViewMode] = useState<'transactionLog' | 'studentSummary'>('transactionLog');
+  const [studentSummary, setStudentSummary] = useState<{
+    student_id: string;
+    student_name: string;
+    student_number: string;
+    total_lessons: number;
+    paid_lessons: number;
+    late_lessons: number;
+    balance_due: number;
+  }[]>([]);
+  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -80,7 +92,13 @@ export default function PaymentsPage() {
     console.log('Payments query result:', Array.isArray(paymentsData) ? paymentsData.length : 0, 'Error:', payErr);
 
     const payments = (paymentsData || []) as (PaymentRecord & { student_id: string; group_id?: string })[];
-    const studentIds = [...new Set(payments.map(p => p.student_id))];
+    const { data: scansDataPre } = await dbSelect({
+      table: 'attendance_scans',
+      select: 'student_id',
+      filters: [{ column: 'center_id', op: 'eq', value: cid }],
+    });
+    const scanStudentIds = [...new Set(((scansDataPre || []) as { student_id: string }[]).map(s => s.student_id))];
+    const studentIds = [...new Set([...payments.map(p => p.student_id), ...scanStudentIds])];
     const groupIds = [...new Set(payments.map(p => p.group_id).filter(Boolean))] as string[];
 
     let studentMap: Record<string, { name: string; student_number: string }> = {};
@@ -110,6 +128,38 @@ export default function PaymentsPage() {
       student_number: studentMap[p.student_id]?.student_number ?? '—',
       group_name: p.group_id ? (groupMap[p.group_id] ?? '—') : '—',
     })));
+
+    // Load student summary (attendance + payment aggregates)
+    const scans = (scansDataPre || []) as { student_id: string }[];
+    const totalLessonsByStudent: Record<string, number> = {};
+    for (const s of scans) {
+      totalLessonsByStudent[s.student_id] = (totalLessonsByStudent[s.student_id] ?? 0) + 1;
+    }
+
+    const paidCount: Record<string, number> = {};
+    const lateCount: Record<string, number> = {};
+    const balanceByStudent: Record<string, number> = {};
+    for (const p of payments) {
+      if (p.status === 'late') {
+        lateCount[p.student_id] = (lateCount[p.student_id] ?? 0) + 1;
+        balanceByStudent[p.student_id] = (balanceByStudent[p.student_id] ?? 0) + (p.amount ?? 0);
+      } else if (p.status === 'confirmed' || p.status === 'pending') {
+        paidCount[p.student_id] = (paidCount[p.student_id] ?? 0) + 1;
+      }
+    }
+
+    const allStudentIds = [...new Set([...Object.keys(totalLessonsByStudent), ...Object.keys(paidCount), ...Object.keys(lateCount)])];
+    const summaryRows = allStudentIds.map(sid => ({
+      student_id: sid,
+      student_name: studentMap[sid]?.name ?? '—',
+      student_number: studentMap[sid]?.student_number ?? '—',
+      total_lessons: totalLessonsByStudent[sid] ?? 0,
+      paid_lessons: paidCount[sid] ?? 0,
+      late_lessons: lateCount[sid] ?? 0,
+      balance_due: balanceByStudent[sid] ?? 0,
+    })).filter(r => r.total_lessons > 0 || r.paid_lessons > 0 || r.late_lessons > 0)
+      .sort((a, b) => (b.balance_due - a.balance_due) || b.total_lessons - a.total_lessons);
+    setStudentSummary(summaryRows);
     setIsLoading(false);
   }, []);
 
@@ -185,12 +235,34 @@ export default function PaymentsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('title')}</h1>
-            <button
-              onClick={handleExport}
-              className="px-4 py-2 text-sm font-medium border border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950"
-            >
-              {t('export')}
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow p-1">
+                <button
+                  onClick={() => setViewMode('transactionLog')}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    viewMode === 'transactionLog' ? 'bg-indigo-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {t('transactionLog')}
+                </button>
+                <button
+                  onClick={() => setViewMode('studentSummary')}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    viewMode === 'studentSummary' ? 'bg-indigo-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {t('studentSummary')}
+                </button>
+              </div>
+              {viewMode === 'transactionLog' && (
+                <button
+                  onClick={handleExport}
+                  className="px-4 py-2 text-sm font-medium border border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950"
+                >
+                  {t('exportExcel')}
+                </button>
+              )}
+            </div>
           </div>
 
           {successMessage && (
@@ -262,6 +334,65 @@ export default function PaymentsPage() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
             </div>
+          ) : viewMode === 'studentSummary' ? (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentName')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentId')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('totalLessons')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('paidLessons')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('lateLessons')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('balanceDue')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {studentSummary.map((row) => (
+                      <React.Fragment key={row.student_id}>
+                        <tr className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{row.student_name}</td>
+                          <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-400" dir="ltr">{row.student_number}</td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.total_lessons}</td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.paid_lessons}</td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.late_lessons}</td>
+                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{row.balance_due > 0 ? `${row.balance_due.toLocaleString('ar-EG')} EGP` : '—'}</td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => setExpandedStudentId(expandedStudentId === row.student_id ? null : row.student_id)}
+                              className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm"
+                            >
+                              {t('viewHistory')}
+                            </button>
+                          </td>
+                        </tr>
+                        {expandedStudentId === row.student_id && (
+                          <tr key={`${row.student_id}-history`} className="bg-gray-50 dark:bg-gray-700/30">
+                            <td colSpan={7} className="px-4 py-3">
+                              <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
+                                {records.filter(r => r.student_id === row.student_id).map(r => (
+                                  <div key={r.id} className="flex justify-between py-1">
+                                    <span>{r.paid_at ? new Date(r.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+                                    <span>{r.amount} EGP</span>
+                                    <span>{formatMethod(r.method)}</span>
+                                    <span className={r.status === 'late' ? 'text-amber-600 font-medium' : ''}>{r.status === 'late' ? t('lateEntry') : r.confirmed !== false && r.status !== 'pending' ? t('filterPaid') : t('filterPending')}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+                {studentSummary.length === 0 && (
+                  <p className="p-8 text-center text-gray-500 dark:text-gray-400">{t('noPaymentsYet')}</p>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="space-y-6">
               {groupedByDate.map(([date, dayRecords]) => {
@@ -306,7 +437,7 @@ export default function PaymentsPage() {
                                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                                     : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
                                 }`}>
-                                  {r.confirmed !== false && r.status === 'confirmed' ? t('confirmed', { defaultValue: 'Confirmed' }) : t('filterPending')}
+                                  {r.confirmed !== false && r.status === 'confirmed' ? t('confirmedStatus') : t('filterPending')}
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.group_name ?? '—'}</td>

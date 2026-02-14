@@ -76,6 +76,35 @@ export async function GET(request: Request) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, count]) => ({ date, count }));
 
+    const { count: pendingPlanRequestsCount } = await supabaseAdmin
+      .from('plan_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    const { count: pendingPaymentProofsCount } = await supabaseAdmin
+      .from('invoices')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const { data: overdueCenters } = await supabaseAdmin
+      .from('centers')
+      .select('id, name, next_payment_due')
+      .eq('status', 'active')
+      .lt('next_payment_due', todayStr);
+
+    let recentActivity: unknown[] = [];
+    try {
+      const { data: auditData } = await supabaseAdmin
+        .from('audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      recentActivity = auditData ?? [];
+    } catch {
+      // audit_log may not exist in some deployments
+    }
+
     return NextResponse.json({
       totalCenters: allCenters.length,
       activeCenters: activeCenters.length,
@@ -85,6 +114,12 @@ export async function GET(request: Request) {
       mrr,
       byPlan,
       signupsChart,
+      pendingSignupsCount: pendingCenters.length,
+      pendingPlanRequestsCount: pendingPlanRequestsCount ?? 0,
+      pendingPaymentProofsCount: pendingPaymentProofsCount ?? 0,
+      overdueCentersCount: overdueCenters?.length ?? 0,
+      overdueCenters: overdueCenters ?? [],
+      recentActivity,
     });
   } catch (error) {
     return NextResponse.json(

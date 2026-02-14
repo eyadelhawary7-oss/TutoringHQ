@@ -16,7 +16,9 @@ interface Student {
 
 interface ScanResultScreenProps {
   student: Student;
+  selectedGroup?: { id: string; name: string; fee: number } | null;
   onPaymentSelect: (method: string, groupId?: string, groupFee?: number) => void;
+  onAllowLateEntry?: () => void;
   onDismiss: () => void;
   isProcessing: boolean;
 }
@@ -30,18 +32,17 @@ const paymentMethods = [
   { key: 'bankTransfer', value: 'bank_transfer' },
 ];
 
-export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, isProcessing }: ScanResultScreenProps) {
+export default function ScanResultScreen({ student, selectedGroup: selectedGroupProp, onPaymentSelect, onAllowLateEntry, onDismiss, isProcessing }: ScanResultScreenProps) {
   const t = useTranslations('scan');
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
-  const [showGroupSelector, setShowGroupSelector] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee: number } | null>(null);
-  const hasMultipleGroups = (student.groups?.length ?? 0) > 1;
+  const selectedGroup = selectedGroupProp ?? student.groups?.[0] ?? null;
 
   const isPaid = student.payment_status === 'paid';
   const isPending = student.payment_status === 'pending';
-  // GREEN = paid/confirmed (cash), YELLOW/AMBER = pending (non-cash recorded), RED = unpaid
-  const bgColor = isPaid ? 'bg-emerald-500' : isPending ? 'bg-amber-500' : 'bg-red-500';
-  const isAmberScreen = isPending; // Use dark text on amber for better contrast
+  const isLateEntryGranted = student.payment_status === 'late_entry_granted';
+  // GREEN = paid/confirmed (cash), YELLOW/AMBER = pending (non-cash), YELLOW = late entry granted, RED = unpaid
+  const bgColor = isPaid ? 'bg-emerald-500' : isLateEntryGranted ? 'bg-amber-400' : isPending ? 'bg-amber-500' : 'bg-red-500';
+  const isAmberScreen = isPending || isLateEntryGranted; // Use dark text on amber for better contrast
 
   return (
     <div
@@ -68,9 +69,9 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
         {student.subject}
       </p>
 
-      {/* Status: paid=green check, pending=amber "Recorded — awaiting transfer", unpaid=red */}
+      {/* Status: paid=green check, pending=amber "Recorded — awaiting transfer", late entry=yellow, unpaid=red */}
       <p className={`text-xl sm:text-2xl text-center mb-8 ${isAmberScreen ? 'text-gray-900 font-semibold' : 'text-white/80'}`}>
-        {isPaid ? `✓ ${t('studentPaid')}` : isPending ? t('recordedAwaitingTransfer') : t('studentUnpaid')}
+        {isPaid ? `✓ ${t('studentPaid')}` : isLateEntryGranted ? t('lateEntryGranted') : isPending ? t('recordedAwaitingTransfer') : t('studentUnpaid')}
       </p>
 
       {isPending && student.last_payment_method && (
@@ -79,61 +80,46 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
         </p>
       )}
 
-      {/* Pay Now Section (unpaid only) */}
-      {!isPaid && !isPending && !showPaymentMethods && !showGroupSelector && (
+      {/* Pay Now Section (unpaid only) - group already selected at scan level */}
+      {!isPaid && !isPending && !isLateEntryGranted && !showPaymentMethods && (
         <button
-          onClick={() => {
-            if (hasMultipleGroups) setShowGroupSelector(true);
-            else setShowPaymentMethods(true);
-          }}
+          onClick={() => setShowPaymentMethods(true)}
           className="px-12 py-5 bg-white text-red-600 text-2xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200"
         >
           {t('payNow')}
         </button>
       )}
 
-      {/* Group Selector (when student in multiple groups) */}
-      {!isPaid && !isPending && showGroupSelector && !showPaymentMethods && (
+      {/* Payment Methods + Allow Late Entry */}
+      {!isPaid && !isPending && !isLateEntryGranted && showPaymentMethods && (
         <div className="w-full max-w-md px-4">
-          <h3 className="text-xl text-white font-bold text-center mb-4">
-            {t('whichClass', { defaultValue: 'Which class is this student attending?' })}
-          </h3>
-          <div className="grid grid-cols-1 gap-3">
-            {student.groups?.map((g) => (
-              <button
-                key={g.id}
-                onClick={() => {
-                  setSelectedGroup(g);
-                  setShowGroupSelector(false);
-                  setShowPaymentMethods(true);
-                }}
-                className="py-4 px-4 bg-white/20 backdrop-blur-sm text-white font-bold rounded-xl border-2 border-white/30 hover:bg-white/30 transition-all text-lg"
-              >
-                {g.name} ({g.fee} EGP)
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Payment Methods Dropdown */}
-      {!isPaid && !isPending && showPaymentMethods && (
-        <div className="w-full max-w-sm px-4">
           <h3 className="text-xl text-white font-bold text-center mb-4">
             {t('selectMethod')}
           </h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mb-4">
             {paymentMethods.map((method) => (
               <button
                 key={method.value}
                 disabled={isProcessing}
-                onClick={() => onPaymentSelect(method.value, selectedGroup?.id ?? (student.groups?.[0]?.id), selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee)}
+                onClick={() => onPaymentSelect(method.value, selectedGroup?.id ?? student.groups?.[0]?.id, selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee)}
                 className="py-4 px-4 bg-white/20 backdrop-blur-sm text-white font-bold rounded-xl border-2 border-white/30 hover:bg-white/30 transition-all disabled:opacity-50 text-lg"
               >
                 {t(method.key)}
               </button>
             ))}
           </div>
+          {onAllowLateEntry && (
+            <>
+              <p className="text-center text-white/90 text-sm my-2">{t('or')}</p>
+              <button
+                disabled={isProcessing}
+                onClick={onAllowLateEntry}
+                className="w-full py-4 px-4 bg-amber-500/90 hover:bg-amber-500 text-gray-900 font-bold rounded-xl border-2 border-amber-400 transition-all disabled:opacity-50 text-lg"
+              >
+                🔓 {t('allowLateEntry')}
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -147,9 +133,9 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
         </div>
       )}
 
-      {(isPaid || isPending) && (
+      {(isPaid || isPending || isLateEntryGranted) && (
         <p className={`text-sm mt-8 ${isAmberScreen ? 'text-gray-700' : 'text-white/60'}`}>
-          {isPaid ? t('attendanceRecorded') : t('pendingPayment')}
+          {isPaid ? t('attendanceRecorded') : isLateEntryGranted ? t('lateEntryGranted') : t('pendingPayment')}
         </p>
       )}
     </div>

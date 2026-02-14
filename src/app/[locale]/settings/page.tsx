@@ -26,6 +26,7 @@ const PERMISSION_KEYS = [
   { key: 'can_add_subjects' as const, labelKey: 'permSubjects' },
   { key: 'can_view_calendar' as const, labelKey: 'permCalendar' },
   { key: 'can_manage_payments' as const, labelKey: 'permPayments' },
+  { key: 'can_allow_late_entry' as const, labelKey: 'permAllowLateEntry' },
 ];
 
 interface CenterInfo {

@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 export type UserRole = 'owner' | 'admin' | 'assistant' | 'teacher';
 
-export type PermissionKey = 'can_add_subjects' | 'can_view_calendar' | 'can_manage_payments';
+export type PermissionKey = 'can_add_subjects' | 'can_view_calendar' | 'can_manage_payments' | 'can_allow_late_entry';
 
 interface UserProfile {
   id: string;
@@ -27,6 +27,7 @@ const defaultPermissions: Record<PermissionKey, boolean> = {
   can_add_subjects: false,
   can_view_calendar: false,
   can_manage_payments: false,
+  can_allow_late_entry: false,
 };
 
 const UserContext = createContext<UserContextType>({
@@ -62,6 +63,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
               can_add_subjects: data.permissions.can_add_subjects ?? false,
               can_view_calendar: data.permissions.can_view_calendar ?? false,
               can_manage_payments: data.permissions.can_manage_payments ?? false,
+              can_allow_late_entry: data.permissions.can_allow_late_entry ?? false,
             });
           }
         }

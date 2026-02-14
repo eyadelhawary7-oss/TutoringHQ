@@ -34,7 +34,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Missing targetUserId, permissionKey, enabled, or centerId' }, { status: 400 });
     }
 
-    const validKeys = ['can_add_subjects', 'can_view_calendar', 'can_manage_payments'];
+    const validKeys = ['can_add_subjects', 'can_view_calendar', 'can_manage_payments', 'can_allow_late_entry'];
     if (!validKeys.includes(permissionKey)) {
       return NextResponse.json({ error: 'Invalid permission key' }, { status: 400 });
     }

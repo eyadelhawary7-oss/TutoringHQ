@@ -95,12 +95,14 @@ export async function GET(request: Request) {
         can_add_subjects: true,
         can_view_calendar: true,
         can_manage_payments: true,
+        can_allow_late_entry: true,
       };
     } else if (role === 'teacher') {
       permissions = {
         can_add_subjects: false,
         can_view_calendar: true,
         can_manage_payments: false,
+        can_allow_late_entry: false,
       };
     } else if (role === 'assistant' && userRecord?.center_id) {
       try {
@@ -114,9 +116,10 @@ export async function GET(request: Request) {
           can_add_subjects: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_add_subjects')?.enabled ?? false,
           can_view_calendar: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_view_calendar')?.enabled ?? false,
           can_manage_payments: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_manage_payments')?.enabled ?? false,
+          can_allow_late_entry: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_allow_late_entry')?.enabled ?? false,
         };
       } catch {
-        permissions = { can_add_subjects: false, can_view_calendar: false, can_manage_payments: false };
+        permissions = { can_add_subjects: false, can_view_calendar: false, can_manage_payments: false, can_allow_late_entry: false };
       }
     }
 

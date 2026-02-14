@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -84,6 +84,8 @@ interface PaymentRecord {
   period_end?: string;
   paid_at: string;
   recorded_by?: string;
+  source?: 'admin_payment' | 'invoice';
+  invoiceStatus?: string;
 }
 
 const PLAN_LABELS: Record<string, string> = {
@@ -93,6 +95,25 @@ const PLAN_LABELS: Record<string, string> = {
   enterprise: 'Enterprise',
   payg: 'PAYG',
 };
+function formatTimeAgo(d: Date): string {
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return 'Just now';
+  if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)} hour ago`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)} days ago`;
+  return d.toLocaleDateString();
+}
+
+function formatActivitySummary(action: string, details?: unknown): string {
+  const d = details as Record<string, unknown> | undefined;
+  if (action === 'center_create') return 'New signup';
+  if (action === 'admin_invoice_approved') return 'Payment proof approved';
+  if (action === 'admin_invoice_rejected') return 'Payment proof rejected';
+  if (action === 'payment_on_scan' && d?.method) return `Payment (${d.method})`;
+  if (action === 'admin_payment_recorded') return 'Admin payment recorded';
+  return action?.replace(/_/g, ' ') ?? '';
+}
+
 const BILLING_LABELS: Record<string, string> = {
   monthly: 'monthly',
   quarterly: 'quarterly',
@@ -129,6 +150,8 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'next_payment_due' | 'students_count' | 'created_at'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [actionCenterId, setActionCenterId] = useState<string | null>(null);
   const [detailCenter, setDetailCenter] = useState<CenterRow | null>(null);
   const [changePlanCenter, setChangePlanCenter] = useState<CenterRow | null>(null);
@@ -429,6 +452,29 @@ export default function AdminPage() {
     ? Object.entries(overview.byPlan || {}).map(([plan, count]) => ({ name: PLAN_LABELS[plan] || plan, count }))
     : [];
 
+  const sortedCenters = useMemo(() => {
+    const arr = [...centers];
+    return arr.sort((a, b) => {
+      if (sortBy === 'next_payment_due') {
+        const dateA = a.next_due ? new Date(a.next_due).getTime() : Number.MAX_SAFE_INTEGER;
+        const dateB = b.next_due ? new Date(b.next_due).getTime() : Number.MAX_SAFE_INTEGER;
+        return sortDir === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      if (sortBy === 'students_count') {
+        return sortDir === 'asc' ? (a.students_count - b.students_count) : (b.students_count - a.students_count);
+      }
+      if (sortBy === 'created_at') {
+        const tA = new Date(a.created_at).getTime();
+        const tB = new Date(b.created_at).getTime();
+        return sortDir === 'asc' ? tA - tB : tB - tA;
+      }
+      // name
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      return sortDir === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+    });
+  }, [centers, sortBy, sortDir]);
+
   return (
     <>
       <Navbar />
@@ -470,6 +516,89 @@ export default function AdminPage() {
           {/* Tab content */}
           {activeTab === 'overview' && overview && (
             <div className="space-y-6">
+              {/* Action Required */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('actionRequired')}</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => setActiveTab('pending')}
+                    className={`p-4 rounded-xl shadow text-left transition-all border-2 ${
+                      ((overview as { pendingSignupsCount?: number }).pendingSignupsCount ?? 0) > 0
+                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                        : 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    }`}
+                  >
+                    <span className="text-2xl">🔔</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('pendingSignupsCount')}</p>
+                    <p className={`text-3xl font-bold ${((overview as { pendingSignupsCount?: number }).pendingSignupsCount ?? 0) > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
+                      {((overview as { pendingSignupsCount?: number }).pendingSignupsCount ?? 0) > 0 ? (overview as { pendingSignupsCount?: number }).pendingSignupsCount : '✓'}
+                    </p>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{t('view')} →</p>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('plan-requests')}
+                    className={`p-4 rounded-xl shadow text-left transition-all border-2 ${
+                      ((overview as { pendingPlanRequestsCount?: number }).pendingPlanRequestsCount ?? 0) > 0
+                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                        : 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    }`}
+                  >
+                    <span className="text-2xl">📋</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('planRequestsCount')}</p>
+                    <p className={`text-3xl font-bold ${((overview as { pendingPlanRequestsCount?: number }).pendingPlanRequestsCount ?? 0) > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
+                      {((overview as { pendingPlanRequestsCount?: number }).pendingPlanRequestsCount ?? 0) > 0 ? (overview as { pendingPlanRequestsCount?: number }).pendingPlanRequestsCount : '✓'}
+                    </p>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{t('view')} →</p>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('billing')}
+                    className={`p-4 rounded-xl shadow text-left transition-all border-2 ${
+                      ((overview as { pendingPaymentProofsCount?: number }).pendingPaymentProofsCount ?? 0) > 0
+                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                        : 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    }`}
+                  >
+                    <span className="text-2xl">💳</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('paymentProofsCount')}</p>
+                    <p className={`text-3xl font-bold ${((overview as { pendingPaymentProofsCount?: number }).pendingPaymentProofsCount ?? 0) > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
+                      {((overview as { pendingPaymentProofsCount?: number }).pendingPaymentProofsCount ?? 0) > 0 ? (overview as { pendingPaymentProofsCount?: number }).pendingPaymentProofsCount : '✓'}
+                    </p>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{t('view')} →</p>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('billing')}
+                    className={`p-4 rounded-xl shadow text-left transition-all border-2 ${
+                      ((overview as { overdueCentersCount?: number }).overdueCentersCount ?? 0) > 0
+                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                        : 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    }`}
+                  >
+                    <span className="text-2xl">⚠️</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('overdueCentersCount')}</p>
+                    <p className={`text-3xl font-bold ${((overview as { overdueCentersCount?: number }).overdueCentersCount ?? 0) > 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
+                      {((overview as { overdueCentersCount?: number }).overdueCentersCount ?? 0) > 0 ? (overview as { overdueCentersCount?: number }).overdueCentersCount : '✓'}
+                    </p>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{t('view')} →</p>
+                  </button>
+                </div>
+                {/* Recent Activity */}
+                {((overview as { recentActivity?: { action: string; details?: unknown; created_at: string; center_id?: string }[] }).recentActivity ?? []).length > 0 && (
+                  <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-xl shadow">
+                    <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{t('recentActivity')}</h3>
+                    <ul className="space-y-2 text-sm">
+                      {((overview as { recentActivity?: Array<{ action: string; details?: unknown; created_at: string }> }).recentActivity ?? []).slice(0, 10).map((a, i) => {
+                        const timeAgo = formatTimeAgo(new Date(a.created_at));
+                        const summary = formatActivitySummary(a.action, a.details);
+                        return (
+                          <li key={i} className="flex justify-between gap-4 text-gray-600 dark:text-gray-400">
+                            <span>{timeAgo} — {summary}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalCenters')}</p>
@@ -529,7 +658,7 @@ export default function AdminPage() {
 
           {activeTab === 'centers' && (
             <div className="space-y-4">
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4 items-center">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -559,6 +688,23 @@ export default function AdminPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm min-w-[200px]"
                 />
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('sortBy')}:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                >
+                  <option value="name">{t('sortName')}</option>
+                  <option value="next_payment_due">{t('sortDueDate')}</option>
+                  <option value="students_count">{t('sortStudents')}</option>
+                  <option value="created_at">{t('sortCreated')}</option>
+                </select>
+                <button
+                  onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                >
+                  {sortDir === 'asc' ? '↑' : '↓'}
+                </button>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
                 <table className="w-full text-sm">
@@ -571,12 +717,24 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentsCount')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('billingPeriod')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('nextDue')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('daysRemaining')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('createdDate')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {centers.map((c) => (
+                    {sortedCenters.map((c) => {
+                      const nextDue = c.next_due ? new Date(c.next_due) : null;
+                      const daysUntilDue = nextDue
+                        ? Math.ceil((nextDue.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                        : null;
+                      const dueColor =
+                        daysUntilDue === null ? 'text-gray-500' :
+                        daysUntilDue > 14 ? 'text-green-600 dark:text-green-400' :
+                        daysUntilDue > 5 ? 'text-amber-600 dark:text-amber-400' :
+                        daysUntilDue > 0 ? 'text-red-600 dark:text-red-400' :
+                        'text-red-700 dark:text-red-300 font-bold';
+                      return (
                       <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700/50">
                         <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{c.name}</td>
                         <td className="px-4 py-3" dir="ltr">{c.phone || c.owner?.phone || '—'}</td>
@@ -593,7 +751,23 @@ export default function AdminPage() {
                         <td className="px-4 py-3">
                           {BILLING_LABELS[c.billing_period || 'monthly'] || c.billing_period}
                         </td>
-                        <td className="px-4 py-3">{c.next_due ? new Date(c.next_due).toLocaleDateString() : '—'}</td>
+                        <td className={`px-4 py-3 ${dueColor}`}>
+                          {c.next_due ? (
+                            <>
+                              {new Date(c.next_due).toLocaleDateString()}
+                              {daysUntilDue !== null && (
+                                <span className="ml-1">
+                                  {daysUntilDue <= 0 ? `(${t('overdue')})` : `(${daysUntilDue} ${t('daysRemaining')})`}
+                                </span>
+                              )}
+                            </>
+                          ) : '—'}
+                        </td>
+                        <td className={`px-4 py-3 font-medium ${dueColor}`}>
+                          {daysUntilDue !== null
+                            ? daysUntilDue <= 0 ? `-${Math.abs(daysUntilDue)} ${t('overdue')}` : String(daysUntilDue)
+                            : '—'}
+                        </td>
                         <td className="px-4 py-3">{new Date(c.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
@@ -636,7 +810,7 @@ export default function AdminPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ); })}
                   </tbody>
                 </table>
                 {centers.length === 0 && (
@@ -789,15 +963,21 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('centerName')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Amount</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Period</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paymentHistory.map((p) => (
-                      <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700/50">
+                      <tr key={p.source === 'invoice' ? `inv-${p.id}` : p.id} className="border-b border-gray-100 dark:border-gray-700/50">
                         <td className="px-4 py-3">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
                         <td className="px-4 py-3">{p.centerName}</td>
                         <td className="px-4 py-3">{Number(p.amount).toLocaleString('ar-EG')} EGP</td>
-                        <td className="px-4 py-3">{p.billing_period}</td>
+                        <td className="px-4 py-3">{p.billing_period === 'payment_proof' ? 'Payment Proof' : p.billing_period}</td>
+                        <td className="px-4 py-3">
+                          {p.invoiceStatus === 'approved' && <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">{t('approved')}</span>}
+                          {p.invoiceStatus === 'rejected' && <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">{t('rejected')}</span>}
+                          {!p.invoiceStatus && '—'}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
