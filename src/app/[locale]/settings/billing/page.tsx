@@ -140,7 +140,7 @@ export default function BillingPage() {
         return;
       }
       const json = await res.json();
-      console.log('Billing fetch invoices:', json.invoices?.length ?? 0);
+      console.log('Invoices query result:', json.invoices, json.error);
       const plans = (json.plans?.length ? json.plans : FALLBACK_PLANS) as PricingPlan[];
       const paygRates = (json.payg_rates?.length ? json.payg_rates : FALLBACK_PAYG) as PaygRate[];
       setData({
@@ -214,7 +214,13 @@ export default function BillingPage() {
           proof_url: proofUrl,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.log('Invoice insert result:', null, json?.error);
+        alert(json?.error || 'Failed');
+        return;
+      }
+      console.log('Invoice insert result: success');
       setSavedMessage(t('proofSubmittedSuccess', { defaultValue: 'Payment proof submitted. Will be confirmed within 24 hours.' }));
       setProofAmount('');
       setProofReference('');

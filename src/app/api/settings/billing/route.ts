@@ -211,29 +211,32 @@ export async function PUT(request: NextRequest) {
       const today = new Date().toISOString().split('T')[0];
       const invoiceNumber = `PAYPROOF-${today}-${Date.now().toString(36)}`;
 
-      const { error: insertErr } = await ctx.supabaseAdmin
+      const insertPayload = {
+        center_id: ctx.user.center_id,
+        invoice_type: 'payment_proof',
+        payment_amount: numAmount,
+        total_amount: numAmount,
+        base_amount: numAmount,
+        payment_method: 'instapay',
+        payment_reference: String(reference).trim(),
+        payment_proof_url: proof_url || null,
+        status: 'pending',
+        billing_period_start: today,
+        billing_period_end: today,
+        due_date: today,
+        invoice_number: invoiceNumber,
+      };
+
+      const { data: insertData, error: insertErr } = await ctx.supabaseAdmin
         .from('invoices')
-        .insert({
-          center_id: ctx.user.center_id,
-          invoice_type: 'payment_proof',
-          payment_amount: numAmount,
-          payment_method: 'instapay',
-          payment_reference: String(reference).trim(),
-          payment_proof_url: proof_url || null,
-          status: 'pending',
-          total_amount: numAmount,
-          base_amount: numAmount,
-          billing_period_start: today,
-          billing_period_end: today,
-          due_date: today,
-          invoice_number: invoiceNumber,
-        });
+        .insert(insertPayload)
+        .select('id');
 
       if (insertErr) {
         console.error('Invoice insert error:', insertErr);
         return NextResponse.json({ error: insertErr.message }, { status: 500 });
       }
-      console.log('Invoice insert result: success');
+      console.log('Invoice insert result:', { data: insertData, error: null });
       return NextResponse.json({ success: true });
     }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbCount } from '@/lib/db-proxy';
 import { exportDashboardToExcel } from '@/lib/excel-export';
@@ -25,13 +25,19 @@ interface DashboardData {
   unpaidCount: number;
   pendingCount: number;
   todayRevenue: number;
+  totalPending: number;
   revenueByMethod: { method: string; amount: number }[];
   trendData: { date: string; count: number }[];
   unpaidStudents: { id: string; name: string; subject: string; fee: number }[];
+  monthTotal: number;
+  monthConfirmed: number;
+  monthPending: number;
+  monthLate: number;
 }
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
   const { user, hasPermission } = useUser();
   const isOwnerOrAdminRole = isOwnerOrAdmin(user?.role);
 
@@ -43,9 +49,14 @@ export default function DashboardPage() {
     unpaidCount: 0,
     pendingCount: 0,
     todayRevenue: 0,
+    totalPending: 0,
     revenueByMethod: [],
     trendData: [],
     unpaidStudents: [],
+    monthTotal: 0,
+    monthConfirmed: 0,
+    monthPending: 0,
+    monthLate: 0,
   });
   const [centerId, setCenterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,24 +92,59 @@ export default function DashboardPage() {
       const pendingCount = students.filter(s => s.payment_status === 'pending').length;
       const unpaidStudents = students.filter(s => s.payment_status === 'unpaid');
 
-      // Today's revenue
-      const { data: todayPayments } = await dbSelect({
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      // Collected today: only CONFIRMED payments
+      const { data: confirmedTodayPayments } = await dbSelect({
         table: 'payments',
         select: 'amount, method',
         filters: [
           { column: 'center_id', op: 'eq', value: cId },
+          { column: 'confirmed', op: 'eq', value: true },
           { column: 'paid_at', op: 'gte', value: startOfToday() },
+          { column: 'paid_at', op: 'lte', value: todayEnd.toISOString() },
         ],
       });
 
-      const payments = (todayPayments || []) as { amount: number; method: string }[];
-      const todayRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const todayPayments = (confirmedTodayPayments || []) as { amount: number; method: string }[];
+      const todayRevenue = todayPayments.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
 
-      // Revenue by method
+      // Total pending (lifetime): unconfirmed payments with status pending
+      const { data: allPendingPayments } = await dbSelect({
+        table: 'payments',
+        select: 'amount',
+        filters: [
+          { column: 'center_id', op: 'eq', value: cId },
+          { column: 'confirmed', op: 'eq', value: false },
+          { column: 'status', op: 'eq', value: 'pending' },
+        ],
+      });
+      const totalPending = (allPendingPayments || []).reduce((sum: number, p: { amount?: number }) => sum + parseFloat(String(p.amount || 0)), 0);
+
+      // Monthly revenue (current month)
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+      const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString();
+      const { data: monthPayments } = await dbSelect({
+        table: 'payments',
+        select: 'amount, confirmed, status',
+        filters: [
+          { column: 'center_id', op: 'eq', value: cId },
+          { column: 'paid_at', op: 'gte', value: monthStart },
+          { column: 'paid_at', op: 'lte', value: monthEnd },
+        ],
+      });
+      const monthPmts = (monthPayments || []) as { amount: number; confirmed?: boolean; status?: string }[];
+      const monthTotal = monthPmts.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const monthConfirmed = monthPmts.filter(p => p.confirmed === true).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const monthPending = monthPmts.filter(p => p.confirmed === false && p.status === 'pending').reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const monthLate = monthPmts.filter(p => p.status === 'late').reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+
+      // Revenue by method (from today's confirmed payments)
       const methodMap = new Map<string, number>();
-      payments.forEach(p => {
+      todayPayments.forEach(p => {
         const current = methodMap.get(p.method) || 0;
-        methodMap.set(p.method, current + (p.amount || 0));
+        methodMap.set(p.method, current + parseFloat(String(p.amount || 0)));
       });
       const revenueByMethod = Array.from(methodMap.entries()).map(([method, amount]) => ({ method, amount }));
 
@@ -134,9 +180,14 @@ export default function DashboardPage() {
         unpaidCount,
         pendingCount,
         todayRevenue,
+        totalPending,
         revenueByMethod,
         trendData,
         unpaidStudents: unpaidStudents.slice(0, 20),
+        monthTotal,
+        monthConfirmed,
+        monthPending,
+        monthLate,
       });
     } catch (err) {
       console.error('Dashboard load error:', err);
@@ -359,10 +410,37 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('pendingAmount')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalPending')}</p>
                   <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">
-                    {data.unpaidStudents.reduce((s, st) => s + (st.fee || 0), 0)} <span className="text-lg">{t('currency')}</span>
+                    {data.totalPending} <span className="text-lg">{t('currency')}</span>
                   </p>
+                </div>
+              </div>
+
+              {/* Monthly Revenue Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                  {t('monthlyRevenue')} — {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalRevenue')}</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">{data.monthTotal} {t('currency')}</p>
+                  </div>
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('confirmedRevenue')}</p>
+                    <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">{data.monthConfirmed} {t('currency')}</p>
+                  </div>
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('pendingRevenue')}</p>
+                    <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-1">{data.monthPending} {t('currency')}</p>
+                  </div>
+                  {data.monthLate > 0 && (
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg sm:col-span-3">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t('lateRevenue')}</p>
+                      <p className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">{data.monthLate} {t('currency')}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

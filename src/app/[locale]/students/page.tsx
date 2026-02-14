@@ -471,8 +471,7 @@ export default function StudentsPage() {
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('name')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('phone')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('subject')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('monthlyFee')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('paymentStatus')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('feePerLesson')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>
                     </tr>
                   </thead>
@@ -493,15 +492,6 @@ export default function StudentsPage() {
                               ? t('multiple', { defaultValue: 'Multiple' })
                               : studentGroupsMap[student.id].fees[0]
                             : student.fee ?? '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            student.payment_status === 'paid'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                          }`}>
-                            {student.payment_status === 'paid' ? t('paid') : t('unpaid')}
-                          </span>
                         </td>
                         <td className="px-4 py-3 flex items-center gap-1">
                           <button

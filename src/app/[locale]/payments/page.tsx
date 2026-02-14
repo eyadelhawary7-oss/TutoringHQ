@@ -65,6 +65,7 @@ export default function PaymentsPage() {
     total_lessons: number;
     paid_lessons: number;
     late_lessons: number;
+    late_balance: number;
     balance_due: number;
   }[]>([]);
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
@@ -144,17 +145,22 @@ export default function PaymentsPage() {
 
     const paidCount: Record<string, number> = {};
     const lateCount: Record<string, number> = {};
-    const balanceByStudent: Record<string, number> = {};
+    const lateBalanceByStudent: Record<string, number> = {};
+    const balanceDueByStudent: Record<string, number> = {};
     for (const p of payments) {
+      const amt = parseFloat(String(p.amount ?? 0));
       if (p.status === 'late') {
         lateCount[p.student_id] = (lateCount[p.student_id] ?? 0) + 1;
-        balanceByStudent[p.student_id] = (balanceByStudent[p.student_id] ?? 0) + (p.amount ?? 0);
-      } else if (p.status === 'confirmed' || p.status === 'pending') {
+        lateBalanceByStudent[p.student_id] = (lateBalanceByStudent[p.student_id] ?? 0) + amt;
+      }
+      if (p.confirmed === true) {
         paidCount[p.student_id] = (paidCount[p.student_id] ?? 0) + 1;
+      } else if (p.confirmed === false && p.status !== 'late') {
+        balanceDueByStudent[p.student_id] = (balanceDueByStudent[p.student_id] ?? 0) + amt;
       }
     }
 
-    const allStudentIds = [...new Set([...Object.keys(totalLessonsByStudent), ...Object.keys(paidCount), ...Object.keys(lateCount)])];
+    const allStudentIds = [...new Set([...Object.keys(totalLessonsByStudent), ...Object.keys(paidCount), ...Object.keys(lateCount), ...Object.keys(balanceDueByStudent)])];
     const summaryRows = allStudentIds.map(sid => ({
       student_id: sid,
       student_name: studentMap[sid]?.name ?? '—',
@@ -162,8 +168,9 @@ export default function PaymentsPage() {
       total_lessons: totalLessonsByStudent[sid] ?? 0,
       paid_lessons: paidCount[sid] ?? 0,
       late_lessons: lateCount[sid] ?? 0,
-      balance_due: balanceByStudent[sid] ?? 0,
-    })).filter(r => r.total_lessons > 0 || r.paid_lessons > 0 || r.late_lessons > 0)
+      balance_due: balanceDueByStudent[sid] ?? 0,
+      late_balance: lateBalanceByStudent[sid] ?? 0,
+    })).filter(r => r.total_lessons > 0 || r.paid_lessons > 0 || r.late_lessons > 0 || r.balance_due > 0)
       .sort((a, b) => (b.balance_due - a.balance_due) || b.total_lessons - a.total_lessons);
     setStudentSummary(summaryRows);
     setIsLoading(false);
@@ -369,8 +376,24 @@ export default function PaymentsPage() {
                           <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-400" dir="ltr">{row.student_number}</td>
                           <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.total_lessons}</td>
                           <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.paid_lessons}</td>
-                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.late_lessons}</td>
-                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{row.balance_due > 0 ? `${row.balance_due.toLocaleString('ar-EG')} EGP` : '—'}</td>
+                          <td className="px-4 py-3">
+                            {row.late_lessons > 0 ? (
+                              <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                {row.late_lessons} ({(row.late_balance ?? 0).toLocaleString('ar-EG')} EGP)
+                              </span>
+                            ) : (
+                              <span className="text-gray-600 dark:text-gray-400">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {row.balance_due > 0 ? (
+                              <span className="font-medium text-red-600 dark:text-red-400">
+                                {row.balance_due.toLocaleString('ar-EG')} EGP
+                              </span>
+                            ) : (
+                              <span className="text-gray-500 dark:text-gray-400">—</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             <button
                               onClick={() => setExpandedStudentId(expandedStudentId === row.student_id ? null : row.student_id)}
@@ -423,9 +446,9 @@ export default function PaymentsPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-gray-700">
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('date', { defaultValue: 'Date' })}</th>
+                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('date')}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentName')}</th>
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentId', { defaultValue: 'Student ID' })}</th>
+                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentId')}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('amount')}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('paymentMethod')}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
@@ -476,7 +499,7 @@ export default function PaymentsPage() {
               })}
               {groupedByDate.length === 0 && (
                 <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-                  {t('noPaymentsYet', { defaultValue: 'No payments recorded yet. Payments will appear here after students are scanned.' })}
+                  {t('noPaymentsYet')}
                 </div>
               )}
             </div>
