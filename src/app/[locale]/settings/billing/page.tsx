@@ -140,6 +140,7 @@ export default function BillingPage() {
         return;
       }
       const json = await res.json();
+      console.log('Billing fetch invoices:', json.invoices?.length ?? 0);
       const plans = (json.plans?.length ? json.plans : FALLBACK_PLANS) as PricingPlan[];
       const paygRates = (json.payg_rates?.length ? json.payg_rates : FALLBACK_PAYG) as PaygRate[];
       setData({
@@ -219,7 +220,7 @@ export default function BillingPage() {
       setProofReference('');
       setProofFile(null);
       setProofPreview(null);
-      fetchBilling();
+      await fetchBilling();
       setTimeout(() => setSavedMessage(''), 5000);
     } catch (err) {
       alert(err instanceof Error ? err.message : t('updateFailed'));

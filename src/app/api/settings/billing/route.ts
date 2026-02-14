@@ -128,6 +128,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(20);
     if (!invErr && invData) invoices = invData;
+    console.log('Billing GET invoices:', invData?.length ?? 0, 'error:', invErr?.message);
 
     const currentPlanDetails = (plans || []).find((p: { id: string }) => p.id === plan);
 
@@ -232,6 +233,7 @@ export async function PUT(request: NextRequest) {
         console.error('Invoice insert error:', insertErr);
         return NextResponse.json({ error: insertErr.message }, { status: 500 });
       }
+      console.log('Invoice insert result: success');
       return NextResponse.json({ success: true });
     }
 

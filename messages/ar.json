@@ -543,7 +543,8 @@
     "sortStudents": "عدد الطلاب",
     "sortCreated": "تاريخ الإنشاء",
     "daysRemaining": "يوم متبقي",
-    "overdue": "متأخر"
+    "overdue": "متأخر",
+    "noActivity": "لا يوجد نشاط حديث"
   },
   "suspended": {
     "title": "انتهى اشتراكك",

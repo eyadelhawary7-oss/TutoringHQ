@@ -507,7 +507,6 @@
     "semiAnnual": "Semi-Annual",
     "annual": "Annual",
     "nextDue": "Next Due",
-    "overdue": "Overdue",
     "dueSoon": "Due Soon",
     "requestPlanChange": "Request Plan Change",
     "requestSubmitted": "Your request has been submitted. It will be reviewed within 24 hours.",
@@ -541,7 +540,8 @@
     "sortStudents": "Students",
     "sortCreated": "Created",
     "daysRemaining": "days remaining",
-    "overdue": "OVERDUE"
+    "overdue": "OVERDUE",
+    "noActivity": "No recent activity"
   },
   "suspended": {
     "title": "Subscription Expired",

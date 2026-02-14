@@ -582,9 +582,9 @@ export default function AdminPage() {
                   </button>
                 </div>
                 {/* Recent Activity */}
-                {((overview as { recentActivity?: { action: string; details?: unknown; created_at: string; center_id?: string }[] }).recentActivity ?? []).length > 0 && (
-                  <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-xl shadow">
-                    <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{t('recentActivity')}</h3>
+                <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-xl shadow">
+                  <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{t('recentActivity')}</h3>
+                  {((overview as { recentActivity?: Array<{ action: string; details?: unknown; created_at: string }> }).recentActivity ?? []).length > 0 ? (
                     <ul className="space-y-2 text-sm">
                       {((overview as { recentActivity?: Array<{ action: string; details?: unknown; created_at: string }> }).recentActivity ?? []).slice(0, 10).map((a, i) => {
                         const timeAgo = formatTimeAgo(new Date(a.created_at));
@@ -596,8 +596,10 @@ export default function AdminPage() {
                         );
                       })}
                     </ul>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('noActivity')}</p>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow">

@@ -194,29 +194,33 @@ export default function ScanPage() {
         });
         if (!lookupError && data) {
           student = data as Student;
-          const { data: membersData } = await dbSelect({
-            table: 'student_group_members',
-            select: 'group_id',
-            filters: [{ column: 'student_id', op: 'eq', value: student.id }],
+        }
+      }
+
+      // When online, ALWAYS fetch groups for the student (whether from IndexedDB or API)
+      if (student && navigator.onLine) {
+        const { data: membersData } = await dbSelect({
+          table: 'student_group_members',
+          select: 'group_id',
+          filters: [{ column: 'student_id', op: 'eq', value: student.id }],
+        });
+        if (membersData && Array.isArray(membersData) && membersData.length > 0) {
+          const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
+          const { data: groupsData } = await dbSelect({
+            table: 'student_groups',
+            select: 'id, name, fee',
+            filters: [{ column: 'id', op: 'in', value: grpIds }],
           });
-          if (membersData && Array.isArray(membersData) && membersData.length > 0) {
-            const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
-            const { data: groupsData } = await dbSelect({
-              table: 'student_groups',
-              select: 'id, name, fee',
-              filters: [{ column: 'id', op: 'in', value: grpIds }],
-            });
-            if (groupsData && Array.isArray(groupsData)) {
-              student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
-                id: g.id,
-                name: g.name,
-                fee: g.fee ?? 0,
-              }));
-              const primaryGroup = student.groups[0];
-              if (primaryGroup) {
-                student.fee = primaryGroup.fee;
-                student.subject = primaryGroup.name;
-              }
+          if (groupsData && Array.isArray(groupsData)) {
+            student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
+              id: g.id,
+              name: g.name,
+              fee: g.fee ?? 0,
+            }));
+            const primaryGroup = student.groups[0];
+            if (primaryGroup && !student.fee) {
+              student.fee = primaryGroup.fee;
+              student.subject = primaryGroup.name;
             }
           }
         }
@@ -431,7 +435,7 @@ export default function ScanPage() {
           },
           select: false,
         });
-        await dbInsert({
+        const { data: lateData, error: lateErr } = await dbInsert({
           table: 'payments',
           data: {
             student_id: scannedStudent.id,
@@ -446,6 +450,7 @@ export default function ScanPage() {
           },
           select: false,
         });
+        console.log('Late entry payment insert:', lateErr ? { error: lateErr } : { success: lateData });
       }
       setScannedStudent({
         ...scannedStudent,
