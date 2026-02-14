@@ -622,23 +622,43 @@ export default function BillingPage() {
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-600">
                       <th className="text-left py-2">{t('invoiceNumber', { defaultValue: 'Invoice #' })}</th>
-                      <th className="text-left py-2">{t('period', { defaultValue: 'Period' })}</th>
+                      <th className="text-left py-2">{t('date', { defaultValue: 'Date' })}</th>
                       <th className="text-left py-2">{t('amount', { defaultValue: 'Amount' })}</th>
+                      <th className="text-left py-2">{t('reference', { defaultValue: 'Reference' })}</th>
                       <th className="text-left py-2">{t('status', { defaultValue: 'Status' })}</th>
+                      <th className="text-left py-2">{t('proof', { defaultValue: 'Proof' })}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data?.invoices?.map((inv: { invoice_number?: string; period_start: string; period_end: string; total_amount: number; status: string; paid_at?: string }) => (
-                      <tr key={inv.invoice_number || inv.period_start} className="border-b border-gray-100 dark:border-gray-700">
+                    {data?.invoices?.map((inv: { id?: string; invoice_number?: string; period_start?: string; period_end?: string; billing_period_start?: string; billing_period_end?: string; total_amount?: number; payment_amount?: number; payment_reference?: string; payment_proof_url?: string; status: string; paid_at?: string; created_at?: string }) => (
+                      <tr key={inv.id || inv.invoice_number || String(inv.created_at)} className="border-b border-gray-100 dark:border-gray-700">
                         <td className="py-2">{inv.invoice_number || '—'}</td>
-                        <td className="py-2">{inv.period_start} – {inv.period_end}</td>
-                        <td className="py-2">{Number(inv.total_amount).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}</td>
                         <td className="py-2">
-                          {inv.status === 'paid' && t('paidStatus')}
-                          {inv.status === 'pending' && t('pendingStatus')}
-                          {inv.status === 'overdue' && t('overdueStatus')}
-                          {inv.status === 'due' && t('dueStatus')}
-                          {!['paid','pending','overdue','due'].includes(inv.status) && inv.status}
+                          {(inv.created_at ? new Date(inv.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : '') || (inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : inv.billing_period_start && inv.billing_period_end ? `${inv.billing_period_start} – ${inv.billing_period_end}` : '—')}
+                        </td>
+                        <td className="py-2">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}</td>
+                        <td className="py-2">{inv.payment_reference || '—'}</td>
+                        <td className="py-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            inv.status === 'paid' || inv.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                            inv.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
+                            'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
+                          }`}>
+                            {inv.status === 'paid' && t('paidStatus')}
+                            {inv.status === 'pending' && t('pendingStatus')}
+                            {(inv.status === 'approved' || inv.status === 'confirmed') && (t('paidStatus') || 'Approved')}
+                            {inv.status === 'rejected' && (t('rejectedStatus', { defaultValue: 'Rejected' }) || 'Rejected')}
+                            {inv.status === 'overdue' && t('overdueStatus')}
+                            {inv.status === 'due' && t('dueStatus')}
+                            {!['paid','pending','overdue','due','approved','rejected','confirmed'].includes(inv.status) && inv.status}
+                          </span>
+                        </td>
+                        <td className="py-2">
+                          {inv.payment_proof_url ? (
+                            <a href={inv.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                              {t('viewProof', { defaultValue: 'View' })}
+                            </a>
+                          ) : '—'}
                         </td>
                       </tr>
                     ))}

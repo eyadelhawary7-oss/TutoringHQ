@@ -87,10 +87,11 @@ export function exportDashboardToExcel(data: DashboardExportData) {
 export interface PaymentExportRecord {
   id: string;
   student_name?: string;
-  subject?: string;
+  student_number?: string;
+  group_name?: string;
   amount: number;
-  payment_method: string;
-  payment_date: string;
+  method: string;
+  paid_at: string;
   status: string;
   confirmed?: boolean;
 }
@@ -98,12 +99,13 @@ export interface PaymentExportRecord {
 export function exportPaymentsToExcel(records: PaymentExportRecord[], filename?: string) {
   const worksheet = XLSX.utils.json_to_sheet(
     records.map(r => ({
-      'التاريخ': r.payment_date ? new Date(r.payment_date).toLocaleDateString('ar-EG') : '',
+      'التاريخ': r.paid_at ? new Date(r.paid_at).toLocaleDateString('ar-EG') : '',
       'اسم الطالب': r.student_name || '',
-      'المادة': r.subject || '',
+      'رقم الطالب': r.student_number || '',
+      'المجموعة': r.group_name || '',
       'المبلغ': r.amount,
-      'طريقة الدفع': METHOD_LABELS[r.payment_method] || r.payment_method,
-      'الحالة': r.confirmed !== false && r.status === 'paid' ? 'مسدد' : 'معلق',
+      'طريقة الدفع': METHOD_LABELS[r.method] || r.method,
+      'الحالة': r.confirmed !== false && r.status === 'confirmed' ? 'مسدد' : 'معلق',
     }))
   );
   const workbook = XLSX.utils.book_new();

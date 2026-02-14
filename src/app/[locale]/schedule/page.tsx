@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog, type Filter } from '@/lib/db-proxy';
@@ -55,7 +55,7 @@ const DAY_MAP: Record<string, string> = {
 const DAY_REVERSE: Record<string, string> = {
   '0': 'Sat', '1': 'Sun', '2': 'Mon', '3': 'Tue', '4': 'Wed', '5': 'Thu', '6': 'Fri',
 };
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+const DAY_KEYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
 function getHoursRange(start: number, end: number): number[] {
   return Array.from({ length: end - start }, (_, i) => i + start);
@@ -92,6 +92,7 @@ function formatTime(minutes: number): string {
 export default function SchedulePage() {
   const t = useTranslations('schedule');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
   const { user, hasPermission } = useUser();
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -407,7 +408,7 @@ export default function SchedulePage() {
           ) : (
             <>
               <div className="flex gap-1 mb-4">
-                {DAY_LABELS.map((label) => (
+                {DAY_KEYS.map((label) => (
                   <button
                     key={label}
                     onClick={() => setSelectedDay(label)}
@@ -465,7 +466,7 @@ export default function SchedulePage() {
                                       onClick={() => handleDeleteSlot(slot.id)}
                                       className="mt-1 text-red-600 hover:underline"
                                     >
-                                      {tCommon('delete')}
+                                      {t('delete')}
                                     </button>
                                   )}
                                 </div>
@@ -499,7 +500,7 @@ export default function SchedulePage() {
                   onChange={(e) => setFormDay(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                 >
-                  {DAY_LABELS.map((label) => (
+                  {DAY_KEYS.map((label) => (
                     <option key={label} value={label}>{t(label.toLowerCase() as 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')}</option>
                   ))}
                 </select>
@@ -549,7 +550,7 @@ export default function SchedulePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('start')}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('startTime')}</label>
                   <input
                     type="time"
                     value={formStart}
@@ -558,7 +559,7 @@ export default function SchedulePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('end')}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('endTime')}</label>
                   <input
                     type="time"
                     value={formEnd}
@@ -596,7 +597,7 @@ export default function SchedulePage() {
                       {tCommon('loading')}
                     </>
                   ) : (
-                    tCommon('save')
+                    t('save')
                   )}
                 </button>
                 <button
@@ -604,7 +605,7 @@ export default function SchedulePage() {
                   onClick={() => setShowAddModal(false)}
                   className="flex-1 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
                 >
-                  {tCommon('cancel')}
+                  {t('cancel')}
                 </button>
               </div>
             </form>
@@ -661,13 +662,13 @@ export default function SchedulePage() {
                   disabled={isSavingHours || editStartHour >= editEndHour}
                   className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  {tCommon('save')}
+                  {t('save')}
                 </button>
                 <button
                   onClick={() => setShowHoursModal(false)}
                   className="flex-1 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg"
                 >
-                  {tCommon('cancel')}
+                  {t('cancel')}
                 </button>
               </div>
             </div>

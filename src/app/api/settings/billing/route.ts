@@ -207,25 +207,30 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'Valid amount is required' }, { status: 400 });
       }
 
-      const { data: pendingInvoice } = await ctx.supabaseAdmin
-        .from('invoices')
-        .select('id')
-        .eq('center_id', ctx.user.center_id)
-        .in('status', ['pending', 'overdue'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const today = new Date().toISOString().split('T')[0];
+      const invoiceNumber = `PAYPROOF-${today}-${Date.now().toString(36)}`;
 
-      if (pendingInvoice) {
-        const { error: updateErr } = await ctx.supabaseAdmin
-          .from('invoices')
-          .update({
-            payment_reference: String(reference).trim(),
-            payment_amount: numAmount,
-            payment_proof_url: proof_url || null,
-          })
-          .eq('id', (pendingInvoice as { id: string }).id);
-        if (updateErr) throw updateErr;
+      const { error: insertErr } = await ctx.supabaseAdmin
+        .from('invoices')
+        .insert({
+          center_id: ctx.user.center_id,
+          invoice_type: 'payment_proof',
+          payment_amount: numAmount,
+          payment_method: 'instapay',
+          payment_reference: String(reference).trim(),
+          payment_proof_url: proof_url || null,
+          status: 'pending',
+          total_amount: numAmount,
+          base_amount: numAmount,
+          billing_period_start: today,
+          billing_period_end: today,
+          due_date: today,
+          invoice_number: invoiceNumber,
+        });
+
+      if (insertErr) {
+        console.error('Invoice insert error:', insertErr);
+        return NextResponse.json({ error: insertErr.message }, { status: 500 });
       }
       return NextResponse.json({ success: true });
     }

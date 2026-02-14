@@ -84,21 +84,21 @@ export default function DashboardPage() {
       // Today's revenue
       const { data: todayPayments } = await dbSelect({
         table: 'payments',
-        select: 'amount, payment_method',
+        select: 'amount, method',
         filters: [
           { column: 'center_id', op: 'eq', value: cId },
-          { column: 'payment_date', op: 'gte', value: startOfToday() },
+          { column: 'paid_at', op: 'gte', value: startOfToday() },
         ],
       });
 
-      const payments = (todayPayments || []) as { amount: number; payment_method: string }[];
+      const payments = (todayPayments || []) as { amount: number; method: string }[];
       const todayRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
       // Revenue by method
       const methodMap = new Map<string, number>();
       payments.forEach(p => {
-        const current = methodMap.get(p.payment_method) || 0;
-        methodMap.set(p.payment_method, current + (p.amount || 0));
+        const current = methodMap.get(p.method) || 0;
+        methodMap.set(p.method, current + (p.amount || 0));
       });
       const revenueByMethod = Array.from(methodMap.entries()).map(([method, amount]) => ({ method, amount }));
 
@@ -211,15 +211,15 @@ export default function DashboardPage() {
         }),
         dbSelect({
           table: 'payments',
-          select: 'student_id, amount, payment_method, payment_date, created_by',
+          select: 'student_id, amount, method, paid_at, recorded_by',
           filters: [{ column: 'center_id', op: 'eq', value: centerId }],
-          order: { column: 'payment_date', ascending: false },
+          order: { column: 'paid_at', ascending: false },
           limit: 500,
         }),
       ]);
       const students = (studentsRes.data || []) as { id: string; name: string; phone?: string; parent_phone?: string; subject?: string; payment_status: string; qr_code?: string }[];
       const attendanceRaw = (attendanceRes.data || []) as { student_id: string; scanned_at: string }[];
-      const paymentsRaw = (paymentsRes.data || []) as { student_id: string; amount: number; payment_method: string; payment_date: string; created_by: string }[];
+      const paymentsRaw = (paymentsRes.data || []) as { student_id: string; amount: number; method: string; paid_at: string; recorded_by: string }[];
       const studentMap = new Map(students.map(s => [s.id, s]));
       exportDashboardToExcel({
         students,
@@ -231,8 +231,8 @@ export default function DashboardPage() {
         payments: paymentsRaw.map(p => ({
           student_name: studentMap.get(p.student_id)?.name || '',
           amount: p.amount,
-          method: p.payment_method,
-          paid_at: p.payment_date,
+          method: p.method,
+          paid_at: p.paid_at,
           recorded_by: '',
         })),
       });

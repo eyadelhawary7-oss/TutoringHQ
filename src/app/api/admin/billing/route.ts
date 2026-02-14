@@ -95,9 +95,21 @@ export async function GET(request: Request) {
       centerName: billingRows.find((c: { id: string }) => c.id === p.center_id)?.name ?? '—',
     }));
 
+    const { data: pendingInvoices } = await supabaseAdmin
+      .from('invoices')
+      .select('id, center_id, payment_amount, payment_reference, payment_proof_url, created_at, invoice_number')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    const pendingInvoiceRows = (pendingInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => ({
+      ...inv,
+      centerName: billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? '—',
+    }));
+
     return NextResponse.json({
       centers: billingRows,
       paymentHistory: paymentRows,
+      pendingInvoices: pendingInvoiceRows,
     });
   } catch (error) {
     return NextResponse.json(
@@ -178,6 +190,80 @@ export async function POST(request: Request) {
         action: 'admin_payment_recorded',
         entity_type: 'admin_payments',
         details: { amount: numAmount, billing_period: period, period_start: start.toISOString().slice(0, 10), period_end: end.toISOString().slice(0, 10) },
+      });
+    } catch {
+      // ignore
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const ctx = await getAdminContext(request);
+    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const { supabaseAdmin, userId } = ctx;
+    const body = await request.json();
+    const { invoiceId, action } = body;
+
+    if (!invoiceId || !action || !['approve', 'reject'].includes(action)) {
+      return NextResponse.json({ error: 'invoiceId and action (approve|reject) required' }, { status: 400 });
+    }
+
+    const { data: inv } = await supabaseAdmin
+      .from('invoices')
+      .select('id, center_id, status')
+      .eq('id', invoiceId)
+      .single();
+
+    if (!inv || (inv as { status: string }).status !== 'pending') {
+      return NextResponse.json({ error: 'Invoice not found or not pending' }, { status: 404 });
+    }
+
+    const centerId = (inv as { center_id: string }).center_id;
+
+    if (action === 'approve') {
+      const { error: updErr } = await supabaseAdmin
+        .from('invoices')
+        .update({
+          status: 'approved',
+          paid_at: new Date().toISOString(),
+        })
+        .eq('id', invoiceId);
+
+      if (updErr) {
+        return NextResponse.json({ error: updErr.message }, { status: 500 });
+      }
+
+      await supabaseAdmin
+        .from('centers')
+        .update({ billing_status: 'paid', last_payment_date: new Date().toISOString().slice(0, 10) })
+        .eq('id', centerId);
+    } else {
+      const { error: updErr } = await supabaseAdmin
+        .from('invoices')
+        .update({ status: 'rejected' })
+        .eq('id', invoiceId);
+
+      if (updErr) {
+        return NextResponse.json({ error: updErr.message }, { status: 500 });
+      }
+    }
+
+    try {
+      await supabaseAdmin.from('audit_log').insert({
+        center_id: centerId,
+        user_id: userId,
+        action: action === 'approve' ? 'admin_invoice_approved' : 'admin_invoice_rejected',
+        entity_type: 'invoices',
+        details: { invoice_id: invoiceId, action },
       });
     } catch {
       // ignore

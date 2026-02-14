@@ -41,8 +41,8 @@ async function hasPaidToday(studentId: string, centerId: string): Promise<boolea
     filters: [
       { column: 'student_id', op: 'eq', value: studentId },
       { column: 'center_id', op: 'eq', value: centerId },
-      { column: 'payment_date', op: 'gte', value: today + 'T00:00:00' },
-      { column: 'payment_date', op: 'lte', value: today + 'T23:59:59' },
+      { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
+      { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
     ],
     limit: 1,
   });
@@ -228,18 +228,18 @@ export default function ScanPage() {
         if (paidToday) {
           const { data: todayPay } = await dbSelect({
             table: 'payments',
-            select: 'payment_method',
+            select: 'method',
             filters: [
               { column: 'student_id', op: 'eq', value: student.id },
               { column: 'center_id', op: 'eq', value: centerId },
-              { column: 'payment_date', op: 'gte', value: new Date().toISOString().split('T')[0] + 'T00:00:00' },
-              { column: 'payment_date', op: 'lte', value: new Date().toISOString().split('T')[0] + 'T23:59:59' },
+              { column: 'paid_at', op: 'gte', value: new Date().toISOString().split('T')[0] + 'T00:00:00' },
+              { column: 'paid_at', op: 'lte', value: new Date().toISOString().split('T')[0] + 'T23:59:59' },
             ],
-            order: { column: 'payment_date', ascending: false },
+            order: { column: 'paid_at', ascending: false },
             limit: 1,
           });
           const pay = Array.isArray(todayPay) ? todayPay[0] : todayPay;
-          lastPaymentMethod = (pay as { payment_method?: string })?.payment_method ?? null;
+          lastPaymentMethod = (pay as { method?: string })?.method ?? null;
         }
       } else {
         paidToday = await hasPaidTodayOffline(centerId, student.id);
@@ -257,7 +257,7 @@ export default function ScanPage() {
       if (paidToday) {
         // Already paid today: record attendance only
         if (navigator.onLine) {
-          await dbInsert({
+          const { error: attendErr } = await dbInsert({
             table: 'attendance_scans',
             data: {
               student_id: student.id,
@@ -265,9 +265,13 @@ export default function ScanPage() {
               scanned_by: userId,
               scanned_at: scannedAt,
               payment_status_at_scan: 'paid',
+              session_date: scannedAt.split('T')[0],
+              payment_recorded: false,
+              group_id: null,
             },
             select: false,
           });
+          if (attendErr) console.error('Attendance scan insert FAILED:', attendErr);
         } else {
           await queueScan({
             student_id: student.id,
@@ -302,6 +306,7 @@ export default function ScanPage() {
     setIsProcessing(true);
 
     const scannedAt = new Date().toISOString();
+    const sessionDate = scannedAt.split('T')[0];
     const isCash = method === 'cash';
     const paymentAmount = amount ?? scannedStudent.fee ?? 0;
 
@@ -311,13 +316,13 @@ export default function ScanPage() {
           student_id: scannedStudent.id,
           center_id: centerId,
           amount: paymentAmount,
-          payment_method: method,
-          payment_date: scannedAt,
-          created_by: userId,
-          status: isCash ? 'paid' : 'pending',
+          method,
+          recorded_by: userId,
+          paid_at: scannedAt,
+          status: isCash ? 'confirmed' : 'pending',
           confirmed: isCash,
+          group_id: groupId || null,
         };
-        if (groupId) paymentData.group_id = groupId;
 
         console.log('Recording payment:', { student_id: scannedStudent.id, center_id: centerId, amount: paymentAmount, method });
         const { data: payData, error: payErr } = await dbInsert({
@@ -325,7 +330,12 @@ export default function ScanPage() {
           data: paymentData,
           select: false,
         });
-        console.log('Payment insert result:', payData, payErr);
+        if (payErr) {
+          console.error('Payment insert FAILED:', payErr);
+          if (typeof alert !== 'undefined') alert('Payment error: ' + (payErr instanceof Error ? payErr.message : String(payErr)));
+        } else {
+          console.log('Payment insert SUCCESS:', payData);
+        }
 
         const scanData: Record<string, unknown> = {
           student_id: scannedStudent.id,
@@ -334,14 +344,17 @@ export default function ScanPage() {
           scanned_at: scannedAt,
           payment_status_at_scan: 'unpaid',
           payment_method: method,
+          session_date: sessionDate,
+          payment_recorded: true,
+          group_id: groupId || null,
         };
-        if (groupId) scanData.group_id = groupId;
 
-        await dbInsert({
+        const { error: scanErr } = await dbInsert({
           table: 'attendance_scans',
           data: scanData,
           select: false,
         });
+        if (scanErr) console.error('Attendance scan insert FAILED:', scanErr);
         await dbInsert({
           table: 'audit_log',
           data: {

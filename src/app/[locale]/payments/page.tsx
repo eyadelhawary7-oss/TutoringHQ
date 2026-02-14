@@ -13,13 +13,15 @@ interface PaymentRecord {
   student_id: string;
   center_id: string;
   amount: number;
-  payment_method: string;
-  payment_date: string;
+  method: string;
+  paid_at: string;
   status: string;
   confirmed?: boolean;
-  created_by?: string | null;
+  recorded_by?: string | null;
+  group_id?: string | null;
   student_name?: string;
-  subject?: string;
+  student_number?: string;
+  group_name?: string;
 }
 
 const METHOD_KEYS: Record<string, string> = {
@@ -68,31 +70,45 @@ export default function PaymentsPage() {
     setCenterId(meData.user.center_id);
     const cid = meData.user.center_id;
 
-    const { data: paymentsData } = await dbSelect({
+    const { data: paymentsData, error: payErr } = await dbSelect({
       table: 'payments',
-      select: 'id, student_id, center_id, amount, payment_method, payment_date, status, confirmed, created_by',
+      select: 'id, student_id, center_id, amount, method, paid_at, status, confirmed, recorded_by, group_id',
       filters: [{ column: 'center_id', op: 'eq', value: cid }],
-      order: { column: 'payment_date', ascending: false },
+      order: { column: 'paid_at', ascending: false },
     });
 
-    const payments = (paymentsData || []) as (PaymentRecord & { student_id: string })[];
-    const studentIds = [...new Set(payments.map(p => p.student_id))];
+    console.log('Payments query result:', Array.isArray(paymentsData) ? paymentsData.length : 0, 'Error:', payErr);
 
-    let studentMap: Record<string, { name: string; subject: string }> = {};
+    const payments = (paymentsData || []) as (PaymentRecord & { student_id: string; group_id?: string })[];
+    const studentIds = [...new Set(payments.map(p => p.student_id))];
+    const groupIds = [...new Set(payments.map(p => p.group_id).filter(Boolean))] as string[];
+
+    let studentMap: Record<string, { name: string; student_number: string }> = {};
+    let groupMap: Record<string, string> = {};
     if (studentIds.length > 0) {
       const { data: studentsData } = await dbSelect({
         table: 'students',
-        select: 'id, name, subject',
+        select: 'id, name, student_number',
         filters: [{ column: 'id', op: 'in', value: studentIds }],
       });
-      const students = (studentsData || []) as { id: string; name: string; subject: string }[];
-      studentMap = Object.fromEntries(students.map(s => [s.id, { name: s.name || '', subject: s.subject || '' }]));
+      const students = (studentsData || []) as { id: string; name: string; student_number?: string }[];
+      studentMap = Object.fromEntries(students.map(s => [s.id, { name: s.name || '', student_number: s.student_number || '—' }]));
+    }
+    if (groupIds.length > 0) {
+      const { data: groupsData } = await dbSelect({
+        table: 'student_groups',
+        select: 'id, name',
+        filters: [{ column: 'id', op: 'in', value: groupIds }],
+      });
+      const groups = (groupsData || []) as { id: string; name: string }[];
+      groupMap = Object.fromEntries(groups.map(g => [g.id, g.name || '']));
     }
 
     setRecords(payments.map(p => ({
       ...p,
       student_name: studentMap[p.student_id]?.name ?? '—',
-      subject: studentMap[p.student_id]?.subject ?? '—',
+      student_number: studentMap[p.student_id]?.student_number ?? '—',
+      group_name: p.group_id ? (groupMap[p.group_id] ?? '—') : '—',
     })));
     setIsLoading(false);
   }, []);
@@ -101,14 +117,13 @@ export default function PaymentsPage() {
 
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
-      if (activeTab === 'pending' && (r.confirmed !== false && r.status === 'paid')) return false;
-      if (activeTab === 'pending') return (r.confirmed === false || r.status === 'pending');
+      if (activeTab === 'pending') return r.confirmed === false || r.status === 'pending';
       if (statusFilter !== 'all') {
         if (statusFilter === 'confirmed' && (r.confirmed === false || r.status === 'pending')) return false;
-        if (statusFilter === 'pending' && (r.confirmed !== false && r.status === 'paid')) return false;
+        if (statusFilter === 'pending' && (r.confirmed !== false && r.status === 'confirmed')) return false;
       }
-      if (methodFilter !== 'all' && r.payment_method !== methodFilter) return false;
-      const payDate = r.payment_date ? r.payment_date.split('T')[0] : '';
+      if (methodFilter !== 'all' && r.method !== methodFilter) return false;
+      const payDate = r.paid_at ? r.paid_at.split('T')[0] : '';
       if (dateFrom && payDate < dateFrom) return false;
       if (dateTo && payDate > dateTo) return false;
       return true;
@@ -118,7 +133,7 @@ export default function PaymentsPage() {
   const groupedByDate = useMemo(() => {
     const groups: Record<string, PaymentRecord[]> = {};
     for (const r of filteredRecords) {
-      const d = r.payment_date ? r.payment_date.split('T')[0] : '';
+      const d = r.paid_at ? r.paid_at.split('T')[0] : '';
       if (!groups[d]) groups[d] = [];
       groups[d].push(r);
     }
@@ -135,7 +150,7 @@ export default function PaymentsPage() {
           confirmed: true,
           confirmed_by: userId,
           confirmed_at: new Date().toISOString(),
-          status: 'paid',
+          status: 'confirmed',
         },
         filters: [{ column: 'id', op: 'eq', value: paymentId }],
       });
@@ -159,7 +174,7 @@ export default function PaymentsPage() {
   };
 
   const methods = useMemo(() => {
-    const set = new Set(records.map(r => r.payment_method).filter(Boolean));
+    const set = new Set(records.map(r => r.method).filter(Boolean));
     return Array.from(set);
   }, [records]);
 
@@ -265,33 +280,39 @@ export default function PaymentsPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-gray-700">
+                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('date', { defaultValue: 'Date' })}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentName')}</th>
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('subject')}</th>
+                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentId', { defaultValue: 'Student ID' })}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('amount')}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('paymentMethod')}</th>
                             <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
+                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('group', { defaultValue: 'Group' })}</th>
                             {canConfirmPayments && <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>}
                           </tr>
                         </thead>
                         <tbody>
                           {dayRecords.map(r => (
                             <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">
+                                {r.paid_at ? new Date(r.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                              </td>
                               <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{r.student_name}</td>
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.subject}</td>
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.amount}</td>
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatMethod(r.payment_method)}</td>
+                              <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-400" dir="ltr">{r.student_number ?? '—'}</td>
+                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.amount} EGP</td>
+                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatMethod(r.method)}</td>
                               <td className="px-4 py-3">
                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  r.confirmed !== false && r.status === 'paid'
+                                  r.confirmed !== false && r.status === 'confirmed'
                                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                                     : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
                                 }`}>
-                                  {r.confirmed !== false && r.status === 'paid' ? t('filterPaid') : t('filterPending')}
+                                  {r.confirmed !== false && r.status === 'confirmed' ? t('confirmed', { defaultValue: 'Confirmed' }) : t('filterPending')}
                                 </span>
                               </td>
+                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.group_name ?? '—'}</td>
                               {canConfirmPayments && (
                                 <td className="px-4 py-3">
-                                  {(r.confirmed === false || r.status === 'pending') && (
+                                  {(r.confirmed === false || r.status === 'pending') ? (
                                     <button
                                       onClick={() => handleConfirm(r.id)}
                                       disabled={confirmingId === r.id}
@@ -299,7 +320,7 @@ export default function PaymentsPage() {
                                     >
                                       ✓ {t('confirm')}
                                     </button>
-                                  )}
+                                  ) : null}
                                 </td>
                               )}
                             </tr>
@@ -312,7 +333,7 @@ export default function PaymentsPage() {
               })}
               {groupedByDate.length === 0 && (
                 <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-                  {tCommon('noData')}
+                  {t('noPaymentsYet', { defaultValue: 'No payments recorded yet. Payments will appear here after students are scanned.' })}
                 </div>
               )}
             </div>

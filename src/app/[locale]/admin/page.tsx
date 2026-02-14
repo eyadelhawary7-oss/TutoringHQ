@@ -124,6 +124,7 @@ export default function AdminPage() {
   const [planRequests, setPlanRequests] = useState<PlanRequestRow[]>([]);
   const [billingCenters, setBillingCenters] = useState<BillingCenter[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
+  const [pendingInvoices, setPendingInvoices] = useState<{ id: string; center_id: string; centerName: string; payment_amount: number; payment_reference?: string; payment_proof_url?: string; created_at: string; invoice_number?: string }[]>([]);
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
@@ -208,6 +209,7 @@ export default function AdminPage() {
       const data = await res.json();
       setBillingCenters(data.centers || []);
       setPaymentHistory(data.paymentHistory || []);
+      setPendingInvoices(data.pendingInvoices || []);
     }
   }, [getSession]);
 
@@ -278,6 +280,33 @@ export default function AdminPage() {
       });
       if (res.ok) {
         fetchPlanRequests();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed');
+      }
+    } catch {
+      alert('Network error');
+    } finally {
+      setActionCenterId(null);
+    }
+  };
+
+  const handleInvoiceAction = async (invoiceId: string, action: 'approve' | 'reject') => {
+    const session = await getSession();
+    if (!session) return;
+    setActionCenterId(invoiceId);
+    try {
+      const res = await fetch('/api/admin/billing', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ invoiceId, action }),
+      });
+      if (res.ok) {
+        setPendingInvoices((prev) => prev.filter((i) => i.id !== invoiceId));
+        fetchBilling();
       } else {
         const data = await res.json();
         alert(data.error || 'Failed');
@@ -699,6 +728,57 @@ export default function AdminPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
+                <h3 className="p-4 text-lg font-semibold text-gray-800 dark:text-gray-200">{t('pendingInvoices', { defaultValue: 'Pending Payment Proofs' })} ({pendingInvoices.length})</h3>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('centerName')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('date')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Amount</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Reference</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Proof</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingInvoices.map((inv) => (
+                      <tr key={inv.id} className="border-b border-gray-100 dark:border-gray-700/50">
+                        <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{inv.centerName}</td>
+                        <td className="px-4 py-3">{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="px-4 py-3">{Number(inv.payment_amount ?? 0).toLocaleString('ar-EG')} EGP</td>
+                        <td className="px-4 py-3 font-mono">{inv.payment_reference || '—'}</td>
+                        <td className="px-4 py-3">
+                          {inv.payment_proof_url ? (
+                            <a href={inv.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                              {t('viewProof', { defaultValue: 'View' })}
+                            </a>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-3 flex gap-2">
+                          <button
+                            onClick={() => handleInvoiceAction(inv.id, 'approve')}
+                            disabled={actionCenterId === inv.id}
+                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                          >
+                            {t('approve')}
+                          </button>
+                          <button
+                            onClick={() => handleInvoiceAction(inv.id, 'reject')}
+                            disabled={actionCenterId === inv.id}
+                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                          >
+                            {t('reject')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {pendingInvoices.length === 0 && (
+                  <p className="p-8 text-center text-gray-500 dark:text-gray-400">{t('noPendingInvoices', { defaultValue: 'No pending payment proofs.' })}</p>
+                )}
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
                 <h3 className="p-4 text-lg font-semibold text-gray-800 dark:text-gray-200">{t('paymentHistory')}</h3>

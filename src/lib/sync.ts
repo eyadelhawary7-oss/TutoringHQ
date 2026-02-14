@@ -20,6 +20,8 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
       if (scan.payment_action) {
         scanData.payment_status_at_scan = 'unpaid';
         scanData.payment_method = scan.payment_action.method;
+        scanData.session_date = new Date(scan.scanned_at).toISOString().split('T')[0];
+        scanData.payment_recorded = true;
         if ((scan.payment_action as { group_id?: string }).group_id) {
           scanData.group_id = (scan.payment_action as { group_id?: string }).group_id;
         }
@@ -40,10 +42,10 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
           student_id: scan.student_id,
           center_id: scan.center_id,
           amount: scan.payment_action.amount,
-          payment_method: scan.payment_action.method,
-          payment_date: scan.scanned_at,
-          created_by: scan.scanned_by,
-          status: isPending ? 'pending' : 'paid',
+          method: scan.payment_action.method,
+          recorded_by: scan.scanned_by,
+          paid_at: scan.scanned_at,
+          status: isPending ? 'pending' : 'confirmed',
           confirmed: !scan.payment_action.isPending,
         };
         if (groupId) payData.group_id = groupId;
