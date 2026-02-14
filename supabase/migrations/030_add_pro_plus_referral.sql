@@ -18,7 +18,7 @@ BEGIN
     END;
   END IF;
   INSERT INTO referral_rewards (referring_center_id, referred_center_id, referred_center_plan, first_month_fee, reward_amount, reward_status)
-  VALUES (NEW.referred_by, NEW.id, COALESCE(NEW.plan, 'starter'), fee, fee * 0.20, 'approved')
+  VALUES (NEW.referred_by, NEW.id, COALESCE(NEW.plan, 'starter'), fee, fee * 0.40, 'approved')
   ON CONFLICT (referring_center_id, referred_center_id) DO UPDATE SET reward_status = 'approved', reward_amount = EXCLUDED.reward_amount;
   RETURN NEW;
 END;

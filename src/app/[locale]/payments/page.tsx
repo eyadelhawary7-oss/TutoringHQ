@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbUpdate } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
@@ -38,7 +38,9 @@ type StatusFilter = 'all' | 'confirmed' | 'pending';
 export default function PaymentsPage() {
   const t = useTranslations('payments');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const { user, hasPermission } = useUser();
+  const isRTL = locale === 'ar';
   const canConfirmPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_manage_payments');
 
   const [records, setRecords] = useState<PaymentRecord[]>([]);
@@ -162,7 +164,7 @@ export default function PaymentsPage() {
   }, [records]);
 
   return (
-    <>
+    <div dir={isRTL ? 'rtl' : 'ltr'}>
       <Navbar />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -317,6 +319,6 @@ export default function PaymentsPage() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

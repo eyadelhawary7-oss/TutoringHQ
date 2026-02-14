@@ -46,6 +46,7 @@ export default function GroupsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState('');
   const [members, setMembers] = useState<{ student_id: string; student_name: string }[]>([]);
+  const [studentOtherGroups, setStudentOtherGroups] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -81,7 +82,6 @@ export default function GroupsPage() {
         }),
       ]);
 
-      console.log('Groups query result:', groupsRes.data, groupsRes.error);
       if (groupsRes.data) {
         const groupsData = groupsRes.data as Group[];
         const withCount = await Promise.all(
@@ -99,7 +99,6 @@ export default function GroupsPage() {
       if (studentsRes.data) setStudents(studentsRes.data as Student[]);
       if (subjectsRes.data) {
         setSubjects(subjectsRes.data as Subject[]);
-        console.log('Subjects loaded for Create Group:', (subjectsRes.data as Subject[]).length);
       }
       setIsLoading(false);
     };
@@ -107,19 +106,37 @@ export default function GroupsPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedGroup) { setMembers([]); return; }
+    if (!selectedGroup) { setMembers([]); setStudentOtherGroups({}); return; }
     const loadMembers = async () => {
-      const { data } = await dbSelect({
+      const { data: membersData } = await dbSelect({
         table: 'student_group_members',
         select: 'student_id',
         filters: [{ column: 'group_id', op: 'eq', value: selectedGroup }],
       });
-      const ids = (data || []).map((m: { student_id: string }) => m.student_id);
+      const ids = (membersData || []).map((m: { student_id: string }) => m.student_id);
       const names = students.filter(s => ids.includes(s.id));
       setMembers(ids.map((id: string) => ({ student_id: id, student_name: names.find(s => s.id === id)?.name || '' })));
+
+      const groupIds = groups.map((g) => g.id);
+      const { data: allMemberships } = await dbSelect({
+        table: 'student_group_members',
+        select: 'student_id, group_id',
+        filters: groupIds.length > 0 ? [{ column: 'group_id', op: 'in' as const, value: groupIds }] : [],
+      });
+      const map: Record<string, string[]> = {};
+      const memberships = (allMemberships || []) as { student_id: string; group_id: string }[];
+      for (const m of memberships) {
+        if (m.group_id === selectedGroup) continue;
+        const g = groups.find(gr => gr.id === m.group_id);
+        if (g) {
+          if (!map[m.student_id]) map[m.student_id] = [];
+          map[m.student_id].push(g.name);
+        }
+      }
+      setStudentOtherGroups(map);
     };
     loadMembers();
-  }, [selectedGroup, students]);
+  }, [selectedGroup, students, groups]);
 
   const handleAddGroup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,9 +230,9 @@ export default function GroupsPage() {
     : groups;
 
   const selectedGroupData = selectedGroup ? groups.find((g) => g.id === selectedGroup) : null;
-  const studentsForGroup = selectedGroupData?.subject
-    ? students.filter((s) => s.subject === selectedGroupData.subject)
-    : students;
+  const studentsForGroup = selectedGroup
+    ? students.filter((s) => !members.some((m) => m.student_id === s.id))
+    : [];
 
   const handleRemoveMember = async (studentId: string) => {
     if (!selectedGroup || !centerId) return;
@@ -370,17 +387,19 @@ export default function GroupsPage() {
                     </div>
                     <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{t('addStudent')}</h3>
                     <div className="flex flex-wrap gap-2">
-                      {studentsForGroup
-                        .filter(s => !members.some(m => m.student_id === s.id))
-                        .map((s) => (
+                      {studentsForGroup.map((s) => {
+                        const otherGroups = studentOtherGroups[s.id] || [];
+                        const suffix = otherGroups.length > 0 ? ` (${otherGroups.join(', ')})` : '';
+                        return (
                           <button
                             key={s.id}
                             onClick={() => handleAddMember(s.id)}
                             className="px-3 py-1 text-sm bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200"
                           >
-                            + {s.name}
+                            + {s.name}{suffix}
                           </button>
-                        ))}
+                        );
+                      })}
                     </div>
                   </>
                 ) : (

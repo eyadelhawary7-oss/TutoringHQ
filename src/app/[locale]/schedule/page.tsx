@@ -50,12 +50,12 @@ interface ScheduleSlot {
 
 // DB stores day_of_week as 0-6: 0=Sat, 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri
 const DAY_MAP: Record<string, string> = {
-  Sun: '0', Mon: '1', Tue: '2', Wed: '3', Thu: '4', Fri: '5', Sat: '6',
+  Sun: '1', Mon: '2', Tue: '3', Wed: '4', Thu: '5', Fri: '6', Sat: '0',
 };
 const DAY_REVERSE: Record<string, string> = {
-  '0': 'Sun', '1': 'Mon', '2': 'Tue', '3': 'Wed', '4': 'Thu', '5': 'Fri', '6': 'Sat',
+  '0': 'Sat', '1': 'Sun', '2': 'Mon', '3': 'Tue', '4': 'Wed', '5': 'Thu', '6': 'Fri',
 };
-const DAY_LABELS = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
 function getHoursRange(start: number, end: number): number[] {
   return Array.from({ length: end - start }, (_, i) => i + start);
@@ -100,7 +100,7 @@ export default function SchedulePage() {
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<string>('Sat');
+  const [selectedDay, setSelectedDay] = useState<string>('Sun');
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [conflictError, setConflictError] = useState('');
@@ -110,7 +110,7 @@ export default function SchedulePage() {
   const [formRecurring, setFormRecurring] = useState(false);
   const [formStart, setFormStart] = useState('09:00');
   const [formEnd, setFormEnd] = useState('10:00');
-  const [formDay, setFormDay] = useState<string>('Sat');
+  const [formDay, setFormDay] = useState<string>('Sun');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slotError, setSlotError] = useState('');
   const [slotSuccessMessage, setSlotSuccessMessage] = useState('');
@@ -175,7 +175,7 @@ export default function SchedulePage() {
           filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
         }),
       ]);
-      if (slotsRes?.error) console.log('Slots error:', slotsRes.error);
+      if (slotsRes?.error) console.error('Slots error:', slotsRes.error);
 
       if (centerRes?.data) {
         const c = centerRes.data as { schedule_start_hour?: number | null; schedule_end_hour?: number | null };
@@ -206,8 +206,6 @@ export default function SchedulePage() {
 
   const dbDayValue = DAY_MAP[selectedDay];
   const slotsForDay = slots.filter((s) => String(s.day_of_week) === dbDayValue);
-  console.log('Selected day:', selectedDay, '→ DB value:', dbDayValue);
-  console.log('Filtered slots for this day:', slotsForDay);
 
   const scheduleTitle = t('centerSchedule');
   const showViewOnly = user?.role === 'assistant' && hasPermission('can_view_calendar');
@@ -319,7 +317,6 @@ export default function SchedulePage() {
         });
         if (slotsRes?.data) {
           const slotsData = slotsRes.data as ScheduleSlot[];
-          console.log('All slots for center:', slotsData);
           const withNames = slotsData.map((s) => ({
             ...s,
             room_name: rooms.find((r) => r.id === s.room_id)?.name ?? '',
@@ -328,6 +325,7 @@ export default function SchedulePage() {
           }));
           setSlots(withNames);
         }
+        if (slotsRes?.error) console.error('Slots refresh error:', slotsRes.error);
       }
     } finally {
       setIsSubmitting(false);
@@ -419,7 +417,7 @@ export default function SchedulePage() {
                         : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
-                    {label}
+                    {t(label.toLowerCase() as 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')}
                   </button>
                 ))}
               </div>
@@ -429,7 +427,7 @@ export default function SchedulePage() {
                   <thead>
                     <tr>
                       <th className="w-16 p-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-r border-gray-200 dark:border-gray-700">
-                        Time
+                        {t('time', { defaultValue: 'Time' })}
                       </th>
                       {rooms.map((r) => (
                         <th key={r.id} className="p-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-r border-gray-200 dark:border-gray-700 min-w-[120px]">
@@ -502,7 +500,7 @@ export default function SchedulePage() {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                 >
                   {DAY_LABELS.map((label) => (
-                    <option key={label} value={label}>{label}</option>
+                    <option key={label} value={label}>{t(label.toLowerCase() as 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')}</option>
                   ))}
                 </select>
               </div>
@@ -651,8 +649,8 @@ export default function SchedulePage() {
                       table: 'centers',
                       data: { schedule_start_hour: editStartHour, schedule_end_hour: editEndHour },
                       filters: [{ column: 'id', op: 'eq' as const, value: centerId }],
-                      select: false,
                     });
+                    if (error) console.error('Working hours save error:', error);
                     if (!error) {
                       setScheduleStartHour(editStartHour);
                       setScheduleEndHour(editEndHour);

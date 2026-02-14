@@ -318,7 +318,7 @@ export default function SettingsPage() {
       return;
     }
 
-    let result: { success?: boolean; member?: TeamMember; tempPassword?: string; error?: string } = {};
+    let result: { success?: boolean; member?: TeamMember; tempPassword?: string; error?: string; pendingInvite?: boolean; message?: string } = {};
     try {
       const res = await fetch('/api/invite-user', {
         method: 'POST',
@@ -350,6 +350,13 @@ export default function SettingsPage() {
       setInviteRole('assistant');
       setLastInvitePassword(result.tempPassword ?? null);
       showSaved();
+    } else if (result.success && result.pendingInvite) {
+      setInviteName('');
+      setInvitePhone('');
+      setInviteRole('assistant');
+      setLastInvitePassword(null);
+      setSavedMessage(result.message || t('inviteSuccess'));
+      setTimeout(() => setSavedMessage(''), 5000);
     } else {
       setInviteError(result.error || 'Failed to add member');
     }

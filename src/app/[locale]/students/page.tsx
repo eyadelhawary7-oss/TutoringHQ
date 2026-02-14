@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, dbUpdate, auditLog } from '@/lib/db-proxy';
+import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import Navbar from '@/components/Navbar';
 import QRCode from 'qrcode';
 
@@ -39,6 +39,7 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [studentGroupsMap, setStudentGroupsMap] = useState<Record<string, { names: string[]; fees: number[] }>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -97,7 +98,28 @@ export default function StudentsPage() {
         dbSelect({ table: 'student_groups', select: 'id, name, subject, fee', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }], order: { column: 'name' } }),
       ]);
       if (subRes.data) setSubjects(subRes.data as Subject[]);
-      if (grpRes.data) setGroups(grpRes.data as Group[]);
+      if (grpRes.data) {
+        const grps = grpRes.data as Group[];
+        setGroups(grps);
+        const groupIds = grps.map((g) => g.id);
+        if (groupIds.length > 0) {
+          const { data: membersData } = await dbSelect({
+            table: 'student_group_members',
+            select: 'student_id, group_id',
+            filters: [{ column: 'group_id', op: 'in', value: groupIds }],
+          });
+          const map: Record<string, { names: string[]; fees: number[] }> = {};
+          for (const m of (membersData || []) as { student_id: string; group_id: string }[]) {
+            const g = grps.find((x) => x.id === m.group_id);
+            if (g) {
+              if (!map[m.student_id]) map[m.student_id] = { names: [], fees: [] };
+              map[m.student_id].names.push(g.name);
+              map[m.student_id].fees.push(g.fee ?? 0);
+            }
+          }
+          setStudentGroupsMap(map);
+        }
+      }
     };
     loadSubjectsAndGroups();
   }, []);
@@ -244,6 +266,29 @@ export default function StudentsPage() {
     }
   };
 
+  const handleDeleteStudent = async (student: Student) => {
+    if (!confirm(t('deleteStudentConfirm', { defaultValue: 'Are you sure you want to delete this student?' }))) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+    const meData = await meRes.json();
+    const centerId = meData?.user?.center_id;
+    const userId = meData?.user?.id;
+    if (!centerId || !userId) return;
+    try {
+      await dbDelete({ table: 'student_group_members', filters: [{ column: 'student_id', op: 'eq', value: student.id }] });
+      await dbDelete({ table: 'attendance_scans', filters: [{ column: 'student_id', op: 'eq', value: student.id }] });
+      await dbDelete({ table: 'payments', filters: [{ column: 'student_id', op: 'eq', value: student.id }] });
+      const { error } = await dbDelete({ table: 'students', filters: [{ column: 'id', op: 'eq', value: student.id }] });
+      if (!error) {
+        setStudents((prev) => prev.filter((s) => s.id !== student.id));
+        await auditLog({ centerId, userId, action: 'student_delete', entityType: 'students', entityId: student.id, details: { name: student.name } });
+      }
+    } catch (err) {
+      console.error('Delete student error:', err);
+    }
+  };
+
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError('');
@@ -302,6 +347,13 @@ export default function StudentsPage() {
         });
       }
       await auditLog({ centerId, userId, action: 'student_create', entityType: 'students', entityId: student.id, details: { name: addForm.name, student_number: studentNumber } });
+      const addedGroup = groups.find((g) => g.id === addForm.groupId);
+      if (addedGroup) {
+        setStudentGroupsMap((prev) => ({
+          ...prev,
+          [student.id]: { names: [addedGroup.name], fees: [addedGroup.fee ?? 0] },
+        }));
+      }
       setStudents((prev) => [{ ...student, student_number: studentNumber } as Student, ...prev]);
       setAddSuccess({ name: addForm.name.trim(), studentNumber, qrDataUrl: qrDataURL });
       setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '' });
@@ -430,8 +482,18 @@ export default function StudentsPage() {
                         <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-400" dir="ltr">{student.student_number || '—'}</td>
                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{student.name}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">{student.phone}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.subject}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{student.fee}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                          {studentGroupsMap[student.id]?.names?.length
+                            ? studentGroupsMap[student.id].names.join(', ')
+                            : student.subject || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                          {studentGroupsMap[student.id]?.fees?.length
+                            ? studentGroupsMap[student.id].fees.length > 1
+                              ? t('multiple', { defaultValue: 'Multiple' })
+                              : studentGroupsMap[student.id].fees[0]
+                            : student.fee ?? '—'}
+                        </td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             student.payment_status === 'paid'
@@ -441,13 +503,20 @@ export default function StudentsPage() {
                             {student.payment_status === 'paid' ? t('paid') : t('unpaid')}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 flex items-center gap-1">
                           <button
                             onClick={() => openQRModal(student)}
                             className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-lg transition-colors"
                             title={t('viewQR')}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStudent(student)}
+                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
+                            title={t('deleteStudent', { defaultValue: 'Delete student' })}
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
                         </td>
                       </tr>

@@ -76,6 +76,7 @@ export async function queueScan(scanData: {
     method: string;
     amount: number;
     isPending?: boolean;
+    group_id?: string;
   };
 }) {
   const db = await getDB();

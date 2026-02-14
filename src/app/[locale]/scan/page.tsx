@@ -29,6 +29,7 @@ interface Student {
   parent_phone?: string | null;
   student_number?: string | null;
   last_payment_method?: string | null;
+  groups?: { id: string; name: string; fee: number }[];
 }
 
 /** Check if student paid TODAY (per-session payment logic). payments table is source of truth. */
@@ -182,7 +183,34 @@ export default function ScanPage() {
           filters,
           single: true,
         });
-        if (!lookupError && data) student = data as Student;
+        if (!lookupError && data) {
+          student = data as Student;
+          const { data: membersData } = await dbSelect({
+            table: 'student_group_members',
+            select: 'group_id',
+            filters: [{ column: 'student_id', op: 'eq', value: student.id }],
+          });
+          if (membersData && Array.isArray(membersData) && membersData.length > 0) {
+            const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
+            const { data: groupsData } = await dbSelect({
+              table: 'student_groups',
+              select: 'id, name, fee',
+              filters: [{ column: 'id', op: 'in', value: grpIds }],
+            });
+            if (groupsData && Array.isArray(groupsData)) {
+              student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
+                id: g.id,
+                name: g.name,
+                fee: g.fee ?? 0,
+              }));
+              const primaryGroup = student.groups[0];
+              if (primaryGroup) {
+                student.fee = primaryGroup.fee;
+                student.subject = primaryGroup.name;
+              }
+            }
+          }
+        }
       }
 
       if (!student) {
@@ -269,41 +297,49 @@ export default function ScanPage() {
     }
   }, [centerId, userId, t, mode]);
 
-  const handlePaymentSelect = async (method: string) => {
+  const handlePaymentSelect = async (method: string, groupId?: string, amount?: number) => {
     if (!scannedStudent || !centerId || !userId) return;
     setIsProcessing(true);
 
     const scannedAt = new Date().toISOString();
     const isCash = method === 'cash';
+    const paymentAmount = amount ?? scannedStudent.fee ?? 0;
 
     try {
       if (navigator.onLine) {
-        // 1. Create payment record (per-session: payments table is source of truth)
-        await dbInsert({
+        const paymentData: Record<string, unknown> = {
+          student_id: scannedStudent.id,
+          center_id: centerId,
+          amount: paymentAmount,
+          payment_method: method,
+          payment_date: scannedAt,
+          created_by: userId,
+          status: isCash ? 'paid' : 'pending',
+          confirmed: isCash,
+        };
+        if (groupId) paymentData.group_id = groupId;
+
+        console.log('Recording payment:', { student_id: scannedStudent.id, center_id: centerId, amount: paymentAmount, method });
+        const { data: payData, error: payErr } = await dbInsert({
           table: 'payments',
-          data: {
-            student_id: scannedStudent.id,
-            center_id: centerId,
-            amount: scannedStudent.fee,
-            payment_method: method,
-            payment_date: scannedAt,
-            created_by: userId,
-            status: isCash ? 'paid' : 'pending',
-            confirmed: isCash,
-          },
+          data: paymentData,
           select: false,
         });
-        // 2. Create attendance_scan record (payment_status_at_scan: unpaid at scan time, we collected)
+        console.log('Payment insert result:', payData, payErr);
+
+        const scanData: Record<string, unknown> = {
+          student_id: scannedStudent.id,
+          center_id: centerId,
+          scanned_by: userId,
+          scanned_at: scannedAt,
+          payment_status_at_scan: 'unpaid',
+          payment_method: method,
+        };
+        if (groupId) scanData.group_id = groupId;
+
         await dbInsert({
           table: 'attendance_scans',
-          data: {
-            student_id: scannedStudent.id,
-            center_id: centerId,
-            scanned_by: userId,
-            scanned_at: scannedAt,
-            payment_status_at_scan: 'unpaid',
-            payment_method: method,
-          },
+          data: scanData,
           select: false,
         });
         await dbInsert({
@@ -314,7 +350,7 @@ export default function ScanPage() {
             action: 'payment_on_scan',
             entity_type: 'payment',
             entity_id: scannedStudent.id,
-            details: { method, amount: scannedStudent.fee, status: method === 'cash' ? 'confirmed' : 'pending' },
+            details: { method, amount: paymentAmount, group_id: groupId ?? null, status: method === 'cash' ? 'confirmed' : 'pending' },
           },
           select: false,
         });
@@ -324,7 +360,7 @@ export default function ScanPage() {
           center_id: centerId,
           scanned_by: userId,
           scanned_at: scannedAt,
-          payment_action: { method, amount: scannedStudent.fee, isPending: !isCash },
+          payment_action: { method, amount: paymentAmount, isPending: !isCash, group_id: groupId },
         });
         await markPaidTodayOffline(centerId, scannedStudent.id);
         const count = await getUnsyncedCount();

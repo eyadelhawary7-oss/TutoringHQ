@@ -11,11 +11,12 @@ interface Student {
   subject: string;
   student_number?: string | null;
   last_payment_method?: string | null;
+  groups?: { id: string; name: string; fee: number }[];
 }
 
 interface ScanResultScreenProps {
   student: Student;
-  onPaymentSelect: (method: string) => void;
+  onPaymentSelect: (method: string, groupId?: string, groupFee?: number) => void;
   onDismiss: () => void;
   isProcessing: boolean;
 }
@@ -32,6 +33,9 @@ const paymentMethods = [
 export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, isProcessing }: ScanResultScreenProps) {
   const t = useTranslations('scan');
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+  const [showGroupSelector, setShowGroupSelector] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee: number } | null>(null);
+  const hasMultipleGroups = (student.groups?.length ?? 0) > 1;
 
   const isPaid = student.payment_status === 'paid';
   const isPending = student.payment_status === 'pending';
@@ -76,13 +80,40 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
       )}
 
       {/* Pay Now Section (unpaid only) */}
-      {!isPaid && !isPending && !showPaymentMethods && (
+      {!isPaid && !isPending && !showPaymentMethods && !showGroupSelector && (
         <button
-          onClick={() => setShowPaymentMethods(true)}
+          onClick={() => {
+            if (hasMultipleGroups) setShowGroupSelector(true);
+            else setShowPaymentMethods(true);
+          }}
           className="px-12 py-5 bg-white text-red-600 text-2xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200"
         >
           {t('payNow')}
         </button>
+      )}
+
+      {/* Group Selector (when student in multiple groups) */}
+      {!isPaid && !isPending && showGroupSelector && !showPaymentMethods && (
+        <div className="w-full max-w-md px-4">
+          <h3 className="text-xl text-white font-bold text-center mb-4">
+            {t('whichClass', { defaultValue: 'Which class is this student attending?' })}
+          </h3>
+          <div className="grid grid-cols-1 gap-3">
+            {student.groups?.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => {
+                  setSelectedGroup(g);
+                  setShowGroupSelector(false);
+                  setShowPaymentMethods(true);
+                }}
+                className="py-4 px-4 bg-white/20 backdrop-blur-sm text-white font-bold rounded-xl border-2 border-white/30 hover:bg-white/30 transition-all text-lg"
+              >
+                {g.name} ({g.fee} EGP)
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Payment Methods Dropdown */}
@@ -96,7 +127,7 @@ export default function ScanResultScreen({ student, onPaymentSelect, onDismiss, 
               <button
                 key={method.value}
                 disabled={isProcessing}
-                onClick={() => onPaymentSelect(method.value)}
+                onClick={() => onPaymentSelect(method.value, selectedGroup?.id ?? (student.groups?.[0]?.id), selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee)}
                 className="py-4 px-4 bg-white/20 backdrop-blur-sm text-white font-bold rounded-xl border-2 border-white/30 hover:bg-white/30 transition-all disabled:opacity-50 text-lg"
               >
                 {t(method.key)}

@@ -20,6 +20,9 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
       if (scan.payment_action) {
         scanData.payment_status_at_scan = 'unpaid';
         scanData.payment_method = scan.payment_action.method;
+        if ((scan.payment_action as { group_id?: string }).group_id) {
+          scanData.group_id = (scan.payment_action as { group_id?: string }).group_id;
+        }
       }
       const { error: attendanceError } = await dbInsert({
         table: 'attendance_scans',
@@ -32,19 +35,21 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
       // If there was a payment action, record it (per-session: payments table is source of truth)
       if (scan.payment_action) {
         const isPending = (scan.payment_action as { isPending?: boolean }).isPending ?? false;
-
+        const groupId = (scan.payment_action as { group_id?: string }).group_id;
+        const payData: Record<string, unknown> = {
+          student_id: scan.student_id,
+          center_id: scan.center_id,
+          amount: scan.payment_action.amount,
+          payment_method: scan.payment_action.method,
+          payment_date: scan.scanned_at,
+          created_by: scan.scanned_by,
+          status: isPending ? 'pending' : 'paid',
+          confirmed: !scan.payment_action.isPending,
+        };
+        if (groupId) payData.group_id = groupId;
         await dbInsert({
           table: 'payments',
-          data: {
-            student_id: scan.student_id,
-            center_id: scan.center_id,
-            amount: scan.payment_action.amount,
-            payment_method: scan.payment_action.method,
-            payment_date: scan.scanned_at,
-            created_by: scan.scanned_by,
-            status: isPending ? 'pending' : 'paid',
-            confirmed: !scan.payment_action.isPending,
-          },
+          data: payData,
           select: false,
         });
       }

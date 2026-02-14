@@ -94,8 +94,6 @@ export async function POST(request: Request) {
       });
     }
 
-    console.log('Creating center for user:', user.id);
-    console.log('Center name:', centerName);
 
     let referredById: string | null = null;
     if (referralCode?.trim()) {
@@ -152,7 +150,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Center created:', center.id);
 
     const { error: userError } = await supabase
       .from('users')
@@ -174,7 +171,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('User profile created successfully');
 
     return NextResponse.json({ 
       success: true,

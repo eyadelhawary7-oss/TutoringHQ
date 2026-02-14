@@ -58,21 +58,27 @@ export async function POST(request: Request) {
     }
     const phoneE164 = toE164(normalizedPhone);
 
-    const { data: currentUser, error: currentUserError } = await supabase
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data: currentUser, error: currentUserError } = await supabaseAdmin
       .from('users')
       .select('center_id, role')
       .eq('id', user.id)
       .single();
 
     if (currentUserError || !currentUser?.center_id) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({
+        error: 'Your account could not be found. Please try logging in again, or contact support if the issue persists.',
+      }, { status: 404 });
     }
 
     if (currentUser.role !== 'owner' && currentUser.role !== 'admin') {
       return NextResponse.json({ error: 'Only center owners and admins can invite team members' }, { status: 403 });
     }
 
-    const { data: existingByE164 } = await supabase
+    const { data: existingByE164 } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('center_id', currentUser.center_id)
@@ -85,7 +91,7 @@ export async function POST(request: Request) {
       }, { status: 409 });
     }
 
-    const { data: existingByLocal } = await supabase
+    const { data: existingByLocal } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('center_id', currentUser.center_id)
@@ -98,10 +104,6 @@ export async function POST(request: Request) {
       }, { status: 409 });
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
     const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
 
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -112,10 +114,34 @@ export async function POST(request: Request) {
     });
 
     if (authError || !authData.user) {
-      console.error('Auth creation error:', authError);
+      const isAlreadyExists = authError?.message?.toLowerCase().includes('already') || authError?.code === 'user_already_exists';
+      if (isAlreadyExists) {
+        const { error: inviteErr } = await supabaseAdmin
+          .from('center_invites')
+          .upsert(
+            { center_id: currentUser.center_id, phone: normalizedPhone, role, status: 'pending' },
+            { onConflict: 'center_id,phone' }
+          );
+        if (!inviteErr) {
+          try {
+            await supabaseAdmin.from('audit_log').insert({
+              center_id: currentUser.center_id,
+              user_id: user.id,
+              action: 'team_member_invited_pending',
+              entity_type: 'center_invites',
+              details: { invited_phone: normalizedPhone, invited_name: name, invited_role: role },
+            });
+          } catch {}
+          return NextResponse.json({
+            success: true,
+            pendingInvite: true,
+            message: `Invitation sent! When this person logs in with phone ${normalizedPhone}, they will be added to your center as an Assistant.`,
+          });
+        }
+      }
       return NextResponse.json({
-        error: `Failed to create user: ${authError?.message || 'Unknown error'}`,
-      }, { status: 500 });
+        error: `This phone number hasn't signed up yet. Ask them to sign up first at /signup, or send them this link: ${process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app'}/login`,
+      }, { status: 400 });
     }
 
     const { data: newUser, error: insertError } = await supabaseAdmin

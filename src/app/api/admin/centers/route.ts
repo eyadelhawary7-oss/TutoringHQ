@@ -472,7 +472,7 @@ export async function PUT(request: Request) {
       const PLAN_FEES: Record<string, number> = { starter: 4000, pro: 7200, pro_plus: 8000, enterprise: 9000 };
       const plan = (center.plan as string) || 'starter';
       const fee = PLAN_FEES[plan] ?? 4000;
-      const reward = Math.round(fee * 0.2);
+      const reward = Math.round(fee * 0.4);
       const { data: referringCenter } = await supabaseAdmin.from('centers').select('name').eq('id', referredBy).single();
       await supabaseAdmin.from('referral_rewards').upsert(
         {
