@@ -301,6 +301,8 @@
     "paidLessons": "حصص مدفوعة",
     "lateLessons": "حصص مؤجلة",
     "balanceDue": "المبلغ المستحق",
+    "sortHighToLow": "الرصيد: من الأعلى للأقل",
+    "sortLowToHigh": "الرصيد: من الأقل للأعلى",
     "viewHistory": "عرض السجل",
     "noPaymentsYet": "لا توجد مدفوعات بعد. ستظهر المدفوعات هنا بعد مسح الطلاب.",
     "lateEntry": "دخول مؤجل",

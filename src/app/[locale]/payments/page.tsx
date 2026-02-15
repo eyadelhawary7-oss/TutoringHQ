@@ -66,6 +66,7 @@ export default function PaymentsPage() {
     paid_lessons: number;
     balance_due: number;
   }[]>([]);
+  const [sortOrder, setSortOrder] = useState<'default' | 'high' | 'low'>('high');
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
@@ -188,6 +189,13 @@ export default function PaymentsPage() {
       return true;
     });
   }, [records, statusFilter, methodFilter, dateFrom, dateTo, activeTab]);
+
+  const sortedStudents = useMemo(() => {
+    if (!studentSummary.length) return [];
+    if (sortOrder === 'high') return [...studentSummary].sort((a, b) => (b.balance_due ?? 0) - (a.balance_due ?? 0));
+    if (sortOrder === 'low') return [...studentSummary].sort((a, b) => (a.balance_due ?? 0) - (b.balance_due ?? 0));
+    return studentSummary;
+  }, [studentSummary, sortOrder]);
 
   const groupedByDate = useMemo(() => {
     const groups: Record<string, PaymentRecord[]> = {};
@@ -345,6 +353,16 @@ export default function PaymentsPage() {
             </div>
           ) : viewMode === 'studentSummary' ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-end">
+                <button
+                  onClick={() => setSortOrder(prev => prev === 'high' ? 'low' : 'high')}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                >
+                  {sortOrder === 'high'
+                    ? t('sortHighToLow', { defaultValue: 'Balance: High → Low' })
+                    : t('sortLowToHigh', { defaultValue: 'Balance: Low → High' })}
+                </button>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -358,7 +376,7 @@ export default function PaymentsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {studentSummary.map((row) => (
+                    {sortedStudents.map((row) => (
                       <React.Fragment key={row.student_id}>
                         <tr className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                           <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{row.student_name}</td>
@@ -403,7 +421,7 @@ export default function PaymentsPage() {
                     ))}
                   </tbody>
                 </table>
-                {studentSummary.length === 0 && (
+                {sortedStudents.length === 0 && (
                   <p className="p-8 text-center text-gray-500 dark:text-gray-400">{t('noPaymentsYet')}</p>
                 )}
               </div>

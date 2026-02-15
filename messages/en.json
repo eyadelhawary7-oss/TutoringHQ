@@ -301,6 +301,8 @@
     "paidLessons": "Paid Lessons",
     "lateLessons": "Late Lessons",
     "balanceDue": "Balance Due",
+    "sortHighToLow": "Balance: High → Low",
+    "sortLowToHigh": "Balance: Low → High",
     "viewHistory": "View History",
     "noPaymentsYet": "No payments yet. Payments will appear here after scanning students.",
     "lateEntry": "Late Entry",
