@@ -1,11 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import LanguageToggle from './LanguageToggle';
 import SyncIndicator from './SyncIndicator';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import type { PermissionKey, UserRole } from '@/contexts/UserContext';
+import { supabase } from '@/lib/supabase';
 
 const getRoleBadge = (role: UserRole) => {
   const badges = {
@@ -20,7 +22,14 @@ const getRoleBadge = (role: UserRole) => {
 export default function Navbar() {
   const t = useTranslations('nav');
   const pathname = usePathname();
+  const router = useRouter();
   const { user, hasPermission } = useUser();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
+    router.refresh();
+  };
 
   const allNavItems: { key: string; href: string; permission?: PermissionKey }[] = [
     { key: 'dashboard', href: '/dashboard', permission: 'can_view_dashboard' },
@@ -99,6 +108,15 @@ export default function Navbar() {
               <span className="hidden sm:inline-flex px-2 py-0.5 text-xs font-medium rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" title={t('limitedAccess')}>
                 {t('limitedAccess')}
               </span>
+            )}
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                title={t('logout', { defaultValue: 'Logout' })}
+              >
+                {t('logout', { defaultValue: 'Logout' })}
+              </button>
             )}
             <SyncIndicator />
             <LanguageToggle />

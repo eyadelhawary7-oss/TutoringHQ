@@ -13,7 +13,8 @@
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
     "roleAssistant": "Assistant",
-    "roleTeacher": "Teacher"
+    "roleTeacher": "Teacher",
+    "logout": "Logout"
   },
   "common": {
     "welcome": "Welcome",
@@ -381,7 +382,9 @@
     "memberDeactivated": "Member deactivated",
     "deactivate": "Deactivate",
     "activate": "Activate",
-    "deactivatedStatus": "Deactivated"
+    "deactivatedStatus": "Deactivated",
+    "account": "Account",
+    "logout": "Logout"
   },
   "groups": {
     "title": "Student Groups",

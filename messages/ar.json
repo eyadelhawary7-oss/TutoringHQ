@@ -13,7 +13,8 @@
     "roleOwner": "مالك",
     "roleAdmin": "أدمن",
     "roleAssistant": "مساعد",
-    "roleTeacher": "معلم"
+    "roleTeacher": "معلم",
+    "logout": "تسجيل الخروج"
   },
   "common": {
     "welcome": "مرحبا",
@@ -381,7 +382,9 @@
     "memberDeactivated": "تم تعطيل العضو",
     "deactivate": "تعطيل",
     "activate": "تفعيل",
-    "deactivatedStatus": "معطل"
+    "deactivatedStatus": "معطل",
+    "account": "الحساب",
+    "logout": "تسجيل الخروج"
   },
   "groups": {
     "title": "مجموعات الطلاب",

@@ -30,6 +30,12 @@ export default function SettingsPage() {
   const router = useRouter();
   const { user: currentUser, hasPermission } = useUser();
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
+    router.refresh();
+  };
+
   const [center, setCenter] = useState<CenterInfo | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
@@ -572,6 +578,19 @@ export default function SettingsPage() {
                   لتفعيل خدمة الواتساب، تواصل مع فريق الدعم: support@centerhq.com
                 </p>
               </div>
+            </section>
+
+            {/* Account / Logout */}
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                {t('account', { defaultValue: 'Account' })}
+              </h2>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {t('logout', { defaultValue: 'Logout' })}
+              </button>
             </section>
           </div>
         </div>
