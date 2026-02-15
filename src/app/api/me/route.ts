@@ -56,7 +56,7 @@ export async function GET(request: Request) {
 
     const { data: userRecord, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id, center_id, role, name, phone, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, is_active')
+      .select('id, name, phone, role, center_id, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings, is_active')
       .eq('id', user.id)
       .single();
 
@@ -86,46 +86,8 @@ export async function GET(request: Request) {
       }
     }
 
-    // Owner and admin have full access; assistant/teacher use permissions table
-    let permissions: Record<string, boolean> = {};
-    const role = userRecord?.role as string;
-
-    if (role === 'owner' || role === 'admin') {
-      permissions = {
-        can_add_subjects: true,
-        can_view_calendar: true,
-        can_manage_payments: true,
-        can_allow_late_entry: true,
-      };
-    } else if (role === 'teacher') {
-      permissions = {
-        can_add_subjects: false,
-        can_view_calendar: true,
-        can_manage_payments: false,
-        can_allow_late_entry: false,
-      };
-    } else if (role === 'assistant' && userRecord?.center_id) {
-      try {
-        const { data: permRows } = await supabaseAdmin
-          .from('permissions')
-          .select('permission_key, enabled')
-          .eq('user_id', user.id)
-          .eq('center_id', userRecord.center_id);
-
-        permissions = {
-          can_add_subjects: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_add_subjects')?.enabled ?? false,
-          can_view_calendar: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_view_calendar')?.enabled ?? false,
-          can_manage_payments: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_manage_payments')?.enabled ?? false,
-          can_allow_late_entry: permRows?.find((p: { permission_key: string }) => p.permission_key === 'can_allow_late_entry')?.enabled ?? false,
-        };
-      } catch {
-        permissions = { can_add_subjects: false, can_view_calendar: false, can_manage_payments: false, can_allow_late_entry: false };
-      }
-    }
-
     return NextResponse.json({
       user: { ...userRecord, center },
-      permissions,
     });
 
   } catch (error) {

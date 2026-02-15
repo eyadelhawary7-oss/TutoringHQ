@@ -33,6 +33,9 @@ const PERMISSION_KEYS: { key: string; labelKey: string }[] = [
   { key: 'can_manage_students', labelKey: 'canManageStudents' },
   { key: 'can_manage_groups', labelKey: 'canManageGroups' },
   { key: 'can_allow_late_entry', labelKey: 'canAllowLateEntry' },
+  { key: 'can_manage_rooms', labelKey: 'canManageRooms' },
+  { key: 'can_view_schedule', labelKey: 'canViewSchedule' },
+  { key: 'can_view_settings', labelKey: 'canViewSettings' },
 ];
 
 export default function TeamPage() {
@@ -83,7 +86,7 @@ export default function TeamPage() {
 
     const { data: membersData } = await dbSelect({
       table: 'users',
-      select: 'id, name, phone, role, is_active, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry',
+      select: 'id, name, phone, role, is_active, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings',
       filters: [{ column: 'center_id', op: 'eq', value: cid }],
     });
     const permMap: Record<string, Record<string, boolean>> = {};
@@ -98,6 +101,9 @@ export default function TeamPage() {
           can_manage_students: m.can_manage_students === true,
           can_manage_groups: m.can_manage_groups === true,
           can_allow_late_entry: m.can_allow_late_entry === true,
+          can_manage_rooms: m.can_manage_rooms === true,
+          can_view_schedule: m.can_view_schedule === true,
+          can_view_settings: m.can_view_settings === true,
         };
         return {
           id: m.id,

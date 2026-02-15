@@ -28,7 +28,7 @@ export default function SettingsPage() {
   const tCommon = useTranslations('common');
   const tReferral = useTranslations('referral');
   const router = useRouter();
-  const { user: currentUser } = useUser();
+  const { user: currentUser, hasPermission } = useUser();
 
   const [center, setCenter] = useState<CenterInfo | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -46,12 +46,12 @@ export default function SettingsPage() {
   const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string; status?: string }[]; pending?: { referred_center_name: string; referred_center_plan: string; reward_status: string; status?: string }[]; totalEarned: number } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
 
-  // Redirect assistants away from settings
+  // Redirect assistants/teachers without can_view_settings
   useEffect(() => {
-    if (currentUser && currentUser.role === 'assistant') {
+    if (currentUser && (currentUser.role === 'assistant' || currentUser.role === 'teacher') && !hasPermission('can_view_settings')) {
       router.replace('/dashboard');
     }
-  }, [currentUser, router]);
+  }, [currentUser, hasPermission, router]);
 
   useEffect(() => {
     const load = async () => {

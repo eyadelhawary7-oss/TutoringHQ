@@ -127,7 +127,7 @@ export default function SchedulePage() {
   const canEdit = canEditSchedule(user?.role);
 
   useEffect(() => {
-    if (user?.role === 'assistant' && !hasPermission('can_view_calendar')) {
+    if ((user?.role === 'assistant' || user?.role === 'teacher') && !hasPermission('can_view_schedule')) {
       router.replace('/dashboard');
     }
   }, [user, hasPermission, router]);
@@ -209,9 +209,9 @@ export default function SchedulePage() {
   const slotsForDay = slots.filter((s) => String(s.day_of_week) === dbDayValue);
 
   const scheduleTitle = t('centerSchedule');
-  const showViewOnly = user?.role === 'assistant' && hasPermission('can_view_calendar');
+  const showViewOnly = (user?.role === 'assistant' || user?.role === 'teacher') && hasPermission('can_view_schedule');
 
-  if (user?.role === 'assistant' && !hasPermission('can_view_calendar')) {
+  if ((user?.role === 'assistant' || user?.role === 'teacher') && !hasPermission('can_view_schedule')) {
     return (
       <>
         <Navbar />

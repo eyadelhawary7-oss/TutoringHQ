@@ -44,7 +44,7 @@ export default function PaymentsPage() {
   const locale = useLocale();
   const { user, hasPermission } = useUser();
   const isRTL = locale === 'ar';
-  const canConfirmPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_manage_payments');
+  const canConfirmPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_record_payments');
 
   const [records, setRecords] = useState<PaymentRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);

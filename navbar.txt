@@ -5,7 +5,8 @@ import LanguageToggle from './LanguageToggle';
 import SyncIndicator from './SyncIndicator';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
-import type { PermissionKey, UserRole } from '@/contexts/UserContext';
+import type { PermissionKey } from '@/contexts/UserContext';
+import type { UserRole } from '@/contexts/UserContext';
 
 const getRoleBadge = (role: UserRole) => {
   const badges = {
@@ -22,22 +23,24 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, hasPermission } = useUser();
 
-  const allNavItems: { key: string; href: string; permission?: PermissionKey }[] = [
-    { key: 'dashboard', href: '/dashboard', permission: 'can_view_dashboard' },
-    { key: 'students', href: '/students', permission: 'can_manage_students' },
-    { key: 'scanner', href: '/scan', permission: 'can_scan' },
-    { key: 'payments', href: '/payments', permission: 'can_view_payments' },
-    { key: 'groups', href: '/groups', permission: 'can_manage_groups' },
-    { key: 'rooms', href: '/rooms', permission: 'can_manage_rooms' },
-    { key: 'schedule', href: '/schedule', permission: 'can_view_schedule' },
-    { key: 'settings', href: '/settings', permission: 'can_view_settings' },
+  const allNavItems: { key: string; href: string; roles: string[]; permission?: string }[] = [
+    { key: 'dashboard', href: '/dashboard', roles: ['owner', 'admin', 'assistant'] },
+    { key: 'students', href: '/students', roles: ['owner', 'admin'] },
+    { key: 'scanner', href: '/scan', roles: ['owner', 'admin', 'assistant'] },
+    { key: 'payments', href: '/payments', roles: ['owner', 'admin', 'assistant'], permission: 'can_manage_payments' },
+    { key: 'groups', href: '/groups', roles: ['owner', 'admin', 'assistant'] },
+    { key: 'rooms', href: '/rooms', roles: ['owner', 'admin'] },
+    { key: 'schedule', href: '/schedule', roles: ['owner', 'admin', 'assistant'], permission: 'can_view_calendar' },
+    { key: 'settings', href: '/settings', roles: ['owner', 'admin'] },
   ];
 
   const navItems = user
     ? allNavItems.filter(item => {
-        if (user.role === 'owner' || user.role === 'admin') return true;
-        if (!item.permission) return true;
-        return hasPermission(item.permission);
+        if (!item.roles.includes(user.role)) return false;
+        if (user.role === 'assistant' && item.permission) {
+          return hasPermission(item.permission as PermissionKey);
+        }
+        return true;
       })
     : [];
 
