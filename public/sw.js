@@ -1,4 +1,4 @@
-const CACHE_NAME = 'revenueguard-v1';
+const CACHE_NAME = 'centerhq-v2';
 const urlsToCache = [
   '/',
   '/scan',
