@@ -19,7 +19,7 @@ import {
   Line,
 } from 'recharts';
 
-type TabId = 'overview' | 'kpi' | 'centers' | 'billing' | 'plan-requests' | 'pending';
+type TabId = 'overview' | 'kpi' | 'centers' | 'billing' | 'plan-requests' | 'pending' | 'team';
 
 interface OverviewStats {
   totalCenters: number;
@@ -214,6 +214,13 @@ export default function AdminPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ center: CenterRow; name: string } | null>(null);
   const [markPaidCenter, setMarkPaidCenter] = useState<BillingCenter | null>(null);
 
+  const [internalTeam, setInternalTeam] = useState<{ id: string; name: string; email: string; role: string; phone?: string; created_at: string }[]>([]);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [invitePhone, setInvitePhone] = useState('');
+  const [inviteRole, setInviteRole] = useState<'internal_admin' | 'internal_viewer'>('internal_admin');
+  const [inviting, setInviting] = useState(false);
+
   const getSession = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session;
@@ -292,6 +299,18 @@ export default function AdminPage() {
     }
   }, [getSession]);
 
+  const fetchInternalTeam = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    const res = await fetch('/api/admin/team', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setInternalTeam(data.team || []);
+    }
+  }, [getSession]);
+
   useEffect(() => {
     if (activeTab === 'centers') fetchCenters();
   }, [activeTab, fetchCenters]);
@@ -303,6 +322,10 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeTab === 'billing') fetchBilling();
   }, [activeTab, fetchBilling]);
+
+  useEffect(() => {
+    if (activeTab === 'team') fetchInternalTeam();
+  }, [activeTab, fetchInternalTeam]);
 
   const sortedCenters = useMemo(() => {
     const arr = [...centers];
@@ -511,6 +534,72 @@ export default function AdminPage() {
     window.open(`https://wa.me/2${phone}?text=${text}`, '_blank');
   };
 
+  const handleInviteInternal = async () => {
+    if (!inviteName.trim() || !invitePhone.trim()) return;
+    const session = await getSession();
+    if (!session) return;
+    setInviting(true);
+    try {
+      const res = await fetch('/api/admin/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ name: inviteName.trim(), email: inviteEmail.trim(), phone: invitePhone.trim(), role: inviteRole }),
+      });
+      if (res.ok) {
+        setInviteName('');
+        setInviteEmail('');
+        setInvitePhone('');
+        fetchInternalTeam();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to invite');
+      }
+    } catch {
+      alert('Network error');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleRemoveInternal = async (memberId: string) => {
+    if (!confirm(t('confirmRemoveTeamMember', { defaultValue: 'Remove this team member?' }))) return;
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/team', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ memberId }),
+      });
+      if (res.ok) fetchInternalTeam();
+      else {
+        const data = await res.json();
+        alert(data.error || 'Failed');
+      }
+    } catch {
+      alert('Network error');
+    }
+  };
+
+  const handleChangeInternalRole = async (memberId: string, newRole: string) => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/team', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ memberId, role: newRole }),
+      });
+      if (res.ok) fetchInternalTeam();
+      else {
+        const data = await res.json();
+        alert(data.error || 'Failed');
+      }
+    } catch {
+      alert('Network error');
+    }
+  };
+
   if (isLoading || !isAuthorized) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -519,6 +608,7 @@ export default function AdminPage() {
     );
   }
 
+  const internalRole = (overview as { internalRole?: string } | null)?.internalRole;
   const tabs: { id: TabId; labelKey: string; minRole?: string }[] = [
     { id: 'overview', labelKey: 'overview' },
     { id: 'kpi', labelKey: 'kpiDashboard' },
@@ -526,6 +616,7 @@ export default function AdminPage() {
     { id: 'billing', labelKey: 'billing' },
     { id: 'plan-requests', labelKey: 'planRequests' },
     { id: 'pending', labelKey: 'pendingSignups' },
+    ...(internalRole === 'super_admin' ? [{ id: 'team' as const, labelKey: 'internalTeam' }] : []),
   ];
 
   const byPlanData = overview
@@ -1244,6 +1335,121 @@ export default function AdminPage() {
                 </table>
               </div>
               {pendingCenters.length === 0 && <p className="mt-4 text-gray-500 dark:text-gray-400">{t('noPending')}</p>}
+            </div>
+          )}
+
+          {activeTab === 'team' && (
+            <div className="space-y-6">
+              {/* Invite Form */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                  {t('inviteTeamMember', { defaultValue: 'Invite Team Member' })}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <input
+                    type="text"
+                    placeholder={t('name', { defaultValue: 'Name' })}
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder={t('phone', { defaultValue: 'Phone (e.g. 01XXXXXXXXX)' })}
+                    value={invitePhone}
+                    onChange={(e) => setInvitePhone(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                    dir="ltr"
+                  />
+                  <input
+                    type="email"
+                    placeholder={t('email', { defaultValue: 'Email (optional)' })}
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                    dir="ltr"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as 'internal_admin' | 'internal_viewer')}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                  >
+                    <option value="internal_admin">{t('internalAdmin', { defaultValue: 'Admin (Full Access)' })}</option>
+                    <option value="internal_viewer">{t('internalViewer', { defaultValue: 'Viewer (Read Only)' })}</option>
+                  </select>
+                  <button
+                    onClick={handleInviteInternal}
+                    disabled={inviting || !inviteName.trim() || !invitePhone.trim()}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg disabled:opacity-50"
+                  >
+                    {inviting ? '...' : t('invite', { defaultValue: 'Invite' })}
+                  </button>
+                </div>
+              </div>
+
+              {/* Team Table */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('name', { defaultValue: 'Name' })}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('phone', { defaultValue: 'Phone' })}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('email', { defaultValue: 'Email' })}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('role', { defaultValue: 'Role' })}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('joinedDate', { defaultValue: 'Joined' })}</th>
+                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions', { defaultValue: 'Actions' })}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {internalTeam.map((m) => (
+                      <tr key={m.id} className="border-b border-gray-100 dark:border-gray-700/50">
+                        <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{m.name}</td>
+                        <td className="px-4 py-3" dir="ltr">{m.phone || '—'}</td>
+                        <td className="px-4 py-3">{m.email || '—'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                            m.role === 'super_admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
+                            m.role === 'internal_admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                            {m.role === 'super_admin' ? t('superAdmin', { defaultValue: 'CEO' }) :
+                             m.role === 'internal_admin' ? t('internalAdmin', { defaultValue: 'Admin' }) :
+                             m.role === 'admin' ? t('superAdmin', { defaultValue: 'CEO' }) :
+                             t('internalViewer', { defaultValue: 'Viewer' })}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">{new Date(m.created_at).toLocaleDateString()}</td>
+                        <td className="px-4 py-3">
+                          {m.role !== 'super_admin' && m.role !== 'admin' && (
+                            <div className="flex gap-2">
+                              <select
+                                value={m.role}
+                                onChange={(e) => handleChangeInternalRole(m.id, e.target.value)}
+                                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white"
+                              >
+                                <option value="internal_admin">{t('internalAdmin', { defaultValue: 'Admin' })}</option>
+                                <option value="internal_viewer">{t('internalViewer', { defaultValue: 'Viewer' })}</option>
+                              </select>
+                              <button
+                                onClick={() => handleRemoveInternal(m.id)}
+                                className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded hover:bg-red-200"
+                              >
+                                {t('remove', { defaultValue: 'Remove' })}
+                              </button>
+                            </div>
+                          )}
+                          {(m.role === 'super_admin' || m.role === 'admin') && (
+                            <span className="text-xs text-gray-500">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {internalTeam.length === 0 && (
+                  <p className="p-8 text-center text-gray-500 dark:text-gray-400">{t('noTeamMembers', { defaultValue: 'No internal team members yet.' })}</p>
+                )}
+              </div>
             </div>
           )}
         </div>

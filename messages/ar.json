@@ -601,7 +601,17 @@
     "monthlyRevenueChart": "الإيرادات الشهرية (آخر 6 أشهر)",
     "financialSummary": "الملخص المالي",
     "annualRunRate": "الإيراد السنوي المتوقع",
-    "collectionRate": "نسبة التحصيل"
+    "collectionRate": "نسبة التحصيل",
+    "internalTeam": "الفريق الداخلي",
+    "inviteTeamMember": "دعوة عضو فريق",
+    "superAdmin": "المدير التنفيذي",
+    "internalAdmin": "مدير (صلاحيات كاملة)",
+    "internalViewer": "مشاهد (قراءة فقط)",
+    "invite": "دعوة",
+    "remove": "إزالة",
+    "joinedDate": "تاريخ الانضمام",
+    "noTeamMembers": "لا يوجد أعضاء فريق داخلي بعد.",
+    "confirmRemoveTeamMember": "هل تريد إزالة هذا العضو؟"
   },
   "suspended": {
     "title": "انتهى اشتراكك",

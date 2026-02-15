@@ -598,7 +598,17 @@
     "monthlyRevenueChart": "Monthly Revenue (Last 6 Months)",
     "financialSummary": "Financial Summary",
     "annualRunRate": "Annual Run Rate (ARR)",
-    "collectionRate": "Collection Rate"
+    "collectionRate": "Collection Rate",
+    "internalTeam": "Internal Team",
+    "inviteTeamMember": "Invite Team Member",
+    "superAdmin": "CEO",
+    "internalAdmin": "Admin (Full Access)",
+    "internalViewer": "Viewer (Read Only)",
+    "invite": "Invite",
+    "remove": "Remove",
+    "joinedDate": "Joined",
+    "noTeamMembers": "No internal team members yet.",
+    "confirmRemoveTeamMember": "Remove this team member?"
   },
   "suspended": {
     "title": "Subscription Expired",
