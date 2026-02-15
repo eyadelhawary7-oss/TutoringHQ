@@ -220,6 +220,7 @@ export default function AdminPage() {
   const [invitePhone, setInvitePhone] = useState('');
   const [inviteRole, setInviteRole] = useState<'internal_admin' | 'internal_viewer'>('internal_admin');
   const [inviting, setInviting] = useState(false);
+  const [internalRole, setInternalRole] = useState<string>('internal_viewer');
 
   const getSession = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -245,6 +246,7 @@ export default function AdminPage() {
         if (res.ok) {
           const data = await res.json();
           setOverview(data);
+          if (data.internalRole) setInternalRole(data.internalRole);
         }
         setIsAuthorized(true);
       } catch {
@@ -608,16 +610,16 @@ export default function AdminPage() {
     );
   }
 
-  const internalRole = (overview as { internalRole?: string } | null)?.internalRole;
-  const tabs: { id: TabId; labelKey: string; minRole?: string }[] = [
-    { id: 'overview', labelKey: 'overview' },
-    { id: 'kpi', labelKey: 'kpiDashboard' },
-    { id: 'centers', labelKey: 'centers' },
-    { id: 'billing', labelKey: 'billing' },
-    { id: 'plan-requests', labelKey: 'planRequests' },
-    { id: 'pending', labelKey: 'pendingSignups' },
-    ...(internalRole === 'super_admin' ? [{ id: 'team' as const, labelKey: 'internalTeam' }] : []),
+  const allTabs: { id: TabId; labelKey: string; roles: string[] }[] = [
+    { id: 'overview', labelKey: 'overview', roles: ['super_admin', 'internal_admin', 'internal_viewer'] },
+    { id: 'kpi', labelKey: 'kpiDashboard', roles: ['super_admin'] },
+    { id: 'centers', labelKey: 'centers', roles: ['super_admin', 'internal_admin', 'internal_viewer'] },
+    { id: 'billing', labelKey: 'billing', roles: ['super_admin', 'internal_admin'] },
+    { id: 'plan-requests', labelKey: 'planRequests', roles: ['super_admin', 'internal_admin'] },
+    { id: 'pending', labelKey: 'pendingSignups', roles: ['super_admin', 'internal_admin'] },
+    { id: 'team', labelKey: 'internalTeam', roles: ['super_admin'] },
   ];
+  const tabs = allTabs.filter(tab => tab.roles.includes(internalRole));
 
   const byPlanData = overview
     ? Object.entries(overview.byPlan || {}).map(([plan, count]) => ({ name: PLAN_LABELS[plan] || plan, count }))
@@ -1024,44 +1026,57 @@ export default function AdminPage() {
                         </td>
                         <td className="px-4 py-3">{new Date(c.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
+                          {internalRole !== 'internal_viewer' ? (
+                            <div className="flex flex-wrap gap-1">
+                              <button
+                                onClick={() => setDetailCenter(c)}
+                                className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-500"
+                              >
+                                {t('viewDetails')}
+                              </button>
+                              {internalRole === 'super_admin' && (
+                                <button
+                                  onClick={() => setChangePlanCenter(c)}
+                                  className="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/50 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800"
+                                >
+                                  {t('changePlan')}
+                                </button>
+                              )}
+                              {internalRole === 'super_admin' && c.status === 'active' && (
+                                <button
+                                  onClick={() => confirm(t('confirmSuspend')) && handleCenterAction(c.id, 'suspend')}
+                                  disabled={actionCenterId === c.id}
+                                  className="px-2 py-1 text-xs bg-amber-100 dark:bg-amber-900/50 rounded hover:bg-amber-200"
+                                >
+                                  {t('suspend')}
+                                </button>
+                              )}
+                              {internalRole === 'super_admin' && c.status === 'suspended' && (
+                                <button
+                                  onClick={() => handleCenterAction(c.id, 'reactivate')}
+                                  disabled={actionCenterId === c.id}
+                                  className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/50 rounded hover:bg-green-200"
+                                >
+                                  {t('reactivate')}
+                                </button>
+                              )}
+                              {internalRole === 'super_admin' && (
+                                <button
+                                  onClick={() => setDeleteConfirm({ center: c, name: '' })}
+                                  className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/50 rounded hover:bg-red-200 text-red-700 dark:text-red-300"
+                                >
+                                  {t('deleteCenters')}
+                                </button>
+                              )}
+                            </div>
+                          ) : (
                             <button
                               onClick={() => setDetailCenter(c)}
                               className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-500"
                             >
                               {t('viewDetails')}
                             </button>
-                            <button
-                              onClick={() => setChangePlanCenter(c)}
-                              className="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/50 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800"
-                            >
-                              {t('changePlan')}
-                            </button>
-                            {c.status === 'active' && (
-                              <button
-                                onClick={() => confirm(t('confirmSuspend')) && handleCenterAction(c.id, 'suspend')}
-                                disabled={actionCenterId === c.id}
-                                className="px-2 py-1 text-xs bg-amber-100 dark:bg-amber-900/50 rounded hover:bg-amber-200"
-                              >
-                                {t('suspend')}
-                              </button>
-                            )}
-                            {c.status === 'suspended' && (
-                              <button
-                                onClick={() => handleCenterAction(c.id, 'reactivate')}
-                                disabled={actionCenterId === c.id}
-                                className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/50 rounded hover:bg-green-200"
-                              >
-                                {t('reactivate')}
-                              </button>
-                            )}
-                            <button
-                              onClick={() => setDeleteConfirm({ center: c, name: '' })}
-                              className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/50 rounded hover:bg-red-200 text-red-700 dark:text-red-300"
-                            >
-                              {t('deleteCenters')}
-                            </button>
-                          </div>
+                          )}
                         </td>
                       </tr>
                     ); })}
@@ -1120,26 +1135,30 @@ export default function AdminPage() {
                             {due.statusDisplay === 'awaiting' && '🟡 ' + t('awaitingPayment')}
                           </td>
                           <td className="px-4 py-3 flex gap-2">
-                            <button
-                              onClick={() => setMarkPaidCenter(c)}
-                              disabled={actionCenterId === c.id}
-                              className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-                            >
-                              {t('markAsPaid')}
-                            </button>
+                            {internalRole === 'super_admin' && (
+                              <button
+                                onClick={() => setMarkPaidCenter(c)}
+                                disabled={actionCenterId === c.id}
+                                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                              >
+                                {t('markAsPaid')}
+                              </button>
+                            )}
                             <button
                               onClick={() => openWhatsAppReminder(c)}
                               className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                             >
                               {t('sendReminder')}
                             </button>
-                            <button
-                              onClick={() => handleCenterAction(c.id, 'suspend')}
-                              disabled={actionCenterId === c.id}
-                              className="px-2 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
-                            >
-                              {t('suspend')}
-                            </button>
+                            {internalRole === 'super_admin' && (
+                              <button
+                                onClick={() => handleCenterAction(c.id, 'suspend')}
+                                disabled={actionCenterId === c.id}
+                                className="px-2 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
+                              >
+                                {t('suspend')}
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1175,13 +1194,15 @@ export default function AdminPage() {
                           ) : '—'}
                         </td>
                         <td className="px-4 py-3 flex gap-2">
-                          <button
-                            onClick={() => handleInvoiceAction(inv.id, 'approve')}
-                            disabled={actionCenterId === inv.id}
-                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
-                          >
-                            {t('approve')}
-                          </button>
+                          {internalRole === 'super_admin' && (
+                            <button
+                              onClick={() => handleInvoiceAction(inv.id, 'approve')}
+                              disabled={actionCenterId === inv.id}
+                              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                            >
+                              {t('approve')}
+                            </button>
+                          )}
                           <button
                             onClick={() => handleInvoiceAction(inv.id, 'reject')}
                             disabled={actionCenterId === inv.id}
