@@ -32,7 +32,7 @@ const paymentMethods = [
   { key: 'bankTransfer', value: 'bank_transfer' },
 ];
 
-export default function ScanResultScreen({ student, selectedGroup: selectedGroupProp, onPaymentSelect, onAllowLateEntry, onDismiss, isProcessing }: ScanResultScreenProps) {
+export default function ScanResultScreen({ student, selectedGroup: selectedGroupProp, onPaymentSelect, onDismiss, isProcessing }: ScanResultScreenProps) {
   const t = useTranslations('scan');
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const selectedGroup = selectedGroupProp ?? student.groups?.[0] ?? null;
@@ -40,9 +40,9 @@ export default function ScanResultScreen({ student, selectedGroup: selectedGroup
   const isPaid = student.payment_status === 'paid';
   const isPending = student.payment_status === 'pending';
   const isLateEntryGranted = student.payment_status === 'late_entry_granted';
-  // GREEN = paid/confirmed (cash), YELLOW/AMBER = pending (non-cash), YELLOW = late entry granted, RED = unpaid
-  const bgColor = isPaid ? 'bg-emerald-500' : isLateEntryGranted ? 'bg-amber-400' : isPending ? 'bg-amber-500' : 'bg-red-500';
-  const isAmberScreen = isPending || isLateEntryGranted; // Use dark text on amber for better contrast
+  // GREEN = paid/confirmed (cash) or late_entry_granted, YELLOW/AMBER = pending (non-cash), RED = unpaid
+  const bgColor = isPaid || isLateEntryGranted ? 'bg-emerald-500' : isPending ? 'bg-amber-500' : 'bg-red-500';
+  const isAmberScreen = isPending;
 
   return (
     <div
@@ -69,9 +69,9 @@ export default function ScanResultScreen({ student, selectedGroup: selectedGroup
         {student.subject}
       </p>
 
-      {/* Status: paid=green check, pending=amber "Recorded — awaiting transfer", late entry=yellow, unpaid=red */}
+      {/* Status: paid=green check, pending=amber "Recorded — awaiting transfer", unpaid=red */}
       <p className={`text-xl sm:text-2xl text-center mb-8 ${isAmberScreen ? 'text-gray-900 font-semibold' : 'text-white/80'}`}>
-        {isPaid ? `✓ ${t('studentPaid')}` : isLateEntryGranted ? t('lateEntryGranted') : isPending ? t('recordedAwaitingTransfer') : t('studentUnpaid')}
+        {isPaid || isLateEntryGranted ? `✓ ${t('studentPaid')}` : isPending ? t('recordedAwaitingTransfer') : t('studentUnpaid')}
       </p>
 
       {isPending && student.last_payment_method && (
@@ -108,18 +108,6 @@ export default function ScanResultScreen({ student, selectedGroup: selectedGroup
               </button>
             ))}
           </div>
-          {onAllowLateEntry && (
-            <>
-              <p className="text-center text-white/90 text-sm my-2">{t('or')}</p>
-              <button
-                disabled={isProcessing}
-                onClick={onAllowLateEntry}
-                className="w-full py-4 px-4 bg-amber-500/90 hover:bg-amber-500 text-gray-900 font-bold rounded-xl border-2 border-amber-400 transition-all disabled:opacity-50 text-lg"
-              >
-                🔓 {t('allowLateEntry')}
-              </button>
-            </>
-          )}
         </div>
       )}
 
@@ -135,7 +123,7 @@ export default function ScanResultScreen({ student, selectedGroup: selectedGroup
 
       {(isPaid || isPending || isLateEntryGranted) && (
         <p className={`text-sm mt-8 ${isAmberScreen ? 'text-gray-700' : 'text-white/60'}`}>
-          {isPaid ? t('attendanceRecorded') : isLateEntryGranted ? t('lateEntryGranted') : t('pendingPayment')}
+          {isPaid || isLateEntryGranted ? t('attendanceRecorded') : t('pendingPayment')}
         </p>
       )}
     </div>
