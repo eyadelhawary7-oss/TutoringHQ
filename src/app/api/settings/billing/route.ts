@@ -267,3 +267,60 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+/** POST handler for submitting payment proof (alternative to PUT) */
+export async function POST(request: NextRequest) {
+  try {
+    const ctx = await getUserContext(request);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (ctx.user.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const body = await request.json();
+    const amount = Number(body.amount);
+    const reference = body.reference?.trim();
+    const proofUrl = body.proofUrl ?? body.proof_url;
+    const paymentMethod = body.paymentMethod ?? 'instapay';
+
+    if (!reference) {
+      return NextResponse.json({ error: 'Reference is required' }, { status: 400 });
+    }
+    if (isNaN(amount) || amount <= 0) {
+      return NextResponse.json({ error: 'Valid amount is required' }, { status: 400 });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const invoiceNumber = `PAYPROOF-${today}-${Date.now().toString(36)}`;
+
+    const insertPayload = {
+      center_id: ctx.user.center_id,
+      invoice_type: 'payment_proof',
+      payment_amount: amount,
+      total_amount: amount,
+      base_amount: amount,
+      payment_method: paymentMethod,
+      payment_reference: reference,
+      payment_proof_url: proofUrl || null,
+      status: 'pending',
+      billing_period_start: today,
+      billing_period_end: today,
+      due_date: today,
+      invoice_number: invoiceNumber,
+    };
+
+    const { error: insertErr } = await ctx.supabaseAdmin
+      .from('invoices')
+      .insert(insertPayload)
+      .select('id');
+
+    if (insertErr) {
+      console.error('Billing POST invoice insert error:', insertErr);
+      return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}

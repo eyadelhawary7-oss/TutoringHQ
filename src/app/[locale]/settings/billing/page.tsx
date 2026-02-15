@@ -85,6 +85,7 @@ function getFixedPlanComparison(plans: PricingPlan[], students: number): { planN
 
 export default function BillingPage() {
   const t = useTranslations('billing');
+  const tSettings = useTranslations('settings');
   const tCommon = useTranslations('common');
   const router = useRouter();
   const { user: currentUser } = useUser();
@@ -319,6 +320,25 @@ export default function BillingPage() {
               className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
             >
               ← {t('backToSettings')}
+            </Link>
+          </div>
+
+          {/* Sub-navigation */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            <Link
+              href="/settings"
+              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+            >
+              {tSettings('general')}
+            </Link>
+            <span className="px-3 py-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 text-sm font-medium">
+              {tSettings('billing')}
+            </span>
+            <Link
+              href="/settings/team"
+              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+            >
+              {tSettings('teamMembers')}
             </Link>
           </div>
 

@@ -34,7 +34,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Missing targetUserId, permissionKey, enabled, or centerId' }, { status: 400 });
     }
 
-    const validKeys = ['can_add_subjects', 'can_view_calendar', 'can_manage_payments', 'can_allow_late_entry'];
+    const validKeys = ['can_add_subjects', 'can_view_calendar', 'can_manage_payments', 'can_allow_late_entry', 'can_scan', 'can_view_payments', 'can_record_payments', 'can_view_dashboard', 'can_view_revenue', 'can_manage_students', 'can_manage_groups'];
     if (!validKeys.includes(permissionKey)) {
       return NextResponse.json({ error: 'Invalid permission key' }, { status: 400 });
     }
@@ -64,8 +64,8 @@ export async function PUT(request: Request) {
       .eq('center_id', centerId)
       .single();
 
-    if (!targetRecord || targetRecord.role !== 'assistant') {
-      return NextResponse.json({ error: 'Can only set permissions for assistants' }, { status: 400 });
+    if (!targetRecord || (targetRecord.role !== 'assistant' && targetRecord.role !== 'teacher')) {
+      return NextResponse.json({ error: 'Can only set permissions for assistants and teachers' }, { status: 400 });
     }
 
     const { error: upsertError } = await supabaseAdmin

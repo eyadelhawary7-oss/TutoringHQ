@@ -15,20 +15,6 @@ interface Subject {
   monthly_fee?: number; // deprecated - fee is now on groups
 }
 
-interface TeamMember {
-  id: string;
-  name: string | null;
-  phone: string;
-  role: string;
-}
-
-const PERMISSION_KEYS = [
-  { key: 'can_add_subjects' as const, labelKey: 'permSubjects' },
-  { key: 'can_view_calendar' as const, labelKey: 'permCalendar' },
-  { key: 'can_manage_payments' as const, labelKey: 'permPayments' },
-  { key: 'can_allow_late_entry' as const, labelKey: 'permAllowLateEntry' },
-];
-
 interface CenterInfo {
   id: string;
   name: string;
@@ -46,7 +32,6 @@ export default function SettingsPage() {
 
   const [center, setCenter] = useState<CenterInfo | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,15 +40,9 @@ export default function SettingsPage() {
   // Form states
   const [centerName, setCenterName] = useState('');
   const [newSubjectName, setNewSubjectName] = useState('');
-  const [inviteName, setInviteName] = useState('');
-  const [invitePhone, setInvitePhone] = useState('');
-  const [inviteRole, setInviteRole] = useState('assistant');
-  const [inviteError, setInviteError] = useState('');
-  const [lastInvitePassword, setLastInvitePassword] = useState<string | null>(null);
   const [scannerMode, setScannerMode] = useState('camera');
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [assistantPermissions, setAssistantPermissions] = useState<Record<string, Record<string, boolean>>>({});
   const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[]; totalEarned: number } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
 
@@ -113,36 +92,6 @@ export default function SettingsPage() {
       });
 
       if (subjectsData) setSubjects(subjectsData as Subject[]);
-
-      // Load all team members (including current user for "You" display)
-      const { data: membersData } = await dbSelect({
-        table: 'users',
-        select: 'id, name, phone, role',
-        filters: [{ column: 'center_id', op: 'eq', value: userCenterId }],
-      });
-
-      if (membersData) {
-        setTeamMembers((membersData as { id: string; name: string | null; phone: string; role: string }[]).map(m => ({
-          id: m.id,
-          name: m.name ?? null,
-          phone: m.phone,
-          role: m.role,
-        })));
-      }
-
-      // Load permissions for assistants
-      const { data: permData } = await dbSelect({
-        table: 'permissions',
-        select: 'user_id, permission_key, enabled',
-        filters: [{ column: 'center_id', op: 'eq', value: userCenterId }],
-      });
-
-      const permMap: Record<string, Record<string, boolean>> = {};
-      (permData || []).forEach((p: { user_id: string; permission_key: string; enabled: boolean }) => {
-        if (!permMap[p.user_id]) permMap[p.user_id] = {};
-        permMap[p.user_id][p.permission_key] = p.enabled;
-      });
-      setAssistantPermissions(permMap);
 
       setIsLoading(false);
     };
@@ -299,121 +248,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleInviteTeamMember = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setInviteError('');
-    setLastInvitePassword(null);
-    if (!centerId || !userId) return;
-
-    const phone = invitePhone.trim();
-    const phoneValid = /^01\d{9}$/.test(phone);
-    if (!phoneValid) {
-      setInviteError(t('invalidPhone'));
-      return;
-    }
-
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      setInviteError(t('error'));
-      return;
-    }
-
-    let result: { success?: boolean; member?: TeamMember; tempPassword?: string; error?: string; pendingInvite?: boolean; message?: string } = {};
-    try {
-      const res = await fetch('/api/invite-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          name: inviteName.trim() || '',
-          phone,
-          role: inviteRole,
-        }),
-      });
-      result = await res.json();
-      if (!res.ok) {
-        setInviteError(result.error || res.statusText || 'Failed to add member');
-        return;
-      }
-    } catch (fetchError) {
-      setInviteError(t('error'));
-      return;
-    }
-
-    if (result.success && result.member) {
-      const member = result.member;
-      setTeamMembers(prev => [...prev, member]);
-      setInviteName('');
-      setInvitePhone('');
-      setInviteRole('assistant');
-      setLastInvitePassword(result.tempPassword ?? null);
-      showSaved();
-    } else if (result.success && result.pendingInvite) {
-      setInviteName('');
-      setInvitePhone('');
-      setInviteRole('assistant');
-      setLastInvitePassword(null);
-      setSavedMessage(result.message || t('inviteSuccess'));
-      setTimeout(() => setSavedMessage(''), 5000);
-    } else {
-      setInviteError(result.error || 'Failed to add member');
-    }
-  };
-
-  const handleRemoveMember = async (member: TeamMember) => {
-    if (!centerId || !userId || member.id === userId) return;
-    const displayName = member.name || member.phone || '?';
-    if (!confirm(t('confirmRemove', { name: displayName }))) return;
-
-    const { error } = await dbDelete({
-      table: 'users',
-      filters: [{ column: 'id', op: 'eq', value: member.id }],
-    });
-
-    if (!error) {
-      await auditLog({
-        centerId,
-        userId,
-        action: 'team_member_remove',
-        entityType: 'users',
-        entityId: member.id,
-        details: { name: member.name, phone: member.phone, role: member.role },
-      });
-      setTeamMembers(prev => prev.filter(m => m.id !== member.id));
-      setSavedMessage(t('memberRemoved'));
-      setTimeout(() => setSavedMessage(''), 2000);
-    }
-  };
-
-  const handlePermissionToggle = async (assistantId: string, key: string, enabled: boolean) => {
-    if (!centerId) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    const res = await fetch('/api/permissions', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ targetUserId: assistantId, permissionKey: key, enabled, centerId }),
-    });
-
-    if (res.ok) {
-      setAssistantPermissions(prev => ({
-        ...prev,
-        [assistantId]: {
-          ...prev[assistantId],
-          [key]: enabled,
-        },
-      }));
-      showSaved();
-    }
-  };
-
   const handleScannerMode = async (mode: string) => {
     if (!centerId || !userId) return;
     setScannerMode(mode);
@@ -457,6 +291,25 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('title')}</h1>
+
+          {/* Sub-navigation: General | Billing | Team Members */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            <span className="px-3 py-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 text-sm font-medium">
+              {t('general', { defaultValue: 'General' })}
+            </span>
+            <Link
+              href="/settings/billing"
+              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+            >
+              {t('billing')}
+            </Link>
+            <Link
+              href="/settings/team"
+              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+            >
+              {t('teamMembers')}
+            </Link>
+          </div>
 
           {/* Success message */}
           {savedMessage && (
@@ -566,147 +419,16 @@ export default function SettingsPage() {
               </form>
             </section>
 
-            {/* Team Members */}
+            {/* Team Members - link to dedicated page */}
             <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('teamMembers')}</h2>
-
-              {/* Team members list - grouped by role with section headers */}
-              <div className="space-y-4 mb-6">
-                {teamMembers.length === 0 ? (
-                  <p className="text-sm text-gray-400 dark:text-gray-500 py-6 text-center">{t('noTeamMembers')}</p>
-                ) : (
-                  <>
-                    {[
-                      { role: 'admin', label: t('admins'), members: teamMembers.filter(m => m.role === 'admin' || m.role === 'owner') },
-                      { role: 'assistant', label: t('assistants'), members: teamMembers.filter(m => m.role === 'assistant') },
-                    ].map(({ label, members }) =>
-                      members.length > 0 ? (
-                        <div key={label}>
-                          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{label}</h3>
-                          <div className="space-y-3">
-                            {members.map((member) => {
-                              const isSelf = member.id === userId;
-                              const roleBadgeClass =
-                                member.role === 'admin' || member.role === 'owner'
-                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
-                                  : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-                              const permKeys = PERMISSION_KEYS;
-                              const isPermReadOnly = member.role === 'admin' || member.role === 'owner' || isSelf;
-                              const permChecked =
-                                member.role === 'admin' || member.role === 'owner'
-                                  ? true
-                                  : (k: string) => assistantPermissions[member.id]?.[k] ?? false;
-
-                              return (
-                                <div
-                          key={member.id}
-                          className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg space-y-3"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {member.name || member.phone}
-                              </span>
-                              {member.name && (
-                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2" dir="ltr">
-                                  {member.phone}
-                                </span>
-                              )}
-                              {isSelf && (
-                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">{t('you')}</span>
-                              )}
-                            </div>
-                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full shrink-0 ${roleBadgeClass}`}>
-                              {member.role === 'owner' ? t('admin') : member.role === 'admin' ? t('admin') : t('assistant')}
-                            </span>
-                            {!isSelf && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveMember(member)}
-                                className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                title={t('removeMember')}
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            )}
-                          </div>
-                            {permKeys.length > 0 && (
-                            <div className="flex flex-wrap gap-4 pt-2 border-t border-gray-200 dark:border-gray-600">
-                              {permKeys.map(({ key, labelKey }) => (
-                                <label
-                                  key={key}
-                                  className={`flex items-center gap-1.5 text-xs select-none ${isPermReadOnly ? 'cursor-default opacity-75' : 'cursor-pointer hover:opacity-90'}`}
-                                  style={!isPermReadOnly ? { pointerEvents: 'auto' } : undefined}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={typeof permChecked === 'function' ? permChecked(key) : permChecked}
-                                    onChange={(e) => !isPermReadOnly && handlePermissionToggle(member.id, key, e.target.checked)}
-                                    disabled={isPermReadOnly}
-                                    className="w-4 h-4 rounded text-indigo-600 disabled:opacity-60 cursor-pointer"
-                                  />
-                                  {t(labelKey)}
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ) : null
-                    )}
-                  </>
-                )}
-              </div>
-
-              {/* Invite form */}
-              <form onSubmit={handleInviteTeamMember} className="space-y-3">
-                {inviteError && (
-                  <p className="text-sm text-red-600 dark:text-red-400">{inviteError}</p>
-                )}
-                {lastInvitePassword && (
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm text-green-700 dark:text-green-400">
-                    <p className="font-medium">{t('inviteSuccess')}</p>
-                    <p className="mt-1">{t('passwordIs', { password: lastInvitePassword })}</p>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-3">
-                  <input
-                    type="text"
-                    value={inviteName}
-                    onChange={(e) => setInviteName(e.target.value)}
-                    placeholder={t('inviteName')}
-                    className="flex-1 min-w-[120px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
-                  />
-                  <input
-                    type="tel"
-                    value={invitePhone}
-                    onChange={(e) => { setInvitePhone(e.target.value); setInviteError(''); }}
-                    placeholder={t('invitePhone')}
-                    dir="ltr"
-                    className="flex-1 min-w-[120px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
-                    required
-                  />
-                  <select
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
-                  >
-                    <option value="assistant">{t('assistant')}</option>
-                  </select>
-                  <button
-                    type="submit"
-                    disabled={false}
-                    className="px-4 py-2 bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap"
-                  >
-                    {t('invite')}
-                  </button>
-                </div>
-              </form>
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('teamMembers')}</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('manageTeamDesc', { defaultValue: 'Manage assistants & teachers' })}</p>
+              <Link
+                href="/settings/team"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
+              >
+                👥 {t('manageTeam', { defaultValue: 'Manage Team' })} →
+              </Link>
             </section>
 
             {/* Scanner Config */}

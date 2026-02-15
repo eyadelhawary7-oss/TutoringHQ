@@ -64,8 +64,6 @@ export default function PaymentsPage() {
     student_number: string;
     total_lessons: number;
     paid_lessons: number;
-    late_lessons: number;
-    late_balance: number;
     balance_due: number;
   }[]>([]);
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
@@ -144,15 +142,9 @@ export default function PaymentsPage() {
     }
 
     const paidCount: Record<string, number> = {};
-    const lateCount: Record<string, number> = {};
-    const lateBalanceByStudent: Record<string, number> = {};
     const balanceDueByStudent: Record<string, number> = {};
     for (const p of payments) {
       const amt = parseFloat(String(p.amount ?? 0));
-      if (p.status === 'late') {
-        lateCount[p.student_id] = (lateCount[p.student_id] ?? 0) + 1;
-        lateBalanceByStudent[p.student_id] = (lateBalanceByStudent[p.student_id] ?? 0) + amt;
-      }
       if (p.confirmed === true) {
         paidCount[p.student_id] = (paidCount[p.student_id] ?? 0) + 1;
       } else if (p.confirmed === false && p.status !== 'late') {
@@ -160,17 +152,15 @@ export default function PaymentsPage() {
       }
     }
 
-    const allStudentIds = [...new Set([...Object.keys(totalLessonsByStudent), ...Object.keys(paidCount), ...Object.keys(lateCount), ...Object.keys(balanceDueByStudent)])];
+    const allStudentIds = [...new Set([...Object.keys(totalLessonsByStudent), ...Object.keys(paidCount), ...Object.keys(balanceDueByStudent)])];
     const summaryRows = allStudentIds.map(sid => ({
       student_id: sid,
       student_name: studentMap[sid]?.name ?? '—',
       student_number: studentMap[sid]?.student_number ?? '—',
       total_lessons: totalLessonsByStudent[sid] ?? 0,
       paid_lessons: paidCount[sid] ?? 0,
-      late_lessons: lateCount[sid] ?? 0,
       balance_due: balanceDueByStudent[sid] ?? 0,
-      late_balance: lateBalanceByStudent[sid] ?? 0,
-    })).filter(r => r.total_lessons > 0 || r.paid_lessons > 0 || r.late_lessons > 0 || r.balance_due > 0)
+    })).filter(r => r.total_lessons > 0 || r.paid_lessons > 0 || r.balance_due > 0)
       .sort((a, b) => (b.balance_due - a.balance_due) || b.total_lessons - a.total_lessons);
     setStudentSummary(summaryRows);
     setIsLoading(false);
@@ -363,7 +353,6 @@ export default function PaymentsPage() {
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentId')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('totalLessons')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('paidLessons')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('lateLessons')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('balanceDue')}</th>
                       <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>
                     </tr>
@@ -377,21 +366,12 @@ export default function PaymentsPage() {
                           <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.total_lessons}</td>
                           <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.paid_lessons}</td>
                           <td className="px-4 py-3">
-                            {row.late_lessons > 0 ? (
-                              <span className="text-amber-600 dark:text-amber-400 font-medium">
-                                {row.late_lessons} ({(row.late_balance ?? 0).toLocaleString('ar-EG')} EGP)
-                              </span>
-                            ) : (
-                              <span className="text-gray-600 dark:text-gray-400">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
                             {row.balance_due > 0 ? (
                               <span className="font-medium text-red-600 dark:text-red-400">
                                 {row.balance_due.toLocaleString('ar-EG')} EGP
                               </span>
                             ) : (
-                              <span className="text-gray-500 dark:text-gray-400">—</span>
+                              <span className="text-gray-500 dark:text-gray-400">0 EGP</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -405,7 +385,7 @@ export default function PaymentsPage() {
                         </tr>
                         {expandedStudentId === row.student_id && (
                           <tr key={`${row.student_id}-history`} className="bg-gray-50 dark:bg-gray-700/30">
-                            <td colSpan={7} className="px-4 py-3">
+                            <td colSpan={6} className="px-4 py-3">
                               <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
                                 {records.filter(r => r.student_id === row.student_id).map(r => (
                                   <div key={r.id} className="flex justify-between py-1">
