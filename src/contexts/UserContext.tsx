@@ -14,6 +14,15 @@ interface UserProfile {
   name: string | null;
   phone: string | null;
   center?: { logo_url?: string; name?: string } | null;
+  can_scan?: boolean;
+  can_view_payments?: boolean;
+  can_record_payments?: boolean;
+  can_view_dashboard?: boolean;
+  can_view_revenue?: boolean;
+  can_manage_students?: boolean;
+  can_manage_groups?: boolean;
+  can_allow_late_entry?: boolean;
+  is_active?: boolean;
 }
 
 interface UserContextType {

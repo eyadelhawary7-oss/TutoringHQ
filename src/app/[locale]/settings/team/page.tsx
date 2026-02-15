@@ -14,6 +14,7 @@ interface TeamMember {
   name: string | null;
   phone: string;
   role: string;
+  is_active?: boolean;
 }
 
 interface PendingInvite {
@@ -82,37 +83,31 @@ export default function TeamPage() {
 
     const { data: membersData } = await dbSelect({
       table: 'users',
-      select: 'id, name, phone, role',
-      filters: [{ column: 'center_id', op: 'eq', value: cid }],
-    });
-    if (membersData) {
-      setTeamMembers((membersData as TeamMember[]).map(m => ({
-        id: m.id,
-        name: m.name ?? null,
-        phone: m.phone,
-        role: m.role,
-      })));
-    }
-
-    // Read permissions directly from users table columns (no separate permissions table)
-    const { data: usersWithPerms } = await dbSelect({
-      table: 'users',
-      select: 'id, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry',
+      select: 'id, name, phone, role, is_active, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry',
       filters: [{ column: 'center_id', op: 'eq', value: cid }],
     });
     const permMap: Record<string, Record<string, boolean>> = {};
-    (usersWithPerms || []).forEach((u: Record<string, unknown>) => {
-      permMap[u.id as string] = {
-        can_scan: u.can_scan === true,
-        can_view_payments: u.can_view_payments === true,
-        can_record_payments: u.can_record_payments === true,
-        can_view_dashboard: u.can_view_dashboard === true,
-        can_view_revenue: u.can_view_revenue === true,
-        can_manage_students: u.can_manage_students === true,
-        can_manage_groups: u.can_manage_groups === true,
-        can_allow_late_entry: u.can_allow_late_entry === true,
-      };
-    });
+    if (membersData) {
+      setTeamMembers((membersData as (TeamMember & Record<string, unknown>)[]).map(m => {
+        permMap[m.id] = {
+          can_scan: m.can_scan === true,
+          can_view_payments: m.can_view_payments === true,
+          can_record_payments: m.can_record_payments === true,
+          can_view_dashboard: m.can_view_dashboard === true,
+          can_view_revenue: m.can_view_revenue === true,
+          can_manage_students: m.can_manage_students === true,
+          can_manage_groups: m.can_manage_groups === true,
+          can_allow_late_entry: m.can_allow_late_entry === true,
+        };
+        return {
+          id: m.id,
+          name: m.name ?? null,
+          phone: m.phone,
+          role: m.role,
+          is_active: m.is_active,
+        };
+      }));
+    }
     setAssistantPermissions(permMap);
 
     const { data: invitesData } = await dbSelect({
@@ -232,6 +227,26 @@ export default function TeamPage() {
       setTeamMembers(prev => prev.filter(m => m.id !== member.id));
       setSavedMessage(t('memberRemoved'));
       setTimeout(() => setSavedMessage(''), 2000);
+    }
+  };
+
+  const handleToggleActive = async (member: TeamMember) => {
+    if (!centerId || !userId) return;
+    const newStatus = member.is_active === false ? true : false;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/permissions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ targetUserId: member.id, permissions: { is_active: newStatus }, centerId }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setTeamMembers(prev => prev.map(m => m.id === member.id ? { ...m, is_active: newStatus } : m));
+      setSavedMessage(newStatus ? t('memberActivated', { defaultValue: 'Member activated' }) : t('memberDeactivated', { defaultValue: 'Member deactivated' }));
+      setTimeout(() => setSavedMessage(''), 2000);
+    } catch {
+      alert(tCommon('error'));
     }
   };
 
@@ -380,7 +395,7 @@ export default function TeamPage() {
                     const permChecked = (k: string) => isOwner(member) ? true : (assistantPermissions[member.id]?.[k] ?? false);
 
                     return (
-                      <tr key={member.id} className="border-b border-gray-100 dark:border-gray-700/50">
+                      <tr key={member.id} className={`border-b border-gray-100 dark:border-gray-700/50 ${member.is_active === false ? 'opacity-50' : ''}`}>
                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
                           {member.name || '—'}
                           {isSelf && <span className="text-xs text-gray-500 ml-1">({t('you')})</span>}
@@ -392,9 +407,15 @@ export default function TeamPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                            {t('activeStatus', { defaultValue: 'Active' })}
-                          </span>
+                          {member.is_active === false ? (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                              {t('deactivatedStatus', { defaultValue: 'Deactivated' })}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                              {t('activeStatus', { defaultValue: 'Active' })}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           {editingPermissionsId === member.id ? (
@@ -437,14 +458,15 @@ export default function TeamPage() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          {!isSelf && (
-                            <button
-                              onClick={() => handleRemoveMember(member)}
-                              className="text-red-600 dark:text-red-400 hover:underline text-xs"
-                              title={t('removeMember', { defaultValue: 'Remove Member' })}
-                            >
-                              {t('removeMember', { defaultValue: 'Remove Member' })}
-                            </button>
+                          {!isSelf && !isOwner(member) && (
+                            <div className="flex flex-col gap-1">
+                              <button onClick={() => handleToggleActive(member)} className={`text-xs hover:underline ${member.is_active === false ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                {member.is_active === false ? t('activate', { defaultValue: 'Activate' }) : t('deactivate', { defaultValue: 'Deactivate' })}
+                              </button>
+                              <button onClick={() => handleRemoveMember(member)} className="text-red-600 dark:text-red-400 hover:underline text-xs">
+                                {t('removeMember', { defaultValue: 'Remove Member' })}
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>

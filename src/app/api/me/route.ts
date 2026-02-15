@@ -56,7 +56,7 @@ export async function GET(request: Request) {
 
     const { data: userRecord, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id, center_id, role, name, phone')
+      .select('id, center_id, role, name, phone, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, is_active')
       .eq('id', user.id)
       .single();
 

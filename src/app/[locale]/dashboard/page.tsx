@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const locale = useLocale();
   const { user, hasPermission } = useUser();
   const isOwnerOrAdminRole = isOwnerOrAdmin(user?.role);
+  const canViewRevenue = user?.role === 'owner' || user?.role === 'admin' || user?.can_view_revenue === true;
 
   const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string } | null>(null);
   const [data, setData] = useState<DashboardData>({
@@ -403,62 +404,70 @@ export default function DashboardPage() {
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalStudents')}</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.totalStudents}</p>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('collectedToday')}</p>
-                  <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">
-                    {data.todayRevenue} <span className="text-lg">{t('currency')}</span>
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalPending')}</p>
-                  <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">
-                    {data.totalPending} <span className="text-lg">{t('currency')}</span>
-                  </p>
-                </div>
+                {canViewRevenue && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('collectedToday')}</p>
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">
+                      {data.todayRevenue} <span className="text-lg">{t('currency')}</span>
+                    </p>
+                  </div>
+                )}
+                {canViewRevenue && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalPending')}</p>
+                    <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">
+                      {data.totalPending} <span className="text-lg">{t('currency')}</span>
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Monthly Revenue Section */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                  {t('monthlyRevenue')} — {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalRevenue')}</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">{data.monthTotal} {t('currency')}</p>
-                  </div>
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('confirmedRevenue')}</p>
-                    <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">{data.monthConfirmed} {t('currency')}</p>
-                  </div>
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('pendingRevenue')}</p>
-                    <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-1">{data.monthPending} {t('currency')}</p>
-                  </div>
-                  {data.monthLate > 0 && (
-                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg sm:col-span-3">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{t('lateRevenue')}</p>
-                      <p className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">{data.monthLate} {t('currency')}</p>
+              {canViewRevenue && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                    {t('monthlyRevenue')} — {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalRevenue')}</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">{data.monthTotal} {t('currency')}</p>
                     </div>
-                  )}
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t('confirmedRevenue')}</p>
+                      <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">{data.monthConfirmed} {t('currency')}</p>
+                    </div>
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t('pendingRevenue')}</p>
+                      <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-1">{data.monthPending} {t('currency')}</p>
+                    </div>
+                    {data.monthLate > 0 && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg sm:col-span-3">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('lateRevenue')}</p>
+                        <p className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">{data.monthLate} {t('currency')}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Charts Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                    {t('paid')} / {t('unpaid')}
-                  </h2>
-                  <PaymentDonut paid={data.paidCount} unpaid={data.unpaidCount} pending={data.pendingCount} />
+              {canViewRevenue && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                      {t('paid')} / {t('unpaid')}
+                    </h2>
+                    <PaymentDonut paid={data.paidCount} unpaid={data.unpaidCount} pending={data.pendingCount} />
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                      {t('paymentBreakdown')}
+                    </h2>
+                    <RevenueBar data={data.revenueByMethod} />
+                  </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                    {t('paymentBreakdown')}
-                  </h2>
-                  <RevenueBar data={data.revenueByMethod} />
-                </div>
-              </div>
+              )}
 
               {/* Trend Chart */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
@@ -469,12 +478,14 @@ export default function DashboardPage() {
               </div>
 
               {/* Unpaid Students List */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                  {t('unpaidStudents')}
-                </h2>
-                <UnpaidList students={data.unpaidStudents} />
-              </div>
+              {canViewRevenue && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                    {t('unpaidStudents')}
+                  </h2>
+                  <UnpaidList students={data.unpaidStudents} />
+                </div>
+              )}
             </div>
           )}
         </div>
