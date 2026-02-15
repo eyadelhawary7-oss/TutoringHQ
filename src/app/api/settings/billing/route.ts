@@ -1,3 +1,4 @@
+// Force rebuild: 2026-02-15
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -75,6 +76,7 @@ function getMonthBounds() {
 }
 
 export async function GET(request: NextRequest) {
+  console.log('Billing GET handler called');
   try {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
