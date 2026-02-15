@@ -721,6 +721,8 @@
     "instapayRefLabel": "InstaPay Transaction Reference",
     "proofLabel": "Transfer Screenshot",
     "proofSubmittedSuccess": "Payment proof submitted. Will be confirmed within 24 hours.",
+    "paymentSubmittedSuccess": "Payment proof submitted successfully",
+    "paymentProofWhatsappNote": "After submitting, you'll be asked to send a WhatsApp confirmation to our team for faster processing.",
     "referenceSubmitted": "Reference submitted. Will be confirmed within 24 hours.",
     "proofOfPayment": "Proof of Payment",
     "uploadProof": "Upload transfer screenshot",

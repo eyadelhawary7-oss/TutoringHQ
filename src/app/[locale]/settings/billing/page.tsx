@@ -42,6 +42,9 @@ const FALLBACK_PAYG: PaygRate[] = [
 
 const MONTHLY_MULTIPLIER = 4.333;
 
+/** Admin WhatsApp number for payment proof notifications */
+const ADMIN_NOTIFICATION_PHONE = '201220601410';
+
 /** Graduated (marginal) pricing with 4.333 weekly-to-monthly multiplier */
 function calculatePaygCost(rates: PaygRate[], students: number): { weekly: number; monthly: number; effectiveRate: number; breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] } {
   const tierDefs = [
@@ -226,13 +229,26 @@ export default function BillingPage() {
         return;
       }
       console.log('Invoice insert result: success');
-      setSavedMessage(locale === 'ar' ? 'تم إرسال إثبات الدفع!' : 'Payment proof submitted!');
+      setSavedMessage(t('paymentSubmittedSuccess', { defaultValue: 'Payment proof submitted successfully' }));
       setProofAmount('');
       setProofReference('');
       setProofFile(null);
       setProofPreview(null);
       await fetchBilling();
       setTimeout(() => setSavedMessage(''), 5000);
+
+      // Open WhatsApp to notify admin
+      const centerName = data?.center_name || currentUser?.name || 'Unknown';
+      const message = encodeURIComponent(
+        '🔔 إثبات دفع جديد - CenterHQ\n' +
+        '━━━━━━━━━━━━━━━\n' +
+        `💰 المبلغ: ${amount} EGP\n` +
+        `📝 المرجع: ${proofReference.trim()}\n` +
+        `🏢 السنتر: ${centerName}\n` +
+        '━━━━━━━━━━━━━━━\n' +
+        '⏳ في انتظار المراجعة على لوحة التحكم'
+      );
+      window.open(`https://wa.me/${ADMIN_NOTIFICATION_PHONE}?text=${message}`, '_blank');
     } catch (err) {
       alert(err instanceof Error ? err.message : t('updateFailed'));
     } finally {
@@ -789,6 +805,9 @@ export default function BillingPage() {
                 >
                   {proofUploading ? tCommon('loading') : t('submitPaymentProof')}
                 </button>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  {t('paymentProofWhatsappNote', { defaultValue: "After submitting, you'll be asked to send a WhatsApp confirmation to our team for faster processing." })}
+                </p>
               </div>
 
             {/* Payment Status Display - after submission */}

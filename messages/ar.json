@@ -724,6 +724,8 @@
     "instapayRefLabel": "رقم معاملة إنستاباي",
     "proofLabel": "صورة إثبات التحويل",
     "proofSubmittedSuccess": "تم إرسال إثبات الدفع. سيتم التأكيد خلال 24 ساعة.",
+    "paymentSubmittedSuccess": "تم إرسال إثبات الدفع بنجاح",
+    "paymentProofWhatsappNote": "بعد الإرسال، سيُطلب منك إرسال تأكيد واتساب لفريقنا لمعالجة أسرع.",
     "referenceSubmitted": "تم إرسال رقم المعاملة. سيتم التأكيد خلال 24 ساعة.",
     "proofOfPayment": "إثبات الدفع",
     "uploadProof": "ارفع صورة التحويل",
