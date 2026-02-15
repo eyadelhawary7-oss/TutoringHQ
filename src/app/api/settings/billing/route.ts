@@ -77,7 +77,7 @@ function getMonthBounds() {
 }
 
 export async function GET(request: NextRequest) {
-  console.log('Billing GET handler called at', new Date().toISOString());
+  console.log('Billing GET handler called');
   try {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -93,8 +93,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (centerError || !center) {
-      console.log('Center lookup failed:', { centerId: ctx.user.center_id, centerError: centerError?.message });
-      return NextResponse.json({ error: 'Center not found', centerId: ctx.user.center_id, centerError: centerError?.message, userId: ctx.user.id }, { status: 404 });
+      return NextResponse.json({ error: 'Center not found' }, { status: 404 });
     }
 
     const billingType = (center as { billing_type?: string }).billing_type || center.pricing_type || 'fixed';
@@ -332,5 +331,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 
 
