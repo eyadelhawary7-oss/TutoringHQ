@@ -67,6 +67,15 @@ export default function LoginPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
+        const checkRes = await fetch('/api/admin/check', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const checkData = await checkRes.json();
+        if (checkData.isAdmin) {
+          router.replace('/admin');
+          return;
+        }
+
         const res = await fetch('/api/auth/check-invite', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${session.access_token}` },

@@ -19,7 +19,7 @@ import {
   Line,
 } from 'recharts';
 
-type TabId = 'overview' | 'kpi' | 'centers' | 'billing' | 'plan-requests' | 'pending';
+type TabId = 'overview' | 'centers' | 'billing' | 'plan-requests' | 'pending';
 
 interface OverviewStats {
   totalCenters: number;
@@ -519,9 +519,8 @@ export default function AdminPage() {
     );
   }
 
-  const tabs: { id: TabId; labelKey: string; minRole?: string }[] = [
+  const tabs: { id: TabId; labelKey: string }[] = [
     { id: 'overview', labelKey: 'overview' },
-    { id: 'kpi', labelKey: 'kpiDashboard' },
     { id: 'centers', labelKey: 'centers' },
     { id: 'billing', labelKey: 'billing' },
     { id: 'plan-requests', labelKey: 'planRequests' },
@@ -709,130 +708,6 @@ export default function AdminPage() {
                         <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'kpi' && overview && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('kpiDashboard', { defaultValue: 'CEO Dashboard — KPIs' })}</h2>
-
-              {/* Revenue KPIs Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow border-s-4 border-green-500">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalRevenueCollected', { defaultValue: 'Total Revenue Collected' })}</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{Number((overview as unknown as Record<string, unknown>).totalRevenueCollected || 0).toLocaleString('ar-EG')} EGP</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow border-s-4 border-indigo-500">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('revenueThisMonth', { defaultValue: 'Revenue This Month' })}</p>
-                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{Number((overview as unknown as Record<string, unknown>).revenueThisMonth || 0).toLocaleString('ar-EG')} EGP</p>
-                  <p className={`text-xs mt-1 ${(Number((overview as unknown as Record<string, unknown>).revenueGrowth) || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {(Number((overview as unknown as Record<string, unknown>).revenueGrowth) || 0) >= 0 ? '↑' : '↓'} {Math.abs(Number((overview as unknown as Record<string, unknown>).revenueGrowth) || 0)}% vs last month
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow border-s-4 border-amber-500">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('pendingRevenue', { defaultValue: 'Pending Revenue' })}</p>
-                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{Number((overview as unknown as Record<string, unknown>).pendingRevenue || 0).toLocaleString('ar-EG')} EGP</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow border-s-4 border-blue-500">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('arpc', { defaultValue: 'Avg Revenue Per Center' })}</p>
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{Number((overview as unknown as Record<string, unknown>).arpc || 0).toLocaleString('ar-EG')} EGP</p>
-                </div>
-              </div>
-
-              {/* Growth & Health Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow border-s-4 border-green-500">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('activeCenters', { defaultValue: 'Active Centers' })}</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{overview.activeCenters}</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow border-s-4 border-red-500">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('churnRate', { defaultValue: 'Churn Rate' })}</p>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">{Number((overview as unknown as Record<string, unknown>).churnRate) || 0}%</p>
-                  <p className="text-xs text-gray-500 mt-1">{Number((overview as unknown as Record<string, unknown>).churnedCenters) || 0} {t('centersSuspended', { defaultValue: 'centers suspended' })}</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow border-s-4 border-purple-500">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('mrr', { defaultValue: 'MRR' })}</p>
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{(overview.mrr || 0).toLocaleString('ar-EG')} EGP</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow border-s-4 border-cyan-500">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('totalStudents', { defaultValue: 'Total Students' })}</p>
-                  <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">{overview.totalStudents}</p>
-                </div>
-              </div>
-
-              {/* Monthly Revenue Chart */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('monthlyRevenueChart', { defaultValue: 'Monthly Revenue (Last 6 Months)' })}</h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={(overview as unknown as Record<string, unknown>).monthlyRevenue as { month: string; revenue: number; centers: number }[] || []}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-600" />
-                      <XAxis dataKey="month" className="text-xs" />
-                      <YAxis className="text-xs" tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-                      <Tooltip formatter={(value: number | undefined) => [`${Number(value ?? 0).toLocaleString('ar-EG')} EGP`, 'Revenue']} />
-                      <Bar dataKey="revenue" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Revenue vs Plan Distribution */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('byPlan', { defaultValue: 'Centers by Plan' })}</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={byPlanData}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-600" />
-                        <XAxis dataKey="name" className="text-xs" />
-                        <YAxis className="text-xs" />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('signupsChart', { defaultValue: 'Signups Over Time' })}</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={overview.signupsChart || []}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-600" />
-                        <XAxis dataKey="date" className="text-xs" tickFormatter={(v) => v.slice(5)} />
-                        <YAxis className="text-xs" />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Financial Summary */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('financialSummary', { defaultValue: 'Financial Summary' })}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">{t('annualRunRate', { defaultValue: 'Annual Run Rate (ARR)' })}</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{((overview.mrr || 0) * 12).toLocaleString('ar-EG')} EGP</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">{t('revenueLastMonth', { defaultValue: 'Revenue Last Month' })}</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{Number((overview as unknown as Record<string, unknown>).revenueLastMonth || 0).toLocaleString('ar-EG')} EGP</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">{t('collectionRate', { defaultValue: 'Collection Rate' })}</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      {(() => {
-                        const collected = Number((overview as unknown as Record<string, unknown>).totalRevenueCollected) || 0;
-                        const pending = Number((overview as unknown as Record<string, unknown>).pendingRevenue) || 0;
-                        const total = collected + pending;
-                        return total > 0 ? `${Math.round((collected / total) * 100)}%` : '—';
-                      })()}
-                    </p>
                   </div>
                 </div>
               </div>

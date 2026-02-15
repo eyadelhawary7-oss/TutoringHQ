@@ -589,7 +589,19 @@
     "overdue": "متأخر",
     "noActivity": "لا يوجد نشاط حديث",
     "awaitingPayment": "بانتظار أول دفعة",
-    "suspended": "موقوف"
+    "suspended": "موقوف",
+    "kpiDashboard": "لوحة تحكم المدير التنفيذي",
+    "totalRevenueCollected": "إجمالي الإيرادات المحصلة",
+    "revenueThisMonth": "إيرادات هذا الشهر",
+    "revenueLastMonth": "إيرادات الشهر الماضي",
+    "pendingRevenue": "إيرادات معلقة",
+    "arpc": "متوسط الإيراد لكل سنتر",
+    "churnRate": "معدل فقدان العملاء",
+    "centersSuspended": "سنتر معلق",
+    "monthlyRevenueChart": "الإيرادات الشهرية (آخر 6 أشهر)",
+    "financialSummary": "الملخص المالي",
+    "annualRunRate": "الإيراد السنوي المتوقع",
+    "collectionRate": "نسبة التحصيل"
   },
   "suspended": {
     "title": "انتهى اشتراكك",

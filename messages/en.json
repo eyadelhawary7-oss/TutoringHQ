@@ -586,7 +586,19 @@
     "overdue": "OVERDUE",
     "noActivity": "No recent activity",
     "awaitingPayment": "Awaiting first payment",
-    "suspended": "Suspended"
+    "suspended": "Suspended",
+    "kpiDashboard": "CEO Dashboard",
+    "totalRevenueCollected": "Total Revenue Collected",
+    "revenueThisMonth": "Revenue This Month",
+    "revenueLastMonth": "Revenue Last Month",
+    "pendingRevenue": "Pending Revenue",
+    "arpc": "Avg Revenue Per Center",
+    "churnRate": "Churn Rate",
+    "centersSuspended": "centers suspended",
+    "monthlyRevenueChart": "Monthly Revenue (Last 6 Months)",
+    "financialSummary": "Financial Summary",
+    "annualRunRate": "Annual Run Rate (ARR)",
+    "collectionRate": "Collection Rate"
   },
   "suspended": {
     "title": "Subscription Expired",
