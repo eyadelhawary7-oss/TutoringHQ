@@ -60,6 +60,7 @@ async function getUserContext(request: NextRequest) {
     .eq('id', user.id)
     .single();
 
+  console.log('getUserContext debug:', { authUserId: user.id, userRecord });
   if (!userRecord?.center_id) return null;
 
   return { user: userRecord, supabaseAdmin };
@@ -76,7 +77,7 @@ function getMonthBounds() {
 }
 
 export async function GET(request: NextRequest) {
-  console.log('Billing GET handler called');
+  console.log('Billing GET handler called at', new Date().toISOString());
   try {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -92,7 +93,8 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (centerError || !center) {
-      return NextResponse.json({ error: 'Center not found' }, { status: 404 });
+      console.log('Center lookup failed:', { centerId: ctx.user.center_id, centerError: centerError?.message });
+      return NextResponse.json({ error: 'Center not found', centerId: ctx.user.center_id, centerError: centerError?.message, userId: ctx.user.id }, { status: 404 });
     }
 
     const billingType = (center as { billing_type?: string }).billing_type || center.pricing_type || 'fixed';
