@@ -245,6 +245,7 @@ export default function BillingPage() {
         `💰 المبلغ: ${amount} EGP\n` +
         `📝 المرجع: ${proofReference.trim()}\n` +
         `🏢 السنتر: ${centerName}\n` +
+  `📅 التاريخ: ${new Date().toLocaleDateString('ar-EG')}\n` +
         '━━━━━━━━━━━━━━━\n' +
         '⏳ في انتظار المراجعة على لوحة التحكم'
       );
@@ -838,3 +839,4 @@ export default function BillingPage() {
     </>
   );
 }
+
