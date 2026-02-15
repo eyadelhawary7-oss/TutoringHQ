@@ -94,24 +94,15 @@ export default function TeamPage() {
       })));
     }
 
-    // Read permissions directly from users table columns (no separate permissions table)
-    const { data: usersWithPerms } = await dbSelect({
-      table: 'users',
-      select: 'id, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry',
+    const { data: permData } = await dbSelect({
+      table: 'permissions',
+      select: 'user_id, permission_key, enabled',
       filters: [{ column: 'center_id', op: 'eq', value: cid }],
     });
     const permMap: Record<string, Record<string, boolean>> = {};
-    (usersWithPerms || []).forEach((u: Record<string, unknown>) => {
-      permMap[u.id as string] = {
-        can_scan: u.can_scan === true,
-        can_view_payments: u.can_view_payments === true,
-        can_record_payments: u.can_record_payments === true,
-        can_view_dashboard: u.can_view_dashboard === true,
-        can_view_revenue: u.can_view_revenue === true,
-        can_manage_students: u.can_manage_students === true,
-        can_manage_groups: u.can_manage_groups === true,
-        can_allow_late_entry: u.can_allow_late_entry === true,
-      };
+    (permData || []).forEach((p: { user_id: string; permission_key: string; enabled: boolean }) => {
+      if (!permMap[p.user_id]) permMap[p.user_id] = {};
+      permMap[p.user_id][p.permission_key] = p.enabled;
     });
     setAssistantPermissions(permMap);
 

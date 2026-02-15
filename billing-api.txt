@@ -98,17 +98,15 @@ export async function GET(request: NextRequest) {
     const billingType = (center as { billing_type?: string }).billing_type || center.pricing_type || 'fixed';
     const plan = center.plan || 'starter';
 
-    let plans: unknown[] = [];
-    try {
-      const { data: plansData } = await ctx.supabaseAdmin.from('pricing_plans').select('*').order('sort_order', { ascending: true });
-      if (plansData) plans = plansData;
-    } catch (e) { console.log('pricing_plans query failed, using empty'); }
+    const { data: plans, error: plansError } = await ctx.supabaseAdmin
+      .from('pricing_plans')
+      .select('*')
+      .order('sort_order', { ascending: true });
 
-    let paygRates: unknown[] = [];
-    try {
-      const { data: paygData } = await ctx.supabaseAdmin.from('payg_rates').select('*').order('sort_order', { ascending: true });
-      if (paygData) paygRates = paygData;
-    } catch (e) { console.log('payg_rates query failed, using empty'); }
+    const { data: paygRates, error: paygError } = await ctx.supabaseAdmin
+      .from('payg_rates')
+      .select('*')
+      .order('sort_order', { ascending: true });
 
     const { start: monthStart, end: monthEnd } = getMonthBounds();
 
@@ -125,18 +123,16 @@ export async function GET(request: NextRequest) {
     const paygEstimate = calculatePaygCost(weeklyAverage);
 
     let invoices: unknown[] = [];
-    try {
-      const { data: invData } = await ctx.supabaseAdmin
-        .from('invoices')
-        .select('*')
-        .eq('center_id', ctx.user.center_id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (invData) invoices = invData;
-    } catch (e) { console.log('invoices query failed, using empty'); }
-    console.log('Billing GET invoices:', invoices?.length ?? 0);
+    const { data: invData, error: invErr } = await ctx.supabaseAdmin
+      .from('invoices')
+      .select('*')
+      .eq('center_id', ctx.user.center_id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (!invErr && invData) invoices = invData;
+    console.log('Billing GET invoices:', invData?.length ?? 0, 'error:', invErr?.message);
 
-    const currentPlanDetails = (plans || []).find((p) => (p as { id: string }).id === plan);
+    const currentPlanDetails = (plans || []).find((p: { id: string }) => p.id === plan);
 
     return NextResponse.json({
       plan,

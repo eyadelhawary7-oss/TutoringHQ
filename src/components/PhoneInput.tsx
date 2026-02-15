@@ -46,34 +46,27 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
         >
           {t('phoneLabel')}
         </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-            <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">+20</span>
-          </div>
+        <div className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700" dir="ltr">
+          <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0 text-sm select-none">+20</span>
           <input
             id="phone"
             name="phone"
             type="tel"
             inputMode="numeric"
-            dir="ltr"
-            required
-            maxLength={11}
             value={phone}
             onChange={(e) => {
-              let value = e.target.value.replace(/\D/g, '');
-              if (value.startsWith('0') && value.length > 1) {
-                value = value.substring(1);
-              }
-              setPhone(value);
+              setPhone(e.target.value.replace(/\D/g, ''));
               setValidationError('');
             }}
-            className="w-full ps-14 pe-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors text-base"
-            placeholder={t('phonePlaceholder')}
+            placeholder="1XXXXXXXXX"
+            className="flex-1 outline-none text-sm bg-transparent text-gray-900 dark:text-white"
+            maxLength={10}
+            required
           />
+        </div>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           {t('phoneHint', { defaultValue: 'Enter without the leading zero' })}
         </p>
-        </div>
         {(validationError || error) && (
           <p className="mt-2 text-sm text-red-600 dark:text-red-400">
             {validationError || error}
