@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     const { data: center, error: centerError } = await ctx.supabaseAdmin
       .from('centers')
       .select(`
-        id, name, plan, pricing_type, weekly_student_limit, max_students,
+        id, name, plan, pricing_type, weekly_student_limit,
         billing_type, pending_plan_change, pending_billing_type,
         current_period_start, current_period_end, last_payment_date
       `)
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
       plan,
       billing_type: billingType,
       pricing_type: billingType,
-      weekly_student_limit: center.weekly_student_limit ?? center.max_students ?? 200,
+      weekly_student_limit: center.weekly_student_limit ?? 200,
       current_period_start: (center as { current_period_start?: string }).current_period_start,
       current_period_end: (center as { current_period_end?: string }).current_period_end,
       last_payment_date: (center as { last_payment_date?: string }).last_payment_date,
@@ -332,3 +332,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
