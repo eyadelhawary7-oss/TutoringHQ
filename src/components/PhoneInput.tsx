@@ -14,21 +14,26 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
   const [phone, setPhone] = useState('');
   const [validationError, setValidationError] = useState('');
 
-  const validateEgyptianPhone = (value: string): boolean => {
-    return /^01[0125][0-9]{8}$/.test(value);
+  const formatPhoneToInternational = (input: string): string => {
+    let cleaned = input.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1);
+    }
+    return '+20' + cleaned;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError('');
-    
-    if (!validateEgyptianPhone(phone)) {
+
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+    if (cleaned.length !== 10 || !/^1[0125][0-9]{8}$/.test(cleaned)) {
       setValidationError(t('invalidPhone'));
       return;
     }
 
-    // Convert to international format: 01XXXXXXXXX -> +201XXXXXXXXX
-    const internationalPhone = `+2${phone}`;
+    const internationalPhone = formatPhoneToInternational(phone);
     onSubmit(internationalPhone);
   };
 
@@ -55,13 +60,19 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
             maxLength={11}
             value={phone}
             onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, '');
+              let value = e.target.value.replace(/\D/g, '');
+              if (value.startsWith('0') && value.length > 1) {
+                value = value.substring(1);
+              }
               setPhone(value);
               setValidationError('');
             }}
             className="w-full ps-14 pe-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors text-base"
             placeholder={t('phonePlaceholder')}
           />
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {t('phoneHint', { defaultValue: 'Enter without the leading zero' })}
+        </p>
         </div>
         {(validationError || error) && (
           <p className="mt-2 text-sm text-red-600 dark:text-red-400">
@@ -72,7 +83,7 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
 
       <button
         type="submit"
-        disabled={isLoading || phone.length < 11}
+        disabled={isLoading || phone.length < 10}
         className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 min-h-[48px]"
       >
         {isLoading ? (

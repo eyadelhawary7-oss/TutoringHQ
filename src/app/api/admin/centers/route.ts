@@ -466,27 +466,7 @@ export async function PUT(request: Request) {
       })
       .eq('id', centerId);
 
-    let referralMessage: string | null = null;
-    const referredBy = (center as { referred_by?: string }).referred_by;
-    if (referredBy) {
-      const PLAN_FEES: Record<string, number> = { starter: 4000, pro: 7200, pro_plus: 8000, enterprise: 9000 };
-      const plan = (center.plan as string) || 'starter';
-      const fee = PLAN_FEES[plan] ?? 4000;
-      const reward = Math.round(fee * 0.4);
-      const { data: referringCenter } = await supabaseAdmin.from('centers').select('name').eq('id', referredBy).single();
-      await supabaseAdmin.from('referral_rewards').upsert(
-        {
-          referring_center_id: referredBy,
-          referred_center_id: centerId,
-          referred_center_plan: plan,
-          first_month_fee: fee,
-          reward_amount: reward,
-          reward_status: 'approved',
-        },
-        { onConflict: 'referring_center_id,referred_center_id' }
-      );
-      referralMessage = `Referral reward of EGP ${reward.toLocaleString()} credited to ${(referringCenter as { name?: string })?.name ?? 'referring center'}`;
-    }
+    // Referral rewards are now created only when admin approves the referred center's first payment (in admin billing)
 
     if (center.email) {
       // TODO: Send email if email service is configured
@@ -497,7 +477,6 @@ export async function PUT(request: Request) {
       success: true,
       action: 'approved',
       credentials: { password },
-      referralMessage,
     });
   } catch (error) {
     return NextResponse.json(

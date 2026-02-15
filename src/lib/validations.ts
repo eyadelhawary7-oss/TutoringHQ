@@ -1,15 +1,33 @@
 import { z } from 'zod';
 
-// Egyptian phone: 01XXXXXXXXX (11 digits)
+// Egyptian phone: 01XXXXXXXXX, +201XXXXXXXXX, or 1XXXXXXXXX - all normalize to 10 digits
+function normalizeEgyptianPhone(v: string): string {
+  const cleaned = v.replace(/\D/g, '');
+  if (cleaned.startsWith('0')) return cleaned.slice(1);
+  if (cleaned.startsWith('20')) return cleaned.slice(2);
+  return cleaned;
+}
 const egyptianPhone = z
   .string()
-  .regex(/^01\d{9}$/, 'رقم الهاتف يجب أن يكون 11 رقم ويبدأ بـ 01')
+  .refine(
+    (v) => {
+      const normalized = normalizeEgyptianPhone(v);
+      return normalized.length === 10 && /^1[0125]\d{8}$/.test(normalized);
+    },
+    'رقم الهاتف يجب أن يكون 11 رقم ويبدأ بـ 01'
+  )
   .optional()
   .nullable();
 
 export const egyptianPhoneRequired = z
   .string()
-  .regex(/^01\d{9}$/, 'رقم الهاتف يجب أن يكون 11 رقم ويبدأ بـ 01');
+  .refine(
+    (v) => {
+      const normalized = normalizeEgyptianPhone(v);
+      return normalized.length === 10 && /^1[0125]\d{8}$/.test(normalized);
+    },
+    'رقم الهاتف يجب أن يكون 11 رقم ويبدأ بـ 01'
+  );
 
 export const signupSchema = z.object({
   centerName: z.string().min(1, 'Center name is required').max(200),

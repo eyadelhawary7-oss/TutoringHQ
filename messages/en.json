@@ -50,14 +50,15 @@
   "login": {
     "title": "Log In",
     "phoneTitle": "Log in with phone number",
-    "phonePlaceholder": "01XXXXXXXXX",
+    "phonePlaceholder": "1220601310",
+    "phoneHint": "Enter without the leading zero",
     "phoneLabel": "Egyptian Phone Number",
     "sendOTP": "Send Code",
     "otpTitle": "Enter verification code",
     "otpPlaceholder": "000000",
     "verify": "Verify",
     "resend": "Resend Code",
-    "invalidPhone": "Invalid phone number",
+    "invalidPhone": "Please enter a valid Egyptian number",
     "otpSent": "Verification code sent",
     "otpError": "Invalid verification code",
     "smsTooMany": "Too many requests (4 SMS/hour limit)",
@@ -98,7 +99,9 @@
     "status": "Status",
     "date": "Date",
     "totalEarned": "Total earned from referrals",
-    "noRewards": "No referral rewards yet"
+    "noRewards": "No referral rewards yet",
+    "pendingReferrals": "Pending (awaiting first payment)",
+    "awaitingPayment": "Awaiting first payment"
   },
   "import": {
     "title": "Import Students",
@@ -344,6 +347,7 @@
     "you": "(You)",
     "removeMember": "Remove",
     "confirmRemove": "Remove {name} from team?",
+    "permissionUpdateFailed": "Failed to update permission",
     "memberRemoved": "Member removed",
     "inviteName": "Name",
     "tempPassword": "Temporary Password",

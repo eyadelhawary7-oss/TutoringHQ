@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import LanguageToggle from '@/components/LanguageToggle';
 
@@ -20,6 +20,7 @@ export default function SignupPage() {
   const t = useTranslations('signup');
   const tLanding = useTranslations('landing');
   const router = useRouter();
+  const locale = useLocale();
 
   const [formData, setFormData] = useState({
     centerName: '',
@@ -40,8 +41,9 @@ export default function SignupPage() {
       setError(t('terms'));
       return;
     }
-    const cleanPhone = formData.phone.replace(/\D/g, '');
-    if (cleanPhone.length !== 11 || !cleanPhone.startsWith('01')) {
+    let cleanPhone = formData.phone.replace(/\D/g, '');
+    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+    if (cleanPhone.length !== 10 || !/^1[0125][0-9]{8}$/.test(cleanPhone)) {
       setError(t('invalidPhone'));
       return;
     }
@@ -57,7 +59,7 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           centerName: formData.centerName.trim(),
-          phone: cleanPhone,
+          phone: '+20' + cleanPhone,
           email: formData.email.trim() || undefined,
           plan: formData.plan,
           termsAccepted: formData.termsAccepted,
@@ -159,12 +161,18 @@ export default function SignupPage() {
                   type="tel"
                   required
                   dir="ltr"
-                  pattern="01[0-9]{9}"
                   value={formData.phone}
-                  onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setError(''); }}
+                  onChange={(e) => {
+                    let v = e.target.value.replace(/\D/g, '');
+                    if (v.startsWith('0') && v.length > 1) v = v.substring(1);
+                    setFormData({ ...formData, phone: v }); setError('');
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="01012345678"
+                  placeholder="1220601310"
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {locale === 'ar' ? 'ادخل الرقم بدون الصفر' : 'Enter without the leading zero'}
+                </p>
               </div>
 
               <div>

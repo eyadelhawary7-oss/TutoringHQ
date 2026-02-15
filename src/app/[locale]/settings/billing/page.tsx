@@ -88,6 +88,7 @@ export default function BillingPage() {
   const tSettings = useTranslations('settings');
   const tCommon = useTranslations('common');
   const router = useRouter();
+  const locale = useLocale();
   const { user: currentUser } = useUser();
   const [data, setData] = useState<{
     plan: string;
@@ -141,6 +142,7 @@ export default function BillingPage() {
         return;
       }
       const json = await res.json();
+      console.log('Billing GET response:', json);
       console.log('Invoices query result:', json.invoices, json.error);
       const plans = (json.plans?.length ? json.plans : FALLBACK_PLANS) as PricingPlan[];
       const paygRates = (json.payg_rates?.length ? json.payg_rates : FALLBACK_PAYG) as PaygRate[];
@@ -206,13 +208,13 @@ export default function BillingPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const res = await fetch('/api/settings/billing', {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({
-          action: 'submit_payment_proof',
           amount,
           reference: proofReference.trim(),
-          proof_url: proofUrl,
+          proofUrl: proofUrl || null,
+          paymentMethod: 'instapay',
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -222,7 +224,7 @@ export default function BillingPage() {
         return;
       }
       console.log('Invoice insert result: success');
-      setSavedMessage(t('proofSubmittedSuccess', { defaultValue: 'Payment proof submitted. Will be confirmed within 24 hours.' }));
+      setSavedMessage(locale === 'ar' ? 'تم إرسال إثبات الدفع!' : 'Payment proof submitted!');
       setProofAmount('');
       setProofReference('');
       setProofFile(null);
@@ -288,7 +290,6 @@ export default function BillingPage() {
   const plans = data?.plans ?? FALLBACK_PLANS;
   const paygRates = data?.payg_rates ?? FALLBACK_PAYG;
   const currentPlanDetails = data?.current_plan_details ?? plans.find(p => p.id === data?.plan);
-  const locale = useLocale();
   const isRTL = locale === 'ar';
   const isOwner = currentUser?.role === 'owner';
 

@@ -140,12 +140,13 @@ export default function TeamPage() {
     setLastInvitePassword(null);
     if (!centerId || !userId) return;
 
-    const phone = invitePhone.trim();
-    const phoneValid = /^01\d{9}$/.test(phone);
-    if (!phoneValid) {
+    let phone = invitePhone.trim().replace(/\D/g, '');
+    if (phone.startsWith('0')) phone = phone.substring(1);
+    if (phone.length !== 10 || !/^1[0125]\d{8}$/.test(phone)) {
       setInviteError(t('invalidPhone'));
       return;
     }
+    const phoneToSend = '0' + phone;
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -163,7 +164,7 @@ export default function TeamPage() {
         },
         body: JSON.stringify({
           name: inviteName.trim() || '',
-          phone,
+          phone: phoneToSend,
           role: inviteRole,
         }),
       });
@@ -186,7 +187,7 @@ export default function TeamPage() {
         setInviteName('');
         setInvitePhone('');
         setInviteRole('assistant');
-        setPendingInvites(prev => [...prev, { phone, role: inviteRole, status: 'pending' }]);
+        setPendingInvites(prev => [...prev, { phone: phoneToSend, role: inviteRole, status: 'pending' }]);
         setShowInviteModal(false);
         setSavedMessage(result.message || t('inviteSuccess'));
         setTimeout(() => setSavedMessage(''), 5000);
@@ -230,24 +231,37 @@ export default function TeamPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const res = await fetch('/api/permissions', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
+    // Optimistic update
+    setAssistantPermissions(prev => ({
+      ...prev,
+      [targetId]: {
+        ...prev[targetId],
+        [key]: enabled,
       },
-      body: JSON.stringify({ targetUserId: targetId, permissionKey: key, enabled, centerId }),
-    });
+    }));
 
-    if (res.ok) {
+    try {
+      const res = await fetch('/api/permissions', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ targetUserId: targetId, permissionKey: key, enabled, centerId }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update');
+      showSaved();
+    } catch {
+      // Revert on failure
       setAssistantPermissions(prev => ({
         ...prev,
         [targetId]: {
           ...prev[targetId],
-          [key]: enabled,
+          [key]: !enabled,
         },
       }));
-      showSaved();
+      alert(t('permissionUpdateFailed', { defaultValue: 'Failed to update permission' }));
     }
   };
 
@@ -477,22 +491,34 @@ export default function TeamPage() {
                 <input
                   type="tel"
                   value={invitePhone}
-                  onChange={(e) => { setInvitePhone(e.target.value); setInviteError(''); }}
-                  placeholder="01XXXXXXXXX"
+                  onChange={(e) => {
+                    let v = e.target.value.replace(/\D/g, '');
+                    if (v.startsWith('0') && v.length > 1) v = v.substring(1);
+                    setInvitePhone(v); setInviteError('');
+                  }}
+                  placeholder={locale === 'ar' ? '1220601310' : '1220601310'}
                   dir="ltr"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
                   required
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {locale === 'ar' ? 'ادخل الرقم بدون الصفر' : 'Enter without the leading zero'}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('role')}</label>
                 <select
                   value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as 'assistant' | 'teacher')}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === 'assistant') setInviteRole('assistant');
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
                 >
                   <option value="assistant">{t('assistant')}</option>
-                  <option value="teacher">{t('roleTeacher', { defaultValue: 'Teacher' })}</option>
+                  <option value="teacher" disabled className="text-gray-400 dark:text-gray-500">
+                    {locale === 'ar' ? 'مدرس (قريباً)' : 'Teacher (Coming Soon)'}
+                  </option>
                 </select>
               </div>
               <div className="flex gap-2">

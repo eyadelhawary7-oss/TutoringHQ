@@ -43,7 +43,7 @@ export default function SettingsPage() {
   const [scannerMode, setScannerMode] = useState('camera');
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[]; totalEarned: number } | null>(null);
+  const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string; status?: string }[]; pending?: { referred_center_name: string; referred_center_plan: string; reward_status: string; status?: string }[]; totalEarned: number } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
 
   // Redirect assistants away from settings
@@ -494,10 +494,23 @@ export default function SettingsPage() {
                       {Number(referralData.totalEarned || 0).toLocaleString('ar-EG')} EGP
                     </p>
                   </div>
+                  {(referralData.pending?.length ?? 0) > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-2">{tReferral('pendingReferrals', { defaultValue: 'Pending (awaiting first payment)' })}</h3>
+                      <div className="space-y-2 text-sm">
+                        {referralData.pending?.map((p, i) => (
+                          <div key={i} className="flex justify-between items-center p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                            <span className="text-gray-900 dark:text-white">{p.referred_center_name}</span>
+                            <span className="text-amber-600 dark:text-amber-400 text-xs">{tReferral('awaitingPayment', { defaultValue: 'Awaiting first payment' })}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tReferral('rewardsTable')}</h3>
-                  {referralData.rewards.length === 0 ? (
+                  {(referralData.rewards?.length ?? 0) === 0 && (referralData.pending?.length ?? 0) === 0 ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400">{tReferral('noRewards')}</p>
-                  ) : (
+                  ) : (referralData.rewards?.length ?? 0) > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
@@ -510,7 +523,7 @@ export default function SettingsPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {referralData.rewards.map((r) => (
+                          {(referralData.rewards ?? []).map((r) => (
                             <tr key={r.id || r.created_at + r.referred_center_name} className="border-b border-gray-100 dark:border-gray-700/50">
                               <td className="py-2 text-gray-900 dark:text-white">{r.referred_center_name}</td>
                               <td className="py-2 text-gray-600 dark:text-gray-400">{r.referred_center_plan}</td>
@@ -532,7 +545,7 @@ export default function SettingsPage() {
                         </tbody>
                       </table>
                     </div>
-                  )}
+                  ) : null}
                 </>
               )}
             </section>

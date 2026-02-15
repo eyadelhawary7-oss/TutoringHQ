@@ -50,14 +50,15 @@
   "login": {
     "title": "تسجيل الدخول",
     "phoneTitle": "تسجيل الدخول برقم الهاتف",
-    "phonePlaceholder": "01XXXXXXXXX",
+    "phonePlaceholder": "1220601310",
+    "phoneHint": "ادخل الرقم بدون الصفر",
     "phoneLabel": "رقم الهاتف المصري",
     "sendOTP": "إرسال الرمز",
     "otpTitle": "أدخل رمز التحقق",
     "otpPlaceholder": "000000",
     "verify": "تحقق",
     "resend": "إعادة إرسال الرمز",
-    "invalidPhone": "رقم هاتف غير صحيح",
+    "invalidPhone": "أدخل رقم مصري صحيح",
     "otpSent": "تم إرسال رمز التحقق",
     "otpError": "رمز التحقق خاطئ",
     "smsTooMany": "تجاوزت حد الرسائل (4 رسائل/ساعة)",
@@ -98,7 +99,9 @@
     "status": "الحالة",
     "date": "التاريخ",
     "totalEarned": "إجمالي المكتسب من الإحالات",
-    "noRewards": "لا توجد مكافآت إحالة بعد"
+    "noRewards": "لا توجد مكافآت إحالة بعد",
+    "pendingReferrals": "قيد الانتظار (بانتظار أول دفعة)",
+    "awaitingPayment": "بانتظار أول دفعة"
   },
   "import": {
     "title": "استيراد الطلاب",
@@ -344,6 +347,7 @@
     "you": "(أنت)",
     "removeMember": "إزالة",
     "confirmRemove": "هل تريد إزالة {name} من الفريق؟",
+    "permissionUpdateFailed": "فشل تحديث الصلاحية",
     "memberRemoved": "تم إزالة العضو",
     "inviteName": "الاسم",
     "tempPassword": "كلمة المرور المؤقتة",

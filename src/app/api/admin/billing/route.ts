@@ -278,7 +278,7 @@ export async function PUT(request: Request) {
       const ref = (inv as { payment_reference?: string }).payment_reference ?? '';
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
-        .select('billing_period')
+        .select('billing_period, plan, referred_by, subscription_status')
         .eq('id', centerId)
         .single();
       const billingPeriod = (centerRow as { billing_period?: string })?.billing_period ?? 'quarterly';
@@ -290,6 +290,42 @@ export async function PUT(request: Request) {
         notes: `Payment proof approved - Ref: ${ref}`,
         recorded_by: userId,
       });
+
+      // Referral reward: only when referred center's first payment is approved
+      const referredBy = (centerRow as { referred_by?: string })?.referred_by;
+      const plan = (centerRow as { plan?: string })?.plan ?? 'starter';
+      const subscriptionStatus = (centerRow as { subscription_status?: string })?.subscription_status ?? 'active';
+      if (referredBy && subscriptionStatus === 'active') {
+        const { data: existingReward } = await supabaseAdmin
+          .from('referral_rewards')
+          .select('id')
+          .eq('referring_center_id', referredBy)
+          .eq('referred_center_id', centerId)
+          .maybeSingle();
+        if (!existingReward) {
+          const rewardAmount = Math.round(amount * 0.4);
+          const { data: referringCenter } = await supabaseAdmin.from('centers').select('name').eq('id', referredBy).single();
+          await supabaseAdmin.from('referral_rewards').insert({
+            referring_center_id: referredBy,
+            referred_center_id: centerId,
+            referred_center_plan: plan,
+            first_month_fee: amount,
+            reward_amount: rewardAmount,
+            reward_status: 'approved',
+          });
+          try {
+            await supabaseAdmin.from('audit_log').insert({
+              center_id: referredBy,
+              user_id: userId,
+              action: 'referral_reward_created',
+              entity_type: 'referral_rewards',
+              details: { referred_center_id: centerId, amount, reward_amount: rewardAmount, referring_center_name: (referringCenter as { name?: string })?.name },
+            });
+          } catch {
+            // ignore
+          }
+        }
+      }
     } else {
       const { error: updErr } = await supabaseAdmin
         .from('invoices')
