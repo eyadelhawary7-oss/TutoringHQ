@@ -36,7 +36,8 @@ const FALLBACK_PLANS: PricingPlan[] = [
 const FALLBACK_PAYG: PaygRate[] = [
   { min_students_per_week: 0, max_students_per_week: 200, rate_per_student_egp: 6 },
   { min_students_per_week: 201, max_students_per_week: 600, rate_per_student_egp: 3.75 },
-  { min_students_per_week: 601, max_students_per_week: 1500, rate_per_student_egp: 2 },
+  { min_students_per_week: 601, max_students_per_week: 1000, rate_per_student_egp: 2.5 },
+  { min_students_per_week: 1001, max_students_per_week: 1500, rate_per_student_egp: 2 },
   { min_students_per_week: 1501, max_students_per_week: 10000, rate_per_student_egp: 1.25 },
 ];
 
@@ -45,32 +46,22 @@ const MONTHLY_MULTIPLIER = 4.333;
 /** Admin WhatsApp number for payment proof notifications */
 const ADMIN_NOTIFICATION_PHONE = '201220601410';
 
-/** Graduated (marginal) pricing with 4.333 weekly-to-monthly multiplier */
-function calculatePaygCost(rates: PaygRate[], students: number): { weekly: number; monthly: number; effectiveRate: number; breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] } {
-  const tierDefs = [
-    { upTo: 200, rate: 6.0 },
-    { upTo: 600, rate: 3.75 },
-    { upTo: 1500, rate: 2.0 },
-    { upTo: Infinity, rate: 1.25 },
-  ];
-  let weeklyCost = 0;
-  const breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] = [];
-  let remaining = students;
-  let prevLimit = 0;
+/** Flat rate per bracket: entire student count uses the rate of the bracket it falls into. 5 brackets matching fixed plans. */
+function getBracketRate(students: number): number {
+  if (students <= 200) return 6;
+  if (students <= 600) return 3.75;
+  if (students <= 1000) return 2.5;
+  if (students <= 1500) return 2;
+  return 1.25;
+}
 
-  for (const tier of tierDefs) {
-    const studentsInTier = Math.min(remaining, tier.upTo - prevLimit);
-    if (studentsInTier <= 0) break;
-    const tierCost = studentsInTier * tier.rate;
-    weeklyCost += tierCost;
-    breakdown.push({ from: prevLimit + 1, to: prevLimit + studentsInTier, count: studentsInTier, rate: tier.rate, cost: tierCost });
-    remaining -= studentsInTier;
-    prevLimit = tier.upTo;
-  }
-
+function calculatePaygCost(_rates: PaygRate[], students: number): { weekly: number; monthly: number; effectiveRate: number; breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] } {
+  const rate = getBracketRate(students);
+  const weeklyCost = students * rate;
   const monthly = Math.round(weeklyCost * MONTHLY_MULTIPLIER);
-  const effectiveRate = students > 0 ? Math.round((weeklyCost / students) * 100) / 100 : 0;
-  return { weekly: weeklyCost, monthly, effectiveRate, breakdown };
+  const breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] =
+    students > 0 ? [{ from: 1, to: students, count: students, rate, cost: weeklyCost }] : [];
+  return { weekly: weeklyCost, monthly, effectiveRate: rate, breakdown };
 }
 
 function getFixedPlanComparison(plans: PricingPlan[], students: number): { planName: string; planNameAr: string; planFee: number; isCustom: boolean } {
@@ -512,11 +503,11 @@ export default function BillingPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('studentsPerWeekSlider')}: <strong>{paygSlider.toLocaleString('ar-EG')}</strong>
+                  {t('studentsPerWeekSlider')}: <strong>{paygSlider.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')}</strong>
                 </label>
                 <input
                   type="range"
-                  min={50}
+                  min={0}
                   max={2000}
                   step={10}
                   value={paygSlider}
@@ -529,25 +520,25 @@ export default function BillingPage() {
                 <div>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{t('weeklyCost')}</span>
                   <p className="text-xl font-bold text-gray-900 dark:text-white">
-                    {paygResult.weekly.toLocaleString('ar-EG')} {t('egp')}/<span className="text-sm">week</span>
+                    {paygResult.weekly.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}/<span className="text-sm">week</span>
                   </p>
                 </div>
                 <div>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{t('monthlyFeeLabel')}</span>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {(paygResult.monthly).toLocaleString('ar-EG')} {t('egp')}/month
+                    {(paygResult.monthly).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}/month
                   </p>
                 </div>
                 <div>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{t('rateTier')}</span>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {paygResult.effectiveRate > 0 ? `${Number(paygResult.effectiveRate).toLocaleString('ar-EG')} ${t('egp')}/${t('perStudent')}` : '—'}
+                    {paygResult.effectiveRate > 0 ? `${Number(paygResult.effectiveRate).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} ${t('egp')}/${t('perStudent')}` : '—'}
                   </p>
                 </div>
                 <div>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{t('premiumVsFixed')}</span>
                   <p className={`font-semibold ${fixedSavesMoney ? 'text-green-600 dark:text-green-400' : fixedComparison.isCustom ? 'text-gray-500' : 'text-amber-600 dark:text-amber-400'}`}>
-                    {fixedComparison.isCustom ? t('contactUs') : fixedSavesMoney ? t('fixedPlanBetter') : t('paygCostsMore', { amount: `${savingsAmount.toLocaleString('ar-EG')} ${t('egp')}` })}
+                    {fixedComparison.isCustom ? t('contactUs') : fixedSavesMoney ? t('fixedPlanBetter') : t('paygCostsMore', { amount: `${savingsAmount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} ${t('egp')}` })}
                   </p>
                 </div>
               </div>
@@ -556,15 +547,12 @@ export default function BillingPage() {
                 <div className="p-4 bg-white dark:bg-gray-700/30 rounded-lg text-sm">
                   <span className="text-xs text-gray-500 dark:text-gray-400 block mb-2">Tier breakdown</span>
                   <div className="space-y-1">
-                    {paygResult.breakdown.map((tier, i) => {
-                      const range = tier.to > 10000 ? `${tier.from}+` : tier.from === tier.to ? `${tier.from}` : `${tier.from}-${tier.to}`;
-                      return (
-                        <div key={i} className="flex justify-between">
-                          <span>{range} × {Number(tier.rate).toLocaleString('ar-EG')} {t('egp')} =</span>
-                          <span>{Number(tier.cost).toLocaleString('ar-EG')} {t('egp')}</span>
-                        </div>
-                      );
-                    })}
+                    {paygResult.breakdown.map((tier, i) => (
+                      <div key={i} className="flex justify-between">
+                        <span>{tier.count.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} × {Number(tier.rate).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')} =</span>
+                        <span>{Number(tier.cost).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -572,7 +560,13 @@ export default function BillingPage() {
               {fixedSavesMoney && !fixedComparison.isCustom && (
                 <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm flex items-center gap-2">
                   <span>✓</span>
-                  <span>PAYG: {paygResult.monthly.toLocaleString('ar-EG')} {t('egp')}/month vs {fixedComparison.planName}: {fixedComparison.planFee.toLocaleString('ar-EG')} {t('egp')}/month. You save {savingsAmount.toLocaleString('ar-EG')} {t('egp')} with the fixed plan.</span>
+                  <span>{t('paygSavingsLine', {
+                    payg: paygResult.monthly.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG'),
+                    plan: fixedComparison.planName,
+                    planFee: fixedComparison.planFee.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG'),
+                    savings: savingsAmount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG'),
+                    egp: t('egp'),
+                  })}</span>
                 </div>
               )}
             </div>
@@ -670,12 +664,12 @@ export default function BillingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-600">
-                      <th className="text-left py-2">{t('invoiceNumber', { defaultValue: 'Invoice #' })}</th>
-                      <th className="text-left py-2">{t('date', { defaultValue: 'Date' })}</th>
-                      <th className="text-left py-2">{t('amount', { defaultValue: 'Amount' })}</th>
-                      <th className="text-left py-2">{t('reference', { defaultValue: 'Reference' })}</th>
-                      <th className="text-left py-2">{t('status', { defaultValue: 'Status' })}</th>
-                      <th className="text-left py-2">{t('proof', { defaultValue: 'Proof' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('invoiceNumber', { defaultValue: 'Invoice #' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('date', { defaultValue: 'Date' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('amount', { defaultValue: 'Amount' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('reference', { defaultValue: 'Reference' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status', { defaultValue: 'Status' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('proof', { defaultValue: 'Proof' })}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -685,10 +679,10 @@ export default function BillingPage() {
                         <td className="py-2">
                           {(inv.created_at ? new Date(inv.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : '') || (inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : inv.billing_period_start && inv.billing_period_end ? `${inv.billing_period_start} – ${inv.billing_period_end}` : '—')}
                         </td>
-                        <td className="py-2">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}</td>
+                        <td className="py-2 font-mono italic">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}</td>
                         <td className="py-2">{inv.payment_reference || '—'}</td>
                         <td className="py-2">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium italic ${
                             inv.status === 'paid' || inv.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
                             inv.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
                             'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
@@ -811,28 +805,25 @@ export default function BillingPage() {
                 </p>
               </div>
 
-            {/* Payment Status Display - after submission */}
-            {data?.invoices && (data.invoices as { status?: string }[]).length > 0 && (
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{locale === 'ar' ? 'حالة الدفع' : 'Payment Status'}:</p>
-                {((data.invoices as { status?: string }[]).map((inv, i) => (
-                  <span
-                    key={i}
-                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                      inv.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200' :
-                      inv.status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' :
-                      inv.status === 'overdue' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                    }`}
-                  >
-                    {inv.status === 'paid' ? (locale === 'ar' ? 'تم التأكيد ✅' : 'Confirmed ✅') :
-                     inv.status === 'pending' ? (locale === 'ar' ? 'في انتظار التأكيد ⏳' : 'Pending Confirmation ⏳') :
-                     inv.status === 'overdue' ? (locale === 'ar' ? 'مرفوض ❌ تواصل مع الدعم' : 'Rejected ❌ Contact Support') :
-                     inv.status || ''}
-                  </span>
-                )))}
-              </div>
-            )}
+            {/* Payment Status Summary - one line instead of badge flood */}
+            {data?.invoices && (data.invoices as { status?: string }[]).length > 0 && (() => {
+              const invoices = data.invoices as { status?: string }[];
+              const approved = invoices.filter(inv => ['paid', 'approved', 'confirmed'].includes(inv.status || '')).length;
+              const rejected = invoices.filter(inv => ['rejected', 'overdue'].includes(inv.status || '')).length;
+              const pending = invoices.filter(inv => !['paid', 'approved', 'confirmed', 'rejected', 'overdue'].includes(inv.status || '')).length;
+              if (pending + approved + rejected === 0) return null;
+              return (
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {pending > 0 && <span className="text-amber-600 dark:text-amber-400">{pending.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('pendingStatus')}</span>}
+                    {pending > 0 && (approved > 0 || rejected > 0) && <span className="mx-1">·</span>}
+                    {approved > 0 && <span className="text-green-600 dark:text-green-400">{approved.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('statusApproved', { defaultValue: 'approved' })}</span>}
+                    {approved > 0 && rejected > 0 && <span className="mx-1">·</span>}
+                    {rejected > 0 && <span className="text-red-600 dark:text-red-400">{rejected.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('rejectedStatus')}</span>}
+                  </p>
+                </div>
+              );
+            })()}
           </section>
         </div>
       </div>

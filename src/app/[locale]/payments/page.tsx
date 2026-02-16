@@ -52,8 +52,6 @@ export default function PaymentsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [methodFilter, setMethodFilter] = useState('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
@@ -183,12 +181,9 @@ export default function PaymentsPage() {
         if (statusFilter === 'pending' && (r.confirmed !== false && r.status === 'confirmed')) return false;
       }
       if (methodFilter !== 'all' && r.method !== methodFilter) return false;
-      const payDate = r.paid_at ? r.paid_at.split('T')[0] : '';
-      if (dateFrom && payDate < dateFrom) return false;
-      if (dateTo && payDate > dateTo) return false;
       return true;
     });
-  }, [records, statusFilter, methodFilter, dateFrom, dateTo, activeTab]);
+  }, [records, statusFilter, methodFilter, activeTab]);
 
   const sortedStudents = useMemo(() => {
     if (!studentSummary.length) return [];
@@ -330,18 +325,6 @@ export default function PaymentsPage() {
                 </select>
               </>
             )}
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
-              className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm shadow"
-            />
-            <input
-              type="date"
-              value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
-              className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm shadow"
-            />
           </div>
 
           {isLoading ? (
@@ -367,12 +350,12 @@ export default function PaymentsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentName')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentId')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('totalLessons')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('paidLessons')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('balanceDue')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentName')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentId')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('totalLessons')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('paidLessons')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('balanceDue')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -380,16 +363,16 @@ export default function PaymentsPage() {
                       <React.Fragment key={row.student_id}>
                         <tr className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                           <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{row.student_name}</td>
-                          <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-400" dir="ltr">{row.student_number}</td>
+                          <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400" dir="ltr">{row.student_number}</td>
                           <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.total_lessons}</td>
                           <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.paid_lessons}</td>
                           <td className="px-4 py-3">
                             {row.balance_due > 0 ? (
-                              <span className="font-medium text-red-600 dark:text-red-400">
+                              <span className="font-mono italic font-medium text-red-600 dark:text-red-400">
                                 {row.balance_due.toLocaleString('ar-EG')} EGP
                               </span>
                             ) : (
-                              <span className="text-gray-500 dark:text-gray-400">0 EGP</span>
+                              <span className="font-mono italic text-gray-500 dark:text-gray-400">0 EGP</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -408,9 +391,9 @@ export default function PaymentsPage() {
                                 {records.filter(r => r.student_id === row.student_id).map(r => (
                                   <div key={r.id} className="flex justify-between py-1">
                                     <span>{r.paid_at ? new Date(r.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
-                                    <span>{r.amount} EGP</span>
+                                    <span className="font-mono italic">{r.amount} EGP</span>
                                     <span>{formatMethod(r.method)}</span>
-                                    <span className={r.status === 'late' ? 'text-amber-600 font-medium' : ''}>{r.status === 'late' ? t('lateEntry') : r.confirmed !== false && r.status !== 'pending' ? t('filterPaid') : t('filterPending')}</span>
+                                    <span className={`italic ${r.status === 'late' ? 'text-amber-600 font-medium' : ''}`}>{r.status === 'late' ? t('lateEntry') : r.confirmed !== false && r.status !== 'pending' ? t('filterPaid') : t('filterPending')}</span>
                                   </div>
                                 ))}
                               </div>
@@ -436,7 +419,7 @@ export default function PaymentsPage() {
                       <span className="font-medium text-gray-700 dark:text-gray-300">
                         {new Date(date).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </span>
-                      <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                      <span className="text-sm font-mono italic font-semibold text-indigo-600 dark:text-indigo-400">
                         {dayTotal.toLocaleString('ar-EG')} EGP
                       </span>
                     </div>
@@ -444,14 +427,14 @@ export default function PaymentsPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-gray-700">
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('date')}</th>
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentName')}</th>
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentId')}</th>
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('amount')}</th>
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('paymentMethod')}</th>
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
-                            <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('group')}</th>
-                            {canConfirmPayments && <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>}
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('date')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentName')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentId')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('amount')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('paymentMethod')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('group')}</th>
+                            {canConfirmPayments && <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{tCommon('actions')}</th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -461,11 +444,11 @@ export default function PaymentsPage() {
                                 {r.paid_at ? new Date(r.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                               </td>
                               <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{r.student_name}</td>
-                              <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-400" dir="ltr">{r.student_number ?? '—'}</td>
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.amount} EGP</td>
+                              <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400" dir="ltr">{r.student_number ?? '—'}</td>
+                              <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400">{r.amount} EGP</td>
                               <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatMethod(r.method)}</td>
                               <td className="px-4 py-3">
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                <span className={`px-2 py-1 text-xs font-medium italic rounded-full ${
                                   r.confirmed !== false && r.status === 'confirmed'
                                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                                     : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'

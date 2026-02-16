@@ -2,7 +2,7 @@ import { routing } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
 import { getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
-import { cairo, inter } from '@/lib/fonts';
+import { cairo, inter, jetbrainsMono } from '@/lib/fonts';
 import '../globals.css';
 import { UserProvider } from '@/contexts/UserContext';
 import ServiceWorkerRegistrarWrapper from '@/components/ServiceWorkerRegistrarWrapper';
@@ -31,7 +31,7 @@ export default async function LocaleLayout({
 
   // Determine direction and font based on locale
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
-  const fontClass = locale === 'ar' ? cairo.variable : inter.variable;
+  const fontClass = [locale === 'ar' ? cairo.variable : inter.variable, jetbrainsMono.variable].join(' ');
   const fontFamily = locale === 'ar' ? 'var(--font-cairo)' : 'var(--font-inter)';
 
   return (

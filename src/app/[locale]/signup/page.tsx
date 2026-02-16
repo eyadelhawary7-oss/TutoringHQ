@@ -103,7 +103,7 @@ export default function SignupPage() {
               href="/"
               className="inline-block py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
             >
-              {tLanding('footer')}
+              {tLanding('backToHome')}
             </Link>
           </div>
         </div>

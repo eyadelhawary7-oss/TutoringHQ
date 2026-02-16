@@ -386,12 +386,12 @@ export default function TeamPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('inviteName')}</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('invitePhone')}</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('role')}</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status', { defaultValue: 'Status' })}</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('permissions', { defaultValue: 'Permissions' })}</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('inviteName')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('invitePhone')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('role')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status', { defaultValue: 'Status' })}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('permissions', { defaultValue: 'Permissions' })}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -408,17 +408,17 @@ export default function TeamPage() {
                         </td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">{member.phone}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getRoleBadgeClass(member.role)}`}>
+                          <span className={`px-2.5 py-1 text-xs font-medium italic rounded-full ${getRoleBadgeClass(member.role)}`}>
                             {getRoleLabel(member.role)}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           {member.is_active === false ? (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                            <span className="px-2 py-0.5 text-xs font-medium italic rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
                               {t('deactivatedStatus', { defaultValue: 'Deactivated' })}
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                            <span className="px-2 py-0.5 text-xs font-medium italic rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                               {t('activeStatus', { defaultValue: 'Active' })}
                             </span>
                           )}
@@ -481,14 +481,14 @@ export default function TeamPage() {
                   {pendingInvites.map((inv, idx) => (
                     <tr key={`pending-${idx}`} className="border-b border-gray-100 dark:border-gray-700/50">
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400">—</td>
-                      <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-400" dir="ltr">{inv.phone}</td>
+                      <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400" dir="ltr">{inv.phone}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getRoleBadgeClass(inv.role)}`}>
+                        <span className={`px-2.5 py-1 text-xs font-medium italic rounded-full ${getRoleBadgeClass(inv.role)}`}>
                           {getRoleLabel(inv.role)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300">
+                        <span className="px-2 py-0.5 text-xs font-medium italic rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300">
                           {t('pendingInvite', { defaultValue: 'Pending invite' })}
                         </span>
                       </td>

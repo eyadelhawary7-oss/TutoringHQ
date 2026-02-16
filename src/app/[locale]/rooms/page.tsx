@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, dbUpdate, auditLog } from '@/lib/db-proxy';
 import Navbar from '@/components/Navbar';
@@ -15,6 +15,7 @@ interface Room {
 export default function RoomsPage() {
   const t = useTranslations('rooms');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -182,44 +183,58 @@ export default function RoomsPage() {
               )}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('allRooms')}</h2>
-                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                <div className="flex flex-col gap-3">
                   {rooms.map((r) => (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700/30"
+                      className="flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50"
                     >
                       {editingId === r.id ? (
-                        <div className="flex-1 flex gap-2">
+                        <div className="flex-1 flex flex-wrap gap-2">
                           <input
                             type="text"
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
-                            className="flex-1 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:text-white"
+                            className="flex-1 min-w-0 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:text-white"
                           />
                           <input
                             type="number"
                             min="1"
                             value={editCapacity}
                             onChange={(e) => setEditCapacity(e.target.value)}
-                            placeholder="Cap"
-                            className="w-16 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:text-white"
+                            placeholder={t('capacity')}
+                            className="w-20 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:text-white"
                           />
-                          <button onClick={handleSaveEdit} className="text-green-600 text-sm">{tCommon('save')}</button>
-                          <button onClick={cancelEdit} className="text-gray-500 text-sm">{tCommon('cancel')}</button>
+                          <button onClick={handleSaveEdit} className="text-green-600 dark:text-green-400 text-sm font-medium">
+                            {tCommon('save')}
+                          </button>
+                          <button onClick={cancelEdit} className="text-gray-500 dark:text-gray-400 text-sm">
+                            {tCommon('cancel')}
+                          </button>
                         </div>
                       ) : (
                         <>
-                          <div>
-                            <span className="font-medium text-gray-900 dark:text-white">{r.name}</span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-bold text-xl font-mono text-gray-900 dark:text-white truncate">
+                              {r.name}
+                            </span>
                             {r.capacity != null && (
-                              <span className="ml-2 text-sm text-gray-500">({r.capacity})</span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">
+                                ({t('capacity')}: {Number(r.capacity).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en')})
+                              </span>
                             )}
                           </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => startEdit(r)} className="text-indigo-600 text-sm">
+                          <div className="flex gap-2 shrink-0">
+                            <button
+                              onClick={() => startEdit(r)}
+                              className="px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                            >
                               {tCommon('edit')}
                             </button>
-                            <button onClick={() => handleDeleteRoom(r.id)} className="text-red-600 text-sm">
+                            <button
+                              onClick={() => handleDeleteRoom(r.id)}
+                              className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                            >
                               {tCommon('delete')}
                             </button>
                           </div>

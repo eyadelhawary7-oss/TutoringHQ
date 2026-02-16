@@ -12,7 +12,6 @@ type LoginStep = 'phone' | 'otp';
 
 export default function LoginPage() {
   const t = useTranslations('login');
-  const tLanding = useTranslations('landing');
   const router = useRouter();
 
   const [step, setStep] = useState<LoginStep>('phone');
@@ -128,14 +127,11 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <Link href="/" className="inline-block mb-4">
               <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
-                <span className="text-2xl font-bold text-white">RG</span>
+                <span className="text-2xl font-bold text-white">CH</span>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 CenterHQ
               </h1>
-              <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
-                {tLanding('subtitle')}
-              </p>
             </Link>
           </div>
 

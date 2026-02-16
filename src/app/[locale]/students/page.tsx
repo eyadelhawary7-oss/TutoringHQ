@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useState, useEffect, useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import Navbar from '@/components/Navbar';
 import QRCode from 'qrcode';
+import { toAr } from '@/lib/number-utils';
 
 interface Student {
   id: string;
@@ -32,16 +33,22 @@ interface Group {
   fee?: number;
 }
 
+type SortBy = 'name' | 'balance';
+
 export default function StudentsPage() {
   const t = useTranslations('students');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
 
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [studentGroupsMap, setStudentGroupsMap] = useState<Record<string, { names: string[]; fees: number[] }>>({});
+  const [studentGroupsMap, setStudentGroupsMap] = useState<Record<string, { names: string[]; fees: number[]; subjects: string[] }>>({});
+  const [balanceByStudent, setBalanceByStudent] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortBy>('name');
+  const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({
     name: '',
@@ -87,6 +94,63 @@ export default function StudentsPage() {
   }, []);
 
   useEffect(() => {
+    if (groups.length === 0) return;
+    const loadBalanceData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+      const meData = await meRes.json();
+      if (!meData?.user?.center_id) return;
+      const cid = meData.user.center_id;
+
+      const [scansRes, paymentsRes] = await Promise.all([
+        dbSelect({
+          table: 'attendance_scans',
+          select: 'student_id, group_id',
+          filters: [{ column: 'center_id', op: 'eq', value: cid }],
+        }),
+        dbSelect({
+          table: 'payments',
+          select: 'student_id, amount, confirmed',
+          filters: [{ column: 'center_id', op: 'eq', value: cid }],
+        }),
+      ]);
+      const scans = (scansRes.data || []) as { student_id: string; group_id: string | null }[];
+      const payments = (paymentsRes.data || []) as { student_id: string; amount: number; confirmed?: boolean }[];
+
+      const groupFeeMap = new Map(groups.map((g) => [g.id, g.fee ?? 0]));
+      const owedByStudent: Record<string, number> = {};
+      for (const s of scans) {
+        if (s.group_id && groupFeeMap.has(s.group_id)) {
+          const key = `${s.student_id}:${s.group_id}`;
+          owedByStudent[key] = (owedByStudent[key] ?? 0) + 1;
+        }
+      }
+      const totalOwedByStudent: Record<string, number> = {};
+      for (const [key, count] of Object.entries(owedByStudent)) {
+        const [sid, gid] = key.split(':');
+        const fee = groupFeeMap.get(gid) ?? 0;
+        totalOwedByStudent[sid] = (totalOwedByStudent[sid] ?? 0) + count * fee;
+      }
+      const paidByStudent: Record<string, number> = {};
+      for (const p of payments) {
+        if (p.confirmed === true) {
+          paidByStudent[p.student_id] = (paidByStudent[p.student_id] ?? 0) + parseFloat(String(p.amount ?? 0));
+        }
+      }
+      const balance: Record<string, number> = {};
+      const allIds = new Set([...Object.keys(totalOwedByStudent), ...Object.keys(paidByStudent)]);
+      for (const sid of allIds) {
+        const owed = totalOwedByStudent[sid] ?? 0;
+        const paid = paidByStudent[sid] ?? 0;
+        balance[sid] = Math.max(0, owed - paid);
+      }
+      setBalanceByStudent(balance);
+    };
+    loadBalanceData();
+  }, [groups]);
+
+  useEffect(() => {
     const loadSubjectsAndGroups = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -108,13 +172,16 @@ export default function StudentsPage() {
             select: 'student_id, group_id',
             filters: [{ column: 'group_id', op: 'in', value: groupIds }],
           });
-          const map: Record<string, { names: string[]; fees: number[] }> = {};
+          const map: Record<string, { names: string[]; fees: number[]; subjects: string[] }> = {};
           for (const m of (membersData || []) as { student_id: string; group_id: string }[]) {
             const g = grps.find((x) => x.id === m.group_id);
             if (g) {
-              if (!map[m.student_id]) map[m.student_id] = { names: [], fees: [] };
+              if (!map[m.student_id]) map[m.student_id] = { names: [], fees: [], subjects: [] };
               map[m.student_id].names.push(g.name);
               map[m.student_id].fees.push(g.fee ?? 0);
+              if (g.subject && !map[m.student_id].subjects.includes(g.subject)) {
+                map[m.student_id].subjects.push(g.subject);
+              }
             }
           }
           setStudentGroupsMap(map);
@@ -124,14 +191,47 @@ export default function StudentsPage() {
     loadSubjectsAndGroups();
   }, []);
 
-  const filteredStudents = students.filter((s) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase().trim();
-    return (
-      (s.name && s.name.toLowerCase().includes(q)) ||
-      (s.student_number && s.student_number.toUpperCase().includes(q.toUpperCase()))
-    );
-  });
+  const distinctSubjects = useMemo(() => {
+    const subs = new Set<string>();
+    for (const g of groups) {
+      if (g.subject) subs.add(g.subject);
+    }
+    return Array.from(subs).sort();
+  }, [groups]);
+
+  const subjectCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const s of students) {
+      const subs = studentGroupsMap[s.id]?.subjects ?? [];
+      for (const sub of subs) {
+        counts[sub] = (counts[sub] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [students, studentGroupsMap]);
+
+  const filteredStudents = useMemo(() => {
+    let list = students.filter((s) => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        if (!(s.name && s.name.toLowerCase().includes(q)) &&
+            !(s.student_number && s.student_number.toUpperCase().includes(q.toUpperCase()))) {
+          return false;
+        }
+      }
+      if (subjectFilter) {
+        const subs = studentGroupsMap[s.id]?.subjects ?? [];
+        if (!subs.includes(subjectFilter)) return false;
+      }
+      return true;
+    });
+    if (sortBy === 'name') {
+      list = [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else {
+      list = [...list].sort((a, b) => (balanceByStudent[b.id] ?? 0) - (balanceByStudent[a.id] ?? 0));
+    }
+    return list;
+  }, [students, searchQuery, subjectFilter, sortBy, studentGroupsMap, balanceByStudent]);
 
   const openQRModal = async (student: Student) => {
     setQrModalStudent(student);
@@ -351,7 +451,11 @@ export default function StudentsPage() {
       if (addedGroup) {
         setStudentGroupsMap((prev) => ({
           ...prev,
-          [student.id]: { names: [addedGroup.name], fees: [addedGroup.fee ?? 0] },
+          [student.id]: {
+            names: [addedGroup.name],
+            fees: [addedGroup.fee ?? 0],
+            subjects: addedGroup.subject ? [addedGroup.subject] : [],
+          },
         }));
       }
       setStudents((prev) => [{ ...student, student_number: studentNumber } as Student, ...prev]);
@@ -433,6 +537,63 @@ export default function StudentsPage() {
             </div>
           )}
 
+          {!isLoading && students.length > 0 && (
+            <div className="space-y-3 mb-6">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">{t('sort')}</span>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('name')}
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                    sortBy === 'name'
+                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('sortName')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('balance')}
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                    sortBy === 'balance'
+                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('sortBalance')}
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSubjectFilter(null)}
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                    subjectFilter === null
+                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('filterAll')} ({students.length})
+                </button>
+                {distinctSubjects.map((sub) => (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => setSubjectFilter(subjectFilter === sub ? null : sub)}
+                    className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                      subjectFilter === sub
+                        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {sub} ({subjectCounts[sub] ?? 0})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="text-center py-16">
               <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -467,18 +628,19 @@ export default function StudentsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentId')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('name')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('phone')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('subject')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('feePerLesson')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{tCommon('actions')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentId')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('name')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('phone')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('subject')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('feePerLesson')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('balance')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredStudents.map((student) => (
                       <tr key={student.id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                        <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-400" dir="ltr">{student.student_number || '—'}</td>
+                        <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400" dir="ltr">{student.student_number || '—'}</td>
                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{student.name}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">{student.phone}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
@@ -489,9 +651,23 @@ export default function StudentsPage() {
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                           {studentGroupsMap[student.id]?.fees?.length
                             ? studentGroupsMap[student.id].fees.length > 1
-                              ? t('multiple', { defaultValue: 'Multiple' })
+                              ? <span className="italic">{t('multiple', { defaultValue: 'Multiple' })}</span>
                               : studentGroupsMap[student.id].fees[0]
                             : student.fee ?? '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {(() => {
+                            const bal = balanceByStudent[student.id] ?? 0;
+                            if (bal > 0) {
+                              const val = locale === 'ar' ? toAr(Math.round(bal)) : Math.round(bal).toLocaleString();
+                              return (
+                                <span className="font-mono italic text-red-600 dark:text-red-400 font-medium">
+                                  {val} {t('currency')}
+                                </span>
+                              );
+                            }
+                            return <span className="text-green-600 dark:text-green-400 font-medium">✓</span>;
+                          })()}
                         </td>
                         <td className="px-4 py-3 flex items-center gap-1">
                           <button

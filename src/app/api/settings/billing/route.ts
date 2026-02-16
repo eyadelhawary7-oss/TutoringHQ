@@ -3,31 +3,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const MONTHLY_MULTIPLIER = 4.333;
-const PAYG_TIERS = [
-  { upTo: 200, rate: 6.0 },
-  { upTo: 600, rate: 3.75 },
-  { upTo: 1500, rate: 2.0 },
-  { upTo: Infinity, rate: 1.25 },
-];
+
+/** Flat rate per bracket: entire student count uses the rate of the bracket it falls into. 5 brackets matching fixed plans. */
+function getBracketRate(students: number): number {
+  if (students <= 200) return 6;
+  if (students <= 600) return 3.75;
+  if (students <= 1000) return 2.5;
+  if (students <= 1500) return 2;
+  return 1.25;
+}
 
 function calculatePaygCost(studentsPerWeek: number) {
-  let weeklyCost = 0;
-  let remaining = studentsPerWeek;
-  let prevLimit = 0;
-  const tiers: { students: number; rate: number; subtotal: number }[] = [];
-
-  for (const tier of PAYG_TIERS) {
-    const studentsInTier = Math.min(remaining, tier.upTo - prevLimit);
-    if (studentsInTier <= 0) break;
-    const subtotal = studentsInTier * tier.rate;
-    weeklyCost += subtotal;
-    tiers.push({ students: studentsInTier, rate: tier.rate, subtotal });
-    remaining -= studentsInTier;
-    prevLimit = tier.upTo;
-  }
-
+  const rate = getBracketRate(studentsPerWeek);
+  const weeklyCost = studentsPerWeek * rate;
   const monthly = Math.round(weeklyCost * MONTHLY_MULTIPLIER);
-  const effectiveRate = studentsPerWeek > 0 ? Math.round((weeklyCost / studentsPerWeek) * 100) / 100 : 0;
+  const effectiveRate = rate;
+  const tiers = studentsPerWeek > 0 ? [{ students: studentsPerWeek, rate, subtotal: weeklyCost }] : [];
   return { weekly: weeklyCost, monthly, effectiveRate, tiers };
 }
 

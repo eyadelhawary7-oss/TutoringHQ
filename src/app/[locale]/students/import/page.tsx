@@ -204,7 +204,7 @@ export default function ImportStudentsPage() {
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-700">
                         {parsedData.headers.map((header) => (
-                          <th key={header} className="px-3 py-2 text-start font-medium text-gray-600 dark:text-gray-400">
+                          <th key={header} className="px-3 py-2 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">
                             {header}
                           </th>
                         ))}

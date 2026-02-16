@@ -986,16 +986,16 @@ export default function AdminPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('phone')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('plan')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('studentsCount')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('billingPeriod')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('nextDue')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('daysRemaining')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('createdDate')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('centerName')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('phone')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('plan')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentsCount')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('billingPeriod')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('nextDue')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('daysRemaining')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('createdDate')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1007,14 +1007,14 @@ export default function AdminPage() {
                         <td className="px-4 py-3" dir="ltr">{c.phone || c.owner?.phone || '—'}</td>
                         <td className="px-4 py-3">{PLAN_LABELS[c.plan || 'starter'] || c.plan}</td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center gap-1 ${c.status === 'active' ? 'text-green-600' : c.status === 'suspended' ? 'text-red-600' : 'text-amber-600'}`}>
+                          <span className={`inline-flex items-center gap-1 italic ${c.status === 'active' ? 'text-green-600' : c.status === 'suspended' ? 'text-red-600' : 'text-amber-600'}`}>
                             {c.status === 'active' && '✅'}
                             {c.status === 'suspended' && '🔴'}
                             {c.status === 'pending' && '🟡'}
                             {c.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3">{c.students_count}</td>
+                        <td className="px-4 py-3 font-mono italic">{c.students_count}</td>
                         <td className="px-4 py-3">
                           {BILLING_LABELS[c.billing_period || 'monthly'] || c.billing_period}
                         </td>
@@ -1096,17 +1096,17 @@ export default function AdminPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('plan')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('billingPeriod')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Discount</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Monthly Equiv</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('nextDue')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Days Until Due</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Auto-Suspend Date</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Referral Credits</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('centerName')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('plan')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('billingPeriod')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Discount</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Monthly Equiv</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('nextDue')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Days Until Due</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Auto-Suspend Date</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Referral Credits</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1117,17 +1117,17 @@ export default function AdminPage() {
                           <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{c.name}</td>
                           <td className="px-4 py-3">{PLAN_LABELS[c.plan] || c.plan}</td>
                           <td className="px-4 py-3">{BILLING_LABELS[c.billing_period || 'monthly']}</td>
-                          <td className="px-4 py-3">{c.discount ?? 0}%</td>
-                          <td className="px-4 py-3">{c.monthlyEquivalent?.toLocaleString('ar-EG') ?? '—'}</td>
+                          <td className="px-4 py-3 font-mono italic">{c.discount ?? 0}%</td>
+                          <td className="px-4 py-3 font-mono italic">{c.monthlyEquivalent?.toLocaleString('ar-EG') ?? '—'}</td>
                           <td className={`px-4 py-3 ${due.dueColor}`}>{due.nextDueText}</td>
                           <td className={`px-4 py-3 font-medium ${due.dueColor}`}>{due.daysText}</td>
                           <td className="px-4 py-3 text-xs">{(() => { const a = (c as { autoSuspendAt?: string }).autoSuspendAt; return a ? new Date(a).toLocaleString() : '—'; })()}</td>
-                          <td className="px-4 py-3 text-green-600 dark:text-green-400">
+                          <td className="px-4 py-3 font-mono italic text-green-600 dark:text-green-400">
                             {((c as { referralCredits?: number }).referralCredits ?? 0) > 0
                               ? `${((c as { referralCredits?: number }).referralCredits ?? 0).toLocaleString('ar-EG')} EGP`
                               : '—'}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 italic">
                             {due.statusDisplay === 'overdue' && '🔴 overdue'}
                             {due.statusDisplay === 'due_soon' && '🟡 due_soon'}
                             {due.statusDisplay === 'paid' && '✅ paid'}
@@ -1171,12 +1171,12 @@ export default function AdminPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('date')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Amount</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Reference</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Proof</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('centerName')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('date')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Amount</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Reference</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Proof</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1184,8 +1184,8 @@ export default function AdminPage() {
                       <tr key={inv.id} className="border-b border-gray-100 dark:border-gray-700/50">
                         <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{inv.centerName}</td>
                         <td className="px-4 py-3">{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3">{Number(inv.payment_amount ?? 0).toLocaleString('ar-EG')} EGP</td>
-                        <td className="px-4 py-3 font-mono">{inv.payment_reference || '—'}</td>
+                        <td className="px-4 py-3 font-mono italic">{Number(inv.payment_amount ?? 0).toLocaleString('ar-EG')} EGP</td>
+                        <td className="px-4 py-3 font-mono italic">{inv.payment_reference || '—'}</td>
                         <td className="px-4 py-3">
                           {inv.payment_proof_url ? (
                             <a href={inv.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
@@ -1224,11 +1224,11 @@ export default function AdminPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('date')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Amount</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Period</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('date')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('centerName')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Amount</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Period</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1236,11 +1236,11 @@ export default function AdminPage() {
                       <tr key={p.source === 'invoice' ? `inv-${p.id}` : p.id} className="border-b border-gray-100 dark:border-gray-700/50">
                         <td className="px-4 py-3">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
                         <td className="px-4 py-3">{p.centerName}</td>
-                        <td className="px-4 py-3">{Number(p.amount).toLocaleString('ar-EG')} EGP</td>
+                        <td className="px-4 py-3 font-mono italic">{Number(p.amount).toLocaleString('ar-EG')} EGP</td>
                         <td className="px-4 py-3">{p.billing_period === 'payment_proof' ? 'Payment Proof' : p.billing_period}</td>
                         <td className="px-4 py-3">
-                          {p.invoiceStatus === 'approved' && <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">{t('approved')}</span>}
-                          {p.invoiceStatus === 'rejected' && <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">{t('rejected')}</span>}
+                          {p.invoiceStatus === 'approved' && <span className="px-2 py-0.5 text-xs font-medium italic rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">{t('approved')}</span>}
+                          {p.invoiceStatus === 'rejected' && <span className="px-2 py-0.5 text-xs font-medium italic rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">{t('rejected')}</span>}
                           {!p.invoiceStatus && '—'}
                         </td>
                       </tr>
@@ -1259,12 +1259,12 @@ export default function AdminPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('centerName')}</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Current Plan</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">Requested Plan</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('requestedAt')}</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('status')}</th>
-                    <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('centerName')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Current Plan</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">Requested Plan</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('requestedAt')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1274,7 +1274,7 @@ export default function AdminPage() {
                       <td className="px-4 py-3">{PLAN_LABELS[pr.current_plan || 'starter']}</td>
                       <td className="px-4 py-3">{PLAN_LABELS[pr.requested_plan] || pr.requested_plan}</td>
                       <td className="px-4 py-3">{new Date(pr.requested_at).toLocaleDateString()}</td>
-                      <td className="px-4 py-3">{pr.status}</td>
+                      <td className="px-4 py-3 italic">{pr.status}</td>
                       <td className="px-4 py-3 flex gap-2">
                         {pr.status === 'pending' && (
                           <>
@@ -1314,14 +1314,14 @@ export default function AdminPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('phone')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('email')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('requestedPlan')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('referralCode')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('referredBy')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('date')}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('centerName')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('phone')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('email')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('requestedPlan')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('referralCode')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('referredBy')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('date')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1413,12 +1413,12 @@ export default function AdminPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('name', { defaultValue: 'Name' })}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('phone', { defaultValue: 'Phone' })}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('email', { defaultValue: 'Email' })}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('role', { defaultValue: 'Role' })}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('joinedDate', { defaultValue: 'Joined' })}</th>
-                      <th className="px-4 py-3 text-start font-medium text-gray-600 dark:text-gray-400">{t('actions', { defaultValue: 'Actions' })}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('name', { defaultValue: 'Name' })}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('phone', { defaultValue: 'Phone' })}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('email', { defaultValue: 'Email' })}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('role', { defaultValue: 'Role' })}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('joinedDate', { defaultValue: 'Joined' })}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('actions', { defaultValue: 'Actions' })}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1428,7 +1428,7 @@ export default function AdminPage() {
                         <td className="px-4 py-3" dir="ltr">{m.phone || '—'}</td>
                         <td className="px-4 py-3">{m.email || '—'}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                          <span className={`px-2 py-0.5 text-xs font-medium italic rounded-full ${
                             m.role === 'super_admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
                             m.role === 'internal_admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
                             'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'

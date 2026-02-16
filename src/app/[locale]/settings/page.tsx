@@ -51,6 +51,7 @@ export default function SettingsPage() {
   const [editName, setEditName] = useState('');
   const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string; status?: string }[]; pending?: { referred_center_name: string; referred_center_plan: string; reward_status: string; status?: string }[]; totalEarned: number } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
+  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
 
   // Redirect assistants/teachers without can_view_settings
   useEffect(() => {
@@ -87,6 +88,7 @@ export default function SettingsPage() {
         setCenter(centerData as CenterInfo);
         setCenterName((centerData as CenterInfo).name || '');
         setScannerMode((centerData as CenterInfo).scanner_default_mode || 'camera');
+        setLogoLoadFailed(false);
       }
 
       // Load subjects (bypass RLS)
@@ -166,6 +168,7 @@ export default function SettingsPage() {
     if (!error) {
       await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'logo' } });
       setCenter(prev => prev ? { ...prev, logo_url: publicData.publicUrl } : null);
+      setLogoLoadFailed(false);
       showSaved();
     }
   };
@@ -330,15 +333,20 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('centerInfo')}</h2>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                  {center?.logo_url ? (
-                    <img src={center.logo_url} alt="Logo" className="w-16 h-16 rounded-lg object-cover" />
+                  {center?.logo_url && !logoLoadFailed ? (
+                    <img
+                      src={center.logo_url}
+                      alt="Logo"
+                      className="w-16 h-16 rounded-lg object-cover"
+                      onError={() => setLogoLoadFailed(true)}
+                    />
                   ) : (
-                    <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                      <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">RG</span>
+                    <div className="w-16 h-16 bg-indigo-600 dark:bg-indigo-600 rounded-lg flex items-center justify-center">
+                      <span className="text-xl font-bold text-white">CH</span>
                     </div>
                   )}
                   <label className="cursor-pointer px-4 py-2 text-sm font-medium border border-indigo-600 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors">
-                    {center?.logo_url ? t('logoChange') : t('logoUpload')}
+                    {(center?.logo_url && !logoLoadFailed) ? t('logoChange') : t('logoUpload')}
                     <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                   </label>
                 </div>
@@ -521,11 +529,11 @@ export default function SettingsPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-gray-600">
-                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('referredCenter')}</th>
-                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('plan')}</th>
-                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('rewardAmount')}</th>
-                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('status')}</th>
-                            <th className="text-start py-2 font-medium text-gray-600 dark:text-gray-400">{tReferral('date')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('referredCenter')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('plan')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('rewardAmount')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('status')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('date')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -533,9 +541,9 @@ export default function SettingsPage() {
                             <tr key={r.id || r.created_at + r.referred_center_name} className="border-b border-gray-100 dark:border-gray-700/50">
                               <td className="py-2 text-gray-900 dark:text-white">{r.referred_center_name}</td>
                               <td className="py-2 text-gray-600 dark:text-gray-400">{r.referred_center_plan}</td>
-                              <td className="py-2 text-gray-900 dark:text-white">{Number(r.reward_amount).toLocaleString('ar-EG')} EGP</td>
+                              <td className="py-2 font-mono italic text-gray-900 dark:text-white">{Number(r.reward_amount).toLocaleString('ar-EG')} EGP</td>
                               <td className="py-2">
-                                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                <span className={`px-2 py-0.5 text-xs font-medium italic rounded-full ${
                                   r.reward_status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
                                   r.reward_status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' :
                                   'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'

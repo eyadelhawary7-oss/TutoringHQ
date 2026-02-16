@@ -727,8 +727,10 @@ export default function ScanPage() {
           student={scannedStudent}
           selectedGroup={selectedGroup ?? scannedStudent.groups?.[0]}
           onPaymentSelect={handlePaymentSelect}
+          onAllowLateEntry={handleAllowLateEntry}
           onDismiss={handleDismiss}
           isProcessing={isProcessing}
+          canAllowLateEntry={canAllowLateEntry}
         />
       )}
     </>

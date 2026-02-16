@@ -27,13 +27,13 @@ export default function UnpaidList({ students }: UnpaidListProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700">
-            <th className="px-3 py-2 text-start font-medium text-gray-600 dark:text-gray-400">
+            <th className="px-3 py-2 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">
               {t('unpaidStudents')}
             </th>
-            <th className="px-3 py-2 text-start font-medium text-gray-600 dark:text-gray-400">
+            <th className="px-3 py-2 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">
               {t('revenue')}
             </th>
-            <th className="px-3 py-2 text-end font-medium text-gray-600 dark:text-gray-400">
+            <th className="px-3 py-2 text-end text-sm font-medium italic text-gray-500 dark:text-gray-400">
               {/* Actions */}
             </th>
           </tr>
@@ -45,7 +45,7 @@ export default function UnpaidList({ students }: UnpaidListProps) {
                 <p className="font-medium text-gray-900 dark:text-white">{student.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{student.subject}</p>
               </td>
-              <td className="px-3 py-3 text-gray-600 dark:text-gray-400">
+              <td className="px-3 py-3 font-mono italic text-gray-600 dark:text-gray-400">
                 {student.fee} {t('currency')}
               </td>
               <td className="px-3 py-3 text-end">

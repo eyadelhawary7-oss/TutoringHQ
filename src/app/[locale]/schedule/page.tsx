@@ -423,61 +423,69 @@ export default function SchedulePage() {
                 ))}
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse bg-white dark:bg-gray-800 rounded-lg shadow">
-                  <thead>
-                    <tr>
-                      <th className="w-16 p-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-r border-gray-200 dark:border-gray-700">
-                        {t('time', { defaultValue: 'Time' })}
-                      </th>
-                      {rooms.map((r) => (
-                        <th key={r.id} className="p-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-r border-gray-200 dark:border-gray-700 min-w-[120px]">
-                          {r.name}
+              <div className="relative">
+                <div
+                  className="overflow-x-auto [-webkit-overflow-scrolling:touch] shadow-[inset_-8px_0_8px_-8px_rgba(0,0,0,0.12)] dark:shadow-[inset_-8px_0_8px_-8px_rgba(255,255,255,0.06)]"
+                >
+                  <table className="w-full border-collapse bg-white dark:bg-gray-800 rounded-lg shadow">
+                    <thead>
+                      <tr>
+                        <th
+                          className="sticky left-0 z-10 w-16 min-w-[4rem] shrink-0 p-2 text-left text-xs font-medium italic text-gray-500 dark:text-gray-400 border-b border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                        >
+                          {t('time', { defaultValue: 'Time' })}
                         </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hours.map((hour) => (
-                      <tr key={hour}>
-                        <td className="p-2 text-xs text-gray-600 dark:text-gray-400 border-r border-b border-gray-200 dark:border-gray-700">
-                          {formatTime(hour * 60)}
-                        </td>
-                        {rooms.map((room) => {
-                          const slot = getSlotAt(room.id, hour);
-                          return (
-                            <td
-                              key={room.id}
-                              className="p-1 border-r border-b border-gray-200 dark:border-gray-700 min-h-[48px] align-top"
-                            >
-                              {slot && (
-                                <div
-                                  className="text-xs p-2 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-200"
-                                  title={`${slot.group_name || slot.subject_name || ''} - ${slot.room_name ?? ''} | ${formatTimeForDisplay(slot.start_time)} - ${formatTimeForDisplay(slot.end_time)}`}
-                                >
-                                  <div className="font-medium truncate">
-                                    {slot.group_name ? `${slot.group_name} - ${slot.room_name}` : `${slot.subject_name ?? ''} - ${slot.room_name ?? ''}`}
-                                  </div>
-                                  {slot.recurring && (
-                                    <span className="text-indigo-500" title={t('recurring')}>↻</span>
-                                  )}
-                                  {canEdit && (
-                                    <button
-                                      onClick={() => handleDeleteSlot(slot.id)}
-                                      className="mt-1 text-red-600 hover:underline"
-                                    >
-                                      {t('delete')}
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })}
+                        {rooms.map((r) => (
+                          <th key={r.id} className="p-2 text-left text-xs font-medium italic text-gray-500 dark:text-gray-400 border-b border-r border-gray-200 dark:border-gray-700 min-w-[120px] bg-white dark:bg-gray-800">
+                            {r.name}
+                          </th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {hours.map((hour) => (
+                        <tr key={hour}>
+                          <td
+                            className="sticky left-0 z-[5] shrink-0 p-2 text-xs font-mono italic text-gray-600 dark:text-gray-400 border-r border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                          >
+                            {formatTime(hour * 60)}
+                          </td>
+                          {rooms.map((room) => {
+                            const slot = getSlotAt(room.id, hour);
+                            return (
+                              <td
+                                key={room.id}
+                                className="p-1 border-r border-b border-gray-200 dark:border-gray-700 min-h-[48px] align-top bg-white dark:bg-gray-800"
+                              >
+                                {slot && (
+                                  <div
+                                    className="text-xs p-2 rounded bg-indigo-50 dark:bg-indigo-900/50 text-indigo-900 dark:text-indigo-200 border-s-4 border-indigo-500 dark:border-indigo-400"
+                                    title={`${slot.group_name || slot.subject_name || ''} - ${slot.room_name ?? ''} | ${formatTimeForDisplay(slot.start_time)} - ${formatTimeForDisplay(slot.end_time)}`}
+                                  >
+                                    <div className="font-medium truncate">
+                                      {slot.group_name ? `${slot.group_name} - ${slot.room_name}` : `${slot.subject_name ?? ''} - ${slot.room_name ?? ''}`}
+                                    </div>
+                                    {slot.recurring && (
+                                      <span className="text-indigo-500" title={t('recurring')}>↻</span>
+                                    )}
+                                    {canEdit && (
+                                      <button
+                                        onClick={() => handleDeleteSlot(slot.id)}
+                                        className="mt-1 text-red-600 hover:underline"
+                                      >
+                                        {t('delete')}
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {rooms.length === 0 && !isLoading && (
