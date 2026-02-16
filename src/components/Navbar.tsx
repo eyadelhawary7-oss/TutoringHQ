@@ -80,7 +80,7 @@ export default function Navbar() {
     const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
     const base = isMobile
       ? `block w-full text-start px-4 py-3 text-base font-medium rounded-lg transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`
-      : `inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800'}`;
+      : `inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${isActive ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800'}`;
     return (
       <Link key={item.key} href={item.href} className={base} onClick={() => isMobile && setMenuOpen(false)}>
         {t(item.key)}
@@ -92,32 +92,31 @@ export default function Navbar() {
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left: Logo + Brand (mobile) or Logo + Brand + Nav (desktop) */}
-          <div className="flex items-center gap-6 md:gap-8 min-w-0">
-            <div className="flex-shrink-0 flex items-center gap-2">
-              {user?.center?.logo_url ? (
-                <img src={user.center.logo_url} alt={centerName} className="h-10 w-auto object-contain" />
-              ) : (
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-bold text-white">CH</span>
-                </div>
-              )}
-              <Link href="/dashboard" className="text-lg font-bold text-gray-900 dark:text-white truncate" onClick={() => setMenuOpen(false)}>
-                CenterHQ
-              </Link>
-            </div>
-            {/* Desktop nav items */}
-            <div className="hidden md:flex md:gap-1 md:items-center md:min-w-0 overflow-x-auto">
-              {navItems.map(item => navLink(item, false))}
-            </div>
+          {/* Left: Logo + Brand */}
+          <div className="flex-shrink-0 flex items-center gap-2">
+            {user?.center?.logo_url ? (
+              <img src={user.center.logo_url} alt={centerName} className="h-10 w-auto object-contain" />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-bold text-white">CH</span>
+              </div>
+            )}
+            <Link href="/dashboard" className="text-lg font-bold text-gray-900 dark:text-white truncate" onClick={() => setMenuOpen(false)}>
+              CenterHQ
+            </Link>
           </div>
 
-          {/* Right: Desktop controls */}
-          <div className="hidden md:flex md:items-center md:gap-3 flex-shrink-0">
+          {/* Center: Desktop nav items (no overflow, no scrollbar) */}
+          <div className="hidden md:flex md:flex-1 md:items-center md:justify-center md:gap-1 md:flex-nowrap">
+            {navItems.map(item => navLink(item, false))}
+          </div>
+
+          {/* Right: Center name + role badge + language toggle */}
+          <div className="hidden md:flex md:items-center md:gap-2 flex-shrink-0">
               {isAdmin && (
                 <Link
                   href="/admin"
-                  className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md border-2 transition-colors ${
+                  className={`inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md border-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                     pathname?.startsWith('/admin')
                       ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                       : 'border-red-500 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
@@ -128,8 +127,8 @@ export default function Navbar() {
               )}
             {user && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                  <span className="truncate max-w-[120px]">{centerName}</span>
+                <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                  <span className="truncate max-w-[100px]">{centerName}</span>
                   {roleLabelKey && (
                     <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`} title={`${centerName} (${t(roleLabelKey)})`}>
                       ({t(roleLabelKey)})
