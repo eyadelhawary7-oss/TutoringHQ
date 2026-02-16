@@ -7,7 +7,6 @@ import { dbSelect, dbCount } from '@/lib/db-proxy';
 import { exportDashboardToExcel } from '@/lib/excel-export';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
-import Navbar from '@/components/Navbar';
 import AttendanceCard from '@/components/dashboard/AttendanceCard';
 import PaymentDonut from '@/components/dashboard/PaymentDonut';
 import RevenueBar from '@/components/dashboard/RevenueBar';
@@ -436,10 +435,8 @@ export default function DashboardPage() {
   // Assistant dashboard: scan CTA + payment quick actions
   if (user?.role === 'assistant' && !isLoading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-[#020617]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen">
+          <div className="max-w-7xl mx-auto p-6">
             <h1 className="text-2xl font-bold text-slate-100 mb-6">
               {t('title')}
             </h1>
@@ -456,7 +453,7 @@ export default function DashboardPage() {
               </Link>
               <Link
                 href="/payments"
-                className="block p-8 bg-[#0F172A] rounded-2xl shadow-lg border border-slate-700 hover:border-indigo-500 transition-colors"
+                className="block p-8 glass hover:border-indigo-500/50 transition-all duration-200"
               >
                 <p className="text-sm text-slate-400">{t('unpaidCount')}</p>
                 <p className="text-3xl font-bold text-slate-100 mt-1">{data.unpaidCount}</p>
@@ -468,7 +465,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </>
     );
   }
 
@@ -508,10 +504,8 @@ export default function DashboardPage() {
   })();
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-[#020617]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto p-6">
           {paymentDueBanner}
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-slate-100">
@@ -538,14 +532,14 @@ export default function DashboardPage() {
               {/* Top Stats Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <AttendanceCard count={data.todayAttendance} label={t('attendance')} />
-                <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-6">
+                <div className="glass p-6">
                   <p className="text-sm text-slate-400">{t('totalStudents')}</p>
                   <p className="text-3xl font-bold text-slate-100 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                     {locale === 'ar' ? toAr(data.totalStudents) : data.totalStudents}
                   </p>
                 </div>
                 {canViewRevenue && (
-                  <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-6">
+                  <div className="glass p-6">
                     <p className="text-sm text-slate-400">{t('collectedToday')}</p>
                     <p className="text-3xl font-bold text-green-400 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(Math.round(data.todayRevenue)) : Math.round(data.todayRevenue).toLocaleString()} <span className="text-lg">{t('currency')}</span>
@@ -553,7 +547,7 @@ export default function DashboardPage() {
                   </div>
                 )}
                 {canViewRevenue && (
-                  <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-6">
+                  <div className="glass p-6">
                     <p className="text-sm text-slate-400">{t('totalPending')}</p>
                     <p className="text-3xl font-bold text-orange-400 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(Math.round(data.totalPending)) : data.totalPending.toLocaleString()} <span className="text-lg">{t('currency')}</span>
@@ -565,25 +559,25 @@ export default function DashboardPage() {
               {/* Secondary KPIs Row */}
               {canViewRevenue && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-4">
+                  <div className="glass p-4">
                     <p className="text-xs text-slate-400">{t('weeklyTrend')}</p>
                     <p className={`text-xl font-bold mt-1 ${data.weeklyTrendPct >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {data.weeklyTrendPct >= 0 ? '↑' : '↓'}{locale === 'ar' ? toAr(Math.abs(data.weeklyTrendPct)) : Math.abs(data.weeklyTrendPct)}{t('pct')}
                     </p>
                   </div>
-                  <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-4">
+                  <div className="glass p-4">
                     <p className="text-xs text-slate-400">{t('collectionRate')}</p>
                     <p className="text-xl font-bold text-slate-100 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(data.collectionRatePct) : data.collectionRatePct}{t('pct')}
                     </p>
                   </div>
-                  <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-4">
+                  <div className="glass p-4">
                     <p className="text-xs text-slate-400">{t('newStudents')}</p>
                     <p className="text-xl font-bold text-slate-100 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(data.newStudentsCount) : data.newStudentsCount}
                     </p>
                   </div>
-                  <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-4">
+                  <div className="glass p-4">
                     <p className="text-xs text-slate-400">{t('atRisk')}</p>
                     <p className="text-xl font-bold text-red-400 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(data.atRiskCount) : data.atRiskCount}
@@ -594,7 +588,7 @@ export default function DashboardPage() {
 
               {/* Monthly Revenue Section */}
               {canViewRevenue && (
-                <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-6">
+                <div className="glass p-6">
                   <h2 className="text-lg font-semibold text-slate-100 mb-4">
                     {t('monthlyRevenue')} — {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
                   </h2>
@@ -624,13 +618,13 @@ export default function DashboardPage() {
               {/* Charts Row */}
               {canViewRevenue && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-6">
+                  <div className="glass p-6">
                     <h2 className="text-lg font-semibold text-slate-100 mb-4">
                       {t('paid')} / {t('unpaid')}
                     </h2>
                     <PaymentDonut paid={data.paidCount} unpaid={data.unpaidCount} pending={data.pendingCount} />
                   </div>
-                  <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-6">
+                  <div className="glass p-6">
                     <h2 className="text-lg font-semibold text-slate-100 mb-4">
                       {t('paymentBreakdown')}
                     </h2>
@@ -640,7 +634,7 @@ export default function DashboardPage() {
               )}
 
               {/* Trend Chart */}
-              <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-6">
+                <div className="glass p-6">
                 <h2 className="text-lg font-semibold text-slate-100 mb-4">
                   {t('trend')}
                 </h2>
@@ -648,7 +642,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Inactive Students Section */}
-              <div className="bg-[#0F172A] border border-slate-700/50 rounded-xl shadow p-6">
+                <div className="glass p-6">
                 <h2 className="text-lg font-semibold text-slate-100 mb-4">
                   {t('inactiveStudents')}
                 </h2>
@@ -662,6 +656,5 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
-    </>
   );
 }

@@ -5,6 +5,9 @@ import { NextIntlClientProvider } from 'next-intl';
 import { cairo, inter, jetbrainsMono } from '@/lib/fonts';
 import '../globals.css';
 import { UserProvider } from '@/contexts/UserContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { LayoutProvider } from '@/contexts/LayoutContext';
+import AppShell from '@/components/AppShell';
 import ServiceWorkerRegistrarWrapper from '@/components/ServiceWorkerRegistrarWrapper';
 
 export function generateStaticParams() {
@@ -35,11 +38,23 @@ export default async function LocaleLayout({
   const fontFamily = locale === 'ar' ? 'var(--font-cairo)' : 'var(--font-inter)';
 
   return (
-    <html lang={locale} dir={dir} className={fontClass} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={fontClass} suppressHydrationWarning data-theme="dark-blue">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#4f46e5" />
+        <meta name="theme-color" content="#070A14" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var t = localStorage.getItem('centerhq-theme');
+                if (t && ['dark-blue','midnight','light'].includes(t)) {
+                  document.documentElement.setAttribute('data-theme', t);
+                }
+              })();
+            `,
+          }}
+        />
       </head>
       <body
         className="antialiased"
@@ -48,7 +63,13 @@ export default async function LocaleLayout({
       >
         <NextIntlClientProvider messages={messages}>
           <UserProvider>
-            {children}
+            <ThemeProvider>
+              <LayoutProvider>
+                <AppShell>
+                  {children}
+                </AppShell>
+              </LayoutProvider>
+            </ThemeProvider>
           </UserProvider>
         </NextIntlClientProvider>
         <ServiceWorkerRegistrarWrapper />

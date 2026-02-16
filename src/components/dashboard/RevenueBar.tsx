@@ -7,11 +7,11 @@ interface RevenueBarProps {
   data: { method: string; amount: number }[];
 }
 
-const METHODS: { key: string; method: string; color: string }[] = [
-  { key: 'methodCash', method: 'cash', color: '#22c55e' },
-  { key: 'methodInstapay', method: 'instapay', color: '#6366f1' },
-  { key: 'methodVodafone', method: 'vodacash', color: '#ef4444' },
-  { key: 'methodFawry', method: 'fawry', color: '#f59e0b' },
+const METHODS: { key: string; method: string; gradient: string; color: string }[] = [
+  { key: 'methodCash', method: 'cash', gradient: 'linear-gradient(90deg, #22c55e 0%, #16a34a 100%)', color: '#22c55e' },
+  { key: 'methodInstapay', method: 'instapay', gradient: 'linear-gradient(90deg, #6366f1 0%, #4f46e5 100%)', color: '#6366f1' },
+  { key: 'methodVodafone', method: 'vodacash', gradient: 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)', color: '#ef4444' },
+  { key: 'methodFawry', method: 'fawry', gradient: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)', color: '#f59e0b' },
 ];
 
 export default function RevenueBar({ data }: RevenueBarProps) {
@@ -34,15 +34,15 @@ export default function RevenueBar({ data }: RevenueBarProps) {
           {t('noPaymentData')}
         </p>
         <div className="space-y-3">
-          {METHODS.map(({ key, method, color }) => (
+          {METHODS.map(({ key, method, gradient }) => (
             <div key={method} className="flex items-center gap-3">
               <span className="text-sm text-slate-300 w-28 flex-shrink-0">
                 {t(key as 'methodCash')}
               </span>
-              <div className="flex-1 h-6 bg-slate-700/50 rounded overflow-hidden">
+              <div className="flex-1 h-6 rounded-lg overflow-hidden bg-slate-700/30">
                 <div
-                  className="h-full rounded transition-all"
-                  style={{ width: '0%', backgroundColor: color }}
+                  className="h-full rounded-lg transition-all duration-500"
+                  style={{ width: '0%', background: gradient }}
                 />
               </div>
               <span className="text-sm font-mono text-slate-400 w-10 text-end" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
@@ -57,7 +57,7 @@ export default function RevenueBar({ data }: RevenueBarProps) {
 
   return (
     <div className="space-y-3">
-      {METHODS.map(({ key, method, color }) => {
+      {METHODS.map(({ key, method, gradient }) => {
         const amount = methodMap.get(method) || methodMap.get('vodacash') || 0;
         const pct = total > 0 ? Math.round((amount / total) * 100) : 0;
         return (
@@ -65,10 +65,10 @@ export default function RevenueBar({ data }: RevenueBarProps) {
             <span className="text-sm text-slate-300 w-28 flex-shrink-0">
               {t(key as 'methodCash')}
             </span>
-            <div className="flex-1 h-6 bg-slate-700/50 rounded overflow-hidden">
+            <div className="flex-1 h-6 rounded-lg overflow-hidden bg-slate-700/30">
               <div
-                className="h-full rounded transition-all"
-                style={{ width: `${pct}%`, backgroundColor: color }}
+                className="h-full rounded-lg transition-all duration-500"
+                style={{ width: `${pct}%`, background: gradient }}
               />
             </div>
             <span className="text-sm font-mono text-slate-400 w-10 text-end" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>

@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbUpdate } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { exportPaymentsToExcel } from '@/lib/excel-export';
-import Navbar from '@/components/Navbar';
 
 interface PaymentRecord {
   id: string;
@@ -241,9 +240,7 @@ export default function PaymentsPage() {
   }, [records]);
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'}>
-      <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('title')}</h1>
@@ -487,6 +484,5 @@ export default function PaymentsPage() {
           )}
         </div>
       </div>
-    </div>
   );
 }

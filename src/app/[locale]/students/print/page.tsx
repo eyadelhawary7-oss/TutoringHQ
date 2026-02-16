@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
-import Navbar from '@/components/Navbar';
 import QRCode from 'qrcode';
 
 interface Student {
@@ -112,11 +111,7 @@ export default function PrintStudentsPage() {
 
   return (
     <>
-      <div className="print:hidden">
-        <Navbar />
-      </div>
-
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 print:bg-white print:dark:bg-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 print:bg-white print:dark:bg-white">
         <div className="print:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">

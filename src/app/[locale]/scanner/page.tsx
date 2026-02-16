@@ -1,13 +1,10 @@
 import { useTranslations } from 'next-intl';
-import Navbar from '@/components/Navbar';
 
 export default function ScannerPage() {
   const t = useTranslations('nav');
   
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
             {t('scanner')}
@@ -16,7 +13,6 @@ export default function ScannerPage() {
             Scanner page with internationalization support.
           </p>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

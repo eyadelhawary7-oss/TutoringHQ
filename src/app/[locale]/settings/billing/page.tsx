@@ -5,7 +5,6 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
-import Navbar from '@/components/Navbar';
 import { Link } from '@/i18n/routing';
 
 interface PricingPlan {
@@ -313,19 +312,14 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin h-8 w-8 border-2 border-indigo-600 border-t-transparent rounded-full" />
         </div>
-      </>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen" dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
             <Link
@@ -827,7 +821,6 @@ export default function BillingPage() {
           </section>
         </div>
       </div>
-    </>
   );
 }
 

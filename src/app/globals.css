@@ -5,6 +5,42 @@
   --foreground: #171717;
 }
 
+/* Theme variables - Dark Blue (default) */
+[data-theme="dark-blue"] {
+  --bg-base: #070A14;
+  --bg-card: rgba(15, 23, 42, 0.6);
+  --bg-sidebar: rgba(13, 18, 33, 0.95);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Theme: Midnight */
+[data-theme="midnight"] {
+  --bg-base: #000000;
+  --bg-card: rgba(10, 10, 10, 0.8);
+  --bg-sidebar: rgba(10, 10, 10, 0.95);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.06);
+  --glass-bg: rgba(15, 15, 15, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.06);
+}
+
+/* Theme: Light */
+[data-theme="light"] {
+  --bg-base: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-sidebar: rgba(255, 255, 255, 0.9);
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.08);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -28,7 +64,86 @@ body {
   color: var(--foreground);
 }
 
-/* 
+/* Glass design system */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.glass-input {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+[data-theme="light"] .glass-input {
+  background: rgba(248, 250, 252, 0.8);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #0f172a;
+}
+
+.glass-badge {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Button styles */
+.btn-primary {
+  background: linear-gradient(to bottom, #4f46e5, #6366f1);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to bottom, #5b21b6, #6366f1);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.btn-secondary {
+  background: var(--glass-bg);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s;
+}
+
+/* Table glass styles */
+.glass-table thead tr {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.glass-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.glass-table td,
+.glass-table th {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/*
   RTL Support with Logical Properties
   Tailwind CSS 4 natively supports logical properties.
   Use these classes for RTL-aware layouts:

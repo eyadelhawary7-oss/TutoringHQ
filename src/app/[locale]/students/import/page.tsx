@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbInsert, dbUpdate, auditLog } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
-import Navbar from '@/components/Navbar';
 import FileUploadZone from '@/components/FileUploadZone';
 import ColumnMapper from '@/components/ColumnMapper';
 import { parseFile, autoDetectMapping, type ParsedData, type ColumnMapping } from '@/lib/excel-parser';
@@ -164,10 +163,8 @@ export default function ImportStudentsPage() {
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -313,6 +310,5 @@ export default function ImportStudentsPage() {
           )}
         </div>
       </div>
-    </>
   );
 }

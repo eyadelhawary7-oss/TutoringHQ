@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
-import Navbar from '@/components/Navbar';
 import { Link } from '@/i18n/routing';
 
 interface Subject {
@@ -273,13 +272,11 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-6 animate-pulse" />
             <div className="space-y-8">
-              <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+              <section className="glass p-6">
                 <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4 animate-pulse" />
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
@@ -290,14 +287,11 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      </>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('title')}</h1>
 
@@ -329,7 +323,7 @@ export default function SettingsPage() {
 
           <div className="space-y-8">
             {/* Center Info */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <section className="glass p-6">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('centerInfo')}</h2>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
@@ -371,7 +365,7 @@ export default function SettingsPage() {
             </section>
 
             {/* Subjects */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <section className="glass p-6">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('subjects')}</h2>
               
               {/* Existing subjects */}
@@ -434,7 +428,7 @@ export default function SettingsPage() {
             </section>
 
             {/* Team Members - link to dedicated page */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <section className="glass p-6">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('teamMembers')}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('manageTeamDesc', { defaultValue: 'Manage assistants & teachers' })}</p>
               <Link
@@ -446,7 +440,7 @@ export default function SettingsPage() {
             </section>
 
             {/* Scanner Config */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <section className="glass p-6">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('scanner')}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t('defaultMode')}</p>
               <div className="flex gap-3">
@@ -565,7 +559,7 @@ export default function SettingsPage() {
             </section>
 
             {/* Billing link */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <section className="glass p-6">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('billing')}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('billingDesc')}</p>
               <Link
@@ -577,7 +571,7 @@ export default function SettingsPage() {
             </section>
 
             {/* WhatsApp Integration Placeholder */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <section className="glass p-6">
               <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
                 <p className="text-amber-800 dark:text-amber-200 text-sm" dir="ltr">
                   For WhatsApp integration, contact our support team: support@centerhq.com
@@ -589,7 +583,7 @@ export default function SettingsPage() {
             </section>
 
             {/* Account / Logout */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <section className="glass p-6">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                 {t('account', { defaultValue: 'Account' })}
               </h2>
@@ -603,6 +597,5 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </>
   );
 }

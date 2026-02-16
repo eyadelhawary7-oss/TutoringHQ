@@ -38,7 +38,7 @@ export default function LanguageToggle() {
       <div className="relative inline-block">
         <select
           disabled
-          className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 pe-8 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+          className="appearance-none glass-input rounded-lg px-3 py-2 pe-8 text-sm font-medium text-slate-200 cursor-pointer disabled:opacity-50"
         >
           <option>AR</option>
         </select>
@@ -52,7 +52,7 @@ export default function LanguageToggle() {
         value={locale}
         onChange={(e) => handleLocaleChange(e.target.value as 'ar' | 'en')}
         disabled={isPending}
-        className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 pe-8 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+        className="appearance-none glass-input rounded-lg px-3 py-2 pe-8 text-sm font-medium text-slate-200 cursor-pointer disabled:opacity-50"
         aria-label="Select language"
       >
         <option value="ar">AR</option>

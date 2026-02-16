@@ -10,61 +10,76 @@ interface PaymentDonutProps {
   pending?: number;
 }
 
-const COLOR_MAP: Record<string, string> = {
-  paid: '#10b981',
-  pending: '#eab308',
-  unpaid: '#ef4444',
-};
-
 export default function PaymentDonut({ paid, unpaid, pending = 0 }: PaymentDonutProps) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
 
   const data = [
-    { name: t('paid'), value: paid, key: 'paid' },
-    { name: t('unpaid'), value: unpaid, key: 'unpaid' },
-    { name: t('pending'), value: pending, key: 'pending' },
+    { name: t('paid'), value: paid, key: 'paid', fill: 'url(#paidGradient)' },
+    { name: t('unpaid'), value: unpaid, key: 'unpaid', fill: 'url(#unpaidGradient)' },
+    { name: t('pending'), value: pending, key: 'pending', fill: 'url(#pendingGradient)' },
   ].filter(d => d.value > 0);
 
   const total = paid + unpaid + pending;
   const paidPct = total > 0 ? Math.round((paid / total) * 100) : 0;
+  const pctDisplay = locale === 'ar' ? `%${toAr(paidPct)}` : `${paidPct}%`;
 
   if (paid === 0 && unpaid === 0 && pending === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-slate-400">
+      <div className="flex items-center justify-center h-[250px] text-slate-400">
         <p className="text-sm">---</p>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full" style={{ height: 280 }}>
-      <ResponsiveContainer width="100%" height={280}>
+    <div className="relative w-full" style={{ height: 250 }}>
+      <ResponsiveContainer width="100%" height={250}>
         <PieChart>
+          <defs>
+            <linearGradient id="paidGradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#34d399" />
+              <stop offset="100%" stopColor="#10b981" />
+            </linearGradient>
+            <linearGradient id="unpaidGradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#f87171" />
+              <stop offset="100%" stopColor="#ef4444" />
+            </linearGradient>
+            <linearGradient id="pendingGradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#fcd34d" />
+              <stop offset="100%" stopColor="#eab308" />
+            </linearGradient>
+            <filter id="donutShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.2" />
+            </filter>
+          </defs>
           <Pie
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={100}
-            paddingAngle={5}
+            innerRadius={55}
+            outerRadius={90}
+            paddingAngle={4}
             dataKey="value"
             label={false}
+            isAnimationActive
+            animationBegin={0}
+            animationDuration={600}
           >
             {data.map((entry) => (
-              <Cell key={entry.key} fill={COLOR_MAP[entry.key]} />
+              <Cell key={entry.key} fill={entry.fill} filter="url(#donutShadow)" />
             ))}
           </Pie>
           <Tooltip
-            contentStyle={{ backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px' }}
+            contentStyle={{ backgroundColor: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px' }}
             labelStyle={{ color: '#e2e8f0' }}
           />
           <Legend wrapperStyle={{ color: '#e2e8f0' }} />
         </PieChart>
       </ResponsiveContainer>
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span className="text-4xl font-bold text-slate-100" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
-          %{locale === 'ar' ? toAr(paidPct) : paidPct}
+        <span className="text-3xl font-bold text-slate-100" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+          {pctDisplay}
         </span>
       </div>
     </div>

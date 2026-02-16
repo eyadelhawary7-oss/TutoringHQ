@@ -1,14 +1,11 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import Navbar from '@/components/Navbar';
 
 export default function NotFound() {
   const t = useTranslations('nav');
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
           <h1 className="text-6xl font-bold text-gray-900 dark:text-white mb-4">
             404
@@ -23,7 +20,6 @@ export default function NotFound() {
             {t('dashboard')}
           </Link>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

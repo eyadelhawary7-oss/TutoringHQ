@@ -5,7 +5,6 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
-import Navbar from '@/components/Navbar';
 import { Link } from '@/i18n/routing';
 import {
   BarChart,
@@ -627,8 +626,7 @@ export default function AdminPage() {
 
   return (
     <>
-      <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen" dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Top bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">

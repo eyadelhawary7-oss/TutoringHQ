@@ -13,11 +13,11 @@ import {
   markPaidTodayOffline,
 } from '@/lib/db';
 import { syncQueuedScans } from '@/lib/sync';
-import Navbar from '@/components/Navbar';
 import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
 import { useUser } from '@/contexts/UserContext';
+import { useLayout } from '@/contexts/LayoutContext';
 
 type ScanMode = 'camera' | 'bluetooth' | 'manual';
 
@@ -57,6 +57,7 @@ export default function ScanPage() {
   const tSync = useTranslations('sync');
   const tCommon = useTranslations('common');
   const { user, hasPermission } = useUser();
+  const { setHideShell } = useLayout();
 
   const [mode, setMode] = useState<ScanMode>('camera');
   const [manualIdInput, setManualIdInput] = useState('');
@@ -95,6 +96,11 @@ export default function ScanPage() {
   }, [centerId]);
 
   const canAllowLateEntry = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_allow_late_entry');
+
+  useEffect(() => {
+    setHideShell(!!scannedStudent);
+    return () => setHideShell(false);
+  }, [scannedStudent, setHideShell]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -590,8 +596,7 @@ export default function ScanPage() {
 
   return (
     <>
-      <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">

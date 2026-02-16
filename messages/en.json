@@ -11,6 +11,8 @@
     "settings": "Settings",
     "admin": "ADMIN",
     "limitedAccess": "(Limited)",
+    "switchToWebMode": "Switch to Web Mode",
+    "switchToAppMode": "Switch to App Mode",
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
     "roleAssistant": "Assistant",

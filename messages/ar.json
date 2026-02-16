@@ -11,6 +11,8 @@
     "settings": "الإعدادات",
     "admin": "الإدارة",
     "limitedAccess": "(محدود)",
+    "switchToWebMode": "التبديل لوضع الويب",
+    "switchToAppMode": "التبديل لوضع التطبيق",
     "roleOwner": "مالك",
     "roleAdmin": "أدمن",
     "roleAssistant": "مساعد",
