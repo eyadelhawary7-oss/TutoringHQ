@@ -33,7 +33,7 @@ export const signupSchema = z.object({
   centerName: z.string().min(1, 'Center name is required').max(200),
   phone: egyptianPhoneRequired,
   email: z.string().email().optional().or(z.literal('')),
-  plan: z.enum(['starter', 'pro', 'pro_plus', 'enterprise']).default('starter'),
+  plan: z.enum(['starter', 'pro', 'business', 'enterprise']).default('starter'),
   termsAccepted: z.boolean().refine((v) => v === true, 'Terms must be accepted'),
   referralCode: z.string().optional(),
 });

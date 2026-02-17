@@ -9,11 +9,11 @@ export type PermissionKey = 'can_scan' | 'can_view_payments' | 'can_record_payme
 
 interface UserProfile {
   id: string;
-  center_id: string;
+  center_id?: string | null;
   role: UserRole;
   name: string | null;
   phone: string | null;
-  center?: { logo_url?: string; name?: string } | null;
+  center?: { logo_url?: string; name?: string; plan?: string } | null;
   can_scan?: boolean;
   can_view_payments?: boolean;
   can_record_payments?: boolean;
@@ -62,19 +62,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const loadUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          setLoading(false);
+          if (!cancelled) setLoading(false);
           return;
         }
 
         const res = await fetch('/api/me', {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
+        if (cancelled) return;
         const data = await res.json();
 
+        if (cancelled) return;
         if (data?.user) {
           setUser(data.user);
           if (data.user.role === 'owner' || data.user.role === 'admin') {
@@ -100,13 +103,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (err) {
-        console.error('Failed to load user profile:', err);
+        if (cancelled) return;
+        const isNetworkError = err instanceof TypeError && (err.message === 'Failed to fetch' || err.message?.includes('fetch'));
+        if (isNetworkError) {
+          console.warn('User profile unavailable (network). Are you offline or is the dev server running?');
+        } else {
+          console.error('Failed to load user profile:', err);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadUser();
+    return () => { cancelled = true; };
   }, []);
 
   const hasPermission = (key: PermissionKey) => permissions[key] ?? false;

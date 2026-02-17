@@ -355,9 +355,9 @@ export default function SchedulePage() {
     <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-text-primary">
               {scheduleTitle}
-              {showViewOnly && <span className="text-base font-normal text-gray-500 dark:text-gray-400 ml-2">{t('viewOnly')}</span>}
+              {showViewOnly && <span className="text-base font-normal text-text-secondary ml-2">{t('viewOnly')}</span>}
             </h1>
             <div className="flex gap-2">
               {canEdit && (
@@ -368,7 +368,7 @@ export default function SchedulePage() {
                       setEditEndHour(scheduleEndHour);
                       setShowHoursModal(true);
                     }}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-text-primary rounded-lg hover:bg-bg-secondary"
                   >
                     {t('workingHours')}
                   </button>
@@ -410,7 +410,7 @@ export default function SchedulePage() {
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       selectedDay === label
                         ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50'
-                        : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/5'
+                        : 'bg-white/5 text-[var(--text-secondary)] hover:bg-white/10 border border-[var(--border-color)]'
                     }`}
                   >
                     {t(label.toLowerCase() as 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')}
@@ -422,16 +422,16 @@ export default function SchedulePage() {
                 <div
                   className="overflow-x-auto [-webkit-overflow-scrolling:touch] shadow-[inset_-8px_0_8px_-8px_rgba(0,0,0,0.12)] dark:shadow-[inset_-8px_0_8px_-8px_rgba(255,255,255,0.06)]"
                 >
-                  <table className="w-full border-collapse bg-white dark:bg-gray-800 rounded-lg shadow">
+                  <table className="w-full border-collapse glass rounded-lg shadow">
                     <thead>
                       <tr>
                         <th
-                          className="sticky left-0 z-10 w-16 min-w-[4rem] shrink-0 p-2 text-left text-xs font-medium italic text-gray-500 dark:text-gray-400 border-b border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                          className="sticky left-0 z-10 w-16 min-w-[4rem] shrink-0 p-2 text-left text-xs font-medium italic text-text-secondary border-b border-r border-gray-200 dark:border-gray-700 glass"
                         >
                           {t('time', { defaultValue: 'Time' })}
                         </th>
                         {rooms.map((r) => (
-                          <th key={r.id} className="p-2 text-left text-xs font-medium italic text-gray-500 dark:text-gray-400 border-b border-r border-gray-200 dark:border-gray-700 min-w-[120px] bg-white dark:bg-gray-800">
+                          <th key={r.id} className="p-2 text-left text-xs font-medium italic text-text-secondary border-b border-r border-gray-200 dark:border-gray-700 min-w-[120px] glass">
                             {r.name}
                           </th>
                         ))}
@@ -441,7 +441,7 @@ export default function SchedulePage() {
                       {hours.map((hour) => (
                         <tr key={hour}>
                           <td
-                            className="sticky left-0 z-[5] shrink-0 p-2 text-xs font-mono italic text-gray-600 dark:text-gray-400 border-r border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                            className="sticky left-0 z-[5] shrink-0 p-2 text-xs font-mono italic text-text-secondary border-r border-b border-gray-200 dark:border-gray-700 glass"
                           >
                             {formatTime(hour * 60)}
                           </td>
@@ -450,7 +450,7 @@ export default function SchedulePage() {
                             return (
                               <td
                                 key={room.id}
-                                className="p-1 border-r border-b border-gray-200 dark:border-gray-700 min-h-[48px] align-top bg-white dark:bg-gray-800"
+                                className="p-1 border-r border-b border-gray-200 dark:border-gray-700 min-h-[48px] align-top glass"
                               >
                                 {slot && (
                                   <div
@@ -484,7 +484,7 @@ export default function SchedulePage() {
               </div>
 
               {rooms.length === 0 && !isLoading && (
-                <p className="text-gray-500 dark:text-gray-400 py-8">{t('noRooms')}</p>
+                <p className="text-text-secondary py-8">{t('noRooms')}</p>
               )}
             </>
           )}
@@ -493,15 +493,15 @@ export default function SchedulePage() {
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('addSlot')}</h2>
+          <div className="glass rounded-xl shadow-xl max-w-md w-full p-6">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">{t('addSlot')}</h2>
             <form onSubmit={handleAddSlot} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('day')}</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('day')}</label>
                 <select
                   value={formDay}
                   onChange={(e) => setFormDay(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                 >
                   {DAY_KEYS.map((label) => (
                     <option key={label} value={label}>{t(label.toLowerCase() as 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')}</option>
@@ -509,12 +509,12 @@ export default function SchedulePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subject')}</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('subject')}</label>
                 <select
                   value={formSubject}
                   onChange={(e) => { setFormSubject(e.target.value); setFormGroup(''); }}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                 >
                   <option value="">{tCommon('select')}</option>
                   {subjects.map((s) => (
@@ -523,13 +523,13 @@ export default function SchedulePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('group')}</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('group')}</label>
                 <select
                   value={formGroup}
                   onChange={(e) => setFormGroup(e.target.value)}
                   required
                   disabled={!formSubject}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary disabled:opacity-50"
                 >
                   <option value="">{formSubject ? tCommon('select') : '—'}</option>
                   {filteredGroups.map((g) => (
@@ -538,12 +538,12 @@ export default function SchedulePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('room')}</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('room')}</label>
                 <select
                   value={formRoom}
                   onChange={(e) => setFormRoom(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                 >
                   <option value="">{tCommon('select')}</option>
                   {rooms.map((r) => (
@@ -553,21 +553,21 @@ export default function SchedulePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('startTime')}</label>
+                  <label className="block text-sm font-medium text-text-primary mb-1">{t('startTime')}</label>
                   <input
                     type="time"
                     value={formStart}
                     onChange={(e) => setFormStart(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('endTime')}</label>
+                  <label className="block text-sm font-medium text-text-primary mb-1">{t('endTime')}</label>
                   <input
                     type="time"
                     value={formEnd}
                     onChange={(e) => setFormEnd(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                   />
                 </div>
               </div>
@@ -578,7 +578,7 @@ export default function SchedulePage() {
                   onChange={(e) => setFormRecurring(e.target.checked)}
                   className="rounded border-gray-300 dark:border-gray-600"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">{t('recurring')}</span>
+                <span className="text-sm text-text-primary">{t('recurring')}</span>
               </label>
               {(conflictError || slotError) && (
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
@@ -606,7 +606,7 @@ export default function SchedulePage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                  className="flex-1 py-2 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-secondary"
                 >
                   {t('cancel')}
                 </button>
@@ -619,29 +619,29 @@ export default function SchedulePage() {
       {/* Working Hours Modal */}
       {showHoursModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('workingHours')}</h2>
+          <div className="glass rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">{t('workingHours')}</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('startHour')}</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('startHour')}</label>
                 <input
                   type="number"
                   min="0"
                   max="23"
                   value={editStartHour}
                   onChange={(e) => setEditStartHour(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('endHour')}</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('endHour')}</label>
                 <input
                   type="number"
                   min="1"
                   max="24"
                   value={editEndHour}
                   onChange={(e) => setEditEndHour(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                 />
               </div>
               <div className="flex gap-3">
@@ -669,7 +669,7 @@ export default function SchedulePage() {
                 </button>
                 <button
                   onClick={() => setShowHoursModal(false)}
-                  className="flex-1 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg"
+                  className="flex-1 py-2 bg-bg-tertiary text-text-primary rounded-lg"
                 >
                   {t('cancel')}
                 </button>

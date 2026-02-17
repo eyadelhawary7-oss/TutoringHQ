@@ -599,12 +599,12 @@ export default function ScanPage() {
     <div className="min-h-screen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-text-primary">
               {t('title')}
             </h1>
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full ${syncIndicatorColor}`} />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-text-secondary">
                 {isOnline ? tSync('online') : tSync('offline')}
               </span>
               {pendingCount > 0 && (
@@ -615,13 +615,13 @@ export default function ScanPage() {
             </div>
           </div>
 
-          <div className="flex bg-white dark:bg-gray-800 rounded-xl shadow p-1 mb-6 max-w-lg mx-auto">
+          <div className="flex glass rounded-xl shadow p-1 mb-6 max-w-lg mx-auto">
             <button
               onClick={() => setMode('camera')}
               className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
                 mode === 'camera'
                   ? 'bg-indigo-600 text-white shadow'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               {t('cameraMode')}
@@ -631,7 +631,7 @@ export default function ScanPage() {
               className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
                 mode === 'bluetooth'
                   ? 'bg-indigo-600 text-white shadow'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               {t('bluetoothMode')}
@@ -641,7 +641,7 @@ export default function ScanPage() {
               className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
                 mode === 'manual'
                   ? 'bg-indigo-600 text-white shadow'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               {t('manualIdMode')}
@@ -655,9 +655,9 @@ export default function ScanPage() {
           )}
 
           {mode === 'manual' && !scannedStudent && (
-            <div className="max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-xl shadow space-y-4">
+            <div className="max-w-md mx-auto p-6 glass rounded-xl shadow space-y-4">
               <div>
-                <label htmlFor="manual-id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="manual-id" className="block text-sm font-medium text-text-primary mb-2">
                   {t('manualIdPlaceholder')}
                 </label>
                 <input
@@ -673,7 +673,7 @@ export default function ScanPage() {
                     }
                   }}
                   placeholder="STU-00042 or 42"
-                  className="w-full px-4 py-3 text-lg border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-4 py-3 text-lg border border-gray-300 dark:border-gray-600 rounded-xl bg-bg-tertiary text-text-primary focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   dir="ltr"
                   autoFocus
                 />

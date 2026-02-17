@@ -124,8 +124,9 @@ export default function ImportStudentsPage() {
         if (insertError) throw insertError;
 
         // Generate QR codes for inserted students
-        if (inserted) {
-          for (const student of inserted) {
+        const insertedList = (inserted || []) as { id: string }[];
+        if (insertedList.length > 0) {
+          for (const student of insertedList) {
             try {
               const qrDataURL = await QRCode.toDataURL(student.id, {
                 width: 300,
@@ -138,7 +139,7 @@ export default function ImportStudentsPage() {
               // QR generation failure is non-critical
             }
           }
-          insertedTotal += inserted.length;
+          insertedTotal += insertedList.length;
         }
       }
 
@@ -167,7 +168,7 @@ export default function ImportStudentsPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-text-primary">
               {t('title')}
             </h1>
             <Link
@@ -186,12 +187,12 @@ export default function ImportStudentsPage() {
           {/* Step: Preview */}
           {step === 'preview' && parsedData && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+              <div className="bg-bg-primary rounded-xl shadow p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                  <h2 className="text-lg font-semibold text-text-primary">
                     {t('preview')}
                   </h2>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-text-secondary">
                     {t('rowsFound', { count: parsedData.rows.length })}
                   </span>
                 </div>
@@ -201,7 +202,7 @@ export default function ImportStudentsPage() {
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-700">
                         {parsedData.headers.map((header) => (
-                          <th key={header} className="px-3 py-2 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">
+                          <th key={header} className="px-3 py-2 text-start text-sm font-medium italic text-text-secondary">
                             {header}
                           </th>
                         ))}
@@ -211,7 +212,7 @@ export default function ImportStudentsPage() {
                       {parsedData.rows.slice(0, 10).map((row, i) => (
                         <tr key={i} className="border-b border-gray-100 dark:border-gray-700/50">
                           {parsedData.headers.map((header) => (
-                            <td key={header} className="px-3 py-2 text-gray-800 dark:text-gray-200">
+                            <td key={header} className="px-3 py-2 text-text-primary">
                               {String(row[header] || '')}
                             </td>
                           ))}
@@ -222,7 +223,7 @@ export default function ImportStudentsPage() {
                 </div>
 
                 {parsedData.rows.length > 10 && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+                  <p className="text-sm text-text-secondary mt-2 text-center">
                     +{parsedData.rows.length - 10} ...
                   </p>
                 )}
@@ -240,7 +241,7 @@ export default function ImportStudentsPage() {
           {/* Step: Column Mapping */}
           {step === 'mapping' && parsedData && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+              <div className="bg-bg-primary rounded-xl shadow p-6">
                 <ColumnMapper
                   headers={parsedData.headers}
                   mapping={mapping}
@@ -255,7 +256,7 @@ export default function ImportStudentsPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('preview')}
-                  className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 text-text-primary font-medium rounded-lg hover:bg-bg-secondary transition-colors"
                 >
                   {tCommon('back')}
                 </button>
@@ -277,7 +278,7 @@ export default function ImportStudentsPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
-              <p className="text-lg text-gray-700 dark:text-gray-300">{t('importing')}</p>
+              <p className="text-lg text-text-primary">{t('importing')}</p>
             </div>
           )}
 
@@ -289,7 +290,7 @@ export default function ImportStudentsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              <h2 className="text-2xl font-bold text-text-primary mb-2">
                 {t('success', { count: importedCount })}
               </h2>
               <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">

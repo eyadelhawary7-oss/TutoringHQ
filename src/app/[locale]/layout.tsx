@@ -2,6 +2,8 @@ import { routing } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
 import { getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { cairo, inter, jetbrainsMono } from '@/lib/fonts';
 import '../globals.css';
 import { UserProvider } from '@/contexts/UserContext';
@@ -40,6 +42,8 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir} className={fontClass} suppressHydrationWarning data-theme="dark-blue">
       <head>
+        <link rel="icon" href="/logo-icon-64.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo-icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#070A14" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
@@ -73,6 +77,8 @@ export default async function LocaleLayout({
           </UserProvider>
         </NextIntlClientProvider>
         <ServiceWorkerRegistrarWrapper />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

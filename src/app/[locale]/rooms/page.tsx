@@ -133,7 +133,7 @@ export default function RoomsPage() {
   return (
     <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('title')}</h1>
+          <h1 className="text-2xl font-bold text-text-primary mb-6">{t('title')}</h1>
 
           {isLoading ? (
             <div className="text-center py-16">
@@ -144,15 +144,15 @@ export default function RoomsPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              <form onSubmit={handleAddRoom} className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 max-w-md">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('createRoom')}</h2>
+              <form onSubmit={handleAddRoom} className="bg-bg-primary rounded-xl shadow p-6 max-w-md">
+                <h2 className="text-lg font-semibold text-text-primary mb-4">{t('createRoom')}</h2>
                 <div className="flex gap-3">
                   <input
                     type="text"
                     value={newRoomName}
                     onChange={(e) => setNewRoomName(e.target.value)}
                     placeholder={t('roomName')}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                     required
                   />
                   <input
@@ -161,7 +161,7 @@ export default function RoomsPage() {
                     value={newRoomCapacity}
                     onChange={(e) => setNewRoomCapacity(e.target.value)}
                     placeholder={t('capacity')}
-                    className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                   />
                 </div>
                 <button
@@ -178,13 +178,13 @@ export default function RoomsPage() {
                   {saveError}
                 </div>
               )}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('allRooms')}</h2>
+              <div className="bg-bg-primary rounded-xl shadow p-6">
+                <h2 className="text-lg font-semibold text-text-primary mb-4">{t('allRooms')}</h2>
                 <div className="flex flex-col gap-3">
                   {rooms.map((r) => (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50"
+                      className="flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-bg-secondary"
                     >
                       {editingId === r.id ? (
                         <div className="flex-1 flex flex-wrap gap-2">
@@ -192,7 +192,7 @@ export default function RoomsPage() {
                             type="text"
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
-                            className="flex-1 min-w-0 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:text-white"
+                            className="flex-1 min-w-0 px-2 py-1 text-sm border rounded bg-bg-tertiary text-text-primary"
                           />
                           <input
                             type="number"
@@ -200,23 +200,23 @@ export default function RoomsPage() {
                             value={editCapacity}
                             onChange={(e) => setEditCapacity(e.target.value)}
                             placeholder={t('capacity')}
-                            className="w-20 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:text-white"
+                            className="w-20 px-2 py-1 text-sm border rounded bg-bg-tertiary text-text-primary"
                           />
                           <button onClick={handleSaveEdit} className="text-green-600 dark:text-green-400 text-sm font-medium">
                             {tCommon('save')}
                           </button>
-                          <button onClick={cancelEdit} className="text-gray-500 dark:text-gray-400 text-sm">
+                          <button onClick={cancelEdit} className="text-text-secondary text-sm">
                             {tCommon('cancel')}
                           </button>
                         </div>
                       ) : (
                         <>
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-bold text-xl font-mono text-gray-900 dark:text-white truncate">
+                            <span className="font-bold text-xl font-mono text-text-primary truncate">
                               {r.name}
                             </span>
                             {r.capacity != null && (
-                              <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">
+                              <span className="text-sm text-text-secondary shrink-0">
                                 ({t('capacity')}: {Number(r.capacity).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en')})
                               </span>
                             )}
@@ -241,7 +241,7 @@ export default function RoomsPage() {
                   ))}
                 </div>
                 {rooms.length === 0 && (
-                  <p className="text-gray-500 dark:text-gray-400 py-4">{t('noRooms')}</p>
+                  <p className="text-text-secondary py-4">{t('noRooms')}</p>
                 )}
               </div>
             </div>

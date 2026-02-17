@@ -24,7 +24,7 @@ export default function ThemeToggle() {
           className={`p-2 rounded-md transition-all duration-200 ${
             theme === t.id
               ? 'bg-indigo-500/50 text-white'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5'
           }`}
           aria-label={t.label}
         >

@@ -52,7 +52,7 @@ export default function FileUploadZone({ onFileSelected, isLoading }: FileUpload
         border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200
         ${isDragOver
           ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950'
-          : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+          : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 hover:bg-bg-secondary'
         }
         ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
       `}
@@ -79,10 +79,10 @@ export default function FileUploadZone({ onFileSelected, isLoading }: FileUpload
           <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{fileName}</p>
         ) : (
           <>
-            <p className="text-gray-700 dark:text-gray-300 font-medium">
+            <p className="text-text-primary font-medium">
               {t('dragDrop')}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-text-secondary">
               {t('acceptedFormats')}
             </p>
           </>

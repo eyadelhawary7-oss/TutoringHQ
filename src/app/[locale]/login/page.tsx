@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
@@ -126,21 +127,19 @@ export default function LoginPage() {
           {/* Header / Logo */}
           <div className="text-center mb-8">
             <Link href="/" className="inline-block mb-4">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
-                <span className="text-2xl font-bold text-white">CH</span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <Image src="/logo-icon.png" alt="CenterHQ" width={64} height={64} className="w-16 h-16 mx-auto mb-3 object-contain" />
+              <h1 className="text-3xl font-bold text-text-primary">
                 CenterHQ
               </h1>
             </Link>
           </div>
 
           {/* Login Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+          <div className="glass rounded-2xl shadow-xl p-8">
             {/* Phone OTP Section */}
             {step === 'phone' ? (
               <>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 text-center">
+                <h2 className="text-xl font-bold text-text-primary mb-6 text-center">
                   {t('phoneTitle')}
                 </h2>
                 <PhoneInput
@@ -176,7 +175,7 @@ export default function LoginPage() {
           <div className="text-center mt-6">
             <Link
               href="/"
-              className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              className="text-sm text-text-secondary hover:text-text-primary"
             >
               ← {t('backToHome')}
             </Link>

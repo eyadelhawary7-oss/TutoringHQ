@@ -76,10 +76,10 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">
+        <h3 className="text-lg font-semibold text-text-primary mb-1">
           {t('otpTitle')}
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400" dir="ltr">
+        <p className="text-sm text-text-secondary" dir="ltr">
           {phone}
         </p>
       </div>
@@ -96,7 +96,7 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={index === 0 ? handlePaste : undefined}
-            className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors"
+            className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-bg-tertiary text-text-primary transition-colors"
           />
         ))}
       </div>
@@ -127,7 +127,7 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
           type="button"
           disabled={resendTimer > 0}
           onClick={handleResend}
-          className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:text-gray-400 disabled:cursor-not-allowed"
+          className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:text-text-tertiary disabled:cursor-not-allowed"
         >
           {resendTimer > 0 ? `${t('resend')} (${resendTimer}s)` : t('resend')}
         </button>

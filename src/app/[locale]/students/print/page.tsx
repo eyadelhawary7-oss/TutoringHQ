@@ -52,7 +52,7 @@ export default function PrintStudentsPage() {
         order: { column: 'name' },
       });
 
-      console.log('Students fetched:', (data || []).length, error);
+      console.log('Students fetched:', Array.isArray(data) ? data.length : 0, error);
 
       if (data && Array.isArray(data)) {
         setStudents(data as Student[]);
@@ -111,17 +111,17 @@ export default function PrintStudentsPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 print:bg-white print:dark:bg-white">
+    <div className="min-h-screen bg-bg-secondary print:bg-white">
         <div className="print:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-text-primary">
               {t('title')}
             </h1>
             <div className="flex gap-3 items-center">
               <select
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm dark:bg-gray-700 dark:text-white"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-bg-tertiary text-text-primary"
               >
                 <option value="all">{t('allSubjects')}</option>
                 {subjects.map((subject) => (
@@ -136,7 +136,7 @@ export default function PrintStudentsPage() {
               </button>
             </div>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <p className="text-sm text-text-secondary mb-4">
             {t('cardsPerPage')} — {readyStudents.length} {tStudents('title')}
           </p>
         </div>
@@ -150,7 +150,7 @@ export default function PrintStudentsPage() {
           </div>
         ) : readyStudents.length === 0 ? (
           <div className="text-center py-16 print:hidden">
-            <p className="text-gray-600 dark:text-gray-400">{t('noCards')}</p>
+            <p className="text-text-secondary">{t('noCards')}</p>
           </div>
         ) : (
           <div className="printable-cards max-w-[210mm] mx-auto px-4 print:px-[10mm] py-8 print:py-0">
@@ -158,7 +158,7 @@ export default function PrintStudentsPage() {
               {readyStudents.map((student) => (
                 <div
                   key={student.id}
-                  className="border border-gray-300 rounded-lg p-4 print:p-[3mm] print:border-gray-400 flex flex-col items-center justify-center text-center bg-white dark:bg-gray-800 print:dark:bg-white"
+                  className="border border-gray-300 rounded-lg p-4 print:p-[3mm] print:border-gray-400 flex flex-col items-center justify-center text-center bg-bg-primary print:bg-white"
                   style={{
                     width: '90mm',
                     height: '55mm',
@@ -173,16 +173,16 @@ export default function PrintStudentsPage() {
                   ) : (
                     <div className="text-xs font-bold text-indigo-600 print:text-indigo-600 mb-1">CenterHQ</div>
                   )}
-                  <p className="text-base font-bold text-gray-900 print:text-gray-900 dark:text-white print:dark:text-gray-900 mb-0.5 line-clamp-1" style={{ fontSize: '16px' }}>
+                  <p className="text-base font-bold text-text-primary print:text-gray-900 mb-0.5 line-clamp-1" style={{ fontSize: '16px' }}>
                     {student.name}
                   </p>
                   {student.subject && (
-                    <p className="text-xs text-gray-600 print:text-gray-600 dark:text-gray-400 print:dark:text-gray-600 mb-1">
+                    <p className="text-xs text-text-secondary print:text-gray-600 mb-1">
                       {student.subject}
                     </p>
                   )}
                   {student.student_number && (
-                    <p className="text-xs text-gray-500 print:text-gray-600 mb-2" dir="ltr">
+                    <p className="text-xs text-text-secondary print:text-gray-600 mb-2" dir="ltr">
                       {student.student_number}
                     </p>
                   )}

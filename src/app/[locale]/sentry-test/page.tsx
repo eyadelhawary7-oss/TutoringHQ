@@ -6,9 +6,9 @@ export default function SentryTestPage() {
   }
 
   return (
-    <div dir="ltr" className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-sm w-full">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+    <div dir="ltr" className="min-h-screen flex items-center justify-center bg-bg-secondary">
+      <div className="bg-bg-primary rounded-xl shadow-lg p-8 max-w-sm w-full">
+        <h1 className="text-2xl font-bold text-text-primary mb-6">
           Sentry Test
         </h1>
         <button

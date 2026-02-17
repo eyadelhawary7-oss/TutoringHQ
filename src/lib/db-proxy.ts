@@ -28,20 +28,54 @@ async function getAccessToken(): Promise<string | null> {
   return session?.access_token || null;
 }
 
+const DEBUG_DB_PROXY = typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || (window as { __DEBUG_DB?: boolean }).__DEBUG_DB);
+
 async function dbRequest(body: Record<string, unknown>) {
   const token = await getAccessToken();
   if (!token) throw new Error('Not authenticated');
 
-  const res = await fetch('/api/db', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
+  const url = '/api/db';
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+  const requestBody = JSON.stringify(body);
 
-  const result = await res.json();
+  if (DEBUG_DB_PROXY) {
+    console.log('[db-proxy] Request:', { url, method: 'POST', headers: { ...headers, Authorization: '[REDACTED]' }, body: requestBody });
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'POST', headers, body: requestBody });
+  } catch (fetchErr) {
+    if (DEBUG_DB_PROXY) {
+      console.error('[db-proxy] Fetch failed:', fetchErr);
+      console.error('[db-proxy] Full stack:', (fetchErr as Error)?.stack);
+    }
+    throw fetchErr;
+  }
+
+  if (DEBUG_DB_PROXY) {
+    console.log('[db-proxy] Response:', { status: res.status, statusText: res.statusText, headers: Object.fromEntries(res.headers.entries()) });
+  }
+
+  let result: { data?: unknown; error?: string | { message?: string }; count?: number };
+  try {
+    result = await res.json();
+  } catch (parseErr) {
+    const text = await res.text().catch(() => '');
+    if (DEBUG_DB_PROXY) {
+      console.error('[db-proxy] JSON parse failed:', parseErr);
+      console.error('[db-proxy] Response body:', text);
+    }
+    throw new Error(`Invalid JSON response: ${text.slice(0, 200)}`);
+  }
+
+  if (DEBUG_DB_PROXY) {
+    console.log('[db-proxy] Parsed result:', { hasData: !!result?.data, error: result?.error, count: result?.count });
+  }
+
   if (result.error) {
     const err = new Error(typeof result.error === 'string' ? result.error : (result.error?.message ?? 'Unknown error'));
     return { data: null, error: err, count: result.count };

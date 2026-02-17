@@ -1,38 +1,128 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getAdminContext } from '@/lib/admin-auth';
+import { PLAN_STUDENT_LIMITS } from '@/lib/plans';
 
 const PLAN_MRR: Record<string, number> = {
-  starter: 4000,
-  pro: 7200,
-  pro_plus: 8000,
+  starter: 2000,
+  pro: 4500,
+  business: 6500,
   enterprise: 9000,
-  payg: 0,
   top_centers: 0,
+  payg: 0,
 };
 
 export async function GET(request: Request) {
+  console.log('==========================================');
+  console.log('[admin/overview] 🔍 Route called');
+  console.log('==========================================');
+
   try {
-    const ctx = await getAdminContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Try cookie-based auth first (auth-helpers)
+    let supabaseAdmin: SupabaseClient | null = null;
+    let internalRole = 'internal_viewer';
 
-    const { supabaseAdmin, internalRole } = ctx;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    const { data: centers, error: centersError } = await supabaseAdmin
-      .from('centers')
-      .select('id, name, plan, status, created_at')
-      .neq('status', 'deleted');
-
-    if (centersError) {
-      return NextResponse.json({ error: centersError.message }, { status: 500 });
+    if (supabaseUrl && supabaseAnonKey) {
+      const cookieStore = await cookies();
+      const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll().map((c) => ({ name: c.name, value: c.value }));
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          },
+        },
+      });
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('[admin/overview] 🔐 Session check (cookies):', {
+        hasSession: !!session,
+        userId: session?.user?.id,
+        error: sessionError?.message,
+      });
+      if (session && supabaseServiceKey) {
+        const userId = session.user.id;
+        const adminClient = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+        const { data: adminUser } = await adminClient.from('admin_users').select('id, role').eq('id', userId).single();
+        const { data: userRecord } = await adminClient.from('users').select('phone').eq('id', userId).single();
+        const userPhone = session.user.phone ?? userRecord?.phone ?? null;
+        const superAdminPhones = (process.env.SUPER_ADMIN_PHONES || '').split(',').map((p) => p.trim());
+        const isPhoneAdmin = !!userPhone && superAdminPhones.includes(String(userPhone).trim());
+        console.log('[admin/overview] 🔐 Admin check:', { hasAdminUser: !!adminUser, isPhoneAdmin, userPhone: userPhone ? '***' : null });
+        if (adminUser || isPhoneAdmin) {
+          supabaseAdmin = adminClient;
+          internalRole = isPhoneAdmin || adminUser?.role === 'super_admin' || adminUser?.role === 'admin' ? 'super_admin' : (adminUser?.role === 'internal_admin' ? 'internal_admin' : 'internal_viewer');
+        }
+      }
     }
 
+    // Fallback: Authorization header (Bearer token) via getAdminContext
+    if (!supabaseAdmin) {
+      console.log('[admin/overview] 🔐 Trying Authorization header...');
+      const ctx = await getAdminContext(request);
+      if (ctx) {
+        supabaseAdmin = ctx.supabaseAdmin;
+        internalRole = ctx.internalRole;
+      }
+    }
+
+    if (!supabaseAdmin) {
+      console.error('[admin/overview] ❌ Unauthorized: no valid session or admin access');
+      return NextResponse.json({ error: 'Unauthorized - admin access required' }, { status: 401 });
+    }
+    console.log('[admin/overview] ✅ Admin authorized, role:', internalRole);
+
+    console.log('[admin/overview] 📡 Querying centers...');
+    const { data: centers, error: centersError } = await supabaseAdmin
+      .from('centers')
+      .select('id, name, phone, plan, status, billing_type, is_early_adopter, early_adopter_price, created_at')
+      .neq('status', 'deleted')
+      .order('created_at', { ascending: false });
+
+    console.log('[admin/overview] 📊 Centers query result:', {
+      count: centers?.length ?? 0,
+      error: centersError,
+      firstCenter: centers?.[0],
+    });
+
+    if (centersError) {
+      console.error('[admin/overview] ❌ Centers query error:', centersError);
+      return NextResponse.json(
+        {
+          error: centersError.message,
+          code: centersError.code,
+          details: centersError.details,
+          hint: centersError.hint,
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('[admin/overview] 📡 Querying students count...');
     const { count: studentsCount, error: studentsError } = await supabaseAdmin
       .from('students')
       .select('id', { count: 'exact', head: true });
 
     if (studentsError) {
-      return NextResponse.json({ error: studentsError.message }, { status: 500 });
+      console.error('[admin/overview] ❌ Students count error:', studentsError);
+      return NextResponse.json(
+        {
+          error: studentsError.message,
+          code: studentsError.code,
+          details: studentsError.details,
+        },
+        { status: 500 }
+      );
     }
+    console.log('[admin/overview] 📊 Students count:', studentsCount ?? 0);
 
     const totalStudents = studentsCount ?? 0;
     const allCenters = centers || [];
@@ -42,16 +132,93 @@ export async function GET(request: Request) {
     const activeCentersCount = activeCenters.length;
     const totalCentersCount = allCenters.length;
 
-    const mrr = activeCenters.reduce((sum: number, c: { plan?: string }) => {
+    const mrrByPlan: Record<string, number> = {
+      starter: 0, pro: 0, business: 0, enterprise: 0, top_centers: 0, payg: 0,
+    };
+    const centersByPlan: Record<string, number> = { starter: 0, pro: 0, business: 0, enterprise: 0, top_centers: 0, payg: 0 };
+    const mrr = activeCenters.reduce((sum: number, c: { plan?: string; is_early_adopter?: boolean; early_adopter_price?: number; billing_type?: string }) => {
       const plan = c.plan || 'starter';
-      return sum + (PLAN_MRR[plan] ?? PLAN_MRR.starter);
+      if ((c.billing_type || 'fixed') === 'payg') {
+        centersByPlan.payg = (centersByPlan.payg ?? 0) + 1;
+        return sum;
+      }
+      centersByPlan[plan] = (centersByPlan[plan] ?? 0) + 1;
+      const amt = c.is_early_adopter && typeof c.early_adopter_price === 'number'
+        ? c.early_adopter_price
+        : PLAN_MRR[plan] ?? PLAN_MRR.starter;
+      mrrByPlan[plan] = (mrrByPlan[plan] ?? 0) + amt;
+      return sum + amt;
     }, 0);
+
+    const paygCenterIds = activeCenters
+      .filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'payg')
+      .map((c: { id: string }) => c.id);
+    if (paygCenterIds.length > 0) {
+      const fourWeeksAgo = new Date();
+      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+      const { data: paygCharges } = await supabaseAdmin
+        .from('payg_weekly_charges')
+        .select('center_id, total_charge')
+        .in('center_id', paygCenterIds)
+        .gte('week_start_date', fourWeeksAgo.toISOString().slice(0, 10));
+      const paygByCenter: Record<string, number[]> = {};
+      (paygCharges || []).forEach((c: { center_id: string; total_charge: number }) => {
+        if (!paygByCenter[c.center_id]) paygByCenter[c.center_id] = [];
+        paygByCenter[c.center_id].push(Number(c.total_charge));
+      });
+      const MONTHLY_WEEKS = 4.333;
+      let paygMRR = 0;
+      Object.values(paygByCenter).forEach((charges) => {
+        const avgWeekly = charges.length > 0 ? charges.reduce((a, b) => a + b, 0) / charges.length : 0;
+        paygMRR += avgWeekly * MONTHLY_WEEKS;
+      });
+      mrrByPlan.payg = Math.round(paygMRR);
+    }
+
+    const arpuByPlan: Record<string, number> = {};
+    for (const plan of Object.keys(mrrByPlan)) {
+      const count = centersByPlan[plan] ?? 0;
+      arpuByPlan[plan] = count > 0 ? Math.round(mrrByPlan[plan] / count) : 0;
+    }
+
+    const activeCenterIds = activeCenters.map((c: { id: string }) => c.id);
+    let upgradeOpportunities: { id: string; name: string; plan: string; students: number; limit: number; pct: number }[] = [];
+    if (activeCenterIds.length > 0) {
+      const { data: studentsData } = await supabaseAdmin
+        .from('students')
+        .select('center_id')
+        .in('center_id', activeCenterIds);
+      const countByCenter: Record<string, number> = {};
+      for (const s of studentsData || []) {
+        const cid = (s as { center_id: string }).center_id;
+        countByCenter[cid] = (countByCenter[cid] ?? 0) + 1;
+      }
+      for (const c of activeCenters) {
+        const plan = (c as { plan?: string }).plan || 'starter';
+        const limit = PLAN_STUDENT_LIMITS[plan] ?? 150;
+        if (limit >= 999999) continue;
+        const students = countByCenter[(c as { id: string }).id] ?? 0;
+        const pct = limit > 0 ? (students / limit) * 100 : 0;
+        if (pct >= 80) {
+          upgradeOpportunities.push({
+            id: (c as { id: string }).id,
+            name: (c as { name: string }).name,
+            plan,
+            students,
+            limit,
+            pct: Math.round(pct),
+          });
+        }
+      }
+      upgradeOpportunities = upgradeOpportunities.sort((a, b) => b.pct - a.pct).slice(0, 10);
+    }
 
     const byPlan: Record<string, number> = {
       starter: 0,
       pro: 0,
-      pro_plus: 0,
+      business: 0,
       enterprise: 0,
+      top_centers: 0,
       payg: 0,
     };
     for (const c of allCenters) {
@@ -166,13 +333,45 @@ export async function GET(request: Request) {
       ? Math.round(((churnedThisMonth || 0) / totalCentersCount) * 100)
       : 0;
 
+    const totalMRR = mrr + (mrrByPlan.payg ?? 0);
+
+    const counts = {
+      total: allCenters.length,
+      active: activeCenters.length,
+      pending: pendingCenters.length,
+    };
+
+    if (!counts || typeof counts.total !== 'number') {
+      console.error('[admin/overview] ❌ No counts calculated');
+      return NextResponse.json(
+        {
+          error: 'Failed to calculate stats',
+          totalCenters: 0,
+          activeCenters: 0,
+          pendingSignups: 0,
+          totalMRR: 0,
+          totalStudents: 0,
+          centers: [],
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('[admin/overview] ✅ Success - returning overview');
+    console.log('==========================================');
+
     return NextResponse.json({
-      totalCenters: allCenters.length,
-      activeCenters: activeCenters.length,
+      totalCenters: counts.total,
+      activeCenters: counts.active,
+      pendingSignups: counts.pending,
       suspendedCenters: suspendedCenters.length,
       pendingCenters: pendingCenters.length,
       totalStudents,
-      mrr,
+      totalMRR,
+      mrr: totalMRR,
+      mrrByPlan,
+      arpuByPlan,
+      upgradeOpportunities,
       byPlan,
       signupsChart,
       pendingSignupsCount: pendingCenters.length,
@@ -191,10 +390,21 @@ export async function GET(request: Request) {
       churnRate,
       churnedCenters: churnedThisMonth || 0,
       internalRole,
+      centers: allCenters.slice(0, 10),
     });
   } catch (error) {
+    console.error('==========================================');
+    console.error('[admin/overview] 💥 CAUGHT ERROR:', error);
+    console.error('[admin/overview] Error type:', error?.constructor?.name);
+    console.error('[admin/overview] Error message:', error instanceof Error ? error.message : String(error));
+    console.error('[admin/overview] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('==========================================');
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        type: error?.constructor?.name,
+        stack: error instanceof Error ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }

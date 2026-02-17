@@ -91,7 +91,7 @@ export default function CameraScanner({ onScan, isActive }: CameraScannerProps) 
       {error && (
         <p className="text-center text-red-500 mt-2 text-sm">{error}</p>
       )}
-      <p className="text-center text-gray-500 dark:text-gray-400 mt-3 text-sm">
+      <p className="text-center text-text-secondary mt-3 text-sm">
         {t('scanning')}
       </p>
     </div>

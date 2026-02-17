@@ -1,18 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import LanguageToggle from '@/components/LanguageToggle';
+import { toAr } from '@/lib/number-utils';
 
-const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=مرحباً، أنا مهتم بخطة كبار السناتر لأكثر من 1500 طالب أسبوعياً';
+const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=مرحباً، أنا مهتم بخطة كبار السناتر لأكثر من 2000 طالب أسبوعياً';
 
-type Plan = 'starter' | 'pro' | 'pro_plus' | 'enterprise';
+type Plan = 'starter' | 'pro' | 'business' | 'enterprise';
 
 const PLAN_OPTIONS: { id: Plan; price: number; limitKey: string }[] = [
-  { id: 'starter', price: 4000, limitKey: 'starterLimit' },
-  { id: 'pro', price: 7200, limitKey: 'proLimit' },
-  { id: 'pro_plus', price: 8000, limitKey: 'proPlusLimit' },
+  { id: 'starter', price: 2000, limitKey: 'starterLimit' },
+  { id: 'pro', price: 4500, limitKey: 'proLimit' },
+  { id: 'business', price: 6500, limitKey: 'businessLimit' },
   { id: 'enterprise', price: 9000, limitKey: 'enterpriseLimit' },
 ];
 
@@ -33,6 +35,14 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [earlyAdopterSpots, setEarlyAdopterSpots] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/pricing-plans')
+      .then((r) => r.json())
+      .then((d) => setEarlyAdopterSpots(d.early_adopter_spots_remaining ?? null))
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,23 +90,25 @@ export default function SignupPage() {
     }
   };
 
+  const formatNum = (n: number) => (locale === 'ar' ? toAr(n) : n.toLocaleString());
+
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900">
+      <div className="min-h-screen bg-white" data-theme="light">
         <div className="absolute top-4 end-4 z-10">
           <LanguageToggle />
         </div>
         <div className="min-h-screen flex flex-col items-center justify-center px-4">
           <div className="max-w-md w-full text-center">
-            <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6">
-              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+            <h1 className="text-2xl font-bold text-text-primary mb-3">
               {t('success')}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-text-secondary mb-6">
               {t('successMessage')}
             </p>
             <Link
@@ -112,7 +124,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900">
+    <div className="min-h-screen bg-white" data-theme="light">
       <div className="absolute top-4 end-4 z-10">
         <LanguageToggle />
       </div>
@@ -121,26 +133,30 @@ export default function SignupPage() {
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <Link href="/" className="inline-block mb-4">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
-                <span className="text-2xl font-bold text-white">CH</span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <Image src="/logo-icon.png" alt="CenterHQ" width={64} height={64} className="w-16 h-16 mx-auto mb-3 object-contain" />
+              <h1 className="text-3xl font-bold text-text-primary">
                 CenterHQ
               </h1>
-              <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
+              <p className="text-sm text-indigo-600 mt-1">
                 {tLanding('subtitle')}
               </p>
             </Link>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 text-center">
+          {earlyAdopterSpots != null && earlyAdopterSpots > 0 && (
+            <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-center">
+              <p className="font-semibold">🎉 {t('earlyAdopterBanner', { defaultValue: 'Only {count} early adopter spots remaining!', count: earlyAdopterSpots })}</p>
+              <p className="text-sm mt-1">{t('earlyAdopterDiscount', { defaultValue: '40% discount locked in forever for the first 10 centers.' })}</p>
+            </div>
+          )}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-8">
+            <h2 className="text-xl font-bold text-text-primary mb-6 text-center">
               {t('title')}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-text-primary mb-1">
                   {t('centerName')} *
                 </label>
                 <input
@@ -148,13 +164,13 @@ export default function SignupPage() {
                   required
                   value={formData.centerName}
                   onChange={(e) => { setFormData({ ...formData, centerName: e.target.value }); setError(''); }}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-text-primary"
                   placeholder="اسم السنتر"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-text-primary mb-1">
                   {t('phone')} *
                 </label>
                 <input
@@ -167,29 +183,29 @@ export default function SignupPage() {
                     if (v.startsWith('0') && v.length > 1) v = v.substring(1);
                     setFormData({ ...formData, phone: v }); setError('');
                   }}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-text-primary"
                   placeholder="1220601310"
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-text-secondary">
                   {locale === 'ar' ? 'ادخل الرقم بدون الصفر' : 'Enter without the leading zero'}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-text-primary mb-1">
                   {t('email')}
                 </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-text-primary"
                   placeholder="email@example.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-text-primary mb-1">
                   {t('referralCode')}
                 </label>
                 <input
@@ -197,20 +213,24 @@ export default function SignupPage() {
                   maxLength={8}
                   value={formData.referralCode}
                   onChange={(e) => { setFormData({ ...formData, referralCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }); setError(''); }}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white font-mono tracking-widest"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-text-primary font-mono tracking-widest"
                   placeholder="XXXXXXXX"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-text-primary mb-2">
                   {t('selectPlan')} *
                 </label>
                 <div className="space-y-3">
                   {PLAN_OPTIONS.map((opt) => (
                     <label
                       key={opt.id}
-                      className="flex items-start gap-3 p-4 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400"
+                      className={`flex items-start gap-3 p-4 bg-white border rounded-lg cursor-pointer transition-colors ${
+                        formData.plan === opt.id
+                          ? 'border-indigo-600 ring-2 ring-indigo-500/20'
+                          : 'border-gray-200 hover:border-indigo-300'
+                      }`}
                     >
                       <input
                         type="radio"
@@ -221,10 +241,10 @@ export default function SignupPage() {
                         className="mt-1 w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                       />
                       <div className="flex-1">
-                        <span className="block text-gray-900 dark:text-white font-medium">
-                          {t(opt.id)} — EGP {opt.price.toLocaleString('ar-EG')}/month
+                        <span className="block text-text-primary font-medium">
+                          {t(opt.id)} — EGP {formatNum(opt.price)}/month
                         </span>
-                        <span className="block text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                        <span className="block text-sm text-text-secondary mt-0.5">
                           {t(opt.limitKey)}
                         </span>
                       </div>
@@ -234,7 +254,7 @@ export default function SignupPage() {
                     href={TOP_CENTERS_WHATSAPP}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-start gap-3 p-4 border-2 rounded-lg transition-colors block"
+                    className="flex items-start gap-3 p-4 border-2 rounded-lg transition-colors block bg-white"
                     style={{ borderColor: '#25D366', backgroundColor: 'rgba(37, 211, 102, 0.08)' }}
                   >
                     <span className="mt-1 flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full" style={{ backgroundColor: 'rgba(37, 211, 102, 0.2)' }}>
@@ -243,11 +263,11 @@ export default function SignupPage() {
                       </svg>
                     </span>
                     <div className="flex-1">
-                      <span className="block text-gray-900 dark:text-white font-medium">
-                        {t('topCenters')} — كبار السناتر
+                      <span className="block text-text-primary font-medium">
+                        {tLanding('planTopCenters')}
                       </span>
-                      <span className="block text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-                        1,500+ طالب/أسبوع — EGP 1/طالب/أسبوع
+                      <span className="block text-sm text-text-secondary mt-0.5">
+                        {t('topCentersDesc')}
                       </span>
                     </div>
                     <span className="mt-2 px-3 py-1.5 text-sm font-medium rounded-lg text-white" style={{ backgroundColor: '#25D366' }}>
@@ -262,15 +282,15 @@ export default function SignupPage() {
                   type="checkbox"
                   checked={formData.termsAccepted}
                   onChange={(e) => { setFormData({ ...formData, termsAccepted: e.target.checked }); setError(''); }}
-                  className="mt-1 rounded border-gray-300 dark:border-gray-600"
+                  className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-text-secondary">
                   {t('terms')}
                 </span>
               </label>
 
               {error && (
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                <p className="text-sm text-red-600">{error}</p>
               )}
 
               <button
@@ -284,9 +304,9 @@ export default function SignupPage() {
           </div>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-text-secondary">
               {t('hasAccount')}{' '}
-              <Link href="/login" className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-medium">
+              <Link href="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">
                 {tLanding('loginButton')}
               </Link>
             </p>

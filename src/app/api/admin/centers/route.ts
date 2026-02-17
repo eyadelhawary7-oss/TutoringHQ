@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 
     let query = supabaseAdmin
       .from('centers')
-      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at, billing_status')
+      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at, billing_status, max_students, pricing_type, billing_type, is_early_adopter, early_adopter_price')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
@@ -106,6 +106,22 @@ export async function GET(request: Request) {
       studentCounts[cid] = (studentCounts[cid] ?? 0) + 1;
     }
 
+    // Weekly unique students (past 7 days) per center for limit display
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const { data: weeklyScans } = centerIds.length > 0
+      ? await supabaseAdmin
+          .from('attendance_scans')
+          .select('center_id, student_id')
+          .in('center_id', centerIds)
+          .gte('scanned_at', weekAgo.toISOString())
+      : { data: [] };
+    const weeklyUniqueByCenter: Record<string, Set<string>> = {};
+    for (const row of (weeklyScans || []) as { center_id: string; student_id: string }[]) {
+      if (!weeklyUniqueByCenter[row.center_id]) weeklyUniqueByCenter[row.center_id] = new Set();
+      weeklyUniqueByCenter[row.center_id].add(row.student_id);
+    }
+
     const { data: owners } = await supabaseAdmin
       .from('users')
       .select('center_id, name, phone')
@@ -132,12 +148,24 @@ export async function GET(request: Request) {
       : { data: [] };
     const referringMap = new Map((referringCenters || []).map((r: { id: string; name: string; referral_code: string }) => [r.id, { name: r.name, referral_code: r.referral_code }]));
 
+    const PLAN_LIMITS: Record<string, number> = {
+      starter: 150, pro: 500, business: 1000, enterprise: 2000, top_centers: 999999, payg: 999999,
+    };
     const rows = centers.map((c: Record<string, unknown>) => {
       const referredBy = (c as { referred_by?: string }).referred_by;
       const referring = referredBy ? referringMap.get(referredBy) : null;
+      const plan = (c as { plan?: string }).plan || 'starter';
+      const maxStudents = (c as { max_students?: number }).max_students ?? PLAN_LIMITS[plan] ?? 150;
+      const weeklyUnique = weeklyUniqueByCenter[c.id as string]?.size ?? 0;
+      const limitStatus = maxStudents < 999999
+        ? (weeklyUnique >= maxStudents ? 'over' : weeklyUnique >= maxStudents * 0.9 ? 'approaching' : 'ok')
+        : 'unlimited';
       return {
         ...c,
         students_count: studentCounts[c.id as string] ?? 0,
+        weekly_unique_students: weeklyUnique,
+        max_students: maxStudents,
+        limit_status: limitStatus,
         owner: ownerMap.get(c.id as string) ?? null,
         last_payment: lastPaymentByCenter[c.id as string] ?? null,
         next_due: (c as { next_payment_due?: string }).next_payment_due || (c as { next_billing_date?: string }).next_billing_date,
@@ -306,7 +334,7 @@ export async function PUT(request: Request) {
     }
 
     if (action === 'change_plan') {
-      if (!newPlan || !['starter', 'pro', 'pro_plus', 'enterprise', 'payg'].includes(newPlan)) {
+      if (!newPlan || !['starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'].includes(newPlan as string)) {
         return NextResponse.json({ error: 'Valid newPlan required' }, { status: 400 });
       }
       const oldPlan = center.plan || 'starter';
@@ -453,17 +481,38 @@ export async function PUT(request: Request) {
     const suspendAt = new Date(now);
     suspendAt.setDate(suspendAt.getDate() + 1);
 
+    // Early Adopter: first 10 approved centers get 40% discount locked in
+    const plan = (center.plan as string) || 'starter';
+    const EARLY_ADOPTER_PRICES: Record<string, number> = {
+      starter: 1200, pro: 2700, business: 3900, enterprise: 5400,
+    };
+    const { count: earlyAdopterCount } = await supabaseAdmin
+      .from('centers')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_early_adopter', true);
+    const canBeEarlyAdopter = (earlyAdopterCount ?? 0) < 10 && plan in EARLY_ADOPTER_PRICES;
+    const earlyAdopterNumber = canBeEarlyAdopter ? (earlyAdopterCount ?? 0) + 1 : null;
+    const earlyAdopterPrice = canBeEarlyAdopter ? EARLY_ADOPTER_PRICES[plan] : null;
+
+    const centerUpdates: Record<string, unknown> = {
+      status: 'active',
+      approved_at: now.toISOString(),
+      approved_by: user.id,
+      subscription_status: 'active',
+      payment_due_date: dueDate,
+      auto_suspend_at: suspendAt.toISOString(),
+      billing_start_date: dueDate,
+    };
+    if (canBeEarlyAdopter) {
+      centerUpdates.is_early_adopter = true;
+      centerUpdates.early_adopter_price = earlyAdopterPrice;
+      centerUpdates.early_adopter_number = earlyAdopterNumber;
+      centerUpdates.early_adopter_date = now.toISOString();
+    }
+
     await supabaseAdmin
       .from('centers')
-      .update({
-        status: 'active',
-        approved_at: now.toISOString(),
-        approved_by: user.id,
-        subscription_status: 'active',
-        payment_due_date: dueDate,
-        auto_suspend_at: suspendAt.toISOString(),
-        billing_start_date: dueDate,
-      })
+      .update(centerUpdates)
       .eq('id', centerId);
 
     // Referral rewards are now created only when admin approves the referred center's first payment (in admin billing)

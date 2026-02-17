@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLayout } from '@/contexts/LayoutContext';
@@ -26,14 +27,15 @@ import {
   Monitor,
 } from 'lucide-react';
 
-const getRoleBadge = (role: UserRole) => {
+const getRoleBadge = (role: UserRole | string) => {
   const badges: Record<string, string> = {
     owner: 'bg-blue-500/15 text-blue-400',
     admin: 'bg-blue-500/15 text-blue-400',
+    super_admin: 'bg-red-500/15 text-red-400',
     assistant: 'bg-green-500/15 text-green-400',
     teacher: 'bg-purple-500/15 text-purple-400',
   };
-  return badges[role] || badges.assistant;
+  return badges[role ?? ''] || badges.assistant;
 };
 
 interface SidebarProps {
@@ -84,15 +86,18 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
     { key: 'settings', href: '/settings', icon: <Settings className="w-5 h-5 shrink-0" />, permission: 'can_view_settings' },
   ];
 
-  const navItems = user
-    ? allNavItems.filter(item => {
-        if (user.role === 'owner' || user.role === 'admin') return true;
-        if (!item.permission) return true;
-        return hasPermission(item.permission);
-      })
-    : [];
+  const isSuperAdminOnly = isAdmin && !user?.center_id;
+  const navItems = isSuperAdminOnly
+    ? []
+    : user
+      ? allNavItems.filter(item => {
+          if (user.role === 'owner' || user.role === 'admin') return true;
+          if (!item.permission) return true;
+          return hasPermission(item.permission);
+        })
+      : [];
 
-  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : null;
+  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : isSuperAdminOnly ? 'roleAdmin' : null;
   const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-slate-500/15 text-slate-400';
   const isLimitedAccess = user?.role === 'assistant';
   const centerName = user?.center?.name || user?.name || user?.phone || 'User';
@@ -101,10 +106,10 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
     <div
       className="flex flex-col h-full w-[280px]"
       style={{
-        background: 'rgba(15, 23, 42, 0.8)',
+        background: 'var(--glass-bg)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderInlineEnd: '1px solid rgba(255, 255, 255, 0.1)',
+        borderInlineEnd: '1px solid var(--glass-border)',
       }}
     >
       {/* Logo + Brand */}
@@ -112,17 +117,30 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         {user?.center?.logo_url ? (
           <img src={user.center.logo_url} alt={centerName} className="h-10 w-10 rounded-lg object-contain" />
         ) : (
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0">
-            <span className="text-sm font-bold text-white">CH</span>
-          </div>
+          <Image src="/logo-icon.png" alt="CenterHQ" width={40} height={40} className="w-10 h-10 rounded-xl shrink-0 object-contain" />
         )}
-        <Link href="/dashboard" className="text-lg font-bold text-slate-100 truncate" onClick={onClose}>
+        <Link href={isSuperAdminOnly ? '/admin' : '/dashboard'} className="text-lg font-bold text-[var(--text-primary)] truncate" onClick={onClose}>
           CenterHQ
         </Link>
       </div>
 
       {/* Nav items */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        {isSuperAdminOnly && (
+          <Link
+            href="/admin"
+            onClick={onClose}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+              pathname?.startsWith('/admin')
+                ? 'bg-red-500/20 text-red-400 border-s border-red-500'
+                : 'text-red-400 hover:bg-red-500/10'
+            }`}
+            style={pathname?.startsWith('/admin') ? { borderInlineStartWidth: 3 } : {}}
+          >
+            <Shield className="w-5 h-5 shrink-0" />
+            {t('admin')}
+          </Link>
+        )}
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -133,7 +151,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-indigo-500/20 text-indigo-300 border-s border-indigo-500'
-                  : 'text-slate-300 hover:bg-white/5 hover:text-slate-100'
+                  : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
               }`}
               style={isActive ? { borderInlineStartWidth: 3 } : {}}
             >
@@ -142,7 +160,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
             </Link>
           );
         })}
-        {isAdmin && (
+        {isAdmin && !isSuperAdminOnly && (
           <Link
             href="/admin"
             onClick={onClose}
@@ -163,7 +181,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       <div className="p-4 border-t border-white/10 space-y-3">
         {user && (
           <div>
-            <p className="text-xs text-slate-400 truncate">{centerName}</p>
+            <p className="text-xs text-[var(--text-secondary)] truncate">{centerName}</p>
             {roleLabelKey && (
               <span className={`inline-flex mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`}>
                 {t(roleLabelKey)}
@@ -183,7 +201,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         </div>
         <button
           onClick={() => { onClose?.(); toggleMode(); }}
-          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-slate-100 rounded-lg transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)] rounded-lg transition-colors"
           title={t('switchToWebMode')}
         >
           <Monitor className="w-5 h-5 shrink-0" />
@@ -227,7 +245,7 @@ export function SidebarHamburger({ open, onToggle }: { open: boolean; onToggle: 
     <button
       type="button"
       onClick={onToggle}
-      className="fixed top-4 start-4 z-50 p-2 rounded-lg bg-slate-800/60 backdrop-blur-md border border-white/10 text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors print:hidden"
+      className="fixed top-4 start-4 z-50 p-2 rounded-lg glass text-[var(--text-primary)] hover:opacity-90 transition-colors print:hidden"
       aria-label={open ? 'Close menu' : 'Open menu'}
       aria-expanded={open}
     >

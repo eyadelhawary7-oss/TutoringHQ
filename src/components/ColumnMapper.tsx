@@ -41,14 +41,14 @@ export default function ColumnMapper({ headers, mapping, onMappingChange }: Colu
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+      <h3 className="text-lg font-semibold text-text-primary">
         {t('mapColumns')}
       </h3>
 
       <div className="space-y-3">
         {mappingFields.map((field) => (
           <div key={field} className="flex items-center gap-3">
-            <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
+            <label className="w-1/3 text-sm font-medium text-text-primary flex items-center gap-1">
               {fieldLabels[field]}
               {requiredFields.includes(field) && (
                 <span className="text-red-500">*</span>
@@ -57,7 +57,7 @@ export default function ColumnMapper({ headers, mapping, onMappingChange }: Colu
             <select
               value={mapping[field] || ''}
               onChange={(e) => handleChange(field, e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-bg-tertiary text-text-primary text-sm"
             >
               <option value="">{t('skipColumn')}</option>
               {headers.map((header) => (

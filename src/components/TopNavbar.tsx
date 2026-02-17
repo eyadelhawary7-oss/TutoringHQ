@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -22,16 +23,19 @@ import {
   Settings,
   Shield,
   Smartphone,
+  Menu,
+  X,
 } from 'lucide-react';
 
-const getRoleBadge = (role: UserRole) => {
+const getRoleBadge = (role: UserRole | string) => {
   const badges: Record<string, string> = {
     owner: 'bg-blue-500/15 text-blue-400',
     admin: 'bg-blue-500/15 text-blue-400',
+    super_admin: 'bg-red-500/15 text-red-400',
     assistant: 'bg-green-500/15 text-green-400',
     teacher: 'bg-purple-500/15 text-purple-400',
   };
-  return badges[role] || badges.assistant;
+  return badges[role ?? ''] || badges.assistant;
 };
 
 export default function TopNavbar() {
@@ -76,20 +80,25 @@ export default function TopNavbar() {
     { key: 'settings', href: '/settings', icon: <Settings className="w-4 h-4 shrink-0" />, permission: 'can_view_settings' },
   ];
 
-  const navItems = user
-    ? allNavItems.filter(item => {
-        if (user.role === 'owner' || user.role === 'admin') return true;
-        if (!item.permission) return true;
-        return hasPermission(item.permission);
-      })
-    : [];
+  const isSuperAdminOnly = isAdmin && !user?.center_id;
+  const navItems = isSuperAdminOnly
+    ? []
+    : user
+      ? allNavItems.filter(item => {
+          if (user.role === 'owner' || user.role === 'admin') return true;
+          if (!item.permission) return true;
+          return hasPermission(item.permission);
+        })
+      : [];
 
-  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : null;
+  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : isSuperAdminOnly ? 'roleAdmin' : null;
   const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-slate-500/15 text-slate-400';
   const isLimitedAccess = user?.role === 'assistant';
   const centerName = user?.center?.name || user?.name || user?.phone || 'User';
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
+    <>
     <nav
       className="fixed top-0 inset-x-0 z-40 flex items-center justify-between h-14 px-4 gap-2 print:hidden"
       style={{
@@ -99,22 +108,41 @@ export default function TopNavbar() {
         borderBottom: '1px solid var(--glass-border, rgba(255, 255, 255, 0.08))',
       }}
     >
-      {/* Left: Logo + Brand */}
+      {/* Left: Hamburger (mobile only) / Logo + Brand */}
       <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(o => !o)}
+          className="md:hidden p-2 rounded-lg text-[var(--text-primary)] hover:bg-white/5"
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+        >
+          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
         {user?.center?.logo_url ? (
           <img src={user.center.logo_url} alt={centerName} className="h-8 w-8 rounded-lg object-contain" />
         ) : (
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-white">CH</span>
-          </div>
+          <Image src="/logo-icon.png" alt="CenterHQ" width={32} height={32} className="w-8 h-8 rounded-lg shrink-0 object-contain" />
         )}
-        <Link href="/dashboard" className="text-base font-bold text-slate-100 truncate hidden sm:inline">
+        <Link href={isSuperAdminOnly ? '/admin' : '/dashboard'} className="text-base font-bold text-[var(--text-primary)] truncate hidden sm:inline">
           CenterHQ
         </Link>
       </div>
 
-      {/* Center: Nav items */}
-      <div className="flex-1 flex items-center justify-center gap-0.5 overflow-x-auto scrollbar-hide min-w-0">
+      {/* Center: Nav items (hidden on mobile) — admin-only for super admins */}
+      <div className="hidden md:flex flex-1 items-center justify-center gap-0.5 overflow-x-auto scrollbar-hide min-w-0">
+        {isSuperAdminOnly && (
+          <Link
+            href="/admin"
+            className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${
+              pathname?.startsWith('/admin')
+                ? 'bg-red-500/20 text-red-400 border-b-2 border-red-400'
+                : 'text-red-400 hover:bg-red-500/10'
+            }`}
+          >
+            <Shield className="w-4 h-4 shrink-0" />
+            {t('admin')}
+          </Link>
+        )}
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -124,7 +152,7 @@ export default function TopNavbar() {
               className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${
                 isActive
                   ? 'bg-indigo-500/20 text-indigo-300 border-b-2 border-indigo-400'
-                  : 'text-slate-300 hover:bg-white/5 hover:text-slate-100'
+                  : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
               }`}
             >
               {item.icon}
@@ -132,7 +160,7 @@ export default function TopNavbar() {
             </Link>
           );
         })}
-        {isAdmin && (
+        {isAdmin && !isSuperAdminOnly && (
           <Link
             href="/admin"
             className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${
@@ -147,11 +175,11 @@ export default function TopNavbar() {
         )}
       </div>
 
-      {/* Right: Center name, role, theme, language, app mode toggle, logout */}
-      <div className="flex items-center gap-2 shrink-0">
+      {/* Right: Center name, role, theme, language, app mode toggle, logout (hidden on mobile) */}
+      <div className="hidden md:flex items-center gap-2 shrink-0">
         {user && (
           <div className="hidden lg:flex items-center gap-2">
-            <span className="text-xs text-slate-400 truncate max-w-[80px]">{centerName}</span>
+            <span className="text-xs text-[var(--text-secondary)] truncate max-w-[80px]">{centerName}</span>
             {roleLabelKey && (
               <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`}>
                 {t(roleLabelKey)}
@@ -170,7 +198,7 @@ export default function TopNavbar() {
         <button
           type="button"
           onClick={toggleMode}
-          className="p-2 rounded-lg text-slate-300 hover:bg-white/5 hover:text-slate-100 transition-colors"
+          className="p-2 rounded-lg text-[var(--text-primary)] hover:bg-white/5 transition-colors"
           title={t('switchToAppMode')}
           aria-label={t('switchToAppMode')}
         >
@@ -187,5 +215,86 @@ export default function TopNavbar() {
         )}
       </div>
     </nav>
+
+    {/* Mobile drawer */}
+    {mobileMenuOpen && (
+      <>
+        <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} aria-hidden />
+        <div
+          className="fixed top-14 start-0 end-0 z-50 md:hidden max-h-[calc(100vh-3.5rem)] overflow-y-auto glass rounded-b-2xl mx-2 p-4 space-y-4"
+          style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}
+        >
+          <div className="flex flex-col gap-2">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              return (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${
+                    isActive ? 'bg-indigo-500/20 text-indigo-300' : 'text-[var(--text-primary)] hover:bg-white/5'
+                  }`}
+                >
+                  {item.icon}
+                  {t(item.key)}
+                </Link>
+              );
+            })}
+            {(isAdmin || isSuperAdminOnly) && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${
+                  pathname?.startsWith('/admin') ? 'bg-red-500/20 text-red-400' : 'text-red-400 hover:bg-red-500/10'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                {t('admin')}
+              </Link>
+            )}
+          </div>
+          <div className="border-t border-white/10 pt-4 space-y-3">
+            {user && (
+              <div>
+                <p className="text-xs text-[var(--text-secondary)] truncate">{centerName}</p>
+                {roleLabelKey && (
+                  <span className={`inline-flex mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`}>
+                    {t(roleLabelKey)}
+                  </span>
+                )}
+              </div>
+            )}
+            {isLimitedAccess && (
+              <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded bg-amber-500/15 text-amber-400">
+                {t('limitedAccess')}
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <LanguageToggle />
+              <SyncIndicator />
+              <button
+                type="button"
+                onClick={() => { setMobileMenuOpen(false); toggleMode(); }}
+                className="p-2 rounded-lg text-[var(--text-primary)] hover:bg-white/5"
+                title={t('switchToAppMode')}
+              >
+                <Smartphone className="w-5 h-5" />
+              </button>
+            </div>
+            {user && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                className="w-full text-start px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg"
+              >
+                {t('logout')}
+              </button>
+            )}
+          </div>
+        </div>
+      </>
+    )}
+    </>
   );
 }

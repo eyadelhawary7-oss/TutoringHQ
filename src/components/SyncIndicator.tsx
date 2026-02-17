@@ -98,7 +98,7 @@ export default function SyncIndicator() {
         <div className="absolute top-full start-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap z-50">
           {statusLabels[status]}
           {pendingCount > 0 && (
-            <span className="block text-gray-400">
+            <span className="block text-text-tertiary">
               {t('pendingScans', { count: pendingCount })}
             </span>
           )}

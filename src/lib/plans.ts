@@ -1,0 +1,68 @@
+/**
+ * Plan features, limits, and feature-gating utilities.
+ * Plans: starter | pro | business | enterprise | top_centers | payg
+ */
+
+export const PLAN_ORDER = ['starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'] as const;
+export type PlanId = (typeof PLAN_ORDER)[number];
+
+export const PLAN_STUDENT_LIMITS: Record<string, number> = {
+  starter: 150,
+  pro: 500,
+  business: 1000,
+  enterprise: 2000,
+  top_centers: 999999,
+  payg: 999999,
+};
+
+export const PLAN_TEAM_LIMITS: Record<string, number> = {
+  starter: 2,
+  pro: 5,
+  business: 10,
+  enterprise: 20,
+  top_centers: 999999,
+  payg: 5, // PAYG default
+};
+
+/** Plan level for comparison (higher = more features) */
+const PLAN_LEVEL: Record<string, number> = {
+  starter: 1,
+  pro: 2,
+  business: 3,
+  enterprise: 4,
+  top_centers: 5,
+  payg: 2, // PAYG treated as pro-level for features
+};
+
+/** Minimum plan required for each feature */
+export const FEATURE_PLANS: Record<string, PlanId> = {
+  excel_export: 'pro',
+  multi_location: 'business',
+  api_access: 'enterprise',
+  custom_reports: 'enterprise',
+  advanced_analytics: 'pro',
+  payment_confirmation: 'pro',
+  bulk_operations: 'business',
+  custom_widgets: 'business',
+  automated_reports: 'business',
+};
+
+export function getPlanLevel(plan: string | null | undefined): number {
+  return PLAN_LEVEL[plan || 'starter'] ?? 0;
+}
+
+export function hasPlanFeature(plan: string | null | undefined, feature: keyof typeof FEATURE_PLANS): boolean {
+  const requiredPlan = FEATURE_PLANS[feature];
+  if (!requiredPlan) return true;
+  const userLevel = getPlanLevel(plan);
+  const requiredLevel = getPlanLevel(requiredPlan);
+  return userLevel >= requiredLevel;
+}
+
+export function getStudentLimit(plan: string | null | undefined): number {
+  return PLAN_STUDENT_LIMITS[plan || 'starter'] ?? 150;
+}
+
+export function getTeamLimit(plan: string | null | undefined): number {
+  return PLAN_TEAM_LIMITS[plan || 'starter'] ?? 2;
+}

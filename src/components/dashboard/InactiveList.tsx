@@ -33,8 +33,8 @@ export default function InactiveList({ students, period, onPeriodChange }: Inact
             onClick={() => onPeriodChange(p)}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors border-2 ${
               period === p
-                ? 'bg-slate-600/50 text-slate-100 border-indigo-500'
-                : 'bg-slate-800/50 text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-slate-300'
+                ? 'bg-indigo-500/20 text-[var(--text-primary)] border-indigo-500'
+                : 'border-transparent text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
             }`}
           >
             {t(`filter${p}` as 'filter7d')}
@@ -42,31 +42,31 @@ export default function InactiveList({ students, period, onPeriodChange }: Inact
         ))}
       </div>
       {students.length === 0 ? (
-        <p className="text-center text-slate-400 py-8 text-sm">
+        <p className="text-center text-[var(--text-secondary)] py-8 text-sm">
           {t('noInactiveStudents')}
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-600">
-                <th className="px-3 py-2 text-start text-sm font-medium italic text-slate-400">{t('studentName')}</th>
-                <th className="px-3 py-2 text-start text-sm font-medium italic text-slate-400">{t('studentId')}</th>
-                <th className="px-3 py-2 text-start text-sm font-medium italic text-slate-400">{t('lastAttendance')}</th>
-                <th className="px-3 py-2 text-end text-sm font-medium italic text-slate-400">{t('daysAbsent')}</th>
+              <tr className="border-b border-[var(--border-color)]">
+                <th className="px-3 py-2 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('studentName')}</th>
+                <th className="px-3 py-2 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('studentId')}</th>
+                <th className="px-3 py-2 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('lastAttendance')}</th>
+                <th className="px-3 py-2 text-end text-sm font-medium italic text-[var(--text-secondary)]">{t('daysAbsent')}</th>
               </tr>
             </thead>
             <tbody>
               {students.map((s) => (
-                <tr key={s.id} className="border-b border-slate-700/50">
-                  <td className="px-3 py-3 font-medium text-slate-100">{s.name}</td>
-                  <td className="px-3 py-3 font-mono italic text-slate-400" dir="ltr">{s.student_number}</td>
-                  <td className="px-3 py-3 text-slate-400">
+                <tr key={s.id} className="border-b border-[var(--border-color)]">
+                  <td className="px-3 py-3 font-medium text-[var(--text-primary)]">{s.name}</td>
+                  <td className="px-3 py-3 font-mono italic text-[var(--text-secondary)]" dir="ltr">{s.student_number}</td>
+                  <td className="px-3 py-3 text-[var(--text-secondary)]">
                     {s.last_scanned_at
                       ? new Date(s.last_scanned_at).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })
                       : '—'}
                   </td>
-                  <td className="px-3 py-3 text-end font-mono italic font-medium text-slate-100">{s.days_absent}</td>
+                  <td className="px-3 py-3 text-end font-mono italic font-medium text-[var(--text-primary)]">{s.days_absent}</td>
                 </tr>
               ))}
             </tbody>

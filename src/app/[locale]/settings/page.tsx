@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -274,13 +275,13 @@ export default function SettingsPage() {
     return (
       <div className="min-h-screen">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-6 animate-pulse" />
+            <div className="h-8 bg-bg-tertiary rounded w-48 mb-6 animate-pulse" />
             <div className="space-y-8">
               <section className="glass p-6">
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4 animate-pulse" />
+                <div className="h-6 bg-bg-tertiary rounded w-32 mb-4 animate-pulse" />
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-16 bg-gray-100 dark:bg-gray-700/50 rounded-lg animate-pulse" />
+                    <div key={i} className="h-16 glass/50 rounded-lg animate-pulse" />
                   ))}
                 </div>
               </section>
@@ -293,7 +294,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('title')}</h1>
+          <h1 className="text-2xl font-bold text-text-primary mb-6">{t('title')}</h1>
 
           {/* Sub-navigation: General | Billing | Team Members */}
           <div className="flex flex-wrap gap-2 mb-6">
@@ -302,13 +303,13 @@ export default function SettingsPage() {
             </span>
             <Link
               href="/settings/billing"
-              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 rounded-lg glass text-text-primary hover:bg-bg-secondary text-sm font-medium transition-colors"
             >
               {t('billing')}
             </Link>
             <Link
               href="/settings/team"
-              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 rounded-lg glass text-text-primary hover:bg-bg-secondary text-sm font-medium transition-colors"
             >
               {t('teamMembers')}
             </Link>
@@ -324,7 +325,7 @@ export default function SettingsPage() {
           <div className="space-y-8">
             {/* Center Info */}
             <section className="glass p-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('centerInfo')}</h2>
+              <h2 className="text-lg font-semibold text-text-primary mb-4">{t('centerInfo')}</h2>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   {center?.logo_url && !logoLoadFailed ? (
@@ -335,9 +336,7 @@ export default function SettingsPage() {
                       onError={() => setLogoLoadFailed(true)}
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-indigo-600 dark:bg-indigo-600 rounded-lg flex items-center justify-center">
-                      <span className="text-xl font-bold text-white">CH</span>
-                    </div>
+                    <Image src="/logo-icon.png" alt="CenterHQ" width={44} height={44} className="w-11 h-11 rounded-xl object-contain" />
                   )}
                   <label className="cursor-pointer px-4 py-2 text-sm font-medium border border-indigo-600 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors">
                     {(center?.logo_url && !logoLoadFailed) ? t('logoChange') : t('logoUpload')}
@@ -345,13 +344,13 @@ export default function SettingsPage() {
                   </label>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('centerName')}</label>
+                  <label className="block text-sm font-medium text-text-primary mb-1">{t('centerName')}</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={centerName}
                       onChange={(e) => setCenterName(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
                     />
                     <button
                       onClick={handleSaveCenterName}
@@ -366,30 +365,30 @@ export default function SettingsPage() {
 
             {/* Subjects */}
             <section className="glass p-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('subjects')}</h2>
+              <h2 className="text-lg font-semibold text-text-primary mb-4">{t('subjects')}</h2>
               
               {/* Existing subjects */}
               <div className="space-y-2 mb-4">
                 {subjects.map((subject) => (
-                  <div key={subject.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                  <div key={subject.id} className="flex items-center gap-3 p-3 bg-[var(--bg-card)] rounded-lg">
                     {editingSubject === subject.id ? (
                       <>
                         <input
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm dark:bg-gray-700 dark:text-white"
+                          className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-bg-tertiary text-text-primary"
                         />
                         <button onClick={() => handleUpdateSubject(subject.id)} className="text-green-600 text-sm font-medium">
                           {tCommon('save')}
                         </button>
-                        <button onClick={() => setEditingSubject(null)} className="text-gray-400 text-sm">
+                        <button onClick={() => setEditingSubject(null)} className="text-text-tertiary text-sm">
                           {tCommon('cancel')}
                         </button>
                       </>
                     ) : (
                       <>
-                        <span className="flex-1 text-sm text-gray-900 dark:text-white font-medium">{subject.name}</span>
+                        <span className="flex-1 text-sm text-text-primary font-medium">{subject.name}</span>
                         <button
                           onClick={() => { setEditingSubject(subject.id); setEditName(subject.name); }}
                           className="text-indigo-600 dark:text-indigo-400 text-xs"
@@ -415,7 +414,7 @@ export default function SettingsPage() {
                   value={newSubjectName}
                   onChange={(e) => setNewSubjectName(e.target.value)}
                   placeholder={t('subjectName')}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
                   required
                 />
                 <button
@@ -429,8 +428,8 @@ export default function SettingsPage() {
 
             {/* Team Members - link to dedicated page */}
             <section className="glass p-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('teamMembers')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('manageTeamDesc', { defaultValue: 'Manage assistants & teachers' })}</p>
+              <h2 className="text-lg font-semibold text-text-primary mb-2">{t('teamMembers')}</h2>
+              <p className="text-sm text-text-secondary mb-4">{t('manageTeamDesc', { defaultValue: 'Manage assistants & teachers' })}</p>
               <Link
                 href="/settings/team"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
@@ -441,15 +440,15 @@ export default function SettingsPage() {
 
             {/* Scanner Config */}
             <section className="glass p-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('scanner')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t('defaultMode')}</p>
+              <h2 className="text-lg font-semibold text-text-primary mb-4">{t('scanner')}</h2>
+              <p className="text-sm text-text-secondary mb-3">{t('defaultMode')}</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => handleScannerMode('camera')}
                   className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium border-2 transition-colors ${
                     scannerMode === 'camera'
                       ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
-                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'
+                      : 'border-gray-300 dark:border-gray-600 text-text-secondary'
                   }`}
                 >
                   {t('camera')}
@@ -459,7 +458,7 @@ export default function SettingsPage() {
                   className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium border-2 transition-colors ${
                     scannerMode === 'bluetooth'
                       ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
-                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'
+                      : 'border-gray-300 dark:border-gray-600 text-text-secondary'
                   }`}
                 >
                   {t('bluetooth')}
@@ -468,18 +467,18 @@ export default function SettingsPage() {
             </section>
 
             {/* Referral */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{tReferral('title')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4" dir="ltr">
+            <section className="glass rounded-xl shadow p-6 mb-6">
+              <h2 className="text-lg font-semibold text-text-primary mb-4">{tReferral('title')}</h2>
+              <p className="text-sm text-text-secondary mb-4" dir="ltr">
                 {tReferral('shareText')}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4" dir="rtl">
+              <p className="text-sm text-text-secondary mb-4" dir="rtl">
                 {tReferral('shareTextAr')}
               </p>
               {referralData && (
                 <>
                   <div className="flex items-center gap-3 mb-4">
-                    <code className="text-2xl font-mono font-bold text-indigo-600 dark:text-indigo-400 tracking-widest bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg">
+                    <code className="text-2xl font-mono font-bold text-indigo-600 dark:text-indigo-400 tracking-widest glass px-4 py-2 rounded-lg">
                       {referralData.referralCode || '—'}
                     </code>
                     <button
@@ -497,8 +496,8 @@ export default function SettingsPage() {
                     </button>
                   </div>
                   <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{tReferral('totalEarned')}</span>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    <span className="text-sm text-text-secondary">{tReferral('totalEarned')}</span>
+                    <p className="text-xl font-bold text-text-primary">
                       {Number(referralData.totalEarned || 0).toLocaleString('ar-EG')} EGP
                     </p>
                   </div>
@@ -508,44 +507,44 @@ export default function SettingsPage() {
                       <div className="space-y-2 text-sm">
                         {referralData.pending?.map((p, i) => (
                           <div key={i} className="flex justify-between items-center p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                            <span className="text-gray-900 dark:text-white">{p.referred_center_name}</span>
+                            <span className="text-text-primary">{p.referred_center_name}</span>
                             <span className="text-amber-600 dark:text-amber-400 text-xs">{tReferral('awaitingPayment', { defaultValue: 'Awaiting first payment' })}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tReferral('rewardsTable')}</h3>
+                  <h3 className="text-sm font-medium text-text-primary mb-2">{tReferral('rewardsTable')}</h3>
                   {(referralData.rewards?.length ?? 0) === 0 && (referralData.pending?.length ?? 0) === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{tReferral('noRewards')}</p>
+                    <p className="text-sm text-text-secondary">{tReferral('noRewards')}</p>
                   ) : (referralData.rewards?.length ?? 0) > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-gray-600">
-                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('referredCenter')}</th>
-                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('plan')}</th>
-                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('rewardAmount')}</th>
-                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('status')}</th>
-                            <th className="text-start py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{tReferral('date')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-text-secondary">{tReferral('referredCenter')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-text-secondary">{tReferral('plan')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-text-secondary">{tReferral('rewardAmount')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-text-secondary">{tReferral('status')}</th>
+                            <th className="text-start py-2 text-sm font-medium italic text-text-secondary">{tReferral('date')}</th>
                           </tr>
                         </thead>
                         <tbody>
                           {(referralData.rewards ?? []).map((r) => (
                             <tr key={r.id || r.created_at + r.referred_center_name} className="border-b border-gray-100 dark:border-gray-700/50">
-                              <td className="py-2 text-gray-900 dark:text-white">{r.referred_center_name}</td>
-                              <td className="py-2 text-gray-600 dark:text-gray-400">{r.referred_center_plan}</td>
-                              <td className="py-2 font-mono italic text-gray-900 dark:text-white">{Number(r.reward_amount).toLocaleString('ar-EG')} EGP</td>
+                              <td className="py-2 text-text-primary">{r.referred_center_name}</td>
+                              <td className="py-2 text-text-secondary">{r.referred_center_plan}</td>
+                              <td className="py-2 font-mono italic text-text-primary">{Number(r.reward_amount).toLocaleString('ar-EG')} EGP</td>
                               <td className="py-2">
                                 <span className={`px-2 py-0.5 text-xs font-medium italic rounded-full ${
                                   r.reward_status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
                                   r.reward_status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' :
-                                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                  'bg-gray-100 text-gray-800'
                                 }`}>
                                   {r.reward_status}
                                 </span>
                               </td>
-                              <td className="py-2 text-gray-600 dark:text-gray-400">
+                              <td className="py-2 text-text-secondary">
                                 {new Date(r.created_at).toLocaleDateString('ar-EG')}
                               </td>
                             </tr>
@@ -560,8 +559,8 @@ export default function SettingsPage() {
 
             {/* Billing link */}
             <section className="glass p-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('billing')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('billingDesc')}</p>
+              <h2 className="text-lg font-semibold text-text-primary mb-4">{t('billing')}</h2>
+              <p className="text-sm text-text-secondary mb-4">{t('billingDesc')}</p>
               <Link
                 href="/settings/billing"
                 className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
@@ -584,7 +583,7 @@ export default function SettingsPage() {
 
             {/* Account / Logout */}
             <section className="glass p-6">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+              <h2 className="text-lg font-semibold text-text-primary mb-4">
                 {t('account', { defaultValue: 'Account' })}
               </h2>
               <button

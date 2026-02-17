@@ -59,10 +59,10 @@ export default function BluetoothScanner({ onScan, isActive }: BluetoothScannerP
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         </div>
-        <p className="text-lg text-gray-700 dark:text-gray-300 font-medium">
+        <p className="text-lg text-text-primary font-medium">
           {t('scanning')}
         </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+        <p className="text-sm text-text-secondary mt-2">
           {t('bluetoothMode')}
         </p>
       </div>

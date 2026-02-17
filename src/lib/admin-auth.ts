@@ -17,18 +17,27 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+    console.log('[admin-auth] Missing env vars');
+    return null;
+  }
 
   const authHeader = request.headers.get('Authorization');
   const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
+  if (!accessToken) {
+    console.log('[admin-auth] No access token');
+    return null;
+  }
 
   const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false },
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-  if (authError || !user) return null;
+  if (authError || !user) {
+    console.log('[admin-auth] Auth failed:', authError?.message ?? 'No user');
+    return null;
+  }
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -48,8 +57,10 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     .eq('id', user.id)
     .single();
   const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
-
-  if (!adminRow && !adminByPhone) return null;
+  if (!adminRow && !adminByPhone) {
+    console.log('[admin-auth] Not admin: no admin_users row, adminByPhone=', adminByPhone);
+    return null;
+  }
 
   // Determine role: phone-based admins are always super_admin
   let internalRole: InternalRole = 'internal_viewer';

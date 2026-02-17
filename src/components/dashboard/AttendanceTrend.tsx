@@ -9,7 +9,7 @@ interface AttendanceTrendProps {
 export default function AttendanceTrend({ data }: AttendanceTrendProps) {
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[250px] text-slate-400">
+      <div className="flex items-center justify-center h-[250px] text-[var(--text-secondary)]">
         <p className="text-sm">---</p>
       </div>
     );
@@ -26,22 +26,22 @@ export default function AttendanceTrend({ data }: AttendanceTrendProps) {
         </defs>
         <CartesianGrid
           strokeDasharray="3 3"
-          stroke="rgba(148, 163, 184, 0.2)"
+          stroke="var(--border-color)"
           vertical={false}
         />
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 12, fill: '#94a3b8' }}
-          stroke="rgba(71, 85, 105, 0.5)"
+          tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
+          stroke="var(--border-color)"
         />
         <YAxis
-          tick={{ fontSize: 12, fill: '#94a3b8' }}
-          stroke="rgba(71, 85, 105, 0.5)"
+          tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
+          stroke="var(--border-color)"
           allowDecimals={false}
         />
         <Tooltip
-          contentStyle={{ backgroundColor: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px' }}
-          labelStyle={{ color: '#e2e8f0' }}
+          contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)', borderRadius: '10px' }}
+          labelStyle={{ color: 'var(--chart-tooltip-text)' }}
         />
         <Bar
           dataKey="count"

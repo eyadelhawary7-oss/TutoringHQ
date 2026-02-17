@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbCount } from '@/lib/db-proxy';
 import { exportDashboardToExcel } from '@/lib/excel-export';
+import { hasPlanFeature } from '@/lib/plans';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import AttendanceCard from '@/components/dashboard/AttendanceCard';
+import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
 import PaymentDonut from '@/components/dashboard/PaymentDonut';
 import RevenueBar from '@/components/dashboard/RevenueBar';
 import AttendanceTrend from '@/components/dashboard/AttendanceTrend';
@@ -41,12 +44,16 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
+  const tSettings = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
+  const router = useRouter();
   const { user, hasPermission } = useUser();
   const isOwnerOrAdminRole = isOwnerOrAdmin(user?.role);
   const canViewRevenue = user?.role === 'owner' || user?.role === 'admin' || user?.can_view_revenue === true;
 
-  const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string } | null>(null);
+  const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string; plan?: string } | null>(null);
+  const [planUsage, setPlanUsage] = useState<{ plan: string; weeklyUniqueStudents: number; studentLimit: number } | null>(null);
   const [data, setData] = useState<DashboardData>({
     todayAttendance: 0,
     totalStudents: 0,
@@ -133,7 +140,8 @@ export default function DashboardPage() {
           { column: 'status', op: 'eq', value: 'pending' },
         ],
       });
-      const totalPending = (allPendingPayments || []).reduce((sum: number, p: { amount?: number }) => sum + parseFloat(String(p.amount || 0)), 0);
+      const allPending = (allPendingPayments || []) as { amount?: number }[];
+      const totalPending = allPending.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
 
       // Monthly revenue (current month)
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
@@ -339,13 +347,41 @@ export default function DashboardPage() {
       });
       const meData = await meRes.json();
 
+      if (meData?.user && !meData.user.center_id) {
+        const adminRes = await fetch('/api/admin/check', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const adminData = await adminRes.json();
+        if (adminData?.isAdmin) {
+          router.replace('/admin');
+          return;
+        }
+      }
+
       if (meData?.user?.center_id) {
         setCenterId(meData.user.center_id);
         setCenterBilling(meData.user.center ? {
           payment_due_date: meData.user.center.payment_due_date,
           billing_status: meData.user.center.billing_status,
           name: meData.user.center.name,
+          plan: meData.user.center.plan,
         } : null);
+        // Fetch plan usage for capacity widget
+        try {
+          const limitsRes = await fetch('/api/settings/limits', {
+            headers: { 'Authorization': `Bearer ${session.access_token}` },
+          });
+          if (limitsRes.ok) {
+            const limitsData = await limitsRes.json();
+            setPlanUsage({
+              plan: limitsData.plan || 'starter',
+              weeklyUniqueStudents: limitsData.weeklyUniqueStudents ?? 0,
+              studentLimit: limitsData.studentLimit ?? 150,
+            });
+          }
+        } catch {
+          // ignore
+        }
       }
     };
     init();
@@ -380,8 +416,15 @@ export default function DashboardPage() {
     };
   }, [centerId, loadDashboard]);
 
+  const canExportExcel = hasPlanFeature(centerBilling?.plan, 'excel_export');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
   const handleExport = useCallback(async () => {
     if (!centerId) return;
+    if (!canExportExcel) {
+      setShowUpgradeModal(true);
+      return;
+    }
     setIsExporting(true);
     try {
       const [studentsRes, attendanceRes, paymentsRes] = await Promise.all([
@@ -430,14 +473,14 @@ export default function DashboardPage() {
     } finally {
       setIsExporting(false);
     }
-  }, [centerId]);
+  }, [centerId, canExportExcel]);
 
   // Assistant dashboard: scan CTA + payment quick actions
   if (user?.role === 'assistant' && !isLoading) {
     return (
       <div className="min-h-screen">
           <div className="max-w-7xl mx-auto p-6">
-            <h1 className="text-2xl font-bold text-slate-100 mb-6">
+            <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-6">
               {t('title')}
             </h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -455,8 +498,8 @@ export default function DashboardPage() {
                 href="/payments"
                 className="block p-8 glass hover:border-indigo-500/50 transition-all duration-200"
               >
-                <p className="text-sm text-slate-400">{t('unpaidCount')}</p>
-                <p className="text-3xl font-bold text-slate-100 mt-1">{data.unpaidCount}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{t('unpaidCount')}</p>
+                <p className="text-3xl font-bold text-[var(--text-primary)] mt-1">{data.unpaidCount}</p>
                 <p className="text-indigo-400 text-sm mt-2">{t('goToPayments')}</p>
               </Link>
             </div>
@@ -508,17 +551,51 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto p-6">
           {paymentDueBanner}
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-slate-100">
+            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
               {t('title')}
             </h1>
             <button
               onClick={handleExport}
               disabled={isExporting || isLoading}
-              className="px-4 py-2 text-sm font-medium border border-indigo-500 text-indigo-400 rounded-lg hover:bg-indigo-500/10 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium border border-indigo-500 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-500/10 disabled:opacity-50"
             >
               {isExporting ? t('exporting') : t('exportData')}
             </button>
+            {showUpgradeModal && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowUpgradeModal(false)}>
+                <div className="glass rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                    {tSettings('upgradeToUnlockFeature')}
+                  </h3>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
+                    {t('exportExcelUpgrade', { defaultValue: 'Excel/CSV export is available on Pro plan and above.' })}
+                  </p>
+                  <Link
+                    href="/settings/billing"
+                    className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
+                  >
+                    {t('upgradePlan')}
+                  </Link>
+                  <button
+                    onClick={() => setShowUpgradeModal(false)}
+                    className="ml-2 px-4 py-2 bg-bg-tertiary rounded-lg text-sm"
+                  >
+                    {tCommon('cancel')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+
+          {planUsage && planUsage.studentLimit < 999999 && (
+            <div className="mb-6">
+              <PlanUsageCard
+                plan={planUsage.plan}
+                weeklyUniqueStudents={planUsage.weeklyUniqueStudents}
+                studentLimit={planUsage.studentLimit}
+              />
+            </div>
+          )}
 
           {isLoading ? (
             <div className="text-center py-16">
@@ -533,14 +610,14 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <AttendanceCard count={data.todayAttendance} label={t('attendance')} />
                 <div className="glass p-6">
-                  <p className="text-sm text-slate-400">{t('totalStudents')}</p>
-                  <p className="text-3xl font-bold text-slate-100 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+                  <p className="text-sm text-[var(--text-secondary)]">{t('totalStudents')}</p>
+                  <p className="text-3xl font-bold text-[var(--text-primary)] mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                     {locale === 'ar' ? toAr(data.totalStudents) : data.totalStudents}
                   </p>
                 </div>
                 {canViewRevenue && (
                   <div className="glass p-6">
-                    <p className="text-sm text-slate-400">{t('collectedToday')}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">{t('collectedToday')}</p>
                     <p className="text-3xl font-bold text-green-400 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(Math.round(data.todayRevenue)) : Math.round(data.todayRevenue).toLocaleString()} <span className="text-lg">{t('currency')}</span>
                     </p>
@@ -548,7 +625,7 @@ export default function DashboardPage() {
                 )}
                 {canViewRevenue && (
                   <div className="glass p-6">
-                    <p className="text-sm text-slate-400">{t('totalPending')}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">{t('totalPending')}</p>
                     <p className="text-3xl font-bold text-orange-400 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(Math.round(data.totalPending)) : data.totalPending.toLocaleString()} <span className="text-lg">{t('currency')}</span>
                     </p>
@@ -560,25 +637,25 @@ export default function DashboardPage() {
               {canViewRevenue && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="glass p-4">
-                    <p className="text-xs text-slate-400">{t('weeklyTrend')}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{t('weeklyTrend')}</p>
                     <p className={`text-xl font-bold mt-1 ${data.weeklyTrendPct >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {data.weeklyTrendPct >= 0 ? '↑' : '↓'}{locale === 'ar' ? toAr(Math.abs(data.weeklyTrendPct)) : Math.abs(data.weeklyTrendPct)}{t('pct')}
                     </p>
                   </div>
                   <div className="glass p-4">
-                    <p className="text-xs text-slate-400">{t('collectionRate')}</p>
-                    <p className="text-xl font-bold text-slate-100 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+                    <p className="text-xs text-[var(--text-secondary)]">{t('collectionRate')}</p>
+                    <p className="text-xl font-bold text-[var(--text-primary)] mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(data.collectionRatePct) : data.collectionRatePct}{t('pct')}
                     </p>
                   </div>
                   <div className="glass p-4">
-                    <p className="text-xs text-slate-400">{t('newStudents')}</p>
-                    <p className="text-xl font-bold text-slate-100 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+                    <p className="text-xs text-[var(--text-secondary)]">{t('newStudents')}</p>
+                    <p className="text-xl font-bold text-[var(--text-primary)] mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(data.newStudentsCount) : data.newStudentsCount}
                     </p>
                   </div>
                   <div className="glass p-4">
-                    <p className="text-xs text-slate-400">{t('atRisk')}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{t('atRisk')}</p>
                     <p className="text-xl font-bold text-red-400 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                       {locale === 'ar' ? toAr(data.atRiskCount) : data.atRiskCount}
                     </p>
@@ -589,25 +666,25 @@ export default function DashboardPage() {
               {/* Monthly Revenue Section */}
               {canViewRevenue && (
                 <div className="glass p-6">
-                  <h2 className="text-lg font-semibold text-slate-100 mb-4">
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
                     {t('monthlyRevenue')} — {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="p-4 bg-slate-800/50 rounded-lg">
-                      <p className="text-sm text-slate-400">{t('totalRevenue')}</p>
-                      <p className="text-xl font-bold text-slate-100 mt-1">{data.monthTotal} {t('currency')}</p>
+                    <div className="p-4 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)]">
+                      <p className="text-sm text-[var(--text-secondary)]">{t('totalRevenue')}</p>
+                      <p className="text-xl font-bold text-[var(--text-primary)] mt-1">{data.monthTotal} {t('currency')}</p>
                     </div>
-                    <div className="p-4 bg-green-900/20 rounded-lg">
-                      <p className="text-sm text-slate-400">{t('confirmedRevenue')}</p>
-                      <p className="text-xl font-bold text-green-400 mt-1">{data.monthConfirmed} {t('currency')}</p>
+                    <div className="p-4 rounded-lg border border-green-500/30 bg-green-500/10">
+                      <p className="text-sm text-[var(--text-secondary)]">{t('confirmedRevenue')}</p>
+                      <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">{data.monthConfirmed} {t('currency')}</p>
                     </div>
-                    <div className="p-4 bg-red-900/20 rounded-lg">
-                      <p className="text-sm text-slate-400">{t('pendingRevenue')}</p>
-                      <p className="text-xl font-bold text-red-400 mt-1">{data.monthPending} {t('currency')}</p>
+                    <div className="p-4 rounded-lg border border-orange-500/30 bg-orange-500/10">
+                      <p className="text-sm text-[var(--text-secondary)]">{t('pendingRevenue')}</p>
+                      <p className="text-xl font-bold text-orange-600 dark:text-orange-400 mt-1">{data.monthPending} {t('currency')}</p>
                     </div>
                     {data.monthLate > 0 && (
-                      <div className="p-4 bg-amber-900/20 rounded-lg sm:col-span-3">
-                        <p className="text-sm text-slate-400">{t('lateRevenue')}</p>
+                      <div className="p-4 rounded-lg sm:col-span-3 border border-amber-500/30 bg-amber-500/10">
+                        <p className="text-sm text-[var(--text-secondary)]">{t('lateRevenue')}</p>
                         <p className="text-xl font-bold text-amber-400 mt-1">{data.monthLate} {t('currency')}</p>
                       </div>
                     )}
@@ -619,13 +696,13 @@ export default function DashboardPage() {
               {canViewRevenue && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="glass p-6">
-                    <h2 className="text-lg font-semibold text-slate-100 mb-4">
+                    <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
                       {t('paid')} / {t('unpaid')}
                     </h2>
                     <PaymentDonut paid={data.paidCount} unpaid={data.unpaidCount} pending={data.pendingCount} />
                   </div>
                   <div className="glass p-6">
-                    <h2 className="text-lg font-semibold text-slate-100 mb-4">
+                    <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
                       {t('paymentBreakdown')}
                     </h2>
                     <RevenueBar data={data.revenueByMethod} />
@@ -635,7 +712,7 @@ export default function DashboardPage() {
 
               {/* Trend Chart */}
                 <div className="glass p-6">
-                <h2 className="text-lg font-semibold text-slate-100 mb-4">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
                   {t('trend')}
                 </h2>
                 <AttendanceTrend data={data.trendData} />
@@ -643,7 +720,7 @@ export default function DashboardPage() {
 
               {/* Inactive Students Section */}
                 <div className="glass p-6">
-                <h2 className="text-lg font-semibold text-slate-100 mb-4">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
                   {t('inactiveStudents')}
                 </h2>
                 <InactiveList

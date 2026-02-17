@@ -6,11 +6,11 @@ const MONTHLY_MULTIPLIER = 4.333;
 
 /** Flat rate per bracket: entire student count uses the rate of the bracket it falls into. 5 brackets matching fixed plans. */
 function getBracketRate(students: number): number {
-  if (students <= 200) return 6;
-  if (students <= 600) return 3.75;
+  if (students <= 150) return 4;
+  if (students <= 500) return 3;
   if (students <= 1000) return 2.5;
-  if (students <= 1500) return 2;
-  return 1.25;
+  if (students <= 2000) return 2;
+  return 1.75;
 }
 
 function calculatePaygCost(studentsPerWeek: number) {
@@ -78,7 +78,8 @@ export async function GET(request: NextRequest) {
       .select(`
         id, name, plan, pricing_type, weekly_student_limit,
         billing_type, pending_plan_change, pending_billing_type,
-        current_period_start, current_period_end, last_payment_date
+        current_period_start, current_period_end, last_payment_date,
+        is_early_adopter, early_adopter_price
       `)
       .eq('id', ctx.user.center_id)
       .single();
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     const { data: scans } = await ctx.supabaseAdmin
       .from('attendance_scans')
-      .select('student_id')
+      .select('student_id, scanned_at')
       .eq('center_id', ctx.user.center_id)
       .gte('scanned_at', `${monthStart}T00:00:00`)
       .lte('scanned_at', `${monthEnd}T23:59:59`);
@@ -115,6 +116,52 @@ export async function GET(request: NextRequest) {
     const uniqueStudents = new Set((scans || []).map((s: { student_id: string }) => s.student_id));
     const weeklyAverage = Math.round((uniqueStudents.size / MONTHLY_MULTIPLIER) * 100) / 100;
     const paygEstimate = calculatePaygCost(weeklyAverage);
+
+    // This week's unique students (for PAYG centers)
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekStartStr = weekStart.toISOString().slice(0, 10);
+    const weekEndStr = now.toISOString().slice(0, 10);
+    const { data: thisWeekScans } = await ctx.supabaseAdmin
+      .from('attendance_scans')
+      .select('student_id')
+      .eq('center_id', ctx.user.center_id)
+      .gte('scanned_at', `${weekStartStr}T00:00:00`)
+      .lte('scanned_at', `${weekEndStr}T23:59:59`);
+    const thisWeekUnique = new Set((thisWeekScans || []).map((s: { student_id: string }) => s.student_id)).size;
+    const thisWeekPayg = calculatePaygCost(thisWeekUnique);
+
+    // Last 4 weeks PAYG charges from payg_weekly_charges
+    let paygWeeklyCharges: { week_start_date: string; week_end_date: string; student_count: number; total_charge: number; paid: boolean }[] = [];
+    try {
+      const fourWeeksAgo = new Date(now);
+      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+      const { data: charges } = await ctx.supabaseAdmin
+        .from('payg_weekly_charges')
+        .select('week_start_date, week_end_date, student_count, total_charge, paid')
+        .eq('center_id', ctx.user.center_id)
+        .gte('week_start_date', fourWeeksAgo.toISOString().slice(0, 10))
+        .order('week_start_date', { ascending: false })
+        .limit(4);
+      paygWeeklyCharges = (charges || []) as typeof paygWeeklyCharges;
+    } catch {
+      // table may not exist
+    }
+
+    const fixedPlanComparison = { plan: '', price: 0, savings: 0 };
+    if (thisWeekPayg.monthly > 0) {
+      const FIXED: Record<string, number> = { starter: 2000, pro: 4500, business: 6500, enterprise: 9000 };
+      for (const [p, price] of Object.entries(FIXED)) {
+        if (price < thisWeekPayg.monthly) {
+          fixedPlanComparison.plan = p;
+          fixedPlanComparison.price = price;
+          fixedPlanComparison.savings = thisWeekPayg.monthly - price;
+          break;
+        }
+      }
+    }
 
     let invoices: unknown[] = [];
     try {
@@ -130,10 +177,15 @@ export async function GET(request: NextRequest) {
 
     const currentPlanDetails = (plans || []).find((p) => (p as { id: string }).id === plan);
 
+    const isEarlyAdopter = !!(center as { is_early_adopter?: boolean }).is_early_adopter;
+    const earlyAdopterPrice = (center as { early_adopter_price?: number }).early_adopter_price;
+
     return NextResponse.json({
       plan,
       billing_type: billingType,
       pricing_type: billingType,
+      is_early_adopter: isEarlyAdopter,
+      early_adopter_price: earlyAdopterPrice,
       weekly_student_limit: center.weekly_student_limit ?? 200,
       current_period_start: (center as { current_period_start?: string }).current_period_start,
       current_period_end: (center as { current_period_end?: string }).current_period_end,
@@ -151,6 +203,14 @@ export async function GET(request: NextRequest) {
         weekly_average: weeklyAverage,
         estimated_bill: paygEstimate.monthly,
       },
+      payg_this_week: {
+        students_scanned: thisWeekUnique,
+        weekly_cost: thisWeekPayg.weekly,
+        monthly_estimate: thisWeekPayg.monthly,
+        rate_per_student: thisWeekPayg.effectiveRate,
+      },
+      payg_weekly_charges: paygWeeklyCharges,
+      payg_fixed_plan_savings: fixedPlanComparison,
     });
   } catch (error) {
     return NextResponse.json(

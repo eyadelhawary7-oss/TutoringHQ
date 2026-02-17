@@ -474,7 +474,7 @@ export default function StudentsPage() {
     <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-text-primary">
               {t('title')}
             </h1>
             <div className="flex flex-wrap gap-3">
@@ -483,7 +483,7 @@ export default function StudentsPage() {
                 placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm min-w-[180px]"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm min-w-[180px]"
                 dir="auto"
               />
               <button
@@ -538,14 +538,14 @@ export default function StudentsPage() {
           {!isLoading && students.length > 0 && (
             <div className="space-y-3 mb-6">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">{t('sort')}</span>
+                <span className="text-sm text-text-secondary">{t('sort')}</span>
                 <button
                   type="button"
                   onClick={() => setSortBy('name')}
                   className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                     sortBy === 'name'
                       ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
                   }`}
                 >
                   {t('sortName')}
@@ -556,7 +556,7 @@ export default function StudentsPage() {
                   className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                     sortBy === 'balance'
                       ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
                   }`}
                 >
                   {t('sortBalance')}
@@ -569,7 +569,7 @@ export default function StudentsPage() {
                   className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                     subjectFilter === null
                       ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
                   }`}
                 >
                   {t('filterAll')} ({students.length})
@@ -582,7 +582,7 @@ export default function StudentsPage() {
                     className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                       subjectFilter === sub
                         ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
                     }`}
                   >
                     {sub} ({subjectCounts[sub] ?? 0})
@@ -601,12 +601,12 @@ export default function StudentsPage() {
             </div>
           ) : students.length === 0 ? (
             <div className="text-center py-16">
-              <div className="w-16 h-16 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 mx-auto bg-bg-tertiary rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">{t('noStudents')}</p>
+              <p className="text-text-secondary mb-4">{t('noStudents')}</p>
               <button
                 onClick={() => setShowAddModal(true)}
                 className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors inline-block"
@@ -621,32 +621,32 @@ export default function StudentsPage() {
               </Link>
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+            <div className="glass rounded-xl shadow overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentId')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('name')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('phone')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('subject')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('feePerLesson')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('balance')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{tCommon('actions')}</th>
+                    <tr className="bg-bg-secondary border-b border-gray-200 dark:border-gray-700">
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('studentId')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('name')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('phone')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('subject')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('feePerLesson')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('balance')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredStudents.map((student) => (
-                      <tr key={student.id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                        <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400" dir="ltr">{student.student_number || '—'}</td>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{student.name}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">{student.phone}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                      <tr key={student.id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-bg-secondary">
+                        <td className="px-4 py-3 font-mono italic text-text-secondary" dir="ltr">{student.student_number || '—'}</td>
+                        <td className="px-4 py-3 font-medium text-text-primary">{student.name}</td>
+                        <td className="px-4 py-3 text-text-secondary" dir="ltr">{student.phone}</td>
+                        <td className="px-4 py-3 text-text-secondary">
                           {studentGroupsMap[student.id]?.names?.length
                             ? studentGroupsMap[student.id].names.join(', ')
                             : student.subject || '—'}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        <td className="px-4 py-3 text-text-secondary">
                           {studentGroupsMap[student.id]?.fees?.length
                             ? studentGroupsMap[student.id].fees.length > 1
                               ? <span className="italic">{t('multiple', { defaultValue: 'Multiple' })}</span>
@@ -695,43 +695,43 @@ export default function StudentsPage() {
 
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto" dir="auto">
+          <div className="glass rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto" dir="auto">
             <div className="p-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('addStudent')}</h2>
+              <h2 className="text-xl font-bold text-text-primary mb-4">{t('addStudent')}</h2>
               <form onSubmit={handleAddStudent} className="space-y-4">
                 {addError && <p className="text-sm text-red-600 dark:text-red-400">{addError}</p>}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('name')} *</label>
+                  <label className="block text-sm font-medium text-text-primary mb-1">{t('name')} *</label>
                   <input
                     type="text"
                     value={addForm.name}
                     onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('phone')}</label>
+                  <label className="block text-sm font-medium text-text-primary mb-1">{t('phone')}</label>
                   <input
                     type="tel"
                     value={addForm.phone}
                     onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                     dir="ltr"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('parentPhoneOptional')}</label>
+                  <label className="block text-sm font-medium text-text-primary mb-1">{t('parentPhoneOptional')}</label>
                   <input
                     type="tel"
                     value={addForm.parentPhone}
                     onChange={(e) => setAddForm((f) => ({ ...f, parentPhone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                     dir="ltr"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('groupRequired')}</label>
+                  <label className="block text-sm font-medium text-text-primary mb-1">{t('groupRequired')}</label>
                   <select
                     value={addForm.groupId}
                     onChange={(e) => {
@@ -744,7 +744,7 @@ export default function StudentsPage() {
                         monthlyFee: g?.fee != null ? String(g.fee) : '',
                       }));
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                     required
                   >
                     <option value="">{tCommon('select')}</option>
@@ -756,21 +756,21 @@ export default function StudentsPage() {
                 {addForm.groupId && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subject')}</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">{t('subject')}</label>
                       <input
                         type="text"
                         readOnly
                         value={groups.find((g) => g.id === addForm.groupId)?.subject ?? ''}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-100 dark:bg-gray-800 dark:text-white bg-gray-50"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-secondary text-text-primary"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('feePerLesson')}</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">{t('feePerLesson')}</label>
                       <input
                         type="number"
                         value={addForm.monthlyFee}
                         onChange={(e) => setAddForm((f) => ({ ...f, monthlyFee: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                         min={0}
                         step={0.01}
                       />
@@ -781,7 +781,7 @@ export default function StudentsPage() {
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 text-text-primary rounded-lg hover:bg-bg-secondary"
                   >
                     {tCommon('cancel')}
                   </button>
@@ -801,15 +801,15 @@ export default function StudentsPage() {
 
       {qrModalStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" dir="rtl">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-sm w-full overflow-hidden">
+          <div className="glass rounded-xl shadow-xl max-w-sm w-full overflow-hidden">
             <div className="p-6 text-center">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{qrModalStudent.name}</h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-2" dir="ltr">{qrModalStudent.student_number || '—'}</p>
+              <h2 className="text-2xl font-bold text-text-primary mb-2">{qrModalStudent.name}</h2>
+              <p className="text-lg text-text-secondary mb-2" dir="ltr">{qrModalStudent.student_number || '—'}</p>
               <div className="flex justify-center mb-4">
                 {qrDataUrl ? (
                   <img src={qrDataUrl} alt="QR Code" className="w-[200px] h-[200px] min-w-[200px] min-h-[200px]" />
                 ) : (
-                  <div className="w-[200px] h-[200px] bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                  <div className="w-[200px] h-[200px] bg-bg-tertiary rounded-lg flex items-center justify-center">
                     <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -817,7 +817,7 @@ export default function StudentsPage() {
                   </div>
                 )}
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{qrModalStudent.subject || '—'}</p>
+              <p className="text-sm text-text-secondary mb-6">{qrModalStudent.subject || '—'}</p>
               <div className="flex gap-3">
                 <button
                   onClick={downloadQR}
@@ -829,14 +829,14 @@ export default function StudentsPage() {
                 <button
                   onClick={printCard}
                   disabled={!qrDataUrl}
-                  className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 text-text-primary rounded-lg hover:bg-bg-secondary disabled:opacity-50 transition-colors"
                 >
                   {t('printCard')}
                 </button>
               </div>
               <button
                 onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }}
-                className="mt-4 w-full py-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-400"
+                className="mt-4 w-full py-2 text-text-secondary hover:text-text-primary"
               >
                 {tCommon('cancel')}
               </button>

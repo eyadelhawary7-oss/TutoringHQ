@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbUpdate } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { exportPaymentsToExcel } from '@/lib/excel-export';
+import { hasPlanFeature } from '@/lib/plans';
 
 interface PaymentRecord {
   id: string;
@@ -16,6 +17,9 @@ interface PaymentRecord {
   paid_at: string;
   status: string;
   confirmed?: boolean;
+  confirmed_by?: string | null;
+  confirmed_at?: string | null;
+  confirmed_by_name?: string | null;
   recorded_by?: string | null;
   group_id?: string | null;
   student_name?: string;
@@ -40,6 +44,7 @@ type StatusFilter = 'all' | 'confirmed' | 'pending';
 export default function PaymentsPage() {
   const t = useTranslations('payments');
   const tCommon = useTranslations('common');
+  const tSettings = useTranslations('settings');
   const locale = useLocale();
   const { user, hasPermission } = useUser();
   const isRTL = locale === 'ar';
@@ -65,28 +70,58 @@ export default function PaymentsPage() {
   }[]>([]);
   const [sortOrder, setSortOrder] = useState<'default' | 'high' | 'low'>('high');
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
+  const [showExportUpgradeModal, setShowExportUpgradeModal] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const DEBUG = typeof window !== 'undefined' && process.env.NODE_ENV === 'development';
 
-  const loadData = useCallback(async () => {
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const loadDataInner = useCallback(async () => {
+    setLoadError(null);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    setUserId(session.user.id);
+      if (!session) return;
+      setUserId(session.user.id);
 
-    const meRes = await fetch('/api/me', {
-      headers: { 'Authorization': `Bearer ${session.access_token}` },
-    });
-    const meData = await meRes.json();
-    if (!meData?.user?.center_id) return;
-    setCenterId(meData.user.center_id);
-    const cid = meData.user.center_id;
+      const meUrl = '/api/me';
+      if (DEBUG) {
+        console.log('[payments] Fetching /api/me', { url: meUrl, method: 'GET', hasToken: !!session.access_token });
+      }
+      let meRes: Response;
+      try {
+        meRes = await fetch(meUrl, { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+      } catch (fetchErr) {
+        if (DEBUG) {
+          console.error('[payments] /api/me fetch failed:', fetchErr);
+          console.error('[payments] Stack:', (fetchErr as Error)?.stack);
+        }
+        throw fetchErr;
+      }
+      if (DEBUG) {
+        console.log('[payments] /api/me response:', { status: meRes.status, statusText: meRes.statusText, ok: meRes.ok });
+      }
+      const meData = await meRes.json();
+      if (DEBUG) {
+        console.log('[payments] /api/me body:', { hasUser: !!meData?.user, centerId: meData?.user?.center_id });
+      }
+      if (!meData?.user?.center_id) return;
+      setCenterId(meData.user.center_id);
+      const cid = meData.user.center_id;
 
-    const { data: paymentsData, error: payErr } = await dbSelect({
+      if (DEBUG) {
+        console.log('[payments] Fetching payments for center:', cid);
+      }
+      const { data: paymentsData, error: payErr } = await dbSelect({
       table: 'payments',
       select: 'id, student_id, center_id, amount, method, recorded_by, paid_at, status, confirmed, confirmed_by, confirmed_at, group_id, students(name, student_number, phone), student_groups(name)',
       filters: [{ column: 'center_id', op: 'eq', value: cid }],
       order: { column: 'paid_at', ascending: false },
     });
 
-    console.log('Payments fetched:', paymentsData?.length, payErr);
+      if (DEBUG) {
+        const count = Array.isArray(paymentsData) ? paymentsData.length : 0;
+        console.log('[payments] Payments fetched:', { count, error: payErr?.message ?? null });
+      }
 
     type PaymentRow = PaymentRecord & {
       student_id: string;
@@ -125,11 +160,24 @@ export default function PaymentsPage() {
       groupMap = Object.fromEntries(groups.map(g => [g.id, g.name || '']));
     }
 
+    const confirmedByIds = [...new Set(payments.map(p => p.confirmed_by).filter(Boolean))] as string[];
+    let confirmedByMap: Record<string, string> = {};
+    if (confirmedByIds.length > 0) {
+      const { data: usersData } = await dbSelect({
+        table: 'users',
+        select: 'id, name',
+        filters: [{ column: 'id', op: 'in', value: confirmedByIds }],
+      });
+      const users = (usersData || []) as { id: string; name: string | null }[];
+      confirmedByMap = Object.fromEntries(users.map(u => [u.id, u.name || '—']));
+    }
+
     setRecords(payments.map(p => ({
       ...p,
       student_name: p.students?.name ?? studentMap[p.student_id]?.name ?? '—',
       student_number: p.students?.student_number ?? studentMap[p.student_id]?.student_number ?? '—',
       group_name: p.student_groups?.name ?? (p.group_id ? (groupMap[p.group_id] ?? '—') : '—'),
+      confirmed_by_name: p.confirmed_by ? (confirmedByMap[p.confirmed_by] ?? '—') : null,
     })));
 
     // Load student summary (attendance + payment aggregates)
@@ -161,8 +209,56 @@ export default function PaymentsPage() {
     })).filter(r => r.total_lessons > 0 || r.paid_lessons > 0 || r.balance_due > 0)
       .sort((a, b) => (b.balance_due - a.balance_due) || b.total_lessons - a.total_lessons);
     setStudentSummary(summaryRows);
-    setIsLoading(false);
   }, []);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setIsOffline(true);
+        setLoadError(t('offline', { defaultValue: 'You appear to be offline. Please check your connection.' }));
+        setIsLoading(false);
+        return;
+      }
+      setIsOffline(false);
+      setLoadError(null);
+      const maxRetries = 3;
+      const delays = [1000, 2000, 4000];
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          if (attempt > 0) {
+            if (DEBUG) console.log(`[payments] Retry ${attempt}/${maxRetries}, delay ${delays[attempt - 1]}ms`);
+            setLoadError(t('retrying', { defaultValue: `Retrying... (${attempt}/${maxRetries})` }));
+            await sleep(delays[attempt - 1]);
+            setLoadError(null);
+          }
+          await loadDataInner();
+          return;
+        } catch (err) {
+          if (DEBUG) {
+            console.error('[payments] Attempt', attempt + 1, 'failed:', err);
+            console.error('[payments] Stack:', (err as Error)?.stack);
+          }
+          if (attempt === maxRetries - 1) {
+            setLoadError(err instanceof Error ? err.message : String(err));
+          }
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadDataInner, DEBUG, t]);
+
+  useEffect(() => {
+    const onOnline = () => { setIsOffline(false); loadData(); };
+    const onOffline = () => setIsOffline(true);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, [loadData]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -202,14 +298,15 @@ export default function PaymentsPage() {
   }, [filteredRecords]);
 
   const handleConfirm = async (paymentId: string) => {
-    if (!userId || !canConfirmPayments) return;
+    if (!canConfirmPayments) return;
     setConfirmingId(paymentId);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       await dbUpdate({
         table: 'payments',
         data: {
           confirmed: true,
-          confirmed_by: userId,
+          confirmed_by: user?.id ?? userId,
           confirmed_at: new Date().toISOString(),
           status: 'confirmed',
         },
@@ -225,7 +322,13 @@ export default function PaymentsPage() {
     }
   };
 
+  const canExportExcel = hasPlanFeature(user?.center?.plan, 'excel_export');
+  const tDashboard = useTranslations('dashboard');
   const handleExport = () => {
+    if (!canExportExcel) {
+      setShowExportUpgradeModal(true);
+      return;
+    }
     exportPaymentsToExcel(filteredRecords);
   };
 
@@ -243,13 +346,13 @@ export default function PaymentsPage() {
     <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('title')}</h1>
+            <h1 className="text-2xl font-bold text-text-primary">{t('title')}</h1>
             <div className="flex items-center gap-3">
-              <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow p-1">
+              <div className="flex bg-bg-primary rounded-lg shadow p-1">
                 <button
                   onClick={() => setViewMode('transactionLog')}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    viewMode === 'transactionLog' ? 'bg-indigo-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    viewMode === 'transactionLog' ? 'bg-indigo-600 text-white' : 'text-text-secondary hover:bg-bg-secondary'
                   }`}
                 >
                   {t('transactionLog')}
@@ -257,19 +360,35 @@ export default function PaymentsPage() {
                 <button
                   onClick={() => setViewMode('studentSummary')}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    viewMode === 'studentSummary' ? 'bg-indigo-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    viewMode === 'studentSummary' ? 'bg-indigo-600 text-white' : 'text-text-secondary hover:bg-bg-secondary'
                   }`}
                 >
                   {t('studentSummary')}
                 </button>
               </div>
               {viewMode === 'transactionLog' && (
-                <button
-                  onClick={handleExport}
-                  className="px-4 py-2 text-sm font-medium border border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950"
-                >
-                  {t('exportExcel')}
-                </button>
+                <>
+                  <button
+                    onClick={handleExport}
+                    className="px-4 py-2 text-sm font-medium border border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950"
+                  >
+                    {t('exportExcel')}
+                  </button>
+                  {showExportUpgradeModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowExportUpgradeModal(false)}>
+                      <div className="bg-bg-primary rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-text-primary mb-2">{tSettings('upgradeToUnlockFeature')}</h3>
+                        <p className="text-sm text-text-secondary mb-4">{tDashboard('exportExcelUpgrade')}</p>
+                        <a href="/settings/billing" className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg">
+                          {tDashboard('upgradePlan')}
+                        </a>
+                        <button onClick={() => setShowExportUpgradeModal(false)} className="ml-2 px-4 py-2 bg-bg-tertiary rounded-lg text-sm">
+                          {tCommon('cancel')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -280,12 +399,24 @@ export default function PaymentsPage() {
             </div>
           )}
 
+          {(loadError || isOffline) && (
+            <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-sm">
+              <p className="font-medium">{loadError || t('offline', { defaultValue: 'Offline' })}</p>
+              <button
+                onClick={() => loadData()}
+                className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg"
+              >
+                {t('retry', { defaultValue: 'Retry' })}
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-3 mb-6">
-            <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow p-1">
+            <div className="flex bg-bg-primary rounded-lg shadow p-1">
               <button
                 onClick={() => setActiveTab('all')}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'all' ? 'bg-indigo-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  activeTab === 'all' ? 'bg-indigo-600 text-white' : 'text-text-secondary hover:bg-bg-secondary'
                 }`}
               >
                 {t('filterAll')}
@@ -293,7 +424,7 @@ export default function PaymentsPage() {
               <button
                 onClick={() => setActiveTab('pending')}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'pending' ? 'bg-indigo-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  activeTab === 'pending' ? 'bg-indigo-600 text-white' : 'text-text-secondary hover:bg-bg-secondary'
                 }`}
               >
                 {t('filterPending')}
@@ -304,7 +435,7 @@ export default function PaymentsPage() {
                 <select
                   value={statusFilter}
                   onChange={e => setStatusFilter(e.target.value as StatusFilter)}
-                  className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm shadow"
+                  className="px-3 py-2 bg-bg-primary border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-text-primary shadow"
                 >
                   <option value="all">{t('filterAll')}</option>
                   <option value="confirmed">{t('filterPaid')}</option>
@@ -313,7 +444,7 @@ export default function PaymentsPage() {
                 <select
                   value={methodFilter}
                   onChange={e => setMethodFilter(e.target.value)}
-                  className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm shadow"
+                  className="px-3 py-2 bg-bg-primary border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-text-primary shadow"
                 >
                   <option value="all">{t('paymentMethod')} — {t('filterAll')}</option>
                   {methods.map(m => (
@@ -332,11 +463,11 @@ export default function PaymentsPage() {
               </svg>
             </div>
           ) : viewMode === 'studentSummary' ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+            <div className="bg-bg-primary rounded-xl shadow overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-end">
                 <button
                   onClick={() => setSortOrder(prev => prev === 'high' ? 'low' : 'high')}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                  className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-bg-secondary text-text-primary transition-colors"
                 >
                   {sortOrder === 'high'
                     ? t('sortHighToLow', { defaultValue: 'Balance: High → Low' })
@@ -347,29 +478,29 @@ export default function PaymentsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentName')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentId')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('totalLessons')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('paidLessons')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('balanceDue')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{tCommon('actions')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('studentName')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('studentId')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('totalLessons')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('paidLessons')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('balanceDue')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedStudents.map((row) => (
                       <React.Fragment key={row.student_id}>
-                        <tr className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{row.student_name}</td>
-                          <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400" dir="ltr">{row.student_number}</td>
-                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.total_lessons}</td>
-                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{row.paid_lessons}</td>
+                        <tr className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-bg-secondary/30">
+                          <td className="px-4 py-3 font-medium text-text-primary">{row.student_name}</td>
+                          <td className="px-4 py-3 font-mono italic text-text-secondary" dir="ltr">{row.student_number}</td>
+                          <td className="px-4 py-3 text-text-secondary">{row.total_lessons}</td>
+                          <td className="px-4 py-3 text-text-secondary">{row.paid_lessons}</td>
                           <td className="px-4 py-3">
                             {row.balance_due > 0 ? (
                               <span className="font-mono italic font-medium text-red-600 dark:text-red-400">
                                 {row.balance_due.toLocaleString('ar-EG')} EGP
                               </span>
                             ) : (
-                              <span className="font-mono italic text-gray-500 dark:text-gray-400">0 EGP</span>
+                              <span className="font-mono italic text-text-secondary">0 EGP</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -382,15 +513,20 @@ export default function PaymentsPage() {
                           </td>
                         </tr>
                         {expandedStudentId === row.student_id && (
-                          <tr key={`${row.student_id}-history`} className="bg-gray-50 dark:bg-gray-700/30">
+                          <tr key={`${row.student_id}-history`} className="bg-bg-secondary">
                             <td colSpan={6} className="px-4 py-3">
                               <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
                                 {records.filter(r => r.student_id === row.student_id).map(r => (
-                                  <div key={r.id} className="flex justify-between py-1">
+                                  <div key={r.id} className="flex flex-wrap justify-between items-center gap-x-2 py-1 border-b border-gray-100 dark:border-gray-700/30 last:border-0">
                                     <span>{r.paid_at ? new Date(r.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
                                     <span className="font-mono italic">{r.amount} EGP</span>
                                     <span>{formatMethod(r.method)}</span>
                                     <span className={`italic ${r.status === 'late' ? 'text-amber-600 font-medium' : ''}`}>{r.status === 'late' ? t('lateEntry') : r.confirmed !== false && r.status !== 'pending' ? t('filterPaid') : t('filterPending')}</span>
+                                    {r.confirmed_by_name && r.confirmed_at && (
+                                      <span className="text-text-tertiary text-[10px] w-full mt-0.5" title={new Date(r.confirmed_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}>
+                                        {t('confirmedBy', { defaultValue: 'Confirmed by' })}: {r.confirmed_by_name}
+                                      </span>
+                                    )}
                                   </div>
                                 ))}
                               </div>
@@ -402,7 +538,7 @@ export default function PaymentsPage() {
                   </tbody>
                 </table>
                 {sortedStudents.length === 0 && (
-                  <p className="p-8 text-center text-gray-500 dark:text-gray-400">{t('noPaymentsYet')}</p>
+                  <p className="p-8 text-center text-text-secondary">{t('noPaymentsYet')}</p>
                 )}
               </div>
             </div>
@@ -411,9 +547,9 @@ export default function PaymentsPage() {
               {groupedByDate.map(([date, dayRecords]) => {
                 const dayTotal = dayRecords.reduce((s, r) => s + r.amount, 0);
                 return (
-                  <div key={date} className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
-                    <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                  <div key={date} className="bg-bg-primary rounded-xl shadow overflow-hidden">
+                    <div className="px-4 py-2 bg-bg-secondary border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                      <span className="font-medium text-text-primary">
                         {new Date(date).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </span>
                       <span className="text-sm font-mono italic font-semibold text-indigo-600 dark:text-indigo-400">
@@ -424,36 +560,49 @@ export default function PaymentsPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-gray-700">
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('date')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentName')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('studentId')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('amount')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('paymentMethod')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('group')}</th>
-                            {canConfirmPayments && <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{tCommon('actions')}</th>}
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('date')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('studentName')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('studentId')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('amount')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('paymentMethod')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('status')}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('confirmedBy', { defaultValue: 'Confirmed by' })}</th>
+                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('group')}</th>
+                            {canConfirmPayments && <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{tCommon('actions')}</th>}
                           </tr>
                         </thead>
                         <tbody>
                           {dayRecords.map(r => (
-                            <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">
+                            <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-bg-secondary/30">
+                              <td className="px-4 py-3 text-text-secondary" dir="ltr">
                                 {r.paid_at ? new Date(r.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                               </td>
-                              <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{r.student_name}</td>
-                              <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400" dir="ltr">{r.student_number ?? '—'}</td>
-                              <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400">{r.amount} EGP</td>
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatMethod(r.method)}</td>
+                              <td className="px-4 py-3 font-medium text-text-primary">{r.student_name}</td>
+                              <td className="px-4 py-3 font-mono italic text-text-secondary" dir="ltr">{r.student_number ?? '—'}</td>
+                              <td className="px-4 py-3 font-mono italic text-text-secondary">{r.amount} EGP</td>
+                              <td className="px-4 py-3 text-text-secondary">{formatMethod(r.method)}</td>
                               <td className="px-4 py-3">
-                                <span className={`px-2 py-1 text-xs font-medium italic rounded-full ${
-                                  r.confirmed !== false && r.status === 'confirmed'
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
-                                }`}>
+                                <span
+                                  title={r.confirmed_by_name && r.confirmed_at
+                                    ? `${t('confirmedBy', { defaultValue: 'Confirmed by' })}: ${r.confirmed_by_name} — ${new Date(r.confirmed_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                                    : undefined}
+                                  className={`px-2 py-1 text-xs font-medium italic rounded-full ${
+                                    r.confirmed !== false && r.status === 'confirmed'
+                                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                      : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
+                                  }`}
+                                >
                                   {r.confirmed !== false && r.status === 'confirmed' ? t('confirmedStatus') : t('filterPending')}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.group_name ?? '—'}</td>
+                              <td className="px-4 py-3 text-text-secondary text-xs">
+                                {r.confirmed_by_name && r.confirmed_at ? (
+                                  <span title={new Date(r.confirmed_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}>
+                                    {r.confirmed_by_name}
+                                  </span>
+                                ) : '—'}
+                              </td>
+                              <td className="px-4 py-3 text-text-secondary">{r.group_name ?? '—'}</td>
                               {canConfirmPayments && (
                                 <td className="px-4 py-3">
                                   {(r.confirmed === false || r.status === 'pending') ? (
@@ -476,7 +625,7 @@ export default function PaymentsPage() {
                 );
               })}
               {groupedByDate.length === 0 && (
-                <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+                <div className="text-center py-16 text-text-secondary">
                   {t('noPaymentsYet')}
                 </div>
               )}

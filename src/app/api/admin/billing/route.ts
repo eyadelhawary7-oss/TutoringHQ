@@ -2,16 +2,16 @@ import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
 
 const PLAN_MONTHLY: Record<string, number> = {
-  starter: 4000,
-  pro: 7200,
-  pro_plus: 8000,
+  starter: 2000,
+  pro: 4500,
+  business: 6500,
   enterprise: 9000,
   payg: 0,
   top_centers: 0,
 };
 
-function calcAmount(plan: string, period: string): number {
-  const monthly = PLAN_MONTHLY[plan] ?? 4000;
+function calcAmount(plan: string, period: string, monthlyOverride?: number): number {
+  const monthly = monthlyOverride ?? PLAN_MONTHLY[plan] ?? 4000;
   switch (period) {
     case 'quarterly': return monthly * 3;
     case 'semi_annual': return Math.round(monthly * 6 * 0.95);
@@ -33,9 +33,11 @@ export async function GET(request: Request) {
 
     const { supabaseAdmin } = ctx;
 
+    const planFilter = new URL(request.url).searchParams.get('plan') || '';
+
     const { data: centers, error: centersError } = await supabaseAdmin
       .from('centers')
-      .select('id, name, plan, phone, billing_period, next_payment_due, next_billing_date, billing_status, status, payment_due_date, auto_suspend_at')
+      .select('id, name, plan, phone, billing_period, next_payment_due, next_billing_date, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type')
       .in('status', ['active', 'suspended']);
 
     if (centersError) {
@@ -53,17 +55,37 @@ export async function GET(request: Request) {
         creditsByCenter[r.referring_center_id] = (creditsByCenter[r.referring_center_id] ?? 0) + Number(r.reward_amount);
       }
     });
-    const billingRows = centers || [];
+    let billingRows = centers || [];
+    let fixedMRR = 0;
+    let paygMRR = 0;
+    const mrrByPlan: Record<string, number> = {};
+
     for (const row of billingRows) {
       const bp = (row as { billing_period?: string }).billing_period || 'monthly';
       const nextDue = (row as { next_payment_due?: string }).next_payment_due
         || (row as { next_billing_date?: string }).next_billing_date;
-      const monthly = PLAN_MONTHLY[row.plan as string] ?? 4000;
-      const amount = calcAmount(row.plan as string || 'starter', bp === 'half_yearly' ? 'semi_annual' : bp === 'yearly' ? 'annual' : bp);
+      const isEarlyAdopter = !!(row as { is_early_adopter?: boolean }).is_early_adopter;
+      const earlyAdopterPrice = (row as { early_adopter_price?: number }).early_adopter_price;
+      const billingType = (row as { billing_type?: string }).billing_type || 'fixed';
+
+      let monthly: number;
+      if (billingType === 'payg') {
+        monthly = 0; // PAYG MRR calculated separately from payg_weekly_charges
+        (row as Record<string, unknown>).amount = 0;
+        (row as Record<string, unknown>).monthlyEquivalent = 0;
+      } else {
+        monthly = isEarlyAdopter && typeof earlyAdopterPrice === 'number'
+          ? earlyAdopterPrice
+          : PLAN_MONTHLY[row.plan as string] ?? 4000;
+        const amount = calcAmount(row.plan as string || 'starter', bp === 'half_yearly' ? 'semi_annual' : bp === 'yearly' ? 'annual' : bp, monthly);
+        (row as Record<string, unknown>).amount = amount;
+        const monthlyEquiv = bp === 'quarterly' ? monthly : bp === 'semi_annual' || bp === 'half_yearly' ? monthly * 0.95 : bp === 'annual' || bp === 'yearly' ? monthly * 0.9 : monthly;
+        (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
+        fixedMRR += monthlyEquiv;
+        const planKey = (row.plan as string) || 'starter';
+        mrrByPlan[planKey] = (mrrByPlan[planKey] ?? 0) + monthlyEquiv;
+      }
       const discount = bp === 'semi_annual' || bp === 'half_yearly' ? 5 : bp === 'annual' || bp === 'yearly' ? 10 : bp === 'quarterly' ? 0 : 0;
-      const monthlyEquiv = bp === 'quarterly' ? monthly : bp === 'semi_annual' || bp === 'half_yearly' ? monthly * 0.95 : bp === 'annual' || bp === 'yearly' ? monthly * 0.9 : monthly;
-      (row as Record<string, unknown>).amount = amount;
-      (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
       (row as Record<string, unknown>).discount = discount;
       (row as Record<string, unknown>).nextDue = nextDue;
       (row as Record<string, unknown>).referralCredits = creditsByCenter[(row as { id: string }).id] ?? 0;
@@ -75,6 +97,44 @@ export async function GET(request: Request) {
         (row as Record<string, unknown>).daysUntilDue = daysUntil;
       }
       (row as Record<string, unknown>).autoSuspendAt = suspendAt;
+    }
+
+    // PAYG centers: get recent weekly charges for MRR estimate
+    const paygCenterIds = billingRows
+      .filter((r: { billing_type?: string }) => (r.billing_type || 'fixed') === 'payg')
+      .map((r: { id: string }) => r.id);
+    if (paygCenterIds.length > 0) {
+      const fourWeeksAgo = new Date();
+      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+      const { data: paygCharges } = await supabaseAdmin
+        .from('payg_weekly_charges')
+        .select('center_id, total_charge')
+        .in('center_id', paygCenterIds)
+        .gte('week_start_date', fourWeeksAgo.toISOString().slice(0, 10));
+      const paygByCenter: Record<string, number[]> = {};
+      (paygCharges || []).forEach((c: { center_id: string; total_charge: number }) => {
+        if (!paygByCenter[c.center_id]) paygByCenter[c.center_id] = [];
+        paygByCenter[c.center_id].push(Number(c.total_charge));
+      });
+      const MONTHLY_WEEKS = 4.333;
+      Object.entries(paygByCenter).forEach(([cid, charges]) => {
+        const avgWeekly = charges.length > 0 ? charges.reduce((a, b) => a + b, 0) / charges.length : 0;
+        const mrr = avgWeekly * MONTHLY_WEEKS;
+        paygMRR += mrr;
+        mrrByPlan['payg'] = (mrrByPlan['payg'] ?? 0) + mrr;
+        const row = billingRows.find((r: { id: string }) => r.id === cid) as Record<string, unknown> | undefined;
+        if (row) {
+          row.monthlyEquivalent = Math.round(mrr);
+          row.paygWeeklyAvg = avgWeekly;
+        }
+      });
+    }
+
+    if (planFilter) {
+      billingRows = billingRows.filter((r: { plan?: string; billing_type?: string }) => {
+        if (planFilter === 'payg') return (r.billing_type || 'fixed') === 'payg';
+        return (r.plan || 'starter') === planFilter;
+      });
     }
 
     const { data: payments, error: payError } = await supabaseAdmin
@@ -126,6 +186,10 @@ export async function GET(request: Request) {
       centerName: billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? '—',
     }));
 
+    const totalMRR = fixedMRR + paygMRR;
+    const activeFixedCount = (centers || []).filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'fixed').length;
+    const revenueProjection = totalMRR * 12;
+
     return NextResponse.json({
       centers: billingRows,
       paymentHistory: [...paymentRows, ...invoiceRows].sort((a, b) => {
@@ -136,6 +200,12 @@ export async function GET(request: Request) {
         return bT - aT;
       }),
       pendingInvoices: pendingInvoiceRows,
+      mrrByPlan,
+      totalMRR,
+      fixedMRR,
+      paygMRR,
+      revenueProjection,
+      activeFixedCount,
     });
   } catch (error) {
     return NextResponse.json(
@@ -303,8 +373,15 @@ export async function PUT(request: Request) {
           .eq('referred_center_id', centerId)
           .maybeSingle();
         if (!existingReward) {
-          const rewardAmount = Math.round(amount * 0.4);
-          const { data: referringCenter } = await supabaseAdmin.from('centers').select('name').eq('id', referredBy).single();
+          const { data: referringCenter } = await supabaseAdmin
+            .from('centers')
+            .select('name, is_early_adopter, early_adopter_referral_count')
+            .eq('id', referredBy)
+            .single();
+          const isEA = !!(referringCenter as { is_early_adopter?: boolean })?.is_early_adopter;
+          const eaCount = Number((referringCenter as { early_adopter_referral_count?: number })?.early_adopter_referral_count ?? 0) || 0;
+          const use60Percent = isEA && eaCount < 10;
+          const rewardAmount = Math.round(amount * (use60Percent ? 0.6 : 0.4));
           await supabaseAdmin.from('referral_rewards').insert({
             referring_center_id: referredBy,
             referred_center_id: centerId,
@@ -313,6 +390,11 @@ export async function PUT(request: Request) {
             reward_amount: rewardAmount,
             reward_status: 'approved',
           });
+          if (isEA && eaCount < 10) {
+            await supabaseAdmin.from('centers').update({
+              early_adopter_referral_count: (eaCount || 0) + 1,
+            }).eq('id', referredBy);
+          }
           try {
             await supabaseAdmin.from('audit_log').insert({
               center_id: referredBy,

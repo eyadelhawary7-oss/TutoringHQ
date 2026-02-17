@@ -90,7 +90,8 @@ export default function GroupsPage() {
               select: 'id',
               filters: [{ column: 'group_id', op: 'eq', value: g.id }],
             });
-            return { ...g, subject: (g as Group).subject ?? null, member_count: (membersData || []).length };
+            const members = (membersData || []) as { id: string }[];
+            return { ...g, subject: (g as Group).subject ?? null, member_count: members.length };
           })
         );
         setGroups(withCount);
@@ -112,7 +113,8 @@ export default function GroupsPage() {
         select: 'student_id',
         filters: [{ column: 'group_id', op: 'eq', value: selectedGroup }],
       });
-      const ids = (membersData || []).map((m: { student_id: string }) => m.student_id);
+      const membersList = (membersData || []) as { student_id: string }[];
+      const ids = membersList.map(m => m.student_id);
       const names = students.filter(s => ids.includes(s.id));
       setMembers(ids.map((id: string) => ({ student_id: id, student_name: names.find(s => s.id === id)?.name || '' })));
 
@@ -248,7 +250,7 @@ export default function GroupsPage() {
   return (
     <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('title')}</h1>
+          <h1 className="text-2xl font-bold text-text-primary mb-6">{t('title')}</h1>
 
           {/* Subject filter pills */}
           {!isLoading && (
@@ -258,7 +260,7 @@ export default function GroupsPage() {
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   subjectFilter === null
                     ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    : 'bg-bg-tertiary text-text-primary hover:bg-bg-secondary'
                 }`}
               >
                 {t('all')} ({groups.length})
@@ -273,7 +275,7 @@ export default function GroupsPage() {
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       subjectFilter === sub.name
                         ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        : 'bg-bg-tertiary text-text-primary hover:bg-bg-secondary'
                     }`}
                   >
                     {sub.name} ({count})
@@ -293,14 +295,14 @@ export default function GroupsPage() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="space-y-4">
-                <form onSubmit={handleAddGroup} className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('createGroup')}</h2>
+                <form onSubmit={handleAddGroup} className="bg-bg-primary rounded-xl shadow p-6">
+                  <h2 className="text-lg font-semibold text-text-primary mb-4">{t('createGroup')}</h2>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{t('subject')} *</label>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">{t('subject')} *</label>
                     <select
                       value={newGroupSubject}
                       onChange={(e) => { setNewGroupSubject(e.target.value); setAddError(''); }}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                       required
                     >
                       <option value="">—</option>
@@ -314,18 +316,18 @@ export default function GroupsPage() {
                     value={newGroupName}
                     onChange={(e) => { setNewGroupName(e.target.value); setAddError(''); }}
                     placeholder={t('groupName')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white mb-3"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary mb-3"
                     required
                   />
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{t('monthlyFee')} *</label>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">{t('monthlyFee')} *</label>
                     <input
                       type="number"
                       value={newGroupFee}
                       onChange={(e) => setNewGroupFee(e.target.value)}
                       placeholder="0"
                       min={0}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                       required
                     />
                   </div>
@@ -341,19 +343,19 @@ export default function GroupsPage() {
                   </button>
                 </form>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('allGroups')}</h2>
+                <div className="bg-bg-primary rounded-xl shadow p-6">
+                  <h2 className="text-lg font-semibold text-text-primary mb-4">{t('allGroups')}</h2>
                   <div className="space-y-2">
                     {filteredGroups.map((g) => (
                       <div
                         key={g.id}
                         className={`flex items-center justify-between p-3 rounded-lg cursor-pointer ${
-                          selectedGroup === g.id ? 'bg-indigo-100 dark:bg-indigo-900/50' : 'bg-gray-50 dark:bg-gray-700/30'
+                          selectedGroup === g.id ? 'bg-indigo-100 dark:bg-indigo-900/50' : 'bg-bg-secondary'
                         }`}
                         onClick={() => setSelectedGroup(g.id)}
                       >
-                        <span className="font-medium text-gray-900 dark:text-white">{g.name}</span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                        <span className="font-medium text-text-primary">{g.name}</span>
+                        <span className="text-sm text-text-secondary">
                           {(g.fee ?? 0).toLocaleString()} {t('feePerLessonShort', { defaultValue: 'EGP/lesson' })} · {(g as Group & { member_count?: number }).member_count ?? 0} {t('members')}
                         </span>
                         <button
@@ -368,13 +370,13 @@ export default function GroupsPage() {
                 </div>
               </div>
 
-              <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+              <div className="lg:col-span-2 bg-bg-primary rounded-xl shadow p-6">
                 {selectedGroup ? (
                   <>
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{t('members')}</h2>
+                    <h2 className="text-lg font-semibold text-text-primary mb-4">{t('members')}</h2>
                     <div className="space-y-2 mb-6">
                       {members.map((m) => (
-                        <div key={m.student_id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/30 rounded">
+                        <div key={m.student_id} className="flex items-center justify-between p-2 bg-bg-secondary rounded">
                           <span>{m.student_name}</span>
                           <button onClick={() => handleRemoveMember(m.student_id)} className="text-red-600 text-xs">
                             {t('remove')}
@@ -382,7 +384,7 @@ export default function GroupsPage() {
                         </div>
                       ))}
                     </div>
-                    <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{t('addStudent')}</h3>
+                    <h3 className="text-sm font-medium text-text-secondary mb-2">{t('addStudent')}</h3>
                     <div className="flex flex-wrap gap-2">
                       {studentsForGroup.map((s) => {
                         const otherGroups = studentOtherGroups[s.id] || [];
@@ -400,7 +402,7 @@ export default function GroupsPage() {
                     </div>
                   </>
                 ) : (
-                  <p className="text-gray-500 dark:text-gray-400">{t('selectGroup')}</p>
+                  <p className="text-text-secondary">{t('selectGroup')}</p>
                 )}
               </div>
             </div>

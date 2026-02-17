@@ -49,6 +49,7 @@ export default function TeamPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
+  const [limits, setLimits] = useState<{ maxTeachers: number; canAddTeacher: boolean } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [savedMessage, setSavedMessage] = useState('');
@@ -82,6 +83,19 @@ export default function TeamPage() {
     if (!meData?.user?.center_id) return;
     setCenterId(meData.user.center_id);
     const cid = meData.user.center_id;
+
+    // Fetch plan limits
+    try {
+      const limitsRes = await fetch('/api/settings/limits', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      if (limitsRes.ok) {
+        const limitsData = await limitsRes.json();
+        setLimits({ maxTeachers: limitsData.maxTeachers ?? 2, canAddTeacher: limitsData.canAddTeacher !== false });
+      }
+    } catch {
+      setLimits({ maxTeachers: 2, canAddTeacher: true });
+    }
 
     const { data: membersData } = await dbSelect({
       table: 'users',
@@ -180,7 +194,11 @@ export default function TeamPage() {
       const result = await res.json();
 
       if (!res.ok) {
-        setInviteError(result.error || res.statusText || 'Failed to add member');
+        if (result.code === 'TEAM_LIMIT_REACHED') {
+          setInviteError(t('planLimitReached', { defaultValue: "You've reached your team member limit for your plan. Upgrade to add more team members." }));
+        } else {
+          setInviteError(result.error || res.statusText || 'Failed to add member');
+        }
         return;
       }
 
@@ -336,13 +354,13 @@ export default function TeamPage() {
           <div className="flex flex-wrap gap-2 mb-6">
             <Link
               href="/settings"
-              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-primary hover:bg-bg-secondary text-sm font-medium transition-colors"
             >
               {t('general')}
             </Link>
             <Link
               href="/settings/billing"
-              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-primary hover:bg-bg-secondary text-sm font-medium transition-colors"
             >
               {t('billing')}
             </Link>
@@ -351,16 +369,34 @@ export default function TeamPage() {
             </span>
           </div>
 
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {t('teamMembers')}
-            </h1>
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
-            >
-              {t('inviteMember', { defaultValue: 'Invite Member' })}
-            </button>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+            <div>
+              <h1 className="text-2xl font-bold text-text-primary">
+                {t('teamMembers')}
+              </h1>
+              {limits && (
+                <p className="text-sm text-text-secondary mt-1">
+                  {t('teamMembersCount', { current: teamMembers.length, max: limits.maxTeachers })}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {limits && !limits.canAddTeacher && (
+                <Link
+                  href="/settings/billing"
+                  className="px-3 py-1.5 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg"
+                >
+                  {t('upgradeForMore')}
+                </Link>
+              )}
+              <button
+                onClick={() => setShowInviteModal(true)}
+                disabled={limits ? !limits.canAddTeacher : false}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg"
+              >
+                {t('inviteMember', { defaultValue: 'Invite Member' })}
+              </button>
+            </div>
           </div>
 
           {savedMessage && (
@@ -376,17 +412,17 @@ export default function TeamPage() {
             </div>
           )}
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+          <div className="glass rounded-xl shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('inviteName')}</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('invitePhone')}</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('role')}</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status', { defaultValue: 'Status' })}</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('permissions', { defaultValue: 'Permissions' })}</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-gray-500 dark:text-gray-400">{tCommon('actions')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('inviteName')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('invitePhone')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('role')}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('status', { defaultValue: 'Status' })}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('permissions', { defaultValue: 'Permissions' })}</th>
+                    <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -397,11 +433,11 @@ export default function TeamPage() {
 
                     return (
                       <tr key={member.id} className={`border-b border-gray-100 dark:border-gray-700/50 ${member.is_active === false ? 'opacity-50' : ''}`}>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        <td className="px-4 py-3 font-medium text-text-primary">
                           {member.name || '—'}
-                          {isSelf && <span className="text-xs text-gray-500 ml-1">({t('you')})</span>}
+                          {isSelf && <span className="text-xs text-text-secondary ml-1">({t('you')})</span>}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">{member.phone}</td>
+                        <td className="px-4 py-3 text-text-secondary" dir="ltr">{member.phone}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2.5 py-1 text-xs font-medium italic rounded-full ${getRoleBadgeClass(member.role)}`}>
                             {getRoleLabel(member.role)}
@@ -455,7 +491,7 @@ export default function TeamPage() {
                               {t('editPermissions', { defaultValue: 'Edit Permissions' })}
                             </button>
                           ) : (
-                            <span className="text-gray-400 text-xs">—</span>
+                            <span className="text-text-tertiary text-xs">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -475,8 +511,8 @@ export default function TeamPage() {
                   })}
                   {pendingInvites.map((inv, idx) => (
                     <tr key={`pending-${idx}`} className="border-b border-gray-100 dark:border-gray-700/50">
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">—</td>
-                      <td className="px-4 py-3 font-mono italic text-gray-600 dark:text-gray-400" dir="ltr">{inv.phone}</td>
+                      <td className="px-4 py-3 text-text-secondary">—</td>
+                      <td className="px-4 py-3 font-mono italic text-text-secondary" dir="ltr">{inv.phone}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2.5 py-1 text-xs font-medium italic rounded-full ${getRoleBadgeClass(inv.role)}`}>
                           {getRoleLabel(inv.role)}
@@ -494,7 +530,7 @@ export default function TeamPage() {
                 </tbody>
               </table>
               {teamMembers.length === 0 && pendingInvites.length === 0 && (
-                <p className="p-8 text-center text-gray-500 dark:text-gray-400">{t('noTeamMembers')}</p>
+                <p className="p-8 text-center text-text-secondary">{t('noTeamMembers')}</p>
               )}
             </div>
           </div>
@@ -504,22 +540,22 @@ export default function TeamPage() {
       {/* Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowInviteModal(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('inviteMember', { defaultValue: 'Invite Member' })}</h3>
+          <div className="glass rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-text-primary mb-4">{t('inviteMember', { defaultValue: 'Invite Member' })}</h3>
             {inviteError && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{inviteError}</p>}
             <form onSubmit={handleInvite} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('inviteName')}</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('inviteName')}</label>
                 <input
                   type="text"
                   value={inviteName}
                   onChange={(e) => setInviteName(e.target.value)}
                   placeholder={t('inviteName')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('invitePhone')}</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('invitePhone')}</label>
                 <input
                   type="tel"
                   value={invitePhone}
@@ -530,25 +566,25 @@ export default function TeamPage() {
                   }}
                   placeholder={locale === 'ar' ? '1220601310' : '1220601310'}
                   dir="ltr"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
                   required
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-text-secondary">
                   {locale === 'ar' ? 'ادخل الرقم بدون الصفر' : 'Enter without the leading zero'}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('role')}</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('role')}</label>
                 <select
                   value={inviteRole}
                   onChange={(e) => {
                     const v = e.target.value;
                     if (v === 'assistant') setInviteRole('assistant');
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
                 >
                   <option value="assistant">{t('assistant')}</option>
-                  <option value="teacher" disabled className="text-gray-400 dark:text-gray-500">
+                  <option value="teacher" disabled className="text-text-tertiary">
                     {locale === 'ar' ? 'مدرس (قريباً)' : 'Teacher (Coming Soon)'}
                   </option>
                 </select>
@@ -564,7 +600,7 @@ export default function TeamPage() {
                 <button
                   type="button"
                   onClick={() => setShowInviteModal(false)}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg text-sm"
+                  className="px-4 py-2 bg-bg-tertiary rounded-lg text-sm"
                 >
                   {tCommon('cancel')}
                 </button>

@@ -42,12 +42,12 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
       <div>
         <label
           htmlFor="phone"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          className="block text-sm font-medium text-text-primary mb-2"
         >
           {t('phoneLabel')}
         </label>
-        <div className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700" dir="ltr">
-          <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0 text-sm select-none">+20</span>
+        <div className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-bg-tertiary" dir="ltr">
+          <span className="text-text-secondary font-medium shrink-0 text-sm select-none">+20</span>
           <input
             id="phone"
             name="phone"
@@ -59,12 +59,12 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
               setValidationError('');
             }}
             placeholder="1XXXXXXXXX"
-            className="flex-1 outline-none text-sm bg-transparent text-gray-900 dark:text-white"
+            className="flex-1 outline-none text-sm bg-transparent text-text-primary"
             maxLength={10}
             required
           />
         </div>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-xs text-text-secondary">
           {t('phoneHint', { defaultValue: 'Enter without the leading zero' })}
         </p>
         {(validationError || error) && (

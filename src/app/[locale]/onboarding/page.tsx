@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -125,9 +126,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-block bg-blue-600 text-white text-4xl font-bold rounded-2xl w-24 h-24 flex items-center justify-center mb-4">
-            CH
-          </div>
+          <Image src="/logo-icon.png" alt="CenterHQ" width={96} height={96} className="w-24 h-24 mx-auto mb-4 object-contain" />
           <h1 className="text-3xl font-bold text-white mb-2">Welcome to CenterHQ</h1>
           <p className="text-slate-300">Choose how to continue</p>
         </div>

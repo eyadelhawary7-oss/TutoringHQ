@@ -25,19 +25,19 @@ interface PaygRate {
 }
 
 const FALLBACK_PLANS: PricingPlan[] = [
-  { id: 'starter', name_en: 'Starter', name_ar: 'أساسي', students_per_week_limit: 200, monthly_fee: 4000, per_student_at_capacity_egp: 5, setup_fee_egp: 2500, is_custom: false },
-  { id: 'pro', name_en: 'Pro', name_ar: 'محترف', students_per_week_limit: 600, monthly_fee: 7200, per_student_at_capacity_egp: 3, setup_fee_egp: 5000, is_custom: false },
-  { id: 'pro_plus', name_en: 'Pro+', name_ar: 'برو+', students_per_week_limit: 1000, monthly_fee: 8000, per_student_at_capacity_egp: 2.25, setup_fee_egp: 7500, is_custom: false },
-  { id: 'enterprise', name_en: 'Enterprise', name_ar: 'مؤسسات', students_per_week_limit: 1500, monthly_fee: 9000, per_student_at_capacity_egp: 1.5, setup_fee_egp: 10000, is_custom: false },
-  { id: 'top_centers', name_en: 'Top Centers', name_ar: 'كبار السناتر', students_per_week_limit: 1500, monthly_fee: 0, per_student_at_capacity_egp: 0, setup_fee_egp: 0, is_custom: true },
+  { id: 'starter', name_en: 'Starter', name_ar: 'أساسي', students_per_week_limit: 150, monthly_fee: 2000, per_student_at_capacity_egp: 13.33, setup_fee_egp: 1000, is_custom: false },
+  { id: 'pro', name_en: 'Pro', name_ar: 'محترف', students_per_week_limit: 500, monthly_fee: 4500, per_student_at_capacity_egp: 9, setup_fee_egp: 2000, is_custom: false },
+  { id: 'business', name_en: 'Business', name_ar: 'أعمال', students_per_week_limit: 1000, monthly_fee: 6500, per_student_at_capacity_egp: 6.5, setup_fee_egp: 3000, is_custom: false },
+  { id: 'enterprise', name_en: 'Enterprise', name_ar: 'مؤسسات', students_per_week_limit: 2000, monthly_fee: 9000, per_student_at_capacity_egp: 4.5, setup_fee_egp: 5000, is_custom: false },
+  { id: 'top_centers', name_en: 'Top Centers', name_ar: 'كبار السناتر', students_per_week_limit: 999999, monthly_fee: 0, per_student_at_capacity_egp: 0, setup_fee_egp: 0, is_custom: true },
 ];
 
 const FALLBACK_PAYG: PaygRate[] = [
-  { min_students_per_week: 0, max_students_per_week: 200, rate_per_student_egp: 6 },
-  { min_students_per_week: 201, max_students_per_week: 600, rate_per_student_egp: 3.75 },
-  { min_students_per_week: 601, max_students_per_week: 1000, rate_per_student_egp: 2.5 },
-  { min_students_per_week: 1001, max_students_per_week: 1500, rate_per_student_egp: 2 },
-  { min_students_per_week: 1501, max_students_per_week: 10000, rate_per_student_egp: 1.25 },
+  { min_students_per_week: 0, max_students_per_week: 150, rate_per_student_egp: 4 },
+  { min_students_per_week: 151, max_students_per_week: 500, rate_per_student_egp: 3 },
+  { min_students_per_week: 501, max_students_per_week: 1000, rate_per_student_egp: 2.5 },
+  { min_students_per_week: 1001, max_students_per_week: 2000, rate_per_student_egp: 2 },
+  { min_students_per_week: 2001, max_students_per_week: 10000, rate_per_student_egp: 1.75 },
 ];
 
 const MONTHLY_MULTIPLIER = 4.333;
@@ -47,11 +47,11 @@ const ADMIN_NOTIFICATION_PHONE = '201220601410';
 
 /** Flat rate per bracket: entire student count uses the rate of the bracket it falls into. 5 brackets matching fixed plans. */
 function getBracketRate(students: number): number {
-  if (students <= 200) return 6;
-  if (students <= 600) return 3.75;
+  if (students <= 150) return 4;
+  if (students <= 500) return 3;
   if (students <= 1000) return 2.5;
-  if (students <= 1500) return 2;
-  return 1.25;
+  if (students <= 2000) return 2;
+  return 1.75;
 }
 
 function calculatePaygCost(_rates: PaygRate[], students: number): { weekly: number; monthly: number; effectiveRate: number; breakdown: { from: number; to: number; count: number; rate: number; cost: number }[] } {
@@ -66,13 +66,13 @@ function calculatePaygCost(_rates: PaygRate[], students: number): { weekly: numb
 function getFixedPlanComparison(plans: PricingPlan[], students: number): { planName: string; planNameAr: string; planFee: number; isCustom: boolean } {
   const starter = plans.find(p => p.id === 'starter');
   const pro = plans.find(p => p.id === 'pro');
-  const proPlus = plans.find(p => p.id === 'pro_plus');
+  const business = plans.find(p => p.id === 'business');
   const enterprise = plans.find(p => p.id === 'enterprise');
   const top = plans.find(p => p.id === 'top_centers');
-  if (students <= 200) return { planName: starter?.name_en ?? 'Starter', planNameAr: starter?.name_ar ?? 'أساسي', planFee: starter?.monthly_fee ?? 4000, isCustom: false };
-  if (students <= 600) return { planName: pro?.name_en ?? 'Pro', planNameAr: pro?.name_ar ?? 'محترف', planFee: pro?.monthly_fee ?? 7200, isCustom: false };
-  if (students <= 1000) return { planName: proPlus?.name_en ?? 'Pro+', planNameAr: proPlus?.name_ar ?? 'برو+', planFee: proPlus?.monthly_fee ?? 8000, isCustom: false };
-  if (students <= 1500) return { planName: enterprise?.name_en ?? 'Enterprise', planNameAr: enterprise?.name_ar ?? 'مؤسسات', planFee: enterprise?.monthly_fee ?? 9000, isCustom: false };
+  if (students <= 150) return { planName: starter?.name_en ?? 'Starter', planNameAr: starter?.name_ar ?? 'أساسي', planFee: starter?.monthly_fee ?? 2000, isCustom: false };
+  if (students <= 500) return { planName: pro?.name_en ?? 'Pro', planNameAr: pro?.name_ar ?? 'محترف', planFee: pro?.monthly_fee ?? 4500, isCustom: false };
+  if (students <= 1000) return { planName: business?.name_en ?? 'Business', planNameAr: business?.name_ar ?? 'أعمال', planFee: business?.monthly_fee ?? 6500, isCustom: false };
+  if (students <= 2000) return { planName: enterprise?.name_en ?? 'Enterprise', planNameAr: enterprise?.name_ar ?? 'مؤسسات', planFee: enterprise?.monthly_fee ?? 9000, isCustom: false };
   return { planName: top?.name_en ?? 'Top Centers', planNameAr: top?.name_ar ?? 'كبار السناتر', planFee: 0, isCustom: true };
 }
 
@@ -84,6 +84,8 @@ export default function BillingPage() {
   const locale = useLocale();
   const { user: currentUser } = useUser();
   const [data, setData] = useState<{
+    is_early_adopter?: boolean;
+    early_adopter_price?: number;
     plan: string;
     pricing_type: string;
     billing_type?: string;
@@ -96,6 +98,9 @@ export default function BillingPage() {
     center_name?: string;
     invoices?: { id: string; invoice_number: string; period_start: string; period_end: string; billing_type: string; total_amount: number; status: string; paid_at?: string }[];
     current_usage?: { total_checkins: number; weekly_average: number; estimated_bill: number };
+    payg_this_week?: { students_scanned: number; weekly_cost: number; monthly_estimate: number; rate_per_student: number };
+    payg_weekly_charges?: { week_start_date: string; week_end_date: string; student_count: number; total_charge: number; paid: boolean }[];
+    payg_fixed_plan_savings?: { plan: string; price: number; savings: number };
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -141,6 +146,8 @@ export default function BillingPage() {
       const plans = (json.plans?.length ? json.plans : FALLBACK_PLANS) as PricingPlan[];
       const paygRates = (json.payg_rates?.length ? json.payg_rates : FALLBACK_PAYG) as PaygRate[];
       setData({
+        is_early_adopter: json.is_early_adopter,
+        early_adopter_price: json.early_adopter_price,
         plan: json.plan || 'starter',
         pricing_type: json.pricing_type || json.billing_type || 'fixed',
         billing_type: json.billing_type || json.pricing_type,
@@ -153,6 +160,9 @@ export default function BillingPage() {
         center_name: json.center_name,
         invoices: json.invoices || [],
         current_usage: json.current_usage,
+        payg_this_week: json.payg_this_week,
+        payg_weekly_charges: json.payg_weekly_charges || [],
+        payg_fixed_plan_savings: json.payg_fixed_plan_savings,
       });
       setPaygSlider(json.weekly_student_limit ?? 200);
     } catch (err) {
@@ -334,7 +344,7 @@ export default function BillingPage() {
           <div className="flex flex-wrap gap-2 mb-6">
             <Link
               href="/settings"
-              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-primary hover:bg-bg-secondary text-sm font-medium transition-colors"
             >
               {tSettings('general')}
             </Link>
@@ -343,13 +353,13 @@ export default function BillingPage() {
             </span>
             <Link
               href="/settings/team"
-              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-primary hover:bg-bg-secondary text-sm font-medium transition-colors"
             >
               {tSettings('teamMembers')}
             </Link>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-primary mb-6">
             {t('title')}
           </h1>
 
@@ -361,55 +371,100 @@ export default function BillingPage() {
 
 
           {/* SECTION 1 - Current Plan Card */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border-2 border-indigo-500 dark:border-indigo-400">
-            <div className="flex items-center gap-2 mb-4">
+          <section className="bg-bg-primary rounded-xl shadow-lg p-6 mb-8 border-2 border-indigo-500 dark:border-indigo-400">
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
               <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200">
                 {t('currentPlan')}
               </span>
+              {data?.is_early_adopter && (
+                <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200" title="Early Adopter - Price Locked Forever">
+                  🔒 {t('earlyAdopterBadge', { defaultValue: 'Early Adopter - Price Locked' })}
+                </span>
+              )}
             </div>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">
               {t('currentPlanCard')}
             </h2>
             {data?.pricing_type === 'payg' || data?.billing_type === 'payg' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('plan')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">Pay-As-You-Go</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div>
+                    <span className="text-sm text-text-secondary">{t('studentsScannedThisWeek', { defaultValue: 'Students this week' })}</span>
+                    <p className="font-semibold text-text-primary">
+                      {(data?.payg_this_week?.students_scanned ?? data?.current_usage?.weekly_average ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-text-secondary">{t('currentWeekCost', { defaultValue: 'This week cost' })}</span>
+                    <p className="font-semibold text-text-primary">
+                      {(data?.payg_this_week?.weekly_cost ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-text-secondary">{t('estimatedMonthly', { defaultValue: 'Est. monthly' })}</span>
+                    <p className="font-semibold text-text-primary">
+                      {(data?.payg_this_week?.monthly_estimate ?? data?.current_usage?.estimated_bill ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-text-secondary">{t('ratePerStudent', { defaultValue: 'Rate/student' })}</span>
+                    <p className="font-semibold text-text-primary">
+                      {(data?.payg_this_week?.rate_per_student ?? 4).toLocaleString('ar-EG')} EGP/week
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('studentsPerWeek')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">~{(data?.current_usage?.weekly_average ?? data?.weekly_student_limit ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('estimatedBill', { defaultValue: 'Estimated bill' })}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {(data?.current_usage?.estimated_bill ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}
-                  </p>
-                </div>
+                {data?.payg_fixed_plan_savings?.savings && data.payg_fixed_plan_savings.savings > 0 && (
+                  <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                      {t('paygSwitchSuggestion', { defaultValue: 'Switch to a fixed plan and save' })} {data.payg_fixed_plan_savings.savings.toLocaleString('ar-EG')} EGP/month ({t('plan')}: {data.payg_fixed_plan_savings.plan.toUpperCase()} @ {data.payg_fixed_plan_savings.price.toLocaleString('ar-EG')} EGP)
+                    </p>
+                    {isOwner && (
+                      <button
+                        onClick={() => { setChangePlanSelect(data.payg_fixed_plan_savings!.plan); setShowPlanRequestModal(true); }}
+                        className="mt-2 px-3 py-1.5 text-sm font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                      >
+                        {t('switchToFixedPlan', { defaultValue: 'Switch to Fixed Plan' })}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {(data?.payg_weekly_charges?.length ?? 0) > 0 && (
+                  <div>
+                    <p className="text-sm text-text-secondary mb-2">{t('last4Weeks', { defaultValue: 'Last 4 weeks' })}</p>
+                    <ul className="space-y-1 text-sm">
+                      {(data.payg_weekly_charges ?? []).map((w, i) => (
+                        <li key={i} className="flex justify-between">
+                          <span>{w.week_start_date} – {w.week_end_date}: {w.student_count} {t('students', { defaultValue: 'students' })}</span>
+                          <span className="font-mono">{Number(w.total_charge).toLocaleString('ar-EG')} EGP {w.paid && '✓'}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('plan')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">
+                  <span className="text-sm text-text-secondary">{t('plan')}</span>
+                  <p className="font-semibold text-text-primary">
                     {currentPlanDetails?.name_en ?? data?.plan} / {currentPlanDetails?.name_ar ?? ''}
                   </p>
                 </div>
                 <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('monthlyFeeLabel')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {currentPlanDetails?.is_custom ? t('custom') : `${Number(currentPlanDetails?.monthly_fee ?? 0).toLocaleString('ar-EG')} ${t('egp')}`}
+                  <span className="text-sm text-text-secondary">{t('monthlyFeeLabel')}</span>
+                  <p className="font-semibold text-text-primary">
+                    {currentPlanDetails?.is_custom ? t('custom') : `${Number(data?.is_early_adopter && typeof data?.early_adopter_price === 'number' ? data.early_adopter_price : currentPlanDetails?.monthly_fee ?? 0).toLocaleString('ar-EG')} ${t('egp')}`}
                   </p>
                 </div>
                 <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('studentsPerWeek')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {currentPlanDetails?.is_custom ? '1,500+' : `≤${currentPlanDetails?.students_per_week_limit?.toLocaleString('ar-EG') ?? 0}`}
+                  <span className="text-sm text-text-secondary">{t('studentsPerWeek')}</span>
+                  <p className="font-semibold text-text-primary">
+                    {currentPlanDetails?.is_custom ? '2,000+' : `≤${currentPlanDetails?.students_per_week_limit?.toLocaleString('ar-EG') ?? 0}`}
                   </p>
                 </div>
                 <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('costPerStudent')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">
+                  <span className="text-sm text-text-secondary">{t('costPerStudent')}</span>
+                  <p className="font-semibold text-text-primary">
                     {currentPlanDetails?.is_custom ? t('negotiated') : `${Number(currentPlanDetails?.per_student_at_capacity_egp ?? 0).toLocaleString('ar-EG')} ${t('egp')}`}
                   </p>
                 </div>
@@ -419,13 +474,13 @@ export default function BillingPage() {
 
           {/* SECTION 2 - Fixed Monthly Plans */}
           <section className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">
               {t('fixedPlans')}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {plans.map((plan) => {
                 const isCurrent = data?.plan === plan.id && data?.pricing_type === 'fixed';
-                const isBestValue = plan.id === 'enterprise';
+                const isBestValue = plan.id === 'pro';
                 const isTopCenters = plan.id === 'top_centers';
 
                 return (
@@ -434,7 +489,7 @@ export default function BillingPage() {
                     className={`relative rounded-xl p-6 shadow-lg border-2 transition-all ${
                       isCurrent
                         ? 'border-indigo-500 dark:border-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/30'
-                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500'
+                        : 'border-gray-200 dark:border-gray-600 bg-bg-primary hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
                     {isBestValue && !isTopCenters && (
@@ -443,33 +498,33 @@ export default function BillingPage() {
                       </span>
                     )}
                     <div className="text-center mb-4">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      <h3 className="text-lg font-bold text-text-primary">
                         {plan.name_en}
                       </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{plan.name_ar}</p>
+                      <p className="text-sm text-text-secondary">{plan.name_ar}</p>
                     </div>
                     <div className="space-y-2 text-sm mb-6">
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">{t('studentsPerWeek')}</span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {plan.is_custom ? '1,500+' : `≤${plan.students_per_week_limit.toLocaleString('ar-EG')}`}
+                        <span className="text-text-secondary">{t('studentsPerWeek')}</span>
+                        <span className="font-medium text-text-primary">
+                          {plan.is_custom ? '2,000+' : `≤${plan.students_per_week_limit.toLocaleString('ar-EG')}`}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">{t('monthlyFeeLabel')}</span>
-                        <span className="font-medium text-gray-900 dark:text-white">
+                        <span className="text-text-secondary">{t('monthlyFeeLabel')}</span>
+                        <span className="font-medium text-text-primary">
                           {plan.is_custom ? t('custom') : `${Number(plan.monthly_fee).toLocaleString('ar-EG')} ${t('egp')}`}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">{t('perStudent')}</span>
-                        <span className="font-medium text-gray-900 dark:text-white">
+                        <span className="text-text-secondary">{t('perStudent')}</span>
+                        <span className="font-medium text-text-primary">
                           {plan.is_custom ? t('negotiated') : `${Number(plan.per_student_at_capacity_egp).toLocaleString('ar-EG')} ${t('egp')}`}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">{t('setup')}</span>
-                        <span className="font-medium text-gray-900 dark:text-white">
+                        <span className="text-text-secondary">{t('setup')}</span>
+                        <span className="font-medium text-text-primary">
                           {plan.is_custom ? t('custom') : `${Number(plan.setup_fee_egp).toLocaleString('ar-EG')} ${t('egp')}`}
                         </span>
                       </div>
@@ -486,60 +541,60 @@ export default function BillingPage() {
           </section>
 
           {/* SECTION 3 - Pay-As-You-Go Slider */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+          <section className="bg-bg-primary rounded-xl shadow p-6">
+            <h2 className="text-lg font-semibold text-text-primary mb-2">
               {t('paygTitle')}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            <p className="text-sm text-text-secondary mb-6">
               {t('paygSubtitle')}
             </p>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-text-primary mb-2">
                   {t('studentsPerWeekSlider')}: <strong>{paygSlider.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')}</strong>
                 </label>
                 <input
                   type="range"
                   min={0}
-                  max={2000}
+                  max={2500}
                   step={10}
                   value={paygSlider}
                   onChange={(e) => setPaygSlider(Number(e.target.value))}
-                  className="w-full h-3 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  className="w-full h-3 bg-bg-tertiary rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-bg-secondary rounded-lg">
                 <div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('weeklyCost')}</span>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  <span className="text-xs text-text-secondary">{t('weeklyCost')}</span>
+                  <p className="text-xl font-bold text-text-primary">
                     {paygResult.weekly.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}/<span className="text-sm">week</span>
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('monthlyFeeLabel')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">
+                  <span className="text-xs text-text-secondary">{t('monthlyFeeLabel')}</span>
+                  <p className="font-semibold text-text-primary">
                     {(paygResult.monthly).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('egp')}/month
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('rateTier')}</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">
+                  <span className="text-xs text-text-secondary">{t('rateTier')}</span>
+                  <p className="font-semibold text-text-primary">
                     {paygResult.effectiveRate > 0 ? `${Number(paygResult.effectiveRate).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} ${t('egp')}/${t('perStudent')}` : '—'}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('premiumVsFixed')}</span>
-                  <p className={`font-semibold ${fixedSavesMoney ? 'text-green-600 dark:text-green-400' : fixedComparison.isCustom ? 'text-gray-500' : 'text-amber-600 dark:text-amber-400'}`}>
+                  <span className="text-xs text-text-secondary">{t('premiumVsFixed')}</span>
+                  <p className={`font-semibold ${fixedSavesMoney ? 'text-green-600 dark:text-green-400' : fixedComparison.isCustom ? 'text-text-secondary' : 'text-amber-600 dark:text-amber-400'}`}>
                     {fixedComparison.isCustom ? t('contactUs') : fixedSavesMoney ? t('fixedPlanBetter') : t('paygCostsMore', { amount: `${savingsAmount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} ${t('egp')}` })}
                   </p>
                 </div>
               </div>
 
               {paygResult.breakdown.length > 0 && (
-                <div className="p-4 bg-white dark:bg-gray-700/30 rounded-lg text-sm">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 block mb-2">Tier breakdown</span>
+                <div className="p-4 bg-bg-tertiary rounded-lg text-sm">
+                  <span className="text-xs text-text-secondary block mb-2">Tier breakdown</span>
                   <div className="space-y-1">
                     {paygResult.breakdown.map((tier, i) => (
                       <div key={i} className="flex justify-between">
@@ -564,18 +619,18 @@ export default function BillingPage() {
                 </div>
               )}
             </div>
-            <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 italic">
+            <p className="mt-4 text-sm text-text-secondary italic">
               {t('sliderInfoOnly', { defaultValue: 'For information only. Use Request Plan Change to switch.' })}
             </p>
           </section>
 
           {/* SECTION 4 - Request Plan Change */}
           {currentUser?.role === 'owner' && (
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+            <section className="bg-bg-primary rounded-xl shadow p-6 mb-8">
+              <h2 className="text-lg font-semibold text-text-primary mb-4">
                 {t('changeQuestion', { defaultValue: 'Want to change your plan?' })}
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              <p className="text-sm text-text-secondary mb-4">
                 {t('changeNotice', { defaultValue: 'Submit a request and we will review it within 24 hours.' })}
               </p>
               <button
@@ -599,9 +654,9 @@ export default function BillingPage() {
 
           {showPlanRequestModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPlanRequestModal(false)}>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('requestPlanChange')}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('selectPlan')}</p>
+              <div className="bg-bg-primary rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-lg font-semibold text-text-primary mb-4">{t('requestPlanChange')}</h3>
+                <p className="text-sm text-text-secondary mb-4">{t('selectPlan')}</p>
                 <div className="space-y-2 mb-6">
                   {plans.filter(p => p.id !== 'top_centers').map(p => (
                     <button
@@ -611,7 +666,7 @@ export default function BillingPage() {
                       className={`w-full px-3 py-2 text-left rounded-lg border ${
                         changePlanSelect === p.id
                           ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
-                          : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          : 'border-gray-200 dark:border-gray-600 hover:bg-bg-secondary'
                       }`}
                     >
                       {p.name_en} / {p.name_ar} — {p.monthly_fee > 0 ? `${Number(p.monthly_fee).toLocaleString('ar-EG')} ${t('egp')}/mo` : t('custom')}
@@ -623,7 +678,7 @@ export default function BillingPage() {
                     className={`w-full px-3 py-2 text-left rounded-lg border ${
                       changePlanSelect === 'payg'
                         ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
-                        : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        : 'border-gray-200 dark:border-gray-600 hover:bg-bg-secondary'
                     }`}
                   >
                     Pay-As-You-Go
@@ -639,7 +694,7 @@ export default function BillingPage() {
                   </button>
                   <button
                     onClick={() => { setShowPlanRequestModal(false); setChangePlanSelect(''); }}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg"
+                    className="px-4 py-2 bg-bg-tertiary rounded-lg"
                   >
                     {tCommon('cancel')}
                   </button>
@@ -649,8 +704,8 @@ export default function BillingPage() {
           )}
 
           {/* SECTION 5 - Invoice History */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+          <section className="bg-bg-primary rounded-xl shadow p-6 mb-8">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">
               {t('invoiceHistory', { defaultValue: 'Invoice History' })}
             </h2>
             {(data?.invoices?.length ?? 0) > 0 ? (
@@ -658,12 +713,12 @@ export default function BillingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-600">
-                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('invoiceNumber', { defaultValue: 'Invoice #' })}</th>
-                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('date', { defaultValue: 'Date' })}</th>
-                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('amount', { defaultValue: 'Amount' })}</th>
-                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('reference', { defaultValue: 'Reference' })}</th>
-                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('status', { defaultValue: 'Status' })}</th>
-                      <th className="text-left py-2 text-sm font-medium italic text-gray-500 dark:text-gray-400">{t('proof', { defaultValue: 'Proof' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-text-secondary">{t('invoiceNumber', { defaultValue: 'Invoice #' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-text-secondary">{t('date', { defaultValue: 'Date' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-text-secondary">{t('amount', { defaultValue: 'Amount' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-text-secondary">{t('reference', { defaultValue: 'Reference' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-text-secondary">{t('status', { defaultValue: 'Status' })}</th>
+                      <th className="text-left py-2 text-sm font-medium italic text-text-secondary">{t('proof', { defaultValue: 'Proof' })}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -703,19 +758,19 @@ export default function BillingPage() {
                 </table>
               </div>
             ) : (
-              <p className="text-gray-500 dark:text-gray-400">{t('noInvoices', { defaultValue: 'No invoices yet.' })}</p>
+              <p className="text-text-secondary">{t('noInvoices', { defaultValue: 'No invoices yet.' })}</p>
             )}
           </section>
 
           {/* SECTION 6 - Payment Methods & Proof Submission */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+          <section className="bg-bg-primary rounded-xl shadow p-6">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">
               {t('paymentMethods', { defaultValue: 'Payment Methods' })}
             </h2>
 
             {/* InstaPay Info - always visible */}
             <div className="mb-6">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <p className="text-sm font-medium text-text-primary mb-2">
                 {locale === 'ar' ? 'حوّل على إنستاباي (رقم الموبايل):' : 'Transfer to InstaPay (Mobile Number):'}
               </p>
               <div className="flex items-center gap-2 flex-wrap items-baseline">
@@ -723,7 +778,7 @@ export default function BillingPage() {
                 <button
                   type="button"
                   onClick={() => { navigator.clipboard.writeText('01001963432'); setSavedMessage(locale === 'ar' ? 'تم النسخ!' : 'Copied!'); setTimeout(() => setSavedMessage(''), 2000); }}
-                  className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500"
+                  className="px-3 py-1.5 text-sm bg-bg-tertiary rounded-lg hover:bg-bg-secondary"
                 >
                   {tCommon('copy')}
                 </button>
@@ -731,17 +786,17 @@ export default function BillingPage() {
             </div>
 
             {/* Bank Transfer - Coming Soon */}
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            <p className="text-sm text-text-secondary mb-6">
               <strong>{t('bankTransfer')}:</strong> {locale === 'ar' ? 'قريباً' : 'Coming Soon'}
             </p>
 
             {/* Payment Proof Form */}
             <div className="space-y-4">
-                <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                <h3 className="text-base font-semibold text-text-primary">
                   {t('submitProofTitle', { defaultValue: 'Submit Payment Proof' })}
                 </h3>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-text-primary mb-1">
                     {t('transferAmountLabel', { defaultValue: 'Transfer Amount (EGP)' })} *
                   </label>
                   <input
@@ -751,11 +806,11 @@ export default function BillingPage() {
                     value={proofAmount}
                     onChange={(e) => setProofAmount(e.target.value)}
                     placeholder={t('transferAmountPlaceholder', { defaultValue: '0.00' })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-text-primary mb-1">
                     {t('instapayRefLabel', { defaultValue: 'InstaPay Transaction Reference' })} *
                   </label>
                   <input
@@ -763,11 +818,11 @@ export default function BillingPage() {
                     value={proofReference}
                     onChange={(e) => setProofReference(e.target.value)}
                     placeholder={t('instapayRef', { defaultValue: 'e.g. 123456789' })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-text-primary mb-1">
                     {t('proofLabel', { defaultValue: 'Transfer Screenshot' })} ({locale === 'ar' ? 'اختياري' : 'optional'})
                   </label>
                   <input
@@ -781,7 +836,7 @@ export default function BillingPage() {
                       }
                       e.target.value = '';
                     }}
-                    className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300"
+                    className="w-full text-sm text-text-secondary file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300"
                   />
                   {proofPreview && (
                     <img src={proofPreview} alt="Preview" className="mt-2 max-h-32 rounded-lg border border-gray-200 dark:border-gray-600" />
@@ -794,7 +849,7 @@ export default function BillingPage() {
                 >
                   {proofUploading ? tCommon('loading') : t('submitPaymentProof')}
                 </button>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <p className="text-xs text-text-secondary mt-2">
                   {t('paymentProofWhatsappNote', { defaultValue: "After submitting, you'll be asked to send a WhatsApp confirmation to our team for faster processing." })}
                 </p>
               </div>
@@ -808,7 +863,7 @@ export default function BillingPage() {
               if (pending + approved + rejected === 0) return null;
               return (
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-text-secondary">
                     {pending > 0 && <span className="text-amber-600 dark:text-amber-400">{pending.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('pendingStatus')}</span>}
                     {pending > 0 && (approved > 0 || rejected > 0) && <span className="mx-1">·</span>}
                     {approved > 0 && <span className="text-green-600 dark:text-green-400">{approved.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')} {t('statusApproved', { defaultValue: 'approved' })}</span>}

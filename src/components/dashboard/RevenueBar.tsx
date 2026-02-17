@@ -30,22 +30,22 @@ export default function RevenueBar({ data }: RevenueBarProps) {
   if (data.length === 0 || total === 0) {
     return (
       <div className="space-y-4">
-        <p className="text-center text-slate-400 text-sm mb-4">
+        <p className="text-center text-[var(--text-secondary)] text-sm mb-4">
           {t('noPaymentData')}
         </p>
         <div className="space-y-3">
           {METHODS.map(({ key, method, gradient }) => (
             <div key={method} className="flex items-center gap-3">
-              <span className="text-sm text-slate-300 w-28 flex-shrink-0">
+              <span className="text-sm text-[var(--text-primary)] w-28 flex-shrink-0">
                 {t(key as 'methodCash')}
               </span>
-              <div className="flex-1 h-6 rounded-lg overflow-hidden bg-slate-700/30">
+              <div className="flex-1 h-6 rounded-lg overflow-hidden bg-[var(--border-color)]/50">
                 <div
                   className="h-full rounded-lg transition-all duration-500"
                   style={{ width: '0%', background: gradient }}
                 />
               </div>
-              <span className="text-sm font-mono text-slate-400 w-10 text-end" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+              <span className="text-sm font-mono text-[var(--text-secondary)] w-10 text-end" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
                 {locale === 'ar' ? toAr(0) : 0}%
               </span>
             </div>
@@ -62,16 +62,16 @@ export default function RevenueBar({ data }: RevenueBarProps) {
         const pct = total > 0 ? Math.round((amount / total) * 100) : 0;
         return (
           <div key={method} className="flex items-center gap-3">
-            <span className="text-sm text-slate-300 w-28 flex-shrink-0">
+            <span className="text-sm text-[var(--text-primary)] w-28 flex-shrink-0">
               {t(key as 'methodCash')}
             </span>
-            <div className="flex-1 h-6 rounded-lg overflow-hidden bg-slate-700/30">
+            <div className="flex-1 h-6 rounded-lg overflow-hidden bg-[var(--border-color)]/50">
               <div
                 className="h-full rounded-lg transition-all duration-500"
                 style={{ width: `${pct}%`, background: gradient }}
               />
             </div>
-            <span className="text-sm font-mono text-slate-400 w-10 text-end" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+            <span className="text-sm font-mono text-[var(--text-secondary)] w-10 text-end" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
               {locale === 'ar' ? toAr(pct) : pct}%
             </span>
           </div>

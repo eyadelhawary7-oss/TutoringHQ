@@ -54,25 +54,48 @@ export async function GET(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: userRecord, error: userError } = await supabaseAdmin
+    let userRecord: { id: string; name?: string | null; phone?: string | null; role?: string; center_id?: string | null; can_scan?: boolean; can_view_payments?: boolean; can_record_payments?: boolean; can_view_dashboard?: boolean; can_view_revenue?: boolean; can_manage_students?: boolean; can_manage_groups?: boolean; can_allow_late_entry?: boolean; can_manage_rooms?: boolean; can_view_schedule?: boolean; can_view_settings?: boolean; is_active?: boolean } | null = null;
+
+    const { data: usersRow, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, name, phone, role, center_id, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings, is_active')
       .eq('id', user.id)
       .single();
 
-    if (userError) {
+    if (usersRow) {
+      userRecord = usersRow;
+    } else {
+      // User may be in admin_users but not in users (super admin without center)
+      const { data: adminRow } = await supabaseAdmin
+        .from('admin_users')
+        .select('id, name, phone')
+        .eq('id', user.id)
+        .single();
+
+      if (adminRow) {
+        userRecord = {
+          id: adminRow.id,
+          name: adminRow.name,
+          phone: adminRow.phone ?? user.phone ?? null,
+          role: 'super_admin',
+          center_id: null,
+        };
+      }
+    }
+
+    if (!userRecord) {
       return NextResponse.json(
-        { error: 'Failed to fetch user profile', details: userError.message },
+        { error: 'Failed to fetch user profile', details: userError?.message ?? 'User not found in users or admin_users' },
         { status: 500 }
       );
     }
 
     // Fetch center logo/name and billing when user has center
-    let center: { logo_url?: string; name?: string; payment_due_date?: string; auto_suspend_at?: string; billing_status?: string } | null = null;
-    if (userRecord?.center_id) {
+    let center: { logo_url?: string; name?: string; payment_due_date?: string; auto_suspend_at?: string; billing_status?: string; plan?: string } | null = null;
+    if (userRecord.center_id) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
-        .select('logo_url, name, payment_due_date, auto_suspend_at, billing_status')
+        .select('logo_url, name, payment_due_date, auto_suspend_at, billing_status, plan')
         .eq('id', userRecord.center_id)
         .single();
       if (centerRow) {
@@ -82,12 +105,13 @@ export async function GET(request: Request) {
           payment_due_date: centerRow.payment_due_date ?? undefined,
           auto_suspend_at: centerRow.auto_suspend_at ?? undefined,
           billing_status: centerRow.billing_status ?? undefined,
+          plan: centerRow.plan ?? undefined,
         };
       }
     }
 
     return NextResponse.json({
-      user: { ...userRecord, center },
+      user: { ...userRecord, center: center ?? null },
     });
 
   } catch (error) {

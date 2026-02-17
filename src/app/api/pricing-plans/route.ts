@@ -24,7 +24,17 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ plans: plans || [] });
+    const { count: earlyAdopterCount } = await supabase
+      .from('centers')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_early_adopter', true);
+    const earlyAdopterSpotsRemaining = Math.max(0, 10 - (earlyAdopterCount ?? 0));
+
+    return NextResponse.json({
+      plans: plans || [],
+      early_adopter_spots_remaining: earlyAdopterSpotsRemaining,
+      early_adopter_discount_pct: 40,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

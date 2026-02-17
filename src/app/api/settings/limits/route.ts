@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     const { data: center, error: centerError } = await ctx.supabaseAdmin
       .from('centers')
-      .select('max_teachers, max_students')
+      .select('max_teachers, max_students, plan')
       .eq('id', centerId)
       .single();
 
@@ -72,27 +72,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Center not found' }, { status: 404 });
     }
 
-    const maxTeachers = Number(center.max_teachers ?? 8);
-    const maxStudents = Number(center.max_students ?? 200);
+    const maxTeachers = Number(center.max_teachers ?? 2);
+    const maxStudents = Number(center.max_students ?? 150);
 
-    const { count: currentTeachers } = await ctx.supabaseAdmin
+    // Count all team members (owner, admin, assistant, teacher)
+    const { count: currentTeamMembers } = await ctx.supabaseAdmin
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .eq('center_id', centerId)
-      .eq('role', 'teacher');
+      .eq('center_id', centerId);
 
     const { count: currentStudents } = await ctx.supabaseAdmin
       .from('students')
       .select('*', { count: 'exact', head: true })
       .eq('center_id', centerId);
 
+    // Weekly active students (unique students scanned in past 7 days)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const { data: weeklyScans } = await ctx.supabaseAdmin
+      .from('attendance_scans')
+      .select('student_id')
+      .eq('center_id', centerId)
+      .gte('scanned_at', weekAgo.toISOString());
+    const weeklyUniqueStudents = new Set((weeklyScans || []).map((s: { student_id: string }) => s.student_id)).size;
+
+    const plan = (center as { plan?: string })?.plan || 'starter';
+    const studentLimit = plan === 'top_centers' || plan === 'payg' ? 999999 : Number(center.max_students ?? 150);
+
+    const currentTeachers = currentTeamMembers ?? 0;
     return NextResponse.json({
       maxTeachers,
-      currentTeachers: currentTeachers ?? 0,
+      currentTeachers,
       maxStudents,
       currentStudents: currentStudents ?? 0,
-      canAddTeacher: (currentTeachers ?? 0) < maxTeachers,
+      canAddTeacher: currentTeachers < maxTeachers,
       canAddStudent: (currentStudents ?? 0) < maxStudents,
+      plan,
+      weeklyUniqueStudents,
+      studentLimit,
     });
   } catch (error) {
     return NextResponse.json(

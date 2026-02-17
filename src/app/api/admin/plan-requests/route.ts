@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
 
+const PLAN_MONTHLY: Record<string, number> = {
+  starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 0, payg: 0,
+};
+
 export async function GET(request: Request) {
   try {
     const ctx = await getAdminContext(request);
@@ -23,15 +27,28 @@ export async function GET(request: Request) {
     const centerIds = [...new Set((requests || []).map((r: { center_id: string }) => r.center_id))];
     const { data: centers } = await supabaseAdmin
       .from('centers')
-      .select('id, name')
+      .select('id, name, phone, is_early_adopter, early_adopter_price')
       .in('id', centerIds);
 
-    const centerMap = new Map((centers || []).map((c: { id: string; name: string }) => [c.id, c.name]));
+    const centerMap = new Map((centers || []).map((c: { id: string; name: string; phone?: string; is_early_adopter?: boolean; early_adopter_price?: number }) => [c.id, c]));
 
-    const rows = (requests || []).map((r: { center_id: string; [k: string]: unknown }) => ({
-      ...r,
-      centerName: centerMap.get(r.center_id) ?? '—',
-    }));
+    const rows = (requests || []).map((r: { center_id: string; current_plan?: string; requested_plan?: string; [k: string]: unknown }) => {
+      const center = centerMap.get(r.center_id);
+      const currentPrice = center?.is_early_adopter && typeof center?.early_adopter_price === 'number'
+        ? center.early_adopter_price
+        : PLAN_MONTHLY[(r.current_plan as string) || 'starter'] ?? 0;
+      const requestedPrice = PLAN_MONTHLY[(r.requested_plan as string) || ''] ?? 0;
+      const priceDiff = requestedPrice - currentPrice;
+      return {
+        ...r,
+        centerName: center?.name ?? '—',
+        centerPhone: center?.phone ?? null,
+        currentPrice,
+        requestedPrice,
+        priceDiff,
+        priceDiffFormatted: priceDiff > 0 ? `+${priceDiff.toLocaleString('ar-EG')} EGP/mo` : priceDiff < 0 ? `${priceDiff.toLocaleString('ar-EG')} EGP/mo` : '—',
+      };
+    });
 
     return NextResponse.json({ requests: rows });
   } catch (error) {
@@ -114,7 +131,28 @@ export async function PUT(request: Request) {
       // ignore
     }
 
-    return NextResponse.json({ success: true, action: 'approved' });
+    const PLAN_LABELS: Record<string, string> = {
+      starter: 'Starter', pro: 'Pro', business: 'Business', enterprise: 'Enterprise', top_centers: 'Top Centers', payg: 'PAYG',
+    };
+    const { data: center } = await supabaseAdmin
+      .from('centers')
+      .select('phone')
+      .eq('id', pr.center_id)
+      .single();
+    const requestedLabel = PLAN_LABELS[(pr.requested_plan as string) || ''] || pr.requested_plan;
+    const reqPrice = PLAN_MONTHLY[(pr.requested_plan as string) || ''] ?? 0;
+    const waMessage = reqPrice > 0
+      ? `مرحباً، تم الموافقة على ترقية خطتك إلى ${requestedLabel}. السعر الجديد: ${reqPrice.toLocaleString('ar-EG')} EGP/شهر. شكراً لثقتك!`
+      : `مرحباً، تم الموافقة على تغيير خطتك إلى ${requestedLabel}. شكراً لثقتك!`;
+    const phone = (center?.phone as string || '').trim();
+    const waLink = phone ? `https://wa.me/${phone.startsWith('+') ? phone.slice(1).replace(/\D/g, '') : '20' + phone.replace(/^0/, '').replace(/\D/g, '')}?text=${encodeURIComponent(waMessage)}` : null;
+
+    return NextResponse.json({
+      success: true,
+      action: 'approved',
+      centerPhone: phone || null,
+      whatsappLink: waLink,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

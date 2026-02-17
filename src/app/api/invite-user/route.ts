@@ -78,6 +78,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Only center owners and admins can invite team members' }, { status: 403 });
     }
 
+    // Check team member limit
+    const { data: centerRow } = await supabaseAdmin
+      .from('centers')
+      .select('plan, max_teachers')
+      .eq('id', currentUser.center_id)
+      .single();
+    const maxTeam = Number((centerRow as { max_teachers?: number })?.max_teachers ?? 2);
+    const { count: teamCount } = await supabaseAdmin
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('center_id', currentUser.center_id);
+    if ((teamCount ?? 0) >= maxTeam) {
+      const planName = (centerRow as { plan?: string })?.plan || 'Starter';
+      return NextResponse.json({
+        error: `You've reached your team member limit for the ${planName} plan. Upgrade to add more team members.`,
+        code: 'TEAM_LIMIT_REACHED',
+        plan: planName,
+      }, { status: 403 });
+    }
+
     const { data: existingByE164 } = await supabaseAdmin
       .from('users')
       .select('id')
