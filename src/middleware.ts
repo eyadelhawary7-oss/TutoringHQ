@@ -94,21 +94,28 @@ export default async function middleware(request: NextRequest) {
         const cleanPath = pathname.replace(/^\/(ar|en)/, '') || '/';
         const localePrefix = pathname.startsWith('/en') ? '/en' : '';
         const suspendedPath = `${localePrefix}/suspended`;
+        /** Allow suspended users to access billing page to submit payment proof */
+        const isBillingPage = cleanPath === '/settings/billing' || cleanPath.startsWith('/settings/billing');
 
         if (!cleanPath.startsWith('/suspended')) {
           if (center?.status === 'suspended') {
-            const suspendedUrl = new URL(suspendedPath, request.url);
-            suspendedUrl.searchParams.set('reason', 'center_suspended');
-            return NextResponse.redirect(suspendedUrl);
-          }
-          const billingStatus = (center as { billing_status?: string })?.billing_status;
-          const autoSuspendAt = (center as { auto_suspend_at?: string })?.auto_suspend_at;
-          if (autoSuspendAt && billingStatus !== 'paid') {
-            const suspendDate = new Date(autoSuspendAt);
-            if (new Date() >= suspendDate) {
+            if (!isBillingPage) {
               const suspendedUrl = new URL(suspendedPath, request.url);
-              suspendedUrl.searchParams.set('reason', 'payment_overdue');
+              suspendedUrl.searchParams.set('reason', 'center_suspended');
               return NextResponse.redirect(suspendedUrl);
+            }
+          } else {
+            const billingStatus = (center as { billing_status?: string })?.billing_status;
+            const autoSuspendAt = (center as { auto_suspend_at?: string })?.auto_suspend_at;
+            if (autoSuspendAt && billingStatus !== 'paid') {
+              const suspendDate = new Date(autoSuspendAt);
+              if (new Date() >= suspendDate) {
+                if (!isBillingPage) {
+                  const suspendedUrl = new URL(suspendedPath, request.url);
+                  suspendedUrl.searchParams.set('reason', 'payment_overdue');
+                  return NextResponse.redirect(suspendedUrl);
+                }
+              }
             }
           }
         }

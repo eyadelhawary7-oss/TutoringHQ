@@ -146,10 +146,10 @@ export default function LandingPage() {
                 {t('ctaStartNow')}
               </Link>
               <Link
-                href="/dashboard"
+                href="/signup"
                 className="inline-flex items-center justify-center px-8 py-3 rounded-lg border border-gray-300 text-text-primary font-medium hover:bg-gray-50 transition-colors"
               >
-                {t('ctaExploreDashboard')}
+                {t('ctaGetStarted')}
               </Link>
             </div>
           </div>

@@ -184,6 +184,7 @@ export default function BillingPage() {
   const [paymentRef, setPaymentRef] = useState('');
   const [proofAmount, setProofAmount] = useState('');
   const [proofReference, setProofReference] = useState('');
+  const [proofPaymentMethod, setProofPaymentMethod] = useState('instapay');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [proofUploading, setProofUploading] = useState(false);
@@ -219,7 +220,7 @@ export default function BillingPage() {
           amount,
           reference: proofReference.trim(),
           proofUrl: proofUrl || null,
-          paymentMethod: 'instapay',
+          paymentMethod: proofPaymentMethod,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -229,7 +230,7 @@ export default function BillingPage() {
         return;
       }
       console.log('Invoice insert result: success');
-      setSavedMessage(t('paymentSubmittedSuccess', { defaultValue: 'Payment proof submitted successfully' }));
+      setSavedMessage(t('paymentSubmittedForReview', { defaultValue: 'Payment submitted for review. Your account will be reactivated once approved.' }));
       setProofAmount('');
       setProofReference('');
       setProofFile(null);
@@ -811,7 +812,24 @@ export default function BillingPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-1">
-                    {t('instapayRefLabel', { defaultValue: 'InstaPay Transaction Reference' })} *
+                    {t('paymentMethodLabel', { defaultValue: 'Payment Method' })} *
+                  </label>
+                  <select
+                    value={proofPaymentMethod}
+                    onChange={(e) => setProofPaymentMethod(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
+                  >
+                    <option value="instapay">InstaPay</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="vodafone_cash">Vodafone Cash</option>
+                    <option value="orange_cash">Orange Cash</option>
+                    <option value="fawry">Fawry</option>
+                    <option value="cash">Cash</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">
+                    {t('instapayRefLabel', { defaultValue: 'Transaction Reference' })} *
                   </label>
                   <input
                     type="text"
@@ -827,12 +845,12 @@ export default function BillingPage() {
                   </label>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.pdf"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f && f.size <= 5 * 1024 * 1024) {
                         setProofFile(f);
-                        setProofPreview(URL.createObjectURL(f));
+                        setProofPreview(f.type.startsWith('image/') ? URL.createObjectURL(f) : null);
                       }
                       e.target.value = '';
                     }}
@@ -840,6 +858,9 @@ export default function BillingPage() {
                   />
                   {proofPreview && (
                     <img src={proofPreview} alt="Preview" className="mt-2 max-h-32 rounded-lg border border-gray-200 dark:border-gray-600" />
+                  )}
+                  {proofFile && !proofPreview && (
+                    <p className="mt-2 text-sm text-text-secondary">{proofFile.name}</p>
                   )}
                 </div>
                 <button

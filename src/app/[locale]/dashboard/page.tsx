@@ -518,16 +518,18 @@ export default function DashboardPage() {
     const diffMs = dueDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-    const payNowUrl = `https://wa.me/201220601410?text=${encodeURIComponent(`أريد سداد اشتراك CenterHQ - اسم السنتر: ${centerBilling.name || ''}`)}`;
     if (diffDays > 0 && diffDays <= 5) {
       return (
         <div className="mb-6 p-4 bg-amber-900/30 border border-amber-600 rounded-xl flex flex-wrap items-center justify-between gap-4">
           <span className="text-amber-200 font-medium">
             {t('paymentDue', { days: diffDays, defaultValue: `Payment due in ${diffDays} days` })}
           </span>
-          <a href={payNowUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg">
+          <button
+            onClick={() => router.push('/settings/billing')}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg"
+          >
             {t('payNow', { defaultValue: 'Pay Now' })}
-          </a>
+          </button>
         </div>
       );
     }
@@ -537,9 +539,12 @@ export default function DashboardPage() {
           <span className="text-red-200 font-medium">
             {t('paymentOverdue', { hours: Math.abs(diffHours), defaultValue: `Payment overdue! Account will be suspended in ${Math.abs(diffHours)} hours` })}
           </span>
-          <a href={payNowUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg">
+          <button
+            onClick={() => router.push('/settings/billing')}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg"
+          >
             {t('payNow', { defaultValue: 'Pay Now' })}
-          </a>
+          </button>
         </div>
       );
     }

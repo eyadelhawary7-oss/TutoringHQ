@@ -177,14 +177,27 @@ export async function GET(request: Request) {
 
     const { data: pendingInvoices } = await supabaseAdmin
       .from('invoices')
-      .select('id, center_id, payment_amount, payment_reference, payment_proof_url, created_at, invoice_number')
+      .select('id, center_id, payment_amount, payment_reference, payment_proof_url, payment_method, created_at, invoice_number')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
-    const pendingInvoiceRows = (pendingInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => ({
-      ...inv,
-      centerName: billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? '—',
-    }));
+    // Get center status for each pending invoice (billingRows may be plan-filtered, so fetch from full centers)
+    const pendingCenterIds = [...new Set((pendingInvoices || []).map((inv: { center_id: string }) => inv.center_id))];
+    const { data: pendingCentersData } = pendingCenterIds.length > 0
+      ? await supabaseAdmin.from('centers').select('id, name, status, plan, billing_period').in('id', pendingCenterIds)
+      : { data: [] };
+    const centerById = Object.fromEntries(((pendingCentersData || []) as { id: string; name: string; status: string; plan?: string; billing_period?: string }[]).map((c) => [c.id, c]));
+
+    const pendingInvoiceRows = (pendingInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => {
+      const center = centerById[inv.center_id];
+      return {
+        ...inv,
+        centerName: center?.name ?? billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? '—',
+        centerStatus: center?.status ?? '—',
+        centerPlan: center?.plan ?? '—',
+        centerBillingPeriod: center?.billing_period ?? '—',
+      };
+    });
 
     const totalMRR = fixedMRR + paygMRR;
     const activeFixedCount = (centers || []).filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'fixed').length;
@@ -339,19 +352,43 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: updErr.message }, { status: 500 });
       }
 
+      const { data: centerRow } = await supabaseAdmin
+        .from('centers')
+        .select('status, billing_period, plan, referred_by, subscription_status')
+        .eq('id', centerId)
+        .single();
+      const centerStatus = (centerRow as { status?: string })?.status;
+      const billingPeriod = (centerRow as { billing_period?: string })?.billing_period ?? 'quarterly';
+      const periodMonths: Record<string, number> = {
+        monthly: 1,
+        quarterly: 3,
+        half_yearly: 6,
+        yearly: 12,
+        semi_annual: 6,
+        annual: 12,
+      };
+      const months = periodMonths[billingPeriod] ?? 3;
+      const nextDue = addMonths(new Date(), months);
+
+      const centerUpdates: Record<string, unknown> = {
+        billing_status: 'paid',
+        last_payment_date: new Date().toISOString().slice(0, 10),
+        next_payment_due: nextDue.toISOString().slice(0, 10),
+        next_billing_date: nextDue.toISOString().slice(0, 10),
+        payment_due_date: nextDue.toISOString().slice(0, 10),
+      };
+      if (centerStatus === 'suspended') {
+        centerUpdates.status = 'active';
+        (centerUpdates as Record<string, string>).subscription_status = 'active';
+      }
+
       await supabaseAdmin
         .from('centers')
-        .update({ billing_status: 'paid', last_payment_date: new Date().toISOString().slice(0, 10) })
+        .update(centerUpdates)
         .eq('id', centerId);
 
       const amount = Number((inv as { payment_amount?: number }).payment_amount ?? 0);
       const ref = (inv as { payment_reference?: string }).payment_reference ?? '';
-      const { data: centerRow } = await supabaseAdmin
-        .from('centers')
-        .select('billing_period, plan, referred_by, subscription_status')
-        .eq('id', centerId)
-        .single();
-      const billingPeriod = (centerRow as { billing_period?: string })?.billing_period ?? 'quarterly';
       await supabaseAdmin.from('admin_payments').insert({
         center_id: centerId,
         amount,

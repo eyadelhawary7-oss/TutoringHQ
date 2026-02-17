@@ -213,7 +213,7 @@ export default function AdminPage() {
   const [planRequests, setPlanRequests] = useState<PlanRequestRow[]>([]);
   const [billingCenters, setBillingCenters] = useState<BillingCenter[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
-  const [pendingInvoices, setPendingInvoices] = useState<{ id: string; center_id: string; centerName: string; payment_amount: number; payment_reference?: string; payment_proof_url?: string; created_at: string; invoice_number?: string }[]>([]);
+  const [pendingInvoices, setPendingInvoices] = useState<{ id: string; center_id: string; centerName: string; payment_amount: number; payment_reference?: string; payment_proof_url?: string; payment_method?: string; centerStatus?: string; centerPlan?: string; centerBillingPeriod?: string; created_at: string; invoice_number?: string }[]>([]);
   const [billingStats, setBillingStats] = useState<{ mrrByPlan: Record<string, number>; totalMRR: number; fixedMRR: number; paygMRR: number; revenueProjection: number } | null>(null);
 
   const [statusFilter, setStatusFilter] = useState('all');
@@ -753,6 +753,11 @@ export default function AdminPage() {
     { id: 'team', labelKey: 'internalTeam', roles: ['super_admin'] },
   ];
   const tabs = allTabs.filter(tab => tab.roles.includes(internalRole));
+
+  const pendingPaymentProofs = useMemo(
+    () => pendingInvoices.filter((inv) => inv.centerStatus === 'suspended' && inv.payment_proof_url),
+    [pendingInvoices]
+  );
 
   const byPlanData = overview
     ? Object.entries(overview.byPlan || {}).map(([plan, count]) => ({ name: PLAN_LABELS[plan] || plan, count }))
@@ -1532,24 +1537,26 @@ export default function AdminPage() {
                 </table>
               </div>
               <div className="glass rounded-xl shadow overflow-x-auto">
-                <h3 className="p-4 text-lg font-semibold text-[var(--text-primary)]">{t('pendingInvoices', { defaultValue: 'Pending Payment Proofs' })} ({pendingInvoices.length})</h3>
+                <h3 className="p-4 text-lg font-semibold text-[var(--text-primary)]">{t('pendingPaymentProofs', { defaultValue: 'Pending Payment Proofs' })} ({pendingPaymentProofs.length})</h3>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
                       <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('date')}</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('plan')}</th>
                       <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Amount</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('paymentMethod', { defaultValue: 'Payment Method' })}</th>
                       <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Reference</th>
                       <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Proof</th>
                       <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {pendingInvoices.map((inv) => (
+                    {pendingPaymentProofs.map((inv) => (
                       <tr key={inv.id} className="border-b border-gray-100 dark:border-gray-700/50">
                         <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{inv.centerName}</td>
-                        <td className="px-4 py-3">{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="px-4 py-3">{PLAN_LABELS[inv.centerPlan || ''] || inv.centerPlan || '—'}</td>
                         <td className="px-4 py-3 font-mono italic">{Number(inv.payment_amount ?? 0).toLocaleString('ar-EG')} EGP</td>
+                        <td className="px-4 py-3">{inv.payment_method || '—'}</td>
                         <td className="px-4 py-3 font-mono italic">{inv.payment_reference || '—'}</td>
                         <td className="px-4 py-3">
                           {inv.payment_proof_url ? (
@@ -1565,7 +1572,7 @@ export default function AdminPage() {
                               disabled={actionCenterId === inv.id}
                               className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
                             >
-                              {t('approve')}
+                              {t('approvePay', { defaultValue: 'Approve Payment' })}
                             </button>
                           )}
                           <button
@@ -1573,14 +1580,14 @@ export default function AdminPage() {
                             disabled={actionCenterId === inv.id}
                             className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
                           >
-                            {t('reject')}
+                            {t('rejectPayment', { defaultValue: 'Reject Payment' })}
                           </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {pendingInvoices.length === 0 && (
+                {pendingPaymentProofs.length === 0 && (
                   <p className="p-8 text-center text-[var(--text-secondary)]">{t('noPendingInvoices', { defaultValue: 'No pending payment proofs.' })}</p>
                 )}
               </div>
