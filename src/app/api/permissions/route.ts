@@ -1,7 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const VALID_KEYS = ['can_scan','can_view_payments','can_record_payments','can_view_dashboard','can_view_revenue','can_manage_students','can_manage_groups','can_allow_late_entry','can_manage_rooms','can_view_schedule','can_view_settings','is_active'];
+
+const permissionsBodySchema = z
+  .object({
+    targetUserId: z.string().uuid().optional(),
+    userId: z.string().uuid().optional(),
+    permissions: z.record(z.string(), z.boolean()).optional(),
+    permissionKey: z.string().optional(),
+    enabled: z.boolean().optional(),
+    permission: z.string().optional(),
+    value: z.boolean().optional(),
+  })
+  .refine((d) => d.targetUserId || d.userId, { message: 'targetUserId or userId required' });
 
 async function getCallerContext(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,8 +42,12 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Only owner/admin can change permissions' }, { status: 403 });
     }
     const body = await request.json();
-    const targetId = body.targetUserId || body.userId;
-    if (!targetId) return NextResponse.json({ error: 'Missing targetUserId' }, { status: 400 });
+    const parsed = permissionsBodySchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
+    }
+    const targetId = parsed.data.targetUserId || parsed.data.userId;
 
     const { data: target } = await ctx.admin.from('users').select('id, role, center_id').eq('id', targetId).eq('center_id', ctx.caller.center_id).single();
     if (!target) return NextResponse.json({ error: 'User not found in this center' }, { status: 404 });
@@ -38,24 +55,25 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Can only set permissions for assistants/teachers' }, { status: 400 });
     }
 
+    const data = parsed.data;
     let updateObj: Record<string, boolean> = {};
-    if (body.permissions && typeof body.permissions === 'object') {
-      for (const [k, v] of Object.entries(body.permissions)) {
+    if (data.permissions && typeof data.permissions === 'object') {
+      for (const [k, v] of Object.entries(data.permissions)) {
         if (VALID_KEYS.includes(k) && typeof v === 'boolean') updateObj[k] = v;
       }
-    } else if (body.permissionKey && typeof body.enabled === 'boolean') {
-      if (VALID_KEYS.includes(body.permissionKey)) updateObj[body.permissionKey] = body.enabled;
-    } else if (body.permission && typeof body.value === 'boolean') {
-      if (VALID_KEYS.includes(body.permission)) updateObj[body.permission] = body.value;
+    } else if (data.permissionKey != null && typeof data.enabled === 'boolean') {
+      if (VALID_KEYS.includes(data.permissionKey)) updateObj[data.permissionKey] = data.enabled;
+    } else if (data.permission != null && typeof data.value === 'boolean') {
+      if (VALID_KEYS.includes(data.permission)) updateObj[data.permission] = data.value;
     }
     if (Object.keys(updateObj).length === 0) return NextResponse.json({ error: 'No valid permissions' }, { status: 400 });
 
-    const { data, error } = await ctx.admin.from('users').update(updateObj).eq('id', targetId).eq('center_id', ctx.caller.center_id).select();
+    const { data: updated, error } = await ctx.admin.from('users').update(updateObj).eq('id', targetId).eq('center_id', ctx.caller.center_id).select();
     if (error) {
       console.error('Permission update error:', error.message, error.details);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }

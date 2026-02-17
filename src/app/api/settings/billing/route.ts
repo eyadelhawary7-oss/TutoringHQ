@@ -227,7 +227,12 @@ export async function PUT(request: NextRequest) {
     if (ctx.user.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
-    const { action, new_plan, new_billing_type, reference } = body;
+    const parsed = (await import('@/lib/validations')).settingsBillingPutSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
+    }
+    const { action, new_plan, new_billing_type, reference, amount, proof_url } = parsed.data;
 
     if (action === 'request_change') {
       if (!new_plan && !new_billing_type) {
@@ -257,11 +262,10 @@ export async function PUT(request: NextRequest) {
     }
 
     if (action === 'submit_payment_proof') {
-      const { amount, reference, proof_url } = body;
       if (!reference || !reference.trim()) {
         return NextResponse.json({ error: 'Reference is required' }, { status: 400 });
       }
-      const numAmount = Number(amount);
+      const numAmount = amount != null ? Number(amount) : NaN;
       if (isNaN(numAmount) || numAmount <= 0) {
         return NextResponse.json({ error: 'Valid amount is required' }, { status: 400 });
       }
@@ -276,8 +280,8 @@ export async function PUT(request: NextRequest) {
         total_amount: numAmount,
         base_amount: numAmount,
         payment_method: 'instapay',
-        payment_reference: String(reference).trim(),
-        payment_proof_url: proof_url || null,
+        payment_reference: String(reference!).trim(),
+        payment_proof_url: (proof_url && proof_url !== '') ? proof_url : null,
         status: 'pending',
         billing_period_start: today,
         billing_period_end: today,
@@ -334,17 +338,19 @@ export async function POST(request: NextRequest) {
     if (ctx.user.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
-    const amount = Number(body.amount);
-    const reference = body.reference?.trim();
-    const proofUrl = body.proofUrl ?? body.proof_url;
-    const paymentMethod = body.paymentMethod ?? 'instapay';
-
-    if (!reference) {
-      return NextResponse.json({ error: 'Reference is required' }, { status: 400 });
+    const parsed = (await import('@/lib/validations')).settingsBillingPostSchema.safeParse({
+      amount: body.amount,
+      reference: body.reference,
+      proofUrl: body.proofUrl ?? body.proof_url,
+      proof_url: body.proof_url,
+      paymentMethod: body.paymentMethod,
+    });
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    if (isNaN(amount) || amount <= 0) {
-      return NextResponse.json({ error: 'Valid amount is required' }, { status: 400 });
-    }
+    const { amount, reference, proofUrl, proof_url, paymentMethod } = parsed.data;
+    const proofUrlResolved = proofUrl ?? proof_url;
 
     const today = new Date().toISOString().split('T')[0];
     const invoiceNumber = `PAYPROOF-${today}-${Date.now().toString(36)}`;
@@ -355,9 +361,9 @@ export async function POST(request: NextRequest) {
       payment_amount: amount,
       total_amount: amount,
       base_amount: amount,
-      payment_method: paymentMethod,
+      payment_method: paymentMethod ?? 'instapay',
       payment_reference: reference,
-      payment_proof_url: proofUrl || null,
+      payment_proof_url: proofUrlResolved || null,
       status: 'pending',
       billing_period_start: today,
       billing_period_end: today,

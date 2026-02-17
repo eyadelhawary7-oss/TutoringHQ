@@ -29,13 +29,28 @@ export const egyptianPhoneRequired = z
     'رقم الهاتف يجب أن يكون 11 رقم ويبدأ بـ 01'
   );
 
+/** Public signup form (/api/signup) - strict validation to prevent injection/XSS */
 export const signupSchema = z.object({
-  centerName: z.string().min(1, 'Center name is required').max(200),
-  phone: egyptianPhoneRequired,
-  email: z.string().email().optional().or(z.literal('')),
-  plan: z.enum(['starter', 'pro', 'business', 'enterprise']).default('starter'),
-  termsAccepted: z.boolean().refine((v) => v === true, 'Terms must be accepted'),
-  referralCode: z.string().optional(),
+  centerName: z
+    .string()
+    .min(2, 'Center name must be at least 2 characters')
+    .max(100, 'Center name too long')
+    .regex(/^[a-zA-Z0-9\s\u0600-\u06FF]+$/, 'Invalid characters in center name'),
+  phone: z.string().refine(
+    (v) => /^\d{10,15}$/.test(v.replace(/\D/g, '')),
+    'Invalid phone number format (10-15 digits)'
+  ),
+  email: z.string().email('Invalid email format').optional().or(z.literal('')),
+  plan: z
+    .string()
+    .transform((v) => (typeof v === 'string' ? v.toUpperCase() : v))
+    .pipe(z.enum(['STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE', 'TOP_CENTERS'])),
+  referralCode: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => (v ?? '').trim().toUpperCase())
+    .refine((v) => v === '' || /^[A-Z0-9]{8}$/.test(v), 'Referral code must be 8 alphanumeric characters'),
 });
 
 export const onboardingSchema = z.object({
@@ -71,11 +86,25 @@ export const whatsappSendSchema = z.object({
 
 export const paymentSchema = z.object({
   student_id: z.string().uuid('Invalid student ID'),
-  amount: z.number().min(0, 'Amount must be non-negative'),
+  amount: z.number().min(0, 'Amount must be non-negative').max(100000),
   method: z.enum(['cash', 'instapay', 'vodacash', 'orange', 'fawry', 'bank'], {
     message: 'Invalid payment method',
   }),
   payment_date: z.string().datetime().optional(),
+});
+
+/** Student create/update - strict validation */
+export const studentSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name too long')
+    .regex(/^[a-zA-Z\s\u0600-\u06FF]+$/, 'Invalid characters in name'),
+  phone: z
+    .string()
+    .refine((v) => !v || v === '' || /^\d{10,15}$/.test(v.replace(/\D/g, '')), 'Invalid phone number')
+    .optional()
+    .or(z.literal('')),
 });
 
 export const studentImportRowSchema = z.object({
@@ -93,3 +122,146 @@ export const whatsappSettingsSchema = z.object({
 export const billingPeriodSchema = z.object({
   billing_period: z.enum(['monthly', 'quarterly', 'half_yearly', 'yearly']),
 });
+
+/** Demo request (public, no auth) */
+export const demoRequestSchema = z.object({
+  name: z.string().min(2, 'Name required').max(100).regex(/^[a-zA-Z\s\u0600-\u06FF]+$/, 'Invalid characters'),
+  phone: z.string().refine((v) => /^\d{10,15}$/.test(v.replace(/\D/g, '')), 'Invalid phone'),
+  email: z.string().email().optional().or(z.literal('')),
+  centerName: z.string().max(200).optional().or(z.literal('')),
+});
+
+/** Invite team member */
+export const inviteUserSchema = z.object({
+  name: z.string().min(2, 'Name required').max(100).regex(/^[a-zA-Z\s\u0600-\u06FF]+$/, 'Invalid characters'),
+  phone: egyptianPhoneRequired,
+  role: z.enum(['assistant', 'teacher']),
+});
+
+/** Admin team - add member */
+export const adminTeamAddSchema = z.object({
+  name: z.string().min(2).max(100).regex(/^[a-zA-Z\s\u0600-\u06FF]+$/, 'Invalid characters'),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().refine((v) => /^\d{10,15}$/.test(v.replace(/\D/g, '')), 'Invalid phone'),
+  role: z.enum(['internal_admin', 'internal_viewer']),
+});
+
+/** Admin team - update role */
+export const adminTeamUpdateSchema = z.object({
+  memberId: z.string().uuid('Invalid member ID'),
+  role: z.enum(['internal_admin', 'internal_viewer']),
+});
+
+/** Admin team - remove member */
+export const adminTeamRemoveSchema = z.object({
+  memberId: z.string().uuid('Invalid member ID'),
+});
+
+/** Admin billing - record payment */
+export const adminBillingRecordSchema = z.object({
+  center_id: z.string().uuid('Invalid center ID'),
+  amount: z.number().positive().max(1000000),
+  billing_period: z
+    .enum(['monthly', 'quarterly', 'semi_annual', 'annual', 'half_yearly', 'yearly'])
+    .optional()
+    .default('monthly'),
+  period_start: z.string().optional(),
+  period_end: z.string().optional(),
+  notes: z.string().max(500).optional().nullable(),
+});
+
+/** Admin billing - invoice action */
+export const adminBillingInvoiceSchema = z.object({
+  invoiceId: z.string().uuid('Invalid invoice ID'),
+  action: z.enum(['approve', 'reject']),
+});
+
+/** Admin centers - create */
+export const adminCentersCreateSchema = z.object({
+  name: z.string().min(2).max(200).regex(/^[a-zA-Z0-9\s\u0600-\u06FF]+$/, 'Invalid characters'),
+  ownerPhone: z.string().refine((v) => /^\d{10,15}$/.test(v.replace(/\D/g, '')), 'Invalid phone'),
+  plan: z.enum(['starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg']).optional().default('starter'),
+});
+
+/** Admin centers - update (PUT) */
+export const adminCentersUpdateSchema = z.object({
+  centerId: z.string().uuid('Invalid center ID'),
+  action: z.enum(['approve', 'reject', 'change_plan', 'suspend', 'reactivate', 'delete', 'update_billing']),
+  newPlan: z.enum(['starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg']).optional(),
+  confirmName: z.string().optional(),
+  billing_period: z.string().optional(),
+  next_payment_due: z.string().optional(),
+});
+
+/** Permissions update */
+export const permissionsUpdateSchema = z.object({
+  targetUserId: z.string().uuid().optional(),
+  userId: z.string().uuid().optional(),
+  permissions: z.record(z.string(), z.boolean()).optional(),
+  permissionKey: z.string().optional(),
+  enabled: z.boolean().optional(),
+  permission: z.string().optional(),
+  value: z.boolean().optional(),
+}).refine((d) => d.targetUserId || d.userId, { message: 'targetUserId or userId required' });
+
+/** Settings billing - payment proof (PUT) */
+export const settingsBillingPutSchema = z.object({
+  action: z.enum(['request_change', 'cancel_change', 'submit_payment_proof', 'submit_payment_reference']),
+  new_plan: z.enum(['starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg']).optional(),
+  new_billing_type: z.string().max(50).optional(),
+  reference: z.string().min(1).max(200).optional(),
+  amount: z.number().positive().max(1000000).optional(),
+  proof_url: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
+});
+
+/** Settings billing POST */
+export const settingsBillingPostSchema = z.object({
+  amount: z.number().positive().max(1000000),
+  reference: z.string().min(1, 'Reference required').max(200),
+  proofUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
+  proof_url: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
+  paymentMethod: z.string().max(50).optional(),
+});
+
+/** Plan request */
+export const planRequestSchema = z.object({
+  requested_plan: z.enum(['starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg']),
+});
+
+/** Admin approve payment */
+export const adminApprovePaymentSchema = z.object({
+  centerId: z.string().uuid('Invalid center ID'),
+  action: z.enum(['approve', 'reject']),
+});
+
+/** Referral validate */
+export const referralValidateSchema = z.object({
+  code: z.string().max(20),
+});
+
+/** Admin plan requests - approve/reject */
+export const adminPlanRequestsSchema = z.object({
+  requestId: z.string().uuid('Invalid request ID'),
+  action: z.enum(['approve', 'reject']),
+  notes: z.string().max(500).optional().nullable(),
+});
+
+/** PAYG calculate */
+export const paygCalculateSchema = z.object({
+  centerId: z.string().uuid().optional(),
+});
+
+/** Student group create/update */
+export const studentGroupSchema = z.object({
+  name: z.string().min(2).max(100).regex(/^[a-zA-Z0-9\s\u0600-\u06FF]+$/, 'Invalid characters'),
+  center_id: z.string().uuid().optional(),
+});
+
+/** DB route - table-specific validation for insert/update */
+export const dbInsertSchemas: Record<string, z.ZodType> = {
+  students: studentImportRowSchema.extend({
+    center_id: z.string().uuid().optional(),
+  }),
+  student_groups: studentGroupSchema,
+  payments: paymentSchema.extend({ center_id: z.string().uuid().optional() }),
+};

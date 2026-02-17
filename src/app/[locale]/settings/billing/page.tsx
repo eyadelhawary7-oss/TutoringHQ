@@ -45,6 +45,10 @@ const MONTHLY_MULTIPLIER = 4.333;
 /** Admin WhatsApp number for payment proof notifications */
 const ADMIN_NOTIFICATION_PHONE = '201220601410';
 
+/** Payment proof upload limits */
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
 /** Flat rate per bracket: entire student count uses the rate of the bracket it falls into. 5 brackets matching fixed plans. */
 function getBracketRate(students: number): number {
   if (students <= 150) return 4;
@@ -189,12 +193,51 @@ export default function BillingPage() {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [proofUploading, setProofUploading] = useState(false);
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      alert(locale === 'ar' ? 'الملف كبير جداً. الحد الأقصى 5 ميجابايت.' : 'File too large. Maximum size is 5MB.');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      alert(locale === 'ar' ? 'نوع ملف غير صالح. فقط JPG و PNG و WebP و PDF مسموح بها.' : 'Invalid file type. Only JPG, PNG, WebP, and PDF allowed.');
+      e.target.value = '';
+      return;
+    }
+
+    // Revoke previous preview URL to avoid memory leak
+    setProofPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+    });
+    setProofFile(file);
+    e.target.value = '';
+  }
+
   async function uploadProof(file: File, cId: string): Promise<string> {
-    const fileName = `${cId}/${Date.now()}_${file.name}`;
-    const { error } = await supabase.storage.from('payment-proofs').upload(fileName, file);
-    if (error) throw error;
-    const { data: { publicUrl } } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
-    return publicUrl;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('centerId', cId);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const res = await fetch('/api/upload/payment-proof', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      body: formData,
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || 'Upload failed');
+    if (!json.url) throw new Error('No URL returned');
+    return json.url;
   }
 
   async function handleSubmitPaymentProof() {
@@ -845,15 +888,8 @@ export default function BillingPage() {
                   </label>
                   <input
                     type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f && f.size <= 5 * 1024 * 1024) {
-                        setProofFile(f);
-                        setProofPreview(f.type.startsWith('image/') ? URL.createObjectURL(f) : null);
-                      }
-                      e.target.value = '';
-                    }}
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    onChange={handleFileChange}
                     className="w-full text-sm text-text-secondary file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300"
                   />
                   {proofPreview && (

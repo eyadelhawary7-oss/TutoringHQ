@@ -11,13 +11,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { code } = body;
-
-    if (!code || typeof code !== 'string') {
+    const parsed = (await import('@/lib/validations')).referralValidateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json({ valid: false }, { status: 200 });
     }
-
-    const cleanCode = code.trim().toUpperCase();
+    const cleanCode = parsed.data.code.trim().toUpperCase();
     if (cleanCode.length !== 8) {
       return NextResponse.json({ valid: false }, { status: 200 });
     }

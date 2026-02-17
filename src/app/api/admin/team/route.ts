@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
+import {
+  adminTeamAddSchema,
+  adminTeamUpdateSchema,
+  adminTeamRemoveSchema,
+} from '@/lib/validations';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,14 +32,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, phone, role } = body;
-
-    if (!name || !phone) {
-      return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 });
+    const parsed = adminTeamAddSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    if (!['internal_admin', 'internal_viewer'].includes(role)) {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
-    }
+    const { name, email, phone, role } = parsed.data;
 
     // Format phone: remove non-digits, ensure starts with 20 (Egypt)
     let formattedPhone = phone.replace(/\D/g, '');
@@ -113,14 +116,12 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { memberId, role } = body;
-
-    if (!memberId || !role) {
-      return NextResponse.json({ error: 'memberId and role required' }, { status: 400 });
+    const parsed = adminTeamUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    if (!['internal_admin', 'internal_viewer'].includes(role)) {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
-    }
+    const { memberId, role } = parsed.data;
 
     const { data: member } = await ctx.supabaseAdmin
       .from('admin_users')
@@ -153,11 +154,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { memberId } = body;
-
-    if (!memberId) {
-      return NextResponse.json({ error: 'memberId required' }, { status: 400 });
+    const parsed = adminTeamRemoveSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
+    const { memberId } = parsed.data;
 
     const { data: member } = await ctx.supabaseAdmin
       .from('admin_users')

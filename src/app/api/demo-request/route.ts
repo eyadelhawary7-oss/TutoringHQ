@@ -15,11 +15,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, phone, email, centerName } = body;
-
-    if (!name || !phone) {
-      return NextResponse.json({ error: 'Missing name or phone' }, { status: 400 });
+    const parsed = (await import('@/lib/validations')).demoRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
+    const { name, phone, email, centerName } = parsed.data;
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },

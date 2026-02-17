@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { dbInsertSchemas } from '@/lib/validations';
 
 const ALLOWED_TABLES = [
   'payments', 'students', 'student_groups', 'attendance_scans',
@@ -98,6 +99,29 @@ export async function POST(request: Request) {
 
     if (operation === 'insert' && !(typeof data === 'object' && data !== null && !Array.isArray(data) || Array.isArray(data))) {
       return NextResponse.json({ error: "Field 'data' must be an object or array", code: 'VALIDATION_ERROR' }, { status: 400 });
+    }
+
+    // Validate insert/update data for tables with schemas
+    const schema = dbInsertSchemas[table as keyof typeof dbInsertSchemas];
+    if ((operation === 'insert' || operation === 'update') && schema && data != null) {
+      const items = Array.isArray(data) ? data : [data];
+      for (let i = 0; i < items.length; i++) {
+        const result = schema.safeParse(items[i]);
+        if (!result.success) {
+          const msg = result.error.issues[0]?.message ?? 'Invalid input';
+          return NextResponse.json({
+            error: `Validation failed for ${table} (item ${i + 1}): ${msg}`,
+            details: result.error.flatten(),
+            code: 'VALIDATION_ERROR',
+          }, { status: 400 });
+        }
+        if (Array.isArray(data)) (data as unknown[])[i] = result.data;
+        else {
+          const obj = data as Record<string, unknown>;
+          for (const k of Object.keys(obj)) delete obj[k];
+          Object.assign(obj, result.data as object);
+        }
+      }
     }
 
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {

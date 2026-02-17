@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
+import { logAdminAction } from '@/lib/audit';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -295,11 +296,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, ownerPhone, plan } = body;
-
-    if (!name || !ownerPhone) {
-      return NextResponse.json({ error: 'Missing name or ownerPhone' }, { status: 400 });
+    const parsed = (await import('@/lib/validations')).adminCentersCreateSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
+    const { name, ownerPhone, plan } = parsed.data;
 
     const { data: center, error: centerError } = await supabaseAdmin
       .from('centers')
@@ -381,18 +383,12 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { centerId, action, newPlan, confirmName, billing_period, next_payment_due } = body as {
-      centerId?: string; action?: string; newPlan?: string; confirmName?: string;
-      billing_period?: string; next_payment_due?: string;
-    };
-    if (!centerId || !action) {
-      return NextResponse.json({ error: 'Invalid centerId or action' }, { status: 400 });
+    const parsed = (await import('@/lib/validations')).adminCentersUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-
-    const validActions = ['approve', 'reject', 'change_plan', 'suspend', 'reactivate', 'delete', 'update_billing'];
-    if (!validActions.includes(action)) {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-    }
+    const { centerId, action, newPlan, confirmName, billing_period, next_payment_due } = parsed.data;
 
     const { data: center, error: centerError } = await supabaseAdmin
       .from('centers')
@@ -410,43 +406,19 @@ export async function PUT(request: Request) {
       }
       const oldPlan = center.plan || 'starter';
       await supabaseAdmin.from('centers').update({ plan: newPlan }).eq('id', centerId);
-      try {
-        await supabaseAdmin.from('audit_log').insert({
-          center_id: centerId,
-          user_id: user.id,
-          action: 'admin_plan_change',
-          entity_type: 'center',
-          details: { center_id: centerId, old_plan: oldPlan, new_plan: newPlan },
-        });
-      } catch { /* ignore */ }
+      await logAdminAction(user.id, 'change_plan', { centerId, oldPlan, newPlan }, centerId);
       return NextResponse.json({ success: true, action: 'change_plan' });
     }
 
     if (action === 'suspend') {
       await supabaseAdmin.from('centers').update({ status: 'suspended' }).eq('id', centerId);
-      try {
-        await supabaseAdmin.from('audit_log').insert({
-          center_id: centerId,
-          user_id: user.id,
-          action: 'admin_suspend',
-          entity_type: 'center',
-          details: { center_id: centerId, reason: 'manual' },
-        });
-      } catch { /* ignore */ }
+      await logAdminAction(user.id, 'suspend_center', { centerId, reason: 'manual' }, centerId);
       return NextResponse.json({ success: true, action: 'suspend' });
     }
 
     if (action === 'reactivate') {
       await supabaseAdmin.from('centers').update({ status: 'active' }).eq('id', centerId);
-      try {
-        await supabaseAdmin.from('audit_log').insert({
-          center_id: centerId,
-          user_id: user.id,
-          action: 'admin_reactivate',
-          entity_type: 'center',
-          details: { center_id: centerId },
-        });
-      } catch { /* ignore */ }
+      await logAdminAction(user.id, 'reactivate_center', { centerId }, centerId);
       return NextResponse.json({ success: true, action: 'reactivate' });
     }
 
@@ -458,15 +430,7 @@ export async function PUT(request: Request) {
         .from('centers')
         .update({ status: 'deleted', deleted_at: new Date().toISOString() })
         .eq('id', centerId);
-      try {
-        await supabaseAdmin.from('audit_log').insert({
-          center_id: centerId,
-          user_id: user.id,
-          action: 'admin_delete_center',
-          entity_type: 'center',
-          details: { center_id: centerId, center_name: center.name },
-        });
-      } catch { /* ignore */ }
+      await logAdminAction(user.id, 'delete_center', { centerId, centerName: center.name }, centerId);
       return NextResponse.json({ success: true, action: 'delete' });
     }
 
@@ -501,17 +465,7 @@ export async function PUT(request: Request) {
         .update({ status: 'rejected' })
         .eq('id', centerId);
 
-      try {
-        await supabaseAdmin.from('audit_log').insert({
-          center_id: centerId,
-          user_id: user.id,
-          action: 'center_rejected',
-          entity_type: 'center',
-          details: { centerName: center.name },
-        });
-      } catch {
-        // Ignore audit_log errors
-      }
+      await logAdminAction(user.id, 'reject_signup', { centerId, centerName: center.name }, centerId);
 
       return NextResponse.json({ success: true, action: 'rejected' });
     }
@@ -585,6 +539,8 @@ export async function PUT(request: Request) {
       .from('centers')
       .update(centerUpdates)
       .eq('id', centerId);
+
+    await logAdminAction(user.id, 'approve_signup', { centerId, centerName: center.name }, centerId);
 
     // Referral rewards are now created only when admin approves the referred center's first payment (in admin billing)
 

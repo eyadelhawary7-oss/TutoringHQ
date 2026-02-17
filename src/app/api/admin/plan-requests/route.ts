@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
+import { adminPlanRequestsSchema } from '@/lib/validations';
 
 const PLAN_MONTHLY: Record<string, number> = {
   starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 0, payg: 0,
@@ -66,11 +67,12 @@ export async function PUT(request: Request) {
 
     const { supabaseAdmin, userId } = ctx;
     const body = await request.json();
-    const { requestId, action, notes } = body;
-
-    if (!requestId || !action || !['approve', 'reject'].includes(action)) {
-      return NextResponse.json({ error: 'requestId and action (approve|reject) required' }, { status: 400 });
+    const parsed = adminPlanRequestsSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
+    const { requestId, action, notes } = parsed.data;
 
     const { data: pr, error: fetchErr } = await supabaseAdmin
       .from('plan_requests')

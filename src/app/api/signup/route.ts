@@ -1,29 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { signupSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { centerName, phone, email, plan } = body;
 
-    // Validate required fields
-    if (!centerName || !phone || !plan) {
+    // Validate input with Zod
+    const parsed = signupSchema.safeParse(body);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: first?.message ?? 'Invalid input', details: parsed.error.flatten() },
         { status: 400 }
       );
     }
 
-    // Validate plan (normalize to uppercase for DB)
-    const validPlans = ['STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE', 'TOP_CENTERS'];
-    const normalizedPlan = String(plan).toUpperCase();
-
-    if (!validPlans.includes(normalizedPlan)) {
-      return NextResponse.json(
-        { error: 'Invalid plan selected' },
-        { status: 400 }
-      );
-    }
+    const { centerName, phone, email, plan, referralCode } = parsed.data;
 
     // Create Supabase client
     const supabase = createClient(
@@ -36,32 +29,38 @@ export async function POST(request: Request) {
       return Math.random().toString(36).substring(2, 10).toUpperCase();
     };
 
-    // Create center - use only fields that exist
-    console.log('==========================================');
-    console.log('[signup] Creating center with values:', {
+    // Resolve referral if provided
+    let referredById: string | null = null;
+    const code = referralCode?.trim().toUpperCase();
+    if (code && code.length === 8) {
+      const { data: refCenter } = await supabase
+        .from('centers')
+        .select('id')
+        .eq('referral_code', code)
+        .single();
+      if (refCenter) referredById = refCenter.id;
+    }
+
+    // Create center - use validated data only
+    const insertPayload: Record<string, unknown> = {
       name: centerName,
-      phone: phone,
+      phone,
       email: email || null,
-      plan: normalizedPlan,
-      planOriginal: plan,
+      plan,
       subscription_status: 'pending',
       status: 'pending',
-    });
-    console.log('==========================================');
+      billing_type: 'fixed',
+      billing_period: 'quarterly',
+      referral_code: generateCode(),
+    };
+    if (referredById) {
+      insertPayload.referred_by = referredById;
+      insertPayload.referral_code_used_at = new Date().toISOString();
+    }
 
     const { data: newCenter, error: centerError } = await supabase
       .from('centers')
-      .insert({
-        name: centerName,
-        phone: phone,
-        email: email || null,
-        plan: normalizedPlan,
-        subscription_status: 'pending',
-        status: 'pending',
-        billing_type: 'fixed',
-        billing_period: 'quarterly',
-        referral_code: generateCode(),
-      })
+      .insert(insertPayload)
       .select()
       .single();
 

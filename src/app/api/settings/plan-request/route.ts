@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { planRequestSchema } from '@/lib/validations';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,11 +42,12 @@ export async function POST(request: NextRequest) {
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    const { requested_plan } = body;
-
-    if (!requested_plan || !['starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'].includes(requested_plan)) {
-      return NextResponse.json({ error: 'requested_plan must be starter, pro, business, enterprise, top_centers, or payg' }, { status: 400 });
+    const parsed = planRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
+    const { requested_plan } = parsed.data;
 
     const { data: center } = await ctx.supabaseAdmin
       .from('centers')

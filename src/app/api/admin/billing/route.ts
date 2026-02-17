@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
+import { adminBillingRecordSchema, adminBillingInvoiceSchema } from '@/lib/validations';
 
 const PLAN_MONTHLY: Record<string, number> = {
   starter: 2000,
@@ -235,18 +236,12 @@ export async function POST(request: Request) {
 
     const { supabaseAdmin, userId } = ctx;
     const body = await request.json();
-    const { center_id, amount, billing_period, period_start, period_end, notes } = body;
-
-    if (!center_id || !amount) {
-      return NextResponse.json({ error: 'center_id and amount required' }, { status: 400 });
+    const parsed = adminBillingRecordSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-
-    const numAmount = Number(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
-    }
-
-    const period = billing_period || 'monthly';
+    const { center_id, amount: numAmount, billing_period: period, period_start, period_end, notes } = parsed.data;
     const periodMap: Record<string, number> = {
       monthly: 1,
       quarterly: 3,
@@ -255,7 +250,7 @@ export async function POST(request: Request) {
       half_yearly: 6,
       yearly: 12,
     };
-    const months = periodMap[period] ?? 1;
+    const months = periodMap[period ?? 'monthly'] ?? 1;
 
     const start = period_start ? new Date(period_start) : new Date();
     const end = period_end ? new Date(period_end) : addMonths(start, months);
@@ -320,11 +315,12 @@ export async function PUT(request: Request) {
 
     const { supabaseAdmin, userId } = ctx;
     const body = await request.json();
-    const { invoiceId, action } = body;
-
-    if (!invoiceId || !action || !['approve', 'reject'].includes(action)) {
-      return NextResponse.json({ error: 'invoiceId and action (approve|reject) required' }, { status: 400 });
+    const parsed = adminBillingInvoiceSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
+    const { invoiceId, action } = parsed.data;
 
     const { data: inv } = await supabaseAdmin
       .from('invoices')

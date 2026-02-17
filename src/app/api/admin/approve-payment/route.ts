@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
+import { adminApprovePaymentSchema } from '@/lib/validations';
+import { logAdminAction } from '@/lib/audit';
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
@@ -16,11 +18,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { centerId, action } = body;
-
-    if (!centerId || !action || !['approve', 'reject'].includes(action)) {
-      return NextResponse.json({ error: 'centerId and action (approve|reject) required' }, { status: 400 });
+    const parsed = adminApprovePaymentSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
+    const { centerId, action } = parsed.data;
 
     const { supabaseAdmin, userId } = ctx;
 
@@ -91,17 +94,12 @@ export async function POST(request: Request) {
         recorded_by: userId,
       });
 
-      try {
-        await supabaseAdmin.from('audit_log').insert({
-          center_id: centerId,
-          user_id: userId,
-          action: 'admin_invoice_approved',
-          entity_type: 'invoices',
-          details: { invoice_id: (pendingInv as { id: string }).id, action: 'approve' },
-        });
-      } catch {
-        // ignore
-      }
+      await logAdminAction(userId, 'approve_payment', {
+        centerId,
+        invoiceId: (pendingInv as { id: string }).id,
+        amount,
+        reference: ref,
+      }, centerId);
 
       return NextResponse.json({ success: true, message: 'Payment approved, account reactivated' });
     }
@@ -122,17 +120,10 @@ export async function POST(request: Request) {
           .update({ status: 'rejected', updated_at: new Date().toISOString() })
           .eq('id', (pendingInv as { id: string }).id);
 
-        try {
-          await supabaseAdmin.from('audit_log').insert({
-            center_id: centerId,
-            user_id: userId,
-            action: 'admin_invoice_rejected',
-            entity_type: 'invoices',
-            details: { invoice_id: (pendingInv as { id: string }).id, action: 'reject' },
-          });
-        } catch {
-          // ignore
-        }
+        await logAdminAction(userId, 'reject_payment', {
+          centerId,
+          invoiceId: (pendingInv as { id: string }).id,
+        }, centerId);
       }
 
       return NextResponse.json({ success: true, message: 'Payment rejected' });

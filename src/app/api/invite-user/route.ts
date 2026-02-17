@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { inviteUserSchema } from '@/lib/validations';
 
 /** Convert Egyptian phone (01XXXXXXXXX) to E.164 (+201XXXXXXXXX) */
 function toE164(phone: string): string {
@@ -40,22 +41,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, phone, role } = body;
-
-    if (!name || !phone || !role) {
-      return NextResponse.json({ error: 'Name, phone, and role are required' }, { status: 400 });
+    const parsed = inviteUserSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
+    const { name, phone, role } = parsed.data;
 
-    if (role !== 'assistant' && role !== 'teacher') {
-      return NextResponse.json({ error: 'Invalid role. Must be assistant or teacher' }, { status: 400 });
-    }
-
-    const phoneRegex = /^01[0-9]{9}$/;
     const cleanPhone = String(phone).trim().replace(/\D/g, '');
     const normalizedPhone = cleanPhone.startsWith('0') ? cleanPhone : '0' + cleanPhone;
-    if (!phoneRegex.test(normalizedPhone)) {
-      return NextResponse.json({ error: 'Invalid Egyptian phone number format (01XXXXXXXXX)' }, { status: 400 });
-    }
     const phoneE164 = toE164(normalizedPhone);
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
