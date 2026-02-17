@@ -1,6 +1,7 @@
 // Force rebuild: 2026-02-15
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 const MONTHLY_MULTIPLIER = 4.333;
 
@@ -225,6 +226,9 @@ export async function PUT(request: NextRequest) {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (ctx.user.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!validateCSRFRequest(request, ctx.user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const body = await request.json();
     const parsed = (await import('@/lib/validations')).settingsBillingPutSchema.safeParse(body);
@@ -336,6 +340,9 @@ export async function POST(request: NextRequest) {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (ctx.user.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!validateCSRFRequest(request, ctx.user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const body = await request.json();
     const parsed = (await import('@/lib/validations')).settingsBillingPostSchema.safeParse({

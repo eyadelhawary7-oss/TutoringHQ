@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
+import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { logAdminAction } from '@/lib/audit';
+import { validateCSRFRequest } from '@/lib/csrf';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -294,6 +296,9 @@ export async function POST(request: Request) {
     if (!adminByTable && !adminByPhone) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+    if (!validateCSRFRequest(request, user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const body = await request.json();
     const parsed = (await import('@/lib/validations')).adminCentersCreateSchema.safeParse(body);
@@ -381,6 +386,9 @@ export async function PUT(request: Request) {
     if (!adminByTable && !adminByPhone) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+    if (!validateCSRFRequest(request, user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const body = await request.json();
     const parsed = (await import('@/lib/validations')).adminCentersUpdateSchema.safeParse(body);
@@ -388,7 +396,7 @@ export async function PUT(request: Request) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    const { centerId, action, newPlan, confirmName, billing_period, next_payment_due } = parsed.data;
+    const { centerId, action, newPlan, confirmName, billing_period, next_payment_due, password } = parsed.data;
 
     const { data: center, error: centerError } = await supabaseAdmin
       .from('centers')
@@ -411,6 +419,15 @@ export async function PUT(request: Request) {
     }
 
     if (action === 'suspend') {
+      const verify = await verifyPasswordForSensitiveAction(
+        supabaseUrl,
+        supabaseAnonKey,
+        accessToken,
+        password || ''
+      );
+      if (!verify.ok) {
+        return NextResponse.json({ error: verify.error }, { status: 401 });
+      }
       await supabaseAdmin.from('centers').update({ status: 'suspended' }).eq('id', centerId);
       await logAdminAction(user.id, 'suspend_center', { centerId, reason: 'manual' }, centerId);
       return NextResponse.json({ success: true, action: 'suspend' });
@@ -425,6 +442,15 @@ export async function PUT(request: Request) {
     if (action === 'delete') {
       if (confirmName !== center.name) {
         return NextResponse.json({ error: 'Center name confirmation does not match' }, { status: 400 });
+      }
+      const verify = await verifyPasswordForSensitiveAction(
+        supabaseUrl,
+        supabaseAnonKey,
+        accessToken,
+        password || ''
+      );
+      if (!verify.ok) {
+        return NextResponse.json({ error: verify.error }, { status: 401 });
       }
       await supabaseAdmin
         .from('centers')
@@ -471,13 +497,13 @@ export async function PUT(request: Request) {
     }
 
     // Approve
-    const password = generatePassword(8);
+    const newUserPassword = generatePassword(8);
     const intlPhone = phone.startsWith('+') ? phone : `+20${phone.replace(/^0/, '')}`;
 
     const { data: newAuthUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       phone: intlPhone,
       phone_confirm: true,
-      password,
+      password: newUserPassword,
       user_metadata: { name: center.name },
     });
 
@@ -552,7 +578,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({
       success: true,
       action: 'approved',
-      credentials: { password },
+      credentials: { password: newUserPassword },
     });
   } catch (error) {
     return NextResponse.json(

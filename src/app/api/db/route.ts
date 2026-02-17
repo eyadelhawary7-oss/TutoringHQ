@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { dbInsertSchemas } from '@/lib/validations';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 const ALLOWED_TABLES = [
   'payments', 'students', 'student_groups', 'attendance_scans',
@@ -133,6 +134,10 @@ export async function POST(request: Request) {
     if (authError || !user) {
       logError('Auth failed', authError);
       return NextResponse.json({ error: 'Not authenticated', code: 'AUTH_FAILED' }, { status: 401 });
+    }
+    const isStateChange = ['insert', 'update', 'delete'].includes(operation as string);
+    if (isStateChange && !validateCSRFRequest(request, user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token', code: 'CSRF_INVALID' }, { status: 403 });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {

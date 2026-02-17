@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
 import { adminPlanRequestsSchema } from '@/lib/validations';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 const PLAN_MONTHLY: Record<string, number> = {
   starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 0, payg: 0,
@@ -64,6 +65,9 @@ export async function PUT(request: Request) {
   try {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const { supabaseAdmin, userId } = ctx;
     const body = await request.json();

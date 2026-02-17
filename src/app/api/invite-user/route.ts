@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { inviteUserSchema } from '@/lib/validations';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 /** Convert Egyptian phone (01XXXXXXXXX) to E.164 (+201XXXXXXXXX) */
 function toE164(phone: string): string {
@@ -39,6 +40,9 @@ export async function POST(request: Request) {
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (!validateCSRFRequest(request, user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const body = await request.json();
     const parsed = inviteUserSchema.safeParse(body);
@@ -58,7 +62,7 @@ export async function POST(request: Request) {
 
     const { data: currentUser, error: currentUserError } = await supabaseAdmin
       .from('users')
-      .select('center_id, role')
+      .select('center_id, role, phone')
       .eq('id', user.id)
       .single();
 
@@ -66,6 +70,16 @@ export async function POST(request: Request) {
       return NextResponse.json({
         error: 'Your account could not be found. Please try logging in again, or contact support if the issue persists.',
       }, { status: 404 });
+    }
+
+    // CRITICAL: Users cannot invite themselves (privilege escalation protection)
+    const currentPhoneNorm = (currentUser.phone || user.phone || '')
+      .replace(/\D/g, '')
+      .replace(/^0/, '')
+      .replace(/^20/, '');
+    const inviteePhoneNorm = normalizedPhone.replace(/\D/g, '').replace(/^0/, '').replace(/^20/, '');
+    if (currentPhoneNorm && inviteePhoneNorm && currentPhoneNorm === inviteePhoneNorm) {
+      return NextResponse.json({ error: 'Cannot invite yourself to the team' }, { status: 403 });
     }
 
     if (currentUser.role !== 'owner' && currentUser.role !== 'admin') {

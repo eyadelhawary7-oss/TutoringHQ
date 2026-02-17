@@ -228,9 +228,12 @@ export default function BillingPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Not authenticated');
 
+    const { getCsrfHeaders } = await import('@/lib/csrf-client');
+    const csrfHeaders = await getCsrfHeaders(session.access_token);
+
     const res = await fetch('/api/upload/payment-proof', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      headers: { Authorization: `Bearer ${session.access_token}`, ...csrfHeaders },
       body: formData,
     });
 
@@ -255,10 +258,12 @@ export default function BillingPage() {
       }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      const { getCsrfHeaders } = await import('@/lib/csrf-client');
+      const csrfHeaders = await getCsrfHeaders(session.access_token);
       console.log('Fetching billing from:', '/api/settings/billing', '(POST)');
       const res = await fetch('/api/settings/billing', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, ...csrfHeaders },
         body: JSON.stringify({
           amount,
           reference: proofReference.trim(),
@@ -309,10 +314,12 @@ export default function BillingPage() {
       setSaving(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      const { getCsrfHeaders } = await import('@/lib/csrf-client');
+      const csrfHeaders = await getCsrfHeaders(session.access_token);
       console.log('Fetching from:', '/api/settings/plan-request');
       const res = await fetch('/api/settings/plan-request', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, ...csrfHeaders },
         body: JSON.stringify({ requested_plan: changePlanSelect }),
       });
       const json = await res.json();
@@ -335,10 +342,12 @@ export default function BillingPage() {
       setSaving(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      const { getCsrfHeaders } = await import('@/lib/csrf-client');
+      const csrfHeaders = await getCsrfHeaders(session.access_token);
       console.log('Fetching billing from:', '/api/settings/billing', '(PUT)');
       const res = await fetch('/api/settings/billing', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, ...csrfHeaders },
         body: JSON.stringify({ action: 'submit_payment_reference', reference: paymentRef.trim() }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed');

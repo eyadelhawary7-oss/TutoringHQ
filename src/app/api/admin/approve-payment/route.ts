@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
 import { adminApprovePaymentSchema } from '@/lib/validations';
 import { logAdminAction } from '@/lib/audit';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
@@ -15,6 +16,9 @@ export async function POST(request: Request) {
     if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (ctx.internalRole !== 'super_admin' && ctx.internalRole !== 'internal_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
     const body = await request.json();

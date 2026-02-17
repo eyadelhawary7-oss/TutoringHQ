@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import { dbSelect, dbDelete, auditLog } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
+import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 
 interface TeamMember {
   id: string;
@@ -64,6 +65,8 @@ export default function TeamPage() {
 
   const [assistantPermissions, setAssistantPermissions] = useState<Record<string, Record<string, boolean>>>({});
   const [editingPermissionsId, setEditingPermissionsId] = useState<string | null>(null);
+  const [permissionPrompt, setPermissionPrompt] = useState<{ targetId: string; key: string; enabled: boolean } | null>(null);
+  const [permissionPromptError, setPermissionPromptError] = useState('');
 
   useEffect(() => {
     if (currentUser && (currentUser.role === 'assistant' || currentUser.role === 'teacher')) {
@@ -179,11 +182,14 @@ export default function TeamPage() {
 
     setInviteSubmitting(true);
     try {
+      const { getCsrfHeaders } = await import('@/lib/csrf-client');
+      const csrfHeaders = await getCsrfHeaders(session.access_token);
       const res = await fetch('/api/invite-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
+          ...csrfHeaders,
         },
         body: JSON.stringify({
           name: inviteName.trim() || '',
@@ -259,9 +265,11 @@ export default function TeamPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     try {
+      const { getCsrfHeaders } = await import('@/lib/csrf-client');
+      const csrfHeaders = await getCsrfHeaders(session.access_token);
       const res = await fetch('/api/permissions', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, ...csrfHeaders },
         body: JSON.stringify({ targetUserId: member.id, permissions: { is_active: newStatus }, centerId }),
       });
       if (!res.ok) throw new Error('Failed');
@@ -273,10 +281,19 @@ export default function TeamPage() {
     }
   };
 
-  const handlePermissionToggle = async (targetId: string, key: string, enabled: boolean) => {
-    if (!centerId) return;
+  const handlePermissionToggle = (targetId: string, key: string, enabled: boolean) => {
+    setPermissionPromptError('');
+    setPermissionPrompt({ targetId, key, enabled });
+  };
+
+  const confirmPermissionChange = async (password: string) => {
+    if (!permissionPrompt || !centerId) return;
+    const { targetId, key, enabled } = permissionPrompt;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
+
+    const { getCsrfHeaders } = await import('@/lib/csrf-client');
+    const csrfHeaders = await getCsrfHeaders(session.access_token);
 
     // Optimistic update
     setAssistantPermissions(prev => ({
@@ -293,14 +310,33 @@ export default function TeamPage() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
+          ...csrfHeaders,
         },
-        body: JSON.stringify({ targetUserId: targetId, permissionKey: key, enabled, centerId }),
+        body: JSON.stringify({
+          targetUserId: targetId,
+          permissionKey: key,
+          enabled,
+          centerId,
+          password,
+        }),
       });
 
-      if (!res.ok) throw new Error('Failed to update');
-      showSaved();
+      if (res.ok) {
+        setPermissionPrompt(null);
+        showSaved();
+      } else {
+        const data = await res.json();
+        setPermissionPromptError(data.error || t('permissionUpdateFailed', { defaultValue: 'Failed to update permission' }));
+        setAssistantPermissions(prev => ({
+          ...prev,
+          [targetId]: {
+            ...prev[targetId],
+            [key]: !enabled,
+          },
+        }));
+      }
     } catch {
-      // Revert on failure
+      setPermissionPromptError(t('permissionUpdateFailed', { defaultValue: 'Failed to update permission' }));
       setAssistantPermissions(prev => ({
         ...prev,
         [targetId]: {
@@ -308,7 +344,6 @@ export default function TeamPage() {
           [key]: !enabled,
         },
       }));
-      alert(t('permissionUpdateFailed', { defaultValue: 'Failed to update permission' }));
     }
   };
 
@@ -609,6 +644,18 @@ export default function TeamPage() {
           </div>
         </div>
       )}
+
+      <PasswordConfirmModal
+        isOpen={!!permissionPrompt}
+        onClose={() => {
+          setPermissionPrompt(null);
+          setPermissionPromptError('');
+        }}
+        title={t('confirmPermissionChange', { defaultValue: 'Confirm Permission Change' })}
+        message={t('enterPasswordToConfirm', { defaultValue: 'Enter your password to confirm this change.' })}
+        error={permissionPromptError}
+        onConfirm={confirmPermissionChange}
+      />
     </>
   );
 }

@@ -39,6 +39,11 @@ async function dbRequest(body: Record<string, unknown>) {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
   };
+  const isStateChange = ['insert', 'update', 'delete'].includes(body.operation as string);
+  if (isStateChange) {
+    const { getCsrfHeaders } = await import('./csrf-client');
+    Object.assign(headers, await getCsrfHeaders(token));
+  }
   const requestBody = JSON.stringify(body);
 
   if (DEBUG_DB_PROXY) {

@@ -150,6 +150,7 @@ export const adminTeamAddSchema = z.object({
 export const adminTeamUpdateSchema = z.object({
   memberId: z.string().uuid('Invalid member ID'),
   role: z.enum(['internal_admin', 'internal_viewer']),
+  password: z.string().optional(), // Required for sensitive action
 });
 
 /** Admin team - remove member */
@@ -174,6 +175,7 @@ export const adminBillingRecordSchema = z.object({
 export const adminBillingInvoiceSchema = z.object({
   invoiceId: z.string().uuid('Invalid invoice ID'),
   action: z.enum(['approve', 'reject']),
+  password: z.string().optional(), // Required for approve when amount > 50,000 EGP
 });
 
 /** Admin centers - create */
@@ -191,6 +193,7 @@ export const adminCentersUpdateSchema = z.object({
   confirmName: z.string().optional(),
   billing_period: z.string().optional(),
   next_payment_due: z.string().optional(),
+  password: z.string().optional(), // Required for delete, suspend
 });
 
 /** Permissions update */
@@ -202,6 +205,7 @@ export const permissionsUpdateSchema = z.object({
   enabled: z.boolean().optional(),
   permission: z.string().optional(),
   value: z.boolean().optional(),
+  password: z.string().optional(), // Required when changing another admin's permissions
 }).refine((d) => d.targetUserId || d.userId, { message: 'targetUserId or userId required' });
 
 /** Settings billing - payment proof (PUT) */

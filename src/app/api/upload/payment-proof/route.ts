@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
@@ -33,6 +34,9 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+    if (!validateCSRFRequest(request, user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
     const formData = await request.formData();

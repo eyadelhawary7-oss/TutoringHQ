@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
 import { adminBillingRecordSchema, adminBillingInvoiceSchema } from '@/lib/validations';
+import { validateCSRFRequest } from '@/lib/csrf';
+import {
+  verifyPasswordForSensitiveAction,
+  SENSITIVE_PAYMENT_THRESHOLD,
+} from '@/lib/verify-password';
 
 const PLAN_MONTHLY: Record<string, number> = {
   starter: 2000,
@@ -233,6 +238,9 @@ export async function POST(request: Request) {
   try {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const { supabaseAdmin, userId } = ctx;
     const body = await request.json();
@@ -312,6 +320,9 @@ export async function PUT(request: Request) {
   try {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const { supabaseAdmin, userId } = ctx;
     const body = await request.json();
@@ -320,7 +331,7 @@ export async function PUT(request: Request) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    const { invoiceId, action } = parsed.data;
+    const { invoiceId, action, password } = parsed.data;
 
     const { data: inv } = await supabaseAdmin
       .from('invoices')
@@ -335,6 +346,25 @@ export async function PUT(request: Request) {
     const centerId = (inv as { center_id: string }).center_id;
 
     if (action === 'approve') {
+      const amount = Number((inv as { payment_amount?: number }).payment_amount ?? 0);
+      if (amount > SENSITIVE_PAYMENT_THRESHOLD) {
+        const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!accessToken || !supabaseUrl || !supabaseAnonKey) {
+          return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+        }
+        const verify = await verifyPasswordForSensitiveAction(
+          supabaseUrl,
+          supabaseAnonKey,
+          accessToken,
+          password || ''
+        );
+        if (!verify.ok) {
+          return NextResponse.json({ error: verify.error }, { status: 401 });
+        }
+      }
+
       const { error: updErr } = await supabaseAdmin
         .from('invoices')
         .update({
@@ -383,7 +413,6 @@ export async function PUT(request: Request) {
         .update(centerUpdates)
         .eq('id', centerId);
 
-      const amount = Number((inv as { payment_amount?: number }).payment_amount ?? 0);
       const ref = (inv as { payment_reference?: string }).payment_reference ?? '';
       await supabaseAdmin.from('admin_payments').insert({
         center_id: centerId,

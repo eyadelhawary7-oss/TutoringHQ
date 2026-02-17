@@ -17,8 +17,11 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 
-type TabId = 'overview' | 'kpi' | 'centers' | 'billing' | 'plan-requests' | 'pending' | 'team';
+const SENSITIVE_PAYMENT_THRESHOLD = 50_000;
+
+type TabId = 'overview' | 'kpi' | 'centers' | 'billing' | 'plan-requests' | 'pending' | 'team' | 'security';
 
 interface OverviewStats {
   totalCenters: number;
@@ -225,7 +228,7 @@ export default function AdminPage() {
   const [actionCenterId, setActionCenterId] = useState<string | null>(null);
   const [detailCenter, setDetailCenter] = useState<CenterRow | null>(null);
   const [changePlanCenter, setChangePlanCenter] = useState<CenterRow | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ center: CenterRow; name: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ center: CenterRow; name: string; password: string } | null>(null);
   const [markPaidCenter, setMarkPaidCenter] = useState<BillingCenter | null>(null);
 
   const [selectedCenterIds, setSelectedCenterIds] = useState<Set<string>>(new Set());
@@ -238,10 +241,50 @@ export default function AdminPage() {
   const [inviting, setInviting] = useState(false);
   const [internalRole, setInternalRole] = useState<string>('internal_viewer');
 
+  const [passwordConfirm, setPasswordConfirm] = useState<
+    | { type: 'suspend'; center: { id: string; name: string } }
+    | { type: 'approve_invoice'; inv: { id: string; centerName: string; payment_amount: number } }
+    | { type: 'change_role'; memberId: string; newRole: string; prevRole: string }
+    | null
+  >(null);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordConfirmLoading, setPasswordConfirmLoading] = useState(false);
+
+  const [securityData, setSecurityData] = useState<{
+    recentLogs: Array<{
+      id: string;
+      action: string;
+      details: Record<string, unknown>;
+      created_at: string;
+      user?: { name?: string | null; phone?: string } | null;
+      center?: { name?: string } | null;
+    }>;
+    actionStats: Record<string, number>;
+    centerStats: Record<string, number>;
+  }>({
+    recentLogs: [],
+    actionStats: {},
+    centerStats: {},
+  });
+
   const getSession = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session;
   }, []);
+
+  const getAuthHeaders = useCallback(async (includeCsrf = true) => {
+    const session = await getSession();
+    if (!session) return null;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    };
+    if (includeCsrf) {
+      const { getCsrfHeaders } = await import('@/lib/csrf-client');
+      Object.assign(headers, await getCsrfHeaders(session.access_token));
+    }
+    return headers;
+  }, [getSession]);
 
   const loadOverview = useCallback(async () => {
     console.log('🔍 Admin Overview: Fetching...');
@@ -432,6 +475,54 @@ export default function AdminPage() {
     if (activeTab === 'team') fetchInternalTeam();
   }, [activeTab, fetchInternalTeam]);
 
+  const fetchSecurityData = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/security', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSecurityData({
+          recentLogs: data.recentLogs || [],
+          actionStats: data.actionStats || {},
+          centerStats: data.centerStats || {},
+        });
+      }
+    } catch {
+      setSecurityData({ recentLogs: [], actionStats: {}, centerStats: {} });
+    }
+  }, [getSession]);
+
+  useEffect(() => {
+    if (activeTab === 'security') fetchSecurityData();
+  }, [activeTab, fetchSecurityData]);
+
+  const exportAuditLog = async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/security?export=csv', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Export failed');
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('Export failed');
+    }
+  };
+
   const sortedCenters = useMemo(() => {
     const arr = [...centers];
     return arr.sort((a, b) => {
@@ -458,21 +549,19 @@ export default function AdminPage() {
   const handleCenterAction = async (
     centerId: string,
     action: string,
-    extra?: { newPlan?: string; confirmName?: string }
+    extra?: { newPlan?: string; confirmName?: string; password?: string }
   ) => {
-    const session = await getSession();
-    if (!session) return;
+    const headers = await getAuthHeaders();
+    if (!headers) return;
     setActionCenterId(centerId);
     try {
       const body: Record<string, unknown> = { centerId, action };
       if (extra?.newPlan) body.newPlan = extra.newPlan;
       if (extra?.confirmName) body.confirmName = extra.confirmName;
+      if (extra?.password) body.password = extra.password;
       const res = await fetch('/api/admin/centers', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers,
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -482,8 +571,11 @@ export default function AdminPage() {
         setDetailCenter(null);
         fetchCenters();
         if (activeTab === 'overview' && overview) {
-          const oRes = await fetch('/api/admin/overview', { headers: { Authorization: `Bearer ${session.access_token}` } });
-          if (oRes.ok) setOverview(await oRes.json());
+          const oHeaders = await getAuthHeaders(false);
+          if (oHeaders) {
+            const oRes = await fetch('/api/admin/overview', { headers: oHeaders });
+            if (oRes.ok) setOverview(await oRes.json());
+          }
         }
       } else {
         alert(data.error || 'Failed');
@@ -496,16 +588,13 @@ export default function AdminPage() {
   };
 
   const handlePlanRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
-    const session = await getSession();
-    if (!session) return;
+    const headers = await getAuthHeaders();
+    if (!headers) return;
     setActionCenterId(requestId);
     try {
       const res = await fetch('/api/admin/plan-requests', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers,
         body: JSON.stringify({ requestId, action }),
       });
       const data = await res.json();
@@ -524,18 +613,17 @@ export default function AdminPage() {
     }
   };
 
-  const handleInvoiceAction = async (invoiceId: string, action: 'approve' | 'reject') => {
-    const session = await getSession();
-    if (!session) return;
+  const handleInvoiceAction = async (invoiceId: string, action: 'approve' | 'reject', password?: string) => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
     setActionCenterId(invoiceId);
     try {
+      const body: Record<string, unknown> = { invoiceId, action };
+      if (password) body.password = password;
       const res = await fetch('/api/admin/billing', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ invoiceId, action }),
+        headers,
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         setPendingInvoices((prev) => prev.filter((i) => i.id !== invoiceId));
@@ -552,18 +640,15 @@ export default function AdminPage() {
   };
 
   const handleMarkPaid = async (center: BillingCenter) => {
-    const session = await getSession();
-    if (!session) return;
+    const headers = await getAuthHeaders();
+    if (!headers) return;
     const amount = center.amount ?? PLAN_PRICE[center.plan] ?? 2000;
     const bp = center.billing_period || 'monthly';
     setActionCenterId(center.id);
     try {
       const res = await fetch('/api/admin/billing', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers,
         body: JSON.stringify({
           center_id: center.id,
           amount,
@@ -585,13 +670,13 @@ export default function AdminPage() {
   };
 
   const handleApprove = async (centerId: string) => {
-    const session = await getSession();
-    if (!session) return;
+    const headers = await getAuthHeaders();
+    if (!headers) return;
     setActionCenterId(centerId);
     try {
       const res = await fetch('/api/admin/centers', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers,
         body: JSON.stringify({ centerId, action: 'approve' }),
       });
       const data = await res.json();
@@ -611,13 +696,13 @@ export default function AdminPage() {
 
   const handleReject = async (centerId: string) => {
     if (!confirm(t('confirmReject'))) return;
-    const session = await getSession();
-    if (!session) return;
+    const headers = await getAuthHeaders();
+    if (!headers) return;
     setActionCenterId(centerId);
     try {
       const res = await fetch('/api/admin/centers', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers,
         body: JSON.stringify({ centerId, action: 'reject' }),
       });
       if (res.ok) {
@@ -644,13 +729,13 @@ export default function AdminPage() {
 
   const handleInviteInternal = async () => {
     if (!inviteName.trim() || !invitePhone.trim()) return;
-    const session = await getSession();
-    if (!session) return;
+    const headers = await getAuthHeaders();
+    if (!headers) return;
     setInviting(true);
     try {
       const res = await fetch('/api/admin/team', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers,
         body: JSON.stringify({ name: inviteName.trim(), email: inviteEmail.trim(), phone: invitePhone.trim(), role: inviteRole }),
       });
       if (res.ok) {
@@ -671,12 +756,12 @@ export default function AdminPage() {
 
   const handleRemoveInternal = async (memberId: string) => {
     if (!confirm(t('confirmRemoveTeamMember', { defaultValue: 'Remove this team member?' }))) return;
-    const session = await getSession();
-    if (!session) return;
+    const headers = await getAuthHeaders();
+    if (!headers) return;
     try {
       const res = await fetch('/api/admin/team', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers,
         body: JSON.stringify({ memberId }),
       });
       if (res.ok) fetchInternalTeam();
@@ -689,14 +774,16 @@ export default function AdminPage() {
     }
   };
 
-  const handleChangeInternalRole = async (memberId: string, newRole: string) => {
-    const session = await getSession();
-    if (!session) return;
+  const handleChangeInternalRole = async (memberId: string, newRole: string, password?: string) => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
     try {
+      const body: Record<string, unknown> = { memberId, role: newRole };
+      if (password) body.password = password;
       const res = await fetch('/api/admin/team', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ memberId, role: newRole }),
+        headers,
+        body: JSON.stringify(body),
       });
       if (res.ok) fetchInternalTeam();
       else {
@@ -751,6 +838,7 @@ export default function AdminPage() {
     { id: 'plan-requests', labelKey: 'planRequests', roles: ['super_admin', 'internal_admin'] },
     { id: 'pending', labelKey: 'pendingSignups', roles: ['super_admin', 'internal_admin'] },
     { id: 'team', labelKey: 'internalTeam', roles: ['super_admin'] },
+    { id: 'security', labelKey: 'security', roles: ['super_admin', 'internal_admin'] },
   ];
   const tabs = allTabs.filter(tab => tab.roles.includes(internalRole));
 
@@ -1210,13 +1298,13 @@ export default function AdminPage() {
                               if (!confirm(t('confirmBulkUpgrade', { defaultValue: `Upgrade ${selectedCenterIds.size} center(s) to ${PLAN_LABELS[plan]}?` }))) return;
                               setBulkUpgrading(true);
                               let done = 0;
+                              const headers = await getAuthHeaders();
+                              if (!headers) { setBulkUpgrading(false); return; }
                               for (const cid of selectedCenterIds) {
                                 try {
-                                  const session = await getSession();
-                                  if (!session) break;
                                   const res = await fetch('/api/admin/centers', {
                                     method: 'PUT',
-                                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                                    headers,
                                     body: JSON.stringify({ centerId: cid, action: 'change_plan', newPlan: plan }),
                                   });
                                   if (res.ok) done++;
@@ -1353,7 +1441,7 @@ export default function AdminPage() {
                               )}
                               {internalRole === 'super_admin' && c.status === 'active' && (
                                 <button
-                                  onClick={() => confirm(t('confirmSuspend')) && handleCenterAction(c.id, 'suspend')}
+                                  onClick={() => setPasswordConfirm({ type: 'suspend', center: c })}
                                   disabled={actionCenterId === c.id}
                                   className="px-2 py-1 text-xs bg-amber-100 dark:bg-amber-900/50 rounded hover:bg-amber-200"
                                 >
@@ -1371,7 +1459,7 @@ export default function AdminPage() {
                               )}
                               {internalRole === 'super_admin' && (
                                 <button
-                                  onClick={() => setDeleteConfirm({ center: c, name: '' })}
+                                  onClick={() => setDeleteConfirm({ center: c, name: '', password: '' })}
                                   className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/50 rounded hover:bg-red-200 text-red-700 dark:text-red-300"
                                 >
                                   {t('deleteCenters')}
@@ -1522,7 +1610,7 @@ export default function AdminPage() {
                             </button>
                             {internalRole === 'super_admin' && (
                               <button
-                                onClick={() => handleCenterAction(c.id, 'suspend')}
+                                onClick={() => setPasswordConfirm({ type: 'suspend', center: c })}
                                 disabled={actionCenterId === c.id}
                                 className="px-2 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
                               >
@@ -1568,7 +1656,18 @@ export default function AdminPage() {
                         <td className="px-4 py-3 flex gap-2">
                           {internalRole === 'super_admin' && (
                             <button
-                              onClick={() => handleInvoiceAction(inv.id, 'approve')}
+                              onClick={() =>
+                                Number(inv.payment_amount ?? 0) > SENSITIVE_PAYMENT_THRESHOLD
+                                  ? setPasswordConfirm({
+                                      type: 'approve_invoice',
+                                      inv: {
+                                        id: inv.id,
+                                        centerName: inv.centerName,
+                                        payment_amount: inv.payment_amount ?? 0,
+                                      },
+                                    })
+                                  : handleInvoiceAction(inv.id, 'approve')
+                              }
                               disabled={actionCenterId === inv.id}
                               className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
                             >
@@ -1821,7 +1920,14 @@ export default function AdminPage() {
                             <div className="flex gap-2">
                               <select
                                 value={m.role}
-                                onChange={(e) => handleChangeInternalRole(m.id, e.target.value)}
+                                onChange={(e) =>
+                                  setPasswordConfirm({
+                                    type: 'change_role',
+                                    memberId: m.id,
+                                    newRole: e.target.value,
+                                    prevRole: m.role,
+                                  })
+                                }
                                 className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-bg-tertiary text-text-primary"
                               >
                                 <option value="internal_admin">{t('internalAdmin', { defaultValue: 'Admin' })}</option>
@@ -1846,6 +1952,111 @@ export default function AdminPage() {
                 {internalTeam.length === 0 && (
                   <p className="p-8 text-center text-[var(--text-secondary)]">{t('noTeamMembers', { defaultValue: 'No internal team members yet.' })}</p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="space-y-6">
+              {/* Recent Admin Actions */}
+              <div className="glass rounded-xl p-6 shadow">
+                <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-4">
+                  {t('recentAdminActions', { defaultValue: 'Recent Admin Actions' })}
+                </h3>
+                <div className="space-y-2">
+                  {securityData.recentLogs.slice(0, 20).map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-center justify-between p-3 bg-bg-tertiary rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-[var(--text-primary)]">
+                          {log.action.replace(/_/g, ' ').toUpperCase()}
+                        </span>
+                        <span className="text-[var(--text-secondary)] text-sm ml-2">
+                          {t('by', { defaultValue: 'by' })} {log.user?.name || t('unknown', { defaultValue: 'Unknown' })}
+                        </span>
+                        {log.center?.name && (
+                          <span className="text-[var(--text-tertiary)] text-sm ml-2">
+                            → {log.center.name}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[var(--text-tertiary)] text-sm flex-shrink-0 ml-2">
+                        {new Date(log.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                  {securityData.recentLogs.length === 0 && (
+                    <p className="text-sm text-[var(--text-secondary)] py-4">{t('noAuditLogs', { defaultValue: 'No audit logs yet.' })}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Statistics & Center Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="glass rounded-xl p-6 shadow">
+                  <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                    {t('actionsLast30Days', { defaultValue: 'Actions (Last 30 Days)' })}
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(securityData.actionStats).length > 0 ? (
+                      Object.entries(securityData.actionStats).map(([action, count]) => (
+                        <div key={action} className="flex justify-between text-sm">
+                          <span className="text-[var(--text-secondary)]">{action.replace(/_/g, ' ')}</span>
+                          <span className="font-semibold text-[var(--text-primary)]">{count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-[var(--text-secondary)]">{t('noActivity')}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="glass rounded-xl p-6 shadow">
+                  <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                    {t('centersByStatus', { defaultValue: 'Centers by Status' })}
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(securityData.centerStats).map(([status, count]) => (
+                      <div key={status} className="flex justify-between text-sm">
+                        <span className="text-[var(--text-secondary)] capitalize">{status}</span>
+                        <span className="font-semibold text-[var(--text-primary)]">{count}</span>
+                      </div>
+                    ))}
+                    {Object.keys(securityData.centerStats).length === 0 && (
+                      <p className="text-sm text-[var(--text-secondary)]">{t('noData')}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="glass rounded-xl p-6 shadow">
+                  <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                    {t('securityHealth', { defaultValue: 'Security Health' })}
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--text-secondary)]">{t('auditLogging', { defaultValue: 'Audit Logging' })}</span>
+                      <span className="text-green-500 font-semibold">✓ {t('active', { defaultValue: 'Active' })}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--text-secondary)]">{t('rlsEnabled', { defaultValue: 'RLS Enabled' })}</span>
+                      <span className="text-green-500 font-semibold">✓ {t('active', { defaultValue: 'Active' })}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--text-secondary)]">{t('inputValidation', { defaultValue: 'Input Validation' })}</span>
+                      <span className="text-green-500 font-semibold">✓ {t('active', { defaultValue: 'Active' })}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Export Audit Log */}
+              <div className="glass rounded-xl p-6 shadow">
+                <button
+                  onClick={exportAuditLog}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+                >
+                  {t('exportAuditLog', { defaultValue: 'Export Audit Log (CSV)' })}
+                </button>
               </div>
             </div>
           )}
@@ -1904,12 +2115,31 @@ export default function AdminPage() {
               value={deleteConfirm.name}
               onChange={(e) => setDeleteConfirm({ ...deleteConfirm, name: e.target.value })}
               placeholder={deleteConfirm.center.name}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary mb-3"
+            />
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1 mt-2">
+              {t('passwordConfirm', { defaultValue: 'Confirm your password' })}
+            </label>
+            <input
+              type="password"
+              value={deleteConfirm.password}
+              onChange={(e) => setDeleteConfirm({ ...deleteConfirm, password: e.target.value })}
+              placeholder={t('passwordPlaceholder', { defaultValue: 'Enter your password' })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary mb-4"
             />
             <div className="flex gap-2">
               <button
-                onClick={() => handleCenterAction(deleteConfirm.center.id, 'delete', { confirmName: deleteConfirm.name })}
-                disabled={deleteConfirm.name !== deleteConfirm.center.name || actionCenterId === deleteConfirm.center.id}
+                onClick={() =>
+                  handleCenterAction(deleteConfirm.center.id, 'delete', {
+                    confirmName: deleteConfirm.name,
+                    password: deleteConfirm.password,
+                  })
+                }
+                disabled={
+                  deleteConfirm.name !== deleteConfirm.center.name ||
+                  !deleteConfirm.password.trim() ||
+                  actionCenterId === deleteConfirm.center.id
+                }
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
                 {t('deleteCenters')}
@@ -1938,6 +2168,67 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      <PasswordConfirmModal
+        isOpen={!!passwordConfirm}
+        onClose={() => {
+          setPasswordConfirm(null);
+          setPasswordError('');
+        }}
+        title={
+          passwordConfirm?.type === 'suspend'
+            ? t('confirmSuspend', { defaultValue: 'Confirm Suspend Center' })
+            : passwordConfirm?.type === 'approve_invoice'
+              ? t('confirmApprovePayment', { defaultValue: 'Confirm Approve Payment' })
+              : t('confirmRoleChange', { defaultValue: 'Confirm Role Change' })
+        }
+        message={
+          passwordConfirm?.type === 'suspend'
+            ? `${t('suspend', { defaultValue: 'Suspend' })}: ${passwordConfirm.center.name}`
+            : passwordConfirm?.type === 'approve_invoice'
+              ? `${passwordConfirm.inv.centerName} - ${passwordConfirm.inv.payment_amount.toLocaleString('ar-EG')} EGP`
+              : undefined
+        }
+        loading={passwordConfirmLoading || !!actionCenterId}
+        error={passwordError}
+        onConfirm={async (password) => {
+          setPasswordError('');
+          setPasswordConfirmLoading(true);
+          try {
+            if (passwordConfirm?.type === 'suspend') {
+              await handleCenterAction(passwordConfirm.center.id, 'suspend', { password });
+              setPasswordConfirm(null);
+            } else if (passwordConfirm?.type === 'approve_invoice') {
+              await handleInvoiceAction(passwordConfirm.inv.id, 'approve', password);
+              setPasswordConfirm(null);
+            } else if (passwordConfirm?.type === 'change_role') {
+              const headers = await getAuthHeaders();
+              if (!headers) {
+                setPasswordError('Not authenticated');
+                return;
+              }
+              const r = await fetch('/api/admin/team', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                  memberId: passwordConfirm.memberId,
+                  role: passwordConfirm.newRole,
+                  password,
+                }),
+              });
+              const data = await r.json();
+              if (r.ok) {
+                fetchInternalTeam();
+                setPasswordConfirm(null);
+              } else {
+                setPasswordError(data.error || 'Failed');
+              }
+            }
+          } finally {
+            setPasswordConfirmLoading(false);
+          }
+        }}
+      />
     </>
   );
 }

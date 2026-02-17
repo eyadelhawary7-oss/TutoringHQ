@@ -5,6 +5,8 @@ import {
   adminTeamUpdateSchema,
   adminTeamRemoveSchema,
 } from '@/lib/validations';
+import { validateCSRFRequest } from '@/lib/csrf';
+import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +31,9 @@ export async function POST(request: NextRequest) {
     if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (ctx.internalRole !== 'super_admin') {
       return NextResponse.json({ error: 'Only super_admin can invite team members' }, { status: 403 });
+    }
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -77,6 +82,11 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // CRITICAL: Admins cannot add themselves to the team (privilege escalation protection)
+    if (ctx.userId === userId) {
+      return NextResponse.json({ error: 'Cannot add yourself to the team' }, { status: 403 });
+    }
+
     const { data: existingAdmin } = await ctx.supabaseAdmin
       .from('admin_users')
       .select('id')
@@ -114,6 +124,9 @@ export async function PUT(request: NextRequest) {
     if (ctx.internalRole !== 'super_admin') {
       return NextResponse.json({ error: 'Only super_admin can change roles' }, { status: 403 });
     }
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const body = await request.json();
     const parsed = adminTeamUpdateSchema.safeParse(body);
@@ -121,7 +134,29 @@ export async function PUT(request: NextRequest) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    const { memberId, role } = parsed.data;
+    const { memberId, role, password } = parsed.data;
+
+    // Password confirmation required for changing another admin's role
+    const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!accessToken || !supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+    const verify = await verifyPasswordForSensitiveAction(
+      supabaseUrl,
+      supabaseAnonKey,
+      accessToken,
+      password || ''
+    );
+    if (!verify.ok) {
+      return NextResponse.json({ error: verify.error }, { status: 401 });
+    }
+
+    // CRITICAL: Admins cannot change their own role (privilege escalation protection)
+    if (ctx.userId === memberId) {
+      return NextResponse.json({ error: 'Cannot change your own role' }, { status: 403 });
+    }
 
     const { data: member } = await ctx.supabaseAdmin
       .from('admin_users')
@@ -152,6 +187,9 @@ export async function DELETE(request: NextRequest) {
     if (ctx.internalRole !== 'super_admin') {
       return NextResponse.json({ error: 'Only super_admin can remove team members' }, { status: 403 });
     }
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const body = await request.json();
     const parsed = adminTeamRemoveSchema.safeParse(body);
@@ -160,6 +198,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
     const { memberId } = parsed.data;
+
+    // CRITICAL: Admins cannot remove themselves (privilege escalation protection)
+    if (ctx.userId === memberId) {
+      return NextResponse.json({ error: 'Cannot remove yourself from the team' }, { status: 403 });
+    }
 
     const { data: member } = await ctx.supabaseAdmin
       .from('admin_users')

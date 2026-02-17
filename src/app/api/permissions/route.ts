@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { validateCSRFRequest } from '@/lib/csrf';
+import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 
 const VALID_KEYS = ['can_scan','can_view_payments','can_record_payments','can_view_dashboard','can_view_revenue','can_manage_students','can_manage_groups','can_allow_late_entry','can_manage_rooms','can_view_schedule','can_view_settings','is_active'];
 
@@ -13,6 +15,7 @@ const permissionsBodySchema = z
     enabled: z.boolean().optional(),
     permission: z.string().optional(),
     value: z.boolean().optional(),
+    password: z.string().optional(), // Required for sensitive action
   })
   .refine((d) => d.targetUserId || d.userId, { message: 'targetUserId or userId required' });
 
@@ -29,7 +32,7 @@ async function getCallerContext(request: Request) {
   const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: caller } = await admin.from('users').select('id, role, center_id').eq('id', user.id).single();
   if (!caller?.center_id) return null;
-  return { caller, admin };
+  return { caller, admin, url, anon, token };
 }
 
 export async function POST(request: Request) { return PUT(request); }
@@ -41,6 +44,9 @@ export async function PUT(request: Request) {
     if (ctx.caller.role !== 'owner' && ctx.caller.role !== 'admin') {
       return NextResponse.json({ error: 'Only owner/admin can change permissions' }, { status: 403 });
     }
+    if (!validateCSRFRequest(request, ctx.caller.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
     const body = await request.json();
     const parsed = permissionsBodySchema.safeParse(body);
     if (!parsed.success) {
@@ -48,6 +54,22 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
     const targetId = parsed.data.targetUserId || parsed.data.userId;
+
+    // CRITICAL: Users cannot modify their own permissions (privilege escalation protection)
+    if (ctx.caller.id === targetId) {
+      return NextResponse.json({ error: 'Cannot modify your own permissions' }, { status: 403 });
+    }
+
+    // Password confirmation required for changing another admin's permissions
+    const verify = await verifyPasswordForSensitiveAction(
+      ctx.url,
+      ctx.anon,
+      ctx.token,
+      parsed.data.password || ''
+    );
+    if (!verify.ok) {
+      return NextResponse.json({ error: verify.error }, { status: 401 });
+    }
 
     const { data: target } = await ctx.admin.from('users').select('id, role, center_id').eq('id', targetId).eq('center_id', ctx.caller.center_id).single();
     if (!target) return NextResponse.json({ error: 'User not found in this center' }, { status: 404 });
