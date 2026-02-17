@@ -63,6 +63,8 @@ export default function SignupPage() {
       return;
     }
     setIsLoading(true);
+    setError('');
+    console.log('[signup-form] Submitting with plan:', formData.plan);
     try {
       const res = await fetch('/api/signup', {
         method: 'POST',
@@ -77,13 +79,17 @@ export default function SignupPage() {
         }),
       });
       const data = await res.json();
+      console.log('[signup-form] Response status:', res.status);
+      console.log('[signup-form] Response data:', data);
+
       if (!res.ok) {
         setError(data.error === 'referralCodeInvalid' ? t('referralCodeInvalid') : (data.error || t('error')));
         return;
       }
       setSuccess(true);
       setTimeout(() => router.push('/login'), 1500);
-    } catch {
+    } catch (err) {
+      console.error('[signup-form] Error:', err);
       setError(t('error'));
     } finally {
       setIsLoading(false);

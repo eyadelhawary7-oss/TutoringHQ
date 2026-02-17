@@ -1,4 +1,6 @@
+import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 function isSuperAdmin(phone: string | null): boolean {
@@ -24,55 +26,110 @@ function generatePassword(len = 8): string {
 }
 
 export async function GET(request: Request) {
+  console.log('==========================================');
+  console.log('[admin/centers] 🔍 Route called');
+
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+      console.log('[admin/centers] ❌ Server configuration error');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const authHeader = request.headers.get('Authorization');
-    const accessToken = authHeader?.replace('Bearer ', '');
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const adminByTable = await isAdminUser(supabaseAdmin, user.id);
-    const { data: userRecordForAdmin } = await supabaseAdmin
+    let userId: string | null = null;
+
+    // Try 1: Cookie-based auth
+    const cookieStore = await cookies();
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll().map((c) => ({ name: c.name, value: c.value }));
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
+      },
+    });
+
+    const { data: { session: cookieSession } } = await supabase.auth.getSession();
+
+    if (cookieSession) {
+      console.log('[admin/centers] ✅ Found session in cookies');
+      userId = cookieSession.user.id;
+    } else {
+      console.log('[admin/centers] ⚠️ No session in cookies, trying Authorization header...');
+
+      // Try 2: Authorization header
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+
+        if (user && !error) {
+          console.log('[admin/centers] ✅ Found user via Authorization header');
+          userId = user.id;
+        } else {
+          console.log('[admin/centers] ❌ Invalid token:', error?.message);
+        }
+      }
+    }
+
+    if (!userId) {
+      console.log('[admin/centers] ❌ No valid authentication found');
+      return NextResponse.json({ error: 'Unauthorized - no session found' }, { status: 401 });
+    }
+
+    console.log('[admin/centers] 🔐 User ID:', userId);
+
+    // Check if user is admin
+    const { data: adminUser } = await adminClient
+      .from('admin_users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    const { data: userData } = await adminClient
       .from('users')
       .select('phone')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
-    const adminByPhone = isSuperAdmin(userRecordForAdmin?.phone ?? null);
 
-    if (!adminByTable && !adminByPhone) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const superAdminPhones = (process.env.SUPER_ADMIN_PHONES || '')
+      .split(',')
+      .map((p: string) => p.trim())
+      .filter(Boolean);
+    const userPhone = cookieSession?.user?.phone ?? userData?.phone ?? null;
+    const isPhoneAdmin = !!userPhone && superAdminPhones.includes(String(userPhone));
+
+    console.log('[admin/centers] 🔐 Admin check:', {
+      hasAdminUser: !!adminUser,
+      isPhoneAdmin,
+    });
+
+    if (!adminUser && !isPhoneAdmin) {
+      console.log('[admin/centers] ❌ Not an admin');
+      return NextResponse.json({ error: 'Forbidden - admin access required' }, { status: 403 });
     }
+
+    console.log('[admin/centers] ✅ Admin authorized');
 
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get('status') || 'all';
     const planFilter = searchParams.get('plan') || 'all';
     const search = searchParams.get('search') || '';
 
-    let query = supabaseAdmin
+    let query = adminClient
       .from('centers')
-      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at, billing_status, max_students, pricing_type, billing_type, is_early_adopter, early_adopter_price')
+      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at, billing_status, billing_type, is_early_adopter, early_adopter_price')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
@@ -87,16 +144,19 @@ export async function GET(request: Request) {
       query = query.or(`name.ilike.${term},phone.ilike.${term}`);
     }
 
+    console.log('[admin/centers] 📡 Querying centers...');
     const { data: centersData, error } = await query;
+    console.log('[admin/centers] 📊 Query result:', { count: centersData?.length ?? 0, error: error?.message });
 
     if (error) {
+      console.error('[admin/centers] ❌ Query error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     const centers = centersData || [];
 
     const centerIds = centers.map((c: { id: string }) => c.id);
-    const { data: counts } = await supabaseAdmin
+    const { data: counts } = await adminClient
       .from('students')
       .select('center_id')
       .in('center_id', centerIds);
@@ -110,7 +170,7 @@ export async function GET(request: Request) {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const { data: weeklyScans } = centerIds.length > 0
-      ? await supabaseAdmin
+      ? await adminClient
           .from('attendance_scans')
           .select('center_id, student_id')
           .in('center_id', centerIds)
@@ -122,7 +182,7 @@ export async function GET(request: Request) {
       weeklyUniqueByCenter[row.center_id].add(row.student_id);
     }
 
-    const { data: owners } = await supabaseAdmin
+    const { data: owners } = await adminClient
       .from('users')
       .select('center_id, name, phone')
       .eq('role', 'owner')
@@ -130,7 +190,7 @@ export async function GET(request: Request) {
     const ownerMap = new Map((owners || []).map((o: { center_id: string; name?: string; phone?: string }) => [o.center_id, { name: o.name, phone: o.phone }]));
 
     let lastPaymentByCenter: Record<string, string> = {};
-    const { data: latestPayments } = await supabaseAdmin
+    const { data: latestPayments } = await adminClient
       .from('admin_payments')
       .select('center_id, paid_at')
       .in('center_id', centerIds)
@@ -144,7 +204,7 @@ export async function GET(request: Request) {
 
     const referredByIds = [...new Set((centers || []).map((c: { referred_by?: string }) => c.referred_by).filter(Boolean))];
     const { data: referringCenters } = referredByIds.length > 0
-      ? await supabaseAdmin.from('centers').select('id, name, referral_code').in('id', referredByIds)
+      ? await adminClient.from('centers').select('id, name, referral_code').in('id', referredByIds)
       : { data: [] };
     const referringMap = new Map((referringCenters || []).map((r: { id: string; name: string; referral_code: string }) => [r.id, { name: r.name, referral_code: r.referral_code }]));
 
@@ -155,7 +215,7 @@ export async function GET(request: Request) {
       const referredBy = (c as { referred_by?: string }).referred_by;
       const referring = referredBy ? referringMap.get(referredBy) : null;
       const plan = (c as { plan?: string }).plan || 'starter';
-      const maxStudents = (c as { max_students?: number }).max_students ?? PLAN_LIMITS[plan] ?? 150;
+      const maxStudents = PLAN_LIMITS[plan] ?? 150;
       const weeklyUnique = weeklyUniqueByCenter[c.id as string]?.size ?? 0;
       const limitStatus = maxStudents < 999999
         ? (weeklyUnique >= maxStudents ? 'over' : weeklyUnique >= maxStudents * 0.9 ? 'approaching' : 'ok')
@@ -175,11 +235,22 @@ export async function GET(request: Request) {
     });
 
     const pendingCenters = rows.filter((c: Record<string, unknown>) => c.status === 'pending');
+    console.log('[admin/centers] ✅ Returning', rows.length, 'centers,', pendingCenters.length, 'pending');
+    console.log('==========================================');
 
     return NextResponse.json({ centers: rows, pendingCenters });
   } catch (error) {
+    console.error('==========================================');
+    console.error('[admin/centers] 💥 CAUGHT ERROR:', error);
+    console.error('[admin/centers] Error message:', error instanceof Error ? error.message : String(error));
+    console.error('[admin/centers] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('==========================================');
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        type: error instanceof Error ? error.constructor?.name : undefined,
+      },
       { status: 500 }
     );
   }

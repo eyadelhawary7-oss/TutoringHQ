@@ -296,19 +296,46 @@ export default function AdminPage() {
   }, [loadOverview]);
 
   const fetchCenters = useCallback(async () => {
+    console.log('🔍 [Centers Tab] Loading centers...');
     const session = await getSession();
-    if (!session) return;
+    if (!session) {
+      console.warn('⚠️ [Centers Tab] No session - cannot fetch centers');
+      return;
+    }
     const params = new URLSearchParams();
     if (statusFilter !== 'all') params.set('status', statusFilter);
     if (planFilter !== 'all') params.set('plan', planFilter);
     if (searchQuery.trim()) params.set('search', searchQuery.trim());
-    const res = await fetch(`/api/admin/centers?${params}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setCenters(data.centers || []);
-      setPendingCenters(data.pendingCenters || []);
+    const url = `/api/admin/centers?${params}`;
+    console.log('📡 [Centers Tab] Fetching:', url);
+    try {
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      console.log('📡 [Centers Tab] Response status:', res.status);
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        console.log('✅ [Centers Tab] Data received:', data);
+        if (data.centers && Array.isArray(data.centers)) {
+          console.log(`📊 [Centers Tab] Loaded ${data.centers.length} centers`);
+          setCenters(data.centers);
+          setPendingCenters(data.pendingCenters || []);
+        } else {
+          console.warn('⚠️ [Centers Tab] No centers array in response:', data);
+          setCenters([]);
+          setPendingCenters([]);
+        }
+      } else {
+        console.error('❌ [Centers Tab] Error response:', res.status, data);
+        setCenters([]);
+        setPendingCenters([]);
+      }
+    } catch (error) {
+      console.error('❌ [Centers Tab] Load error:', error);
+      setCenters([]);
+      setPendingCenters([]);
     }
   }, [getSession, statusFilter, planFilter, searchQuery]);
 
@@ -359,9 +386,39 @@ export default function AdminPage() {
     }
   }, [getSession]);
 
+  const fetchPendingSignups = useCallback(async () => {
+    console.log('🔍 [Pending Signups] Loading...');
+    const session = await getSession();
+    if (!session) {
+      console.log('⚠️ [Pending Signups] No session');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/pending-signups', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      console.log('📡 [Pending Signups] Response status:', res.status);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(data.signups)) {
+        setPendingCenters(data.signups);
+        console.log('📊 [Pending Signups] Loaded', data.signups.length, 'pending centers');
+      } else {
+        console.warn('⚠️ [Pending Signups] No signups array in response:', data);
+        setPendingCenters([]);
+      }
+    } catch (error) {
+      console.error('❌ [Pending Signups] Error:', error);
+      setPendingCenters([]);
+    }
+  }, [getSession]);
+
   useEffect(() => {
     if (activeTab === 'centers') fetchCenters();
   }, [activeTab, fetchCenters]);
+
+  useEffect(() => {
+    if (activeTab === 'pending') fetchPendingSignups();
+  }, [activeTab, fetchPendingSignups]);
 
   useEffect(() => {
     if (activeTab === 'plan-requests') fetchPlanRequests();

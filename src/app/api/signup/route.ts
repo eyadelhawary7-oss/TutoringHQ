@@ -1,89 +1,92 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { signupSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
     const body = await request.json();
-    const validation = signupSchema.safeParse(body);
-    if (!validation.success) {
-      const msg = validation.error.issues[0]?.message || 'Invalid input';
-      return NextResponse.json({ error: msg }, { status: 400 });
-    }
-    const { centerName, phone, email, plan, referralCode } = validation.data;
+    const { centerName, phone, email, plan } = body;
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    // Resolve referral code to center UUID (referred_by is UUID, not text)
-    let referredBy: string | null = null;
-    if (referralCode && referralCode.trim() !== '') {
-      const { data: referringCenter } = await supabase
-        .from('centers')
-        .select('id')
-        .eq('referral_code', referralCode.trim().toUpperCase())
-        .single();
-      if (referringCenter) {
-        referredBy = referringCenter.id; // UUID, not text
-      }
-      // If code is invalid, silently ignore — don't block signup
+    // Validate required fields
+    if (!centerName || !phone || !plan) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
     }
 
-    const insertData: Record<string, unknown> = {
-      name: centerName.trim(),
-      phone: phone.trim(),
-      email: email?.trim() || null,
-      plan: plan || 'starter',
-      status: 'pending',
-      requested_at: new Date().toISOString(),
-      referred_by: referredBy, // null or valid UUID
+    // Validate plan (normalize to uppercase for DB)
+    const validPlans = ['STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE', 'TOP_CENTERS'];
+    const normalizedPlan = String(plan).toUpperCase();
+
+    if (!validPlans.includes(normalizedPlan)) {
+      return NextResponse.json(
+        { error: 'Invalid plan selected' },
+        { status: 400 }
+      );
+    }
+
+    // Create Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Generate simple referral code
+    const generateCode = () => {
+      return Math.random().toString(36).substring(2, 10).toUpperCase();
     };
-    if (referredBy) {
-      insertData.referral_code_used_at = new Date().toISOString();
-    }
 
-    const { data: center, error: centerError } = await supabase
+    // Create center - use only fields that exist
+    console.log('==========================================');
+    console.log('[signup] Creating center with values:', {
+      name: centerName,
+      phone: phone,
+      email: email || null,
+      plan: normalizedPlan,
+      planOriginal: plan,
+      subscription_status: 'pending',
+      status: 'pending',
+    });
+    console.log('==========================================');
+
+    const { data: newCenter, error: centerError } = await supabase
       .from('centers')
-      .insert(insertData)
-      .select('id')
+      .insert({
+        name: centerName,
+        phone: phone,
+        email: email || null,
+        plan: normalizedPlan,
+        subscription_status: 'pending',
+        status: 'pending',
+        billing_type: 'fixed',
+        billing_period: 'quarterly',
+        referral_code: generateCode(),
+      })
+      .select()
       .single();
 
-    if (centerError) {
-      return NextResponse.json({ error: centerError.message }, { status: 500 });
-    }
+    console.log('[signup] Insert result:', { success: !centerError, error: centerError });
 
-    // Log referral in audit_log if used
-    if (referredBy && center && referralCode?.trim()) {
-      try {
-        const { error: auditErr } = await supabase.from('audit_log').insert({
-          center_id: center.id,
-          user_id: null,
-          action: 'referral_used',
-          entity_type: 'center',
-          details: { referral_code: referralCode.trim(), referred_by: referredBy },
-        });
-        if (auditErr) console.warn('Audit log referral_used:', auditErr.message);
-      } catch {
-        // Don't fail signup if audit log fails
-      }
+    if (centerError) {
+      console.error('Signup error:', centerError);
+      return NextResponse.json(
+        {
+          error: 'Failed to create center',
+          details: centerError.message,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'تم إرسال طلبك بنجاح. سيتم التواصل معك خلال 24 ساعة.',
+      message: 'Signup successful! Pending admin approval.',
+      center: newCenter,
     });
   } catch (error) {
-    console.error('Signup error:', error);
+    console.error('Signup exception:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Signup failed' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
