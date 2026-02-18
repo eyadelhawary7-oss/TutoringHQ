@@ -21,11 +21,8 @@ async function isAdminUser(supabaseAdmin: any, userId: string): Promise<boolean>
   return !!data;
 }
 
-function generatePassword(len = 8): string {
-  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
-  let s = '';
-  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
+function generatePin(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 export async function GET(request: Request) {
@@ -496,15 +493,20 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: true, action: 'rejected' });
     }
 
-    // Approve
-    const newUserPassword = generatePassword(8);
+    // Approve - create auth user with username+password for hybrid login
+    const pin = generatePin();
     const intlPhone = phone.startsWith('+') ? phone : `+20${phone.replace(/^0/, '')}`;
 
+    const ownerName = center.name;
+    const emailForAuth = `${intlPhone.replace(/\D/g, '')}@centerhq.local`;
+
     const { data: newAuthUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: emailForAuth,
       phone: intlPhone,
       phone_confirm: true,
-      password: newUserPassword,
-      user_metadata: { name: center.name },
+      email_confirm: true,
+      password: pin,
+      user_metadata: { name: ownerName },
     });
 
     if (createError || !newAuthUser.user) {
@@ -519,7 +521,8 @@ export async function PUT(request: Request) {
       center_id: centerId,
       role: 'owner',
       phone: intlPhone,
-      name: center.name,
+      name: ownerName,
+      phone_verified: true,
     });
 
     if (userInsertError) {
@@ -575,10 +578,24 @@ export async function PUT(request: Request) {
       // For now we rely on WhatsApp
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app';
+    const credentialsMessage = `تم تفعيل حسابك في CenterHQ! 🎉
+
+🔐 بيانات الدخول:
+📱 رقم الهاتف: ${intlPhone}
+🔑 رمز PIN: ${pin}
+
+🌐 رابط الدخول:
+${appUrl}/login
+
+مرحباً بك في CenterHQ! 💙`;
+
     return NextResponse.json({
       success: true,
       action: 'approved',
-      credentials: { password: newUserPassword },
+      credentials: { phone: intlPhone, pin },
+      credentialsMessage,
+      whatsappUrl: `https://wa.me/${intlPhone.replace(/\D/g, '')}?text=${encodeURIComponent(credentialsMessage)}`,
     });
   } catch (error) {
     return NextResponse.json(

@@ -164,7 +164,7 @@ export async function GET(request: Request) {
 
     const { data: allInvoices } = await supabaseAdmin
       .from('invoices')
-      .select('id, center_id, payment_amount, payment_reference, status, paid_at, updated_at')
+      .select('id, center_id, payment_amount, payment_reference, payment_proof_url, status, paid_at, updated_at')
       .in('status', ['approved', 'rejected'])
       .order('updated_at', { ascending: false })
       .limit(50);
@@ -179,6 +179,7 @@ export async function GET(request: Request) {
       notes: `Invoice ${inv.payment_reference ?? inv.id}`,
       source: 'invoice' as const,
       invoiceStatus: inv.status,
+      payment_proof_url: inv.payment_proof_url ?? null,
     }));
 
     const { data: pendingInvoices } = await supabaseAdmin

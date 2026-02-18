@@ -79,15 +79,34 @@ export async function GET(request: Request) {
 
     console.log('[admin/pending-signups] 📡 Querying pending centers...');
 
-    const { data: pendingCenters, error } = await adminClient
+    // Try full query first, fallback to basic columns if extended columns don't exist
+    let pendingCenters: Record<string, unknown>[] | null = null;
+    let error: { message: string } | null = null;
+
+    const fullResult = await adminClient
       .from('centers')
-      .select('id, name, phone, email, plan, status, subscription_status, requested_at, created_at, referred_by, referral_code_used_at')
+      .select('id, name, phone, email, plan, status, subscription_status, requested_at, created_at, referred_by, referral_code_used_at, city, signup_notes')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
+
+    if (fullResult.error) {
+      console.warn('[admin/pending-signups] ⚠️ Full query failed, trying basic columns:', fullResult.error.message);
+      const basicResult = await adminClient
+        .from('centers')
+        .select('id, name, phone, plan, status, created_at')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+      pendingCenters = basicResult.data;
+      error = basicResult.error;
+    } else {
+      pendingCenters = fullResult.data;
+      error = fullResult.error;
+    }
 
     console.log('[admin/pending-signups] 📊 Query result:', {
       count: pendingCenters?.length || 0,
       error: error?.message,
+      firstRow: pendingCenters?.[0] || null,
     });
 
     if (error) {

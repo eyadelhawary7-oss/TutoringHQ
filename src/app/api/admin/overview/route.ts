@@ -20,13 +20,29 @@ export async function GET(request: Request) {
   console.log('==========================================');
 
   try {
-    // Try cookie-based auth first (auth-helpers)
-    let supabaseAdmin: SupabaseClient | null = null;
-    let internalRole = 'internal_viewer';
-
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[admin/overview] ❌ Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+      return NextResponse.json(
+        { error: 'Server misconfiguration: missing Supabase URL or anon key' },
+        { status: 500 }
+      );
+    }
+
+    if (!supabaseServiceKey) {
+      console.error('[admin/overview] ❌ Missing SUPABASE_SERVICE_ROLE_KEY');
+      return NextResponse.json(
+        { error: 'Server misconfiguration: missing Supabase service role key' },
+        { status: 500 }
+      );
+    }
+
+    // Try cookie-based auth first (auth-helpers)
+    let supabaseAdmin: SupabaseClient | null = null;
+    let internalRole = 'internal_viewer';
 
     if (supabaseUrl && supabaseAnonKey) {
       const cookieStore = await cookies();
@@ -81,51 +97,36 @@ export async function GET(request: Request) {
     console.log('[admin/overview] ✅ Admin authorized, role:', internalRole);
 
     console.log('[admin/overview] 📡 Querying centers...');
-    const { data: centers, error: centersError } = await supabaseAdmin
+    let centers: unknown[] = [];
+    const { data: centersData, error: centersError } = await supabaseAdmin
       .from('centers')
       .select('id, name, phone, plan, status, billing_type, is_early_adopter, early_adopter_price, created_at')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
-    console.log('[admin/overview] 📊 Centers query result:', {
-      count: centers?.length ?? 0,
-      error: centersError,
-      firstCenter: centers?.[0],
-    });
-
     if (centersError) {
       console.error('[admin/overview] ❌ Centers query error:', centersError);
       return NextResponse.json(
-        {
-          error: centersError.message,
-          code: centersError.code,
-          details: centersError.details,
-          hint: centersError.hint,
-        },
+        { error: centersError.message || 'Failed to load centers' },
         { status: 500 }
       );
     }
+    centers = centersData || [];
 
-    console.log('[admin/overview] 📡 Querying students count...');
-    const { count: studentsCount, error: studentsError } = await supabaseAdmin
-      .from('students')
-      .select('id', { count: 'exact', head: true });
+    console.log('[admin/overview] 📊 Centers count:', centers.length);
 
-    if (studentsError) {
-      console.error('[admin/overview] ❌ Students count error:', studentsError);
-      return NextResponse.json(
-        {
-          error: studentsError.message,
-          code: studentsError.code,
-          details: studentsError.details,
-        },
-        { status: 500 }
-      );
+    let totalStudents = 0;
+    try {
+      const { count: studentsCount, error: studentsError } = await supabaseAdmin
+        .from('students')
+        .select('id', { count: 'exact', head: true });
+      if (!studentsError) totalStudents = studentsCount ?? 0;
+    } catch (e) {
+      console.warn('[admin/overview] Students count failed:', e);
     }
-    console.log('[admin/overview] 📊 Students count:', studentsCount ?? 0);
+    console.log('[admin/overview] 📊 Students count:', totalStudents);
 
-    const totalStudents = studentsCount ?? 0;
-    const allCenters = centers || [];
+    const allCenters = centers as Array<{ id: string; name: string; plan?: string; status?: string; billing_type?: string; is_early_adopter?: boolean; early_adopter_price?: number; created_at?: string }>;
     const activeCenters = allCenters.filter((c: { status?: string }) => c.status === 'active');
     const suspendedCenters = allCenters.filter((c: { status?: string }) => c.status === 'suspended');
     const pendingCenters = allCenters.filter((c: { status?: string }) => c.status === 'pending');
@@ -150,29 +151,33 @@ export async function GET(request: Request) {
       return sum + amt;
     }, 0);
 
-    const paygCenterIds = activeCenters
-      .filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'payg')
-      .map((c: { id: string }) => c.id);
-    if (paygCenterIds.length > 0) {
-      const fourWeeksAgo = new Date();
-      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-      const { data: paygCharges } = await supabaseAdmin
-        .from('payg_weekly_charges')
-        .select('center_id, total_charge')
-        .in('center_id', paygCenterIds)
-        .gte('week_start_date', fourWeeksAgo.toISOString().slice(0, 10));
-      const paygByCenter: Record<string, number[]> = {};
-      (paygCharges || []).forEach((c: { center_id: string; total_charge: number }) => {
-        if (!paygByCenter[c.center_id]) paygByCenter[c.center_id] = [];
-        paygByCenter[c.center_id].push(Number(c.total_charge));
-      });
-      const MONTHLY_WEEKS = 4.333;
-      let paygMRR = 0;
-      Object.values(paygByCenter).forEach((charges) => {
-        const avgWeekly = charges.length > 0 ? charges.reduce((a, b) => a + b, 0) / charges.length : 0;
-        paygMRR += avgWeekly * MONTHLY_WEEKS;
-      });
-      mrrByPlan.payg = Math.round(paygMRR);
+    try {
+      const paygCenterIds = activeCenters
+        .filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'payg')
+        .map((c: { id: string }) => c.id);
+      if (paygCenterIds.length > 0) {
+        const fourWeeksAgo = new Date();
+        fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+        const { data: paygCharges } = await supabaseAdmin
+          .from('payg_weekly_charges')
+          .select('center_id, total_charge')
+          .in('center_id', paygCenterIds)
+          .gte('week_start_date', fourWeeksAgo.toISOString().slice(0, 10));
+        const paygByCenter: Record<string, number[]> = {};
+        (paygCharges || []).forEach((c: { center_id: string; total_charge: number }) => {
+          if (!paygByCenter[c.center_id]) paygByCenter[c.center_id] = [];
+          paygByCenter[c.center_id].push(Number(c.total_charge));
+        });
+        const MONTHLY_WEEKS = 4.333;
+        let paygMRR = 0;
+        Object.values(paygByCenter).forEach((charges) => {
+          const avgWeekly = charges.length > 0 ? charges.reduce((a, b) => a + b, 0) / charges.length : 0;
+          paygMRR += avgWeekly * MONTHLY_WEEKS;
+        });
+        mrrByPlan.payg = Math.round(paygMRR);
+      }
+    } catch (paygErr) {
+      console.warn('[admin/overview] PAYG query failed (non-fatal):', paygErr);
     }
 
     const arpuByPlan: Record<string, number> = {};
@@ -183,34 +188,38 @@ export async function GET(request: Request) {
 
     const activeCenterIds = activeCenters.map((c: { id: string }) => c.id);
     let upgradeOpportunities: { id: string; name: string; plan: string; students: number; limit: number; pct: number }[] = [];
-    if (activeCenterIds.length > 0) {
-      const { data: studentsData } = await supabaseAdmin
-        .from('students')
-        .select('center_id')
-        .in('center_id', activeCenterIds);
-      const countByCenter: Record<string, number> = {};
-      for (const s of studentsData || []) {
-        const cid = (s as { center_id: string }).center_id;
-        countByCenter[cid] = (countByCenter[cid] ?? 0) + 1;
-      }
-      for (const c of activeCenters) {
-        const plan = (c as { plan?: string }).plan || 'starter';
-        const limit = PLAN_STUDENT_LIMITS[plan] ?? 150;
-        if (limit >= 999999) continue;
-        const students = countByCenter[(c as { id: string }).id] ?? 0;
-        const pct = limit > 0 ? (students / limit) * 100 : 0;
-        if (pct >= 80) {
-          upgradeOpportunities.push({
-            id: (c as { id: string }).id,
-            name: (c as { name: string }).name,
-            plan,
-            students,
-            limit,
-            pct: Math.round(pct),
-          });
+    try {
+      if (activeCenterIds.length > 0) {
+        const { data: studentsData } = await supabaseAdmin
+          .from('students')
+          .select('center_id')
+          .in('center_id', activeCenterIds);
+        const countByCenter: Record<string, number> = {};
+        for (const s of studentsData || []) {
+          const cid = (s as { center_id: string }).center_id;
+          countByCenter[cid] = (countByCenter[cid] ?? 0) + 1;
         }
+        for (const c of activeCenters) {
+          const plan = (c as { plan?: string }).plan || 'starter';
+          const limit = PLAN_STUDENT_LIMITS[plan] ?? 150;
+          if (limit >= 999999) continue;
+          const students = countByCenter[(c as { id: string }).id] ?? 0;
+          const pct = limit > 0 ? (students / limit) * 100 : 0;
+          if (pct >= 80) {
+            upgradeOpportunities.push({
+              id: (c as { id: string }).id,
+              name: (c as { name: string }).name,
+              plan,
+              students,
+              limit,
+              pct: Math.round(pct),
+            });
+          }
+        }
+        upgradeOpportunities = upgradeOpportunities.sort((a, b) => b.pct - a.pct).slice(0, 10);
       }
-      upgradeOpportunities = upgradeOpportunities.sort((a, b) => b.pct - a.pct).slice(0, 10);
+    } catch (e) {
+      console.warn('[admin/overview] Upgrade opportunities query failed (non-fatal):', e);
     }
 
     const byPlan: Record<string, number> = {
@@ -245,22 +254,22 @@ export async function GET(request: Request) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, count]) => ({ date, count }));
 
-    const { count: pendingPlanRequestsCount } = await supabaseAdmin
-      .from('plan_requests')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending');
-
-    const { count: pendingPaymentProofsCount } = await supabaseAdmin
-      .from('invoices')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending');
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const { data: overdueCenters } = await supabaseAdmin
-      .from('centers')
-      .select('id, name, next_payment_due')
-      .eq('status', 'active')
-      .lt('next_payment_due', todayStr);
+    let pendingPlanRequestsCount = 0;
+    let pendingPaymentProofsCount = 0;
+    let overdueCenters: unknown[] = [];
+    try {
+      const pr = await supabaseAdmin.from('plan_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+      pendingPlanRequestsCount = pr.count ?? 0;
+    } catch {}
+    try {
+      const inv = await supabaseAdmin.from('invoices').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+      pendingPaymentProofsCount = inv.count ?? 0;
+    } catch {}
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { data } = await supabaseAdmin.from('centers').select('id, name, next_payment_due').eq('status', 'active').lt('next_payment_due', todayStr);
+      overdueCenters = data ?? [];
+    } catch {}
 
     let recentActivity: unknown[] = [];
     try {
@@ -274,25 +283,35 @@ export async function GET(request: Request) {
       // audit_log may not exist in some deployments
     }
 
-    // Revenue KPIs
-    const { data: revenueData } = await supabaseAdmin
-      .from('invoices')
-      .select('payment_amount, status, created_at')
-      .in('status', ['approved', 'paid']);
+    // Revenue KPIs (wrapped for resilience - invoices table may differ by deployment)
+    let revenueData: Array<{ payment_amount?: number; created_at?: string }> = [];
+    let pendingRevenue = 0;
+    let churnedThisMonth = 0;
+    try {
+      const { data: rev } = await supabaseAdmin.from('invoices').select('payment_amount, status, created_at').in('status', ['approved', 'paid']);
+      revenueData = rev || [];
+    } catch {}
+    try {
+      const { data: pend } = await supabaseAdmin.from('invoices').select('payment_amount').eq('status', 'pending');
+      pendingRevenue = (pend || []).reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
+    } catch {}
+    try {
+      const { count } = await supabaseAdmin.from('centers').select('id', { count: 'exact', head: true }).eq('status', 'suspended');
+      churnedThisMonth = count ?? 0;
+    } catch {}
 
-    const totalRevenueCollected = (revenueData || [])
-      .reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
+    const totalRevenueCollected = revenueData.reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
 
     const revenueNow = new Date();
     const monthStart = new Date(revenueNow.getFullYear(), revenueNow.getMonth(), 1).toISOString();
-    const revenueThisMonth = (revenueData || [])
-      .filter((inv) => inv.created_at >= monthStart)
+    const revenueThisMonth = revenueData
+      .filter((inv) => inv.created_at && inv.created_at >= monthStart)
       .reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
 
     const lastMonthStart = new Date(revenueNow.getFullYear(), revenueNow.getMonth() - 1, 1).toISOString();
     const lastMonthEnd = new Date(revenueNow.getFullYear(), revenueNow.getMonth(), 0).toISOString();
-    const revenueLastMonth = (revenueData || [])
-      .filter((inv) => inv.created_at >= lastMonthStart && inv.created_at <= lastMonthEnd)
+    const revenueLastMonth = revenueData
+      .filter((inv) => inv.created_at && inv.created_at >= lastMonthStart && inv.created_at <= lastMonthEnd)
       .reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
 
     const revenueGrowth = revenueLastMonth > 0
@@ -307,8 +326,8 @@ export async function GET(request: Request) {
       const mEnd = new Date(revenueNow.getFullYear(), revenueNow.getMonth() - i + 1, 0);
       const mStartStr = mStart.toISOString();
       const mEndStr = mEnd.toISOString();
-      const mRevenue = (revenueData || [])
-        .filter((inv) => inv.created_at >= mStartStr && inv.created_at <= mEndStr)
+      const mRevenue = revenueData
+        .filter((inv) => inv.created_at && inv.created_at >= mStartStr && inv.created_at <= mEndStr)
         .reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
       monthlyRevenue.push({
         month: mStart.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
@@ -317,21 +336,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const { data: pendingRevData } = await supabaseAdmin
-      .from('invoices')
-      .select('payment_amount')
-      .eq('status', 'pending');
-    const pendingRevenue = (pendingRevData || [])
-      .reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
-
-    const { count: churnedThisMonth } = await supabaseAdmin
-      .from('centers')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'suspended');
-
-    const churnRate = totalCentersCount > 0
-      ? Math.round(((churnedThisMonth || 0) / totalCentersCount) * 100)
-      : 0;
+    const churnRate = totalCentersCount > 0 ? Math.round((churnedThisMonth / totalCentersCount) * 100) : 0;
 
     const totalMRR = mrr + (mrrByPlan.payg ?? 0);
 
@@ -377,8 +382,8 @@ export async function GET(request: Request) {
       pendingSignupsCount: pendingCenters.length,
       pendingPlanRequestsCount: pendingPlanRequestsCount ?? 0,
       pendingPaymentProofsCount: pendingPaymentProofsCount ?? 0,
-      overdueCentersCount: overdueCenters?.length ?? 0,
-      overdueCenters: overdueCenters ?? [],
+      overdueCentersCount: Array.isArray(overdueCenters) ? overdueCenters.length : 0,
+      overdueCenters: Array.isArray(overdueCenters) ? overdueCenters : [],
       recentActivity,
       totalRevenueCollected,
       revenueThisMonth,
@@ -388,7 +393,7 @@ export async function GET(request: Request) {
       monthlyRevenue,
       pendingRevenue,
       churnRate,
-      churnedCenters: churnedThisMonth || 0,
+      churnedCenters: churnedThisMonth,
       internalRole,
       centers: allCenters.slice(0, 10),
     });
@@ -399,11 +404,12 @@ export async function GET(request: Request) {
     console.error('[admin/overview] Error message:', error instanceof Error ? error.message : String(error));
     console.error('[admin/overview] Error stack:', error instanceof Error ? error.stack : 'No stack');
     console.error('==========================================');
+    const errorMessage = error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unknown error');
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage || 'Internal server error',
         type: error?.constructor?.name,
-        stack: error instanceof Error ? error.stack : undefined,
+        stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );

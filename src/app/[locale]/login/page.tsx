@@ -1,65 +1,53 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import LanguageToggle from '@/components/LanguageToggle';
-import PhoneInput from '@/components/PhoneInput';
-import OTPInput from '@/components/OTPInput';
-
-type LoginStep = 'phone' | 'otp';
 
 export default function LoginPage() {
   const t = useTranslations('login');
   const router = useRouter();
 
-  const [step, setStep] = useState<LoginStep>('phone');
   const [phone, setPhone] = useState('');
+  const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSendOTP = async (internationalPhone: string) => {
-    setIsLoading(true);
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
     setError('');
 
-    try {
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        phone: internationalPhone,
-      });
+    if (!phone || !pin) {
+      setError(t('invalidCredentials'));
+      return;
+    }
 
-      if (otpError) {
-        if (otpError.message.includes('rate limit') || otpError.status === 429) {
-          setError(t('smsTooMany'));
-        } else {
-          setError(otpError.message);
-        }
+    setIsLoading(true);
+    try {
+      // Query users table to find user by phone
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, email')
+        .eq('phone', phone)
+        .single();
+
+      if (userError || !userData) {
+        setError(t('phoneNotFound', { defaultValue: 'Phone number not registered' }));
+        setIsLoading(false);
         return;
       }
 
-      setPhone(internationalPhone);
-      setStep('otp');
-    } catch {
-      setError(t('invalidPhone'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyOTP = async (otp: string) => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
-        phone,
-        token: otp,
-        type: 'sms',
+      // Login using the email from users table
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+        email: userData.email || `${phone.replace(/[^0-9]/g, '')}@centerhq.local`,
+        password: pin,
       });
 
-      if (verifyError) {
-        setError(t('otpError'));
+      if (loginError) {
+        setError(t('invalidCredentials'));
+        setIsLoading(false);
         return;
       }
 
@@ -78,7 +66,7 @@ export default function LoginPage() {
 
         const res = await fetch('/api/auth/check-invite', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         });
         const result = await res.json();
 
@@ -91,40 +79,16 @@ export default function LoginPage() {
         }
       }
     } catch {
-      setError(t('otpError'));
+      setError(t('invalidCredentials'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResendOTP = async () => {
-    setError('');
-    try {
-      const { error: resendError } = await supabase.auth.signInWithOtp({
-        phone,
-      });
-      if (resendError) {
-        if (resendError.message.includes('rate limit') || resendError.status === 429) {
-          setError(t('smsTooMany'));
-        } else {
-          setError(resendError.message);
-        }
-      }
-    } catch {
-      setError(t('smsTooMany'));
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900">
-      {/* Language Toggle */}
-      <div className="absolute top-4 end-4 z-10">
-        <LanguageToggle />
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900" data-theme="light">
       <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
-          {/* Header / Logo */}
           <div className="text-center mb-8">
             <Link href="/" className="inline-block mb-4">
               <Image src="/logo-icon.png" alt="CenterHQ" width={64} height={64} className="w-16 h-16 mx-auto mb-3 object-contain" />
@@ -134,44 +98,82 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {/* Login Card */}
-          <div className="glass rounded-2xl shadow-xl p-8">
-            {/* Phone OTP Section */}
-            {step === 'phone' ? (
-              <>
-                <h2 className="text-xl font-bold text-text-primary mb-6 text-center">
-                  {t('phoneTitle')}
-                </h2>
-                <PhoneInput
-                  onSubmit={handleSendOTP}
-                  isLoading={isLoading}
-                  error={error}
+          <div className="bg-bg-primary text-text-primary border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-8">
+            <h2 className="text-xl font-bold text-text-primary mb-6 text-center">
+              {t('credentialsTitle', { defaultValue: 'Login' })}
+            </h2>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-text-primary mb-2">
+                  {t('phoneLabel', { defaultValue: 'Phone Number' })}
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/[^0-9+]/g, '');
+
+                    // Auto-add +20 if user starts typing a digit
+                    if (value.length === 1 && value !== '+') {
+                      value = '+20' + value;
+                    }
+
+                    // Limit to +20XXXXXXXXXX (13 chars)
+                    if (value.length <= 13) {
+                      setPhone(value);
+                    }
+                    setError('');
+                  }}
+                  placeholder="+20 1XXXXXXXXX"
+                  required
+                  className="w-full px-4 py-3 bg-bg-tertiary border border-gray-300 dark:border-gray-600 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-text-primary text-end"
+                  dir="ltr"
+                  autoComplete="tel"
                 />
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => { setStep('phone'); setError(''); }}
-                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-4 flex items-center gap-1"
-                >
-                  <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  {t('phoneLabel')}
-                </button>
-                <OTPInput
-                  onSubmit={handleVerifyOTP}
-                  onResend={handleResendOTP}
-                  isLoading={isLoading}
-                  error={error}
-                  phone={phone}
+              </div>
+              <div>
+                <label htmlFor="pin" className="block text-sm font-medium text-text-primary mb-2">
+                  {t('pinLabel', { defaultValue: 'PIN Code' })}
+                </label>
+                <input
+                  id="pin"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={pin}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    if (value.length <= 6) setPin(value);
+                    setError('');
+                  }}
+                  placeholder="••••••"
+                  maxLength={6}
+                  required
+                  className="w-full px-4 py-3 bg-bg-tertiary border border-gray-300 dark:border-gray-600 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-text-primary text-center text-2xl tracking-widest font-mono"
+                  autoComplete="off"
                 />
-              </>
-            )}
+                <p className="text-text-tertiary text-sm mt-1 text-center">
+                  {t('pinHelper', { defaultValue: 'Enter your 6-digit PIN' })}
+                </p>
+              </div>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? '...' : t('loginButton', { defaultValue: 'Login' })}
+              </button>
+              <div className="mt-4 text-center">
+                <Link href="/forgot-password" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                  {t('forgotPin', { defaultValue: 'Forgot PIN?' })}
+                </Link>
+              </div>
+            </form>
           </div>
 
-          {/* Back to Home */}
           <div className="text-center mt-6">
             <Link
               href="/"

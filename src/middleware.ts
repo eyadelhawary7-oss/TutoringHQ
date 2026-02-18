@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 const intlMiddleware = createMiddleware(routing);
 
 // Routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/'];
+const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/'];
 
 // Routes that should not have locale prefix handling  
 const apiRoutes = ['/auth/callback'];

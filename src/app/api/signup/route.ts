@@ -1,91 +1,111 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { signupSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const { centerName, ownerName, phone, city, plan, notes } = body;
 
-    // Validate input with Zod
-    const parsed = signupSchema.safeParse(body);
-    if (!parsed.success) {
-      const first = parsed.error.issues[0];
-      return NextResponse.json(
-        { error: first?.message ?? 'Invalid input', details: parsed.error.flatten() },
-        { status: 400 }
-      );
+    if (!centerName?.trim() || !ownerName?.trim() || !phone?.trim() || !plan) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const { centerName, phone, email, plan, referralCode } = parsed.data;
+    const validPlans = ['STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE'];
+    const normalizedPlan = String(plan).toUpperCase();
+    if (!validPlans.includes(normalizedPlan)) {
+      return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 });
+    }
 
-    // Create Supabase client
+    let formattedPhone = String(phone).replace(/\s/g, '').replace(/\D/g, '');
+    if (formattedPhone.startsWith('0')) formattedPhone = '+20' + formattedPhone.substring(1);
+    else if (!formattedPhone.startsWith('20')) formattedPhone = '+20' + formattedPhone;
+    else formattedPhone = '+' + formattedPhone;
+
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Generate simple referral code
-    const generateCode = () => {
-      return Math.random().toString(36).substring(2, 10).toUpperCase();
+    const generateReferralCode = () => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
     };
 
-    // Resolve referral if provided
-    let referredById: string | null = null;
-    const code = referralCode?.trim().toUpperCase();
-    if (code && code.length === 8) {
-      const { data: refCenter } = await supabase
-        .from('centers')
-        .select('id')
-        .eq('referral_code', code)
-        .single();
-      if (refCenter) referredById = refCenter.id;
-    }
-
-    // Create center - use validated data only
-    const insertPayload: Record<string, unknown> = {
-      name: centerName,
-      phone,
-      email: email || null,
-      plan,
-      subscription_status: 'pending',
-      status: 'pending',
-      billing_type: 'fixed',
-      billing_period: 'quarterly',
-      referral_code: generateCode(),
+    const planPricing: Record<string, { monthly: number; setup: number }> = {
+      STARTER: { monthly: 2000, setup: 1000 },
+      PRO: { monthly: 4500, setup: 2000 },
+      BUSINESS: { monthly: 6500, setup: 3000 },
+      ENTERPRISE: { monthly: 9000, setup: 5000 },
     };
-    if (referredById) {
-      insertPayload.referred_by = referredById;
-      insertPayload.referral_code_used_at = new Date().toISOString();
-    }
+    const pricing = planPricing[normalizedPlan] || planPricing.STARTER;
 
-    const { data: newCenter, error: centerError } = await supabase
+    const planLower = normalizedPlan.toLowerCase();
+
+    const { data: center, error: centerError } = await supabase
       .from('centers')
-      .insert(insertPayload)
+      .insert({
+        name: centerName.trim(),
+        owner_name: ownerName.trim(),
+        phone: formattedPhone,
+        city: city?.trim() || null,
+        plan: planLower,
+        signup_notes: notes?.trim() || null,
+        status: 'pending',
+        subscription_status: 'pending',
+        billing_type: 'fixed',
+        billing_period: 'quarterly',
+        billing_amount: pricing.monthly,
+        referral_code: generateReferralCode(),
+        requested_at: new Date().toISOString(),
+      })
       .select()
       .single();
 
-    console.log('[signup] Insert result:', { success: !centerError, error: centerError });
-
     if (centerError) {
-      console.error('Signup error:', centerError);
+      console.error('[signup] Center creation error:', centerError);
       return NextResponse.json(
-        {
-          error: 'Failed to create center',
-          details: centerError.message,
-        },
+        { error: 'Failed to create signup request' },
         { status: 500 }
       );
     }
 
+    const firstPayment = pricing.monthly + pricing.setup;
+    const whatsappMessage = `🆕 *NEW SIGNUP REQUEST*
+
+📋 *Center Details:*
+- Name: ${centerName}
+- Owner: ${ownerName}
+- Phone: ${formattedPhone}
+- City: ${city || '—'}
+- Plan: ${normalizedPlan}
+
+💰 *Payment Required:*
+- Monthly: EGP ${pricing.monthly.toLocaleString()}
+- Setup Fee: EGP ${pricing.setup.toLocaleString()}
+- *First Payment: EGP ${firstPayment.toLocaleString()}*
+
+📝 Notes: ${notes || 'None'}
+
+🔗 View in admin panel.`;
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app';
+    const adminWhatsAppUrl = `https://wa.me/201220601410?text=${encodeURIComponent(whatsappMessage)}`;
+
     return NextResponse.json({
       success: true,
-      message: 'Signup successful! Pending admin approval.',
-      center: newCenter,
+      message: 'Signup request submitted successfully',
+      center_id: center.id,
+      center,
+      admin_whatsapp_url: adminWhatsAppUrl,
     });
   } catch (error) {
-    console.error('Signup exception:', error);
+    console.error('[signup] Error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

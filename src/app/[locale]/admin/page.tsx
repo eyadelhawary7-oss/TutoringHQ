@@ -44,7 +44,7 @@ interface CenterRow {
   plan?: string;
   status?: string;
   created_at: string;
-  students_count: number;
+  students_count?: number;
   owner?: { name?: string; phone?: string } | null;
   last_payment?: string | null;
   next_due?: string | null;
@@ -58,6 +58,10 @@ interface CenterRow {
   weekly_unique_students?: number;
   max_students?: number;
   limit_status?: string;
+  owner_name?: string | null;
+  city?: string | null;
+  signup_notes?: string | null;
+  requested_at?: string | null;
 }
 
 interface PlanRequestRow {
@@ -100,6 +104,7 @@ interface PaymentRecord {
   recorded_by?: string;
   source?: 'admin_payment' | 'invoice';
   invoiceStatus?: string;
+  payment_proof_url?: string | null;
 }
 
 const PLAN_LABELS: Record<string, string> = {
@@ -153,18 +158,26 @@ function getCenterDueDisplay(
   if (!nextDue || !hasPaid) {
     return { nextDueText: t('awaitingPayment'), daysText: t('awaitingPayment'), dueColor: 'text-amber-600 dark:text-amber-400' };
   }
-  const days = Math.ceil((new Date(nextDue).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const dateStr = new Date(nextDue).toLocaleDateString();
-  if (days <= 0) {
-    return { nextDueText: dateStr, daysText: `${Math.abs(days)} ${t('overdue')}`, dueColor: 'text-red-600 dark:text-red-400 font-bold' };
+  const GRACE_DAYS = 7;
+  const dueDate = new Date(nextDue);
+  const suspensionDate = new Date(dueDate);
+  suspensionDate.setDate(suspensionDate.getDate() + GRACE_DAYS);
+  const daysUntilSuspension = Math.ceil((suspensionDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const dateStr = dueDate.toLocaleDateString();
+  if (daysUntilSuspension <= 0) {
+    return { nextDueText: dateStr, daysText: t('suspended'), dueColor: 'text-red-600 dark:text-red-400 font-bold' };
   }
-  if (days <= 5) {
-    return { nextDueText: dateStr, daysText: String(days), dueColor: 'text-red-600 dark:text-red-400' };
+  if (daysUntilDue <= 0) {
+    return { nextDueText: dateStr, daysText: `${daysUntilSuspension} ${t('daysRemaining')}`, dueColor: 'text-red-600 dark:text-red-400 font-bold' };
   }
-  if (days <= 14) {
-    return { nextDueText: dateStr, daysText: String(days), dueColor: 'text-amber-600 dark:text-amber-400' };
+  if (daysUntilDue <= 5) {
+    return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: 'text-red-600 dark:text-red-400' };
   }
-  return { nextDueText: dateStr, daysText: String(days), dueColor: 'text-green-600 dark:text-green-400' };
+  if (daysUntilDue <= 14) {
+    return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: 'text-amber-600 dark:text-amber-400' };
+  }
+  return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: 'text-green-600 dark:text-green-400' };
 }
 
 function getBillingDueDisplay(
@@ -179,15 +192,23 @@ function getBillingDueDisplay(
   if (!nextDue || !hasPaid) {
     return { nextDueText: t('awaitingPayment'), daysText: t('awaitingPayment'), dueColor: 'text-amber-600 dark:text-amber-400', statusDisplay: 'awaiting' };
   }
-  const days = Math.ceil((new Date(nextDue).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const dateStr = new Date(nextDue).toLocaleDateString();
-  if (days <= 0) {
-    return { nextDueText: dateStr, daysText: `${Math.abs(days)} ${t('overdue')}`, dueColor: 'text-red-600 dark:text-red-400 font-bold', statusDisplay: 'overdue' };
+  const GRACE_DAYS = 7;
+  const dueDate = new Date(nextDue);
+  const suspensionDate = new Date(dueDate);
+  suspensionDate.setDate(suspensionDate.getDate() + GRACE_DAYS);
+  const daysUntilSuspension = Math.ceil((suspensionDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const dateStr = dueDate.toLocaleDateString();
+  if (daysUntilSuspension <= 0) {
+    return { nextDueText: dateStr, daysText: t('suspended'), dueColor: 'text-red-600 dark:text-red-400 font-bold', statusDisplay: 'overdue' };
   }
-  if (days <= 5) {
-    return { nextDueText: dateStr, daysText: String(days), dueColor: 'text-red-600 dark:text-red-400', statusDisplay: 'due_soon' };
+  if (daysUntilDue <= 0) {
+    return { nextDueText: dateStr, daysText: `${daysUntilSuspension} ${t('daysRemaining')}`, dueColor: 'text-red-600 dark:text-red-400 font-bold', statusDisplay: 'overdue' };
   }
-  return { nextDueText: dateStr, daysText: String(days), dueColor: days <= 14 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400', statusDisplay: 'paid' };
+  if (daysUntilDue <= 5) {
+    return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: 'text-red-600 dark:text-red-400', statusDisplay: 'due_soon' };
+  }
+  return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: daysUntilDue <= 14 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400', statusDisplay: 'paid' };
 }
 
 const PLAN_PRICE: Record<string, number> = {
@@ -287,46 +308,68 @@ export default function AdminPage() {
   }, [getSession]);
 
   const loadOverview = useCallback(async () => {
-    console.log('🔍 Admin Overview: Fetching...');
+    console.log('[Admin] Loading overview...');
     const session = await getSession();
     if (!session) {
-      console.log('❌ Admin Overview: No session, redirecting to login');
+      console.log('[Admin] No session found, redirecting to login');
       router.replace('/login');
       return;
     }
     setIsLoading(true);
     setLoadError(null);
     try {
-      console.log('📡 Admin Overview: Fetching /api/admin/overview...');
+      console.log('[Admin] Making API request to /api/admin/overview');
       const res = await fetch('/api/admin/overview', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      console.log('📡 Admin Overview: Response status', res.status, res.statusText);
+      console.log('[Admin] Response status:', res.status);
+      console.log('[Admin] Response ok:', res.ok);
+
+      const responseText = await res.text();
+      console.log('[Admin] Response text:', responseText);
+
       if (res.status === 403) {
-        console.log('❌ Admin Overview: Forbidden (403)');
+        console.log('[Admin] Forbidden (403)');
         setIsAuthorized(false);
         setLoadError('Access denied');
         router.replace('/dashboard');
         return;
       }
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        console.log('✅ Admin Overview: Data received:', {
-          totalCenters: data.totalCenters,
-          activeCenters: data.activeCenters,
-          mrr: data.mrr,
-          internalRole: data.internalRole,
-        });
-        setOverview(data);
-        if (data.internalRole) setInternalRole(data.internalRole);
-        setIsAuthorized(true);
-      } else {
-        console.error('❌ Admin Overview: Error response:', data);
-        setLoadError(data.error || `Request failed (${res.status})`);
+
+      if (!res.ok) {
+        let errorData: Record<string, unknown>;
+        try {
+          errorData = responseText ? (JSON.parse(responseText) as Record<string, unknown>) : {};
+        } catch {
+          errorData = { error: 'Failed to parse error response', raw: responseText };
+        }
+        console.error('❌ Admin Overview: Error response:', errorData);
+        console.error('❌ Status code:', res.status);
+        const errMsg = typeof errorData.error === 'string' ? errorData.error : `Request failed (${res.status})`;
+        setLoadError(errMsg);
         setIsAuthorized(false);
+        return;
       }
+
+      let data: Record<string, unknown>;
+      try {
+        data = responseText ? (JSON.parse(responseText) as Record<string, unknown>) : {};
+      } catch {
+        console.error('❌ Admin Overview: Invalid JSON response');
+        setLoadError(`Request failed (${res.status}): invalid response`);
+        setIsAuthorized(false);
+        return;
+      }
+
+      console.log('✅ Admin Overview loaded:', data);
+      setOverview(data as unknown as OverviewStats);
+      if (data.internalRole) setInternalRole(data.internalRole as string);
+      setIsAuthorized(true);
     } catch (err) {
-      console.error('❌ Admin Overview: Fetch error:', err);
+      console.error('❌ Admin Overview: Exception caught:', err);
+      console.error('❌ Error type:', (err as Error)?.constructor?.name);
+      console.error('❌ Error message:', err instanceof Error ? err.message : String(err));
+      console.error('❌ Full error:', err);
       setLoadError(err instanceof Error ? err.message : 'Network error');
       setIsAuthorized(false);
     } finally {
@@ -404,6 +447,8 @@ export default function AdminPage() {
     });
     if (res.ok) {
       const data = await res.json();
+      console.log('[Billing] Fetched data:', { centers: data.centers?.length, pendingInvoices: data.pendingInvoices?.length, paymentHistory: data.paymentHistory?.length });
+      console.log('[Billing] Pending proofs query result:', { pendingInvoices: data.pendingInvoices, error: data.error });
       setBillingCenters(data.centers || []);
       setPaymentHistory(data.paymentHistory || []);
       setPendingInvoices(data.pendingInvoices || []);
@@ -532,7 +577,9 @@ export default function AdminPage() {
         return sortDir === 'asc' ? dateA - dateB : dateB - dateA;
       }
       if (sortBy === 'students_count') {
-        return sortDir === 'asc' ? (a.students_count - b.students_count) : (b.students_count - a.students_count);
+        return sortDir === 'asc'
+          ? ((a.students_count || 0) - (b.students_count || 0))
+          : ((b.students_count || 0) - (a.students_count || 0));
       }
       if (sortBy === 'created_at') {
         const tA = new Date(a.created_at).getTime();
@@ -545,6 +592,11 @@ export default function AdminPage() {
       return sortDir === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
     });
   }, [centers, sortBy, sortDir]);
+
+  const pendingPaymentProofs = useMemo(
+    () => pendingInvoices,
+    [pendingInvoices]
+  );
 
   const handleCenterAction = async (
     centerId: string,
@@ -683,7 +735,20 @@ export default function AdminPage() {
       if (res.ok) {
         setPendingCenters((prev) => prev.filter((c) => c.id !== centerId));
         fetchCenters();
-        if (data.referralMessage) alert(data.referralMessage);
+        fetchPendingSignups();
+        if (data.credentialsMessage) {
+          try {
+            await navigator.clipboard.writeText(data.credentialsMessage);
+          } catch {
+            /* ignore */
+          }
+          if (data.whatsappUrl) {
+            window.open(data.whatsappUrl, '_blank');
+          }
+          alert(t('accountActivated', { defaultValue: 'Account activated! Credentials copied to clipboard. WhatsApp opened to send credentials.' }));
+        } else if (data.referralMessage) {
+          alert(data.referralMessage);
+        }
       } else {
         alert(data.error || 'Failed');
       }
@@ -841,11 +906,6 @@ export default function AdminPage() {
     { id: 'security', labelKey: 'security', roles: ['super_admin', 'internal_admin'] },
   ];
   const tabs = allTabs.filter(tab => tab.roles.includes(internalRole));
-
-  const pendingPaymentProofs = useMemo(
-    () => pendingInvoices.filter((inv) => inv.centerStatus === 'suspended' && inv.payment_proof_url),
-    [pendingInvoices]
-  );
 
   const byPlanData = overview
     ? Object.entries(overview.byPlan || {}).map(([plan, count]) => ({ name: PLAN_LABELS[plan] || plan, count }))
@@ -1699,6 +1759,7 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('centerName')}</th>
                       <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Amount</th>
                       <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Period</th>
+                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Payment Proof</th>
                       <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('status')}</th>
                     </tr>
                   </thead>
@@ -1709,6 +1770,13 @@ export default function AdminPage() {
                         <td className="px-4 py-3">{p.centerName}</td>
                         <td className="px-4 py-3 font-mono italic">{Number(p.amount).toLocaleString('ar-EG')} EGP</td>
                         <td className="px-4 py-3">{p.billing_period === 'payment_proof' ? 'Payment Proof' : p.billing_period}</td>
+                        <td className="px-4 py-3">
+                          {p.payment_proof_url ? (
+                            <a href={p.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                              {t('viewProof', { defaultValue: 'View' })}
+                            </a>
+                          ) : <span className="text-[var(--text-secondary)]">No proof</span>}
+                        </td>
                         <td className="px-4 py-3">
                           {p.invoiceStatus === 'approved' && <span className="px-2 py-0.5 text-xs font-medium italic rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">{t('approved')}</span>}
                           {p.invoiceStatus === 'rejected' && <span className="px-2 py-0.5 text-xs font-medium italic rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">{t('rejected')}</span>}
@@ -1782,55 +1850,113 @@ export default function AdminPage() {
 
           {activeTab === 'pending' && (
             <div className="glass rounded-xl shadow p-6">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                {t('pendingSignups')} ({pendingCenters.length})
-              </h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('phone')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('email')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('requestedPlan')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('referralCode')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('referredBy')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('date')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pendingCenters.map((c) => (
-                      <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700/50">
-                        <td className="px-4 py-3 text-[var(--text-primary)]">{c.name}</td>
-                        <td className="px-4 py-3" dir="ltr">{c.phone || '—'}</td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">{c.email || '—'}</td>
-                        <td className="px-4 py-3">{PLAN_LABELS[c.plan || 'starter'] || c.plan}</td>
-                        <td className="px-4 py-3 font-mono">{c.referral_code_used || '—'}</td>
-                        <td className="px-4 py-3">{c.referring_center_name || '—'}</td>
-                        <td className="px-4 py-3 text-text-secondary">{new Date(c.created_at).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 flex gap-2">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                  {t('pendingSignups')} ({pendingCenters.length})
+                </h2>
+                <button
+                  onClick={fetchPendingSignups}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
+                >
+                  {t('refresh', { defaultValue: 'Refresh' })}
+                </button>
+              </div>
+              {pendingCenters.length === 0 ? (
+                <p className="mt-4 text-[var(--text-secondary)]">{t('noPending')}</p>
+              ) : (
+                <div className="grid gap-4">
+                  {pendingCenters.map((c) => {
+                    const planPricing: Record<string, { monthly: number; setup: number }> = {
+                      starter: { monthly: 2000, setup: 1000 },
+                      pro: { monthly: 4500, setup: 2000 },
+                      business: { monthly: 6500, setup: 3000 },
+                      enterprise: { monthly: 9000, setup: 5000 },
+                    };
+                    const plan = (c.plan || 'starter').toLowerCase();
+                    const pricing = planPricing[plan] || planPricing.starter;
+                    const firstPayment = pricing.monthly + pricing.setup;
+                    const phoneDigits = (c.phone || '').replace(/\D/g, '');
+                    const instaPayPhone = process.env.NEXT_PUBLIC_INSTAPAY_PHONE || '+20 122 060 1410';
+                    const paymentWhatsAppText = `مرحباً! شكراً لتسجيلك في CenterHQ.
+
+💰 للتفعيل، يرجى إرسال إيصال InstaPay بمبلغ ${firstPayment.toLocaleString()} جنيه:
+• رسوم الاشتراك الشهري: ${pricing.monthly.toLocaleString()} جنيه
+• رسوم الإعداد: ${pricing.setup.toLocaleString()} جنيه
+
+📱 رقم InstaPay (رقم الموبايل):
+${instaPayPhone}
+
+بعد استلام الإيصال، سنفعل حسابك خلال ساعات.`;
+                    let phoneDig = phoneDigits;
+                    if (phoneDig.startsWith('0')) phoneDig = '20' + phoneDig.slice(1);
+                    else if (!phoneDig.startsWith('20')) phoneDig = '20' + phoneDig;
+                    const paymentWhatsAppUrl = `https://wa.me/${phoneDig}?text=${encodeURIComponent(paymentWhatsAppText)}`;
+                    return (
+                      <div key={c.id} className="bg-bg-secondary p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-xl text-[var(--text-primary)]">{c.name}</h4>
+                            <p className="text-[var(--text-secondary)]">{c.owner_name || ''} {c.city ? `• ${c.city}` : ''}</p>
+                            <p className="text-[var(--text-secondary)]" dir="ltr">Phone: {c.phone || '—'}</p>
+                            <p className="text-[var(--text-tertiary)] text-sm mt-1">
+                              {t('requested', { defaultValue: 'Requested' })}: {new Date(c.requested_at || c.created_at).toLocaleDateString('en-GB')} at {new Date(c.requested_at || c.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <span className="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-full text-sm font-medium">
+                            {PLAN_LABELS[c.plan || 'starter'] || c.plan}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                          <div>
+                            <p className="text-[var(--text-tertiary)] text-sm">{t('monthlyFee', { defaultValue: 'Monthly Fee' })}</p>
+                            <p className="text-[var(--text-primary)] font-bold">EGP {pricing.monthly.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-[var(--text-tertiary)] text-sm">{t('setupFee', { defaultValue: 'Setup Fee' })}</p>
+                            <p className="text-[var(--text-primary)] font-bold">EGP {pricing.setup.toLocaleString()}</p>
+                          </div>
+                          <div className="col-span-2 pt-2 border-t border-indigo-200 dark:border-indigo-800">
+                            <p className="text-[var(--text-tertiary)] text-sm">{t('firstPaymentRequired', { defaultValue: 'First Payment Required' })}</p>
+                            <p className="text-indigo-600 dark:text-indigo-400 font-bold text-2xl">
+                              EGP {firstPayment.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        {c.signup_notes && (
+                          <p className="text-[var(--text-secondary)] text-sm mb-4 italic">Notes: {c.signup_notes}</p>
+                        )}
+                        <div className="flex gap-3 flex-wrap">
+                          <a
+                            href={paymentWhatsAppUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 min-w-[180px] px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center justify-center gap-2 font-medium text-sm"
+                          >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                            </svg>
+                            {t('requestPayment', { defaultValue: 'Request Payment' })}
+                          </a>
                           <button
                             onClick={() => handleApprove(c.id)}
                             disabled={actionCenterId === c.id}
-                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                            className="flex-1 min-w-[180px] px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm disabled:opacity-50"
                           >
-                            {actionCenterId === c.id ? '...' : t('approve')}
+                            {actionCenterId === c.id ? '...' : '✅ ' + t('activateAccount', { defaultValue: 'Activate Account' })}
                           </button>
                           <button
                             onClick={() => handleReject(c.id)}
                             disabled={actionCenterId === c.id}
-                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                            className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm disabled:opacity-50"
                           >
-                            {t('reject')}
+                            ❌ {t('reject')}
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {pendingCenters.length === 0 && <p className="mt-4 text-[var(--text-secondary)]">{t('noPending')}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 

@@ -586,12 +586,20 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-text-primary mb-4">
                 {t('account', { defaultValue: 'Account' })}
               </h2>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {t('logout', { defaultValue: 'Logout' })}
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/settings/reset-password"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  {t('resetPassword', { defaultValue: 'Reset Password' })}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  {t('logout', { defaultValue: 'Logout' })}
+                </button>
+              </div>
             </section>
           </div>
         </div>

@@ -514,10 +514,11 @@ export default function DashboardPage() {
   const paymentDueBanner = (() => {
     if (!centerBilling?.payment_due_date || centerBilling.billing_status === 'paid') return null;
     const dueDate = new Date(centerBilling.payment_due_date);
-    const now = new Date();
-    const diffMs = dueDate.getTime() - now.getTime();
+    const now = Date.now();
+    const diffMs = dueDate.getTime() - now;
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+
+    // Due soon (up to 5 days before due date)
     if (diffDays > 0 && diffDays <= 5) {
       return (
         <div className="mb-6 p-4 bg-amber-900/30 border border-amber-600 rounded-xl flex flex-wrap items-center justify-between gap-4">
@@ -533,11 +534,37 @@ export default function DashboardPage() {
         </div>
       );
     }
+
+    // Overdue: countdown to suspension (7-day grace period)
     if (diffDays <= 0) {
+      const suspendDate = new Date(centerBilling.payment_due_date);
+      suspendDate.setDate(suspendDate.getDate() + 7); // 7 days grace period
+
+      const hoursRemaining = Math.max(
+        0,
+        Math.floor((suspendDate.getTime() - now) / (1000 * 60 * 60))
+      );
+
+      if (hoursRemaining <= 0) {
+        return (
+          <div className="mb-6 p-4 bg-red-900/30 border border-red-600 rounded-xl flex flex-wrap items-center justify-between gap-4">
+            <span className="text-red-200 font-medium">
+              {t('accountSuspended', { defaultValue: 'Account suspended due to overdue payment.' })}
+            </span>
+            <button
+              onClick={() => router.push('/settings/billing')}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg"
+            >
+              {t('payNow', { defaultValue: 'Pay Now' })}
+            </button>
+          </div>
+        );
+      }
+
       return (
         <div className="mb-6 p-4 bg-red-900/30 border border-red-600 rounded-xl flex flex-wrap items-center justify-between gap-4">
           <span className="text-red-200 font-medium">
-            {t('paymentOverdue', { hours: Math.abs(diffHours), defaultValue: `Payment overdue! Account will be suspended in ${Math.abs(diffHours)} hours` })}
+            {t('paymentOverdue', { hours: hoursRemaining, defaultValue: `Payment overdue! Account will be suspended in ${hoursRemaining} hours` })}
           </span>
           <button
             onClick={() => router.push('/settings/billing')}
