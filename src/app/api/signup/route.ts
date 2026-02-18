@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { normalizePhone } from '@/lib/utils/phone';
 
 export async function POST(request: Request) {
   try {
@@ -16,10 +17,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 });
     }
 
-    let formattedPhone = String(phone).replace(/\s/g, '').replace(/\D/g, '');
-    if (formattedPhone.startsWith('0')) formattedPhone = '+20' + formattedPhone.substring(1);
-    else if (!formattedPhone.startsWith('20')) formattedPhone = '+20' + formattedPhone;
-    else formattedPhone = '+' + formattedPhone;
+    const formattedPhone = normalizePhone(String(phone).trim());
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

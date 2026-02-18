@@ -1,12 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-function toE164(phone: string): string {
-  const cleaned = phone.replace(/\D/g, '');
-  if (cleaned.startsWith('0')) return '+20' + cleaned.slice(1);
-  if (cleaned.startsWith('20')) return '+' + cleaned;
-  return '+20' + cleaned;
-}
+import { normalizePhone } from '@/lib/utils/phone';
 
 export async function POST(request: Request) {
   try {
@@ -23,20 +17,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ hasInvite: false, error: 'Phone required' }, { status: 400 });
     }
 
-    const phoneE164 = toE164(phoneRaw);
-    const normalizedPhone = phoneRaw.replace(/\D/g, '');
+    const phoneE164 = normalizePhone(phoneRaw);
+    const digits = phoneRaw.replace(/\D/g, '');
     const phoneVariants = [
       phoneE164,
-      normalizedPhone.startsWith('0') ? normalizedPhone : '0' + normalizedPhone,
-      '+20' + normalizedPhone.replace(/^0/, ''),
-      '20' + normalizedPhone.replace(/^0/, ''),
+      ...(digits.length >= 10
+        ? [digits.startsWith('0') ? digits : '0' + digits]
+        : []),
     ];
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    for (const p of phoneVariants) {
+    for (const p of [...new Set(phoneVariants)]) {
       const { data } = await supabaseAdmin
         .from('center_invites')
         .select('id, center_id, role, invited_name')

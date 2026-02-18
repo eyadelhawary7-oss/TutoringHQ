@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { normalizePhone } from '@/lib/utils/phone';
 
 function generatePin(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Center not found' }, { status: 404 });
     }
 
-    const normPhone = (p: string) => p.replace(/\D/g, '').replace(/^20/, '');
+    const normPhone = (p: string) => normalizePhone(p).replace(/\D/g, '');
     const userDigits = normPhone(user.phone || '');
     const centerDigits = normPhone(center.phone || '');
     if (!userDigits || !centerDigits || userDigits !== centerDigits) {
@@ -87,7 +88,8 @@ export async function POST(request: Request) {
 
     // Generate PIN and phone-based email
     const pin = generatePin();
-    const phoneDigits = (user.phone || center.phone).replace(/\D/g, '');
+    const normalizedPhone = normalizePhone(user.phone || center.phone || '');
+    const phoneDigits = normalizedPhone.replace(/\D/g, '');
     const emailForAuth = `${phoneDigits}@centerhq.local`;
 
     const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
@@ -107,7 +109,7 @@ export async function POST(request: Request) {
       id: user.id,
       center_id: centerId,
       role: 'owner',
-      phone: user.phone || center.phone,
+      phone: normalizedPhone,
       name: center.name || null,
       phone_verified: true,
     });

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { normalizePhone } from '@/lib/utils/phone';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -495,7 +496,7 @@ export async function PUT(request: Request) {
 
     // Approve - create auth user with username+password for hybrid login
     const pin = generatePin();
-    const intlPhone = phone.startsWith('+') ? phone : `+20${phone.replace(/^0/, '')}`;
+    const intlPhone = normalizePhone(phone);
 
     const ownerName = center.name;
     const emailForAuth = `${intlPhone.replace(/\D/g, '')}@centerhq.local`;

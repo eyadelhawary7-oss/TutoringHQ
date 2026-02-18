@@ -2,18 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { inviteUserSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
-
-/** Convert Egyptian phone (01XXXXXXXXX) to E.164 (+201XXXXXXXXX) */
-function toE164(phone: string): string {
-  const cleaned = phone.replace(/\D/g, '');
-  if (cleaned.startsWith('0')) {
-    return '+20' + cleaned.slice(1);
-  }
-  if (cleaned.startsWith('20')) {
-    return '+' + cleaned;
-  }
-  return '+20' + cleaned;
-}
+import { normalizePhone } from '@/lib/utils/phone';
 
 export async function POST(request: Request) {
   try {
@@ -52,9 +41,7 @@ export async function POST(request: Request) {
     }
     const { name, phone, role } = parsed.data;
 
-    const cleanPhone = String(phone).trim().replace(/\D/g, '');
-    const normalizedPhone = cleanPhone.startsWith('0') ? cleanPhone : '0' + cleanPhone;
-    const phoneE164 = toE164(normalizedPhone);
+    const phoneE164 = normalizePhone(String(phone).trim());
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -73,11 +60,9 @@ export async function POST(request: Request) {
     }
 
     // CRITICAL: Users cannot invite themselves (privilege escalation protection)
-    const currentPhoneNorm = (currentUser.phone || user.phone || '')
-      .replace(/\D/g, '')
-      .replace(/^0/, '')
-      .replace(/^20/, '');
-    const inviteePhoneNorm = normalizedPhone.replace(/\D/g, '').replace(/^0/, '').replace(/^20/, '');
+    const digitsOf = (p: string) => p.replace(/\D/g, '').replace(/^0/, '').replace(/^20/, '');
+    const currentPhoneNorm = digitsOf(currentUser.phone || user.phone || '');
+    const inviteePhoneNorm = digitsOf(phoneE164);
     if (currentPhoneNorm && inviteePhoneNorm && currentPhoneNorm === inviteePhoneNorm) {
       return NextResponse.json({ error: 'Cannot invite yourself to the team' }, { status: 403 });
     }
@@ -119,19 +104,6 @@ export async function POST(request: Request) {
       }, { status: 409 });
     }
 
-    const { data: existingByLocal } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('center_id', currentUser.center_id)
-      .eq('phone', normalizedPhone)
-      .maybeSingle();
-
-    if (existingByLocal) {
-      return NextResponse.json({
-        error: 'هذا الرقم مسجل بالفعل في السنتر / This phone number is already registered for your center',
-      }, { status: 409 });
-    }
-
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app';
     const acceptInviteUrl = `${appUrl}/en/accept-invite`;
 
@@ -162,7 +134,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         action: 'team_member_invited_pending',
         entity_type: 'center_invites',
-        details: { invited_phone: normalizedPhone, invited_name: name, invited_role: role },
+        details: { invited_phone: phoneE164, invited_name: name, invited_role: role },
       });
     } catch {
       // Don't fail if audit log fails

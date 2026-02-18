@@ -1,9 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-function normPhone(p: string): string {
-  return p.replace(/\D/g, '').replace(/^20/, '');
-}
+import { normalizePhone } from '@/lib/utils/phone';
 
 function generatePin(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -40,8 +37,13 @@ export async function POST(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const userPhoneNorm = normPhone(user.phone || '');
-    const phoneVariants = [user.phone, userPhoneNorm, '0' + userPhoneNorm, '+20' + userPhoneNorm.replace(/^0/, '')];
+    const normalizedPhone = normalizePhone(user.phone || '');
+    const digits = (user.phone || '').replace(/\D/g, '');
+    const phoneVariants = [
+      normalizedPhone,
+      user.phone,
+      digits.startsWith('0') ? digits : '0' + digits,
+    ].filter(Boolean);
 
     let invite: { id: string; center_id: string; role: string; invited_name?: string; phone: string } | null = null;
     for (const p of phoneVariants) {
@@ -80,7 +82,8 @@ export async function POST(request: Request) {
 
     // Generate PIN and phone-based email
     const pin = generatePin();
-    const phoneDigits = (user.phone || invite.phone).replace(/\D/g, '');
+    const storedPhone = normalizePhone(user.phone || invite.phone);
+    const phoneDigits = storedPhone.replace(/\D/g, '');
     const emailForAuth = `${phoneDigits}@centerhq.local`;
 
     const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
@@ -100,7 +103,7 @@ export async function POST(request: Request) {
       id: user.id,
       center_id: invite.center_id,
       role: invite.role || 'assistant',
-      phone: user.phone || invite.phone,
+      phone: storedPhone,
       name: invite.invited_name || null,
       phone_verified: true,
     });

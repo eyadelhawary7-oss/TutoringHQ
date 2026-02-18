@@ -26,22 +26,23 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      // Query users table to find user by phone
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, email')
-        .eq('phone', phone)
-        .single();
+      // Lookup user by phone via API (uses service role, bypasses RLS)
+      const lookupRes = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const lookupData = await lookupRes.json();
 
-      if (userError || !userData) {
-        setError(t('phoneNotFound', { defaultValue: 'Phone number not registered' }));
+      if (!lookupRes.ok || !lookupData.email) {
+        setError(lookupData.error || t('phoneNotFound', { defaultValue: 'Phone number not registered' }));
         setIsLoading(false);
         return;
       }
 
-      // Login using the email from users table
+      // Login using the email from lookup
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email: userData.email || `${phone.replace(/[^0-9]/g, '')}@centerhq.local`,
+        email: lookupData.email,
         password: pin,
       });
 

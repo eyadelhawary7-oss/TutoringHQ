@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { normalizePhone } from '@/lib/utils/phone';
 
 /**
  * Called after login. Checks if user's phone is in center_invites.
@@ -32,9 +33,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    let phone = user.phone?.replace(/\s/g, '') || user.user_metadata?.phone || '';
-    if (phone.startsWith('+20')) phone = '0' + phone.slice(3);
-    if (phone.startsWith('20')) phone = '0' + phone.slice(2);
+    const phoneRaw = user.phone?.replace(/\s/g, '') || user.user_metadata?.phone || '';
+    const normalizedPhone = normalizePhone(phoneRaw);
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -53,9 +53,13 @@ export async function POST(request: Request) {
       });
     }
 
-    // Check center_invites for this phone (try normalized formats)
-    if (phone) {
-      const phoneVariants = [phone, phone.replace(/^0/, '+20'), phone.replace(/^0/, '20')];
+    // Check center_invites for this phone (DB stores +20 format)
+    if (normalizedPhone) {
+      const digits = phoneRaw.replace(/\D/g, '');
+      const phoneVariants = [
+        normalizedPhone,
+        digits.startsWith('0') ? digits : '0' + digits,
+      ];
       let invite: { id: string; center_id: string; role: string } | null = null;
       for (const p of phoneVariants) {
         const { data } = await supabaseAdmin
@@ -74,7 +78,7 @@ export async function POST(request: Request) {
             id: user.id,
             center_id: invite.center_id,
             role: invite.role || 'owner',
-            phone: user.phone || phone,
+            phone: normalizedPhone,
             name: user.user_metadata?.name || null,
           },
           { onConflict: 'id' }
