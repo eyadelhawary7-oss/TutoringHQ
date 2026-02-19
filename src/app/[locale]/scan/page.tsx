@@ -177,7 +177,12 @@ export default function ScanPage() {
   };
 
   const handleScan = useCallback(async (code: string) => {
-    if (isProcessingRef.current || !centerId || !userId) return;
+    if (isProcessingRef.current) return;
+    if (!centerId || !userId) {
+      setError('جاري التحميل... حاول مرة أخرى');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
     isProcessingRef.current = true;
     setError('');
 
@@ -201,6 +206,22 @@ export default function ScanPage() {
         if (!lookupError && data) {
           student = data as Student;
         }
+      }
+
+      if (!student && navigator.onLine && /^\d{10,11}$/.test(code.trim())) {
+        const normalizedPhone = code.trim().startsWith('0')
+          ? '+2' + code.trim()
+          : '+' + code.trim();
+        const { data, error: phoneError } = await dbSelect({
+          table: 'students',
+          select: 'id, name, phone, parent_phone, subject, fee, student_number',
+          filters: [
+            { column: 'phone', op: 'eq', value: normalizedPhone },
+            { column: 'center_id', op: 'eq', value: centerId },
+          ],
+          single: true,
+        });
+        if (!phoneError && data) student = data as Student;
       }
 
       // When online, ALWAYS fetch groups for the student (whether from IndexedDB or API)
@@ -679,9 +700,10 @@ export default function ScanPage() {
                 />
               </div>
               <button
-                onClick={() => manualIdInput.trim() && handleScan(manualIdInput.trim())}
-                disabled={!manualIdInput.trim()}
-                className="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-lg transition-colors"
+                onClick={() => { const trimmed = manualIdInput.trim(); if (!trimmed) return; handleScan(trimmed); }}
+                className={`w-full py-4 px-6 text-white font-bold rounded-xl text-lg transition-colors ${
+                  manualIdInput.trim() ? 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800' : 'bg-gray-400 cursor-not-allowed'
+                }`}
               >
                 {t('checkIn')}
               </button>
