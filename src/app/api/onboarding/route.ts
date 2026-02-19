@@ -152,14 +152,20 @@ export async function POST(request: Request) {
 
 
     const { error: userError } = await supabase
-      .from('users')
-      .insert({
-        id: user.id,
-        center_id: center.id,
-        role: 'owner',
-        phone: user.phone || '',
-        name: centerName.trim()
-      });
+    .from('users')
+    .insert({
+      id: user.id,
+      center_id: center.id,
+      role: 'owner',
+      phone: user.phone || '',
+      name: centerName.trim(),
+      can_scan: true,
+      can_view_payments: true,
+      can_view_dashboard: true,
+      can_manage_students: true,
+      can_manage_groups: true,
+      can_manage_settings: true,
+    });
 
     if (userError) {
       console.error('User profile creation error:', userError);
