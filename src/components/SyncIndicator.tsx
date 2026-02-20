@@ -37,9 +37,7 @@ export default function SyncIndicator() {
   }, [status, updatePendingCount]);
 
   useEffect(() => {
-    // Set initial online status
-    setStatus(navigator.onLine ? 'online' : 'offline');
-
+    const tid = setTimeout(() => setStatus(navigator.onLine ? 'online' : 'offline'), 0);
     const handleOnline = () => {
       setStatus('online');
       performSync();
@@ -52,11 +50,13 @@ export default function SyncIndicator() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Check pending count periodically
-    updatePendingCount();
+    // Check pending count periodically (defer initial call to avoid sync setState in effect)
+    const tid2 = setTimeout(updatePendingCount, 0);
     const interval = setInterval(updatePendingCount, 10000);
 
     return () => {
+      clearTimeout(tid);
+      clearTimeout(tid2);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       clearInterval(interval);

@@ -49,7 +49,7 @@ export default function UnpaidList({ students }: UnpaidListProps) {
                 {student.fee} {t('currency')}
               </td>
               <td className="px-3 py-3 text-end">
-                <button className="text-xs px-3 py-1.5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors">
+                <button className="text-xs px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors">
                   {t('sendReminder')}
                 </button>
               </td>

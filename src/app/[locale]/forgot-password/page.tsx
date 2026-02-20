@@ -120,18 +120,18 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900" data-theme="light">
+    <div className="min-h-screen bg-gradient-hero">
       <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <Link href="/" className="inline-block mb-4">
               <Image src="/logo-icon.png" alt="CenterHQ" width={64} height={64} className="w-16 h-16 mx-auto mb-3 object-contain" />
-              <h1 className="text-3xl font-bold text-text-primary">CenterHQ</h1>
+              <h1 className="text-3xl font-bold text-white">CenterHQ</h1>
             </Link>
           </div>
 
-          <div className="bg-bg-primary text-text-primary border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-8">
-            <h2 className="text-xl font-bold text-text-primary mb-6 text-center">
+          <div className="bg-white/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl p-8">
+            <h2 className="text-xl font-bold text-foreground mb-6 text-center">
               {t('title')}
             </h2>
 
@@ -142,7 +142,7 @@ export default function ForgotPasswordPage() {
             )}
 
             {message && (
-              <div className="bg-green-500/10 border border-green-500 text-green-600 dark:text-green-400 p-3 rounded-lg mb-4 text-sm">
+              <div className="bg-green-50 border border-green-200 text-green-600 p-3 rounded-lg mb-4 text-sm">
                 {message}
               </div>
             )}
@@ -155,7 +155,7 @@ export default function ForgotPasswordPage() {
                   error={error}
                 />
                 <div className="mt-6 text-center">
-                  <Link href="/login" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                  <Link href="/login" className="text-sm text-[#0D9488] hover:underline">
                     {t('backToLogin')}
                   </Link>
                 </div>
@@ -167,14 +167,14 @@ export default function ForgotPasswordPage() {
                 <button
                   type="button"
                   onClick={() => { setStep('phone'); setError(''); setMessage(''); }}
-                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-4 flex items-center gap-1"
+                  className="text-sm text-[#0D9488] hover:underline mb-4 flex items-center gap-1"
                 >
                   <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                   {t('backToLogin')}
                 </button>
-                <p className="text-text-secondary text-center mb-6 text-sm">
+                <p className="text-muted-foreground text-center mb-6 text-sm">
                   {t('enterOTP')}
                 </p>
                 <OTPInput
@@ -189,12 +189,12 @@ export default function ForgotPasswordPage() {
 
             {step === 'new-password' && (
               <form onSubmit={handleResetPassword} className="space-y-4">
-                <p className="text-text-secondary text-sm mb-6">
+                <p className="text-muted-foreground text-sm mb-6">
                   {t('createNewPassword')}
                 </p>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     {t('newPasswordLabel')}
                   </label>
                   <input
@@ -204,9 +204,9 @@ export default function ForgotPasswordPage() {
                     placeholder="••••••••"
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 bg-bg-tertiary text-text-primary border border-gray-300 dark:border-gray-600 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-4 py-3 bg-slate-50 text-foreground border border-border rounded-lg focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/30"
                   />
-                  <p className="text-text-secondary text-sm mt-1">
+                  <p className="text-muted-foreground text-sm mt-1">
                     {t('passwordRequirements')}
                   </p>
                 </div>
@@ -214,7 +214,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-2.5 bg-[#0D9488] hover:bg-[#0b7b70] text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? t('resetting') : t('resetPassword')}
                 </button>
@@ -223,7 +223,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           <div className="mt-6 text-center">
-            <Link href="/login" className="text-sm text-text-secondary hover:text-text-primary">
+            <Link href="/login" className="text-sm text-slate-300 hover:text-white">
               ← {t('backToLogin')}
             </Link>
           </div>

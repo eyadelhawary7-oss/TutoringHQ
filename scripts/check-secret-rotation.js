@@ -4,7 +4,7 @@
  *
  * Run with: npm run check-secrets
  */
-
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 

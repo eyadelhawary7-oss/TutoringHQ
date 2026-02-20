@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbUpdate } from '@/lib/db-proxy';
+import { dbSelect, dbUpdate, type Filter } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { exportPaymentsToExcel } from '@/lib/excel-export';
 import { hasPlanFeature } from '@/lib/plans';
+import { Link } from '@/i18n/routing';
+import { Download, Search, Check, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface PaymentRecord {
   id: string;
@@ -21,10 +23,16 @@ interface PaymentRecord {
   confirmed_at?: string | null;
   confirmed_by_name?: string | null;
   recorded_by?: string | null;
+  recorded_by_name?: string | null;
   group_id?: string | null;
   student_name?: string;
   student_number?: string;
   group_name?: string;
+}
+
+interface GroupOption {
+  id: string;
+  name: string;
 }
 
 const METHOD_KEYS: Record<string, string> = {
@@ -39,40 +47,50 @@ const METHOD_KEYS: Record<string, string> = {
   late_entry: 'lateEntry',
 };
 
-type StatusFilter = 'all' | 'confirmed' | 'pending';
+type StatusFilter = 'all' | 'confirmed' | 'pending' | 'late';
+
+interface StudentSummaryRow {
+  student_id: string;
+  student_name: string;
+  student_number: string;
+  total_paid: number;
+  total_pending: number;
+  total_late: number;
+  balance_due: number;
+}
 
 export default function PaymentsPage() {
   const t = useTranslations('payments');
   const tCommon = useTranslations('common');
   const tSettings = useTranslations('settings');
+  const tDashboard = useTranslations('dashboard');
   const locale = useLocale();
   const { user, hasPermission } = useUser();
   const isRTL = locale === 'ar';
   const canConfirmPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_record_payments');
+  const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
 
   const [records, setRecords] = useState<PaymentRecord[]>([]);
+  const [groups, setGroups] = useState<GroupOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [view, setView] = useState<'log' | 'summary'>('log');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [methodFilter, setMethodFilter] = useState('all');
+  const [groupFilter, setGroupFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
-  const [viewMode, setViewMode] = useState<'transactionLog' | 'studentSummary'>('transactionLog');
-  const [studentSummary, setStudentSummary] = useState<{
-    student_id: string;
-    student_name: string;
-    student_number: string;
-    total_lessons: number;
-    paid_lessons: number;
-    balance_due: number;
-  }[]>([]);
-  const [sortOrder, setSortOrder] = useState<'default' | 'high' | 'low'>('high');
-  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
+  const [studentSummary, setStudentSummary] = useState<StudentSummaryRow[]>([]);
+  const [sortOrder, setSortOrder] = useState<'high' | 'low'>('high');
+  const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [showExportUpgradeModal, setShowExportUpgradeModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
+  const filterRef = useRef({ dateFrom: '', dateTo: '', groupFilter: 'all', methodFilter: 'all' });
   const DEBUG = typeof window !== 'undefined' && process.env.NODE_ENV === 'development';
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -80,56 +98,48 @@ export default function PaymentsPage() {
   const loadDataInner = useCallback(async () => {
     setLoadError(null);
     const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      setUserId(session.user.id);
+    if (!session) return;
+    setUserId(session.user.id);
 
-      const meUrl = '/api/me';
-      if (DEBUG) {
-        console.log('[payments] Fetching /api/me', { url: meUrl, method: 'GET', hasToken: !!session.access_token });
-      }
-      let meRes: Response;
-      try {
-        meRes = await fetch(meUrl, { headers: { 'Authorization': `Bearer ${session.access_token}` } });
-      } catch (fetchErr) {
-        if (DEBUG) {
-          console.error('[payments] /api/me fetch failed:', fetchErr);
-          console.error('[payments] Stack:', (fetchErr as Error)?.stack);
-        }
-        throw fetchErr;
-      }
-      if (DEBUG) {
-        console.log('[payments] /api/me response:', { status: meRes.status, statusText: meRes.statusText, ok: meRes.ok });
-      }
-      const meData = await meRes.json();
-      if (DEBUG) {
-        console.log('[payments] /api/me body:', { hasUser: !!meData?.user, centerId: meData?.user?.center_id });
-      }
-      if (!meData?.user?.center_id) return;
-      setCenterId(meData.user.center_id);
-      const cid = meData.user.center_id;
+    const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+    const meData = await meRes.json();
+    if (!meData?.user?.center_id) return;
+    setCenterId(meData.user.center_id);
+    const cid = meData.user.center_id;
 
-      if (DEBUG) {
-        console.log('[payments] Fetching payments for center:', cid);
-      }
-      const { data: paymentsData, error: payErr } = await dbSelect({
+    const { dateFrom: df, dateTo: dt, groupFilter: gf, methodFilter: mf } = filterRef.current;
+
+    const filters: Filter[] = [
+      { column: 'center_id', op: 'eq', value: cid },
+    ];
+    if (df) filters.push({ column: 'paid_at', op: 'gte', value: `${df}T00:00:00.000Z` });
+    if (dt) filters.push({ column: 'paid_at', op: 'lte', value: `${dt}T23:59:59.999Z` });
+    if (gf && gf !== 'all') filters.push({ column: 'group_id', op: 'eq', value: gf });
+    if (mf && mf !== 'all') filters.push({ column: 'method', op: 'eq', value: mf });
+
+    const { data: paymentsData, error: payErr } = await dbSelect({
       table: 'payments',
       select: 'id, student_id, center_id, amount, method, recorded_by, paid_at, status, confirmed, confirmed_by, confirmed_at, group_id, students(name, student_number, phone), student_groups(name)',
-      filters: [{ column: 'center_id', op: 'eq', value: cid }],
+      filters,
       order: { column: 'paid_at', ascending: false },
     });
 
-      if (DEBUG) {
-        const count = Array.isArray(paymentsData) ? paymentsData.length : 0;
-        console.log('[payments] Payments fetched:', { count, error: payErr?.message ?? null });
-      }
+    if (DEBUG && payErr) console.log('[payments] Pay err:', payErr);
 
     type PaymentRow = PaymentRecord & {
-      student_id: string;
-      group_id?: string | null;
       students?: { name?: string; student_number?: string; phone?: string } | null;
       student_groups?: { name?: string } | null;
     };
     const payments = (paymentsData || []) as PaymentRow[];
+
+    const { data: groupsData } = await dbSelect({
+      table: 'student_groups',
+      select: 'id, name',
+      filters: [{ column: 'center_id', op: 'eq', value: cid }],
+      order: { column: 'name' },
+    });
+    setGroups((groupsData || []) as GroupOption[]);
+
     const { data: scansDataPre } = await dbSelect({
       table: 'attendance_scans',
       select: 'student_id',
@@ -148,70 +158,74 @@ export default function PaymentsPage() {
         filters: [{ column: 'id', op: 'in', value: studentIds }],
       });
       const students = (studentsData || []) as { id: string; name: string; student_number?: string }[];
-      studentMap = Object.fromEntries(students.map(s => [s.id, { name: s.name || '', student_number: s.student_number || '—' }]));
+      studentMap = Object.fromEntries(students.map(s => [s.id, { name: s.name || '', student_number: s.student_number || '\u2014' }]));
     }
     if (groupIds.length > 0) {
-      const { data: groupsData } = await dbSelect({
+      const { data: groupsMapData } = await dbSelect({
         table: 'student_groups',
         select: 'id, name',
         filters: [{ column: 'id', op: 'in', value: groupIds }],
       });
-      const groups = (groupsData || []) as { id: string; name: string }[];
-      groupMap = Object.fromEntries(groups.map(g => [g.id, g.name || '']));
+      const gs = (groupsMapData || []) as { id: string; name: string }[];
+      groupMap = Object.fromEntries(gs.map(g => [g.id, g.name || '']));
     }
 
-    const confirmedByIds = [...new Set(payments.map(p => p.confirmed_by).filter(Boolean))] as string[];
-    let confirmedByMap: Record<string, string> = {};
-    if (confirmedByIds.length > 0) {
+    const userIds = [...new Set([
+      ...payments.map(p => p.confirmed_by).filter(Boolean),
+      ...payments.map(p => p.recorded_by).filter(Boolean),
+    ])] as string[];
+    let userMap: Record<string, string> = {};
+    if (userIds.length > 0) {
       const { data: usersData } = await dbSelect({
         table: 'users',
         select: 'id, name',
-        filters: [{ column: 'id', op: 'in', value: confirmedByIds }],
+        filters: [{ column: 'id', op: 'in', value: userIds }],
       });
       const users = (usersData || []) as { id: string; name: string | null }[];
-      confirmedByMap = Object.fromEntries(users.map(u => [u.id, u.name || '—']));
+      userMap = Object.fromEntries(users.map(u => [u.id, u.name || '\u2014']));
     }
 
     setRecords(payments.map(p => ({
       ...p,
-      student_name: p.students?.name ?? studentMap[p.student_id]?.name ?? '—',
-      student_number: p.students?.student_number ?? studentMap[p.student_id]?.student_number ?? '—',
-      group_name: p.student_groups?.name ?? (p.group_id ? (groupMap[p.group_id] ?? '—') : '—'),
-      confirmed_by_name: p.confirmed_by ? (confirmedByMap[p.confirmed_by] ?? '—') : null,
+      student_name: p.students?.name ?? studentMap[p.student_id]?.name ?? '\u2014',
+      student_number: p.students?.student_number ?? studentMap[p.student_id]?.student_number ?? '\u2014',
+      group_name: p.student_groups?.name ?? (p.group_id ? (groupMap[p.group_id] ?? '\u2014') : '\u2014'),
+      confirmed_by_name: p.confirmed_by ? (userMap[p.confirmed_by] ?? '\u2014') : null,
+      recorded_by_name: p.recorded_by ? (userMap[p.recorded_by] ?? '\u2014') : null,
     })));
 
-    // Load student summary (attendance + payment aggregates)
-    const scans = (scansDataPre || []) as { student_id: string }[];
-    const totalLessonsByStudent: Record<string, number> = {};
-    for (const s of scans) {
-      totalLessonsByStudent[s.student_id] = (totalLessonsByStudent[s.student_id] ?? 0) + 1;
-    }
-
-    const paidCount: Record<string, number> = {};
+    const totalPaid: Record<string, number> = {};
+    const totalPending: Record<string, number> = {};
+    const totalLate: Record<string, number> = {};
     const balanceDueByStudent: Record<string, number> = {};
     for (const p of payments) {
       const amt = parseFloat(String(p.amount ?? 0));
-      if (p.confirmed === true) {
-        paidCount[p.student_id] = (paidCount[p.student_id] ?? 0) + 1;
-      } else if (p.confirmed === false && p.status !== 'late') {
+      if (p.confirmed === true && p.status !== 'late') {
+        totalPaid[p.student_id] = (totalPaid[p.student_id] ?? 0) + amt;
+      } else if (p.status === 'late') {
+        totalLate[p.student_id] = (totalLate[p.student_id] ?? 0) + 1;
+      } else if (p.confirmed === false || p.status === 'pending') {
+        totalPending[p.student_id] = (totalPending[p.student_id] ?? 0) + amt;
         balanceDueByStudent[p.student_id] = (balanceDueByStudent[p.student_id] ?? 0) + amt;
       }
     }
 
-    const allStudentIds = [...new Set([...Object.keys(totalLessonsByStudent), ...Object.keys(paidCount), ...Object.keys(balanceDueByStudent)])];
-    const summaryRows = allStudentIds.map(sid => ({
+    const allStudentIds = [...new Set([...Object.keys(totalPaid), ...Object.keys(totalPending), ...Object.keys(totalLate), ...Object.keys(balanceDueByStudent)])];
+    const summaryRows: StudentSummaryRow[] = allStudentIds.map(sid => ({
       student_id: sid,
-      student_name: studentMap[sid]?.name ?? '—',
-      student_number: studentMap[sid]?.student_number ?? '—',
-      total_lessons: totalLessonsByStudent[sid] ?? 0,
-      paid_lessons: paidCount[sid] ?? 0,
+      student_name: studentMap[sid]?.name ?? '\u2014',
+      student_number: studentMap[sid]?.student_number ?? '\u2014',
+      total_paid: totalPaid[sid] ?? 0,
+      total_pending: totalPending[sid] ?? 0,
+      total_late: totalLate[sid] ?? 0,
       balance_due: balanceDueByStudent[sid] ?? 0,
-    })).filter(r => r.total_lessons > 0 || r.paid_lessons > 0 || r.balance_due > 0)
-      .sort((a, b) => (b.balance_due - a.balance_due) || b.total_lessons - a.total_lessons);
+    })).filter(r => r.total_paid > 0 || r.total_pending > 0 || r.total_late > 0 || r.balance_due > 0)
+      .sort((a, b) => (b.balance_due - a.balance_due) || (b.total_pending - a.total_pending));
     setStudentSummary(summaryRows);
   }, []);
 
   const loadData = useCallback(async () => {
+    filterRef.current = { dateFrom, dateTo, groupFilter, methodFilter };
     setIsLoading(true);
     try {
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -227,7 +241,6 @@ export default function PaymentsPage() {
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
           if (attempt > 0) {
-            if (DEBUG) console.log(`[payments] Retry ${attempt}/${maxRetries}, delay ${delays[attempt - 1]}ms`);
             setLoadError(t('retrying', { defaultValue: `Retrying... (${attempt}/${maxRetries})` }));
             await sleep(delays[attempt - 1]);
             setLoadError(null);
@@ -235,10 +248,6 @@ export default function PaymentsPage() {
           await loadDataInner();
           return;
         } catch (err) {
-          if (DEBUG) {
-            console.error('[payments] Attempt', attempt + 1, 'failed:', err);
-            console.error('[payments] Stack:', (err as Error)?.stack);
-          }
           if (attempt === maxRetries - 1) {
             setLoadError(err instanceof Error ? err.message : String(err));
           }
@@ -247,17 +256,14 @@ export default function PaymentsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [loadDataInner, DEBUG, t]);
+  }, [loadDataInner, t, dateFrom, dateTo, groupFilter, methodFilter]);
 
   useEffect(() => {
     const onOnline = () => { setIsOffline(false); loadData(); };
     const onOffline = () => setIsOffline(true);
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
-    return () => {
-      window.removeEventListener('online', onOnline);
-      window.removeEventListener('offline', onOffline);
-    };
+    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
   }, [loadData]);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -268,45 +274,54 @@ export default function PaymentsPage() {
     return () => window.removeEventListener('focus', onFocus);
   }, [loadData]);
 
-  const filteredRecords = useMemo(() => {
+  const filtered = useMemo(() => {
     return records.filter(r => {
-      if (activeTab === 'pending') return r.confirmed === false || r.status === 'pending';
       if (statusFilter !== 'all') {
-        if (statusFilter === 'confirmed' && (r.confirmed === false || r.status === 'pending')) return false;
-        if (statusFilter === 'pending' && (r.confirmed !== false && r.status === 'confirmed')) return false;
+        if (statusFilter === 'confirmed' && (r.confirmed !== true || r.status !== 'confirmed')) return false;
+        if (statusFilter === 'pending' && (r.status !== 'pending' && (r.confirmed !== false || r.status === 'late'))) return false;
+        if (statusFilter === 'late' && r.status !== 'late') return false;
       }
-      if (methodFilter !== 'all' && r.method !== methodFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const name = (r.student_name ?? '').toLowerCase();
+        const num = (r.student_number ?? '').toLowerCase();
+        if (!name.includes(q) && !num.includes(q)) return false;
+      }
       return true;
     });
-  }, [records, statusFilter, methodFilter, activeTab]);
+  }, [records, statusFilter, searchQuery]);
 
   const sortedStudents = useMemo(() => {
-    if (!studentSummary.length) return [];
-    if (sortOrder === 'high') return [...studentSummary].sort((a, b) => (b.balance_due ?? 0) - (a.balance_due ?? 0));
-    if (sortOrder === 'low') return [...studentSummary].sort((a, b) => (a.balance_due ?? 0) - (b.balance_due ?? 0));
-    return studentSummary;
-  }, [studentSummary, sortOrder]);
+    const list = studentSummary.filter(s => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const name = (s.student_name ?? '').toLowerCase();
+        const num = (s.student_number ?? '').toLowerCase();
+        if (!name.includes(q) && !num.includes(q)) return false;
+      }
+      return true;
+    });
+    if (sortOrder === 'high') return [...list].sort((a, b) => b.balance_due - a.balance_due);
+    return [...list].sort((a, b) => a.balance_due - b.balance_due);
+  }, [studentSummary, sortOrder, searchQuery]);
 
-  const groupedByDate = useMemo(() => {
-    const groups: Record<string, PaymentRecord[]> = {};
-    for (const r of filteredRecords) {
-      const d = r.paid_at ? r.paid_at.split('T')[0] : '';
-      if (!groups[d]) groups[d] = [];
-      groups[d].push(r);
-    }
-    return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
-  }, [filteredRecords]);
+  const kpis = useMemo(() => {
+    const confirmedTotal = records.filter(r => r.confirmed === true && r.status !== 'late').reduce((s, r) => s + (r.amount ?? 0), 0);
+    const pendingCount = records.filter(r => (r.confirmed === false || r.status === 'pending') && r.status !== 'late').length;
+    const lateCount = records.filter(r => r.status === 'late').length;
+    return { confirmedTotal, pendingCount, lateCount };
+  }, [records]);
 
   const handleConfirm = async (paymentId: string) => {
     if (!canConfirmPayments) return;
     setConfirmingId(paymentId);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user: u } } = await supabase.auth.getUser();
       await dbUpdate({
         table: 'payments',
         data: {
           confirmed: true,
-          confirmed_by: user?.id ?? userId,
+          confirmed_by: u?.id ?? userId,
           confirmed_at: new Date().toISOString(),
           status: 'confirmed',
         },
@@ -323,18 +338,17 @@ export default function PaymentsPage() {
   };
 
   const canExportExcel = hasPlanFeature(user?.center?.plan, 'excel_export');
-  const tDashboard = useTranslations('dashboard');
   const handleExport = () => {
     if (!canExportExcel) {
       setShowExportUpgradeModal(true);
       return;
     }
-    exportPaymentsToExcel(filteredRecords);
+    exportPaymentsToExcel(filtered);
   };
 
   const formatMethod = (method: string) => {
     const key = METHOD_KEYS[method] || method;
-    return t(String(key) as Parameters<typeof t>[0]) || method;
+    return (t(key as Parameters<typeof t>[0]) as string) || method;
   };
 
   const methods = useMemo(() => {
@@ -343,295 +357,253 @@ export default function PaymentsPage() {
   }, [records]);
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-text-primary">{t('title')}</h1>
-            <div className="flex items-center gap-3">
-              <div className="flex bg-bg-primary rounded-lg shadow p-1">
-                <button
-                  onClick={() => setViewMode('transactionLog')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    viewMode === 'transactionLog' ? 'bg-indigo-600 text-white' : 'text-text-secondary hover:bg-bg-secondary'
-                  }`}
-                >
-                  {t('transactionLog')}
-                </button>
-                <button
-                  onClick={() => setViewMode('studentSummary')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    viewMode === 'studentSummary' ? 'bg-indigo-600 text-white' : 'text-text-secondary hover:bg-bg-secondary'
-                  }`}
-                >
-                  {t('studentSummary')}
-                </button>
-              </div>
-              {viewMode === 'transactionLog' && (
-                <>
-                  <button
-                    onClick={handleExport}
-                    className="px-4 py-2 text-sm font-medium border border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950"
-                  >
-                    {t('exportExcel')}
-                  </button>
-                  {showExportUpgradeModal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowExportUpgradeModal(false)}>
-                      <div className="bg-bg-primary rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-lg font-semibold text-text-primary mb-2">{tSettings('upgradeToUnlockFeature')}</h3>
-                        <p className="text-sm text-text-secondary mb-4">{tDashboard('exportExcelUpgrade')}</p>
-                        <a href="/settings/billing" className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg">
-                          {tDashboard('upgradePlan')}
-                        </a>
-                        <button onClick={() => setShowExportUpgradeModal(false)} className="ml-2 px-4 py-2 bg-bg-tertiary rounded-lg text-sm">
-                          {tCommon('cancel')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-4 md:p-6 space-y-5 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">{t('title')}</h1>
+        <button
+          onClick={handleExport}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <Download size={14} /> {t('exportExcel')}
+        </button>
+      </div>
+
+      {/* Export upgrade modal */}
+      {showExportUpgradeModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowExportUpgradeModal(false)}>
+          <div className="bg-card rounded-2xl border border-border shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-foreground mb-2">{tSettings('upgradeToUnlockFeature')}</h3>
+            <p className="text-sm text-muted-foreground mb-4">{tDashboard('exportExcelUpgrade')}</p>
+            <div className="flex gap-2">
+              <Link href="/settings/billing" className="inline-block px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg">
+                {tDashboard('upgradePlan')}
+              </Link>
+              <button onClick={() => setShowExportUpgradeModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border text-muted-foreground hover:bg-muted">
+                {tCommon('cancel')}
+              </button>
             </div>
           </div>
+        </div>
+      )}
 
-          {successMessage && (
-            <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm text-center">
-              {successMessage}
-            </div>
-          )}
+      {successMessage && (
+        <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm text-center">
+          {successMessage}
+        </div>
+      )}
 
-          {(loadError || isOffline) && (
-            <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-sm">
-              <p className="font-medium">{loadError || t('offline', { defaultValue: 'Offline' })}</p>
-              <button
-                onClick={() => loadData()}
-                className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg"
-              >
-                {t('retry', { defaultValue: 'Retry' })}
-              </button>
-            </div>
-          )}
+      {(loadError || isOffline) && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
+          <p className="font-medium">{loadError || t('offline', { defaultValue: 'Offline' })}</p>
+          <button onClick={() => loadData()} className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+            {t('retry', { defaultValue: 'Retry' })}
+          </button>
+        </div>
+      )}
 
-          <div className="flex flex-wrap gap-3 mb-6">
-            <div className="flex bg-bg-primary rounded-lg shadow p-1">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'all' ? 'bg-indigo-600 text-white' : 'text-text-secondary hover:bg-bg-secondary'
-                }`}
-              >
-                {t('filterAll')}
-              </button>
-              <button
-                onClick={() => setActiveTab('pending')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'pending' ? 'bg-indigo-600 text-white' : 'text-text-secondary hover:bg-bg-secondary'
-                }`}
-              >
-                {t('filterPending')}
-              </button>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: t('confirmedLabel'), value: `${kpis.confirmedTotal.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} ${tCommon('egp')}`, color: '#16A34A', icon: Check },
+          { label: t('filterPending'), value: kpis.pendingCount, color: '#F59E0B', icon: Clock },
+          { label: t('lateEntry'), value: kpis.lateCount, color: '#7C3AED', icon: AlertTriangle },
+        ].map(({ label, value, color, icon: Icon }) => (
+          <div key={label} className="ch-card p-3 md:p-4 flex items-center gap-2 md:gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${color}18`, color }}><Icon size={16} /></div>
+            <div className="min-w-0">
+              <div className="font-black text-lg md:text-xl font-mono text-foreground">{value}</div>
+              <div className="text-xs text-muted-foreground truncate">{label}</div>
             </div>
-            {activeTab === 'all' && (
-              <>
-                <select
-                  value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value as StatusFilter)}
-                  className="px-3 py-2 bg-bg-primary border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-text-primary shadow"
-                >
-                  <option value="all">{t('filterAll')}</option>
-                  <option value="confirmed">{t('filterPaid')}</option>
-                  <option value="pending">{t('filterPending')}</option>
-                </select>
-                <select
-                  value={methodFilter}
-                  onChange={e => setMethodFilter(e.target.value)}
-                  className="px-3 py-2 bg-bg-primary border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-text-primary shadow"
-                >
-                  <option value="all">{t('paymentMethod')} — {t('filterAll')}</option>
-                  {methods.map(m => (
-                    <option key={m} value={m}>{formatMethod(m)}</option>
-                  ))}
-                </select>
-              </>
-            )}
           </div>
+        ))}
+      </div>
 
-          {isLoading ? (
-            <div className="text-center py-16">
-              <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            </div>
-          ) : viewMode === 'studentSummary' ? (
-            <div className="bg-bg-primary rounded-xl shadow overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-end">
-                <button
-                  onClick={() => setSortOrder(prev => prev === 'high' ? 'low' : 'high')}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-bg-secondary text-text-primary transition-colors"
-                >
-                  {sortOrder === 'high'
-                    ? t('sortHighToLow', { defaultValue: 'Balance: High → Low' })
-                    : t('sortLowToHigh', { defaultValue: 'Balance: Low → High' })}
-                </button>
-              </div>
+      {/* View toggle */}
+      <div className="flex gap-1 p-1 rounded-xl border border-border w-fit" style={{ background: 'hsl(var(--muted))' }}>
+        {[
+          { key: 'log', label: t('transactionLog') },
+          { key: 'summary', label: t('studentSummary') },
+        ].map(({ key, label }) => (
+          <button key={key} onClick={() => setView(key as 'log' | 'summary')} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${view === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
+          <input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder={t('searchStudent', { defaultValue: 'Search student...' })}
+            className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-slate-400"
+          />
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {(['all', 'confirmed', 'pending', 'late'] as const).map(s => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${statusFilter === s ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
+            >
+              {s === 'all' ? tCommon('all', { defaultValue: 'All' }) : s === 'confirmed' ? t('confirmedStatus') : s === 'pending' ? t('filterPending') : t('lateEntry')}
+            </button>
+          ))}
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-xs border border-input bg-background text-foreground"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-xs border border-input bg-background text-foreground"
+            />
+          </div>
+          <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs border border-input bg-background text-foreground">
+            <option value="all">{t('allGroups', { defaultValue: 'All Groups' })}</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+          <select value={methodFilter} onChange={e => setMethodFilter(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs border border-input bg-background text-foreground">
+            <option value="all">{t('allMethods', { defaultValue: 'All Methods' })}</option>
+            {methods.map(m => <option key={m} value={m}>{formatMethod(m)}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Loading */}
+      {isLoading ? (
+        <div className="text-center py-16">
+          <svg className="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+      ) : (
+        <>
+          {/* Transaction Log */}
+          {view === 'log' && (
+            <div className="ch-card overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('studentName')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('studentId')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('totalLessons')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('paidLessons')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('balanceDue')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{tCommon('actions')}</th>
+                  <thead style={{ background: 'hsl(var(--muted))' }}>
+                    <tr>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{t('student')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{t('group')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{t('amount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{t('paymentMethod')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{t('recordedBy', { defaultValue: 'Recorded By' })}</th>
+                      {canViewPayments && <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedStudents.map((row) => (
-                      <React.Fragment key={row.student_id}>
-                        <tr className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-bg-secondary/30">
-                          <td className="px-4 py-3 font-medium text-text-primary">{row.student_name}</td>
-                          <td className="px-4 py-3 font-mono italic text-text-secondary" dir="ltr">{row.student_number}</td>
-                          <td className="px-4 py-3 text-text-secondary">{row.total_lessons}</td>
-                          <td className="px-4 py-3 text-text-secondary">{row.paid_lessons}</td>
+                    {filtered.map(p => (
+                      <tr key={p.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-foreground">{p.student_name}</div>
+                          <div className="text-xs text-muted-foreground font-mono" dir="ltr">{p.student_number}</div>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-xs">{p.group_name}</td>
+                        <td className="px-4 py-3 font-bold text-foreground font-mono">{p.amount} {tCommon('egp')}</td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs">{formatMethod(p.method)}</td>
+                        <td className="px-4 py-3">
+                          <span className={p.confirmed === true && p.status === 'confirmed' ? 'badge-confirmed' : p.status === 'late' ? 'badge-late' : 'badge-pending'}>
+                            {p.confirmed === true && p.status === 'confirmed' ? t('confirmedStatus') : p.status === 'late' ? t('lateEntry') : t('filterPending')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">{p.recorded_by_name ?? '\u2014'}</td>
+                        {canViewPayments && (
                           <td className="px-4 py-3">
-                            {row.balance_due > 0 ? (
-                              <span className="font-mono italic font-medium text-red-600 dark:text-red-400">
-                                {row.balance_due.toLocaleString('ar-EG')} EGP
-                              </span>
-                            ) : (
-                              <span className="font-mono italic text-text-secondary">0 EGP</span>
-                            )}
+                            {(p.confirmed === false || p.status === 'pending') && p.status !== 'late' && canConfirmPayments ? (
+                              <button
+                                onClick={() => handleConfirm(p.id)}
+                                disabled={confirmingId === p.id}
+                                className="px-3 py-1 rounded-lg text-xs font-semibold text-white disabled:opacity-50 transition-colors"
+                                style={{ background: '#16A34A' }}
+                              >
+                                {t('confirm')}
+                              </button>
+                            ) : null}
                           </td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => setExpandedStudentId(expandedStudentId === row.student_id ? null : row.student_id)}
-                              className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm"
-                            >
-                              {t('viewHistory')}
-                            </button>
-                          </td>
-                        </tr>
-                        {expandedStudentId === row.student_id && (
-                          <tr key={`${row.student_id}-history`} className="bg-bg-secondary">
-                            <td colSpan={6} className="px-4 py-3">
-                              <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
-                                {records.filter(r => r.student_id === row.student_id).map(r => (
-                                  <div key={r.id} className="flex flex-wrap justify-between items-center gap-x-2 py-1 border-b border-gray-100 dark:border-gray-700/30 last:border-0">
-                                    <span>{r.paid_at ? new Date(r.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
-                                    <span className="font-mono italic">{r.amount} EGP</span>
-                                    <span>{formatMethod(r.method)}</span>
-                                    <span className={`italic ${r.status === 'late' ? 'text-amber-600 font-medium' : ''}`}>{r.status === 'late' ? t('lateEntry') : r.confirmed !== false && r.status !== 'pending' ? t('filterPaid') : t('filterPending')}</span>
-                                    {r.confirmed_by_name && r.confirmed_at && (
-                                      <span className="text-text-tertiary text-[10px] w-full mt-0.5" title={new Date(r.confirmed_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}>
-                                        {t('confirmedBy', { defaultValue: 'Confirmed by' })}: {r.confirmed_by_name}
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                          </tr>
                         )}
-                      </React.Fragment>
+                      </tr>
                     ))}
                   </tbody>
                 </table>
-                {sortedStudents.length === 0 && (
-                  <p className="p-8 text-center text-text-secondary">{t('noPaymentsYet')}</p>
-                )}
               </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {groupedByDate.map(([date, dayRecords]) => {
-                const dayTotal = dayRecords.reduce((s, r) => s + r.amount, 0);
-                return (
-                  <div key={date} className="bg-bg-primary rounded-xl shadow overflow-hidden">
-                    <div className="px-4 py-2 bg-bg-secondary border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <span className="font-medium text-text-primary">
-                        {new Date(date).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                      </span>
-                      <span className="text-sm font-mono italic font-semibold text-indigo-600 dark:text-indigo-400">
-                        {dayTotal.toLocaleString('ar-EG')} EGP
-                      </span>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-200 dark:border-gray-700">
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('date')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('studentName')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('studentId')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('amount')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('paymentMethod')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('status')}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('confirmedBy', { defaultValue: 'Confirmed by' })}</th>
-                            <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{t('group')}</th>
-                            {canConfirmPayments && <th className="px-4 py-3 text-start text-sm font-medium italic text-text-secondary">{tCommon('actions')}</th>}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {dayRecords.map(r => (
-                            <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-bg-secondary/30">
-                              <td className="px-4 py-3 text-text-secondary" dir="ltr">
-                                {r.paid_at ? new Date(r.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
-                              </td>
-                              <td className="px-4 py-3 font-medium text-text-primary">{r.student_name}</td>
-                              <td className="px-4 py-3 font-mono italic text-text-secondary" dir="ltr">{r.student_number ?? '—'}</td>
-                              <td className="px-4 py-3 font-mono italic text-text-secondary">{r.amount} EGP</td>
-                              <td className="px-4 py-3 text-text-secondary">{formatMethod(r.method)}</td>
-                              <td className="px-4 py-3">
-                                <span
-                                  title={r.confirmed_by_name && r.confirmed_at
-                                    ? `${t('confirmedBy', { defaultValue: 'Confirmed by' })}: ${r.confirmed_by_name} — ${new Date(r.confirmed_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
-                                    : undefined}
-                                  className={`px-2 py-1 text-xs font-medium italic rounded-full ${
-                                    r.confirmed !== false && r.status === 'confirmed'
-                                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                      : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
-                                  }`}
-                                >
-                                  {r.confirmed !== false && r.status === 'confirmed' ? t('confirmedStatus') : t('filterPending')}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-text-secondary text-xs">
-                                {r.confirmed_by_name && r.confirmed_at ? (
-                                  <span title={new Date(r.confirmed_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}>
-                                    {r.confirmed_by_name}
-                                  </span>
-                                ) : '—'}
-                              </td>
-                              <td className="px-4 py-3 text-text-secondary">{r.group_name ?? '—'}</td>
-                              {canConfirmPayments && (
-                                <td className="px-4 py-3">
-                                  {(r.confirmed === false || r.status === 'pending') ? (
-                                    <button
-                                      onClick={() => handleConfirm(r.id)}
-                                      disabled={confirmingId === r.id}
-                                      className="px-3 py-1.5 text-sm font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800 disabled:opacity-50"
-                                    >
-                                      ✓ {t('confirm')}
-                                    </button>
-                                  ) : null}
-                                </td>
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
-              {groupedByDate.length === 0 && (
-                <div className="text-center py-16 text-text-secondary">
-                  {t('noPaymentsYet')}
-                </div>
-              )}
+              {filtered.length === 0 && <p className="p-8 text-center text-muted-foreground">{t('noPaymentsYet')}</p>}
             </div>
           )}
-        </div>
-      </div>
+
+          {/* Student Summary */}
+          {view === 'summary' && (
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setSortOrder(prev => prev === 'high' ? 'low' : 'high')}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  {sortOrder === 'high' ? t('sortHighToLow') : t('sortLowToHigh')}
+                </button>
+              </div>
+              {sortedStudents.map(s => (
+                <div key={s.student_id} className="ch-card overflow-hidden">
+                  <button
+                    onClick={() => setExpandedStudent(expandedStudent === s.student_id ? null : s.student_id)}
+                    className="w-full p-4 flex items-center justify-between text-start"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground">{s.student_name}</span>
+                        {s.balance_due > 0 && (
+                          <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
+                            {s.balance_due.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-mono text-xs text-muted-foreground" dir="ltr">{s.student_number}</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-end">
+                        <span className="text-xs font-mono text-green-600 me-2">{s.total_paid.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</span>
+                        {s.total_pending > 0 && <span className="text-xs font-mono text-amber-600 me-2">{s.total_pending.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</span>}
+                        {s.total_late > 0 && <span className="badge-late">{s.total_late} {t('lateEntry')}</span>}
+                      </div>
+                      {expandedStudent === s.student_id ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                    </div>
+                  </button>
+                  {expandedStudent === s.student_id && (
+                    <div className="border-t border-border">
+                      {records.filter(r => r.student_id === s.student_id).map(p => (
+                        <div key={p.id} className="flex items-center justify-between px-4 py-2 text-xs border-b border-border last:border-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">{p.group_name}</span>
+                            <span className="text-muted-foreground">{formatMethod(p.method)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-foreground">{p.amount} {tCommon('egp')}</span>
+                            <span className={p.confirmed === true && p.status === 'confirmed' ? 'badge-confirmed' : p.status === 'late' ? 'badge-late' : 'badge-pending'}>
+                              {p.confirmed === true && p.status === 'confirmed' ? t('confirmedStatus') : p.status === 'late' ? t('lateEntry') : t('filterPending')}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {sortedStudents.length === 0 && <p className="p-8 text-center text-muted-foreground">{t('noPaymentsYet')}</p>}
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }

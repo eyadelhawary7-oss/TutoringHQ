@@ -1,19 +1,32 @@
 'use client';
 
-import Image from 'next/image';
-import { useState, FormEvent } from 'react';
-import { useTranslations } from 'next-intl';
-import { Link, useRouter } from '@/i18n/routing';
+import { useState, FormEvent, useTransition } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
+import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
+import { Eye, EyeOff, Phone, Lock, Globe } from 'lucide-react';
 
 export default function LoginPage() {
   const t = useTranslations('login');
+  const tc = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
 
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleLocaleToggle = () => {
+    const newLocale = locale === 'ar' ? 'en' : 'ar';
+    localStorage.setItem('preferred-locale', newLocale);
+    startTransition(() => {
+      router.replace(pathname, { locale: newLocale as 'ar' | 'en' });
+    });
+  };
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -26,7 +39,6 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      // Lookup user by phone via API (uses service role, bypasses RLS)
       const lookupRes = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,12 +47,11 @@ export default function LoginPage() {
       const lookupData = await lookupRes.json();
 
       if (!lookupRes.ok || !lookupData.email) {
-        setError(lookupData.error || t('phoneNotFound', { defaultValue: 'Phone number not registered' }));
+        setError(lookupData.error || t('phoneNotFound'));
         setIsLoading(false);
         return;
       }
 
-      // Login using the email from lookup
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email: lookupData.email,
         password: pin,
@@ -87,102 +98,122 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900" data-theme="light">
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-block mb-4">
-              <Image src="/logo-icon.png" alt="CenterHQ" width={64} height={64} className="w-16 h-16 mx-auto mb-3 object-contain" />
-              <h1 className="text-3xl font-bold text-text-primary">
-                CenterHQ
-              </h1>
-            </Link>
-          </div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: 'var(--gradient-hero)' }}>
+      {/* Language toggle */}
+      <div className="absolute top-4 end-4">
+        <button
+          onClick={handleLocaleToggle}
+          disabled={isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 text-white/70 hover:text-white transition-colors"
+        >
+          <Globe size={13} />
+          <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
+        </button>
+      </div>
 
-          <div className="bg-bg-primary text-text-primary border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-8">
-            <h2 className="text-xl font-bold text-text-primary mb-6 text-center">
-              {t('credentialsTitle', { defaultValue: 'Login' })}
-            </h2>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-text-primary mb-2">
-                  {t('phoneLabel', { defaultValue: 'Phone Number' })}
-                </label>
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl mb-4 shadow-lg" style={{ background: 'hsl(var(--primary))' }}>
+            CH
+          </div>
+          <h1 className="text-2xl font-black text-white">CenterHQ</h1>
+          <p className="text-white/50 text-sm mt-1">{t('title')}</p>
+        </div>
+
+        {/* Card */}
+        <div className="rounded-2xl border border-white/10 p-6 shadow-xl" style={{ background: 'hsl(var(--card) / 0.95)', backdropFilter: 'blur(20px)' }}>
+          <form onSubmit={handleLogin} className="space-y-4">
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">{t('phone')}</label>
+              <div className="relative">
+                <Phone size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
                 <input
-                  id="phone"
                   type="tel"
                   inputMode="numeric"
                   value={phone}
                   onChange={(e) => {
                     let value = e.target.value.replace(/[^0-9+]/g, '');
-
-                    // Auto-add +20 if user starts typing a digit
                     if (value.length === 1 && value !== '+') {
                       value = '+20' + value;
                     }
-
-                    // Limit to +20XXXXXXXXXX (13 chars)
                     if (value.length <= 13) {
                       setPhone(value);
                     }
                     setError('');
                   }}
-                  placeholder="+20 1XXXXXXXXX"
-                  required
-                  className="w-full px-4 py-3 bg-bg-tertiary border border-gray-300 dark:border-gray-600 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-text-primary text-end"
+                  placeholder={t('phonePlaceholder')}
+                  className="w-full ps-9 pe-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                   dir="ltr"
+                  required
                   autoComplete="tel"
                 />
               </div>
-              <div>
-                <label htmlFor="pin" className="block text-sm font-medium text-text-primary mb-2">
-                  {t('pinLabel', { defaultValue: 'PIN Code' })}
-                </label>
+            </div>
+
+            {/* PIN */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">{t('pin')}</label>
+              <div className="relative">
+                <Lock size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
                 <input
-                  id="pin"
-                  type="tel"
+                  type={showPin ? 'text' : 'password'}
                   inputMode="numeric"
-                  pattern="[0-9]*"
+                  maxLength={6}
                   value={pin}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^0-9]/g, '');
                     if (value.length <= 6) setPin(value);
                     setError('');
                   }}
-                  placeholder="••••••"
-                  maxLength={6}
+                  placeholder={t('pinPlaceholder')}
+                  className="w-full ps-9 pe-10 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow font-mono tracking-widest"
+                  dir="ltr"
                   required
-                  className="w-full px-4 py-3 bg-bg-tertiary border border-gray-300 dark:border-gray-600 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-text-primary text-center text-2xl tracking-widest font-mono"
                   autoComplete="off"
                 />
-                <p className="text-text-tertiary text-sm mt-1 text-center">
-                  {t('pinHelper', { defaultValue: 'Enter your 6-digit PIN' })}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowPin((v) => !v)}
+                  className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
+                >
+                  {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? '...' : t('loginButton', { defaultValue: 'Login' })}
-              </button>
-              <div className="mt-4 text-center">
-                <Link href="/forgot-password" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
-                  {t('forgotPin', { defaultValue: 'Forgot PIN?' })}
-                </Link>
-              </div>
-            </form>
-          </div>
+            </div>
 
-          <div className="text-center mt-6">
-            <Link
-              href="/"
-              className="text-sm text-text-secondary hover:text-text-primary"
+            {/* Error */}
+            {error && (
+              <div className="rounded-lg px-3 py-2.5 text-sm font-medium" style={{ background: 'hsl(var(--destructive) / 0.1)', color: 'hsl(var(--destructive))' }}>
+                {error}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-60"
+              style={{ background: 'hsl(var(--primary))' }}
             >
-              ← {t('backToHome')}
+              {isLoading ? tc('loading') : t('submit')}
+            </button>
+
+            {/* Forgot PIN */}
+            <div className="text-center">
+              <Link href="/forgot-password" className="text-sm hover:underline" style={{ color: 'hsl(var(--primary))' }}>
+                {t('forgotPin')}
+              </Link>
+            </div>
+          </form>
+
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            {t('noAccount')}{' '}
+            <Link href="/signup" className="font-semibold hover:underline" style={{ color: 'hsl(var(--primary))' }}>
+              {t('registerLink')}
             </Link>
-          </div>
+          </p>
         </div>
       </div>
     </div>

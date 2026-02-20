@@ -1,270 +1,256 @@
 'use client';
 
-import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
-import LanguageToggle from '@/components/LanguageToggle';
-import ThemeToggle from '@/components/ThemeToggle';
-import { QrCode, CreditCard, Calendar, BarChart3, WifiOff, Bluetooth, Check, Languages } from 'lucide-react';
+import { Link, useRouter, usePathname } from '@/i18n/routing';
+import { QrCode, CreditCard, Calendar, BarChart3, Wifi, Bluetooth, Globe } from 'lucide-react';
 import { toAr } from '@/lib/number-utils';
+import { useTransition } from 'react';
+import Image from 'next/image';
 
 const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=مرحباً، أنا مهتم بخطة كبار السناتر لأكثر من 2000 طالب أسبوعياً';
 
-const LANDING_PLANS = [
-  {
-    id: 'starter',
-    nameKey: 'planStarter' as const,
-    price: 2000,
-    setupFee: 1000,
-    features: ['pricingStarter1', 'pricingStarter2', 'pricingStarter3', 'pricingStarter4', 'pricingStarter5', 'pricingStarter6', 'pricingStarter7', 'pricingStarter8', 'pricingStarter9', 'pricingStarter10'] as const,
-    highlighted: false,
-    isCustom: false,
-    ctaKey: 'choosePlan' as const,
-    href: '/signup',
-    external: false,
-  },
-  {
-    id: 'pro',
-    nameKey: 'planPro' as const,
-    price: 4500,
-    setupFee: 2000,
-    features: ['pricingPro1', 'pricingPro2', 'pricingPro3', 'pricingPro4', 'pricingPro5', 'pricingPro6', 'pricingPro7', 'pricingPro8', 'pricingPro9', 'pricingPro10'] as const,
-    highlighted: true,
-    isCustom: false,
-    ctaKey: 'choosePlan' as const,
-    href: '/signup',
-    external: false,
-  },
-  {
-    id: 'business',
-    nameKey: 'planBusiness' as const,
-    price: 6500,
-    setupFee: 3000,
-    features: ['pricingBusiness1', 'pricingBusiness2', 'pricingBusiness3', 'pricingBusiness4', 'pricingBusiness5', 'pricingBusiness6', 'pricingBusiness7', 'pricingBusiness8'] as const,
-    highlighted: false,
-    isCustom: false,
-    ctaKey: 'choosePlan' as const,
-    href: '/signup',
-    external: false,
-  },
-  {
-    id: 'enterprise',
-    nameKey: 'planEnterprise' as const,
-    price: 9000,
-    setupFee: 5000,
-    features: ['pricingEnterprise1', 'pricingEnterprise2', 'pricingEnterprise3', 'pricingEnterprise4', 'pricingEnterprise5', 'pricingEnterprise6', 'pricingEnterprise7'] as const,
-    highlighted: false,
-    isCustom: false,
-    ctaKey: 'choosePlan' as const,
-    href: '/signup',
-    external: false,
-  },
-  {
-    id: 'top_centers',
-    nameKey: 'planTopCenters' as const,
-    price: null,
-    setupFee: null,
-    features: ['pricingTopCenters1', 'pricingTopCenters2', 'pricingTopCenters3', 'pricingTopCenters4', 'pricingTopCenters5', 'pricingTopCenters6', 'pricingTopCenters7'] as const,
-    highlighted: false,
-    isCustom: true,
-    ctaKey: 'contactUs' as const,
-    href: TOP_CENTERS_WHATSAPP,
-    external: true,
-  },
-] as const;
+const PLANS = [
+  { key: 'planStarter', fee: 2000, limit: 150, setupFee: 1000, tier: 'starter' as const },
+  { key: 'planPro', fee: 4500, limit: 500, setupFee: 2000, tier: 'pro' as const, popular: true },
+  { key: 'planBusiness', fee: 6500, limit: 1000, setupFee: 3000, tier: 'business' as const },
+  { key: 'planEnterprise', fee: 9000, limit: 2000, setupFee: 5000, tier: 'enterprise' as const },
+  { key: 'planTopCenters', fee: 0, limit: 0, setupFee: 0, tier: 'top_centers' as const, custom: true },
+];
 
-const FEATURE_CARDS = [
-  { key: 'featureQRAttendance', descKey: 'featureQRAttendanceDesc', icon: QrCode },
-  { key: 'featurePaymentTracking', descKey: 'featurePaymentTrackingDesc', icon: CreditCard },
-  { key: 'featureScheduling', descKey: 'featureSchedulingDesc', icon: Calendar },
-  { key: 'featureAnalytics', descKey: 'featureAnalyticsDesc', icon: BarChart3 },
-  { key: 'featureOfflineSupport', descKey: 'featureOfflineSupportDesc', icon: WifiOff },
-  { key: 'featureBluetoothScanner', descKey: 'featureBluetoothScannerDesc', icon: Bluetooth },
-] as const;
+const FEATURES = [
+  { key: 'feature1', icon: QrCode, color: 'hsl(var(--primary))', bgColor: 'hsl(var(--primary) / 0.12)' },
+  { key: 'feature2', icon: CreditCard, color: '#16A34A', bgColor: '#16A34A18' },
+  { key: 'feature3', icon: Calendar, color: '#7C3AED', bgColor: '#7C3AED18' },
+  { key: 'feature4', icon: BarChart3, color: '#F59E0B', bgColor: '#F59E0B18' },
+  { key: 'feature5', icon: Wifi, color: '#DC2626', bgColor: '#DC262618' },
+  { key: 'feature6', icon: Bluetooth, color: '#0EA5E9', bgColor: '#0EA5E918' },
+];
+
+function formatPrice(n: number, locale: string) {
+  if (locale === 'ar') {
+    return toAr(n);
+  }
+  return new Intl.NumberFormat('en-US').format(n);
+}
 
 export default function LandingPage() {
   const t = useTranslations('landing');
+  const tc = useTranslations('common');
   const locale = useLocale();
-  const isAr = locale === 'ar';
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
 
-  const formatNum = (n: number) => (isAr ? toAr(n) : n.toLocaleString());
+  const handleLocaleToggle = () => {
+    const newLocale = locale === 'ar' ? 'en' : 'ar';
+    localStorage.setItem('preferred-locale', newLocale);
+    startTransition(() => {
+      router.replace(pathname, { locale: newLocale as 'ar' | 'en' });
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-white" data-theme="light">
-      {/* Fixed white navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-icon.png" alt="CenterHQ" width={36} height={36} className="w-9 h-9" />
-            <span className="text-lg font-semibold text-text-primary">CenterHQ</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-text-secondary">
-              <div className="flex items-center gap-1.5">
-                <Languages className="w-5 h-5 text-text-secondary" aria-hidden />
-                <LanguageToggle />
-              </div>
-              <ThemeToggle />
-            </div>
+    <div className="min-h-screen flex flex-col" style={{ background: 'hsl(var(--background))' }}>
+      {/* ─── Header ─── */}
+      <header className="sticky top-0 z-40 border-b border-white/10" style={{ background: 'hsl(var(--navy))' }}>
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ background: 'hsl(var(--primary))' }}>CH</div>
+            <span className="font-bold text-white text-lg hidden sm:block">CenterHQ</span>
+          </div>
+
+          {/* Nav links */}
+          <nav className="hidden md:flex items-center gap-6">
+            <a href="#features" className="text-sm text-white/70 hover:text-white transition-colors">{t('features')}</a>
+            <a href="#pricing" className="text-sm text-white/70 hover:text-white transition-colors">{t('pricing')}</a>
+          </nav>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleLocaleToggle}
+              disabled={isPending}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/70 hover:text-white border border-white/20 hover:border-white/40 transition-colors"
+            >
+              <Globe size={13} />
+              <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
+            </button>
             <Link
               href="/login"
-              className="px-4 py-2 rounded-lg border border-gray-300 text-text-primary font-medium hover:bg-gray-50 transition-colors"
+              className="px-4 py-1.5 rounded-lg text-sm font-medium border border-white/30 text-white hover:bg-white/10 transition-colors"
             >
-              {t('loginButton')}
+              {t('login')}
             </Link>
             <Link
               href="/signup"
-              className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
+              className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-colors hidden sm:block"
+              style={{ background: 'hsl(var(--primary))' }}
             >
-              {t('signupButton')}
+              {t('register')}
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="pt-[60px]">
-        {/* Hero section */}
-        <section className="py-24 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 text-text-primary text-sm mb-8 rtl:flex-row-reverse">
-              <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-              {t('heroBadge')}
-            </div>
-            <h1 className="text-5xl font-bold text-text-primary mb-4">
-              {t('heroTitle1')}
-              <br />
-              <span className="text-indigo-600">{t('heroTitle2')}</span>
-            </h1>
-            <p className="text-lg text-text-secondary max-w-2xl mx-auto mb-10">
-              {t('heroSubtitle')}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link
-                href="/signup"
-                className="inline-flex items-center justify-center px-8 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors"
-              >
-                {t('ctaStartNow')}
-              </Link>
-              <Link
-                href="/signup"
-                className="inline-flex items-center justify-center px-8 py-3 rounded-lg border border-gray-300 text-text-primary font-medium hover:bg-gray-50 transition-colors"
-              >
-                {t('ctaGetStarted')}
-              </Link>
-            </div>
-          </div>
-        </section>
+      {/* ─── Hero ─── */}
+      <section className="relative overflow-hidden min-h-[560px] flex items-center" style={{ background: 'var(--gradient-hero)' }}>
+        {/* Hero image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/hero-scanner.jpg"
+            alt="CenterHQ Scanner"
+            fill
+            className="object-cover opacity-20"
+            sizes="100vw"
+            priority
+          />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, hsl(var(--navy) / 0.4), hsl(var(--navy)))' }} />
+        </div>
 
-        {/* Features section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50/50">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-bold text-text-primary text-center mb-4">
-              {t('featuresHeading')}
-            </h2>
-            <p className="text-text-secondary text-center mb-12">
-              {t('featuresSubtitle')}
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {FEATURE_CARDS.map(({ key, descKey, icon: Icon }) => (
-                <div
-                  key={key}
-                  className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="inline-flex p-2 rounded-lg bg-indigo-50 text-indigo-600 mb-4">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-bold text-text-primary mb-2">{t(key)}</h3>
-                  <p className="text-text-secondary">{t(descKey)}</p>
+        <div className="container mx-auto px-4 relative z-10 py-20 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium mb-6 border border-white/20" style={{ background: 'hsl(var(--primary) / 0.2)', color: 'hsl(var(--primary-light))' }}>
+            <QrCode size={13} />
+            <span>{t('heroPillBadge')}</span>
+          </div>
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white mb-6 tracking-tight">
+            {t('heroTitle')}
+          </h1>
+          <p className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-10 leading-relaxed">
+            {t('heroSubtitle')}
+          </p>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Link
+              href="/signup"
+              className="px-8 py-3.5 rounded-xl font-bold text-white text-base transition-all hover:opacity-90 active:scale-95"
+              style={{ background: 'hsl(var(--primary))' }}
+            >
+              {t('register')}
+            </Link>
+            <Link
+              href="/login"
+              className="px-8 py-3.5 rounded-xl font-medium text-white text-base border border-white/30 hover:bg-white/10 transition-colors"
+            >
+              {t('login')}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Features ─── */}
+      <section id="features" className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-foreground text-center mb-3">{t('features')}</h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-lg mx-auto">{t('featuresSubtitleAr')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {FEATURES.map(({ key, icon: Icon, color, bgColor }) => (
+              <div key={key} className="ch-card p-6 hover:shadow-md transition-shadow group">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110" style={{ background: bgColor, color }}>
+                  <Icon size={24} />
                 </div>
-              ))}
-            </div>
+                <h3 className="font-bold text-foreground mb-2">{t(`${key}Title`)}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t(`${key}Desc`)}</p>
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Pricing section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-bold text-text-primary text-center mb-4">
-              {t('pricingHeading')}
-            </h2>
-            <p className="text-text-secondary text-center mb-12">
-              {t('pricingSubtitle')}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-              {LANDING_PLANS.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={`bg-white rounded-xl border p-6 lg:p-8 ${
-                    plan.highlighted ? 'border-2 border-indigo-600 shadow-lg relative' : 'border-gray-200'
-                  }`}
-                >
-                  {plan.highlighted && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="inline-block px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-medium">
-                        {t('mostPopular')}
-                      </span>
+      {/* ─── Pricing ─── */}
+      <section id="pricing" className="py-20" style={{ background: 'hsl(var(--muted))' }}>
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-foreground text-center mb-3">{t('pricing')}</h2>
+          <p className="text-center text-muted-foreground mb-12">{t('pricingNote')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
+            {PLANS.map((plan) => (
+              <div
+                key={plan.key}
+                className={`relative ch-card p-5 flex flex-col transition-all hover:shadow-md ${plan.popular ? 'ring-2 ring-primary scale-[1.02]' : ''}`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-white whitespace-nowrap" style={{ background: 'hsl(var(--primary))' }}>
+                    {t('mostPopular')}
+                  </div>
+                )}
+
+                <div className="mb-4">
+                  <h3 className="font-bold text-foreground text-lg">{t(plan.key)}</h3>
+                  {plan.custom ? (
+                    <div className="mt-2">
+                      <span className="text-2xl font-black text-foreground font-mono">{t('custom')}</span>
+                    </div>
+                  ) : (
+                    <div className="mt-2 flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-foreground font-mono">{formatPrice(plan.fee, locale)}</span>
+                      <span className="text-sm text-muted-foreground">{tc('egp')}</span>
                     </div>
                   )}
-                  <h3 className="text-xl font-bold text-text-primary mb-4">{t(plan.nameKey)}</h3>
-                  <div className="flex items-baseline gap-1 mb-2">
-                    {plan.price !== null ? (
-                      <>
-                        <span className="text-4xl font-bold text-text-primary tabular-nums">
-                          {formatNum(plan.price)}
-                        </span>
-                        <span className="text-text-secondary">{t('perMonth')}</span>
-                      </>
-                    ) : (
-                      <span className="text-2xl font-bold text-indigo-600">{t('custom')}</span>
-                    )}
-                  </div>
-                  {'setupFee' in plan && (
-                    plan.setupFee != null ? (
-                      <p className="text-sm text-text-secondary mb-4">{t('setupFee', { amount: formatNum(plan.setupFee) })}</p>
-                    ) : plan.isCustom ? (
-                      <p className="text-sm text-text-secondary mb-4">{t('setupFeeCustom', { defaultValue: 'Setup: Custom (EGP 10K-25K)' })}</p>
-                    ) : null
-                  )}
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((fk) => (
-                      <li key={fk} className="flex items-center gap-2 text-text-secondary">
-                        <Check className="w-5 h-5 text-green-500 shrink-0" />
-                        <span>{t(fk)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {plan.external ? (
-                    <a
-                      href={plan.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block w-full text-center py-3 rounded-lg font-medium border border-gray-300 text-text-primary hover:bg-gray-50 transition-colors"
-                    >
-                      {t(plan.ctaKey)}
-                    </a>
-                  ) : (
-                    <Link
-                      href={plan.href}
-                      className={`block w-full text-center py-3 rounded-lg font-medium transition-colors ${
-                        plan.highlighted
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          : 'border border-gray-300 text-text-primary hover:bg-gray-50'
-                      }`}
-                    >
-                      {t(plan.ctaKey)}
-                    </Link>
-                  )}
+                  <p className="text-xs text-muted-foreground mt-1">{t('monthlyFee')}</p>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* Footer */}
-        <footer className="py-8 border-t border-gray-200">
-          <p className="text-center text-text-tertiary text-sm">{t('footer')}</p>
-        </footer>
-      </main>
+                <div className="flex-1 space-y-2 text-sm">
+                  {!plan.custom && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{t('studentLimitLabel')}</span>
+                        <span className="font-semibold text-foreground font-mono">{formatPrice(plan.limit, locale)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{t('setupFee')}</span>
+                        <span className="font-semibold text-foreground font-mono">{formatPrice(plan.setupFee, locale)} {tc('egp')}</span>
+                      </div>
+                    </>
+                  )}
+                  <p className="text-xs text-muted-foreground">{t('studentsPerWeek')}</p>
+                </div>
+
+                {plan.custom ? (
+                  <a
+                    href={TOP_CENTERS_WHATSAPP}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 block w-full text-center py-2.5 rounded-xl text-sm font-semibold border border-border text-foreground hover:bg-muted transition-colors"
+                  >
+                    {t('contactUs')}
+                  </a>
+                ) : (
+                  <Link
+                    href="/signup"
+                    className={`mt-5 block w-full text-center py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                      plan.popular
+                        ? 'text-white'
+                        : 'border border-border text-foreground hover:bg-muted'
+                    }`}
+                    style={plan.popular ? { background: 'hsl(var(--primary))' } : {}}
+                  >
+                    {t('register')}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Footer ─── */}
+      <footer className="py-8 border-t border-border" style={{ background: 'hsl(var(--navy))' }}>
+        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ background: 'hsl(var(--primary))' }}>CH</div>
+            <span className="text-white/70 text-sm">{t('copyright')}</span>
+          </div>
+          <a
+            href={TOP_CENTERS_WHATSAPP}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition-colors"
+            style={{ background: '#25D366' }}
+          >
+            <span>💬</span>
+            <span>{t('contactWhatsapp')}</span>
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

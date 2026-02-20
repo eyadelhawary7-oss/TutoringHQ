@@ -78,7 +78,7 @@ export async function PUT(request: Request) {
     }
 
     const data = parsed.data;
-    let updateObj: Record<string, boolean> = {};
+    const updateObj: Record<string, boolean> = {};
     if (data.permissions && typeof data.permissions === 'object') {
       for (const [k, v] of Object.entries(data.permissions)) {
         if (VALID_KEYS.includes(k) && typeof v === 'boolean') updateObj[k] = v;

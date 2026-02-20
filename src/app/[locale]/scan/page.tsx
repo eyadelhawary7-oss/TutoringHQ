@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, dbUpdate } from '@/lib/db-proxy';
+import { dbSelect, dbInsert } from '@/lib/db-proxy';
 import {
   syncStudentsToLocal,
   getStudentOffline,
@@ -56,6 +56,7 @@ export default function ScanPage() {
   const t = useTranslations('scan');
   const tSync = useTranslations('sync');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const { user, hasPermission } = useUser();
   const { setHideShell } = useLayout();
 
@@ -72,6 +73,7 @@ export default function ScanPage() {
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [addedAmountToBalance, setAddedAmountToBalance] = useState(0);
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
 
@@ -479,6 +481,7 @@ export default function ScanPage() {
         });
         console.log('Late entry payment insert:', lateErr ? { error: lateErr } : { success: lateData });
       }
+      setAddedAmountToBalance(fee);
       setScannedStudent({
         ...scannedStudent,
         payment_status: 'late_entry_granted',
@@ -580,6 +583,7 @@ export default function ScanPage() {
         setPendingCount(count);
       }
 
+      setAddedAmountToBalance(isCash ? 0 : paymentAmount);
       setScannedStudent({ ...scannedStudent, payment_status: isCash ? 'paid' : 'pending', last_payment_method: method });
       setIsProcessing(false);
 
@@ -602,6 +606,7 @@ export default function ScanPage() {
     setScannedStudent(null);
     setNeedGroupSelection(false);
     setSelectedGroup(null);
+    setAddedAmountToBalance(0);
     isProcessingRef.current = false;
     if (mode === 'manual') {
       setManualIdInput('');
@@ -609,143 +614,164 @@ export default function ScanPage() {
     }
   };
 
-  const syncIndicatorColor = isSyncing
-    ? 'bg-yellow-500 animate-pulse'
-    : isOnline
-      ? 'bg-green-500'
-      : 'bg-red-500';
-
   return (
     <>
-    <div className="min-h-screen">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-text-primary">
-              {t('title')}
-            </h1>
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${syncIndicatorColor}`} />
-              <span className="text-sm text-text-secondary">
-                {isOnline ? tSync('online') : tSync('offline')}
+      {/* Main scanner UI — normal app navigation (sidebar/bottom bar) visible in idle */}
+      <div className="p-4 md:p-6 space-y-5 animate-fade-in">
+        {/* Top bar: title left, Online/Offline indicator top-right */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-foreground">{t('title')}</h1>
+          <div className="flex items-center gap-2">
+            {pendingCount > 0 && (
+              <span className="text-xs text-amber-500 font-medium">
+                ({pendingCount} {t('pending')})
               </span>
-              {pendingCount > 0 && (
-                <span className="text-xs text-orange-600 dark:text-orange-400">
-                  ({pendingCount} {t('pending')})
+            )}
+            {isSyncing ? (
+              <div className="flex items-center gap-1.5" title={tSync('syncing')}>
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-xs text-amber-500 hidden sm:inline">{tSync('syncing')}</span>
+              </div>
+            ) : (
+              <div
+                className={`flex items-center gap-1.5 ${isOnline ? 'text-green-500' : 'text-red-500'}`}
+                title={isOnline ? tSync('online') : tSync('offline')}
+              >
+                <div
+                  className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}
+                />
+                <span className="text-xs font-medium hidden sm:inline">
+                  {isOnline ? tSync('online') : tSync('offline')}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+        </div>
 
-          <div className="flex glass rounded-xl shadow p-1 mb-6 max-w-lg mx-auto">
+        {/* 3 input mode tabs — segmented control, active = teal */}
+        <div className="flex gap-1 p-1 rounded-xl border border-border w-full max-w-md" style={{ background: 'hsl(var(--muted))' }}>
+          {[
+            { key: 'camera' as const, label: t('camera'), icon: '📷' },
+            { key: 'bluetooth' as const, label: t('bluetooth'), icon: '🔗' },
+            { key: 'manual' as const, label: t('manualId'), icon: '🔢' },
+          ].map(({ key, label, icon }) => (
             <button
-              onClick={() => setMode('camera')}
-              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'camera'
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'text-text-secondary hover:text-text-primary'
+              key={key}
+              onClick={() => {
+                setMode(key);
+                if (key === 'manual') {
+                  setManualIdInput('');
+                  setTimeout(() => manualInputRef.current?.focus(), 100);
+                } else if (key === 'bluetooth') {
+                  setTimeout(() => {
+                    const btInput = document.querySelector('[data-bluetooth-scanner-input]') as HTMLInputElement | null;
+                    btInput?.focus();
+                  }, 100);
+                }
+              }}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                mode === key
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground'
               }`}
             >
-              {t('cameraMode')}
+              <span>{icon}</span>
+              <span className="truncate">{label}</span>
             </button>
-            <button
-              onClick={() => setMode('bluetooth')}
-              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'bluetooth'
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              {t('bluetoothMode')}
-            </button>
-            <button
-              onClick={() => { setMode('manual'); setManualIdInput(''); setTimeout(() => manualInputRef.current?.focus(), 100); }}
-              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'manual'
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              {t('manualIdMode')}
-            </button>
+          ))}
+        </div>
+
+        {error && (
+          <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-center text-sm">
+            {error}
           </div>
+        )}
 
-          {error && (
-            <div className="max-w-md mx-auto mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-center text-sm">
-              {error}
-            </div>
+        {/* Scanner body */}
+        <div className="flex flex-col items-center gap-6">
+          {mode === 'camera' && (
+            <CameraScanner
+              key={scannedStudent ? 'camera-hidden' : 'camera-active'}
+              onScan={handleScan}
+              isActive={!scannedStudent}
+            />
+          )}
+
+          {mode === 'bluetooth' && (
+            <BluetoothScanner
+              key={scannedStudent ? 'bt-hidden' : 'bt-active'}
+              onScan={handleScan}
+              isActive={!scannedStudent}
+            />
           )}
 
           {mode === 'manual' && !scannedStudent && (
-            <div className="max-w-md mx-auto p-6 glass rounded-xl shadow space-y-4">
-              <div>
-                <label htmlFor="manual-id" className="block text-sm font-medium text-text-primary mb-2">
-                  {t('manualIdPlaceholder')}
-                </label>
-                <input
-                  ref={manualInputRef}
-                  id="manual-id"
-                  type="text"
-                  value={manualIdInput}
-                  onChange={(e) => setManualIdInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && manualIdInput.trim()) {
-                      e.preventDefault();
-                      handleScan(manualIdInput.trim());
-                    }
-                  }}
-                  placeholder="STU-00042 or 42"
-                  className="w-full px-4 py-3 text-lg border border-gray-300 dark:border-gray-600 rounded-xl bg-bg-tertiary text-text-primary focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  dir="ltr"
-                  autoFocus
-                />
-              </div>
+            <div className="w-full max-w-sm space-y-3">
+              <input
+                ref={manualInputRef}
+                type="text"
+                inputMode="text"
+                value={manualIdInput}
+                onChange={(e) => setManualIdInput(e.target.value)}
+                placeholder={t('manualIdPlaceholder')}
+                className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                dir="ltr"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && manualIdInput.trim()) {
+                    e.preventDefault();
+                    handleScan(manualIdInput.trim());
+                  }
+                }}
+              />
               <button
-                onClick={() => { const trimmed = manualIdInput.trim(); if (!trimmed) return; handleScan(trimmed); }}
-                className={`w-full py-4 px-6 text-white font-bold rounded-xl text-lg transition-colors ${
-                  manualIdInput.trim() ? 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800' : 'bg-gray-400 cursor-not-allowed'
-                }`}
+                onClick={() => {
+                  const trimmed = manualIdInput.trim();
+                  if (!trimmed) return;
+                  handleScan(trimmed);
+                }}
+                disabled={!manualIdInput.trim()}
+                className="w-full py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                style={{ background: 'hsl(var(--primary))' }}
               >
                 {t('checkIn')}
               </button>
             </div>
           )}
-          <CameraScanner key={scannedStudent ? 'camera-hidden' : 'camera-active'} onScan={handleScan} isActive={mode === 'camera' && !scannedStudent} />
-          <BluetoothScanner key={scannedStudent ? 'bt-hidden' : 'bt-active'} onScan={handleScan} isActive={mode === 'bluetooth' && !scannedStudent} />
         </div>
       </div>
 
-      {/* Group Selector - show when student has 2+ groups, before green/red */}
+      {/* Group Selector — Lovable-style modal */}
       {needGroupSelection && scannedStudent && scannedStudent.groups && scannedStudent.groups.length >= 2 && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-800 dark:bg-slate-900 min-h-screen w-full"
-          dir="rtl"
-        >
-          <h1 className="text-4xl sm:text-6xl font-bold text-white text-center px-4 mb-2">
-            {scannedStudent.name}
-          </h1>
-          <p className="text-xl text-white/90 text-center mb-6">
-            {t('chooseLesson')}
-          </p>
-          <div className="w-full max-w-md px-4 grid grid-cols-1 gap-4">
-            {scannedStudent.groups.map((g) => (
+        <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border overflow-hidden bg-card shadow-xl">
+            <div className="p-5 border-b border-border">
+              <h2 className="font-bold text-foreground text-lg">{t('selectGroupTitle')}</h2>
+              <p className="text-muted-foreground text-sm mt-1">{scannedStudent.name} — {scannedStudent.student_number ?? '—'}</p>
+              <p className="text-muted-foreground text-xs mt-0.5">{t('selectGroupDesc')}</p>
+            </div>
+            <div className="p-3 space-y-2">
+              {scannedStudent.groups.map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => handleGroupSelect(g)}
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-start"
+                >
+                  <div>
+                    <div className="font-semibold text-foreground">{g.name}</div>
+                    <div className="text-sm text-muted-foreground">{t('perLesson')}</div>
+                  </div>
+                  <span className="font-bold text-foreground font-mono text-sm">{g.fee} {tCommon('egp')}</span>
+                </button>
+              ))}
               <button
-                key={g.id}
-                onClick={() => handleGroupSelect(g)}
-                className="py-5 px-6 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-bold rounded-xl border-2 border-white/30 transition-all text-lg text-center"
+                onClick={handleDismiss}
+                className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <div>{g.name}</div>
-                <div className="text-base font-normal opacity-90 mt-1">
-                  {g.fee} EGP {t('perLesson')}
-                </div>
+                {tCommon('cancel')}
               </button>
-            ))}
+            </div>
           </div>
-          <button
-            onClick={handleDismiss}
-            className="mt-8 px-6 py-2 text-white/80 hover:text-white text-sm"
-          >
-            {tCommon('cancel')}
-          </button>
         </div>
       )}
 
@@ -758,6 +784,8 @@ export default function ScanPage() {
           onDismiss={handleDismiss}
           isProcessing={isProcessing}
           canAllowLateEntry={canAllowLateEntry}
+          balanceDue={addedAmountToBalance}
+          addedAmount={addedAmountToBalance}
         />
       )}
     </>

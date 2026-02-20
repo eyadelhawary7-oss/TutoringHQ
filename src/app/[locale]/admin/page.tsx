@@ -4,9 +4,27 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { useUser } from '@/contexts/UserContext';
+import { useLayout } from '@/contexts/LayoutContext';
 import { Link } from '@/i18n/routing';
 import {
+  LayoutDashboard,
+  Building2,
+  CreditCard,
+  FileText,
+  Clock,
+  Users,
+  Search,
+  X,
+  Check,
+  AlertTriangle,
+  ExternalLink,
+  Trash2,
+  MoreVertical,
+  ChevronDown,
+} from 'lucide-react';
+import {
+  LineChart,
+  Line,
   BarChart,
   Bar,
   XAxis,
@@ -14,26 +32,57 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
 } from 'recharts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 
-const SENSITIVE_PAYMENT_THRESHOLD = 50_000;
+const PLAN_LABELS: Record<string, string> = {
+  starter: 'Starter',
+  pro: 'Pro',
+  business: 'Business',
+  enterprise: 'Enterprise',
+  top_centers: 'Top Centers',
+  payg: 'PAYG',
+};
 
-type TabId = 'overview' | 'kpi' | 'centers' | 'billing' | 'plan-requests' | 'pending' | 'team' | 'security';
+const PLAN_COLORS: Record<string, string> = {
+  starter: 'border-gray-400 bg-gray-50 text-gray-700',
+  pro: 'border-blue-400 bg-blue-50 text-blue-700',
+  business: 'border-teal-400 bg-teal-50 text-teal-700',
+  enterprise: 'border-purple-400 bg-purple-50 text-purple-700',
+  top_centers: 'border-amber-400 bg-amber-50 text-amber-700',
+  payg: 'border-indigo-400 bg-indigo-50 text-indigo-700',
+};
 
-interface OverviewStats {
+const STATUS_STYLES: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  suspended: 'bg-red-100 text-red-700',
+  pending: 'bg-amber-100 text-amber-700',
+  trial: 'bg-blue-100 text-blue-700',
+  rejected: 'bg-red-100 text-red-700',
+};
+
+type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam';
+
+const ADMIN_NAV: { key: AdminTab; icon: typeof LayoutDashboard }[] = [
+  { key: 'overview', icon: LayoutDashboard },
+  { key: 'centers', icon: Building2 },
+  { key: 'billing', icon: CreditCard },
+  { key: 'planRequests', icon: FileText },
+  { key: 'pendingSignups', icon: Clock },
+  { key: 'internalTeam', icon: Users },
+];
+
+interface OverviewData {
   totalCenters: number;
   activeCenters: number;
-  suspendedCenters: number;
+  pendingSignups: number;
   totalStudents: number;
-  mrr: number;
-  byPlan: Record<string, number>;
-  mrrByPlan?: Record<string, number>;
-  arpuByPlan?: Record<string, number>;
-  upgradeOpportunities?: { id: string; name: string; plan: string; students: number; limit: number; pct: number }[];
-  signupsChart: { date: string; count: number }[];
+  totalMRR?: number;
+  mrr?: number;
+  signupsChart?: { date: string; count: number }[];
+  monthlyRevenue?: { month: string; revenue: number }[];
+  recentActivity?: Array<{ id?: string; action?: string; details?: unknown; created_at?: string }>;
 }
 
 interface CenterRow {
@@ -50,78 +99,54 @@ interface CenterRow {
   next_due?: string | null;
   billing_period?: string;
   billing_status?: string;
+  owner_name?: string | null;
   referral_code?: string | null;
-  referred_by?: string | null;
   referral_code_used?: string | null;
   referring_center_name?: string | null;
-  is_early_adopter?: boolean;
-  weekly_unique_students?: number;
-  max_students?: number;
-  limit_status?: string;
-  owner_name?: string | null;
-  city?: string | null;
-  signup_notes?: string | null;
-  requested_at?: string | null;
 }
 
-interface PlanRequestRow {
+interface BillingRow {
+  id: string;
+  name: string;
+  plan?: string;
+  amount?: number;
+  billing_period?: string;
+  nextDue?: string;
+  next_payment_due?: string;
+  billing_status?: string;
+  status?: string;
+}
+
+interface PendingSignup {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string | null;
+  plan?: string;
+  owner_name?: string | null;
+  created_at?: string;
+  referral_code_used?: string | null;
+  referring_center_name?: string | null;
+}
+
+interface PlanRequest {
   id: string;
   center_id: string;
   centerName: string;
   current_plan?: string;
   requested_plan: string;
   status: string;
-  requested_at: string;
+  requested_at?: string;
   priceDiffFormatted?: string;
-  priceDiff?: number;
 }
 
-interface BillingCenter {
+interface TeamMember {
   id: string;
   name: string;
-  plan: string;
   phone?: string;
-  billing_period?: string;
-  next_payment_due?: string;
-  next_billing_date?: string;
-  amount?: number;
-  monthlyEquivalent?: number;
-  discount?: number;
-  nextDue?: string;
-  billing_status?: string;
-  status?: string;
-}
-
-interface PaymentRecord {
-  id: string;
-  center_id: string;
-  centerName: string;
-  amount: number;
-  billing_period: string;
-  period_start?: string;
-  period_end?: string;
-  paid_at: string;
-  recorded_by?: string;
-  source?: 'admin_payment' | 'invoice';
-  invoiceStatus?: string;
-  payment_proof_url?: string | null;
-}
-
-const PLAN_LABELS: Record<string, string> = {
-  starter: 'Starter',
-  pro: 'Pro',
-  business: 'Business',
-  enterprise: 'Enterprise',
-  top_centers: 'Top Centers',
-  payg: 'PAYG',
-};
-function formatTimeAgo(d: Date): string {
-  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (sec < 60) return 'Just now';
-  if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
-  if (sec < 86400) return `${Math.floor(sec / 3600)} hour ago`;
-  if (sec < 604800) return `${Math.floor(sec / 86400)} days ago`;
-  return d.toLocaleDateString();
+  email?: string;
+  role: string;
+  created_at?: string;
 }
 
 function formatActivitySummary(action: string, details?: unknown): string {
@@ -131,162 +156,56 @@ function formatActivitySummary(action: string, details?: unknown): string {
   if (action === 'admin_invoice_rejected') return 'Payment proof rejected';
   if (action === 'payment_on_scan' && d?.method) return `Payment (${d.method})`;
   if (action === 'admin_payment_recorded') return 'Admin payment recorded';
+  if (action === 'approve_signup') return 'Signup approved';
+  if (action === 'reject_signup') return 'Signup rejected';
+  if (action === 'suspend_center') return 'Center suspended';
+  if (action === 'reactivate_center') return 'Center reactivated';
   return action?.replace(/_/g, ' ') ?? '';
 }
 
-const BILLING_LABELS: Record<string, string> = {
-  monthly: 'monthly',
-  quarterly: 'quarterly',
-  semi_annual: 'Semi-Annual',
-  half_yearly: 'Semi-Annual',
-  annual: 'Annual',
-  yearly: 'Annual',
-};
-
-function getCenterDueDisplay(
-  center: CenterRow,
-  t: (key: string) => string
-): { nextDueText: string; daysText: string; dueColor: string } {
-  if (center.status === 'pending') {
-    return { nextDueText: '—', daysText: '—', dueColor: 'text-text-secondary' };
-  }
-  if (center.status === 'suspended') {
-    return { nextDueText: t('suspended'), daysText: t('suspended'), dueColor: 'text-red-500 dark:text-red-400 font-bold' };
-  }
-  const hasPaid = center.billing_status === 'paid' || !!center.last_payment;
-  const nextDue = center.next_due;
-  if (!nextDue || !hasPaid) {
-    return { nextDueText: t('awaitingPayment'), daysText: t('awaitingPayment'), dueColor: 'text-amber-600 dark:text-amber-400' };
-  }
-  const GRACE_DAYS = 7;
-  const dueDate = new Date(nextDue);
-  const suspensionDate = new Date(dueDate);
-  suspensionDate.setDate(suspensionDate.getDate() + GRACE_DAYS);
-  const daysUntilSuspension = Math.ceil((suspensionDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const dateStr = dueDate.toLocaleDateString();
-  if (daysUntilSuspension <= 0) {
-    return { nextDueText: dateStr, daysText: t('suspended'), dueColor: 'text-red-600 dark:text-red-400 font-bold' };
-  }
-  if (daysUntilDue <= 0) {
-    return { nextDueText: dateStr, daysText: `${daysUntilSuspension} ${t('daysRemaining')}`, dueColor: 'text-red-600 dark:text-red-400 font-bold' };
-  }
-  if (daysUntilDue <= 5) {
-    return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: 'text-red-600 dark:text-red-400' };
-  }
-  if (daysUntilDue <= 14) {
-    return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: 'text-amber-600 dark:text-amber-400' };
-  }
-  return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: 'text-green-600 dark:text-green-400' };
-}
-
-function getBillingDueDisplay(
-  center: BillingCenter,
-  t: (key: string) => string
-): { nextDueText: string; daysText: string; dueColor: string; statusDisplay: 'overdue' | 'due_soon' | 'paid' | 'suspended' | 'awaiting' } {
-  if (center.status === 'suspended') {
-    return { nextDueText: t('suspended'), daysText: t('suspended'), dueColor: 'text-red-500 dark:text-red-400 font-bold', statusDisplay: 'suspended' };
-  }
-  const nextDue = center.nextDue || center.next_payment_due || center.next_billing_date;
-  const hasPaid = center.billing_status === 'paid';
-  if (!nextDue || !hasPaid) {
-    return { nextDueText: t('awaitingPayment'), daysText: t('awaitingPayment'), dueColor: 'text-amber-600 dark:text-amber-400', statusDisplay: 'awaiting' };
-  }
-  const GRACE_DAYS = 7;
-  const dueDate = new Date(nextDue);
-  const suspensionDate = new Date(dueDate);
-  suspensionDate.setDate(suspensionDate.getDate() + GRACE_DAYS);
-  const daysUntilSuspension = Math.ceil((suspensionDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const dateStr = dueDate.toLocaleDateString();
-  if (daysUntilSuspension <= 0) {
-    return { nextDueText: dateStr, daysText: t('suspended'), dueColor: 'text-red-600 dark:text-red-400 font-bold', statusDisplay: 'overdue' };
-  }
-  if (daysUntilDue <= 0) {
-    return { nextDueText: dateStr, daysText: `${daysUntilSuspension} ${t('daysRemaining')}`, dueColor: 'text-red-600 dark:text-red-400 font-bold', statusDisplay: 'overdue' };
-  }
-  if (daysUntilDue <= 5) {
-    return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: 'text-red-600 dark:text-red-400', statusDisplay: 'due_soon' };
-  }
-  return { nextDueText: dateStr, daysText: String(daysUntilDue), dueColor: daysUntilDue <= 14 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400', statusDisplay: 'paid' };
-}
-
-const PLAN_PRICE: Record<string, number> = {
-  starter: 2000,
-  pro: 4500,
-  business: 6500,
-  enterprise: 9000,
-  top_centers: 0,
-  payg: 0,
-};
-
 export default function AdminPage() {
-  const t = useTranslations('admin');
+  const tAdmin = useTranslations('admin');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const router = useRouter();
-  const { user } = useUser();
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const { setHideShell } = useLayout();
+
+  const [tab, setTab] = useState<AdminTab>('overview');
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-
-  const [overview, setOverview] = useState<OverviewStats | null>(null);
-  const [centers, setCenters] = useState<CenterRow[]>([]);
-  const [pendingCenters, setPendingCenters] = useState<CenterRow[]>([]);
-  const [planRequests, setPlanRequests] = useState<PlanRequestRow[]>([]);
-  const [billingCenters, setBillingCenters] = useState<BillingCenter[]>([]);
-  const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
-  const [pendingInvoices, setPendingInvoices] = useState<{ id: string; center_id: string; centerName: string; payment_amount: number; payment_reference?: string; payment_proof_url?: string; payment_method?: string; centerStatus?: string; centerPlan?: string; centerBillingPeriod?: string; created_at: string; invoice_number?: string }[]>([]);
-  const [billingStats, setBillingStats] = useState<{ mrrByPlan: Record<string, number>; totalMRR: number; fixedMRR: number; paygMRR: number; revenueProjection: number } | null>(null);
-
+  const [centerSearch, setCenterSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [planFilter, setPlanFilter] = useState('all');
-  const [billingPlanFilter, setBillingPlanFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'next_payment_due' | 'students_count' | 'created_at'>('name');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [actionCenterId, setActionCenterId] = useState<string | null>(null);
+
+  const [overview, setOverview] = useState<OverviewData | null>(null);
+  const [centers, setCenters] = useState<CenterRow[]>([]);
+  const [billingData, setBillingData] = useState<BillingRow[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<Array<{ centerName: string; amount: number; paid_at?: string; billing_period?: string; recorded_by?: string }>>([]);
+  const [pendingInvoices, setPendingInvoices] = useState<Array<{ id: string; centerName: string; payment_amount?: number; center_id: string; payment_proof_url?: string }>>([]);
+  const [pendingSignups, setPendingSignups] = useState<PendingSignup[]>([]);
+  const [planRequests, setPlanRequests] = useState<PlanRequest[]>([]);
+  const [internalTeam, setInternalTeam] = useState<TeamMember[]>([]);
+
   const [detailCenter, setDetailCenter] = useState<CenterRow | null>(null);
-  const [changePlanCenter, setChangePlanCenter] = useState<CenterRow | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ center: CenterRow; name: string; password: string } | null>(null);
-  const [markPaidCenter, setMarkPaidCenter] = useState<BillingCenter | null>(null);
-
-  const [selectedCenterIds, setSelectedCenterIds] = useState<Set<string>>(new Set());
-  const [bulkUpgrading, setBulkUpgrading] = useState(false);
-  const [internalTeam, setInternalTeam] = useState<{ id: string; name: string; email: string; role: string; phone?: string; created_at: string }[]>([]);
-  const [inviteName, setInviteName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [invitePhone, setInvitePhone] = useState('');
-  const [inviteRole, setInviteRole] = useState<'internal_admin' | 'internal_viewer'>('internal_admin');
-  const [inviting, setInviting] = useState(false);
-  const [internalRole, setInternalRole] = useState<string>('internal_viewer');
-
+  const [showSuspendConfirm, setShowSuspendConfirm] = useState<CenterRow | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<CenterRow | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
+  const [showRejectReason, setShowRejectReason] = useState<PendingSignup | null>(null);
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
   const [passwordConfirm, setPasswordConfirm] = useState<
-    | { type: 'suspend'; center: { id: string; name: string } }
+    | { type: 'suspend'; center: CenterRow }
     | { type: 'approve_invoice'; inv: { id: string; centerName: string; payment_amount: number } }
-    | { type: 'change_role'; memberId: string; newRole: string; prevRole: string }
+    | { type: 'delete'; center: CenterRow; confirmName: string }
     | null
   >(null);
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordConfirmLoading, setPasswordConfirmLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [addAdminForm, setAddAdminForm] = useState({ name: '', phone: '', email: '' });
 
-  const [securityData, setSecurityData] = useState<{
-    recentLogs: Array<{
-      id: string;
-      action: string;
-      details: Record<string, unknown>;
-      created_at: string;
-      user?: { name?: string | null; phone?: string } | null;
-      center?: { name?: string } | null;
-    }>;
-    actionStats: Record<string, number>;
-    centerStats: Record<string, number>;
-  }>({
-    recentLogs: [],
-    actionStats: {},
-    centerStats: {},
-  });
+  useEffect(() => {
+    setHideShell(true);
+    return () => setHideShell(false);
+  }, [setHideShell]);
 
   const getSession = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -301,593 +220,338 @@ export default function AdminPage() {
       Authorization: `Bearer ${session.access_token}`,
     };
     if (includeCsrf) {
-      const { getCsrfHeaders } = await import('@/lib/csrf-client');
-      Object.assign(headers, await getCsrfHeaders(session.access_token));
+      const csrf = await getCsrfHeaders(session.access_token);
+      Object.assign(headers, csrf);
     }
     return headers;
   }, [getSession]);
 
   const loadOverview = useCallback(async () => {
-    console.log('[Admin] Loading overview...');
     const session = await getSession();
     if (!session) {
-      console.log('[Admin] No session found, redirecting to login');
       router.replace('/login');
       return;
     }
-    setIsLoading(true);
-    setLoadError(null);
     try {
-      console.log('[Admin] Making API request to /api/admin/overview');
       const res = await fetch('/api/admin/overview', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      console.log('[Admin] Response status:', res.status);
-      console.log('[Admin] Response ok:', res.ok);
-
-      const responseText = await res.text();
-      console.log('[Admin] Response text:', responseText);
-
       if (res.status === 403) {
-        console.log('[Admin] Forbidden (403)');
-        setIsAuthorized(false);
-        setLoadError('Access denied');
         router.replace('/dashboard');
         return;
       }
-
       if (!res.ok) {
-        let errorData: Record<string, unknown>;
-        try {
-          errorData = responseText ? (JSON.parse(responseText) as Record<string, unknown>) : {};
-        } catch {
-          errorData = { error: 'Failed to parse error response', raw: responseText };
-        }
-        console.error('❌ Admin Overview: Error response:', errorData);
-        console.error('❌ Status code:', res.status);
-        const errMsg = typeof errorData.error === 'string' ? errorData.error : `Request failed (${res.status})`;
-        setLoadError(errMsg);
-        setIsAuthorized(false);
+        const err = await res.json().catch(() => ({}));
+        setLoadError(err?.error || 'Failed to load');
         return;
       }
-
-      let data: Record<string, unknown>;
-      try {
-        data = responseText ? (JSON.parse(responseText) as Record<string, unknown>) : {};
-      } catch {
-        console.error('❌ Admin Overview: Invalid JSON response');
-        setLoadError(`Request failed (${res.status}): invalid response`);
-        setIsAuthorized(false);
-        return;
-      }
-
-      console.log('✅ Admin Overview loaded:', data);
-      setOverview(data as unknown as OverviewStats);
-      if (data.internalRole) setInternalRole(data.internalRole as string);
-      setIsAuthorized(true);
-    } catch (err) {
-      console.error('❌ Admin Overview: Exception caught:', err);
-      console.error('❌ Error type:', (err as Error)?.constructor?.name);
-      console.error('❌ Error message:', err instanceof Error ? err.message : String(err));
-      console.error('❌ Full error:', err);
-      setLoadError(err instanceof Error ? err.message : 'Network error');
-      setIsAuthorized(false);
-    } finally {
-      setIsLoading(false);
+      const data = await res.json();
+      setOverview(data);
+      setLoadError(null);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Network error');
     }
   }, [getSession, router]);
 
-  useEffect(() => {
-    loadOverview();
-  }, [loadOverview]);
-
-  const fetchCenters = useCallback(async () => {
-    console.log('🔍 [Centers Tab] Loading centers...');
+  const loadCenters = useCallback(async () => {
     const session = await getSession();
-    if (!session) {
-      console.warn('⚠️ [Centers Tab] No session - cannot fetch centers');
-      return;
-    }
+    if (!session) return;
     const params = new URLSearchParams();
     if (statusFilter !== 'all') params.set('status', statusFilter);
-    if (planFilter !== 'all') params.set('plan', planFilter);
-    if (searchQuery.trim()) params.set('search', searchQuery.trim());
-    const url = `/api/admin/centers?${params}`;
-    console.log('📡 [Centers Tab] Fetching:', url);
+    if (centerSearch.trim()) params.set('search', centerSearch.trim());
     try {
-      const res = await fetch(url, {
+      const res = await fetch(`/api/admin/centers?${params}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      console.log('📡 [Centers Tab] Response status:', res.status);
-
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok) {
-        console.log('✅ [Centers Tab] Data received:', data);
-        if (data.centers && Array.isArray(data.centers)) {
-          console.log(`📊 [Centers Tab] Loaded ${data.centers.length} centers`);
-          setCenters(data.centers);
-          setPendingCenters(data.pendingCenters || []);
-        } else {
-          console.warn('⚠️ [Centers Tab] No centers array in response:', data);
-          setCenters([]);
-          setPendingCenters([]);
-        }
-      } else {
-        console.error('❌ [Centers Tab] Error response:', res.status, data);
-        setCenters([]);
-        setPendingCenters([]);
-      }
-    } catch (error) {
-      console.error('❌ [Centers Tab] Load error:', error);
-      setCenters([]);
-      setPendingCenters([]);
+      if (!res.ok) return;
+      const data = await res.json();
+      setCenters(data.centers || data);
+    } catch {
+      // ignore
     }
-  }, [getSession, statusFilter, planFilter, searchQuery]);
+  }, [getSession, statusFilter, centerSearch]);
 
-  const fetchPlanRequests = useCallback(async () => {
+  const loadBilling = useCallback(async () => {
     const session = await getSession();
     if (!session) return;
-    const res = await fetch('/api/admin/plan-requests', {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch('/api/admin/billing', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
       const data = await res.json();
-      setPlanRequests(data.requests || []);
-    }
-  }, [getSession]);
-
-  const fetchBilling = useCallback(async () => {
-    const session = await getSession();
-    if (!session) return;
-    const params = new URLSearchParams();
-    if (billingPlanFilter !== 'all') params.set('plan', billingPlanFilter);
-    const res = await fetch(`/api/admin/billing?${params}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      console.log('[Billing] Fetched data:', { centers: data.centers?.length, pendingInvoices: data.pendingInvoices?.length, paymentHistory: data.paymentHistory?.length });
-      console.log('[Billing] Pending proofs query result:', { pendingInvoices: data.pendingInvoices, error: data.error });
-      setBillingCenters(data.centers || []);
+      setBillingData(data.centers || []);
       setPaymentHistory(data.paymentHistory || []);
       setPendingInvoices(data.pendingInvoices || []);
-      setBillingStats(data.totalMRR != null ? {
-        mrrByPlan: data.mrrByPlan || {},
-        totalMRR: data.totalMRR ?? 0,
-        fixedMRR: data.fixedMRR ?? 0,
-        paygMRR: data.paygMRR ?? 0,
-        revenueProjection: data.revenueProjection ?? 0,
-      } : null);
-    }
-  }, [getSession, billingPlanFilter]);
-
-  const fetchInternalTeam = useCallback(async () => {
-    const session = await getSession();
-    if (!session) return;
-    const res = await fetch('/api/admin/team', {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setInternalTeam(data.team || []);
+    } catch {
+      // ignore
     }
   }, [getSession]);
 
-  const fetchPendingSignups = useCallback(async () => {
-    console.log('🔍 [Pending Signups] Loading...');
+  const loadPendingSignups = useCallback(async () => {
     const session = await getSession();
-    if (!session) {
-      console.log('⚠️ [Pending Signups] No session');
-      return;
-    }
+    if (!session) return;
     try {
       const res = await fetch('/api/admin/pending-signups', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      console.log('📡 [Pending Signups] Response status:', res.status);
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && Array.isArray(data.signups)) {
-        setPendingCenters(data.signups);
-        console.log('📊 [Pending Signups] Loaded', data.signups.length, 'pending centers');
-      } else {
-        console.warn('⚠️ [Pending Signups] No signups array in response:', data);
-        setPendingCenters([]);
-      }
-    } catch (error) {
-      console.error('❌ [Pending Signups] Error:', error);
-      setPendingCenters([]);
+      if (!res.ok) return;
+      const data = await res.json();
+      setPendingSignups(data.signups || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
+  const loadPlanRequests = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/plan-requests', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setPlanRequests(data.requests || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
+  const loadInternalTeam = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/team', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setInternalTeam(data.team || []);
+    } catch {
+      // ignore
     }
   }, [getSession]);
 
   useEffect(() => {
-    if (activeTab === 'centers') fetchCenters();
-  }, [activeTab, fetchCenters]);
+    setIsLoading(true);
+    loadOverview()
+      .then(() => setIsLoading(false))
+      .catch(() => setIsLoading(false));
+  }, [loadOverview]);
 
   useEffect(() => {
-    if (activeTab === 'pending') fetchPendingSignups();
-  }, [activeTab, fetchPendingSignups]);
-
+    if (tab === 'centers') loadCenters();
+  }, [tab, loadCenters]);
   useEffect(() => {
-    if (activeTab === 'plan-requests') fetchPlanRequests();
-  }, [activeTab, fetchPlanRequests]);
-
+    if (tab === 'billing') loadBilling();
+  }, [tab, loadBilling]);
   useEffect(() => {
-    if (activeTab === 'billing') fetchBilling();
-  }, [activeTab, fetchBilling]);
-
+    if (tab === 'pendingSignups') loadPendingSignups();
+  }, [tab, loadPendingSignups]);
   useEffect(() => {
-    if (activeTab === 'team') fetchInternalTeam();
-  }, [activeTab, fetchInternalTeam]);
+    if (tab === 'planRequests') loadPlanRequests();
+  }, [tab, loadPlanRequests]);
+  useEffect(() => {
+    if (tab === 'internalTeam') loadInternalTeam();
+  }, [tab, loadInternalTeam]);
 
-  const fetchSecurityData = useCallback(async () => {
-    const session = await getSession();
-    if (!session) return;
-    try {
-      const res = await fetch('/api/admin/security', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSecurityData({
-          recentLogs: data.recentLogs || [],
-          actionStats: data.actionStats || {},
-          centerStats: data.centerStats || {},
-        });
-      }
-    } catch {
-      setSecurityData({ recentLogs: [], actionStats: {}, centerStats: {} });
+  const filteredCenters = centers.filter((c) => {
+    const matchSearch = !centerSearch.trim() ||
+      c.name?.toLowerCase().includes(centerSearch.toLowerCase()) ||
+      c.phone?.includes(centerSearch) ||
+      (c.owner?.name ?? c.owner_name ?? '').toLowerCase().includes(centerSearch.toLowerCase());
+    const matchStatus = statusFilter === 'all' || (c.status ?? 'active') === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  // Aggregate signupsChart (daily) to weekly for "New Centers per Week"
+  const signupsWeekly = useMemo(() => {
+    const chart = overview?.signupsChart ?? [];
+    if (chart.length === 0) return [];
+    const byWeek: Record<number, number> = {};
+    for (const { date, count } of chart) {
+      if (!date) continue;
+      const d = new Date(date);
+      const weekStart = new Date(d);
+      weekStart.setHours(0, 0, 0, 0);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      const ts = weekStart.getTime();
+      byWeek[ts] = (byWeek[ts] ?? 0) + count;
     }
-  }, [getSession]);
-
-  useEffect(() => {
-    if (activeTab === 'security') fetchSecurityData();
-  }, [activeTab, fetchSecurityData]);
-
-  const exportAuditLog = async () => {
-    const session = await getSession();
-    if (!session) return;
-    try {
-      const res = await fetch('/api/admin/security?export=csv', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error || 'Export failed');
-        return;
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch {
-      alert('Export failed');
-    }
-  };
-
-  const sortedCenters = useMemo(() => {
-    const arr = [...centers];
-    return arr.sort((a, b) => {
-      if (sortBy === 'next_payment_due') {
-        const dateA = a.next_due ? new Date(a.next_due).getTime() : Number.MAX_SAFE_INTEGER;
-        const dateB = b.next_due ? new Date(b.next_due).getTime() : Number.MAX_SAFE_INTEGER;
-        return sortDir === 'asc' ? dateA - dateB : dateB - dateA;
-      }
-      if (sortBy === 'students_count') {
-        return sortDir === 'asc'
-          ? ((a.students_count || 0) - (b.students_count || 0))
-          : ((b.students_count || 0) - (a.students_count || 0));
-      }
-      if (sortBy === 'created_at') {
-        const tA = new Date(a.created_at).getTime();
-        const tB = new Date(b.created_at).getTime();
-        return sortDir === 'asc' ? tA - tB : tB - tA;
-      }
-      // name
-      const nameA = (a.name || '').toLowerCase();
-      const nameB = (b.name || '').toLowerCase();
-      return sortDir === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
-    });
-  }, [centers, sortBy, sortDir]);
-
-  const pendingPaymentProofs = useMemo(
-    () => pendingInvoices,
-    [pendingInvoices]
-  );
+    return Object.entries(byWeek)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([, count], i) => ({ date: `W${i + 1}`, count }));
+  }, [overview?.signupsChart]);
 
   const handleCenterAction = async (
     centerId: string,
-    action: string,
+    action: 'suspend' | 'reactivate' | 'change_plan' | 'delete' | 'approve' | 'reject',
     extra?: { newPlan?: string; confirmName?: string; password?: string }
   ) => {
     const headers = await getAuthHeaders();
     if (!headers) return;
-    setActionCenterId(centerId);
+    setActionLoading(true);
     try {
-      const body: Record<string, unknown> = { centerId, action };
-      if (extra?.newPlan) body.newPlan = extra.newPlan;
-      if (extra?.confirmName) body.confirmName = extra.confirmName;
-      if (extra?.password) body.password = extra.password;
+      const body: Record<string, unknown> = { centerId, action, ...extra };
       const res = await fetch('/api/admin/centers', {
         method: 'PUT',
         headers,
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (res.ok) {
-        setChangePlanCenter(null);
-        setDeleteConfirm(null);
-        setDetailCenter(null);
-        fetchCenters();
-        if (activeTab === 'overview' && overview) {
-          const oHeaders = await getAuthHeaders(false);
-          if (oHeaders) {
-            const oRes = await fetch('/api/admin/overview', { headers: oHeaders });
-            if (oRes.ok) setOverview(await oRes.json());
-          }
-        }
-      } else {
-        alert(data.error || 'Failed');
+      if (!res.ok) throw new Error(data?.error || 'Failed');
+      if (action === 'approve' && data.credentialsMessage) {
+        const waUrl = data.whatsappUrl;
+        if (waUrl) window.open(waUrl, '_blank');
       }
-    } catch {
-      alert('Network error');
+      setShowSuspendConfirm(null);
+      setShowDeleteConfirm(null);
+      setShowRejectReason(null);
+      setDetailCenter(null);
+      loadCenters();
+      if (tab === 'pendingSignups') loadPendingSignups();
+      loadOverview();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
     } finally {
-      setActionCenterId(null);
+      setActionLoading(false);
     }
   };
 
   const handlePlanRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
     const headers = await getAuthHeaders();
     if (!headers) return;
-    setActionCenterId(requestId);
+    setActionLoading(true);
     try {
       const res = await fetch('/api/admin/plan-requests', {
         method: 'PUT',
         headers,
         body: JSON.stringify({ requestId, action }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        fetchPlanRequests();
-        if (action === 'approve' && data.whatsappLink) {
-          window.open(data.whatsappLink, '_blank', 'noopener');
-        }
-      } else {
-        alert(data.error || 'Failed');
-      }
-    } catch {
-      alert('Network error');
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      loadPlanRequests();
+      loadOverview();
+      loadCenters();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
     } finally {
-      setActionCenterId(null);
+      setActionLoading(false);
+    }
+  };
+
+  const handleMarkPaid = async (centerId: string, amount: number, billingPeriod: string) => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/billing', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ center_id: centerId, amount, billing_period: billingPeriod }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      loadBilling();
+      loadOverview();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleInvoiceAction = async (invoiceId: string, action: 'approve' | 'reject', password?: string) => {
     const headers = await getAuthHeaders();
     if (!headers) return;
-    setActionCenterId(invoiceId);
-    try {
-      const body: Record<string, unknown> = { invoiceId, action };
-      if (password) body.password = password;
-      const res = await fetch('/api/admin/billing', {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(body),
-      });
-      if (res.ok) {
-        setPendingInvoices((prev) => prev.filter((i) => i.id !== invoiceId));
-        fetchBilling();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed');
-      }
-    } catch {
-      alert('Network error');
-    } finally {
-      setActionCenterId(null);
-    }
-  };
-
-  const handleMarkPaid = async (center: BillingCenter) => {
-    const headers = await getAuthHeaders();
-    if (!headers) return;
-    const amount = center.amount ?? PLAN_PRICE[center.plan] ?? 2000;
-    const bp = center.billing_period || 'monthly';
-    setActionCenterId(center.id);
+    setActionLoading(true);
     try {
       const res = await fetch('/api/admin/billing', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          center_id: center.id,
-          amount,
-          billing_period: bp === 'half_yearly' ? 'semi_annual' : bp === 'yearly' ? 'annual' : bp,
-        }),
-      });
-      if (res.ok) {
-        setMarkPaidCenter(null);
-        fetchBilling();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed');
-      }
-    } catch {
-      alert('Network error');
-    } finally {
-      setActionCenterId(null);
-    }
-  };
-
-  const handleApprove = async (centerId: string) => {
-    const headers = await getAuthHeaders();
-    if (!headers) return;
-    setActionCenterId(centerId);
-    try {
-      const res = await fetch('/api/admin/centers', {
         method: 'PUT',
         headers,
-        body: JSON.stringify({ centerId, action: 'approve' }),
+        body: JSON.stringify({ invoiceId, action, password }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        setPendingCenters((prev) => prev.filter((c) => c.id !== centerId));
-        fetchCenters();
-        fetchPendingSignups();
-        if (data.credentialsMessage) {
-          try {
-            await navigator.clipboard.writeText(data.credentialsMessage);
-          } catch {
-            /* ignore */
-          }
-          if (data.whatsappUrl) {
-            window.open(data.whatsappUrl, '_blank');
-          }
-          alert(t('accountActivated', { defaultValue: 'Account activated! Credentials copied to clipboard. WhatsApp opened to send credentials.' }));
-        } else if (data.referralMessage) {
-          alert(data.referralMessage);
-        }
-      } else {
-        alert(data.error || 'Failed');
-      }
-    } catch {
-      alert('Network error');
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      setPasswordConfirm(null);
+      loadBilling();
+      loadOverview();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
     } finally {
-      setActionCenterId(null);
+      setActionLoading(false);
     }
   };
 
-  const handleReject = async (centerId: string) => {
-    if (!confirm(t('confirmReject'))) return;
+  const handleAddAdmin = async () => {
     const headers = await getAuthHeaders();
-    if (!headers) return;
-    setActionCenterId(centerId);
-    try {
-      const res = await fetch('/api/admin/centers', {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ centerId, action: 'reject' }),
-      });
-      if (res.ok) {
-        setPendingCenters((prev) => prev.filter((c) => c.id !== centerId));
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed');
-      }
-    } catch {
-      alert('Network error');
-    } finally {
-      setActionCenterId(null);
-    }
-  };
-
-  const openWhatsAppReminder = (center: BillingCenter) => {
-    const amount = center.amount ?? PLAN_PRICE[center.plan] ?? 2000;
-    const phone = (center.phone || '').replace(/\D/g, '').replace(/^0/, '');
-    const text = encodeURIComponent(
-      `مرحباً، هذا تذكير بموعد سداد اشتراك CenterHQ. المبلغ المطلوب: ${amount} جنيه. شكراً لتعاونكم.`
-    );
-    window.open(`https://wa.me/2${phone}?text=${text}`, '_blank');
-  };
-
-  const handleInviteInternal = async () => {
-    if (!inviteName.trim() || !invitePhone.trim()) return;
-    const headers = await getAuthHeaders();
-    if (!headers) return;
-    setInviting(true);
+    if (!headers || !addAdminForm.name.trim() || !addAdminForm.phone.trim()) return;
+    setActionLoading(true);
     try {
       const res = await fetch('/api/admin/team', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ name: inviteName.trim(), email: inviteEmail.trim(), phone: invitePhone.trim(), role: inviteRole }),
+        body: JSON.stringify({
+          name: addAdminForm.name.trim(),
+          phone: addAdminForm.phone.replace(/\D/g, ''),
+          email: addAdminForm.email.trim() || undefined,
+          role: 'internal_admin',
+        }),
       });
-      if (res.ok) {
-        setInviteName('');
-        setInviteEmail('');
-        setInvitePhone('');
-        fetchInternalTeam();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to invite');
-      }
-    } catch {
-      alert('Network error');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed');
+      setShowAddAdmin(false);
+      setAddAdminForm({ name: '', phone: '', email: '' });
+      loadInternalTeam();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed');
     } finally {
-      setInviting(false);
+      setActionLoading(false);
     }
   };
 
-  const handleRemoveInternal = async (memberId: string) => {
-    if (!confirm(t('confirmRemoveTeamMember', { defaultValue: 'Remove this team member?' }))) return;
+  const handleRemoveTeamMember = async (memberId: string) => {
     const headers = await getAuthHeaders();
-    if (!headers) return;
+    if (!headers || !confirm(tAdmin('confirmRemoveTeamMember'))) return;
+    setActionLoading(true);
     try {
       const res = await fetch('/api/admin/team', {
         method: 'DELETE',
         headers,
         body: JSON.stringify({ memberId }),
       });
-      if (res.ok) fetchInternalTeam();
-      else {
-        const data = await res.json();
-        alert(data.error || 'Failed');
-      }
-    } catch {
-      alert('Network error');
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      loadInternalTeam();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleChangeInternalRole = async (memberId: string, newRole: string, password?: string) => {
-    const headers = await getAuthHeaders();
-    if (!headers) return;
-    try {
-      const body: Record<string, unknown> = { memberId, role: newRole };
-      if (password) body.password = password;
-      const res = await fetch('/api/admin/team', {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(body),
-      });
-      if (res.ok) fetchInternalTeam();
-      else {
-        const data = await res.json();
-        alert(data.error || 'Failed');
-      }
-    } catch {
-      alert('Network error');
-    }
-  };
+  const PlanBadge = ({ plan }: { plan?: string }) => (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${PLAN_COLORS[plan || 'starter'] || PLAN_COLORS.starter}`}>
+      {PLAN_LABELS[plan || 'starter'] || plan}
+    </span>
+  );
 
-  if (isLoading && isAuthorized === null) {
+  if (isLoading && !overview && !loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-indigo-600 border-t-transparent rounded-full" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
-  if (loadError && !isAuthorized) {
+  if (loadError && !overview) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <p className="text-red-600 dark:text-red-400 font-medium mb-2">
-            {t('loadError', { defaultValue: 'Failed to load admin data' })}
-          </p>
-          <p className="text-sm text-[var(--text-secondary)] mb-4">{loadError}</p>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <div className="text-center">
+          <p className="text-red-600 font-medium mb-2">{loadError}</p>
           <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => loadOverview()}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              {t('retry', { defaultValue: 'Retry' })}
+            <button onClick={loadOverview} className="px-4 py-2 bg-primary text-white rounded-lg">
+              {tAdmin('retry')}
             </button>
-            <Link
-              href="/dashboard"
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-bg-secondary"
-            >
-              {t('backToMyCenter')}
+            <Link href="/dashboard" className="px-4 py-2 border rounded-lg">
+              {tAdmin('backToMyCenter')}
             </Link>
           </div>
         </div>
@@ -895,788 +559,297 @@ export default function AdminPage() {
     );
   }
 
-  const allTabs: { id: TabId; labelKey: string; roles: string[] }[] = [
-    { id: 'overview', labelKey: 'overview', roles: ['super_admin', 'internal_admin', 'internal_viewer'] },
-    { id: 'kpi', labelKey: 'kpiDashboard', roles: ['super_admin'] },
-    { id: 'centers', labelKey: 'centers', roles: ['super_admin', 'internal_admin', 'internal_viewer'] },
-    { id: 'billing', labelKey: 'billing', roles: ['super_admin', 'internal_admin'] },
-    { id: 'plan-requests', labelKey: 'planRequests', roles: ['super_admin', 'internal_admin'] },
-    { id: 'pending', labelKey: 'pendingSignups', roles: ['super_admin', 'internal_admin'] },
-    { id: 'team', labelKey: 'internalTeam', roles: ['super_admin'] },
-    { id: 'security', labelKey: 'security', roles: ['super_admin', 'internal_admin'] },
-  ];
-  const tabs = allTabs.filter(tab => tab.roles.includes(internalRole));
-
-  const byPlanData = overview
-    ? Object.entries(overview.byPlan || {}).map(([plan, count]) => ({ name: PLAN_LABELS[plan] || plan, count }))
-    : [];
-  const mrrByPlanData = overview?.mrrByPlan
-    ? Object.entries(overview.mrrByPlan)
-        .filter(([, amt]) => amt > 0)
-        .map(([plan, amount]) => ({ name: PLAN_LABELS[plan] || plan, amount }))
-    : [];
-
   return (
-    <>
-    <div className="min-h-screen" dir={isRTL ? 'rtl' : 'ltr'}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Top bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">{t('title')}</h1>
-            <div className="flex items-center gap-4">
-              {user?.name && <span className="text-sm text-[var(--text-secondary)]">{user.name}</span>}
-              {user?.center_id && (
-                <Link
-                  href="/dashboard"
-                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                >
-                  {t('backToMyCenter')}
-                </Link>
-              )}
-            </div>
-          </div>
+    <div className="flex min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Admin Sidebar */}
+      <aside className="hidden md:flex flex-col w-56 shrink-0 border-e border-border bg-card">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-bold text-foreground">{tAdmin('title')}</h2>
+          <Link href="/dashboard" className="text-xs text-primary hover:underline mt-1 block">{tAdmin('backToMyCenter')}</Link>
+        </div>
+        <nav className="flex-1 p-2 space-y-0.5">
+          {ADMIN_NAV.map(({ key, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start ${
+                tab === key ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <Icon size={18} />
+              <span>{tAdmin(key)}</span>
+            </button>
+          ))}
+        </nav>
+      </aside>
 
-          {/* Tabs */}
-          <div className="flex overflow-x-auto gap-1 pb-4 border-b border-gray-200 dark:border-gray-700 mb-6">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white/5 text-[var(--text-primary)] hover:bg-white/10'
-                }`}
-              >
-                {t(tab.labelKey)}
-              </button>
-            ))}
-          </div>
+      {/* Mobile tab bar */}
+      <div className="md:hidden fixed top-0 start-0 end-0 z-20 border-b border-border overflow-x-auto scrollbar-hide bg-card">
+        <div className="flex px-2 py-1.5 gap-1">
+          {ADMIN_NAV.map(({ key, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${
+                tab === key ? 'bg-primary/20 text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <Icon size={14} />
+              <span>{tAdmin(key)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {/* Tab content */}
-          {activeTab === 'overview' && !overview && (
-            <div className="py-8 text-center text-[var(--text-secondary)]">
-              <p>{t('loadingOverview', { defaultValue: 'Loading overview data...' })}</p>
-              <button
-                onClick={() => loadOverview()}
-                className="mt-2 text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                {t('retry', { defaultValue: 'Retry' })}
-              </button>
+      {/* Main content */}
+      <div className="flex-1 p-4 md:p-6 overflow-auto pt-14 md:pt-6">
+        {/* Overview */}
+        {tab === 'overview' && overview && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+              {[
+                { label: tAdmin('totalCenters'), value: String(overview.totalCenters ?? 0), color: '#3B82F6' },
+                { label: tAdmin('activeCenters'), value: String(overview.activeCenters ?? 0), color: '#16A34A' },
+                { label: tAdmin('pendingSignups'), value: String(overview.pendingSignups ?? 0), color: '#F59E0B' },
+                { label: tAdmin('totalMRREgp', { defaultValue: 'Total MRR in EGP' }), value: `${(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('ar-EG')} ${tCommon('egp')}`, color: '#0D9488' },
+                { label: tAdmin('totalStudents'), value: String(overview.totalStudents ?? 0), color: '#7C3AED' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="glass p-4 rounded-xl">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: `${color}20`, color }}>
+                    <LayoutDashboard size={16} />
+                  </div>
+                  <div className="text-xl font-black font-mono text-foreground">{value}</div>
+                  <div className="text-xs text-muted-foreground">{label}</div>
+                </div>
+              ))}
             </div>
-          )}
-          {activeTab === 'overview' && overview && (
-            <div className="space-y-6">
-              {/* Action Required */}
-              <div>
-                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('actionRequired')}</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <button
-                    onClick={() => setActiveTab('pending')}
-                    className={`p-4 rounded-xl shadow text-left transition-all border-2 ${
-                      ((overview as { pendingSignupsCount?: number }).pendingSignupsCount ?? 0) > 0
-                        ? 'border-amber-500 bg-amber-500/10'
-                        : 'border-green-500 bg-green-500/10'
-                    }`}
-                  >
-                    <span className="text-2xl">🔔</span>
-                    <p className="text-sm text-[var(--text-secondary)] mt-1">{t('pendingSignupsCount')}</p>
-                    <p className={`text-3xl font-bold ${((overview as { pendingSignupsCount?: number }).pendingSignupsCount ?? 0) > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
-                      {((overview as { pendingSignupsCount?: number }).pendingSignupsCount ?? 0) > 0 ? (overview as { pendingSignupsCount?: number }).pendingSignupsCount : '✓'}
-                    </p>
-                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{t('view')} →</p>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('plan-requests')}
-                    className={`p-4 rounded-xl shadow text-left transition-all border-2 ${
-                      ((overview as { pendingPlanRequestsCount?: number }).pendingPlanRequestsCount ?? 0) > 0
-                        ? 'border-amber-500 bg-amber-500/10'
-                        : 'border-green-500 bg-green-500/10'
-                    }`}
-                  >
-                    <span className="text-2xl">📋</span>
-                    <p className="text-sm text-[var(--text-secondary)] mt-1">{t('planRequestsCount')}</p>
-                    <p className={`text-3xl font-bold ${((overview as { pendingPlanRequestsCount?: number }).pendingPlanRequestsCount ?? 0) > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
-                      {((overview as { pendingPlanRequestsCount?: number }).pendingPlanRequestsCount ?? 0) > 0 ? (overview as { pendingPlanRequestsCount?: number }).pendingPlanRequestsCount : '✓'}
-                    </p>
-                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{t('view')} →</p>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('billing')}
-                    className={`p-4 rounded-xl shadow text-left transition-all border-2 ${
-                      ((overview as { pendingPaymentProofsCount?: number }).pendingPaymentProofsCount ?? 0) > 0
-                        ? 'border-amber-500 bg-amber-500/10'
-                        : 'border-green-500 bg-green-500/10'
-                    }`}
-                  >
-                    <span className="text-2xl">💳</span>
-                    <p className="text-sm text-[var(--text-secondary)] mt-1">{t('paymentProofsCount')}</p>
-                    <p className={`text-3xl font-bold ${((overview as { pendingPaymentProofsCount?: number }).pendingPaymentProofsCount ?? 0) > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
-                      {((overview as { pendingPaymentProofsCount?: number }).pendingPaymentProofsCount ?? 0) > 0 ? (overview as { pendingPaymentProofsCount?: number }).pendingPaymentProofsCount : '✓'}
-                    </p>
-                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{t('view')} →</p>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('billing')}
-                    className={`p-4 rounded-xl shadow text-left transition-all border-2 ${
-                      ((overview as { overdueCentersCount?: number }).overdueCentersCount ?? 0) > 0
-                        ? 'border-red-500 bg-red-500/10'
-                        : 'border-green-500 bg-green-500/10'
-                    }`}
-                  >
-                    <span className="text-2xl">⚠️</span>
-                    <p className="text-sm text-[var(--text-secondary)] mt-1">{t('overdueCentersCount')}</p>
-                    <p className={`text-3xl font-bold ${((overview as { overdueCentersCount?: number }).overdueCentersCount ?? 0) > 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
-                      {((overview as { overdueCentersCount?: number }).overdueCentersCount ?? 0) > 0 ? (overview as { overdueCentersCount?: number }).overdueCentersCount : '✓'}
-                    </p>
-                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{t('view')} →</p>
-                  </button>
-                </div>
-                {/* Recent Activity */}
-                <div className="mt-6 p-4 glass rounded-xl shadow">
-                  <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">{t('recentActivity')}</h3>
-                  {((overview as { recentActivity?: Array<{ action: string; details?: unknown; created_at: string }> }).recentActivity ?? []).length > 0 ? (
-                    <ul className="space-y-2 text-sm">
-                      {((overview as { recentActivity?: Array<{ action: string; details?: unknown; created_at: string }> }).recentActivity ?? []).slice(0, 10).map((a, i) => {
-                        const timeAgo = formatTimeAgo(new Date(a.created_at));
-                        const summary = formatActivitySummary(a.action, a.details);
-                        return (
-                          <li key={i} className="flex justify-between gap-4 text-[var(--text-secondary)]">
-                            <span>{timeAgo} — {summary}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-[var(--text-secondary)]">{t('noActivity')}</p>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="glass rounded-xl p-4 shadow">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('totalCenters')}</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)]">{overview.totalCenters}</p>
-                </div>
-                <div className="glass rounded-xl p-4 shadow">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('activeCenters')}</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{overview.activeCenters}</p>
-                </div>
-                <div className="glass rounded-xl p-4 shadow">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('suspendedCenters')}</p>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">{overview.suspendedCenters}</p>
-                </div>
-                <div className="glass rounded-xl p-4 shadow">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('totalStudents')}</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)]">{overview.totalStudents}</p>
-                </div>
-                <div className="glass rounded-xl p-4 shadow">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('mrr')}</p>
-                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                    {overview.mrr?.toLocaleString('ar-EG')} EGP
-                  </p>
-                </div>
-              </div>
-              {/* Upgrade Opportunities & ARPU by Plan */}
-              {(overview.upgradeOpportunities?.length ?? 0) > 0 && (
-                <div className="glass rounded-xl p-6 shadow">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">{t('upgradeOpportunities', { defaultValue: 'Upgrade Opportunities' })}</h3>
-                  <p className="text-sm text-[var(--text-secondary)] mb-3">{t('centersNearCapacity', { defaultValue: 'Centers approaching plan limits (80%+ capacity)' })}</p>
-                  <ul className="space-y-2">
-                    {(overview.upgradeOpportunities ?? []).slice(0, 5).map((u) => (
-                      <li key={u.id} className="flex justify-between items-center text-sm">
-                        <span className="text-[var(--text-primary)]">{u.name}</span>
-                        <span className="text-amber-600 dark:text-amber-400 font-medium">{u.students}/{u.limit} ({u.pct}%)</span>
-                        <button onClick={() => { setActiveTab('centers'); setPlanFilter(u.plan); }} className="text-indigo-600 dark:text-indigo-400 hover:underline text-xs">
-                          {t('view')} →
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  <button onClick={() => setActiveTab('centers')} className="mt-3 text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
-                    {t('viewAllCenters')} →
-                  </button>
+
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              {(signupsWeekly.length > 0 || (overview.signupsChart?.length ?? 0) > 0) && (
+                <div className="glass p-5 rounded-xl">
+                  <h3 className="font-bold text-foreground mb-4">{tAdmin('newCentersPerWeek', { defaultValue: 'New Centers per Week' })}</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={signupsWeekly.length > 0 ? signupsWeekly : overview.signupsChart!}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="count" stroke="#0D9488" strokeWidth={2} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               )}
-              {overview?.arpuByPlan && Object.keys(overview.arpuByPlan).some((k) => (overview.arpuByPlan![k] ?? 0) > 0) && (
-                <div className="glass rounded-xl p-6 shadow">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">{t('arpuByPlan', { defaultValue: 'ARPU by Plan' })}</h3>
-                  <p className="text-sm text-[var(--text-secondary)] mb-3">{t('avgRevenuePerUser', { defaultValue: 'Average revenue per user (center) by plan tier' })}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(overview.arpuByPlan)
-                      .filter(([, amt]) => amt > 0)
-                      .map(([plan, amt]) => (
-                        <span key={plan} className="px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300">
-                          {PLAN_LABELS[plan] || plan}: {amt.toLocaleString('ar-EG')} EGP
-                        </span>
-                      ))}
-                  </div>
-                </div>
-              )}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="glass rounded-xl p-6 shadow">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('byPlan')}</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={byPlanData}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-600" />
-                        <XAxis dataKey="name" className="text-xs" />
-                        <YAxis className="text-xs" />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="glass rounded-xl p-6 shadow">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('mrrByPlan', { defaultValue: 'MRR by Plan' })}</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={mrrByPlanData}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-600" />
-                        <XAxis dataKey="name" className="text-xs" />
-                        <YAxis className="text-xs" tickFormatter={(v) => `${(Number(v) / 1000).toFixed(0)}K`} />
-                        <Tooltip formatter={(value: number | undefined) => [`${Number(value ?? 0).toLocaleString('ar-EG')} EGP`, 'MRR']} />
-                        <Bar dataKey="amount" fill="#10b981" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="glass rounded-xl p-6 shadow">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('signupsChart')}</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={overview.signupsChart || []}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-600" />
-                        <XAxis dataKey="date" className="text-xs" tickFormatter={(v) => v.slice(5)} />
-                        <YAxis className="text-xs" />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'kpi' && overview && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">{t('kpiDashboard', { defaultValue: 'CEO Dashboard — KPIs' })}</h2>
-
-              {/* Revenue KPIs Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="glass rounded-xl p-5 shadow border-s-4 border-green-500">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('totalRevenueCollected', { defaultValue: 'Total Revenue Collected' })}</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{Number((overview as unknown as Record<string, unknown>).totalRevenueCollected || 0).toLocaleString('ar-EG')} EGP</p>
-                </div>
-                <div className="glass rounded-xl p-5 shadow border-s-4 border-indigo-500">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('revenueThisMonth', { defaultValue: 'Revenue This Month' })}</p>
-                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{Number((overview as unknown as Record<string, unknown>).revenueThisMonth || 0).toLocaleString('ar-EG')} EGP</p>
-                  <p className={`text-xs mt-1 ${(Number((overview as unknown as Record<string, unknown>).revenueGrowth) || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {(Number((overview as unknown as Record<string, unknown>).revenueGrowth) || 0) >= 0 ? '↑' : '↓'} {Math.abs(Number((overview as unknown as Record<string, unknown>).revenueGrowth) || 0)}% vs last month
-                  </p>
-                </div>
-                <div className="glass rounded-xl p-5 shadow border-s-4 border-amber-500">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('pendingRevenue', { defaultValue: 'Pending Revenue' })}</p>
-                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{Number((overview as unknown as Record<string, unknown>).pendingRevenue || 0).toLocaleString('ar-EG')} EGP</p>
-                </div>
-                <div className="glass rounded-xl p-5 shadow border-s-4 border-blue-500">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('arpc', { defaultValue: 'Avg Revenue Per Center' })}</p>
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{Number((overview as unknown as Record<string, unknown>).arpc || 0).toLocaleString('ar-EG')} EGP</p>
-                </div>
-              </div>
-
-              {/* Growth & Health Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="glass rounded-xl p-5 shadow border-s-4 border-green-500">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('activeCenters', { defaultValue: 'Active Centers' })}</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{overview.activeCenters}</p>
-                </div>
-                <div className="glass rounded-xl p-5 shadow border-s-4 border-red-500">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('churnRate', { defaultValue: 'Churn Rate' })}</p>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">{Number((overview as unknown as Record<string, unknown>).churnRate) || 0}%</p>
-                  <p className="text-xs text-text-secondary mt-1">{Number((overview as unknown as Record<string, unknown>).churnedCenters) || 0} {t('centersSuspended', { defaultValue: 'centers suspended' })}</p>
-                </div>
-                <div className="glass rounded-xl p-5 shadow border-s-4 border-purple-500">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('mrr', { defaultValue: 'MRR' })}</p>
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{(overview.mrr || 0).toLocaleString('ar-EG')} EGP</p>
-                </div>
-                <div className="glass rounded-xl p-5 shadow border-s-4 border-cyan-500">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('totalStudents', { defaultValue: 'Total Students' })}</p>
-                  <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">{overview.totalStudents}</p>
-                </div>
-              </div>
-
-              {/* Monthly Revenue Chart */}
-              <div className="glass rounded-xl p-6 shadow">
-                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('monthlyRevenueChart', { defaultValue: 'Monthly Revenue (Last 6 Months)' })}</h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={(overview as unknown as Record<string, unknown>).monthlyRevenue as { month: string; revenue: number; centers: number }[] || []}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-600" />
-                      <XAxis dataKey="month" className="text-xs" />
-                      <YAxis className="text-xs" tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-                      <Tooltip formatter={(value: number | undefined) => [`${Number(value ?? 0).toLocaleString('ar-EG')} EGP`, 'Revenue']} />
-                      <Bar dataKey="revenue" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              {(overview.monthlyRevenue?.length ?? 0) > 0 && (
+                <div className="glass p-5 rounded-xl">
+                  <h3 className="font-bold text-foreground mb-4">{tAdmin('monthlyRevenueChart', { defaultValue: 'Monthly Revenue' })}</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={overview.monthlyRevenue}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Bar dataKey="revenue" fill="#0D9488" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
-
-              {/* Revenue vs Plan Distribution */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="glass rounded-xl p-6 shadow">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('byPlan', { defaultValue: 'Centers by Plan' })}</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={byPlanData}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-600" />
-                        <XAxis dataKey="name" className="text-xs" />
-                        <YAxis className="text-xs" />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="glass rounded-xl p-6 shadow">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('signupsChart', { defaultValue: 'Signups Over Time' })}</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={overview.signupsChart || []}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-600" />
-                        <XAxis dataKey="date" className="text-xs" tickFormatter={(v) => v.slice(5)} />
-                        <YAxis className="text-xs" />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Financial Summary */}
-              <div className="glass rounded-xl p-6 shadow">
-                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('financialSummary', { defaultValue: 'Financial Summary' })}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
-                  <div>
-                    <p className="text-[var(--text-secondary)] mb-1">{t('annualRunRate', { defaultValue: 'Annual Run Rate (ARR)' })}</p>
-                    <p className="text-xl font-bold text-[var(--text-primary)]">{((overview.mrr || 0) * 12).toLocaleString('ar-EG')} EGP</p>
-                  </div>
-                  <div>
-                    <p className="text-[var(--text-secondary)] mb-1">{t('revenueLastMonth', { defaultValue: 'Revenue Last Month' })}</p>
-                    <p className="text-xl font-bold text-[var(--text-primary)]">{Number((overview as unknown as Record<string, unknown>).revenueLastMonth || 0).toLocaleString('ar-EG')} EGP</p>
-                  </div>
-                  <div>
-                    <p className="text-[var(--text-secondary)] mb-1">{t('collectionRate', { defaultValue: 'Collection Rate' })}</p>
-                    <p className="text-xl font-bold text-[var(--text-primary)]">
-                      {(() => {
-                        const collected = Number((overview as unknown as Record<string, unknown>).totalRevenueCollected) || 0;
-                        const pending = Number((overview as unknown as Record<string, unknown>).pendingRevenue) || 0;
-                        const total = collected + pending;
-                        return total > 0 ? `${Math.round((collected / total) * 100)}%` : '—';
-                      })()}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
-          )}
 
-          {activeTab === 'centers' && (
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-4 items-center">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
-                >
-                  <option value="all">{t('filterAll')}</option>
-                  <option value="active">{t('filterActive')}</option>
-                  <option value="suspended">{t('filterSuspended')}</option>
-                  <option value="pending">{t('filterPending')}</option>
-                </select>
-                <select
-                  value={planFilter}
-                  onChange={(e) => setPlanFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
-                >
-                  <option value="all">{t('filterAll')}</option>
-                  <option value="starter">Starter</option>
-                  <option value="pro">Pro</option>
-                  <option value="business">Business</option>
-                  <option value="enterprise">Enterprise</option>
-                  <option value="top_centers">Top Centers</option>
-                  <option value="payg">PAYG</option>
-                </select>
-                <input
-                  type="text"
-                  placeholder={t('searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm min-w-[200px]"
-                />
-                <span className="text-sm text-[var(--text-secondary)]">{t('sortBy')}:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
-                >
-                  <option value="name">{t('sortName')}</option>
-                  <option value="next_payment_due">{t('sortDueDate')}</option>
-                  <option value="students_count">{t('sortStudents')}</option>
-                  <option value="created_at">{t('sortCreated')}</option>
-                </select>
-                <button
-                  onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
-                >
-                  {sortDir === 'asc' ? '↑' : '↓'}
-                </button>
-                {internalRole === 'super_admin' && (
-                  <>
-                    <button
-                      onClick={() => setSelectedCenterIds(new Set(sortedCenters.filter(c => c.status === 'active').map(c => c.id)))}
-                      className="px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
-                    >
-                      {t('selectAllActive', { defaultValue: 'Select all active' })}
-                    </button>
-                    <button
-                      onClick={() => setSelectedCenterIds(new Set())}
-                      className="px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
-                    >
-                      {t('clearSelection', { defaultValue: 'Clear' })}
-                    </button>
-                    {selectedCenterIds.size > 0 && (
-                      <span className="text-sm text-[var(--text-secondary)]">
-                        {selectedCenterIds.size} {t('selected', { defaultValue: 'selected' })}
-                        <span className="ml-2 text-indigo-600 dark:text-indigo-400">{t('upgradeTo', { defaultValue: 'Upgrade to' })}:</span>
-                        {(['pro', 'business', 'enterprise'] as const).map((plan) => (
-                          <button
-                            key={plan}
-                            onClick={async () => {
-                              if (!confirm(t('confirmBulkUpgrade', { defaultValue: `Upgrade ${selectedCenterIds.size} center(s) to ${PLAN_LABELS[plan]}?` }))) return;
-                              setBulkUpgrading(true);
-                              let done = 0;
-                              const headers = await getAuthHeaders();
-                              if (!headers) { setBulkUpgrading(false); return; }
-                              for (const cid of selectedCenterIds) {
-                                try {
-                                  const res = await fetch('/api/admin/centers', {
-                                    method: 'PUT',
-                                    headers,
-                                    body: JSON.stringify({ centerId: cid, action: 'change_plan', newPlan: plan }),
-                                  });
-                                  if (res.ok) done++;
-                                } catch {
-                                  /* skip */
-                                }
-                              }
-                              setBulkUpgrading(false);
-                              setSelectedCenterIds(new Set());
-                              fetchCenters();
-                              alert(t('bulkUpgradeDone', { defaultValue: `Upgraded ${done} center(s).` }));
-                            }}
-                            disabled={bulkUpgrading}
-                            className="ml-1 px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/50 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 disabled:opacity-50"
-                          >
-                            {PLAN_LABELS[plan]}
-                          </button>
-                        ))}
+            {(overview.recentActivity?.length ?? 0) > 0 && (
+              <div className="glass p-5 rounded-xl">
+                <h3 className="font-bold text-foreground mb-3">{tAdmin('recentActivity')}</h3>
+                <div className="space-y-3">
+                  {overview.recentActivity!.slice(0, 5).map((a, i) => (
+                    <div key={a.id || i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                      <span className="text-sm text-foreground">
+                        {formatActivitySummary(a.action || '', a.details)}
+                        {a.details && typeof (a.details as { center_name?: string }).center_name === 'string' ? (
+                          <> — {(a.details as { center_name: string }).center_name}</>
+                        ) : null}
                       </span>
-                    )}
-                  </>
-                )}
+                      <span className="text-xs text-muted-foreground whitespace-nowrap ms-3">
+                        {a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="glass rounded-xl shadow overflow-x-auto">
+            )}
+          </>
+        )}
+
+        {/* Centers */}
+        {tab === 'centers' && (
+          <>
+            <div className="flex flex-wrap gap-3 items-center mb-4">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
+                <input
+                  value={centerSearch}
+                  onChange={(e) => setCenterSearch(e.target.value)}
+                  placeholder={tAdmin('search', { defaultValue: 'Search centers...' })}
+                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-border bg-muted text-foreground text-sm"
+                />
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2.5 rounded-xl border border-border bg-muted text-foreground text-sm"
+              >
+                <option value="all">{tCommon('all')}</option>
+                <option value="active">{tCommon('active')}</option>
+                <option value="suspended">{tAdmin('suspended')}</option>
+                <option value="pending">{tAdmin('pending')}</option>
+              </select>
+            </div>
+
+            <div className="glass overflow-hidden rounded-xl">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      {internalRole === 'super_admin' && (
-                        <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)] w-10">
-                          <input
-                            type="checkbox"
-                            checked={sortedCenters.filter(c => c.status === 'active').length > 0 && sortedCenters.filter(c => c.status === 'active').every(c => selectedCenterIds.has(c.id))}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedCenterIds(new Set(sortedCenters.filter(c => c.status === 'active').map(c => c.id)));
-                              } else {
-                                setSelectedCenterIds(new Set());
-                              }
-                            }}
-                            className="rounded"
-                          />
-                        </th>
-                      )}
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('phone')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('plan')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('status')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('studentsCount')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('billingPeriod')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('nextDue')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('daysRemaining')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('createdDate')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('actions')}</th>
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Owner</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tCommon('phone')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('studentsCount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('createdAt')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedCenters.map((c) => {
-                      const due = getCenterDueDisplay(c, t);
-                      return (
-                      <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700/50">
-                        {internalRole === 'super_admin' && (
-                          <td className="px-4 py-3">
-                            {c.status === 'active' ? (
-                              <input
-                                type="checkbox"
-                                checked={selectedCenterIds.has(c.id)}
-                                onChange={(e) => {
-                                  const next = new Set(selectedCenterIds);
-                                  if (e.target.checked) next.add(c.id);
-                                  else next.delete(c.id);
-                                  setSelectedCenterIds(next);
-                                }}
-                                className="rounded"
-                              />
-                            ) : (
-                              <span className="w-4 block" />
-                            )}
-                          </td>
-                        )}
-                        <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{c.name}</td>
-                        <td className="px-4 py-3" dir="ltr">{c.phone || c.owner?.phone || '—'}</td>
+                    {filteredCenters.map((c) => (
+                      <tr key={c.id} className="border-t border-border hover:bg-muted/30">
+                        <td className="px-4 py-3 font-medium text-foreground">{c.name}</td>
+                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
+                        <td className="px-4 py-3"><PlanBadge plan={c.plan} /></td>
                         <td className="px-4 py-3">
-                          <span className="inline-flex items-center gap-1 flex-wrap">
-                            {PLAN_LABELS[c.plan || 'starter'] || c.plan}
-                            {c.is_early_adopter && (
-                              <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300" title="Early Adopter - Price Locked">🔒 EA</span>
-                            )}
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[c.status || 'active'] || STATUS_STYLES.active}`}>
+                            {c.status || 'active'}
                           </span>
                         </td>
+                        <td className="px-4 py-3 font-mono text-muted-foreground hidden md:table-cell">{c.students_count ?? 0}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center gap-1 italic ${c.status === 'active' ? 'text-green-600' : c.status === 'suspended' ? 'text-red-600' : 'text-amber-600'}`}>
-                            {c.status === 'active' && '✅'}
-                            {c.status === 'suspended' && '🔴'}
-                            {c.status === 'pending' && '🟡'}
-                            {c.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`font-mono italic ${
-                            (c as { limit_status?: string }).limit_status === 'over' ? 'text-red-600 dark:text-red-400 font-bold' :
-                            (c as { limit_status?: string }).limit_status === 'approaching' ? 'text-amber-600 dark:text-amber-400' : ''
-                          }`}>
-                            {(c as { weekly_unique_students?: number }).weekly_unique_students != null && (c as { max_students?: number }).max_students != null && (c as { max_students: number }).max_students < 999999
-                              ? `${(c as { weekly_unique_students: number }).weekly_unique_students}/${(c as { max_students: number }).max_students}`
-                              : c.students_count}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {BILLING_LABELS[c.billing_period || 'monthly'] || c.billing_period}
-                        </td>
-                        <td className={`px-4 py-3 ${due.dueColor}`}>
-                          {due.nextDueText}
-                        </td>
-                        <td className={`px-4 py-3 font-medium ${due.dueColor}`}>
-                          {due.daysText}
-                        </td>
-                        <td className="px-4 py-3">{new Date(c.created_at).toLocaleDateString()}</td>
-                        <td className="px-4 py-3">
-                          {internalRole !== 'internal_viewer' ? (
-                            <div className="flex flex-wrap gap-1">
-                              <button
-                                onClick={() => setDetailCenter(c)}
-                                className="px-2 py-1 text-xs glass rounded hover:bg-white/10"
-                              >
-                                {t('viewDetails')}
-                              </button>
-                              {internalRole === 'super_admin' && (
-                                <button
-                                  onClick={() => setChangePlanCenter(c)}
-                                  className="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/50 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800"
-                                >
-                                  {t('changePlan')}
-                                </button>
-                              )}
-                              {internalRole === 'super_admin' && c.status === 'active' && (
-                                <button
-                                  onClick={() => setPasswordConfirm({ type: 'suspend', center: c })}
-                                  disabled={actionCenterId === c.id}
-                                  className="px-2 py-1 text-xs bg-amber-100 dark:bg-amber-900/50 rounded hover:bg-amber-200"
-                                >
-                                  {t('suspend')}
-                                </button>
-                              )}
-                              {internalRole === 'super_admin' && c.status === 'suspended' && (
-                                <button
-                                  onClick={() => handleCenterAction(c.id, 'reactivate')}
-                                  disabled={actionCenterId === c.id}
-                                  className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/50 rounded hover:bg-green-200"
-                                >
-                                  {t('reactivate')}
-                                </button>
-                              )}
-                              {internalRole === 'super_admin' && (
-                                <button
-                                  onClick={() => setDeleteConfirm({ center: c, name: '', password: '' })}
-                                  className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/50 rounded hover:bg-red-200 text-red-700 dark:text-red-300"
-                                >
-                                  {t('deleteCenters')}
-                                </button>
-                              )}
-                            </div>
-                          ) : (
+                          <div className="relative">
                             <button
-                              onClick={() => setDetailCenter(c)}
-                              className="px-2 py-1 text-xs glass rounded hover:bg-white/10"
+                              onClick={() => setOpenActionsId(openActionsId === c.id ? null : c.id)}
+                              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"
+                              title={tCommon('actions')}
                             >
-                              {t('viewDetails')}
+                              <MoreVertical size={16} />
                             </button>
-                          )}
+                            {openActionsId === c.id && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setOpenActionsId(null)} aria-hidden="true" />
+                                <div className="absolute top-full end-0 mt-1 z-50 min-w-[180px] py-1 rounded-lg border border-border shadow-lg bg-card">
+                                  <button onClick={() => { setDetailCenter(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
+                                    <ExternalLink size={14} />{tAdmin('viewDetails')}
+                                  </button>
+                                  {c.status === 'active' && (
+                                    <button onClick={() => { setShowSuspendConfirm(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
+                                      <AlertTriangle size={14} />{tAdmin('suspend')}
+                                    </button>
+                                  )}
+                                  {c.status === 'suspended' && (
+                                    <button onClick={() => { handleCenterAction(c.id, 'reactivate'); setOpenActionsId(null); }} disabled={actionLoading} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start disabled:opacity-50">
+                                      <Check size={14} />{tAdmin('reactivate')}
+                                    </button>
+                                  )}
+                                  <button onClick={() => { /* TODO: Change Plan modal */ setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
+                                    <CreditCard size={14} />{tAdmin('changePlan')}
+                                  </button>
+                                  <button onClick={() => { setShowDeleteConfirm(c); setDeleteConfirmName(''); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start">
+                                    <Trash2 size={14} />{tCommon('delete')}
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
-                    ); })}
+                    ))}
                   </tbody>
                 </table>
-                {centers.length === 0 && (
-                  <p className="p-8 text-center text-[var(--text-secondary)]">{t('noCenters')}</p>
-                )}
               </div>
             </div>
-          )}
+          </>
+        )}
 
-          {activeTab === 'billing' && (
-            <div className="space-y-8">
-              {/* Plan filter & MRR widgets */}
-              <div className="flex flex-wrap items-center gap-4 mb-4">
-                <select
-                  value={billingPlanFilter}
-                  onChange={(e) => setBillingPlanFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
-                >
-                  <option value="all">{t('allPlans', { defaultValue: 'All Plans' })}</option>
-                  <option value="starter">Starter</option>
-                  <option value="pro">Pro</option>
-                  <option value="business">Business</option>
-                  <option value="enterprise">Enterprise</option>
-                  <option value="top_centers">Top Centers</option>
-                  <option value="payg">PAYG</option>
-                </select>
-              </div>
-              {billingStats && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-                  <div className="glass rounded-xl p-4 shadow">
-                    <p className="text-xs text-[var(--text-secondary)]">{t('totalMRR', { defaultValue: 'Total MRR' })}</p>
-                    <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{billingStats.totalMRR.toLocaleString('ar-EG')} EGP</p>
-                  </div>
-                  <div className="glass rounded-xl p-4 shadow">
-                    <p className="text-xs text-[var(--text-secondary)]">{t('fixedMRR', { defaultValue: 'Fixed MRR' })}</p>
-                    <p className="text-lg font-bold text-[var(--text-primary)]">{billingStats.fixedMRR.toLocaleString('ar-EG')} EGP</p>
-                  </div>
-                  <div className="glass rounded-xl p-4 shadow">
-                    <p className="text-xs text-[var(--text-secondary)]">{t('paygMRR', { defaultValue: 'PAYG MRR' })}</p>
-                    <p className="text-lg font-bold text-[var(--text-primary)]">{billingStats.paygMRR.toLocaleString('ar-EG')} EGP</p>
-                  </div>
-                  <div className="glass rounded-xl p-4 shadow">
-                    <p className="text-xs text-[var(--text-secondary)]">{t('revenueProjection', { defaultValue: 'Annual Projection' })}</p>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-400">{billingStats.revenueProjection.toLocaleString('ar-EG')} EGP</p>
-                  </div>
-                  {Object.entries(billingStats.mrrByPlan).filter(([, amt]) => amt > 0).length > 0 && (
-                    <div className="glass rounded-xl p-4 shadow col-span-2">
-                      <p className="text-xs text-[var(--text-secondary)] mb-2">{t('mrrByPlan', { defaultValue: 'MRR by Plan' })}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(billingStats.mrrByPlan)
-                          .filter(([, amt]) => amt > 0)
-                          .map(([plan, amt]) => (
-                            <span key={plan} className="px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300">
-                              {PLAN_LABELS[plan] || plan}: {amt.toLocaleString('ar-EG')} EGP
-                            </span>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="glass rounded-xl shadow overflow-x-auto">
-                <h3 className="p-4 text-lg font-semibold text-[var(--text-primary)]">{t('billing')}</h3>
+        {/* Billing */}
+        {tab === 'billing' && (
+          <>
+            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('billing')}</h2>
+            <div className="glass overflow-hidden rounded-xl mb-6">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('plan')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('billingPeriod')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Discount</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Monthly Equiv</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('nextDue')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Days Until Due</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Auto-Suspend Date</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Referral Credits</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('status')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('actions')}</th>
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('nextDue')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {billingCenters.map((c) => {
-                      const due = getBillingDueDisplay(c, t);
+                    {billingData.map((b) => {
+                      const isPaid = b.billing_status === 'paid';
+                      const nextDueStr = b.nextDue ?? b.next_payment_due;
+                      const nextDueDate = nextDueStr ? new Date(nextDueStr) : null;
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      let statusKey: 'paid' | 'overdue' | 'dueSoon' | 'due' = 'due';
+                      if (isPaid) statusKey = 'paid';
+                      else if (nextDueDate && nextDueDate < today) statusKey = 'overdue';
+                      else if (nextDueDate) {
+                        const daysUntil = Math.ceil((nextDueDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+                        statusKey = daysUntil <= 7 ? 'dueSoon' : 'due';
+                      }
+                      const statusConfig = {
+                        paid: { label: '✅ Paid', className: STATUS_STYLES.active },
+                        overdue: { label: '🔴 Overdue', className: 'bg-red-100 text-red-700' },
+                        dueSoon: { label: '🟡 Due Soon', className: 'bg-amber-100 text-amber-700' },
+                        due: { label: 'Due', className: 'bg-gray-100 text-gray-700' },
+                      };
+                      const sc = statusConfig[statusKey];
                       return (
-                        <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700/50">
-                          <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{c.name}</td>
+                        <tr key={b.id} className="border-t border-border hover:bg-muted/30">
+                          <td className="px-4 py-3 font-medium text-foreground">{b.name}</td>
+                          <td className="px-4 py-3"><PlanBadge plan={b.plan} /></td>
+                          <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell">{b.billing_period ?? '—'}</td>
+                          <td className="px-4 py-3 font-mono font-bold text-foreground">{(b.amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{nextDueStr ?? '—'}</td>
                           <td className="px-4 py-3">
-                            <span className="flex items-center gap-1 flex-wrap">
-                              {(c as { billing_type?: string }).billing_type === 'payg'
-                                ? <span>PAYG</span>
-                                : <span>{PLAN_LABELS[c.plan] || c.plan}</span>}
-                              {(c as { is_early_adopter?: boolean }).is_early_adopter && (
-                                <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300" title="Early Adopter - Price Locked">
-                                  🔒 EA
-                                </span>
-                              )}
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${sc.className}`}>
+                              {sc.label}
                             </span>
                           </td>
-                          <td className="px-4 py-3">{BILLING_LABELS[c.billing_period || 'monthly']}</td>
-                          <td className="px-4 py-3 font-mono italic">{c.discount ?? 0}%</td>
-                          <td className="px-4 py-3 font-mono italic">{c.monthlyEquivalent?.toLocaleString('ar-EG') ?? '—'}</td>
-                          <td className={`px-4 py-3 ${due.dueColor}`}>{due.nextDueText}</td>
-                          <td className={`px-4 py-3 font-medium ${due.dueColor}`}>{due.daysText}</td>
-                          <td className="px-4 py-3 text-xs">{(() => { const a = (c as { autoSuspendAt?: string }).autoSuspendAt; return a ? new Date(a).toLocaleString() : '—'; })()}</td>
-                          <td className="px-4 py-3 font-mono italic text-green-600 dark:text-green-400">
-                            {((c as { referralCredits?: number }).referralCredits ?? 0) > 0
-                              ? `${((c as { referralCredits?: number }).referralCredits ?? 0).toLocaleString('ar-EG')} EGP`
-                              : '—'}
-                          </td>
-                          <td className="px-4 py-3 italic">
-                            {due.statusDisplay === 'overdue' && '🔴 overdue'}
-                            {due.statusDisplay === 'due_soon' && '🟡 due_soon'}
-                            {due.statusDisplay === 'paid' && '✅ paid'}
-                            {due.statusDisplay === 'suspended' && '🔴 ' + t('suspended')}
-                            {due.statusDisplay === 'awaiting' && '🟡 ' + t('awaitingPayment')}
-                          </td>
-                          <td className="px-4 py-3 flex gap-2">
-                            {internalRole === 'super_admin' && (
-                              <button
-                                onClick={() => setMarkPaidCenter(c)}
-                                disabled={actionCenterId === c.id}
-                                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-                              >
-                                {t('markAsPaid')}
-                              </button>
-                            )}
-                            <button
-                              onClick={() => openWhatsAppReminder(c)}
-                              className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                            >
-                              {t('sendReminder')}
-                            </button>
-                            {internalRole === 'super_admin' && (
-                              <button
-                                onClick={() => setPasswordConfirm({ type: 'suspend', center: c })}
-                                disabled={actionCenterId === c.id}
-                                className="px-2 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
-                              >
-                                {t('suspend')}
-                              </button>
-                            )}
+                          <td className="px-4 py-3">
+                            <div className="flex gap-1 flex-wrap">
+                              {!isPaid && (
+                                <>
+                                  <button
+                                    onClick={() => handleMarkPaid(b.id, b.amount ?? 0, b.billing_period ?? 'monthly')}
+                                    disabled={actionLoading}
+                                    className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                                  >
+                                    {tAdmin('markAsPaid')}
+                                  </button>
+                                  <button
+                                    onClick={() => { /* TODO: wire /api/admin/billing send-reminder */ }}
+                                    disabled={actionLoading}
+                                    className="px-2 py-1 rounded text-xs font-semibold border border-border hover:bg-muted disabled:opacity-50"
+                                  >
+                                    {tAdmin('sendReminder')}
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1684,677 +857,397 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="glass rounded-xl shadow overflow-x-auto">
-                <h3 className="p-4 text-lg font-semibold text-[var(--text-primary)]">{t('pendingPaymentProofs', { defaultValue: 'Pending Payment Proofs' })} ({pendingPaymentProofs.length})</h3>
+            </div>
+
+            {pendingInvoices.length > 0 && (
+              <>
+                <h3 className="font-bold text-foreground mt-6 mb-3">{tAdmin('pendingInvoices')}</h3>
+                <div className="glass overflow-hidden rounded-xl mb-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
+                          <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
+                          <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingInvoices.map((inv) => (
+                          <tr key={inv.id} className="border-t border-border">
+                            <td className="px-4 py-3 font-medium text-foreground">{inv.centerName}</td>
+                            <td className="px-4 py-3 font-mono font-bold">{(inv.payment_amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                            <td className="px-4 py-3 flex gap-1">
+                              <button
+                                onClick={() => {
+                                  if ((inv.payment_amount ?? 0) > 50000) {
+                                    setPasswordConfirm({ type: 'approve_invoice', inv: { id: inv.id, centerName: inv.centerName, payment_amount: inv.payment_amount ?? 0 } });
+                                  } else {
+                                    handleInvoiceAction(inv.id, 'approve');
+                                  }
+                                }}
+                                disabled={actionLoading}
+                                className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700"
+                              >
+                                {tAdmin('approvePay')}
+                              </button>
+                              <button onClick={() => handleInvoiceAction(inv.id, 'reject')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-700">
+                                {tAdmin('rejectPayment')}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <h3 className="font-bold text-foreground mt-6 mb-3">{tAdmin('paymentHistory')}</h3>
+            <div className="glass overflow-hidden rounded-xl">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('plan')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Amount</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('paymentMethod', { defaultValue: 'Payment Method' })}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Reference</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Proof</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('actions')}</th>
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('recordedBy')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {pendingPaymentProofs.map((inv) => (
-                      <tr key={inv.id} className="border-b border-gray-100 dark:border-gray-700/50">
-                        <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{inv.centerName}</td>
-                        <td className="px-4 py-3">{PLAN_LABELS[inv.centerPlan || ''] || inv.centerPlan || '—'}</td>
-                        <td className="px-4 py-3 font-mono italic">{Number(inv.payment_amount ?? 0).toLocaleString('ar-EG')} EGP</td>
-                        <td className="px-4 py-3">{inv.payment_method || '—'}</td>
-                        <td className="px-4 py-3 font-mono italic">{inv.payment_reference || '—'}</td>
-                        <td className="px-4 py-3">
-                          {inv.payment_proof_url ? (
-                            <a href={inv.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
-                              {t('viewProof', { defaultValue: 'View' })}
-                            </a>
-                          ) : '—'}
-                        </td>
-                        <td className="px-4 py-3 flex gap-2">
-                          {internalRole === 'super_admin' && (
-                            <button
-                              onClick={() =>
-                                Number(inv.payment_amount ?? 0) > SENSITIVE_PAYMENT_THRESHOLD
-                                  ? setPasswordConfirm({
-                                      type: 'approve_invoice',
-                                      inv: {
-                                        id: inv.id,
-                                        centerName: inv.centerName,
-                                        payment_amount: inv.payment_amount ?? 0,
-                                      },
-                                    })
-                                  : handleInvoiceAction(inv.id, 'approve')
-                              }
-                              disabled={actionCenterId === inv.id}
-                              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
-                            >
-                              {t('approvePay', { defaultValue: 'Approve Payment' })}
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleInvoiceAction(inv.id, 'reject')}
-                            disabled={actionCenterId === inv.id}
-                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
-                          >
-                            {t('rejectPayment', { defaultValue: 'Reject Payment' })}
-                          </button>
-                        </td>
+                    {paymentHistory.map((p, i) => (
+                      <tr key={i} className="border-t border-border">
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
+                        <td className="px-4 py-3 font-medium text-foreground">{p.centerName}</td>
+                        <td className="px-4 py-3 font-mono font-bold">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{p.billing_period ?? '—'}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {pendingPaymentProofs.length === 0 && (
-                  <p className="p-8 text-center text-[var(--text-secondary)]">{t('noPendingInvoices', { defaultValue: 'No pending payment proofs.' })}</p>
-                )}
-              </div>
-              <div className="glass rounded-xl shadow overflow-x-auto">
-                <h3 className="p-4 text-lg font-semibold text-[var(--text-primary)]">{t('paymentHistory')}</h3>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('date')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('centerName')}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Amount</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Period</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Payment Proof</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('status')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paymentHistory.map((p) => (
-                      <tr key={p.source === 'invoice' ? `inv-${p.id}` : p.id} className="border-b border-gray-100 dark:border-gray-700/50">
-                        <td className="px-4 py-3">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3">{p.centerName}</td>
-                        <td className="px-4 py-3 font-mono italic">{Number(p.amount).toLocaleString('ar-EG')} EGP</td>
-                        <td className="px-4 py-3">{p.billing_period === 'payment_proof' ? 'Payment Proof' : p.billing_period}</td>
-                        <td className="px-4 py-3">
-                          {p.payment_proof_url ? (
-                            <a href={p.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
-                              {t('viewProof', { defaultValue: 'View' })}
-                            </a>
-                          ) : <span className="text-[var(--text-secondary)]">No proof</span>}
-                        </td>
-                        <td className="px-4 py-3">
-                          {p.invoiceStatus === 'approved' && <span className="px-2 py-0.5 text-xs font-medium italic rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">{t('approved')}</span>}
-                          {p.invoiceStatus === 'rejected' && <span className="px-2 py-0.5 text-xs font-medium italic rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">{t('rejected')}</span>}
-                          {!p.invoiceStatus && '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {paymentHistory.length === 0 && (
-                  <p className="p-8 text-center text-[var(--text-secondary)]">No payments recorded yet.</p>
-                )}
               </div>
             </div>
-          )}
+          </>
+        )}
 
-          {activeTab === 'plan-requests' && (
-            <div className="glass rounded-xl shadow overflow-x-auto">
+        {/* Plan Requests */}
+        {tab === 'planRequests' && (
+          <>
+            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('planRequests')}</h2>
+            <div className="glass overflow-hidden rounded-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Current → Requested</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {planRequests.map((pr) => (
+                      <tr key={pr.id} className="border-t border-border">
+                        <td className="px-4 py-3 font-medium text-foreground">{pr.centerName}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <PlanBadge plan={pr.current_plan} />
+                            <span className="text-muted-foreground">→</span>
+                            <PlanBadge plan={pr.requested_plan} />
+                            {pr.priceDiffFormatted && <span className="text-xs text-muted-foreground">{pr.priceDiffFormatted}</span>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : '—'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pr.status === 'pending' ? STATUS_STYLES.pending : pr.status === 'approved' ? STATUS_STYLES.active : STATUS_STYLES.rejected}`}>
+                            {pr.status === 'pending' ? tAdmin('pending') : pr.status === 'approved' ? tAdmin('approved') : tAdmin('rejected')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {pr.status === 'pending' && (
+                            <div className="flex gap-1">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700">
+                                {tAdmin('approve')}
+                              </button>
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-700">
+                                {tAdmin('reject')}
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Pending Signups */}
+        {tab === 'pendingSignups' && (
+          <>
+            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('pendingSignups')}</h2>
+            <div className="glass overflow-hidden rounded-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Center</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Owner</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('phone')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tCommon('email')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('referredBy')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingSignups.map((ps) => (
+                      <tr key={ps.id} className="border-t border-border">
+                        <td className="px-4 py-3 font-medium text-foreground">{ps.name}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{ps.owner_name ?? '—'}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground" dir="ltr">{ps.phone ?? '—'}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{ps.email ?? '—'}</td>
+                        <td className="px-4 py-3"><PlanBadge plan={ps.plan} /></td>
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1">
+                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700">
+                              {tAdmin('approve')}
+                            </button>
+                            <button onClick={() => setShowRejectReason(ps)} className="px-2 py-1 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-700">
+                              {tAdmin('reject')}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {pendingSignups.length === 0 && (
+                      <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">{tAdmin('noPending')}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Internal Team */}
+        {tab === 'internalTeam' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-foreground">{tAdmin('internalTeam')}</h2>
+              <button onClick={() => setShowAddAdmin(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90">
+                + {tAdmin('addAdmin', { defaultValue: 'Add Admin' })}
+              </button>
+            </div>
+            <div className="glass overflow-hidden rounded-xl">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('centerName')}</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Current Plan</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Requested Plan</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">Price Change</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('requestedAt')}</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('status')}</th>
-                    <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('actions')}</th>
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
+                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('phone')}</th>
+                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">Role</th>
+                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('joinedDate')}</th>
+                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {planRequests.map((pr) => (
-                    <tr key={pr.id} className="border-b border-gray-100 dark:border-gray-700/50">
-                      <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{pr.centerName}</td>
-                      <td className="px-4 py-3">{PLAN_LABELS[pr.current_plan || 'starter']}</td>
-                      <td className="px-4 py-3">{PLAN_LABELS[pr.requested_plan] || pr.requested_plan}</td>
-                      <td className={`px-4 py-3 font-mono ${(pr.priceDiff ?? 0) > 0 ? 'text-green-600 dark:text-green-400' : (pr.priceDiff ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                        {pr.priceDiffFormatted || '—'}
-                      </td>
-                      <td className="px-4 py-3">{new Date(pr.requested_at).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 italic">{pr.status}</td>
-                      <td className="px-4 py-3 flex gap-2">
-                        {pr.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handlePlanRequestAction(pr.id, 'approve')}
-                              disabled={actionCenterId === pr.id}
-                              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
-                            >
-                              {t('approve')}
-                            </button>
-                            <button
-                              onClick={() => handlePlanRequestAction(pr.id, 'reject')}
-                              disabled={actionCenterId === pr.id}
-                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
-                            >
-                              {t('reject')}
-                            </button>
-                          </>
+                  {internalTeam.map((m) => (
+                    <tr key={m.id} className="border-t border-border">
+                      <td className="px-4 py-3 font-medium text-foreground">{m.name}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground" dir="ltr">{m.phone ?? m.email ?? '—'}</td>
+                      <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-xs font-semibold border border-purple-400 bg-purple-50  text-purple-700 ">{m.role}</span></td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
+                      <td className="px-4 py-3">
+                        {m.role !== 'super_admin' && m.role !== 'admin' && (
+                          <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50">
+                            {tAdmin('remove')}
+                          </button>
                         )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {planRequests.length === 0 && (
-                <p className="p-8 text-center text-[var(--text-secondary)]">No plan requests.</p>
-              )}
             </div>
-          )}
-
-          {activeTab === 'pending' && (
-            <div className="glass rounded-xl shadow p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                  {t('pendingSignups')} ({pendingCenters.length})
-                </h2>
-                <button
-                  onClick={fetchPendingSignups}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
-                >
-                  {t('refresh', { defaultValue: 'Refresh' })}
-                </button>
-              </div>
-              {pendingCenters.length === 0 ? (
-                <p className="mt-4 text-[var(--text-secondary)]">{t('noPending')}</p>
-              ) : (
-                <div className="grid gap-4">
-                  {pendingCenters.map((c) => {
-                    const planPricing: Record<string, { monthly: number; setup: number }> = {
-                      starter: { monthly: 2000, setup: 1000 },
-                      pro: { monthly: 4500, setup: 2000 },
-                      business: { monthly: 6500, setup: 3000 },
-                      enterprise: { monthly: 9000, setup: 5000 },
-                    };
-                    const plan = (c.plan || 'starter').toLowerCase();
-                    const pricing = planPricing[plan] || planPricing.starter;
-                    const firstPayment = pricing.monthly + pricing.setup;
-                    const phoneDigits = (c.phone || '').replace(/\D/g, '');
-                    const instaPayPhone = process.env.NEXT_PUBLIC_INSTAPAY_PHONE || '+20 122 060 1410';
-                    const paymentWhatsAppText = `مرحباً! شكراً لتسجيلك في CenterHQ.
-
-💰 للتفعيل، يرجى إرسال إيصال InstaPay بمبلغ ${firstPayment.toLocaleString()} جنيه:
-• رسوم الاشتراك الشهري: ${pricing.monthly.toLocaleString()} جنيه
-• رسوم الإعداد: ${pricing.setup.toLocaleString()} جنيه
-
-📱 رقم InstaPay (رقم الموبايل):
-${instaPayPhone}
-
-بعد استلام الإيصال، سنفعل حسابك خلال ساعات.`;
-                    let phoneDig = phoneDigits;
-                    if (phoneDig.startsWith('0')) phoneDig = '20' + phoneDig.slice(1);
-                    else if (!phoneDig.startsWith('20')) phoneDig = '20' + phoneDig;
-                    const paymentWhatsAppUrl = `https://wa.me/${phoneDig}?text=${encodeURIComponent(paymentWhatsAppText)}`;
-                    return (
-                      <div key={c.id} className="bg-bg-secondary p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex-1">
-                            <h4 className="font-bold text-xl text-[var(--text-primary)]">{c.name}</h4>
-                            <p className="text-[var(--text-secondary)]">{c.owner_name || ''} {c.city ? `• ${c.city}` : ''}</p>
-                            <p className="text-[var(--text-secondary)]" dir="ltr">Phone: {c.phone || '—'}</p>
-                            <p className="text-[var(--text-tertiary)] text-sm mt-1">
-                              {t('requested', { defaultValue: 'Requested' })}: {new Date(c.requested_at || c.created_at).toLocaleDateString('en-GB')} at {new Date(c.requested_at || c.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                          <span className="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-full text-sm font-medium">
-                            {PLAN_LABELS[c.plan || 'starter'] || c.plan}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                          <div>
-                            <p className="text-[var(--text-tertiary)] text-sm">{t('monthlyFee', { defaultValue: 'Monthly Fee' })}</p>
-                            <p className="text-[var(--text-primary)] font-bold">EGP {pricing.monthly.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-[var(--text-tertiary)] text-sm">{t('setupFee', { defaultValue: 'Setup Fee' })}</p>
-                            <p className="text-[var(--text-primary)] font-bold">EGP {pricing.setup.toLocaleString()}</p>
-                          </div>
-                          <div className="col-span-2 pt-2 border-t border-indigo-200 dark:border-indigo-800">
-                            <p className="text-[var(--text-tertiary)] text-sm">{t('firstPaymentRequired', { defaultValue: 'First Payment Required' })}</p>
-                            <p className="text-indigo-600 dark:text-indigo-400 font-bold text-2xl">
-                              EGP {firstPayment.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                        {c.signup_notes && (
-                          <p className="text-[var(--text-secondary)] text-sm mb-4 italic">Notes: {c.signup_notes}</p>
-                        )}
-                        <div className="flex gap-3 flex-wrap">
-                          <a
-                            href={paymentWhatsAppUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 min-w-[180px] px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center justify-center gap-2 font-medium text-sm"
-                          >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                            </svg>
-                            {t('requestPayment', { defaultValue: 'Request Payment' })}
-                          </a>
-                          <button
-                            onClick={() => handleApprove(c.id)}
-                            disabled={actionCenterId === c.id}
-                            className="flex-1 min-w-[180px] px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm disabled:opacity-50"
-                          >
-                            {actionCenterId === c.id ? '...' : '✅ ' + t('activateAccount', { defaultValue: 'Activate Account' })}
-                          </button>
-                          <button
-                            onClick={() => handleReject(c.id)}
-                            disabled={actionCenterId === c.id}
-                            className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm disabled:opacity-50"
-                          >
-                            ❌ {t('reject')}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'team' && (
-            <div className="space-y-6">
-              {/* Invite Form */}
-              <div className="glass rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                  {t('inviteTeamMember', { defaultValue: 'Invite Team Member' })}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <input
-                    type="text"
-                    placeholder={t('name', { defaultValue: 'Name' })}
-                    value={inviteName}
-                    onChange={(e) => setInviteName(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
-                  />
-                  <input
-                    type="text"
-                    placeholder={t('phone', { defaultValue: 'Phone (e.g. 01XXXXXXXXX)' })}
-                    value={invitePhone}
-                    onChange={(e) => setInvitePhone(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
-                    dir="ltr"
-                  />
-                  <input
-                    type="email"
-                    placeholder={t('email', { defaultValue: 'Email (optional)' })}
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
-                    dir="ltr"
-                  />
-                  <select
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value as 'internal_admin' | 'internal_viewer')}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary text-sm"
-                  >
-                    <option value="internal_admin">{t('internalAdmin', { defaultValue: 'Admin (Full Access)' })}</option>
-                    <option value="internal_viewer">{t('internalViewer', { defaultValue: 'Viewer (Read Only)' })}</option>
-                  </select>
-                  <button
-                    onClick={handleInviteInternal}
-                    disabled={inviting || !inviteName.trim() || !invitePhone.trim()}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg disabled:opacity-50"
-                  >
-                    {inviting ? '...' : t('invite', { defaultValue: 'Invite' })}
-                  </button>
-                </div>
-              </div>
-
-              {/* Team Table */}
-              <div className="glass rounded-xl shadow overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('name', { defaultValue: 'Name' })}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('phone', { defaultValue: 'Phone' })}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('email', { defaultValue: 'Email' })}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('role', { defaultValue: 'Role' })}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('joinedDate', { defaultValue: 'Joined' })}</th>
-                      <th className="px-4 py-3 text-start text-sm font-medium italic text-[var(--text-secondary)]">{t('actions', { defaultValue: 'Actions' })}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {internalTeam.map((m) => (
-                      <tr key={m.id} className="border-b border-gray-100 dark:border-gray-700/50">
-                        <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{m.name}</td>
-                        <td className="px-4 py-3" dir="ltr">{m.phone || '—'}</td>
-                        <td className="px-4 py-3">{m.email || '—'}</td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 text-xs font-medium italic rounded-full ${
-                            m.role === 'super_admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
-                            m.role === 'internal_admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-                            'glass text-[var(--text-primary)]'
-                          }`}>
-                            {m.role === 'super_admin' ? t('superAdmin', { defaultValue: 'CEO' }) :
-                             m.role === 'internal_admin' ? t('internalAdmin', { defaultValue: 'Admin' }) :
-                             m.role === 'admin' ? t('superAdmin', { defaultValue: 'CEO' }) :
-                             t('internalViewer', { defaultValue: 'Viewer' })}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">{new Date(m.created_at).toLocaleDateString()}</td>
-                        <td className="px-4 py-3">
-                          {m.role !== 'super_admin' && m.role !== 'admin' && (
-                            <div className="flex gap-2">
-                              <select
-                                value={m.role}
-                                onChange={(e) =>
-                                  setPasswordConfirm({
-                                    type: 'change_role',
-                                    memberId: m.id,
-                                    newRole: e.target.value,
-                                    prevRole: m.role,
-                                  })
-                                }
-                                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-bg-tertiary text-text-primary"
-                              >
-                                <option value="internal_admin">{t('internalAdmin', { defaultValue: 'Admin' })}</option>
-                                <option value="internal_viewer">{t('internalViewer', { defaultValue: 'Viewer' })}</option>
-                              </select>
-                              <button
-                                onClick={() => handleRemoveInternal(m.id)}
-                                className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded hover:bg-red-200"
-                              >
-                                {t('remove', { defaultValue: 'Remove' })}
-                              </button>
-                            </div>
-                          )}
-                          {(m.role === 'super_admin' || m.role === 'admin') && (
-                            <span className="text-xs text-text-secondary">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {internalTeam.length === 0 && (
-                  <p className="p-8 text-center text-[var(--text-secondary)]">{t('noTeamMembers', { defaultValue: 'No internal team members yet.' })}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'security' && (
-            <div className="space-y-6">
-              {/* Recent Admin Actions */}
-              <div className="glass rounded-xl p-6 shadow">
-                <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-4">
-                  {t('recentAdminActions', { defaultValue: 'Recent Admin Actions' })}
-                </h3>
-                <div className="space-y-2">
-                  {securityData.recentLogs.slice(0, 20).map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex items-center justify-between p-3 bg-bg-tertiary rounded-lg"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium text-[var(--text-primary)]">
-                          {log.action.replace(/_/g, ' ').toUpperCase()}
-                        </span>
-                        <span className="text-[var(--text-secondary)] text-sm ml-2">
-                          {t('by', { defaultValue: 'by' })} {log.user?.name || t('unknown', { defaultValue: 'Unknown' })}
-                        </span>
-                        {log.center?.name && (
-                          <span className="text-[var(--text-tertiary)] text-sm ml-2">
-                            → {log.center.name}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[var(--text-tertiary)] text-sm flex-shrink-0 ml-2">
-                        {new Date(log.created_at).toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                  {securityData.recentLogs.length === 0 && (
-                    <p className="text-sm text-[var(--text-secondary)] py-4">{t('noAuditLogs', { defaultValue: 'No audit logs yet.' })}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Statistics & Center Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="glass rounded-xl p-6 shadow">
-                  <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                    {t('actionsLast30Days', { defaultValue: 'Actions (Last 30 Days)' })}
-                  </h4>
-                  <div className="space-y-2">
-                    {Object.entries(securityData.actionStats).length > 0 ? (
-                      Object.entries(securityData.actionStats).map(([action, count]) => (
-                        <div key={action} className="flex justify-between text-sm">
-                          <span className="text-[var(--text-secondary)]">{action.replace(/_/g, ' ')}</span>
-                          <span className="font-semibold text-[var(--text-primary)]">{count}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-[var(--text-secondary)]">{t('noActivity')}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="glass rounded-xl p-6 shadow">
-                  <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                    {t('centersByStatus', { defaultValue: 'Centers by Status' })}
-                  </h4>
-                  <div className="space-y-2">
-                    {Object.entries(securityData.centerStats).map(([status, count]) => (
-                      <div key={status} className="flex justify-between text-sm">
-                        <span className="text-[var(--text-secondary)] capitalize">{status}</span>
-                        <span className="font-semibold text-[var(--text-primary)]">{count}</span>
-                      </div>
-                    ))}
-                    {Object.keys(securityData.centerStats).length === 0 && (
-                      <p className="text-sm text-[var(--text-secondary)]">{t('noData')}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="glass rounded-xl p-6 shadow">
-                  <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                    {t('securityHealth', { defaultValue: 'Security Health' })}
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-[var(--text-secondary)]">{t('auditLogging', { defaultValue: 'Audit Logging' })}</span>
-                      <span className="text-green-500 font-semibold">✓ {t('active', { defaultValue: 'Active' })}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-[var(--text-secondary)]">{t('rlsEnabled', { defaultValue: 'RLS Enabled' })}</span>
-                      <span className="text-green-500 font-semibold">✓ {t('active', { defaultValue: 'Active' })}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-[var(--text-secondary)]">{t('inputValidation', { defaultValue: 'Input Validation' })}</span>
-                      <span className="text-green-500 font-semibold">✓ {t('active', { defaultValue: 'Active' })}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Export Audit Log */}
-              <div className="glass rounded-xl p-6 shadow">
-                <button
-                  onClick={exportAuditLog}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
-                >
-                  {t('exportAuditLog', { defaultValue: 'Export Audit Log (CSV)' })}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
-      {/* Modals */}
+      {/* Center Detail Slide-over */}
       {detailCenter && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDetailCenter(null)}>
-          <div className="glass rounded-xl shadow-xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('centerDetails')}</h3>
-            <div className="space-y-2 text-sm">
-              <p><span className="text-text-secondary">{t('centerName')}:</span> {detailCenter.name}</p>
-              <p><span className="text-text-secondary">{t('phone')}:</span> <span dir="ltr">{detailCenter.phone || detailCenter.owner?.phone || '—'}</span></p>
-              <p><span className="text-text-secondary">{t('email')}:</span> {detailCenter.email || '—'}</p>
-              <p><span className="text-text-secondary">Owner:</span> {detailCenter.owner?.name || '—'} ({detailCenter.owner?.phone || '—'})</p>
-              <p><span className="text-text-secondary">{t('plan')}:</span> {PLAN_LABELS[detailCenter.plan || 'starter']}</p>
-              <p><span className="text-text-secondary">{t('studentsCount')}:</span> {detailCenter.students_count}</p>
-              <p><span className="text-text-secondary">{t('lastPayment')}:</span> {detailCenter.last_payment ? new Date(detailCenter.last_payment).toLocaleDateString() : '—'}</p>
-              <p><span className="text-text-secondary">{t('referralCode')}:</span> {detailCenter.referral_code || '—'}</p>
+        <div className="fixed inset-0 z-50" onClick={() => setDetailCenter(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-card" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h2 className="font-bold text-foreground text-lg">{detailCenter.name}</h2>
+              <button onClick={() => setDetailCenter(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
             </div>
-            <button onClick={() => setDetailCenter(null)} className="mt-4 px-4 py-2 glass rounded-lg hover:bg-white/10">{t('viewDetails')} ✕</button>
-          </div>
-        </div>
-      )}
-
-      {changePlanCenter && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setChangePlanCenter(null)}>
-          <div className="glass rounded-xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('changePlan')}</h3>
-            <div className="space-y-2">
-              {(['starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'] as const).map((plan) => (
-                <button
-                  key={plan}
-                  onClick={() => handleCenterAction(changePlanCenter.id, 'change_plan', { newPlan: plan })}
-                  disabled={actionCenterId === changePlanCenter.id}
-                  className="w-full px-3 py-2 text-left glass rounded-lg hover:bg-bg-secondary disabled:opacity-50"
-                >
-                  {PLAN_LABELS[plan]} {plan !== 'payg' && plan !== 'top_centers' && `(EGP ${PLAN_PRICE[plan]?.toLocaleString()}/mo)`}
-                  {plan === 'top_centers' && ' (Custom)'}
-                </button>
+            <div className="p-5 space-y-4">
+              {[
+                { label: 'Owner', value: detailCenter.owner?.name ?? detailCenter.owner_name ?? '—' },
+                { label: tCommon('phone'), value: detailCenter.phone ?? '—' },
+                { label: tCommon('email'), value: detailCenter.email ?? '—' },
+                { label: 'Plan', value: PLAN_LABELS[detailCenter.plan ?? 'starter'] ?? detailCenter.plan },
+                { label: tAdmin('billingPeriod'), value: detailCenter.billing_period ?? '—' },
+                { label: tAdmin('studentsCount'), value: String(detailCenter.students_count ?? 0) },
+                { label: tCommon('status'), value: detailCenter.status ?? '—' },
+                { label: tAdmin('nextDue'), value: detailCenter.next_due ?? '—' },
+                { label: tAdmin('referralCode'), value: detailCenter.referral_code ?? '—' },
+                { label: tAdmin('createdAt'), value: detailCenter.created_at ? new Date(detailCenter.created_at).toLocaleDateString() : '—' },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+                  <p className="font-medium text-foreground">{value}</p>
+                </div>
               ))}
             </div>
-            <button onClick={() => setChangePlanCenter(null)} className="mt-4 px-4 py-2 glass rounded-lg">Cancel</button>
           </div>
         </div>
       )}
 
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeleteConfirm(null)}>
-          <div className="glass rounded-xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-4">{t('confirmDelete')}</h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-2">Type: {deleteConfirm.center.name}</p>
-            <input
-              type="text"
-              value={deleteConfirm.name}
-              onChange={(e) => setDeleteConfirm({ ...deleteConfirm, name: e.target.value })}
-              placeholder={deleteConfirm.center.name}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary mb-3"
-            />
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1 mt-2">
-              {t('passwordConfirm', { defaultValue: 'Confirm your password' })}
-            </label>
-            <input
-              type="password"
-              value={deleteConfirm.password}
-              onChange={(e) => setDeleteConfirm({ ...deleteConfirm, password: e.target.value })}
-              placeholder={t('passwordPlaceholder', { defaultValue: 'Enter your password' })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary mb-4"
-            />
-            <div className="flex gap-2">
+      {/* Suspend Confirm */}
+      {showSuspendConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSuspendConfirm(null)}>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-card" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-foreground mb-2">{tAdmin('confirmSuspend')}</h3>
+            <p className="text-sm text-muted-foreground mb-4">Are you sure you want to suspend {showSuspendConfirm.name}?</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowSuspendConfirm(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
               <button
-                onClick={() =>
-                  handleCenterAction(deleteConfirm.center.id, 'delete', {
-                    confirmName: deleteConfirm.name,
-                    password: deleteConfirm.password,
-                  })
-                }
-                disabled={
-                  deleteConfirm.name !== deleteConfirm.center.name ||
-                  !deleteConfirm.password.trim() ||
-                  actionCenterId === deleteConfirm.center.id
-                }
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                onClick={() => setPasswordConfirm({ type: 'suspend', center: showSuspendConfirm })}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
               >
-                {t('deleteCenters')}
+                {tCommon('confirm')}
               </button>
-              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 glass rounded-lg">Cancel</button>
             </div>
           </div>
         </div>
       )}
 
-      {markPaidCenter && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setMarkPaidCenter(null)}>
-          <div className="glass rounded-xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('markAsPaid')}</h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-4">{markPaidCenter.name} - {(markPaidCenter.amount ?? PLAN_PRICE[markPaidCenter.plan] ?? 2000).toLocaleString('ar-EG')} EGP</p>
-            <div className="flex gap-2">
+      {/* Delete Confirm */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowDeleteConfirm(null)}>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-card" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-foreground mb-2">{tAdmin('deleteCenters')}</h3>
+            <p className="text-sm text-muted-foreground mb-3">{tAdmin('confirmDelete')}</p>
+            <p className="text-sm mb-2"><strong className="text-foreground">{showDeleteConfirm.name}</strong></p>
+            <input
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              placeholder={showDeleteConfirm.name}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-muted text-foreground text-sm mb-3"
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
               <button
-                onClick={() => handleMarkPaid(markPaidCenter)}
-                disabled={actionCenterId === markPaidCenter.id}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                disabled={deleteConfirmName !== showDeleteConfirm.name}
+                onClick={() => {
+                  if (deleteConfirmName === showDeleteConfirm.name) {
+                    setPasswordConfirm({ type: 'delete', center: showDeleteConfirm, confirmName: deleteConfirmName });
+                    setShowDeleteConfirm(null);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
               >
-                {t('markAsPaid')}
+                {tCommon('delete')}
               </button>
-              <button onClick={() => setMarkPaidCenter(null)} className="px-4 py-2 glass rounded-lg">Cancel</button>
             </div>
           </div>
         </div>
       )}
 
-      <PasswordConfirmModal
-        isOpen={!!passwordConfirm}
-        onClose={() => {
-          setPasswordConfirm(null);
-          setPasswordError('');
-        }}
-        title={
-          passwordConfirm?.type === 'suspend'
-            ? t('confirmSuspend', { defaultValue: 'Confirm Suspend Center' })
-            : passwordConfirm?.type === 'approve_invoice'
-              ? t('confirmApprovePayment', { defaultValue: 'Confirm Approve Payment' })
-              : t('confirmRoleChange', { defaultValue: 'Confirm Role Change' })
-        }
-        message={
-          passwordConfirm?.type === 'suspend'
-            ? `${t('suspend', { defaultValue: 'Suspend' })}: ${passwordConfirm.center.name}`
-            : passwordConfirm?.type === 'approve_invoice'
-              ? `${passwordConfirm.inv.centerName} - ${passwordConfirm.inv.payment_amount.toLocaleString('ar-EG')} EGP`
-              : undefined
-        }
-        loading={passwordConfirmLoading || !!actionCenterId}
-        error={passwordError}
-        onConfirm={async (password) => {
-          setPasswordError('');
-          setPasswordConfirmLoading(true);
-          try {
-            if (passwordConfirm?.type === 'suspend') {
-              await handleCenterAction(passwordConfirm.center.id, 'suspend', { password });
-              setPasswordConfirm(null);
-            } else if (passwordConfirm?.type === 'approve_invoice') {
-              await handleInvoiceAction(passwordConfirm.inv.id, 'approve', password);
-              setPasswordConfirm(null);
-            } else if (passwordConfirm?.type === 'change_role') {
-              const headers = await getAuthHeaders();
-              if (!headers) {
-                setPasswordError('Not authenticated');
-                return;
-              }
-              const r = await fetch('/api/admin/team', {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify({
-                  memberId: passwordConfirm.memberId,
-                  role: passwordConfirm.newRole,
-                  password,
-                }),
-              });
-              const data = await r.json();
-              if (r.ok) {
-                fetchInternalTeam();
-                setPasswordConfirm(null);
-              } else {
-                setPasswordError(data.error || 'Failed');
-              }
-            }
-          } finally {
-            setPasswordConfirmLoading(false);
+      {/* Add Admin Modal */}
+      {showAddAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddAdmin(false)}>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-card" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-foreground mb-4">{tAdmin('inviteTeamMember', { defaultValue: 'Add Admin' })}</h3>
+            <p className="text-xs text-muted-foreground mb-3">{tAdmin('noTeamMembers', { defaultValue: 'User must have signed up at CenterHQ first.' })}</p>
+            <div className="space-y-3">
+              <input
+                value={addAdminForm.name}
+                onChange={(e) => setAddAdminForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder={tCommon('name')}
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm"
+              />
+              <input
+                value={addAdminForm.phone}
+                onChange={(e) => setAddAdminForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder={tCommon('phone')}
+                type="tel"
+                dir="ltr"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm"
+              />
+              <input
+                value={addAdminForm.email}
+                onChange={(e) => setAddAdminForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder={tCommon('email')}
+                type="email"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm"
+              />
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => setShowAddAdmin(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button onClick={handleAddAdmin} disabled={actionLoading || !addAdminForm.name.trim() || !addAdminForm.phone.trim()} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">
+                {tAdmin('invite')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Reason Modal */}
+      {showRejectReason && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowRejectReason(null)}>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-card" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-foreground mb-3">Rejection Reason</h3>
+            <textarea placeholder="Optional reason..." className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm h-24 resize-none mb-4" />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowRejectReason(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button
+                onClick={() => { handleCenterAction(showRejectReason.id, 'reject'); setShowRejectReason(null); }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
+              >
+                {tAdmin('reject')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Confirm Modal */}
+      {passwordConfirm && (
+        <PasswordConfirmModal
+          isOpen={!!passwordConfirm}
+          onClose={() => setPasswordConfirm(null)}
+          title={
+            passwordConfirm.type === 'suspend'
+              ? tAdmin('confirmSuspend')
+              : passwordConfirm.type === 'delete'
+                ? tAdmin('deleteCenters')
+                : tAdmin('confirmApprovePayment')
           }
-        }}
-      />
-    </>
+          onConfirm={async (password) => {
+            if (passwordConfirm.type === 'suspend') {
+              await handleCenterAction(passwordConfirm.center.id, 'suspend', { password });
+            } else if (passwordConfirm.type === 'delete') {
+              await handleCenterAction(passwordConfirm.center.id, 'delete', { confirmName: passwordConfirm.confirmName, password });
+            } else {
+              await handleInvoiceAction(passwordConfirm.inv.id, 'approve', password);
+            }
+            setPasswordConfirm(null);
+          }}
+        />
+      )}
+    </div>
   );
 }

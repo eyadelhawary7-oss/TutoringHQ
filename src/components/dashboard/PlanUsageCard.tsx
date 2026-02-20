@@ -58,12 +58,12 @@ export default function PlanUsageCard({ plan, weeklyUniqueStudents, studentLimit
         />
       </div>
       {isYellow && isOwner && (
-        <p className="text-sm text-amber-500 dark:text-amber-400 mt-2">
+        <p className="text-sm text-amber-500 mt-2">
           {t('approachingLimit', { defaultValue: 'Approaching limit' })}
         </p>
       )}
       {isRed && isOwner && (
-        <p className="text-sm text-red-500 dark:text-red-400 mt-2">
+        <p className="text-sm text-red-500 mt-2">
           {t('upgradeRecommended', { defaultValue: 'Upgrade recommended' })}
         </p>
       )}

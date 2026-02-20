@@ -1,45 +1,16 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 
-export type ThemeName = 'dark-blue' | 'midnight' | 'light';
-
-const THEME_STORAGE_KEY = 'centerhq-theme';
-
+// Light-only app — ThemeContext is a no-op kept for import compatibility
 const ThemeContext = createContext<{
-  theme: ThemeName;
-  setTheme: (t: ThemeName) => void;
-}>({ theme: 'dark-blue', setTheme: () => {} });
+  theme: 'light';
+  setTheme: (t: string) => void;
+}>({ theme: 'light', setTheme: () => {} });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeName>('dark-blue');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const stored = localStorage.getItem(THEME_STORAGE_KEY) as ThemeName | null;
-    if (stored && ['dark-blue', 'midnight', 'light'].includes(stored)) {
-      setThemeState(stored);
-      document.documentElement.setAttribute('data-theme', stored);
-    } else {
-      document.documentElement.setAttribute('data-theme', 'dark-blue');
-    }
-  }, []);
-
-  const setTheme = useCallback((t: ThemeName) => {
-    setThemeState(t);
-    document.documentElement.setAttribute('data-theme', t);
-    localStorage.setItem(THEME_STORAGE_KEY, t);
-  }, []);
-
-  useEffect(() => {
-    if (mounted) {
-      document.documentElement.setAttribute('data-theme', theme);
-    }
-  }, [theme, mounted]);
-
+export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme: 'light', setTheme: () => {} }}>
       {children}
     </ThemeContext.Provider>
   );

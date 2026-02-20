@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, dbDelete, dbUpdate, auditLog } from '@/lib/db-proxy';
+import { dbSelect, dbInsert, auditLog } from '@/lib/db-proxy';
+import { Plus, DoorOpen, X } from 'lucide-react';
 
 interface Room {
   id: string;
   name: string;
   capacity: number | null;
+  schedule_count?: number;
 }
 
 export default function RoomsPage() {
@@ -19,234 +21,166 @@ export default function RoomsPage() {
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [newRoomName, setNewRoomName] = useState('');
-  const [newRoomCapacity, setNewRoomCapacity] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addCapacity, setAddCapacity] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editCapacity, setEditCapacity] = useState('');
-  const [saveError, setSaveError] = useState('');
+  const [addError, setAddError] = useState('');
+
+  const loadData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+    const meData = await meRes.json();
+    if (!meData?.user?.center_id) return;
+    const cid = meData.user.center_id;
+    setCenterId(cid);
+    setUserId(meData.user.id);
+
+    const roomsRes = await dbSelect({
+      table: 'rooms',
+      select: 'id, name, capacity',
+      filters: [{ column: 'center_id', op: 'eq', value: cid }],
+      order: { column: 'name' },
+    });
+
+    const roomsData = (roomsRes.data || []) as Room[];
+    const { data: slotsData } = await dbSelect({
+      table: 'schedule_slots',
+      select: 'room_id',
+      filters: [{ column: 'center_id', op: 'eq', value: cid }],
+    });
+
+    const countByRoom: Record<string, number> = {};
+    for (const s of (slotsData || []) as { room_id: string }[]) {
+      countByRoom[s.room_id] = (countByRoom[s.room_id] ?? 0) + 1;
+    }
+
+    setRooms(roomsData.map(r => ({ ...r, schedule_count: countByRoom[r.id] ?? 0 })));
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const meRes = await fetch('/api/me', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      const meData = await meRes.json();
-      if (!meData?.user?.center_id) return;
-      setCenterId(meData.user.center_id);
-      setUserId(meData.user.id);
-
-      const roomsRes = await dbSelect({
-        table: 'rooms',
-        select: 'id, name, capacity',
-        filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
-        order: { column: 'name' },
-      });
-
-      if (roomsRes.data) setRooms(roomsRes.data as Room[]);
-      setIsLoading(false);
-    };
-    load();
+    const id = setTimeout(() => loadData(), 0);
+    return () => clearTimeout(id);
   }, []);
 
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!centerId || !userId || !newRoomName.trim()) return;
+    setAddError('');
+    if (!centerId || !userId || !addName.trim()) {
+      setAddError(t('roomNameRequired', { defaultValue: 'Room name is required' }));
+      return;
+    }
     setIsAdding(true);
-    const capacity = newRoomCapacity.trim() ? parseInt(newRoomCapacity, 10) : null;
+    const capacity = addCapacity.trim() ? parseInt(addCapacity, 10) : null;
     const { data, error } = await dbInsert({
       table: 'rooms',
-      data: { center_id: centerId, name: newRoomName.trim(), capacity },
+      data: { center_id: centerId, name: addName.trim(), capacity },
       single: true,
     });
-    if (!error && data) {
-      await auditLog({
-        centerId,
-        userId,
-        action: 'room_create',
-        entityType: 'rooms',
-        entityId: (data as Room).id,
-        details: { name: (data as Room).name },
-      });
-      setRooms(prev => [...prev, data as Room]);
-      setNewRoomName('');
-      setNewRoomCapacity('');
+    if (error) {
+      setAddError(typeof error === 'object' && error?.message ? String(error.message) : 'Failed to create room');
+      setIsAdding(false);
+      return;
+    }
+    if (data) {
+      const inserted = data as Room;
+      await auditLog({ centerId, userId, action: 'room_create', entityType: 'rooms', entityId: inserted.id, details: { name: inserted.name } });
+      setRooms(prev => [...prev, { ...inserted, schedule_count: 0 }]);
+      setShowAddModal(false);
+      setAddName('');
+      setAddCapacity('');
     }
     setIsAdding(false);
   };
 
-  const handleDeleteRoom = async (id: string) => {
-    if (!centerId || !userId || !confirm(t('deleteConfirm'))) return;
-    await dbDelete({
-      table: 'rooms',
-      filters: [{ column: 'id', op: 'eq', value: id }],
-    });
-    await auditLog({ centerId, userId, action: 'room_delete', entityType: 'rooms', entityId: id });
-    setRooms(prev => prev.filter(r => r.id !== id));
-    if (editingId === id) setEditingId(null);
-  };
-
-  const startEdit = (r: Room) => {
-    setEditingId(r.id);
-    setEditName(r.name);
-    setEditCapacity(r.capacity != null ? String(r.capacity) : '');
-    setSaveError('');
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingId || !centerId || !userId || !editName.trim()) return;
-    setSaveError('');
-    const capVal = editCapacity.trim();
-    const capacity = capVal ? (parseInt(capVal, 10) || null) : null;
-    const { error } = await dbUpdate({
-      table: 'rooms',
-      data: { name: editName.trim(), capacity },
-      filters: [{ column: 'id', op: 'eq', value: editingId }],
-      select: false,
-    });
-    if (!error) {
-      setRooms(prev => prev.map(r => r.id === editingId ? { ...r, name: editName.trim(), capacity } : r));
-      setEditingId(null);
-      await auditLog({
-        centerId,
-        userId,
-        action: 'room_update',
-        entityType: 'rooms',
-        entityId: editingId,
-        details: { name: editName.trim(), capacity },
-      });
-    } else {
-      setSaveError(typeof error === 'object' && error !== null && 'message' in error
-        ? (error as { message: string }).message
-        : String(error));
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-  };
-
   return (
-    <div className="min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-2xl font-bold text-text-primary mb-6">{t('title')}</h1>
+    <div className="p-4 md:p-6 space-y-5 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-foreground">{t('title')}</h1>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+          style={{ background: 'hsl(var(--primary))' }}
+        >
+          <Plus size={14} /> {t('addRoom')}
+        </button>
+      </div>
 
-          {isLoading ? (
-            <div className="text-center py-16">
-              <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <form onSubmit={handleAddRoom} className="bg-bg-primary rounded-xl shadow p-6 max-w-md">
-                <h2 className="text-lg font-semibold text-text-primary mb-4">{t('createRoom')}</h2>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={newRoomName}
-                    onChange={(e) => setNewRoomName(e.target.value)}
-                    placeholder={t('roomName')}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
-                    required
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    value={newRoomCapacity}
-                    onChange={(e) => setNewRoomCapacity(e.target.value)}
-                    placeholder={t('capacity')}
-                    className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
-                  />
+      {isLoading ? (
+        <div className="text-center py-16">
+          <svg className="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {rooms.map(r => (
+            <div key={r.id} className="ch-card p-5 hover:shadow-lg transition-all">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10" style={{ color: 'hsl(var(--primary))' }}>
+                  <DoorOpen size={22} />
                 </div>
-                <button
-                  type="submit"
-                  disabled={isAdding}
-                  className="mt-3 w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {tCommon('add')}
-                </button>
-              </form>
-
-              {saveError && (
-                <div className="mb-4 p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm">
-                  {saveError}
+                <div>
+                  <h3 className="font-bold text-foreground">{r.name}</h3>
+                  <p className="text-xs text-muted-foreground">{t('maxCapacity')}: <span className="font-mono font-bold text-foreground">{r.capacity ?? '—'}</span></p>
                 </div>
-              )}
-              <div className="bg-bg-primary rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold text-text-primary mb-4">{t('allRooms')}</h2>
-                <div className="flex flex-col gap-3">
-                  {rooms.map((r) => (
-                    <div
-                      key={r.id}
-                      className="flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-bg-secondary"
-                    >
-                      {editingId === r.id ? (
-                        <div className="flex-1 flex flex-wrap gap-2">
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            className="flex-1 min-w-0 px-2 py-1 text-sm border rounded bg-bg-tertiary text-text-primary"
-                          />
-                          <input
-                            type="number"
-                            min="1"
-                            value={editCapacity}
-                            onChange={(e) => setEditCapacity(e.target.value)}
-                            placeholder={t('capacity')}
-                            className="w-20 px-2 py-1 text-sm border rounded bg-bg-tertiary text-text-primary"
-                          />
-                          <button onClick={handleSaveEdit} className="text-green-600 dark:text-green-400 text-sm font-medium">
-                            {tCommon('save')}
-                          </button>
-                          <button onClick={cancelEdit} className="text-text-secondary text-sm">
-                            {tCommon('cancel')}
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-bold text-xl font-mono text-text-primary truncate">
-                              {r.name}
-                            </span>
-                            {r.capacity != null && (
-                              <span className="text-sm text-text-secondary shrink-0">
-                                ({t('capacity')}: {Number(r.capacity).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en')})
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex gap-2 shrink-0">
-                            <button
-                              onClick={() => startEdit(r)}
-                              className="px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
-                            >
-                              {tCommon('edit')}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteRoom(r.id)}
-                              className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                            >
-                              {tCommon('delete')}
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                {rooms.length === 0 && (
-                  <p className="text-text-secondary py-4">{t('noRooms')}</p>
-                )}
+              </div>
+              <div className="flex items-center justify-between text-sm border-t border-border pt-3">
+                <span className="text-muted-foreground">{t('scheduleCount')}</span>
+                <span className="font-bold font-mono text-foreground">{r.schedule_count ?? 0}</span>
               </div>
             </div>
-          )}
+          ))}
         </div>
-      </div>
+      )}
+
+      {rooms.length === 0 && !isLoading && (
+        <p className="text-muted-foreground py-8 text-center">{t('noRooms')}</p>
+      )}
+
+      {/* Add Room Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddModal(false)}>
+          <div className="bg-card rounded-2xl border border-border shadow-xl p-6 max-w-sm mx-4 w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-foreground">{t('addRoom')}</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleAddRoom} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{t('roomName')}</label>
+                <input
+                  value={addName}
+                  onChange={e => setAddName(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{t('capacity')}</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={addCapacity}
+                  onChange={e => setAddCapacity(e.target.value)}
+                  placeholder="—"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              {addError && <p className="text-sm text-red-500">{addError}</p>}
+              <div className="flex gap-2 justify-end mt-4">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border text-muted-foreground hover:bg-muted">{tCommon('cancel')}</button>
+                <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{tCommon('save')}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

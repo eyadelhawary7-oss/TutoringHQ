@@ -11,14 +11,26 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import AttendanceCard from '@/components/dashboard/AttendanceCard';
 import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
-import PaymentDonut from '@/components/dashboard/PaymentDonut';
-import RevenueBar from '@/components/dashboard/RevenueBar';
-import AttendanceTrend from '@/components/dashboard/AttendanceTrend';
+import { Progress } from '@/components/ui/progress';
+import AttendanceAreaChart from '@/components/dashboard/AttendanceAreaChart';
+import RevenueStackedChart from '@/components/dashboard/RevenueStackedChart';
+import PaymentMethodsDonut from '@/components/dashboard/PaymentMethodsDonut';
 import InactiveList, { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
+import { QrCode, TrendingUp, Users, CreditCard, Camera, UserPlus, DollarSign, FileSpreadsheet } from 'lucide-react';
 import { toAr } from '@/lib/number-utils';
 
 function isOwnerOrAdmin(role?: string): boolean {
   return role === 'owner' || role === 'admin';
+}
+
+export interface RecentPaymentRow {
+  id: string;
+  student_name: string;
+  student_number?: string;
+  group_name?: string;
+  amount: number;
+  status: string;
+  confirmed?: boolean;
 }
 
 interface DashboardData {
@@ -31,6 +43,8 @@ interface DashboardData {
   totalPending: number;
   revenueByMethod: { method: string; amount: number }[];
   trendData: { date: string; count: number }[];
+  revenueChartData: { date: string; day: string; cash: number; instapay: number; vodafone: number; orange: number; fawry: number; bank: number; other: number }[];
+  recentPayments: RecentPaymentRow[];
   monthTotal: number;
   monthConfirmed: number;
   monthPending: number;
@@ -40,10 +54,13 @@ interface DashboardData {
   newStudentsCount: number;
   atRiskCount: number;
   inactiveStudents: InactiveStudent[];
+  scanDeltaPct: number;
+  revenueDeltaPct: number;
 }
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
+  const tPayments = useTranslations('payments');
   const tSettings = useTranslations('settings');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -64,6 +81,8 @@ export default function DashboardPage() {
     totalPending: 0,
     revenueByMethod: [],
     trendData: [],
+    revenueChartData: [],
+    recentPayments: [],
     monthTotal: 0,
     monthConfirmed: 0,
     monthPending: 0,
@@ -73,8 +92,11 @@ export default function DashboardPage() {
     newStudentsCount: 0,
     atRiskCount: 0,
     inactiveStudents: [],
+    scanDeltaPct: 0,
+    revenueDeltaPct: 0,
   });
   const [inactivePeriod, setInactivePeriod] = useState<InactivePeriod>('7d');
+  const [timeRange, setTimeRange] = useState<'7' | '30'>('7');
   const [centerId, setCenterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
@@ -89,7 +111,7 @@ export default function DashboardPage() {
     '7d': 7, '14d': 14, '30d': 30, '3mo': 90, '6mo': 180, '1yr': 365,
   };
 
-  const loadDashboard = useCallback(async (cId: string, inactPeriod: InactivePeriod = '7d') => {
+  const loadDashboard = useCallback(async (cId: string, inactPeriod: InactivePeriod = '7d', range: 7 | 30 = 7) => {
     try {
       // Today's attendance count
       const { count: attendanceCount } = await dbCount({
@@ -129,6 +151,38 @@ export default function DashboardPage() {
 
       const todayPayments = (confirmedTodayPayments || []) as { amount: number; method: string }[];
       const todayRevenue = todayPayments.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+
+      // Yesterday for delta calculation
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStart = new Date(yesterday);
+      yesterdayStart.setHours(0, 0, 0, 0);
+      const yesterdayEnd = new Date(yesterday);
+      yesterdayEnd.setHours(23, 59, 59, 999);
+      const [{ count: yesterdayAttendance }, { data: yesterdayPaymentsRaw }] = await Promise.all([
+        dbCount({
+          table: 'attendance_scans',
+          filters: [
+            { column: 'center_id', op: 'eq', value: cId },
+            { column: 'scanned_at', op: 'gte', value: yesterdayStart.toISOString() },
+            { column: 'scanned_at', op: 'lte', value: yesterdayEnd.toISOString() },
+          ],
+        }),
+        dbSelect({
+          table: 'payments',
+          select: 'amount',
+          filters: [
+            { column: 'center_id', op: 'eq', value: cId },
+            { column: 'confirmed', op: 'eq', value: true },
+            { column: 'paid_at', op: 'gte', value: yesterdayStart.toISOString() },
+            { column: 'paid_at', op: 'lte', value: yesterdayEnd.toISOString() },
+          ],
+        }),
+      ]);
+      const yesterdayRev = ((yesterdayPaymentsRaw || []) as { amount: number }[]).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const yesterAtt = yesterdayAttendance || 0;
+      const scanDeltaPct = yesterAtt > 0 ? Math.round(((attendanceCount || 0) - yesterAtt) / yesterAtt * 100) : 0;
+      const revenueDeltaPct = yesterdayRev > 0 ? Math.round((todayRevenue - yesterdayRev) / yesterdayRev * 100) : 0;
 
       // Total pending (lifetime): unconfirmed payments with status pending
       const { data: allPendingPayments } = await dbSelect({
@@ -171,9 +225,10 @@ export default function DashboardPage() {
       });
       const revenueByMethod = Array.from(methodMap.entries()).map(([method, amount]) => ({ method, amount }));
 
-      // 7-day attendance trend
+      // Attendance trend (range days)
       const trendData: { date: string; count: number }[] = [];
-      for (let i = 6; i >= 0; i--) {
+      const dayLabels = locale === 'ar' ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      for (let i = range - 1; i >= 0; i--) {
         const day = new Date();
         day.setDate(day.getDate() - i);
         const dayStart = new Date(day);
@@ -190,11 +245,101 @@ export default function DashboardPage() {
           ],
         });
 
+        const isToday = i === 0;
         trendData.push({
-          date: `${day.getDate()}/${day.getMonth() + 1}`,
+          date: isToday ? (locale === 'ar' ? 'اليوم' : 'Today') : dayLabels[day.getDay()],
           count: count || 0,
         });
       }
+
+      // Revenue by day by method (for stacked bar chart)
+      const revenueChartData: { date: string; day: string; cash: number; instapay: number; vodafone: number; orange: number; fawry: number; bank: number; other: number }[] = [];
+      for (let i = range - 1; i >= 0; i--) {
+        const day = new Date();
+        day.setDate(day.getDate() - i);
+        const dayStart = new Date(day);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(day);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const { data: dayPayments } = await dbSelect({
+          table: 'payments',
+          select: 'amount, method',
+          filters: [
+            { column: 'center_id', op: 'eq', value: cId },
+            { column: 'confirmed', op: 'eq', value: true },
+            { column: 'paid_at', op: 'gte', value: dayStart.toISOString() },
+            { column: 'paid_at', op: 'lte', value: dayEnd.toISOString() },
+          ],
+        });
+        const pmts = (dayPayments || []) as { amount: number; method?: string }[];
+        const byMethod: Record<string, number> = { cash: 0, instapay: 0, vodafone: 0, orange: 0, fawry: 0, bank: 0, other: 0 };
+        for (const p of pmts) {
+          const m = (p.method || 'cash').toLowerCase();
+          const amt = parseFloat(String(p.amount || 0));
+          if (m === 'cash') byMethod.cash += amt;
+          else if (m === 'instapay') byMethod.instapay += amt;
+          else if (m === 'vodafone_cash' || m === 'vodacash') byMethod.vodafone += amt;
+          else if (m === 'orange' || m === 'orange_cash') byMethod.orange += amt;
+          else if (m === 'fawry') byMethod.fawry += amt;
+          else if (m === 'bank_transfer' || m === 'bank') byMethod.bank += amt;
+          else byMethod.other += amt;
+        }
+        const isToday = i === 0;
+        revenueChartData.push({
+          date: `${day.getDate()}/${day.getMonth() + 1}`,
+          day: isToday ? (locale === 'ar' ? 'اليوم' : 'Today') : dayLabels[day.getDay()],
+          cash: 0,
+          instapay: 0,
+          vodafone: 0,
+          orange: 0,
+          fawry: 0,
+          bank: 0,
+          other: 0,
+          ...byMethod,
+        });
+      }
+
+      // Recent payments (with student and group names)
+      const { data: recentPaymentsRaw } = await dbSelect({
+        table: 'payments',
+        select: 'id, student_id, amount, status, confirmed, group_id, students(name, student_number), student_groups(name)',
+        filters: [{ column: 'center_id', op: 'eq', value: cId }],
+        order: { column: 'paid_at', ascending: false },
+        limit: 10,
+      });
+      type PaymentRow = { id: string; student_id: string; amount: number; status: string; confirmed?: boolean; group_id?: string; students?: { name?: string; student_number?: string } | null; student_groups?: { name?: string } | null };
+      const studentIds = [...new Set(((recentPaymentsRaw || []) as PaymentRow[]).map(p => p.student_id).filter(Boolean))];
+      const groupIds = [...new Set(((recentPaymentsRaw || []) as PaymentRow[]).map(p => p.group_id).filter(Boolean))];
+      let studentMap: Record<string, { name: string; student_number?: string }> = {};
+      let groupMap: Record<string, string> = {};
+      if (studentIds.length > 0) {
+        const { data: studentsData } = await dbSelect({
+          table: 'students',
+          select: 'id, name, student_number',
+          filters: [{ column: 'id', op: 'in', value: studentIds }],
+        });
+        const students = (studentsData || []) as { id: string; name?: string; student_number?: string }[];
+        studentMap = Object.fromEntries(students.map(s => [s.id, { name: s.name || '—', student_number: s.student_number }]));
+      }
+      if (groupIds.length > 0) {
+        const { data: groupsData } = await dbSelect({
+          table: 'student_groups',
+          select: 'id, name',
+          filters: [{ column: 'id', op: 'in', value: groupIds }],
+        });
+        const groups = (groupsData || []) as { id: string; name?: string }[];
+        groupMap = Object.fromEntries(groups.map(g => [g.id, g.name || '—']));
+      }
+      const recentPayments: { id: string; student_name: string; student_number?: string; group_name?: string; amount: number; status: string; confirmed?: boolean }[] = ((recentPaymentsRaw || []) as PaymentRow[]).map(p => ({
+        id: p.id,
+        student_name: p.students?.name ?? studentMap[p.student_id]?.name ?? '—',
+        student_number: p.students?.student_number ?? studentMap[p.student_id]?.student_number,
+        group_name: p.student_groups?.name ?? (p.group_id ? groupMap[p.group_id] : undefined),
+        amount: parseFloat(String(p.amount || 0)),
+        status: p.confirmed === true ? 'confirmed' : (p.status === 'late' ? 'late' : 'pending'),
+        confirmed: p.confirmed,
+      }));
 
       // Weekly trend: this week vs last week attendance
       const now = new Date();
@@ -320,6 +465,8 @@ export default function DashboardPage() {
         totalPending,
         revenueByMethod,
         trendData,
+        revenueChartData,
+        recentPayments,
         monthTotal,
         monthConfirmed,
         monthPending,
@@ -329,13 +476,15 @@ export default function DashboardPage() {
         newStudentsCount: newStudentsCount || 0,
         atRiskCount,
         inactiveStudents,
+        scanDeltaPct,
+        revenueDeltaPct,
       });
     } catch (err) {
       console.error('Dashboard load error:', err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     const init = async () => {
@@ -389,9 +538,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (centerId) {
-      loadDashboard(centerId, inactivePeriod);
+      loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7);
     }
-  }, [centerId, inactivePeriod, loadDashboard]);
+  }, [centerId, inactivePeriod, timeRange, loadDashboard]);
 
   // Real-time updates
   useEffect(() => {
@@ -402,19 +551,19 @@ export default function DashboardPage() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'attendance_scans', filter: `center_id=eq.${centerId}` },
-        () => loadDashboard(centerId)
+        () => loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7)
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'payments', filter: `center_id=eq.${centerId}` },
-        () => loadDashboard(centerId)
+        () => loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7)
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [centerId, loadDashboard]);
+  }, [centerId, inactivePeriod, timeRange, loadDashboard]);
 
   const canExportExcel = hasPlanFeature(centerBilling?.plan, 'excel_export');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -478,35 +627,34 @@ export default function DashboardPage() {
   // Assistant dashboard: scan CTA + payment quick actions
   if (user?.role === 'assistant' && !isLoading) {
     return (
-      <div className="min-h-screen">
-          <div className="max-w-7xl mx-auto p-6">
-            <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-6">
+      <div className="p-4 md:p-6 space-y-6 animate-fade-in">
+            <h1 className="text-2xl font-bold text-foreground mb-6">
               {t('title')}
             </h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <Link
                 href="/scan"
-                className="block p-8 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-lg text-center transition-colors"
+                className="block p-8 hover:opacity-90 rounded-2xl shadow-lg text-center transition-colors"
+                style={{ background: 'hsl(var(--primary))' }}
               >
                 <svg className="w-16 h-16 mx-auto text-white mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                 </svg>
                 <h2 className="text-xl font-bold text-white">{t('scanNow')}</h2>
-                <p className="text-indigo-100 text-sm mt-2">{t('scanSubtitle')}</p>
+                <p className="text-white/60 text-sm mt-2">{t('scanSubtitle')}</p>
               </Link>
               <Link
                 href="/payments"
-                className="block p-8 glass hover:border-indigo-500/50 transition-all duration-200"
+                className="block p-8 ch-card hover:shadow-md transition-all duration-200"
               >
-                <p className="text-sm text-[var(--text-secondary)]">{t('unpaidCount')}</p>
-                <p className="text-3xl font-bold text-[var(--text-primary)] mt-1">{data.unpaidCount}</p>
-                <p className="text-indigo-400 text-sm mt-2">{t('goToPayments')}</p>
+                <p className="text-sm text-muted-foreground">{t('unpaidCount')}</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{data.unpaidCount}</p>
+                <p className="text-primary text-sm mt-2">{t('goToPayments')}</p>
               </Link>
             </div>
             <div className="mt-6">
               <AttendanceCard count={data.todayAttendance} label={t('attendance')} />
             </div>
-          </div>
         </div>
     );
   }
@@ -521,8 +669,8 @@ export default function DashboardPage() {
     // Due soon (up to 5 days before due date)
     if (diffDays > 0 && diffDays <= 5) {
       return (
-        <div className="mb-6 p-4 bg-amber-900/30 border border-amber-600 rounded-xl flex flex-wrap items-center justify-between gap-4">
-          <span className="text-amber-200 font-medium">
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-xl flex flex-wrap items-center justify-between gap-4">
+          <span className="text-amber-800 font-medium">
             {t('paymentDue', { days: diffDays, defaultValue: `Payment due in ${diffDays} days` })}
           </span>
           <button
@@ -547,8 +695,8 @@ export default function DashboardPage() {
 
       if (hoursRemaining <= 0) {
         return (
-          <div className="mb-6 p-4 bg-red-900/30 border border-red-600 rounded-xl flex flex-wrap items-center justify-between gap-4">
-            <span className="text-red-200 font-medium">
+          <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-xl flex flex-wrap items-center justify-between gap-4">
+            <span className="text-red-800 font-medium">
               {t('accountSuspended', { defaultValue: 'Account suspended due to overdue payment.' })}
             </span>
             <button
@@ -562,8 +710,8 @@ export default function DashboardPage() {
       }
 
       return (
-        <div className="mb-6 p-4 bg-red-900/30 border border-red-600 rounded-xl flex flex-wrap items-center justify-between gap-4">
-          <span className="text-red-200 font-medium">
+        <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-xl flex flex-wrap items-center justify-between gap-4">
+          <span className="text-red-800 font-medium">
             {t('paymentOverdue', { hours: hoursRemaining, defaultValue: `Payment overdue! Account will be suspended in ${hoursRemaining} hours` })}
           </span>
           <button
@@ -579,44 +727,57 @@ export default function DashboardPage() {
   })();
 
   return (
-    <div className="min-h-screen">
-        <div className="max-w-7xl mx-auto p-6">
+    <div className="p-4 md:p-6 space-y-6 animate-fade-in">
           {paymentDueBanner}
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-              {t('title')}
-            </h1>
-            <button
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">{t('confirmedOnly')}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 p-1 rounded-xl border border-border bg-muted">
+                {(['7', '30'] as const).map(r => (
+                  <button
+                    key={r}
+                    onClick={() => setTimeRange(r)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${timeRange === r ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                  >
+                    {r === '7' ? t('last7Days') : t('last30Days')}
+                  </button>
+                ))}
+              </div>
+              <button
               onClick={handleExport}
               disabled={isExporting || isLoading}
-              className="px-4 py-2 text-sm font-medium border border-indigo-500 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-500/10 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium border border-border text-muted-foreground hover:bg-muted rounded-lg disabled:opacity-50"
             >
               {isExporting ? t('exporting') : t('exportData')}
             </button>
             {showUpgradeModal && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowUpgradeModal(false)}>
-                <div className="glass rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                <div className="bg-card rounded-2xl border border-border shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
                     {tSettings('upgradeToUnlockFeature')}
                   </h3>
-                  <p className="text-sm text-[var(--text-secondary)] mb-4">
+                  <p className="text-sm text-muted-foreground mb-4">
                     {t('exportExcelUpgrade', { defaultValue: 'Excel/CSV export is available on Pro plan and above.' })}
                   </p>
                   <Link
                     href="/settings/billing"
-                    className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg"
+                    className="inline-block px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg"
                   >
                     {t('upgradePlan')}
                   </Link>
                   <button
                     onClick={() => setShowUpgradeModal(false)}
-                    className="ml-2 px-4 py-2 bg-bg-tertiary rounded-lg text-sm"
+                    className="ml-2 px-4 py-2 bg-slate-100 rounded-lg text-sm text-slate-700"
                   >
                     {tCommon('cancel')}
                   </button>
                 </div>
               </div>
             )}
+            </div>
           </div>
 
           {planUsage && planUsage.studentLimit < 999999 && (
@@ -631,130 +792,223 @@ export default function DashboardPage() {
 
           {isLoading ? (
             <div className="text-center py-16">
-              <svg className="animate-spin h-8 w-8 text-indigo-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-8 w-8 text-teal-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Top Stats Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <AttendanceCard count={data.todayAttendance} label={t('attendance')} />
-                <div className="glass p-6">
-                  <p className="text-sm text-[var(--text-secondary)]">{t('totalStudents')}</p>
-                  <p className="text-3xl font-bold text-[var(--text-primary)] mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
-                    {locale === 'ar' ? toAr(data.totalStudents) : data.totalStudents}
-                  </p>
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                <div className="kpi-card animate-slide-up">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
+                      <QrCode size={20} />
+                    </div>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
+                      {data.scanDeltaPct >= 0 ? '+' : ''}{data.scanDeltaPct}{t('pct')}
+                    </span>
+                  </div>
+                  <p className="text-2xl font-black text-foreground font-mono mt-1">{locale === 'ar' ? toAr(data.todayAttendance) : data.todayAttendance}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t('todayScans')}</p>
                 </div>
                 {canViewRevenue && (
-                  <div className="glass p-6">
-                    <p className="text-sm text-[var(--text-secondary)]">{t('collectedToday')}</p>
-                    <p className="text-3xl font-bold text-green-400 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
-                      {locale === 'ar' ? toAr(Math.round(data.todayRevenue)) : Math.round(data.todayRevenue).toLocaleString()} <span className="text-lg">{t('currency')}</span>
+                  <div className="kpi-card animate-slide-up">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#16A34A18', color: '#16A34A' }}>
+                        <TrendingUp size={20} />
+                      </div>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: '#16A34A18', color: '#16A34A' }}>
+                        {data.revenueDeltaPct >= 0 ? '+' : ''}{data.revenueDeltaPct}{t('pct')}
+                      </span>
+                    </div>
+                    <p className="text-2xl font-black text-foreground font-mono mt-1">
+                      {locale === 'ar' ? toAr(Math.round(data.todayRevenue)) : Math.round(data.todayRevenue).toLocaleString()} ج.م
                     </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t('todayRevenue')}</p>
                   </div>
                 )}
+                <div className="kpi-card animate-slide-up">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#F59E0B18', color: '#F59E0B' }}>
+                      <Users size={20} />
+                    </div>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: '#F59E0B18', color: '#F59E0B' }}>
+                      +{locale === 'ar' ? toAr(data.newStudentsCount) : data.newStudentsCount}
+                    </span>
+                  </div>
+                  <p className="text-2xl font-black text-foreground font-mono mt-1">{locale === 'ar' ? toAr(data.totalStudents) : data.totalStudents}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t('activeStudents')}</p>
+                </div>
                 {canViewRevenue && (
-                  <div className="glass p-6">
-                    <p className="text-sm text-[var(--text-secondary)]">{t('totalPending')}</p>
-                    <p className="text-3xl font-bold text-orange-400 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
-                      {locale === 'ar' ? toAr(Math.round(data.totalPending)) : data.totalPending.toLocaleString()} <span className="text-lg">{t('currency')}</span>
-                    </p>
+                  <div className="kpi-card animate-slide-up">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#7C3AED18', color: '#7C3AED' }}>
+                        <CreditCard size={20} />
+                      </div>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: '#7C3AED18', color: '#7C3AED' }}>
+                        {data.pendingCount}
+                      </span>
+                    </div>
+                    <p className="text-2xl font-black text-foreground font-mono mt-1">{data.pendingCount}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t('pendingPayments')}</p>
                   </div>
                 )}
               </div>
 
-              {/* Secondary KPIs Row */}
-              {canViewRevenue && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="glass p-4">
-                    <p className="text-xs text-[var(--text-secondary)]">{t('weeklyTrend')}</p>
-                    <p className={`text-xl font-bold mt-1 ${data.weeklyTrendPct >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
-                      {data.weeklyTrendPct >= 0 ? '↑' : '↓'}{locale === 'ar' ? toAr(Math.abs(data.weeklyTrendPct)) : Math.abs(data.weeklyTrendPct)}{t('pct')}
+              {/* Weekly Performance */}
+              <div>
+                <h2 className="text-lg font-bold text-foreground mb-3">{t('weeklyPerformance')}</h2>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                  <div className="ch-card p-4 flex flex-col gap-2">
+                    <p className="text-xs text-muted-foreground">{t('collectionRate')}</p>
+                    <p className="text-xl font-bold text-foreground">{data.collectionRatePct}%</p>
+                    <Progress value={data.collectionRatePct} className="h-1.5" />
+                  </div>
+                  <div className="ch-card p-4 flex flex-col gap-2">
+                    <p className="text-xs text-muted-foreground">{t('avgRevenueStudent')}</p>
+                    <p className="text-xl font-bold text-foreground font-mono">
+                      {locale === 'ar' ? toAr(Math.round(data.monthConfirmed / (data.totalStudents || 1))) : Math.round(data.monthConfirmed / (data.totalStudents || 1)).toLocaleString()} ج.م
                     </p>
                   </div>
-                  <div className="glass p-4">
-                    <p className="text-xs text-[var(--text-secondary)]">{t('collectionRate')}</p>
-                    <p className="text-xl font-bold text-[var(--text-primary)] mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
-                      {locale === 'ar' ? toAr(data.collectionRatePct) : data.collectionRatePct}{t('pct')}
+                  <div className="ch-card p-4 flex flex-col gap-2">
+                    <p className="text-xs text-muted-foreground">{t('totalUnpaidBalance')}</p>
+                    <p className={`text-xl font-bold font-mono ${data.totalPending > 0 ? 'text-destructive' : 'text-foreground'}`}>
+                      {locale === 'ar' ? toAr(Math.round(data.totalPending)) : Math.round(data.totalPending).toLocaleString()} ج.م
                     </p>
                   </div>
-                  <div className="glass p-4">
-                    <p className="text-xs text-[var(--text-secondary)]">{t('newStudents')}</p>
-                    <p className="text-xl font-bold text-[var(--text-primary)] mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
-                      {locale === 'ar' ? toAr(data.newStudentsCount) : data.newStudentsCount}
-                    </p>
-                  </div>
-                  <div className="glass p-4">
-                    <p className="text-xs text-[var(--text-secondary)]">{t('atRisk')}</p>
-                    <p className="text-xl font-bold text-red-400 mt-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
-                      {locale === 'ar' ? toAr(data.atRiskCount) : data.atRiskCount}
-                    </p>
+                  <div className="ch-card p-4 flex flex-col gap-2">
+                    <p className="text-xs text-muted-foreground">{t('topGroupWeek')}</p>
+                    <p className="text-xl font-bold text-foreground">—</p>
+                    <p className="text-xs text-muted-foreground">{data.todayAttendance} {t('scans')}</p>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Monthly Revenue Section */}
-              {canViewRevenue && (
-                <div className="glass p-6">
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                    {t('monthlyRevenue')} — {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)]">
-                      <p className="text-sm text-[var(--text-secondary)]">{t('totalRevenue')}</p>
-                      <p className="text-xl font-bold text-[var(--text-primary)] mt-1">{data.monthTotal} {t('currency')}</p>
+              {/* Quick Actions */}
+              <div>
+                <h2 className="text-lg font-bold text-foreground mb-3">{t('quickActions')}</h2>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <Link
+                    href="/scan"
+                    className="ch-card p-4 flex items-start gap-3 hover:shadow-md transition-shadow group"
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
+                      <Camera size={20} />
                     </div>
-                    <div className="p-4 rounded-lg border border-green-500/30 bg-green-500/10">
-                      <p className="text-sm text-[var(--text-secondary)]">{t('confirmedRevenue')}</p>
-                      <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">{data.monthConfirmed} {t('currency')}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t('scanStudent')}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t('scanStudentDesc')}</p>
                     </div>
-                    <div className="p-4 rounded-lg border border-orange-500/30 bg-orange-500/10">
-                      <p className="text-sm text-[var(--text-secondary)]">{t('pendingRevenue')}</p>
-                      <p className="text-xl font-bold text-orange-600 dark:text-orange-400 mt-1">{data.monthPending} {t('currency')}</p>
+                  </Link>
+                  <Link
+                    href="/students"
+                    className="ch-card p-4 flex items-start gap-3 hover:shadow-md transition-shadow group"
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#16A34A18', color: '#16A34A' }}>
+                      <UserPlus size={20} />
                     </div>
-                    {data.monthLate > 0 && (
-                      <div className="p-4 rounded-lg sm:col-span-3 border border-amber-500/30 bg-amber-500/10">
-                        <p className="text-sm text-[var(--text-secondary)]">{t('lateRevenue')}</p>
-                        <p className="text-xl font-bold text-amber-400 mt-1">{data.monthLate} {t('currency')}</p>
-                      </div>
-                    )}
-                  </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t('addStudent')}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t('addStudentDesc')}</p>
+                    </div>
+                  </Link>
+                  <Link
+                    href="/payments?filter=pending"
+                    className="ch-card p-4 flex items-start gap-3 hover:shadow-md transition-shadow group"
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#DC262618', color: '#DC2626' }}>
+                      <DollarSign size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t('viewUnpaid')}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t('viewUnpaidDesc')}</p>
+                    </div>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={isExporting}
+                    className="ch-card p-4 flex items-start gap-3 hover:shadow-md transition-shadow group text-start w-full disabled:opacity-50"
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#3B82F618', color: '#3B82F6' }}>
+                      <FileSpreadsheet size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t('exportReport')}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t('exportReportDesc')}</p>
+                    </div>
+                  </button>
                 </div>
-              )}
+              </div>
 
               {/* Charts Row */}
-              {canViewRevenue && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="glass p-6">
-                    <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                      {t('paid')} / {t('unpaid')}
-                    </h2>
-                    <PaymentDonut paid={data.paidCount} unpaid={data.unpaidCount} pending={data.pendingCount} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="ch-card p-5">
+                  <h3 className="font-semibold text-foreground mb-4">{t('attendanceChart')}</h3>
+                  <AttendanceAreaChart data={data.trendData} />
+                </div>
+                {canViewRevenue && (
+                  <div className="ch-card p-5">
+                    <h3 className="font-semibold text-foreground mb-4">{t('revenueChart')}</h3>
+                    <RevenueStackedChart data={data.revenueChartData} />
                   </div>
-                  <div className="glass p-6">
-                    <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                      {t('paymentBreakdown')}
-                    </h2>
-                    <RevenueBar data={data.revenueByMethod} />
+                )}
+              </div>
+
+              {/* Payment Methods Donut */}
+              {canViewRevenue && (
+                <div className="ch-card p-5">
+                  <h3 className="font-semibold text-foreground mb-4">{t('paymentMethods')}</h3>
+                  <PaymentMethodsDonut data={data.revenueByMethod} />
+                </div>
+              )}
+
+              {/* Recent Payments */}
+              {canViewRevenue && (
+                <div className="ch-card p-5">
+                  <h3 className="font-semibold text-foreground mb-4">{t('recentPayments')}</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-start py-2 text-muted-foreground font-medium">{tPayments('studentName')}</th>
+                          <th className="text-start py-2 text-muted-foreground font-medium hidden sm:table-cell">{tPayments('group')}</th>
+                          <th className="text-start py-2 text-muted-foreground font-medium">{tPayments('amount')}</th>
+                          <th className="text-start py-2 text-muted-foreground font-medium">{tCommon('status')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.recentPayments.slice(0, 5).map(p => (
+                          <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                            <td className="py-2.5">
+                              <div className="font-medium text-foreground">{p.student_name}</div>
+                              {p.student_number && <div className="text-xs text-muted-foreground font-mono">{p.student_number}</div>}
+                            </td>
+                            <td className="py-2.5 hidden sm:table-cell text-muted-foreground">{p.group_name ?? '—'}</td>
+                            <td className="py-2.5 font-bold text-foreground font-mono">{Math.round(p.amount).toLocaleString()} ج.م</td>
+                            <td className="py-2.5">
+                              <span className={p.status === 'confirmed' ? 'badge-confirmed' : p.status === 'pending' ? 'badge-pending' : 'badge-late'}>
+                                {p.status === 'confirmed' ? tPayments('confirmedStatus') : p.status === 'pending' ? tPayments('filterPending') : tPayments('lateEntry')}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {data.recentPayments.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="py-8 text-center text-muted-foreground text-sm">{tCommon('noData')}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
 
-              {/* Trend Chart */}
-                <div className="glass p-6">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                  {t('trend')}
-                </h2>
-                <AttendanceTrend data={data.trendData} />
-              </div>
-
               {/* Inactive Students Section */}
-                <div className="glass p-6">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                  {t('inactiveStudents')}
-                </h2>
+              <div className="ch-card p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">{t('inactiveStudents')}</h2>
                 <InactiveList
                   students={data.inactiveStudents}
                   period={inactivePeriod}
@@ -763,7 +1017,6 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-        </div>
       </div>
   );
 }

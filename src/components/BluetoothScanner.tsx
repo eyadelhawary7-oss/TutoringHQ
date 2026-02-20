@@ -31,41 +31,38 @@ export default function BluetoothScanner({ onScan, isActive }: BluetoothScannerP
     return () => document.removeEventListener('click', handleClick);
   }, [isActive]);
 
+  const handleSubmit = () => {
+    if (!buffer.trim()) return;
+    const value = buffer.trim();
+    setBuffer('');
+    onScan(value);
+    // Stay focused after scan so user can immediately scan next
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
   if (!isActive) return null;
 
   return (
-    <div className="w-full max-w-md mx-auto text-center">
-      {/* Hidden input that captures bluetooth scanner keyboard input */}
+    <div className="w-full max-w-md">
       <input
         ref={inputRef}
+        data-bluetooth-scanner-input
         type="text"
         value={buffer}
         onChange={(e) => setBuffer(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && buffer.trim()) {
-            onScan(buffer.trim());
-            setBuffer('');
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSubmit();
           }
         }}
-        className="opacity-0 absolute w-0 h-0"
+        className="w-full px-5 py-4 rounded-xl border border-slate-300 bg-white text-slate-900 text-lg text-center focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder:text-slate-400"
+        placeholder={t('scanHere')}
         autoFocus
         autoComplete="off"
+        dir="ltr"
       />
-
-      {/* Visual indicator */}
-      <div className="py-12">
-        <div className="w-24 h-24 mx-auto bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center mb-6 animate-pulse">
-          <svg className="w-12 h-12 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <p className="text-lg text-text-primary font-medium">
-          {t('scanning')}
-        </p>
-        <p className="text-sm text-text-secondary mt-2">
-          {t('bluetoothMode')}
-        </p>
-      </div>
+      <p className="text-xs text-slate-500 mt-2 text-center">{t('bluetoothMode')}</p>
     </div>
   );
 }

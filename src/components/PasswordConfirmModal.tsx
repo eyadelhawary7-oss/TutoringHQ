@@ -63,13 +63,13 @@ export default function PasswordConfirmModal({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t('passwordPlaceholder', { defaultValue: 'Enter your password' })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary mb-4"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-bg-tertiary text-text-primary mb-4"
             autoComplete="current-password"
             autoFocus
             disabled={loading}
           />
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>
+            <p className="text-sm text-red-600 mb-3">{error}</p>
           )}
           <div className="flex gap-2">
             <button

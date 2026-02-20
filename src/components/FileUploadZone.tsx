@@ -51,8 +51,8 @@ export default function FileUploadZone({ onFileSelected, isLoading }: FileUpload
       className={`
         border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200
         ${isDragOver
-          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950'
-          : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 hover:bg-bg-secondary'
+          ? 'border-indigo-500 bg-indigo-50'
+          : 'border-gray-300 hover:border-indigo-400 hover:bg-bg-secondary'
         }
         ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
       `}
@@ -69,14 +69,14 @@ export default function FileUploadZone({ onFileSelected, isLoading }: FileUpload
       />
 
       <div className="flex flex-col items-center gap-3">
-        <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-900 rounded-xl flex items-center justify-center">
-          <svg className="w-7 h-7 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center">
+          <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
         </div>
 
         {fileName ? (
-          <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{fileName}</p>
+          <p className="text-sm font-medium text-indigo-600">{fileName}</p>
         ) : (
           <>
             <p className="text-text-primary font-medium">

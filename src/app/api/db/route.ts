@@ -144,6 +144,7 @@ export async function POST(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder has complex chaining types
     let query: any;
 
     const selectStr: string = typeof selectColumns === 'string' ? selectColumns : '*';

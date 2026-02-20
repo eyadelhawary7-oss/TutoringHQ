@@ -7,7 +7,7 @@
  *
  * Requires: Restore a Supabase backup to a separate project first, then use that project's credentials.
  */
-
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { createClient } = require('@supabase/supabase-js');
 
 const TEST_PROJECT_URL = process.env.TEST_SUPABASE_URL;

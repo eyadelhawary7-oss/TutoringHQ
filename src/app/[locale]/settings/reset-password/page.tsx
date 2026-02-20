@@ -56,9 +56,9 @@ export default function ResetPasswordPage() {
     return (
       <div className="min-h-screen bg-bg-primary" dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="max-w-md mx-auto px-4 py-12">
-          <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-700 text-center">
-            <h2 className="text-xl font-bold text-green-800 dark:text-green-200 mb-2">{t('success')}</h2>
-            <p className="text-green-700 dark:text-green-300 text-sm">{t('redirecting')}</p>
+          <div className="p-6 bg-green-50 rounded-xl border border-green-200 text-center">
+            <h2 className="text-xl font-bold text-green-800 mb-2">{t('success')}</h2>
+            <p className="text-green-700 text-sm">{t('redirecting')}</p>
           </div>
         </div>
       </div>
@@ -69,17 +69,17 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-bg-primary" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-md mx-auto px-4 py-12">
         <div className="glass rounded-xl p-6 shadow">
-          <h1 className="text-2xl font-bold text-text-primary mb-6">{t('title')}</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-6">{t('title')}</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
-                <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
+              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                <p className="text-red-800 text-sm">{error}</p>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
                 {t('newPinLabel')}
               </label>
               <input
@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
                 placeholder="••••••"
                 maxLength={6}
                 required
-                className="w-full px-4 py-3 bg-bg-tertiary text-text-primary border border-gray-300 dark:border-gray-600 rounded-lg text-center text-2xl tracking-widest font-mono"
+                className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-gray-300 rounded-lg text-center text-2xl tracking-widest font-mono"
                 autoComplete="off"
                 dir="ltr"
               />
@@ -104,7 +104,7 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
                 {t('confirmPinLabel')}
               </label>
               <input
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
                 placeholder="••••••"
                 maxLength={6}
                 required
-                className="w-full px-4 py-3 bg-bg-tertiary text-text-primary border border-gray-300 dark:border-gray-600 rounded-lg text-center text-2xl tracking-widest font-mono"
+                className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-gray-300 rounded-lg text-center text-2xl tracking-widest font-mono"
                 autoComplete="off"
                 dir="ltr"
               />
@@ -128,14 +128,14 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading || !newPin || !confirmPin}
-              className="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg disabled:opacity-50 transition-colors"
+              className="w-full px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg disabled:opacity-50 transition-colors"
             >
               {loading ? t('updating') : t('updateButton')}
             </button>
 
             <Link
               href="/settings"
-              className="block text-center text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="block text-center text-sm text-teal-600 hover:underline"
             >
               {t('backToSettings')}
             </Link>

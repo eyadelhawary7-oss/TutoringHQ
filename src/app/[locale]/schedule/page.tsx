@@ -1,28 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog, type Filter } from '@/lib/db-proxy';
+import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
-
-function isOwnerOrAdmin(role?: string): boolean {
-  return role === 'owner' || role === 'admin';
-}
-
-function canEditSchedule(role?: string): boolean {
-  return role === 'owner' || role === 'admin';
-}
+import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
 
 interface Room {
   id: string;
   name: string;
-}
-
-interface Subject {
-  id: string;
-  name: string;
+  capacity?: number | null;
 }
 
 interface Group {
@@ -34,58 +23,34 @@ interface Group {
 interface ScheduleSlot {
   id: string;
   room_id: string;
-  subject?: string;
   group_id?: string | null;
-  teacher_id: string;
-  day_of_week: number | string; // SMALLINT 0-6 or TEXT 'sat','sun','mon',...
+  day_of_week: number | string;
   start_time: string;
   end_time: string;
   recurring?: boolean;
   room_name?: string;
-  subject_name?: string;
   group_name?: string;
-  teacher_name?: string;
 }
 
-// DB stores day_of_week as 0-6: 0=Sat, 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri
-const DAY_MAP: Record<string, string> = {
-  Sun: '1', Mon: '2', Tue: '3', Wed: '4', Thu: '5', Fri: '6', Sat: '0',
-};
-const DAY_REVERSE: Record<string, string> = {
-  '0': 'Sat', '1': 'Sun', '2': 'Mon', '3': 'Tue', '4': 'Wed', '5': 'Thu', '6': 'Fri',
-};
-const DAY_KEYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
-
-function getHoursRange(start: number, end: number): number[] {
-  return Array.from({ length: end - start }, (_, i) => i + start);
-}
+const DAY_KEYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
+const DAY_COLORS = ['#0D9488', '#7C3AED', '#F59E0B', '#DC2626', '#16A34A', '#0EA5E9', '#6B7280'];
+const DAY_ORDER = [0, 1, 2, 3, 4, 5, 6] as const;
 
 function timeToMinutes(t: string): number {
-  // Handle full ISO timestamp (e.g. "2000-01-01T09:00:00.000Z") - extract time part
   let timeStr = t;
   if (t.includes('T')) {
     const d = new Date(t);
-    if (!isNaN(d.getTime())) {
-      const h = d.getHours();
-      const m = d.getMinutes();
-      return h * 60 + m;
-    }
+    if (!isNaN(d.getTime())) return d.getHours() * 60 + d.getMinutes();
     timeStr = t.split('T')[1]?.slice(0, 5) ?? t;
   }
   const [h, m] = timeStr.split(':').map(Number);
   return (h || 0) * 60 + (m || 0);
 }
 
-/** Format TIME column value (e.g. '09:00:00') for display as '09:00' */
 function formatTimeForDisplay(t: string | undefined): string {
   if (!t) return '';
-  return t.substring(0, 5);
-}
-
-function formatTime(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  const part = t.includes('T') ? t.split('T')[1] : t;
+  return (part ?? t).slice(0, 5);
 }
 
 export default function SchedulePage() {
@@ -95,35 +60,23 @@ export default function SchedulePage() {
   const router = useRouter();
   const { user, hasPermission } = useUser();
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<string>('Sun');
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [conflictError, setConflictError] = useState('');
-  const [formRoom, setFormRoom] = useState('');
-  const [formSubject, setFormSubject] = useState('');
-  const [formGroup, setFormGroup] = useState('');
-  const [formRecurring, setFormRecurring] = useState(false);
+  const [formGroupId, setFormGroupId] = useState('');
+  const [formRoomId, setFormRoomId] = useState('');
+  const [formDay, setFormDay] = useState(0);
   const [formStart, setFormStart] = useState('09:00');
-  const [formEnd, setFormEnd] = useState('10:00');
-  const [formDay, setFormDay] = useState<string>('Sun');
+  const [formEnd, setFormEnd] = useState('11:00');
+  const [formRecurring, setFormRecurring] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slotError, setSlotError] = useState('');
-  const [slotSuccessMessage, setSlotSuccessMessage] = useState('');
-  const [scheduleStartHour, setScheduleStartHour] = useState(8);
-  const [scheduleEndHour, setScheduleEndHour] = useState(20);
-  const [showHoursModal, setShowHoursModal] = useState(false);
-  const [editStartHour, setEditStartHour] = useState(8);
-  const [editEndHour, setEditEndHour] = useState(20);
-  const [isSavingHours, setIsSavingHours] = useState(false);
+  const [slotSuccess, setSlotSuccess] = useState('');
 
-  const hours = getHoursRange(scheduleStartHour, scheduleEndHour);
-
-  const canEdit = canEditSchedule(user?.role);
+  const canEdit = user?.role === 'owner' || user?.role === 'admin';
 
   useEffect(() => {
     if ((user?.role === 'assistant' || user?.role === 'teacher') && !hasPermission('can_view_schedule')) {
@@ -131,150 +84,76 @@ export default function SchedulePage() {
     }
   }, [user, hasPermission, router]);
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+  const loadData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
 
-      const meRes = await fetch('/api/me', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      const meData = await meRes.json();
-      if (!meData?.user?.center_id) return;
-      setCenterId(meData.user.center_id);
-      setUserId(meData.user.id);
+    const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+    const meData = await meRes.json();
+    if (!meData?.user?.center_id) return;
+    const cid = meData.user.center_id;
+    setCenterId(cid);
+    setUserId(meData.user.id);
 
-      const [centerRes, roomsRes, subjectsRes, grpRes, slotsRes] = await Promise.all([
-        dbSelect({
-          table: 'centers',
-          select: 'schedule_start_hour, schedule_end_hour',
-          filters: [{ column: 'id', op: 'eq' as const, value: meData.user.center_id }],
-          single: true,
-        }),
-        dbSelect({
-          table: 'rooms',
-          select: 'id, name',
-          filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
-          order: { column: 'name' },
-        }),
-        dbSelect({
-          table: 'subjects',
-          select: 'id, name',
-          filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
-          order: { column: 'name' },
-        }),
-        dbSelect({
-          table: 'student_groups',
-          select: 'id, name, subject',
-          filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
-          order: { column: 'name' },
-        }),
-        dbSelect({
-          table: 'schedule_slots',
-          select: 'id, room_id, subject, group_id, teacher_id, day_of_week, start_time, end_time, recurring, recurring_until',
-          filters: [{ column: 'center_id', op: 'eq' as const, value: meData.user.center_id }],
-        }),
-      ]);
-      if (slotsRes?.error) console.error('Slots error:', slotsRes.error);
+    const [roomsRes, groupsRes, slotsRes] = await Promise.all([
+      dbSelect({ table: 'rooms', select: 'id, name, capacity', filters: [{ column: 'center_id', op: 'eq', value: cid }], order: { column: 'name' } }),
+      dbSelect({ table: 'student_groups', select: 'id, name, subject', filters: [{ column: 'center_id', op: 'eq', value: cid }], order: { column: 'name' } }),
+      dbSelect({ table: 'schedule_slots', select: 'id, room_id, group_id, day_of_week, start_time, end_time, recurring', filters: [{ column: 'center_id', op: 'eq', value: cid }] }),
+    ]);
 
-      if (centerRes?.data) {
-        const c = centerRes.data as { schedule_start_hour?: number | null; schedule_end_hour?: number | null };
-        if (c.schedule_start_hour != null) setScheduleStartHour(c.schedule_start_hour);
-        if (c.schedule_end_hour != null) setScheduleEndHour(c.schedule_end_hour);
-      }
-      if (roomsRes.data) setRooms(roomsRes.data as Room[]);
-      if (subjectsRes.data) setSubjects(subjectsRes.data as Subject[]);
-      if (grpRes?.data) setGroups(grpRes.data as Group[]);
+    const roomsData = (roomsRes.data || []) as Room[];
+    const groupsData = (groupsRes.data || []) as Group[];
+    const slotsData = (slotsRes.data || []) as ScheduleSlot[];
 
-      if (slotsRes.data) {
-        const slotsData = slotsRes.data as ScheduleSlot[];
-        const roomsData = (roomsRes.data || []) as Room[];
-        const subjectsData = (subjectsRes.data || []) as Subject[];
-        const groupsData = (grpRes?.data || []) as Group[];
-        const withNames = slotsData.map((s) => ({
-          ...s,
-          room_name: roomsData.find((r) => r.id === s.room_id)?.name ?? '',
-          subject_name: s.subject ?? '',
-          group_name: s.group_id ? groupsData.find((g) => g.id === s.group_id)?.name ?? '' : '',
-        }));
-        setSlots(withNames);
-      }
-      setIsLoading(false);
-    };
-    load();
-  }, []);
-
-  const dbDayValue = DAY_MAP[selectedDay];
-  const slotsForDay = slots.filter((s) => String(s.day_of_week) === dbDayValue);
-
-  const scheduleTitle = t('centerSchedule');
-  const showViewOnly = (user?.role === 'assistant' || user?.role === 'teacher') && hasPermission('can_view_schedule');
-
-  if ((user?.role === 'assistant' || user?.role === 'teacher') && !hasPermission('can_view_schedule')) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-          <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-        </div>
-    );
-  }
-
-  const checkConflict = (
-    roomId: string,
-    groupId: string | null,
-    dayLabel: string,
-    start: string,
-    end: string,
-    excludeId?: string
-  ): string | null => {
-    const startM = timeToMinutes(start);
-    const endM = timeToMinutes(end);
-    const dbDay = DAY_MAP[dayLabel];
-    for (const s of slots) {
-      if (s.id === excludeId) continue;
-      if (String(s.day_of_week) !== dbDay) continue;
-      const sStart = timeToMinutes(s.start_time);
-      const sEnd = timeToMinutes(s.end_time);
-      const overlaps = startM < sEnd && endM > sStart;
-      if (overlaps && s.room_id === roomId) return t('conflict');
-      if (overlaps && groupId && s.group_id === groupId) return t('conflict');
-    }
-    return null;
+    setRooms(roomsData);
+    setGroups(groupsData);
+    setSlots(slotsData.map(s => ({
+      ...s,
+      room_name: roomsData.find(r => r.id === s.room_id)?.name ?? '',
+      group_name: s.group_id ? groupsData.find(g => g.id === s.group_id)?.name ?? '' : '',
+    })));
+    setIsLoading(false);
   };
 
-  const selectedSubjectName = subjects.find((s) => s.id === formSubject)?.name ?? '';
-  const filteredGroups = formSubject
-    ? groups.filter((g) => g.subject === selectedSubjectName)
-    : [];
+  useEffect(() => { loadData(); }, []);
+
+  const hasConflict = useMemo(() => {
+    if (!formRoomId) return false;
+    const startM = timeToMinutes(formStart);
+    const endM = timeToMinutes(formEnd);
+    return slots.some(s =>
+      s.room_id === formRoomId &&
+      Number(s.day_of_week) === formDay &&
+      timeToMinutes(s.start_time) < endM &&
+      timeToMinutes(s.end_time) > startM
+    );
+  }, [slots, formRoomId, formDay, formStart, formEnd]);
 
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     setSlotError('');
-    if (!centerId || !userId || !formRoom || !formSubject || !formGroup) {
-      setSlotError('Room, subject, and group are required');
+    if (!centerId || !userId || !formGroupId || !formRoomId) {
+      setSlotError(t('roomGroupRequired', { defaultValue: 'Group and room are required' }));
       return;
     }
-    setConflictError('');
-    const conflict = checkConflict(formRoom, formGroup || null, formDay, formStart, formEnd);
-    if (conflict) {
-      setConflictError(conflict);
+    if (hasConflict) {
+      setSlotError(t('conflictMessage'));
       return;
     }
     setIsSubmitting(true);
     try {
-      const startTime = formStart.includes(':') && formStart.length === 5 ? formStart + ':00' : formStart;
-      const endTime = formEnd.includes(':') && formEnd.length === 5 ? formEnd + ':00' : formEnd;
+      const group = groups.find(g => g.id === formGroupId);
+      const startTime = formStart.length === 5 ? formStart + ':00' : formStart;
+      const endTime = formEnd.length === 5 ? formEnd + ':00' : formEnd;
       const { data, error } = await dbInsert({
         table: 'schedule_slots',
         data: {
           center_id: centerId,
-          room_id: formRoom,
-          subject: selectedSubjectName,
-          group_id: formGroup || null,
+          room_id: formRoomId,
+          subject: group?.subject ?? null,
+          group_id: formGroupId,
           teacher_id: userId,
-          day_of_week: Number(DAY_MAP[formDay]),
+          day_of_week: formDay,
           start_time: startTime,
           end_time: endTime,
           recurring: formRecurring,
@@ -282,47 +161,20 @@ export default function SchedulePage() {
         single: true,
       });
       if (error) {
-        console.error('[Schedule] Slot insert failed:', error);
-        const errMsg = typeof error === 'object' && error !== null && 'message' in error
-          ? (error as { message: string }).message
-          : String(error);
-        setSlotError(errMsg);
+        setSlotError(typeof error === 'object' && error?.message ? String(error.message) : String(error));
+        setIsSubmitting(false);
         return;
       }
       if (data) {
         const slot = data as ScheduleSlot;
-        await auditLog({
-          centerId,
-          userId,
-          action: 'schedule_slot_create',
-          entityType: 'schedule_slots',
-          entityId: slot.id,
-          details: { room_id: formRoom, subject_id: formSubject, group_id: formGroup, day: formDay, day_of_week: Number(DAY_MAP[formDay]) },
-        });
+        await auditLog({ centerId, userId, action: 'schedule_slot_create', entityType: 'schedule_slots', entityId: slot.id, details: {} });
         setShowAddModal(false);
-        setFormRoom('');
-        setFormSubject('');
-        setFormGroup('');
-        setFormRecurring(false);
+        setFormGroupId('');
+        setFormRoomId('');
         setSlotError('');
-        setSlotSuccessMessage(t('slotSaved'));
-        setTimeout(() => setSlotSuccessMessage(''), 4000);
-        const slotsRes = await         dbSelect({
-          table: 'schedule_slots',
-          select: 'id, room_id, subject, group_id, teacher_id, day_of_week, start_time, end_time, recurring, recurring_until',
-          filters: [{ column: 'center_id', op: 'eq' as const, value: centerId }],
-        });
-        if (slotsRes?.data) {
-          const slotsData = slotsRes.data as ScheduleSlot[];
-          const withNames = slotsData.map((s) => ({
-            ...s,
-            room_name: rooms.find((r) => r.id === s.room_id)?.name ?? '',
-            subject_name: s.subject ?? '',
-            group_name: s.group_id ? groups.find((g) => g.id === s.group_id)?.name ?? '' : '',
-          }));
-          setSlots(withNames);
-        }
-        if (slotsRes?.error) console.error('Slots refresh error:', slotsRes.error);
+        setSlotSuccess(t('slotSaved'));
+        setTimeout(() => setSlotSuccess(''), 4000);
+        await loadData();
       }
     } finally {
       setIsSubmitting(false);
@@ -331,353 +183,188 @@ export default function SchedulePage() {
 
   const handleDeleteSlot = async (id: string) => {
     if (!centerId || !userId || !confirm(t('deleteConfirm'))) return;
-    await dbDelete({
-      table: 'schedule_slots',
-      filters: [{ column: 'id', op: 'eq' as const, value: id }],
-    });
+    await dbDelete({ table: 'schedule_slots', filters: [{ column: 'id', op: 'eq', value: id }] });
     await auditLog({ centerId, userId, action: 'schedule_slot_delete', entityType: 'schedule_slots', entityId: id });
-    setSlots((prev) => prev.filter((s) => s.id !== id));
+    setSlots(prev => prev.filter(s => s.id !== id));
   };
 
-  const getSlotAt = (roomId: string, hour: number) => {
-    const startM = hour * 60;
-    const endM = (hour + 1) * 60;
-    return slotsForDay.find((s) => {
-      if (s.room_id !== roomId) return false;
-      const sStart = timeToMinutes(s.start_time);
-      const sEnd = timeToMinutes(s.end_time);
-      return startM < sEnd && endM > sStart;
-    });
-  };
+  if ((user?.role === 'assistant' || user?.role === 'teacher') && !hasPermission('can_view_schedule')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <svg className="animate-spin h-8 w-8 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+      </div>
+    );
+  }
 
   return (
-    <>
-    <div className="min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-text-primary">
-              {scheduleTitle}
-              {showViewOnly && <span className="text-base font-normal text-text-secondary ml-2">{t('viewOnly')}</span>}
-            </h1>
-            <div className="flex gap-2">
-              {canEdit && (
-                <>
-                  <button
-                    onClick={() => {
-                      setEditStartHour(scheduleStartHour);
-                      setEditEndHour(scheduleEndHour);
-                      setShowHoursModal(true);
-                    }}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-text-primary rounded-lg hover:bg-bg-secondary"
-                  >
-                    {t('workingHours')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setFormDay(selectedDay);
-                      setShowAddModal(true);
-                      setConflictError('');
-                      setSlotError('');
-                    }}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                  >
-                    {t('addSlot')}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {slotSuccessMessage && (
-            <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm">
-              {slotSuccessMessage}
-            </div>
+    <div className="p-4 md:p-6 space-y-5 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-foreground">
+          {t('title')}
+          {(user?.role === 'assistant' || user?.role === 'teacher') && hasPermission('can_view_schedule') && (
+            <span className="text-base font-normal text-muted-foreground ms-2">{t('viewOnly')}</span>
           )}
-          {isLoading ? (
-            <div className="text-center py-16">
-              <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            </div>
-          ) : (
-            <>
-              <div className="flex gap-1 mb-4">
-                {DAY_KEYS.map((label) => (
-                  <button
-                    key={label}
-                    onClick={() => setSelectedDay(label)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      selectedDay === label
-                        ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50'
-                        : 'bg-white/5 text-[var(--text-secondary)] hover:bg-white/10 border border-[var(--border-color)]'
-                    }`}
-                  >
-                    {t(label.toLowerCase() as 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')}
-                  </button>
-                ))}
-              </div>
-
-              <div className="relative">
-                <div
-                  className="overflow-x-auto [-webkit-overflow-scrolling:touch] shadow-[inset_-8px_0_8px_-8px_rgba(0,0,0,0.12)] dark:shadow-[inset_-8px_0_8px_-8px_rgba(255,255,255,0.06)]"
-                >
-                  <table className="w-full border-collapse glass rounded-lg shadow">
-                    <thead>
-                      <tr>
-                        <th
-                          className="sticky left-0 z-10 w-16 min-w-[4rem] shrink-0 p-2 text-left text-xs font-medium italic text-text-secondary border-b border-r border-gray-200 dark:border-gray-700 glass"
-                        >
-                          {t('time', { defaultValue: 'Time' })}
-                        </th>
-                        {rooms.map((r) => (
-                          <th key={r.id} className="p-2 text-left text-xs font-medium italic text-text-secondary border-b border-r border-gray-200 dark:border-gray-700 min-w-[120px] glass">
-                            {r.name}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {hours.map((hour) => (
-                        <tr key={hour}>
-                          <td
-                            className="sticky left-0 z-[5] shrink-0 p-2 text-xs font-mono italic text-text-secondary border-r border-b border-gray-200 dark:border-gray-700 glass"
-                          >
-                            {formatTime(hour * 60)}
-                          </td>
-                          {rooms.map((room) => {
-                            const slot = getSlotAt(room.id, hour);
-                            return (
-                              <td
-                                key={room.id}
-                                className="p-1 border-r border-b border-gray-200 dark:border-gray-700 min-h-[48px] align-top glass"
-                              >
-                                {slot && (
-                                  <div
-                                    className="text-xs p-2 rounded bg-indigo-50 dark:bg-indigo-900/50 text-indigo-900 dark:text-indigo-200 border-s-4 border-indigo-500 dark:border-indigo-400"
-                                    title={`${slot.group_name || slot.subject_name || ''} - ${slot.room_name ?? ''} | ${formatTimeForDisplay(slot.start_time)} - ${formatTimeForDisplay(slot.end_time)}`}
-                                  >
-                                    <div className="font-medium truncate">
-                                      {slot.group_name ? `${slot.group_name} - ${slot.room_name}` : `${slot.subject_name ?? ''} - ${slot.room_name ?? ''}`}
-                                    </div>
-                                    {slot.recurring && (
-                                      <span className="text-indigo-500" title={t('recurring')}>↻</span>
-                                    )}
-                                    {canEdit && (
-                                      <button
-                                        onClick={() => handleDeleteSlot(slot.id)}
-                                        className="mt-1 text-red-600 hover:underline"
-                                      >
-                                        {t('delete')}
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {rooms.length === 0 && !isLoading && (
-                <p className="text-text-secondary py-8">{t('noRooms')}</p>
-              )}
-            </>
-          )}
-        </div>
+        </h1>
+        {canEdit && (
+          <button
+            onClick={() => { setShowAddModal(true); setSlotError(''); }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+            style={{ background: 'hsl(var(--primary))' }}
+          >
+            <Plus size={14} /> {t('addSession')}
+          </button>
+        )}
       </div>
 
+      {slotSuccess && (
+        <div className="p-3 rounded-lg bg-green-100 border border-green-500/30 text-green-700 text-sm">
+          {slotSuccess}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="text-center py-16">
+          <svg className="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          {DAY_ORDER.map(day => {
+            const daySlots = slots.filter(s => Number(s.day_of_week) === day);
+            const color = DAY_COLORS[day];
+            return (
+              <div key={day} className="ch-card overflow-hidden">
+                <div className="px-3 py-2 text-xs font-bold text-white text-center" style={{ background: color }}>
+                  {t(DAY_KEYS[day])}
+                </div>
+                <div className="p-2 space-y-2 min-h-[80px]">
+                  {daySlots.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">{t('noSlots')}</p>
+                  ) : daySlots.map(slot => (
+                    <div key={slot.id} className="rounded-lg p-2 text-xs" style={{ background: `${color}15`, borderInlineStart: `3px solid ${color}` }}>
+                      <div className="font-semibold text-foreground truncate">{slot.group_name || '—'}</div>
+                      <div className="text-muted-foreground">{slot.room_name || '—'}</div>
+                      <div className="flex items-center gap-1 text-muted-foreground mt-1">
+                        <Clock size={10} />
+                        <span className="font-mono">{formatTimeForDisplay(slot.start_time)}{'\u2013'}{formatTimeForDisplay(slot.end_time)}</span>
+                      </div>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteSlot(slot.id); }}
+                          className="mt-2 text-red-600 hover:text-red-700 text-[10px] font-medium"
+                        >
+                          {t('delete')}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {rooms.length === 0 && !isLoading && (
+        <p className="text-muted-foreground py-8 text-center">{t('noRooms')}</p>
+      )}
+
+      {/* Add Session Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="glass rounded-xl shadow-xl max-w-md w-full p-6">
-            <h2 className="text-lg font-semibold text-text-primary mb-4">{t('addSlot')}</h2>
-            <form onSubmit={handleAddSlot} className="space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddModal(false)}>
+          <div className="bg-card rounded-2xl border border-border shadow-xl p-6 max-w-sm mx-4 w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-foreground">{t('addSession')}</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleAddSlot} className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">{t('day')}</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{t('group')}</label>
+                <select
+                  value={formGroupId}
+                  onChange={e => setFormGroupId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  required
+                >
+                  <option value="">{tCommon('select')}</option>
+                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{t('room')}</label>
+                <select
+                  value={formRoomId}
+                  onChange={e => setFormRoomId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  required
+                >
+                  <option value="">{tCommon('select')}</option>
+                  {rooms.map(r => <option key={r.id} value={r.id}>{r.name}{r.capacity != null ? ` (${r.capacity})` : ''}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{t('day')}</label>
                 <select
                   value={formDay}
-                  onChange={(e) => setFormDay(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
+                  onChange={e => setFormDay(Number(e.target.value))}
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  {DAY_KEYS.map((label) => (
-                    <option key={label} value={label}>{t(label.toLowerCase() as 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')}</option>
-                  ))}
+                  {DAY_ORDER.map(d => <option key={d} value={d}>{t(DAY_KEYS[d])}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">{t('subject')}</label>
-                <select
-                  value={formSubject}
-                  onChange={(e) => { setFormSubject(e.target.value); setFormGroup(''); }}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
-                >
-                  <option value="">{tCommon('select')}</option>
-                  {subjects.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">{t('group')}</label>
-                <select
-                  value={formGroup}
-                  onChange={(e) => setFormGroup(e.target.value)}
-                  required
-                  disabled={!formSubject}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary disabled:opacity-50"
-                >
-                  <option value="">{formSubject ? tCommon('select') : '—'}</option>
-                  {filteredGroups.map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">{t('room')}</label>
-                <select
-                  value={formRoom}
-                  onChange={(e) => setFormRoom(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
-                >
-                  <option value="">{tCommon('select')}</option>
-                  {rooms.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">{t('startTime')}</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">{t('startTime')}</label>
                   <input
                     type="time"
                     value={formStart}
-                    onChange={(e) => setFormStart(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
+                    onChange={e => setFormStart(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">{t('endTime')}</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">{t('endTime')}</label>
                   <input
                     type="time"
                     value={formEnd}
-                    onChange={(e) => setFormEnd(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
+                    onChange={e => setFormEnd(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
               </div>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 py-1">
                 <input
                   type="checkbox"
                   checked={formRecurring}
-                  onChange={(e) => setFormRecurring(e.target.checked)}
-                  className="rounded border-gray-300 dark:border-gray-600"
+                  onChange={e => setFormRecurring(e.target.checked)}
+                  className="rounded accent-primary"
                 />
-                <span className="text-sm text-text-primary">{t('recurring')}</span>
+                <span className="text-sm text-foreground">{t('recurring')}</span>
               </label>
-              {(conflictError || slotError) && (
-                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
-                  {conflictError || slotError}
+              {hasConflict && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                  <AlertTriangle size={16} />
+                  <span>{t('conflictMessage')}</span>
                 </div>
               )}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      {tCommon('loading')}
-                    </>
-                  ) : (
-                    t('save')
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-secondary"
-                >
-                  {t('cancel')}
-                </button>
+              {slotError && !hasConflict && (
+                <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">{slotError}</div>
+              )}
+              <div className="flex gap-2 justify-end mt-4">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border text-muted-foreground hover:bg-muted">{tCommon('cancel')}</button>
+                <button type="submit" disabled={!formGroupId || !formRoomId || hasConflict || isSubmitting} className="px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{tCommon('save')}</button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* Working Hours Modal */}
-      {showHoursModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="glass rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h2 className="text-lg font-semibold text-text-primary mb-4">{t('workingHours')}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">{t('startHour')}</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={editStartHour}
-                  onChange={(e) => setEditStartHour(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">{t('endHour')}</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="24"
-                  value={editEndHour}
-                  onChange={(e) => setEditEndHour(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={async () => {
-                    if (!centerId || !userId || editStartHour >= editEndHour) return;
-                    setIsSavingHours(true);
-                    const { error } = await dbUpdate({
-                      table: 'centers',
-                      data: { schedule_start_hour: editStartHour, schedule_end_hour: editEndHour },
-                      filters: [{ column: 'id', op: 'eq' as const, value: centerId }],
-                    });
-                    if (error) console.error('Working hours save error:', error);
-                    if (!error) {
-                      setScheduleStartHour(editStartHour);
-                      setScheduleEndHour(editEndHour);
-                      setShowHoursModal(false);
-                    }
-                    setIsSavingHours(false);
-                  }}
-                  disabled={isSavingHours || editStartHour >= editEndHour}
-                  className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {t('save')}
-                </button>
-                <button
-                  onClick={() => setShowHoursModal(false)}
-                  className="flex-1 py-2 bg-bg-tertiary text-text-primary rounded-lg"
-                >
-                  {t('cancel')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

@@ -12,14 +12,17 @@ export default function LanguageToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    // Load saved locale from localStorage on mount
+    const id = setTimeout(() => {
+      setMounted(true);
+      // Load saved locale from localStorage on mount
     const savedLocale = localStorage.getItem('preferred-locale');
     if (savedLocale && savedLocale !== locale) {
       startTransition(() => {
         router.replace(pathname, { locale: savedLocale as 'ar' | 'en' });
       });
     }
+    }, 0);
+    return () => clearTimeout(id);
   }, []);
 
   const handleLocaleChange = (newLocale: 'ar' | 'en') => {

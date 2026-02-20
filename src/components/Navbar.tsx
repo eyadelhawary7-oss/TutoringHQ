@@ -13,11 +13,11 @@ import { supabase } from '@/lib/supabase';
 
 const getRoleBadge = (role: UserRole | string) => {
   const badges: Record<string, string> = {
-    owner: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    admin: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    super_admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    assistant: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    teacher: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    owner: 'bg-blue-100 text-blue-800',
+    admin: 'bg-blue-100 text-blue-800',
+    super_admin: 'bg-red-100 text-red-800',
+    assistant: 'bg-green-100 text-green-800',
+    teacher: 'bg-purple-100 text-purple-800',
   };
   return badges[role ?? ''] || badges.assistant;
 };
@@ -84,8 +84,8 @@ export default function Navbar() {
   const navLink = (item: { key: string; href: string }, isMobile = false) => {
     const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
     const base = isMobile
-      ? `block w-full text-start px-4 py-3 text-base font-medium rounded-lg transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-text-primary hover:bg-bg-secondary'}`
-      : `inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${isActive ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-text-primary hover:text-text-primary hover:bg-bg-secondary'}`;
+      ? `block w-full text-start px-4 py-3 text-base font-medium rounded-lg transition-colors ${isActive ? 'bg-teal-50 text-teal-700' : 'text-text-primary hover:bg-bg-secondary'}`
+      : `inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${isActive ? 'bg-teal-50 text-teal-700' : 'text-text-primary hover:text-text-primary hover:bg-bg-secondary'}`;
     return (
       <Link key={item.key} href={item.href} className={base} onClick={() => isMobile && setMenuOpen(false)}>
         {t(item.key)}
@@ -94,7 +94,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-bg-primary border-b border-gray-200 dark:border-gray-800">
+    <nav className="bg-bg-primary border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left: Logo + Brand */}
@@ -117,8 +117,8 @@ export default function Navbar() {
                 href="/admin"
                 className={`inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md border-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                   pathname?.startsWith('/admin')
-                    ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    : 'border-red-500 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : 'border-red-500 text-red-600 hover:bg-red-50'
                 }`}
               >
                 {t('admin')}
@@ -133,8 +133,8 @@ export default function Navbar() {
                   href="/admin"
                   className={`inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md border-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                     pathname?.startsWith('/admin')
-                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                      : 'border-red-500 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                      ? 'border-red-500 bg-red-50 text-red-700'
+                      : 'border-red-500 text-red-600 hover:bg-red-50'
                   }`}
                 >
                   {t('admin')}
@@ -153,14 +153,14 @@ export default function Navbar() {
               </div>
             )}
             {isLimitedAccess && (
-              <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" title={t('limitedAccess')}>
+              <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded bg-amber-50 text-amber-600" title={t('limitedAccess')}>
                 {t('limitedAccess')}
               </span>
             )}
             {user && (
               <button
                 onClick={handleLogout}
-                className="text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                className="text-sm text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
                 title={t('logout')}
               >
                 {t('logout')}
@@ -201,8 +201,8 @@ export default function Navbar() {
             aria-hidden="true"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="fixed inset-x-0 top-0 z-50 md:hidden bg-bg-primary border-b border-gray-200 dark:border-gray-800 shadow-lg max-h-screen overflow-y-auto">
-            <div className="flex justify-between items-center h-14 px-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="fixed inset-x-0 top-0 z-50 md:hidden bg-bg-primary border-b border-gray-200 shadow-lg max-h-screen overflow-y-auto">
+            <div className="flex justify-between items-center h-14 px-4 border-b border-gray-200">
               <span className="text-lg font-bold text-text-primary">CenterHQ</span>
               <button
                 type="button"
@@ -222,15 +222,15 @@ export default function Navbar() {
                   href="/admin"
                   className={`block w-full text-start px-4 py-3 text-base font-medium rounded-lg border-2 transition-colors ${
                     pathname?.startsWith('/admin')
-                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                      : 'border-red-500 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                      ? 'border-red-500 bg-red-50 text-red-700'
+                      : 'border-red-500 text-red-600 hover:bg-red-50'
                   }`}
                   onClick={() => setMenuOpen(false)}
                 >
                   {t('admin')}
                 </Link>
               )}
-              <hr className="my-4 border-gray-200 dark:border-gray-800" />
+              <hr className="my-4 border-gray-200" />
               <div className="px-4 py-2">
                 <p className="text-sm font-medium text-text-primary truncate">{centerName}</p>
                 {roleLabelKey && (
@@ -241,7 +241,7 @@ export default function Navbar() {
               </div>
               <button
                 onClick={handleLogout}
-                className="block w-full text-start px-4 py-3 text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                className="block w-full text-start px-4 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
                 {t('logout')}
               </button>

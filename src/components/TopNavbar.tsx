@@ -151,7 +151,7 @@ export default function TopNavbar() {
               href={item.href}
               className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${
                 isActive
-                  ? 'bg-indigo-500/20 text-indigo-300 border-b-2 border-indigo-400'
+                  ? 'bg-teal-500/20 text-teal-300 border-b-2 border-teal-400'
                   : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
               }`}
             >
@@ -232,8 +232,8 @@ export default function TopNavbar() {
                   key={item.key}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${
-                    isActive ? 'bg-indigo-500/20 text-indigo-300' : 'text-[var(--text-primary)] hover:bg-white/5'
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${
+                    isActive ? 'bg-teal-500/20 text-teal-300' : 'text-[var(--text-primary)] hover:bg-white/5'
                   }`}
                 >
                   {item.icon}

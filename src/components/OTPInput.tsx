@@ -96,13 +96,13 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={index === 0 ? handlePaste : undefined}
-            className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-bg-tertiary text-text-primary transition-colors"
+            className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-bg-tertiary text-text-primary transition-colors"
           />
         ))}
       </div>
 
       {error && (
-        <p className="text-center text-sm text-red-600 dark:text-red-400">
+        <p className="text-center text-sm text-red-600">
           {error}
         </p>
       )}
@@ -127,7 +127,7 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
           type="button"
           disabled={resendTimer > 0}
           onClick={handleResend}
-          className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:text-text-tertiary disabled:cursor-not-allowed"
+          className="text-sm text-indigo-600 hover:text-indigo-700 disabled:text-text-tertiary disabled:cursor-not-allowed"
         >
           {resendTimer > 0 ? `${t('resend')} (${resendTimer}s)` : t('resend')}
         </button>

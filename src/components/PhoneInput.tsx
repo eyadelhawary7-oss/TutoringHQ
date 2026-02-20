@@ -46,7 +46,7 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
         >
           {t('phoneLabel')}
         </label>
-        <div className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-bg-tertiary" dir="ltr">
+        <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2 bg-bg-tertiary" dir="ltr">
           <span className="text-text-secondary font-medium shrink-0 text-sm select-none">+20</span>
           <input
             id="phone"
@@ -68,7 +68,7 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
           {t('phoneHint', { defaultValue: 'Enter without the leading zero' })}
         </p>
         {(validationError || error) && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          <p className="mt-2 text-sm text-red-600">
             {validationError || error}
           </p>
         )}

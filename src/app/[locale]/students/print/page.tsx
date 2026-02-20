@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
+import { QRCard } from '@/components/QRCard';
+import { QrCode } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -24,9 +26,11 @@ export default function PrintStudentsPage() {
 
   const [students, setStudents] = useState<Student[]>([]);
   const [centerLogo, setCenterLogo] = useState<string | null>(null);
+  const [centerName, setCenterName] = useState('CenterHQ');
   const [isLoading, setIsLoading] = useState(true);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -34,7 +38,7 @@ export default function PrintStudentsPage() {
       if (!session) return;
 
       const meRes = await fetch('/api/me', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const meData = await meRes.json();
 
@@ -43,16 +47,16 @@ export default function PrintStudentsPage() {
       if (meData?.user?.center?.logo_url) {
         setCenterLogo(meData.user.center.logo_url);
       }
+      if (meData?.user?.center?.name) {
+        setCenterName(meData.user.center.name);
+      }
 
-      // Fetch ALL students for this center (not filtered by qr_code)
       const { data, error } = await dbSelect({
         table: 'students',
         select: 'id, name, subject, qr_code, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
         order: { column: 'name' },
       });
-
-      console.log('Students fetched:', Array.isArray(data) ? data.length : 0, error);
 
       if (data && Array.isArray(data)) {
         setStudents(data as Student[]);
@@ -69,7 +73,6 @@ export default function PrintStudentsPage() {
     ? students
     : students.filter(s => s.subject === selectedSubject);
 
-  // Generate QR on the fly for students without qr_code
   const studentsWithQR = useMemo(() => {
     return filteredStudents.map(s => ({
       ...s,
@@ -105,23 +108,54 @@ export default function PrintStudentsPage() {
     return () => { cancelled = true; };
   }, [studentsWithQR]);
 
+  const selectableStudents = readyStudents;
+  const selectedStudents = selectableStudents.filter(s => selectedIds.has(s.id));
+  const allSelected = selectableStudents.length > 0 && selectedIds.size === selectableStudents.length;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(selectableStudents.map(s => s.id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedIds(new Set());
+  };
+
   const handlePrint = () => {
     window.print();
   };
 
   return (
     <>
-    <div className="min-h-screen bg-bg-secondary print:bg-white">
-        <div className="print:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-text-primary">
-              {t('title')}
-            </h1>
-            <div className="flex gap-3 items-center">
+      <div className="print-page min-h-screen bg-background print:min-h-0 print:bg-transparent animate-fade-in">
+        {/* Selection UI - hidden in print */}
+        <div className="selection-controls no-print max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+            <div className="flex flex-wrap gap-3 items-center">
+              <button
+                type="button"
+                onClick={allSelected ? deselectAll : selectAll}
+                className="px-4 py-2 rounded-xl text-sm font-medium border border-border text-muted-foreground hover:bg-muted"
+              >
+                {allSelected ? t('deselectAll') : t('selectAll')}
+              </button>
+              <span className="text-sm text-muted-foreground">{t('selectedCount', { count: selectedStudents.length })}</span>
               <select
                 value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-bg-tertiary text-text-primary"
+                onChange={(e) => {
+                  setSelectedSubject(e.target.value);
+                  setSelectedIds(new Set());
+                }}
+                className="px-3 py-2 border border-border rounded-xl text-sm bg-white text-foreground"
               >
                 <option value="all">{t('allSubjects')}</option>
                 {subjects.map((subject) => (
@@ -130,103 +164,120 @@ export default function PrintStudentsPage() {
               </select>
               <button
                 onClick={handlePrint}
-                className="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                disabled={selectedStudents.length === 0}
+                className="flex items-center gap-2 px-6 py-2 text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: 'hsl(var(--primary))' }}
               >
-                {t('printButton')}
+                <QrCode size={16} /> {t('printButton')}
               </button>
             </div>
           </div>
-          <p className="text-sm text-text-secondary mb-4">
-            {t('cardsPerPage')} — {readyStudents.length} {tStudents('title')}
-          </p>
+          <p className="text-sm text-muted-foreground mb-4">{t('cardsPerPage')}</p>
+
+          {isLoading ? (
+            <div className="text-center py-16">
+              <div className="animate-spin h-8 w-8 border-2 border-teal-500 border-t-transparent rounded-full mx-auto" />
+            </div>
+          ) : selectableStudents.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground">{t('noCards')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {selectableStudents.map((student) => (
+                <label
+                  key={student.id}
+                  className="ch-card flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-muted transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(student.id)}
+                    onChange={() => toggleSelect(student.id)}
+                    className="rounded accent-teal-600 w-4 h-4"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-foreground truncate">{student.name}</div>
+                    <div className="text-xs font-mono text-muted-foreground truncate" dir="ltr">
+                      {student.student_number || '—'}
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
 
-        {isLoading ? (
-          <div className="text-center py-16 print:hidden">
-            <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-          </div>
-        ) : readyStudents.length === 0 ? (
-          <div className="text-center py-16 print:hidden">
-            <p className="text-text-secondary">{t('noCards')}</p>
-          </div>
-        ) : (
-          <div className="printable-cards max-w-[210mm] mx-auto px-4 print:px-[10mm] py-8 print:py-0">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:gap-[4mm] print:grid-cols-4">
-              {readyStudents.map((student) => (
-                <div
-                  key={student.id}
-                  className="border border-gray-300 rounded-lg p-4 print:p-[3mm] print:border-gray-400 flex flex-col items-center justify-center text-center bg-bg-primary print:bg-white"
-                  style={{
-                    width: '90mm',
-                    height: '55mm',
-                    minWidth: '90mm',
-                    minHeight: '55mm',
-                    pageBreakInside: 'avoid',
-                    breakInside: 'avoid',
-                  }}
-                >
-                  {centerLogo ? (
-                    <img src={centerLogo} alt="Logo" className="h-8 w-auto object-contain mb-1 print:mb-1" />
-                  ) : (
-                    <div className="text-xs font-bold text-indigo-600 print:text-indigo-600 mb-1">CenterHQ</div>
-                  )}
-                  <p className="text-base font-bold text-text-primary print:text-gray-900 mb-0.5 line-clamp-1" style={{ fontSize: '16px' }}>
-                    {student.name}
-                  </p>
-                  {student.subject && (
-                    <p className="text-xs text-text-secondary print:text-gray-600 mb-1">
-                      {student.subject}
-                    </p>
-                  )}
-                  {student.student_number && (
-                    <p className="text-xs text-text-secondary print:text-gray-600 mb-2" dir="ltr">
-                      {student.student_number}
-                    </p>
-                  )}
-                  {student.qrDataUrl && (
-                    <img
-                      src={student.qrDataUrl}
-                      alt={`QR: ${student.name}`}
-                      className="w-24 h-24 print:w-[22mm] print:h-[22mm]"
-                    />
-                  )}
+        {/* Printable cards - preview on screen, only content when printing */}
+        <div className={`print-cards-only ${selectedStudents.length > 0 ? 'block' : 'hidden'} print:!block py-8 px-4`}>
+          {selectedStudents.length > 0 && (
+            <div className="print-cards-grid grid grid-cols-2 gap-4 max-w-[210mm] mx-auto">
+              {selectedStudents.map((student) => (
+                <div key={student.id} className="print-card">
+                  <QRCard
+                    student={student}
+                    qrDataUrl={student.qrDataUrl || null}
+                    centerLogo={centerLogo}
+                    centerName={centerName}
+                  />
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <style jsx global>{`
         @media print {
-          body * {
-            visibility: hidden;
+          nav, header, footer, .sidebar, .bottom-nav, .top-bar, button, .no-print, .selection-controls, input[type="checkbox"], select {
+            display: none !important;
+            visibility: hidden !important;
           }
-          .printable-cards,
-          .printable-cards * {
+
+          /* Show ONLY the card grid */
+          .print-cards-only {
+            display: block !important;
             visibility: visible !important;
           }
-          .printable-cards {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+
+          .print-cards-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 4mm !important;
+            padding: 10mm !important;
+            visibility: visible !important;
           }
-          nav, .print\\:hidden {
-            display: none !important;
+
+          .print-card {
+            width: 85.6mm !important;
+            height: 54mm !important;
+            min-width: 85.6mm !important;
+            min-height: 54mm !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
           }
+
+          /* Page break after every 8 cards (2 columns x 4 rows) */
+          .print-card:nth-child(8n) {
+            page-break-after: always !important;
+          }
+
           @page {
             size: A4;
             margin: 10mm;
           }
-          .dark\\:bg-gray-800 {
-            background-color: white !important;
+
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
-          .dark\\:text-white {
-            color: #111827 !important;
+
+          /* Reset main layout for print - no sidebar offset */
+          .app-mode-main,
+          main {
+            padding-inline-start: 0 !important;
           }
         }
       `}</style>

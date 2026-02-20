@@ -66,8 +66,8 @@ export function autoDetectMapping(headers: string[]): ColumnMapping {
     monthlyFee: null,
   };
 
-  const namePatterns = ['name', 'اسم', 'الاسم', 'اسم الطالب', 'student', 'الطالب'];
-  const phonePatterns = ['phone', 'هاتف', 'رقم', 'موبايل', 'تليفون', 'mobile', 'رقم الطالب'];
+  const namePatterns = ['name', 'اسم', 'الاسم', 'اسم الطالب', 'student', 'الطالب', 'الاسم_الكامل'];
+  const phonePatterns = ['phone', 'هاتف', 'الهاتف', 'رقم', 'موبايل', 'تليفون', 'mobile', 'رقم الطالب', 'رقم الهاتف'];
   const parentPatterns = ['parent', 'ولي', 'ولي الأمر', 'رقم ولي', 'parent phone', 'رقم ولي الأمر'];
   const subjectPatterns = ['subject', 'مادة', 'المادة', 'الماده', 'course'];
   const groupPatterns = ['group', 'مجموعة', 'المجموعة', 'شعبة'];

@@ -1,205 +1,264 @@
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
+@plugin "tailwindcss-animate";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-  /* Default (used before data-theme is set) - matches dark-blue */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0f172a;
-  --bg-primary: #0f172a;
-  --bg-secondary: #1f2937;
-  --bg-tertiary: #374151;
-}
-
-/* Theme variables - Dark Blue (default) */
-[data-theme="dark-blue"] {
-  --bg-base: #070A14;
-  --bg-card: rgba(15, 23, 42, 0.6);
-  --bg-sidebar: rgba(13, 18, 33, 0.95);
-  --bg-primary: #0f172a;
-  --bg-secondary: #1f2937;
-  --bg-tertiary: #374151;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0f172a;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(15, 23, 42, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --chart-tooltip-bg: #0F172A;
-  --chart-tooltip-text: #e2e8f0;
-  --chart-tooltip-border: rgba(255, 255, 255, 0.1);
-}
-
-/* Theme: Midnight */
-[data-theme="midnight"] {
-  --bg-base: #000000;
-  --bg-card: rgba(10, 10, 10, 0.8);
-  --bg-sidebar: rgba(10, 10, 10, 0.95);
-  --bg-primary: #0f172a;
-  --bg-secondary: #1f2937;
-  --bg-tertiary: #374151;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0f172a;
-  --border-color: rgba(255, 255, 255, 0.06);
-  --glass-bg: rgba(15, 15, 15, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --chart-tooltip-bg: #0a0a0a;
-  --chart-tooltip-text: #e2e8f0;
-  --chart-tooltip-border: rgba(255, 255, 255, 0.08);
-}
-
-/* Theme: Light */
-[data-theme="light"] {
-  --bg-base: #f1f5f9;
-  --bg-card: #ffffff;
-  --bg-sidebar: #ffffff;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-tertiary: #f3f4f6;
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --text-inverse: #ffffff;
-  --border-color: #e2e8f0;
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --chart-tooltip-bg: #ffffff;
-  --chart-tooltip-text: #1e293b;
-  --chart-tooltip-border: rgba(0, 0, 0, 0.1);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  /* Theme-aware background colors - switch per data-theme */
-  --color-bg-primary: var(--bg-primary);
-  --color-bg-secondary: var(--bg-secondary);
-  --color-bg-tertiary: var(--bg-tertiary);
-  /* Theme-aware text colors - switch per data-theme */
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-tertiary: var(--text-muted);
-  --color-text-inverse: var(--text-inverse);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-arabic: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
-  --font-cairo: var(--font-cairo);
-  --font-inter: var(--font-inter);
-  --font-jetbrains-mono: var(--font-jetbrains-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* ─── Brand ─── */
+    --primary: 174 72% 30%;
+    --primary-light: 174 72% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    /* ─── Navy (sidebar / dark surfaces) ─── */
+    --navy: 215 28% 17%;
+    --navy-light: 215 25% 22%;
+    --navy-foreground: 210 40% 95%;
+
+    /* ─── Amber accent ─── */
+    --amber: 38 95% 53%;
+    --amber-foreground: 215 28% 17%;
+
+    /* ─── Scanner result screens ─── */
+    --scanner-green: 142 71% 35%;
+    --scanner-red: 0 72% 51%;
+    --scanner-yellow: 48 97% 42%;
+    --scanner-purple: 263 70% 50%;
+
+    /* ─── Semantic tokens (shadcn compatible) ─── */
+    --background: 210 20% 97%;
+    --foreground: 215 28% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 12%;
+
+    --secondary: 210 20% 93%;
+    --secondary-foreground: 215 28% 17%;
+
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 174 72% 95%;
+    --accent-foreground: 174 72% 25%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 174 72% 30%;
+
+    --radius: 0.75rem;
+
+    /* ─── Sidebar ─── */
+    --sidebar-background: 215 28% 17%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 174 72% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 24%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 215 25% 24%;
+    --sidebar-ring: 174 72% 40%;
+
+    /* ─── Shadows ─── */
+    --shadow-sm: 0 1px 3px 0 hsl(215 28% 17% / 0.08), 0 1px 2px -1px hsl(215 28% 17% / 0.08);
+    --shadow-md: 0 4px 12px -1px hsl(215 28% 17% / 0.1), 0 2px 4px -2px hsl(215 28% 17% / 0.06);
+    --shadow-lg: 0 10px 24px -3px hsl(215 28% 17% / 0.12), 0 4px 8px -4px hsl(215 28% 17% / 0.08);
+    --shadow-card: 0 2px 8px 0 hsl(215 28% 17% / 0.06), 0 0 0 1px hsl(214 32% 88% / 0.6);
+
+    /* ─── Gradients ─── */
+    --gradient-primary: linear-gradient(135deg, hsl(174 72% 30%), hsl(174 72% 20%));
+    --gradient-navy: linear-gradient(180deg, hsl(215 28% 17%), hsl(215 28% 12%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 28% 12%) 0%, hsl(215 28% 17%) 50%, hsl(174 40% 18%) 100%);
+  }
+
+  .dark {
+    --background: 222 47% 3%;
+    --foreground: 210 40% 95%;
+    --card: 217 33% 10%;
+    --card-foreground: 210 40% 95%;
+    --popover: 217 33% 10%;
+    --popover-foreground: 210 40% 95%;
+    --primary: 174 72% 42%;
+    --primary-foreground: 215 28% 10%;
+    --secondary: 215 25% 15%;
+    --secondary-foreground: 210 40% 95%;
+    --muted: 215 25% 13%;
+    --muted-foreground: 215 16% 55%;
+    --accent: 174 72% 15%;
+    --accent-foreground: 174 72% 60%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 25% 18%;
+    --input: 215 25% 18%;
+    --ring: 174 72% 42%;
+
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 12px -1px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 10px 24px -3px hsl(0 0% 0% / 0.5);
+    --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.2), 0 0 0 1px hsl(215 25% 18% / 0.8);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-feature-settings: 'tnum';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  [dir="rtl"] {
+    font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  }
+
+  [dir="ltr"] {
+    font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  }
+
+  .font-numbers, .font-mono {
+    font-family: "Söhne Mono", Monaco, "Andale Mono", "Ubuntu Mono", "Courier New", monospace;
+    font-variant-numeric: tabular-nums;
+  }
 }
 
-/* Glass design system */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  color: var(--text-primary);
+@layer components {
+  .ch-card {
+    @apply bg-card rounded-xl border border-border/60;
+    box-shadow: var(--shadow-card);
+  }
+
+  .scanner-green { background-color: hsl(var(--scanner-green)); }
+  .scanner-red { background-color: hsl(var(--scanner-red)); }
+  .scanner-yellow { background-color: hsl(var(--scanner-yellow)); }
+  .scanner-purple { background-color: hsl(var(--scanner-purple)); }
+
+  .nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200;
+    color: hsl(var(--sidebar-foreground) / 0.7);
+  }
+  .nav-item:hover {
+    background-color: hsl(var(--sidebar-accent));
+    color: hsl(var(--sidebar-foreground));
+  }
+  .nav-item.active {
+    background-color: hsl(var(--primary) / 0.15);
+    color: hsl(var(--sidebar-primary));
+    border-inline-start: 3px solid hsl(var(--sidebar-primary));
+    padding-inline-start: calc(0.75rem - 3px);
+  }
+
+  .kpi-card {
+    @apply bg-card rounded-xl border border-border/60 p-5 flex flex-col gap-2;
+    box-shadow: var(--shadow-card);
+  }
+
+  .badge-confirmed {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    background-color: hsl(142 71% 35% / 0.12);
+    color: hsl(142 71% 28%);
+  }
+  .dark .badge-confirmed {
+    background-color: hsl(142 71% 45% / 0.1);
+    color: hsl(142 71% 55%);
+  }
+  .badge-pending {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    background-color: hsl(38 95% 53% / 0.12);
+    color: hsl(38 80% 35%);
+  }
+  .dark .badge-pending {
+    background-color: hsl(38 95% 53% / 0.1);
+    color: hsl(38 80% 55%);
+  }
+  .badge-late {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    background-color: hsl(263 70% 50% / 0.12);
+    color: hsl(263 70% 40%);
+  }
+  .dark .badge-late {
+    background-color: hsl(263 70% 50% / 0.1);
+    color: hsl(263 70% 60%);
+  }
+
+  .pay-btn {
+    @apply flex flex-col items-center justify-center gap-2 rounded-xl p-4 text-sm font-semibold transition-all active:scale-95;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(4px);
+  }
+  .pay-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-/* Theme-aware text utilities */
-.text-theme-primary { color: var(--text-primary); }
-.text-theme-secondary { color: var(--text-secondary); }
-.text-theme-muted { color: var(--text-muted); }
-
-.glass-input {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  transition: all 0.2s;
+/* ─── Print styles ─── */
+@media print {
+  .print-area { display: block !important; }
+  nav, header, footer, aside, .sidebar, .bottom-nav, .top-bar,
+  .no-print, button, [role="navigation"], .selection-controls,
+  .md\:flex.flex-col.w-56, .md\:hidden.fixed {
+    display: none !important;
+  }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    width: 210mm;
+  }
+  .flex.min-h-screen, .flex-1.flex.flex-col, main {
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: white !important;
+  }
+  .print-area {
+    display: block !important;
+    padding: 8mm !important;
+  }
+  .print-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4mm !important;
+    page-break-inside: auto !important;
+  }
+  .qr-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  .qr-card:nth-child(8n) {
+    page-break-after: always !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
 }
-
-.glass-input:focus {
-  outline: none;
-  border-color: rgba(99, 102, 241, 0.5);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-}
-
-[data-theme="light"] .glass-input {
-  background: rgba(248, 250, 252, 0.8);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: #0f172a;
-}
-
-.glass-badge {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 9999px;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-/* Button styles */
-.btn-primary {
-  background: linear-gradient(to bottom, #4f46e5, #6366f1);
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(to bottom, #5b21b6, #6366f1);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-}
-
-.btn-secondary {
-  background: var(--glass-bg);
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  backdrop-filter: blur(8px);
-  transition: all 0.2s;
-}
-
-/* Table glass styles */
-.glass-table thead tr {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.glass-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.glass-table td,
-.glass-table th {
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/*
-  RTL Support with Logical Properties
-  Tailwind CSS 4 natively supports logical properties.
-  Use these classes for RTL-aware layouts:
-  - ms-* instead of ml-* (margin-inline-start)
-  - me-* instead of mr-* (margin-inline-end)
-  - ps-* instead of pl-* (padding-inline-start)
-  - pe-* instead of pr-* (padding-inline-end)
-  - start-* instead of left-* (inset-inline-start)
-  - end-* instead of right-* (inset-inline-end)
-  - text-start instead of text-left
-  - text-end instead of text-right
-*/

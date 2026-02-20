@@ -10,7 +10,7 @@ interface CameraScannerProps {
 
 export default function CameraScanner({ onScan, isActive }: CameraScannerProps) {
   const t = useTranslations('scan');
-  const scannerRef = useRef<any>(null);
+  const scannerRef = useRef<{ stop: () => Promise<void> } | null>(null);
   const [error, setError] = useState('');
   const startedRef = useRef(false);
 
@@ -53,12 +53,12 @@ export default function CameraScanner({ onScan, isActive }: CameraScannerProps) 
           }
         );
         startedRef.current = true;
-      } catch (err: any) {
-        const errMsg = String(err);
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
         if (errMsg.includes('NotFoundError') || errMsg.includes('device not found')) {
           setError(t('scanError') + ' (No camera found)');
         } else {
-          console.error('Camera error:', err);
+          console.error('Camera error:', errMsg);
           setError(t('scanError'));
         }
       }

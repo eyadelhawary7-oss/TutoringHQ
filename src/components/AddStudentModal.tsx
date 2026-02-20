@@ -182,8 +182,8 @@ export default function AddStudentModal({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" dir="rtl">
         <div className="bg-bg-primary rounded-xl shadow-xl max-w-sm w-full p-6">
-          <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -193,7 +193,7 @@ export default function AddStudentModal({
           <p className="text-sm text-text-secondary text-center mb-4">
             {createdStudent.name}
           </p>
-          <p className="text-lg font-mono font-bold text-indigo-600 dark:text-indigo-400 text-center mb-4">
+          <p className="text-lg font-mono font-bold text-indigo-600 text-center mb-4">
             {createdStudent.student_number}
           </p>
           {createdStudent.qr_code && (
@@ -222,7 +222,7 @@ export default function AddStudentModal({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <p className="text-sm text-red-600">{error}</p>
             )}
 
             <div>
@@ -233,7 +233,7 @@ export default function AddStudentModal({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-bg-tertiary text-text-primary"
                 placeholder={t('name')}
                 required
               />
@@ -248,7 +248,7 @@ export default function AddStudentModal({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 dir="ltr"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-bg-tertiary text-text-primary"
                 placeholder="01XXXXXXXXX"
               />
             </div>
@@ -262,7 +262,7 @@ export default function AddStudentModal({
                 value={parentPhone}
                 onChange={(e) => setParentPhone(e.target.value)}
                 dir="ltr"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-bg-tertiary text-text-primary"
                 placeholder="01XXXXXXXXX"
               />
             </div>
@@ -288,7 +288,7 @@ export default function AddStudentModal({
                     setMonthlyFee('');
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-bg-tertiary text-text-primary"
                 required
               >
                 <option value="">{tCommon('select')}</option>
@@ -310,7 +310,7 @@ export default function AddStudentModal({
                     type="text"
                     value={groups.find((g) => g.id === groupId)?.subject ?? ''}
                     readOnly
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-secondary text-text-primary"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-bg-secondary text-text-primary"
                   />
                 </div>
 
@@ -322,7 +322,7 @@ export default function AddStudentModal({
                     type="number"
                     value={monthlyFee}
                     onChange={(e) => setMonthlyFee(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-bg-tertiary text-text-primary"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-bg-tertiary text-text-primary"
                     min={0}
                     step={0.01}
                   />
@@ -334,7 +334,7 @@ export default function AddStudentModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 py-2.5 px-4 border border-gray-300 dark:border-gray-600 text-text-primary rounded-lg hover:bg-bg-secondary"
+                className="flex-1 py-2.5 px-4 border border-gray-300 text-text-primary rounded-lg hover:bg-bg-secondary"
               >
                 {tCommon('cancel')}
               </button>
