@@ -70,28 +70,65 @@ export default function ScanPage() {
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [addedAmountToBalance, setAddedAmountToBalance] = useState(0);
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
 
-  // Sync students to IndexedDB when center is available
+  // Sync students (with groups) to IndexedDB when center is available and online
   const fetchAndSyncStudents = useCallback(async () => {
-    if (!centerId) return;
+    if (!centerId || !navigator.onLine) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data } = await dbSelect({
+      const { data: studentsRaw } = await dbSelect({
         table: 'students',
         select: 'id, name, phone, parent_phone, subject, fee, qr_code, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
       });
-      if (data && Array.isArray(data)) {
-        await syncStudentsToLocal(data);
+      const students = (studentsRaw || []) as { id: string; name?: string; phone?: string; subject?: string; fee?: number; student_number?: string | null }[];
+
+      if (students.length === 0) return;
+
+      // Fetch group memberships and group details for each student
+      const { data: membersData } = await dbSelect({
+        table: 'student_group_members',
+        select: 'student_id, group_id',
+        filters: [{ column: 'student_id', op: 'in', value: students.map(s => s.id) }],
+      });
+      const members = (membersData || []) as { student_id: string; group_id: string }[];
+
+      const groupIds = [...new Set(members.map(m => m.group_id))];
+      let groupsMap: Record<string, { id: string; name: string; fee: number }> = {};
+      if (groupIds.length > 0) {
+        const { data: groupsData } = await dbSelect({
+          table: 'student_groups',
+          select: 'id, name, fee',
+          filters: [{ column: 'id', op: 'in', value: groupIds }],
+        });
+        groupsMap = Object.fromEntries(
+          ((groupsData || []) as { id: string; name?: string; fee?: number }[]).map(g => [
+            g.id,
+            { id: g.id, name: g.name ?? '', fee: g.fee ?? 0 },
+          ])
+        );
       }
+
+      const studentsWithGroups = students.map(s => {
+        const studentGroups = members
+          .filter(m => m.student_id === s.id)
+          .map(m => groupsMap[m.group_id])
+          .filter(Boolean);
+        return {
+          ...s,
+          groups: studentGroups,
+        };
+      });
+
+      await syncStudentsToLocal(studentsWithGroups);
     } catch (err) {
       console.error('Failed to sync students:', err);
     }
@@ -189,69 +226,78 @@ export default function ScanPage() {
     setError('');
 
     const { byId, value } = normalizeForLookup(code);
+    let student: Student | null = null;
+    let usedOffline = false;
 
     try {
-      // Offline-first: try IndexedDB first
-      let student: Student | null = (await getStudentOffline(value) as Student | undefined) || null;
-
-      // If not in IndexedDB and online, fetch from API
-      if (!student && navigator.onLine) {
-        const filters = byId
-          ? [{ column: 'id', op: 'eq' as const, value }, { column: 'center_id', op: 'eq' as const, value: centerId }]
-          : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
-        const { data, error: lookupError } = await dbSelect({
-          table: 'students',
-          select: 'id, name, phone, parent_phone, subject, fee, student_number',
-          filters,
-          single: true,
-        });
-        if (!lookupError && data) {
-          student = data as Student;
-        }
-      }
-
-      if (!student && navigator.onLine && /^\d{10,11}$/.test(code.trim())) {
-        const normalizedPhone = code.trim().startsWith('0')
-          ? '+2' + code.trim()
-          : '+' + code.trim();
-        const { data, error: phoneError } = await dbSelect({
-          table: 'students',
-          select: 'id, name, phone, parent_phone, subject, fee, student_number',
-          filters: [
-            { column: 'phone', op: 'eq', value: normalizedPhone },
-            { column: 'center_id', op: 'eq', value: centerId },
-          ],
-          single: true,
-        });
-        if (!phoneError && data) student = data as Student;
-      }
-
-      // When online, ALWAYS fetch groups for the student (whether from IndexedDB or API)
-      if (student && navigator.onLine) {
-        const { data: membersData } = await dbSelect({
-          table: 'student_group_members',
-          select: 'group_id',
-          filters: [{ column: 'student_id', op: 'eq', value: student.id }],
-        });
-        if (membersData && Array.isArray(membersData) && membersData.length > 0) {
-          const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
-          const { data: groupsData } = await dbSelect({
-            table: 'student_groups',
-            select: 'id, name, fee',
-            filters: [{ column: 'id', op: 'in', value: grpIds }],
+      // ONLINE: Try Supabase first
+      if (navigator.onLine) {
+        try {
+          const filters = byId
+            ? [{ column: 'id', op: 'eq' as const, value }, { column: 'center_id', op: 'eq' as const, value: centerId }]
+            : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
+          const { data, error: lookupError } = await dbSelect({
+            table: 'students',
+            select: 'id, name, phone, parent_phone, subject, fee, student_number',
+            filters,
+            single: true,
           });
-          if (groupsData && Array.isArray(groupsData)) {
-            student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
-              id: g.id,
-              name: g.name,
-              fee: g.fee ?? 0,
-            }));
-            const primaryGroup = student.groups[0];
-            if (primaryGroup && !student.fee) {
-              student.fee = primaryGroup.fee;
-              student.subject = primaryGroup.name;
+          if (!lookupError && data) student = data as Student;
+
+          if (!student && /^\d{10,11}$/.test(code.trim())) {
+            const normalizedPhone = code.trim().startsWith('0') ? '+2' + code.trim() : '+' + code.trim();
+            const { data: phoneData, error: phoneError } = await dbSelect({
+              table: 'students',
+              select: 'id, name, phone, parent_phone, subject, fee, student_number',
+              filters: [
+                { column: 'phone', op: 'eq', value: normalizedPhone },
+                { column: 'center_id', op: 'eq', value: centerId },
+              ],
+              single: true,
+            });
+            if (!phoneError && phoneData) student = phoneData as Student;
+          }
+        } catch (networkErr) {
+          // Network error: fall back to IndexedDB
+          usedOffline = true;
+          student = (await getStudentOffline(value) as Student | undefined) || null;
+        }
+      } else {
+        // OFFLINE: Use IndexedDB directly
+        usedOffline = true;
+        student = (await getStudentOffline(value) as Student | undefined) || null;
+      }
+
+      // When online and found from API (not IndexedDB fallback), fetch groups
+      if (student && navigator.onLine && !usedOffline) {
+        try {
+          const { data: membersData } = await dbSelect({
+            table: 'student_group_members',
+            select: 'group_id',
+            filters: [{ column: 'student_id', op: 'eq', value: student.id }],
+          });
+          if (membersData && Array.isArray(membersData) && membersData.length > 0) {
+            const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
+            const { data: groupsData } = await dbSelect({
+              table: 'student_groups',
+              select: 'id, name, fee',
+              filters: [{ column: 'id', op: 'in', value: grpIds }],
+            });
+            if (groupsData && Array.isArray(groupsData)) {
+              student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
+                id: g.id,
+                name: g.name,
+                fee: g.fee ?? 0,
+              }));
+              const primaryGroup = student.groups[0];
+              if (primaryGroup && !student.fee) {
+                student.fee = primaryGroup.fee;
+                student.subject = primaryGroup.name;
+              }
             }
           }
+        } catch {
+          // Keep student.groups from IndexedDB if any
         }
       }
 
@@ -265,8 +311,8 @@ export default function ScanPage() {
       const groups = student.groups ?? [];
       const hasMultipleGroups = groups.length >= 2;
 
-      // If 2+ groups: show group selector BEFORE checking payment
-      if (hasMultipleGroups && navigator.onLine) {
+      // If 2+ groups: show group selector BEFORE checking payment (works offline if groups cached)
+      if (hasMultipleGroups) {
         setSelectedGroup(null);
         setNeedGroupSelection(true);
         setScannedStudent({ ...student, payment_status: '', last_payment_method: null });
@@ -377,25 +423,31 @@ export default function ScanPage() {
     let lastPaymentMethod: string | null = null;
 
     if (navigator.onLine) {
-      paidToday = await hasPaidToday(student.id, centerId, group.id);
-      if (paidToday) {
-        const today = new Date().toISOString().split('T')[0];
-        const { data: todayPay } = await dbSelect({
-          table: 'payments',
-          select: 'method',
-          filters: [
-            { column: 'student_id', op: 'eq', value: student.id },
-            { column: 'center_id', op: 'eq', value: centerId },
-            { column: 'group_id', op: 'eq', value: group.id },
-            { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
-            { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
-          ],
-          order: { column: 'paid_at', ascending: false },
-          limit: 1,
-        });
-        const pay = Array.isArray(todayPay) ? todayPay[0] : todayPay;
-        lastPaymentMethod = (pay as { method?: string })?.method ?? null;
+      try {
+        paidToday = await hasPaidToday(student.id, centerId, group.id);
+        if (paidToday) {
+          const today = new Date().toISOString().split('T')[0];
+          const { data: todayPay } = await dbSelect({
+            table: 'payments',
+            select: 'method',
+            filters: [
+              { column: 'student_id', op: 'eq', value: student.id },
+              { column: 'center_id', op: 'eq', value: centerId },
+              { column: 'group_id', op: 'eq', value: group.id },
+              { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
+              { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
+            ],
+            order: { column: 'paid_at', ascending: false },
+            limit: 1,
+          });
+          const pay = Array.isArray(todayPay) ? todayPay[0] : todayPay;
+          lastPaymentMethod = (pay as { method?: string })?.method ?? null;
+        }
+      } catch {
+        paidToday = await hasPaidTodayOffline(centerId, student.id);
       }
+    } else {
+      paidToday = await hasPaidTodayOffline(centerId, student.id);
     }
 
     const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
@@ -409,22 +461,33 @@ export default function ScanPage() {
     setScannedStudent(studentForDisplay);
     const scannedAt = new Date().toISOString();
 
-    if (paidToday && navigator.onLine) {
-      const { error: attendErr } = await dbInsert({
-        table: 'attendance_scans',
-        data: {
+    if (paidToday) {
+      if (navigator.onLine) {
+        const { error: attendErr } = await dbInsert({
+          table: 'attendance_scans',
+          data: {
+            student_id: student.id,
+            center_id: centerId,
+            scanned_by: userId,
+            scanned_at: scannedAt,
+            payment_status_at_scan: 'paid',
+            session_date: scannedAt.split('T')[0],
+            payment_recorded: false,
+            group_id: group.id,
+          },
+          select: false,
+        });
+        if (attendErr) console.error('Attendance scan insert FAILED:', attendErr);
+      } else {
+        await queueScan({
           student_id: student.id,
           center_id: centerId,
           scanned_by: userId,
           scanned_at: scannedAt,
-          payment_status_at_scan: 'paid',
-          session_date: scannedAt.split('T')[0],
-          payment_recorded: false,
-          group_id: group.id,
-        },
-        select: false,
-      });
-      if (attendErr) console.error('Attendance scan insert FAILED:', attendErr);
+        });
+        const count = await getUnsyncedCount();
+        setPendingCount(count);
+      }
       dismissTimerRef.current = setTimeout(() => {
         setScannedStudent(null);
         setSelectedGroup(null);
