@@ -183,6 +183,14 @@
     box-shadow: var(--shadow-card);
   }
 
+  .btn-primary {
+    @apply text-white font-semibold;
+    background-color: hsl(var(--primary));
+  }
+  .btn-primary:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
   .scanner-green { background-color: hsl(var(--scanner-green)); }
   .scanner-red { background-color: hsl(var(--scanner-red)); }
   .scanner-yellow { background-color: hsl(var(--scanner-yellow)); }

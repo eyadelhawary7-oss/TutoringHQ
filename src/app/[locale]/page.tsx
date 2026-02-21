@@ -94,7 +94,7 @@ export default function LandingPage() {
       </header>
 
       {/* ─── Hero ─── */}
-      <section className="relative overflow-hidden min-h-[560px] flex items-center" style={{ background: 'var(--gradient-hero)' }}>
+      <section className="relative overflow-hidden min-h-[640px] md:min-h-[720px] flex items-center" style={{ background: 'var(--gradient-hero)' }}>
         {/* Hero image */}
         <div className="absolute inset-0">
           <Image
@@ -105,7 +105,7 @@ export default function LandingPage() {
             sizes="100vw"
             priority
           />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, hsl(var(--navy) / 0.4), hsl(var(--navy)))' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, hsl(var(--navy) / 0.2), hsl(var(--navy) / 0.5), hsl(var(--navy)))' }} />
         </div>
 
         <div className="container mx-auto px-4 relative z-10 py-20 text-center">
@@ -113,7 +113,7 @@ export default function LandingPage() {
             <QrCode size={13} />
             <span>{t('heroPillBadge')}</span>
           </div>
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white mb-6 tracking-tight">
+          <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-white mb-6 tracking-tight">
             {t('heroTitle')}
           </h1>
           <p className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-10 leading-relaxed">

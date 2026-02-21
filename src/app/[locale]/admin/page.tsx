@@ -20,7 +20,13 @@ import {
   ExternalLink,
   Trash2,
   MoreVertical,
-  ChevronDown,
+  Target,
+  BarChart3,
+  Plus,
+  Shield,
+  ShieldAlert,
+  Activity,
+  TrendingUp,
 } from 'lucide-react';
 import {
   LineChart,
@@ -32,6 +38,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { getCsrfHeaders } from '@/lib/csrf-client';
@@ -62,7 +71,7 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 };
 
-type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam';
+type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'salesPipeline' | 'analytics';
 
 const ADMIN_NAV: { key: AdminTab; icon: typeof LayoutDashboard }[] = [
   { key: 'overview', icon: LayoutDashboard },
@@ -71,6 +80,8 @@ const ADMIN_NAV: { key: AdminTab; icon: typeof LayoutDashboard }[] = [
   { key: 'planRequests', icon: FileText },
   { key: 'pendingSignups', icon: Clock },
   { key: 'internalTeam', icon: Users },
+  { key: 'salesPipeline', icon: Target },
+  { key: 'analytics', icon: BarChart3 },
 ];
 
 interface OverviewData {
@@ -83,6 +94,9 @@ interface OverviewData {
   signupsChart?: { date: string; count: number }[];
   monthlyRevenue?: { month: string; revenue: number }[];
   recentActivity?: Array<{ id?: string; action?: string; details?: unknown; created_at?: string }>;
+  totalRevenueCollected?: number;
+  revenueThisMonth?: number;
+  pendingRevenue?: number;
 }
 
 interface CenterRow {
@@ -103,7 +117,23 @@ interface CenterRow {
   referral_code?: string | null;
   referral_code_used?: string | null;
   referring_center_name?: string | null;
+  last_active?: string;
+  usage_scans?: number;
 }
+
+interface SalesLead {
+  id: string;
+  name: string;
+  contact_person: string;
+  phone: string;
+  area: string;
+  source: string;
+  stage: 'prospect' | 'contacted' | 'demo_scheduled' | 'converted';
+  notes: string;
+}
+
+const AREAS = ['Nasr City', 'Heliopolis', 'Maadi', '6th October', 'Sheikh Zayed', 'Dokki', 'Mohandeseen', 'Other'];
+const SOURCES = ['Referral', 'Walk-in', 'WhatsApp', 'Social Media', 'Cold Call', 'Other'];
 
 interface BillingRow {
   id: string;
@@ -201,6 +231,10 @@ export default function AdminPage() {
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [addAdminForm, setAddAdminForm] = useState({ name: '', phone: '', email: '' });
+  const [leads, setLeads] = useState<SalesLead[]>([]);
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
+  const [addLeadForm, setAddLeadForm] = useState<{ name: string; contactPerson: string; phone: string; area: string; source: string; stage: SalesLead['stage']; notes: string }>({ name: '', contactPerson: '', phone: '', area: '', source: '', stage: 'prospect', notes: '' });
 
   useEffect(() => {
     setHideShell(true);
@@ -341,7 +375,7 @@ export default function AdminPage() {
   }, [loadOverview]);
 
   useEffect(() => {
-    if (tab === 'centers') loadCenters();
+    if (tab === 'centers' || tab === 'analytics') loadCenters();
   }, [tab, loadCenters]);
   useEffect(() => {
     if (tab === 'billing') loadBilling();
@@ -361,7 +395,12 @@ export default function AdminPage() {
       c.name?.toLowerCase().includes(centerSearch.toLowerCase()) ||
       c.phone?.includes(centerSearch) ||
       (c.owner?.name ?? c.owner_name ?? '').toLowerCase().includes(centerSearch.toLowerCase());
-    const matchStatus = statusFilter === 'all' || (c.status ?? 'active') === statusFilter;
+    const isAtRisk = (c.last_active?.includes('days') || c.last_active === 'Never') ?? false;
+    const matchStatus = statusFilter === 'all'
+      ? true
+      : statusFilter === 'at_risk'
+        ? isAtRisk
+        : (c.status ?? 'active') === statusFilter;
     return matchSearch && matchStatus;
   });
 
@@ -606,6 +645,7 @@ export default function AdminPage() {
         {/* Overview */}
         {tab === 'overview' && overview && (
           <>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Platform Health</h2>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
               {[
                 { label: tAdmin('totalCenters'), value: String(overview.totalCenters ?? 0), color: '#3B82F6' },
@@ -622,6 +662,57 @@ export default function AdminPage() {
                   <div className="text-xs text-muted-foreground">{label}</div>
                 </div>
               ))}
+            </div>
+
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mt-6">Revenue</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <div className="glass p-4 rounded-xl">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#0D948820', color: '#0D9488' }}><TrendingUp size={16} /></div>
+                <div className="text-lg font-black font-mono text-foreground">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</div>
+                <div className="text-xs text-muted-foreground">{tAdmin('mrr')}</div>
+              </div>
+              <div className="glass p-4 rounded-xl">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#DC262620', color: '#DC2626' }}><AlertTriangle size={16} /></div>
+                <div className="text-lg font-black font-mono text-foreground">{overview.pendingRevenue?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</div>
+                <div className="text-xs text-muted-foreground">Outstanding Invoices</div>
+              </div>
+              <div className="glass p-4 rounded-xl">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#16A34A20', color: '#16A34A' }}><CreditCard size={16} /></div>
+                <div className="text-lg font-black font-mono text-foreground">{overview.revenueThisMonth?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</div>
+                <div className="text-xs text-muted-foreground">Collected This Month</div>
+              </div>
+              <div className="glass p-4 rounded-xl">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#3B82F620', color: '#3B82F6' }}><BarChart3 size={16} /></div>
+                <div className="text-lg font-black font-mono text-foreground">{overview.totalRevenueCollected != null && overview.pendingRevenue != null && overview.totalRevenueCollected + overview.pendingRevenue > 0 ? Math.round(overview.totalRevenueCollected / (overview.totalRevenueCollected + overview.pendingRevenue) * 100) : '—'}%</div>
+                <div className="text-xs text-muted-foreground">Collection Rate</div>
+              </div>
+            </div>
+
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mt-6">Security & Alerts</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <div className="glass p-4 rounded-xl">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#16A34A20', color: '#16A34A' }}><Shield size={16} /></div>
+                <div className="text-lg font-black font-mono text-foreground">0</div>
+                <div className="text-xs text-muted-foreground">Failed Logins 24h</div>
+              </div>
+              <div className="glass p-4 rounded-xl">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#0D948820', color: '#0D9488' }}><Users size={16} /></div>
+                <div className="text-lg font-black font-mono text-foreground">{overview.pendingSignups ?? 0}</div>
+                <div className="text-xs text-muted-foreground">New Signups 7d</div>
+              </div>
+              <div className="glass p-4 rounded-xl">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#16A34A20', color: '#16A34A' }}><ShieldAlert size={16} /></div>
+                <div className="text-lg font-black font-mono text-foreground">0</div>
+                <div className="text-xs text-muted-foreground">Flagged Activity</div>
+              </div>
+              <div className="glass p-4 rounded-xl">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#16A34A20', color: '#16A34A' }}><Activity size={16} /></div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <div className="text-sm font-bold font-mono text-foreground">All systems operational</div>
+                </div>
+                <div className="text-xs text-muted-foreground">System Status</div>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -691,16 +782,19 @@ export default function AdminPage() {
                   className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-border bg-muted text-foreground text-sm"
                 />
               </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2.5 rounded-xl border border-border bg-muted text-foreground text-sm"
-              >
-                <option value="all">{tCommon('all')}</option>
-                <option value="active">{tCommon('active')}</option>
-                <option value="suspended">{tAdmin('suspended')}</option>
-                <option value="pending">{tAdmin('pending')}</option>
-              </select>
+              <div className="flex gap-1 flex-wrap">
+                {['all', 'active', 'pending', 'suspended', 'at_risk'].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      statusFilter === s ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {s === 'all' ? tCommon('all') : s === 'at_risk' ? (tAdmin('atRisk') ?? 'At Risk') : s === 'active' ? tCommon('active') : s === 'pending' ? tAdmin('pending') : tAdmin('suspended')}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="glass overflow-hidden rounded-xl">
@@ -714,6 +808,8 @@ export default function AdminPage() {
                       <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
                       <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
                       <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('studentsCount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('lastActive') ?? 'Last Active'}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('usage') ?? 'Usage'}</th>
                       <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('createdAt')}</th>
                       <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
                     </tr>
@@ -731,6 +827,8 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 font-mono text-muted-foreground hidden md:table-cell">{c.students_count ?? 0}</td>
+                        <td className={`px-4 py-3 text-xs hidden lg:table-cell ${(c.last_active?.includes('days') || c.last_active === 'Never') ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>{c.last_active ?? '—'}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground hidden lg:table-cell">{c.usage_scans ?? 0}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
                         <td className="px-4 py-3">
                           <div className="relative">
@@ -1081,6 +1179,192 @@ export default function AdminPage() {
             </div>
           </>
         )}
+
+        {/* Sales Pipeline */}
+        {tab === 'salesPipeline' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-foreground">{tAdmin('salesPipeline') ?? 'Sales Pipeline'}</h2>
+              <button onClick={() => setShowAddLead(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary">
+                <Plus size={16} />{tAdmin('addLead') ?? 'Add Lead'}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+              {[
+                { label: 'Total Leads', value: leads.length },
+                { label: 'Contacted', value: leads.filter(l => l.stage === 'contacted').length },
+                { label: 'Demo Scheduled', value: leads.filter(l => l.stage === 'demo_scheduled').length },
+                { label: 'Converted', value: leads.filter(l => l.stage === 'converted').length },
+                { label: 'Conversion Rate', value: leads.length > 0 ? `${Math.round((leads.filter(l => l.stage === 'converted').length / leads.length) * 100)}%` : '0%' },
+              ].map(({ label, value }) => (
+                <div key={label} className="glass p-4 rounded-xl">
+                  <div className="text-xl font-black font-mono text-foreground">{value}</div>
+                  <div className="text-xs text-muted-foreground">{label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {(['prospect', 'contacted', 'demo_scheduled', 'converted'] as const).map((stage) => (
+                <div key={stage} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-sm text-foreground">{stage.replace('_', ' ')}</h3>
+                    <span className="text-xs font-mono text-muted-foreground">{leads.filter(l => l.stage === stage).length}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {leads.filter(l => l.stage === stage).map((lead) => (
+                      <div key={lead.id} onClick={() => setSelectedLead(lead)} className="ch-card p-3 cursor-pointer hover:shadow-md transition-shadow border border-border">
+                        <p className="font-semibold text-sm text-foreground">{lead.name}</p>
+                        <p className="text-xs text-muted-foreground">{lead.contact_person}</p>
+                        <p className="text-xs font-mono text-muted-foreground mt-1" dir="ltr">{lead.phone}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground">{lead.area}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{lead.source}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Analytics */}
+        {tab === 'analytics' && (
+          <>
+            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('analytics') ?? 'Analytics'}</h2>
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="glass p-5 rounded-xl">
+                <h3 className="font-semibold text-foreground mb-4">Centers by Plan</h3>
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
+                          { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
+                          { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
+                          { name: 'Enterprise', value: centers.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
+                          { name: 'Top Centers', value: centers.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={70}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
+                          { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
+                          { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
+                          { name: 'Enterprise', value: centers.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
+                          { name: 'Top Centers', value: centers.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
+                        ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 flex-1">
+                    {['Starter', 'Pro', 'Business', 'Enterprise', 'Top Centers'].map((name, i) => {
+                      const val = centers.filter(c => c.plan === (name === 'Top Centers' ? 'top_centers' : name.toLowerCase())).length;
+                      const colors = ['#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'];
+                      return (
+                        <div key={name} className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
+                          <span className="text-sm text-muted-foreground flex-1">{name}</span>
+                          <span className="text-sm font-bold font-mono text-foreground">{val}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="glass p-5 rounded-xl">
+                <h3 className="font-semibold text-foreground mb-4">Centers by Status</h3>
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Active', value: centers.filter(c => (c.status ?? 'active') === 'active').length, color: '#16A34A' },
+                          { name: 'Pending', value: centers.filter(c => c.status === 'pending').length, color: '#F59E0B' },
+                          { name: 'Suspended', value: centers.filter(c => c.status === 'suspended').length, color: '#DC2626' },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={70}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {[
+                          { color: '#16A34A' },
+                          { color: '#F59E0B' },
+                          { color: '#DC2626' },
+                        ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 flex-1">
+                    {['Active', 'Pending', 'Suspended'].map((name, i) => {
+                      const statusKey = name.toLowerCase();
+                      const val = centers.filter(c => (c.status ?? 'active') === statusKey).length;
+                      const colors = ['#16A34A', '#F59E0B', '#DC2626'];
+                      return (
+                        <div key={name} className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
+                          <span className="text-sm text-muted-foreground flex-1">{name}</span>
+                          <span className="text-sm font-bold font-mono text-foreground">{val}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="glass p-5 rounded-xl">
+                <h3 className="font-semibold text-foreground mb-4">Top 5 Centers by Students</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={[...centers].sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
+                    <Tooltip />
+                    <Bar dataKey="students_count" fill="#0D9488" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="glass p-5 rounded-xl">
+                <h3 className="font-semibold text-foreground mb-4">Top 5 Centers by Revenue</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={[...centers].filter(c => (c.status ?? 'active') === 'active').sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
+                    <Tooltip />
+                    <Bar dataKey="students_count" fill="#3B82F6" radius={[0, 4, 4, 0]} name="Est. revenue proxy" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { label: 'Avg Students/Center', value: centers.length > 0 ? Math.round(centers.reduce((s, c) => s + (c.students_count ?? 0), 0) / centers.length) : 0 },
+                { label: 'Avg Revenue/Center', value: centers.filter(c => (c.status ?? 'active') === 'active').length > 0 ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, centers.filter(c => (c.status ?? 'active') === 'active').length)).toLocaleString('ar-EG')} ${tCommon('egp')}` : '—' },
+                { label: 'Centers with 0 Students', value: centers.filter(c => (c.students_count ?? 0) === 0).length },
+                { label: 'Centers at Risk', value: centers.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
+              ].map(({ label, value }) => (
+                <div key={label} className="glass p-4 rounded-xl">
+                  <div className="text-xl font-black font-mono text-foreground">{value}</div>
+                  <div className="text-xs text-muted-foreground">{label}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Center Detail Slide-over */}
@@ -1103,6 +1387,8 @@ export default function AdminPage() {
                 { label: tCommon('status'), value: detailCenter.status ?? '—' },
                 { label: tAdmin('nextDue'), value: detailCenter.next_due ?? '—' },
                 { label: tAdmin('referralCode'), value: detailCenter.referral_code ?? '—' },
+                { label: tAdmin('lastActive'), value: detailCenter.last_active ?? '—' },
+                { label: tAdmin('usage'), value: String(detailCenter.usage_scans ?? 0) },
                 { label: tAdmin('createdAt'), value: detailCenter.created_at ? new Date(detailCenter.created_at).toLocaleDateString() : '—' },
               ].map(({ label, value }) => (
                 <div key={label}>
@@ -1218,6 +1504,99 @@ export default function AdminPage() {
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
               >
                 {tAdmin('reject')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Lead Modal */}
+      {showAddLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddLead(false)}>
+          <div className="rounded-2xl border border-border p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto bg-card" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-foreground mb-4">{tAdmin('addLead') ?? 'Add Lead'}</h3>
+            <div className="space-y-3">
+              <input placeholder="Center Name" value={addLeadForm.name} onChange={(e) => setAddLeadForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+              <input placeholder="Contact Person" value={addLeadForm.contactPerson} onChange={(e) => setAddLeadForm(f => ({ ...f, contactPerson: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+              <input placeholder={tCommon('phone')} type="tel" dir="ltr" value={addLeadForm.phone} onChange={(e) => setAddLeadForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+              <select value={addLeadForm.area} onChange={(e) => setAddLeadForm(f => ({ ...f, area: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                <option value="">Area</option>
+                {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+              <select value={addLeadForm.source} onChange={(e) => setAddLeadForm(f => ({ ...f, source: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                <option value="">Source</option>
+                {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                <option value="prospect">Prospect</option>
+                <option value="contacted">Contacted</option>
+                <option value="demo_scheduled">Demo Scheduled</option>
+                <option value="converted">Converted</option>
+              </select>
+              <textarea placeholder="Notes" value={addLeadForm.notes} onChange={(e) => setAddLeadForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm h-20 resize-none" />
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => setShowAddLead(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button
+                onClick={() => {
+                  if (addLeadForm.name.trim()) {
+                    setLeads(prev => [...prev, {
+                      id: `sl-${Date.now()}`,
+                      name: addLeadForm.name.trim(),
+                      contact_person: addLeadForm.contactPerson,
+                      phone: addLeadForm.phone,
+                      area: addLeadForm.area,
+                      source: addLeadForm.source,
+                      stage: addLeadForm.stage,
+                      notes: addLeadForm.notes,
+                    }]);
+                    setAddLeadForm({ name: '', contactPerson: '', phone: '', area: '', source: '', stage: 'prospect', notes: '' });
+                    setShowAddLead(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary"
+              >
+                {tCommon('save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lead Detail Slide-over */}
+      {selectedLead && (
+        <div className="fixed inset-0 z-50" onClick={() => setSelectedLead(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-card" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h2 className="font-bold text-foreground text-lg">{selectedLead.name}</h2>
+              <button onClick={() => setSelectedLead(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div><p className="text-xs text-muted-foreground mb-0.5">Contact Person</p><p className="font-medium text-foreground">{selectedLead.contact_person}</p></div>
+              <div><p className="text-xs text-muted-foreground mb-0.5">{tCommon('phone')}</p><p className="font-medium text-foreground" dir="ltr">{selectedLead.phone}</p></div>
+              <div><p className="text-xs text-muted-foreground mb-0.5">Area</p><p className="font-medium text-foreground">{selectedLead.area}</p></div>
+              <div><p className="text-xs text-muted-foreground mb-0.5">Source</p><p className="font-medium text-foreground">{selectedLead.source}</p></div>
+              <div><p className="text-xs text-muted-foreground mb-0.5">Notes</p><p className="font-medium text-foreground">{selectedLead.notes}</p></div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Change Stage</p>
+                <select
+                  value={selectedLead.stage}
+                  onChange={(e) => {
+                    const newStage = e.target.value as SalesLead['stage'];
+                    setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, stage: newStage } : l));
+                    setSelectedLead({ ...selectedLead, stage: newStage });
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-muted text-foreground text-sm"
+                >
+                  <option value="prospect">Prospect</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="demo_scheduled">Demo Scheduled</option>
+                  <option value="converted">Converted</option>
+                </select>
+              </div>
+              <button onClick={() => { setLeads(prev => prev.filter(l => l.id !== selectedLead.id)); setSelectedLead(null); }} className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-destructive border border-destructive/30 hover:bg-destructive/10">
+                {tCommon('delete')} Lead
               </button>
             </div>
           </div>

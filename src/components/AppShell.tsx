@@ -9,20 +9,13 @@ import { useTransition } from 'react';
 import Sidebar from '@/components/Sidebar';
 import MobileTopBar from '@/components/MobileTopBar';
 import { BottomNav } from '@/components/BottomNav';
-import { Globe } from 'lucide-react';
+import { Globe, Menu } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 
 const PUBLIC_PATHS = ['/', '/login', '/signup', '/onboarding', '/suspended', '/auth/callback'];
-const SIDEBAR_STORAGE_KEY = 'centerhq-sidebar-collapsed';
-
 function stripLocale(path: string): string {
   return path.replace(/^\/(ar|en)(\/|$)/, '$2') || '/';
-}
-
-function getInitialSidebarCollapsed(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
 }
 
 const PAGE_TITLE_MAP: Record<string, string> = {
@@ -43,16 +36,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const locale = useLocale();
   const router = useRouter();
   const { user } = useUser();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { hideShell } = useLayout();
   const [isPending, startTransition] = useTransition();
-
-  const handleSidebarCollapsedChange = (collapsed: boolean) => {
-    setSidebarCollapsed(collapsed);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed));
-    }
-  };
 
   const cleanPath = stripLocale(pathname);
   const isPublic = PUBLIC_PATHS.some((p) => cleanPath === p || cleanPath.startsWith(p + '/'));
@@ -85,17 +71,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onCollapsedChange={handleSidebarCollapsedChange}
-      />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div
-        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${sidebarCollapsed ? 'md:ms-16' : 'md:ms-64'}`}
-      >
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Desktop topbar */}
         <header className="hidden md:flex items-center justify-between h-14 px-6 border-b border-border bg-card shrink-0 sticky top-0 z-30">
-          <h1 className="font-semibold text-foreground text-base">{pageTitle}</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+            <span className="font-bold text-foreground text-lg">CenterHQ</span>
+          </div>
           <div className="flex items-center gap-3">
             <button
               onClick={handleLocaleToggle}
@@ -115,8 +105,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Mobile TopBar */}
-        <MobileTopBar />
+        {/* Mobile TopBar - includes hamburger */}
+        <MobileTopBar onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Page content */}
         <main className="flex-1 overflow-auto pb-20 md:pb-0">

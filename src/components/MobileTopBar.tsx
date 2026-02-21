@@ -5,9 +5,13 @@ import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
-import { Globe } from 'lucide-react';
+import { Globe, Menu } from 'lucide-react';
 
-export default function MobileTopBar() {
+interface MobileTopBarProps {
+  onMenuClick?: () => void;
+}
+
+export default function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
   const { user } = useUser();
   const locale = useLocale();
   const router = useRouter();
@@ -33,6 +37,11 @@ export default function MobileTopBar() {
       }}
     >
       <div className="flex items-center gap-2">
+        {onMenuClick && (
+          <button onClick={onMenuClick} className="p-2 -ms-2 rounded-lg hover:bg-slate-100 transition-colors" aria-label="Open menu">
+            <Menu size={20} style={{ color: 'hsl(var(--foreground))' }} />
+          </button>
+        )}
         <Link
           href={user && !user.center_id ? '/admin' : '/dashboard'}
           className="flex items-center gap-2 shrink-0"

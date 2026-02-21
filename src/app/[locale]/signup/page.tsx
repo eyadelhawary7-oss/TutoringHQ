@@ -142,7 +142,7 @@ export default function SignupPage() {
         </button>
       </div>
 
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-xl mb-3 shadow-lg" style={{ background: 'hsl(var(--primary))' }}>CH</div>
           <h1 className="text-xl font-black text-white">CenterHQ</h1>

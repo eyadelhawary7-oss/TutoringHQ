@@ -170,17 +170,49 @@ export async function GET(request: Request) {
     // Weekly unique students (past 7 days) per center for limit display
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
     const { data: weeklyScans } = centerIds.length > 0
       ? await adminClient
           .from('attendance_scans')
-          .select('center_id, student_id')
+          .select('center_id, student_id, scanned_at')
           .in('center_id', centerIds)
           .gte('scanned_at', weekAgo.toISOString())
       : { data: [] };
     const weeklyUniqueByCenter: Record<string, Set<string>> = {};
-    for (const row of (weeklyScans || []) as { center_id: string; student_id: string }[]) {
+    const lastScanByCenter: Record<string, string> = {};
+    for (const row of (weeklyScans || []) as { center_id: string; student_id: string; scanned_at?: string }[]) {
       if (!weeklyUniqueByCenter[row.center_id]) weeklyUniqueByCenter[row.center_id] = new Set();
       weeklyUniqueByCenter[row.center_id].add(row.student_id);
+      if (row.scanned_at && (!lastScanByCenter[row.center_id] || row.scanned_at > lastScanByCenter[row.center_id])) {
+        lastScanByCenter[row.center_id] = row.scanned_at;
+      }
+    }
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const { data: allScansForLast } = centerIds.length > 0
+      ? await adminClient
+          .from('attendance_scans')
+          .select('center_id, scanned_at')
+          .in('center_id', centerIds)
+          .gte('scanned_at', ninetyDaysAgo.toISOString())
+          .order('scanned_at', { ascending: false })
+          .limit(1000)
+      : { data: [] };
+    for (const row of (allScansForLast || []) as { center_id: string; scanned_at: string }[]) {
+      if (!lastScanByCenter[row.center_id]) lastScanByCenter[row.center_id] = row.scanned_at;
+    }
+    const { data: monthScans } = centerIds.length > 0
+      ? await adminClient
+          .from('attendance_scans')
+          .select('center_id')
+          .in('center_id', centerIds)
+          .gte('scanned_at', monthStart.toISOString())
+      : { data: [] };
+    const usageScansByCenter: Record<string, number> = {};
+    for (const row of (monthScans || []) as { center_id: string }[]) {
+      usageScansByCenter[row.center_id] = (usageScansByCenter[row.center_id] ?? 0) + 1;
     }
 
     const { data: owners } = await adminClient
@@ -221,6 +253,20 @@ export async function GET(request: Request) {
       const limitStatus = maxStudents < 999999
         ? (weeklyUnique >= maxStudents ? 'over' : weeklyUnique >= maxStudents * 0.9 ? 'approaching' : 'ok')
         : 'unlimited';
+      const lastScan = lastScanByCenter[c.id as string];
+      const now = new Date();
+      let lastActive = 'Never';
+      if (lastScan) {
+        const d = new Date(lastScan);
+        const diffMs = now.getTime() - d.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        if (diffMins < 60) lastActive = `${diffMins}m ago`;
+        else if (diffHours < 24) lastActive = `${diffHours}h ago`;
+        else if (diffDays < 7) lastActive = `${diffDays}d ago`;
+        else lastActive = `${diffDays} days ago`;
+      }
       return {
         ...c,
         students_count: studentCounts[c.id as string] ?? 0,
@@ -232,6 +278,8 @@ export async function GET(request: Request) {
         next_due: (c as { next_payment_due?: string }).next_payment_due || (c as { next_billing_date?: string }).next_billing_date,
         referring_center_name: referring?.name ?? null,
         referral_code_used: referring?.referral_code ?? null,
+        last_active: lastActive,
+        usage_scans: usageScansByCenter[c.id as string] ?? 0,
       };
     });
 
