@@ -6,10 +6,7 @@ import { useLayout } from '@/contexts/LayoutContext';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
-import Sidebar, {
-  SIDEBAR_EXPANDED,
-  SIDEBAR_COLLAPSED,
-} from '@/components/Sidebar';
+import Sidebar from '@/components/Sidebar';
 import MobileTopBar from '@/components/MobileTopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Globe } from 'lucide-react';
@@ -86,19 +83,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
-
   return (
-    <div
-      className="flex min-h-screen w-full bg-background"
-      style={{ ['--app-sidebar-width' as string]: `${sidebarWidth}px` } as React.CSSProperties}
-    >
+    <div className="flex min-h-screen w-full bg-background">
       <Sidebar
         collapsed={sidebarCollapsed}
         onCollapsedChange={handleSidebarCollapsedChange}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div
+        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${sidebarCollapsed ? 'md:ms-16' : 'md:ms-64'}`}
+      >
         {/* Desktop topbar */}
         <header className="hidden md:flex items-center justify-between h-14 px-6 border-b border-border bg-card shrink-0 sticky top-0 z-30">
           <h1 className="font-semibold text-foreground text-base">{pageTitle}</h1>

@@ -947,12 +947,12 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="ch-card p-5">
                   <h3 className="font-semibold text-foreground mb-4">{t('attendanceChart')}</h3>
-                  <AttendanceAreaChart data={data.trendData} />
+                  <AttendanceAreaChart data={data.trendData ?? []} />
                 </div>
                 {canViewRevenue && (
                   <div className="ch-card p-5">
                     <h3 className="font-semibold text-foreground mb-4">{t('revenueChart')}</h3>
-                    <RevenueStackedChart data={data.revenueChartData} />
+                    <RevenueStackedChart data={data.revenueChartData ?? []} />
                   </div>
                 )}
               </div>
@@ -961,7 +961,7 @@ export default function DashboardPage() {
               {canViewRevenue && (
                 <div className="ch-card p-5">
                   <h3 className="font-semibold text-foreground mb-4">{t('paymentMethods')}</h3>
-                  <PaymentMethodsDonut data={data.revenueByMethod} />
+                  <PaymentMethodsDonut data={data.revenueByMethod ?? []} />
                 </div>
               )}
 
@@ -980,7 +980,7 @@ export default function DashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {data.recentPayments.slice(0, 5).map(p => (
+                        {(data.recentPayments ?? []).slice(0, 5).map(p => (
                           <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                             <td className="py-2.5">
                               <div className="font-medium text-foreground">{p.student_name}</div>
@@ -995,7 +995,7 @@ export default function DashboardPage() {
                             </td>
                           </tr>
                         ))}
-                        {data.recentPayments.length === 0 && (
+                        {(data.recentPayments ?? []).length === 0 && (
                           <tr>
                             <td colSpan={4} className="py-8 text-center text-muted-foreground text-sm">{tCommon('noData')}</td>
                           </tr>
@@ -1010,7 +1010,7 @@ export default function DashboardPage() {
               <div className="ch-card p-6">
                 <h2 className="text-lg font-semibold text-foreground mb-4">{t('inactiveStudents')}</h2>
                 <InactiveList
-                  students={data.inactiveStudents}
+                  students={data.inactiveStudents ?? []}
                   period={inactivePeriod}
                   onPeriodChange={setInactivePeriod}
                 />

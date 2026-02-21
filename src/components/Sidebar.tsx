@@ -111,7 +111,7 @@ export default function Sidebar({ collapsed: controlledCollapsed, onCollapsedCha
 
   return (
     <aside
-      className={`hidden md:flex flex-col h-screen sticky top-0 transition-all duration-300 z-40 shrink-0 print:hidden ${
+      className={`hidden md:flex flex-col fixed left-0 top-0 bottom-0 h-screen transition-all duration-300 z-40 print:hidden ${
         collapsed ? 'w-16' : 'w-64'
       }`}
       style={{ background: 'var(--gradient-navy)' }}

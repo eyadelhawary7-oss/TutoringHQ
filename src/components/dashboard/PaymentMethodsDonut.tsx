@@ -32,11 +32,12 @@ const METHOD_KEYS: Record<string, string> = {
   bank: 'methodBank',
 };
 
-export default function PaymentMethodsDonut({ data }: PaymentMethodsDonutProps) {
+export default function PaymentMethodsDonut({ data = [] }: PaymentMethodsDonutProps) {
   const t = useTranslations('dashboard');
 
-  const total = data.reduce((sum, d) => sum + (d.amount || 0), 0);
-  const pieData = data
+  const safeData = data ?? [];
+  const total = safeData.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const pieData = safeData
     .filter(d => (d.amount || 0) > 0)
     .map(d => {
       const method = (d.method || 'other').toLowerCase();

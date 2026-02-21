@@ -17,10 +17,10 @@ const COLORS = {
   other: '#64748B',
 };
 
-export default function RevenueStackedChart({ data }: RevenueStackedChartProps) {
+export default function RevenueStackedChart({ data = [] }: RevenueStackedChartProps) {
   const t = useTranslations('dashboard');
 
-  if (data.length === 0) {
+  if (!data?.length) {
     return (
         <div className="flex items-center justify-center h-[200px] text-muted-foreground">
         <p className="text-sm">---</p>
