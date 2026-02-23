@@ -27,6 +27,14 @@ import {
   ShieldAlert,
   Activity,
   TrendingUp,
+  Eye,
+  Menu,
+  ArrowLeft,
+  CheckCircle,
+  XCircle,
+  BadgeCheck,
+  Bell,
+  MessageCircle,
 } from 'lucide-react';
 import {
   LineChart,
@@ -122,6 +130,7 @@ const SOURCES = ['Referral', 'Walk-in', 'WhatsApp', 'Social Media', 'Cold Call',
 interface BillingRow {
   id: string;
   name: string;
+  phone?: string;
   plan?: string;
   amount?: number;
   billing_period?: string;
@@ -186,6 +195,8 @@ export default function AdminPage() {
   const { setHideShell } = useLayout();
 
   const [tab, setTab] = useState<AdminTab>('overview');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [centerSearch, setCenterSearch] = useState('');
@@ -195,7 +206,7 @@ export default function AdminPage() {
   const [centers, setCenters] = useState<CenterRow[]>([]);
   const [billingData, setBillingData] = useState<BillingRow[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<Array<{ centerName: string; amount: number; paid_at?: string; billing_period?: string; recorded_by?: string }>>([]);
-  const [pendingInvoices, setPendingInvoices] = useState<Array<{ id: string; centerName: string; payment_amount?: number; center_id: string; payment_proof_url?: string }>>([]);
+  const [pendingInvoices, setPendingInvoices] = useState<Array<{ id: string; centerName: string; payment_amount?: number; center_id: string; payment_proof_url?: string | null }>>([]);
   const [pendingSignups, setPendingSignups] = useState<PendingSignup[]>([]);
   const [planRequests, setPlanRequests] = useState<PlanRequest[]>([]);
   const [internalTeam, setInternalTeam] = useState<TeamMember[]>([]);
@@ -214,6 +225,9 @@ export default function AdminPage() {
     | null
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [changePlanModal, setChangePlanModal] = useState<{ centerId: string; centerName: string; currentPlan: string } | null>(null);
+  const [newPlan, setNewPlan] = useState('');
+  const [changingPlan, setChangingPlan] = useState(false);
   const [addAdminForm, setAddAdminForm] = useState({ name: '', phone: '', email: '' });
   const [leads, setLeads] = useState<SalesLead[]>([]);
   const [showAddLead, setShowAddLead] = useState(false);
@@ -463,6 +477,45 @@ export default function AdminPage() {
     }
   };
 
+  const sendWhatsAppReminder = (
+    centerPhone: string,
+    centerName: string,
+    amount: number,
+    nextDue: string
+  ) => {
+    // Normalize phone — strip everything except digits
+    let phone = centerPhone.replace(/\D/g, '');
+    // Ensure Egyptian country code
+    if (phone.startsWith('0')) phone = '2' + phone; // 01x -> 201x
+    if (!phone.startsWith('20')) phone = '20' + phone;
+    const formattedAmount = amount.toLocaleString('ar-EG');
+    const formattedDue = new Date(nextDue).toLocaleDateString('ar-EG', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const message = encodeURIComponent(
+      `السلام عليكم ${centerName} 👋\n\n` +
+      `نود تذكيركم بأن دفعة اشتراككم في CenterHQ بقيمة *${formattedAmount} ج.م* مستحقة بتاريخ *${formattedDue}*.\n\n` +
+      `يمكنكم تسوية الدفع ورفع إثبات الدفع من خلال:\n` +
+      `🔗 https://center-hq.vercel.app/settings/billing\n\n` +
+      `شكراً لثقتكم بـ CenterHQ 🙏`
+    );
+    const waUrl = `https://wa.me/${phone}?text=${message}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const contactViaWhatsApp = (phone: string, centerName: string) => {
+    let normalized = phone.replace(/\D/g, '');
+    if (normalized.startsWith('0')) normalized = '2' + normalized;
+    if (!normalized.startsWith('20')) normalized = '20' + normalized;
+    const message = encodeURIComponent(
+      `السلام عليكم 👋\n\n` +
+      `شكراً لتسجيلكم في CenterHQ!\n\n` +
+      `نود التواصل معكم لإتمام إعداد حساب "${centerName}" والتعرف على احتياجاتكم.\n\n` +
+      `متى يناسبكم التحدث؟ 🙏`
+    );
+    window.open(`https://wa.me/${normalized}?text=${message}`, '_blank', 'noopener,noreferrer');
+  };
+
   const handleMarkPaid = async (centerId: string, amount: number, billingPeriod: string) => {
     const headers = await getAuthHeaders();
     if (!headers) return;
@@ -577,8 +630,8 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Admin Sidebar */}
+    <div className="flex flex-col md:flex-row min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Admin Sidebar - desktop only */}
       <aside className="hidden md:flex flex-col w-56 shrink-0 border-e border-slate-200 bg-slate-900">
         <div className="p-4 border-b border-slate-700">
           <h2 className="font-bold text-white">{tAdmin('title')}</h2>
@@ -602,28 +655,61 @@ export default function AdminPage() {
         </nav>
       </aside>
 
-      {/* Mobile tab bar */}
-      <div className="md:hidden fixed top-0 start-0 end-0 z-20 border-b border-slate-200 overflow-x-auto scrollbar-hide bg-white">
-        <div className="flex px-2 py-1.5 gap-1">
-          {ADMIN_NAV.map(({ key, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={
-                tab === key
-                  ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap bg-teal-600/10 text-teal-600'
-                  : 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap text-slate-500'
-              }
-            >
-              <Icon size={14} />
-              <span>{tAdmin(key)}</span>
-            </button>
-          ))}
+      {/* Mobile top bar + hamburger */}
+      <div className="flex items-center justify-between p-4 border-b border-slate-200 md:hidden">
+        <div>
+          <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
+          <h2 className="font-bold text-slate-900 text-sm capitalize">{tab}</h2>
         </div>
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <Menu className="w-5 h-5 text-slate-600" />
+        </button>
       </div>
 
+      {/* Mobile slide-out nav drawer */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <div className="absolute top-0 start-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <span className="font-bold text-slate-900">Admin Panel</span>
+              <button onClick={() => setMobileNavOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+              {ADMIN_NAV.map(({ key, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => { setTab(key); setMobileNavOpen(false); }}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    tab === key
+                      ? 'bg-teal-50 text-teal-700'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {tAdmin(key)}
+                </button>
+              ))}
+            </nav>
+            <div className="p-4 border-t border-slate-200">
+              <Link href="/dashboard" className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700">
+                <ArrowLeft className="w-4 h-4" /> Back to My Center
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
-      <div className="flex-1 p-4 md:p-6 overflow-auto pt-14 md:pt-6">
+      <div className="flex-1 p-4 md:p-6 overflow-auto">
         {/* Overview */}
         {tab === 'overview' && overview && (
           <>
@@ -905,7 +991,7 @@ export default function AdminPage() {
                                       <Check size={14} />{tAdmin('reactivate')}
                                     </button>
                                   )}
-                                  <button onClick={() => { /* TODO: Change Plan modal */ setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
+                                  <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
                                     <CreditCard size={14} />{tAdmin('changePlan')}
                                   </button>
                                   <button onClick={() => { setShowDeleteConfirm(c); setDeleteConfirmName(''); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start">
@@ -959,21 +1045,23 @@ export default function AdminPage() {
                             <BillingStatusBadge status={isPaid ? 'paid' : (billingStatus === 'overdue' ? 'overdue' : 'active')} nextDue={nextDueStr || new Date().toISOString()} />
                           </td>
                           <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-nowrap">
                               {!isPaid && (
                                 <button
                                   onClick={() => handleMarkPaid(b.id, b.amount ?? 0, b.billing_period ?? 'monthly')}
                                   disabled={actionLoading}
-                                  className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50"
                                 >
+                                  <BadgeCheck className="w-4 h-4" />
                                   {tAdmin('markAsPaid')}
                                 </button>
                               )}
                               <button
-                                onClick={() => { /* TODO: wire /api/admin/billing send-reminder */ }}
+                                onClick={() => sendWhatsAppReminder(b.phone ?? '', b.name ?? '', b.amount ?? 0, nextDueStr || '')}
                                 disabled={actionLoading}
-                                className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-slate-700 text-sm font-semibold rounded-lg whitespace-nowrap transition-all disabled:opacity-50"
                               >
+                                <Bell className="w-4 h-4" />
                                 {tAdmin('sendReminder')}
                               </button>
                             </div>
@@ -1005,22 +1093,40 @@ export default function AdminPage() {
                             <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{inv.centerName}</td>
                             <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(inv.payment_amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
                             <td className="py-3.5 px-4">
-                              <button
-                                onClick={() => {
-                                  if ((inv.payment_amount ?? 0) > 50000) {
-                                    setPasswordConfirm({ type: 'approve_invoice', inv: { id: inv.id, centerName: inv.centerName, payment_amount: inv.payment_amount ?? 0 } });
-                                  } else {
-                                    handleInvoiceAction(inv.id, 'approve');
-                                  }
-                                }}
-                                disabled={actionLoading}
-                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
-                              >
-                                {tAdmin('approvePay')}
-                              </button>
-                              <button onClick={() => handleInvoiceAction(inv.id, 'reject')} disabled={actionLoading} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50">
-                                {tAdmin('rejectPayment')}
-                              </button>
+                              <div className="flex items-center gap-2 flex-nowrap">
+                                {inv.payment_proof_url ? (
+                                  <button
+                                    onClick={() => setViewingProof(inv.payment_proof_url || null)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors border border-blue-200"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" /> View Proof
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-slate-400 px-3">No image</span>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    if ((inv.payment_amount ?? 0) > 50000) {
+                                      setPasswordConfirm({ type: 'approve_invoice', inv: { id: inv.id, centerName: inv.centerName, payment_amount: inv.payment_amount ?? 0 } });
+                                    } else {
+                                      handleInvoiceAction(inv.id, 'approve');
+                                    }
+                                  }}
+                                  disabled={actionLoading}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  {tAdmin('approvePay')}
+                                </button>
+                                <button
+                                  onClick={() => handleInvoiceAction(inv.id, 'reject')}
+                                  disabled={actionLoading}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  {tAdmin('rejectPayment')}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1097,11 +1203,13 @@ export default function AdminPage() {
                         </td>
                         <td className="py-3.5 px-4">
                           {pr.status === 'pending' && (
-                            <div className="flex gap-2">
-                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50">
+                            <div className="flex items-center gap-2 flex-nowrap">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50">
+                                <CheckCircle className="w-4 h-4" />
                                 {tAdmin('approve')}
                               </button>
-                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50">
+                                <XCircle className="w-4 h-4" />
                                 {tAdmin('reject')}
                               </button>
                             </div>
@@ -1128,7 +1236,7 @@ export default function AdminPage() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Center</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Owner</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('phone')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tCommon('email')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Email</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('referredBy')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
@@ -1146,11 +1254,21 @@ export default function AdminPage() {
                         <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
                         <td className="py-3.5 px-4 text-sm text-slate-600">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
                         <td className="py-3.5 px-4">
-                          <div className="flex gap-2">
-                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50">
+                          <div className="flex items-center gap-2 flex-nowrap">
+                            <button
+                              onClick={() => contactViaWhatsApp(ps.phone ?? '', ps.name ?? '')}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm"
+                              title="Contact on WhatsApp"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">WhatsApp</span>
+                            </button>
+                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50">
+                              <CheckCircle className="w-3.5 h-3.5" />
                               {tAdmin('approve')}
                             </button>
-                            <button onClick={() => setShowRejectReason(ps)} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors">
+                            <button onClick={() => setShowRejectReason(ps)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm">
+                              <XCircle className="w-3.5 h-3.5" />
                               {tAdmin('reject')}
                             </button>
                           </div>
@@ -1628,6 +1746,98 @@ export default function AdminPage() {
                 {tCommon('delete')} Lead
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Plan Modal */}
+      {changePlanModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Change Plan</h2>
+                <p className="text-sm text-slate-500 mt-0.5">{changePlanModal.centerName}</p>
+              </div>
+              <button onClick={() => { setChangePlanModal(null); setNewPlan(''); }} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-slate-500 mb-3">
+                  Current plan: <span className="font-semibold text-slate-900 capitalize">{changePlanModal.currentPlan}</span>
+                </p>
+                <label className="text-sm font-medium text-slate-700 block mb-2">New Plan</label>
+                <select
+                  value={newPlan}
+                  onChange={(e) => setNewPlan(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                >
+                  <option value="">Select a plan...</option>
+                  <option value="starter">Starter — ≤150 students — EGP 2,000/mo</option>
+                  <option value="pro">Pro — ≤500 students — EGP 4,500/mo</option>
+                  <option value="business">Business — ≤1,000 students — EGP 6,500/mo</option>
+                  <option value="enterprise">Enterprise — ≤2,000 students — EGP 9,000/mo</option>
+                  <option value="top_centers">Top Centers — Custom</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 pt-0">
+              <button
+                onClick={() => { setChangePlanModal(null); setNewPlan(''); }}
+                className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!newPlan || newPlan === changePlanModal.currentPlan || changingPlan}
+                onClick={async () => {
+                  if (!newPlan) return;
+                  setChangingPlan(true);
+                  try {
+                    await handleCenterAction(changePlanModal.centerId, 'change_plan', { newPlan });
+                    setChangePlanModal(null);
+                    setNewPlan('');
+                    loadCenters();
+                  } finally {
+                    setChangingPlan(false);
+                  }
+                }}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                {changingPlan ? 'Saving...' : 'Change Plan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Proof Image Modal */}
+      {viewingProof && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingProof(null)}>
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-white font-semibold">Payment Proof</span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewingProof}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Open Original
+                </a>
+                <button onClick={() => setViewingProof(null)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+            <img
+              src={viewingProof}
+              alt="Payment proof"
+              className="w-full rounded-xl shadow-2xl max-h-[80vh] object-contain bg-white"
+            />
           </div>
         </div>
       )}

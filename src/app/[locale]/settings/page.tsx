@@ -9,9 +9,9 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
-import { PageHeader, RoleBadge } from '@/components/shared';
+import { PageHeader, RoleBadge, PlanBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
-import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard } from 'lucide-react';
+import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard, Loader2, FileText } from 'lucide-react';
 
 type TabType = 'general' | 'billing' | 'team';
 
@@ -190,6 +190,8 @@ function SettingsPageContent() {
   const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[]; pending?: { referred_center_name: string; referred_center_plan: string; reward_status: string }[]; totalEarned: number } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
 
   // Billing
   const [billingData, setBillingData] = useState<{
@@ -216,6 +218,7 @@ function SettingsPageContent() {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [proofUploading, setProofUploading] = useState(false);
   const [billingSaving, setBillingSaving] = useState(false);
+  const [planRequests, setPlanRequests] = useState<Array<{ id: string; current_plan: string; requested_plan: string; status: string; requested_at?: string }>>([]);
 
   // Team
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -269,6 +272,7 @@ function SettingsPageContent() {
         setCenterName(c.name || '');
         setCenterPhone(c.phone || '');
         setScannerMode(c.scanner_default_mode || 'camera');
+        setLogoUrl(c.logo_url ?? null);
         setLogoLoadFailed(false);
       }
 
@@ -313,25 +317,35 @@ function SettingsPageContent() {
           plans: FALLBACK_PLANS,
           payg_rates: FALLBACK_PAYG,
         });
-        return;
+      } else {
+        const json = await res.json();
+        const plans = (json.plans?.length ? json.plans : FALLBACK_PLANS) as PricingPlan[];
+        const paygRates = (json.payg_rates?.length ? json.payg_rates : FALLBACK_PAYG) as PaygRate[];
+        setBillingData({
+          plan: json.plan || 'starter',
+          pricing_type: json.pricing_type || json.billing_type || 'fixed',
+          billing_type: json.billing_type || json.pricing_type,
+          weekly_student_limit: json.weekly_student_limit ?? 200,
+          plans,
+          payg_rates: paygRates,
+          current_plan_details: json.current_plan_details,
+          is_early_adopter: json.is_early_adopter,
+          early_adopter_price: json.early_adopter_price,
+          center_name: json.center_name,
+          invoices: json.invoices || [],
+        });
+        setPaygSlider(json.weekly_student_limit ?? 200);
       }
-      const json = await res.json();
-      const plans = (json.plans?.length ? json.plans : FALLBACK_PLANS) as PricingPlan[];
-      const paygRates = (json.payg_rates?.length ? json.payg_rates : FALLBACK_PAYG) as PaygRate[];
-      setBillingData({
-        plan: json.plan || 'starter',
-        pricing_type: json.pricing_type || json.billing_type || 'fixed',
-        billing_type: json.billing_type || json.pricing_type,
-        weekly_student_limit: json.weekly_student_limit ?? 200,
-        plans,
-        payg_rates: paygRates,
-        current_plan_details: json.current_plan_details,
-        is_early_adopter: json.is_early_adopter,
-        early_adopter_price: json.early_adopter_price,
-        center_name: json.center_name,
-        invoices: json.invoices || [],
-      });
-      setPaygSlider(json.weekly_student_limit ?? 200);
+      // Fetch plan requests for this center
+      if (centerId) {
+        const { data: planReqs } = await supabase
+          .from('plan_requests')
+          .select('id, current_plan, requested_plan, status, requested_at')
+          .eq('center_id', centerId)
+          .order('requested_at', { ascending: false })
+          .limit(10);
+        setPlanRequests(planReqs ?? []);
+      }
     } catch {
       setBillingData({
         plan: 'starter',
@@ -343,7 +357,7 @@ function SettingsPageContent() {
     } finally {
       setBillingLoading(false);
     }
-  }, []);
+  }, [centerId]);
 
   useEffect(() => {
     if (activeTab === 'billing') fetchBilling();
@@ -435,21 +449,37 @@ function SettingsPageContent() {
     }
   };
 
+  // IMPORTANT: Create 'center-logos' bucket in Supabase Storage Dashboard
+  // Set bucket to PUBLIC so images are accessible via public URL
+  // Add RLS policy: authenticated users can upload to their own center_id folder
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !centerId || !userId) return;
-    const ext = file.name.split('.').pop();
-    const path = `${centerId}/logo.${ext}`;
-    const { error: uploadError } = await supabase.storage.from('center-logos').upload(path, file, { upsert: true });
-    if (uploadError) return;
-    const { data: publicData } = supabase.storage.from('center-logos').getPublicUrl(path);
-    const { error } = await dbUpdate({ table: 'centers', data: { logo_url: publicData.publicUrl }, filters: [{ column: 'id', op: 'eq', value: centerId }] });
-    if (!error) {
-      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'logo' } });
-      setCenter(prev => prev ? { ...prev, logo_url: publicData.publicUrl } : null);
+    if (!file || !center?.id) return;
+    setLogoUploading(true);
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${center.id}/logo.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from('center-logos')
+      .upload(filePath, file, { upsert: true });
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      setLogoUploading(false);
+      return;
+    }
+    const { data: { publicUrl } } = supabase.storage
+      .from('center-logos')
+      .getPublicUrl(filePath);
+    const { error: updateError } = await supabase
+      .from('centers')
+      .update({ logo_url: publicUrl })
+      .eq('id', center.id);
+    if (!updateError) {
+      setLogoUrl(publicUrl + '?t=' + Date.now());
+      setCenter(prev => prev ? { ...prev, logo_url: publicUrl } : null);
       setLogoLoadFailed(false);
       showSaved();
     }
+    setLogoUploading(false);
   };
 
   const handleAddSubject = async (e: React.FormEvent) => {
@@ -796,19 +826,32 @@ function SettingsPageContent() {
               </div>
               <div className="p-6">
                 <div className="flex items-start gap-6 flex-wrap">
-                  <div className="relative w-20 h-20">
-                    {center?.logo_url && !logoLoadFailed ? (
-                      <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden">
-                        <img src={center.logo_url} alt="Logo" className="w-full h-full object-cover" onError={() => setLogoLoadFailed(true)} />
-                      </div>
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden">
-                        <Building2 className="w-8 h-8 text-slate-400" />
-                      </div>
-                    )}
-                    <label className="absolute bottom-0 end-0 w-7 h-7 bg-teal-600 rounded-full flex items-center justify-center shadow-md hover:bg-teal-700 cursor-pointer">
-                      <Camera className="w-3.5 h-3.5 text-white" />
-                      <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                  <div className="relative w-24 h-24 flex-shrink-0">
+                    <div className="w-24 h-24 rounded-full bg-slate-100 border-2 border-slate-200 overflow-hidden flex items-center justify-center">
+                      {logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt="Center logo"
+                          className="w-full h-full object-cover"
+                          onError={() => setLogoUrl(null)}
+                        />
+                      ) : (
+                        <Building2 className="w-10 h-10 text-slate-400" />
+                      )}
+                    </div>
+                    <label className="absolute bottom-0 end-0 w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center shadow-md hover:bg-teal-700 cursor-pointer transition-colors">
+                      {logoUploading ? (
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      ) : (
+                        <Camera className="w-4 h-4 text-white" />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                        disabled={logoUploading}
+                      />
                     </label>
                   </div>
                   <div className="flex-1 min-w-[200px] space-y-4">
@@ -994,8 +1037,8 @@ function SettingsPageContent() {
                   <MessageCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">WhatsApp Support</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">Contact support via WhatsApp</p>
+                  <h3 className="font-semibold text-slate-900">{tBilling('whatsappSupport')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{tBilling('contactSupportViaWhatsapp')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -1014,7 +1057,7 @@ function SettingsPageContent() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-slate-900">{t('account')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">Security and sign out</p>
+                  <p className="text-sm text-slate-500 mt-0.5">{tBilling('securityAndSignOut')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -1053,7 +1096,7 @@ function SettingsPageContent() {
                   </div>
                   <div className="mt-4 pt-4 border-t border-teal-500/40 flex items-center justify-between">
                     <p className="text-teal-200 text-sm">Next payment due: <span className="text-white font-semibold">—</span></p>
-                    <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full border border-green-500/30">Active</span>
+                    <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full border border-green-500/30">{tBilling('active')}</span>
                   </div>
                 </div>
 
@@ -1067,7 +1110,7 @@ function SettingsPageContent() {
                       <div key={plan.id} className={`bg-white rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-200'}`}>
                         {isCurrent && (
                           <div className="absolute -top-3 start-1/2 -translate-x-1/2">
-                            <span className="px-3 py-1 bg-teal-600 text-white text-xs font-semibold rounded-full shadow">Current Plan</span>
+                            <span className="px-3 py-1 bg-teal-600 text-white text-xs font-semibold rounded-full shadow">{tBilling('currentPlan')}</span>
                           </div>
                         )}
                         <h3 className="font-bold text-slate-900 text-lg capitalize">{plan.name_en}</h3>
@@ -1098,11 +1141,11 @@ function SettingsPageContent() {
                     <div className="p-4 bg-teal-50 rounded-xl border border-teal-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs text-teal-600 font-medium">Weekly Cost</p>
+                          <p className="text-xs text-teal-600 font-medium">{tBilling('weeklyCost')}</p>
                           <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.weekly.toLocaleString('ar-EG')} {tBilling('egp')}</p>
                         </div>
                         <div className="text-end">
-                          <p className="text-xs text-teal-600 font-medium">Monthly Est.</p>
+                          <p className="text-xs text-teal-600 font-medium">{tBilling('monthlyEst')}</p>
                           <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.monthly.toLocaleString('ar-EG')} {tBilling('egp')}</p>
                         </div>
                       </div>
@@ -1157,6 +1200,56 @@ function SettingsPageContent() {
                   ) : <p className="p-8 text-center text-slate-500">{tBilling('noInvoices')}</p>}
                 </div>
 
+                {/* Plan Change Requests */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+                  <div className="p-6 border-b border-slate-100">
+                    <h3 className="font-semibold text-slate-900">Plan Change Requests</h3>
+                    <p className="text-sm text-slate-500 mt-0.5">History of your plan upgrade/downgrade requests</p>
+                  </div>
+                  {planRequests.length === 0 ? (
+                    <div className="text-center py-10">
+                      <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                      <p className="text-slate-500 text-sm">No plan change requests yet</p>
+                    </div>
+                  ) : (
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50">
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">From</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">To</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {planRequests.map(req => (
+                          <tr key={req.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3.5 px-4 text-sm text-slate-500">
+                              {new Date(req.requested_at || 0).toLocaleDateString()}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <PlanBadge plan={req.current_plan} />
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <PlanBadge plan={req.requested_plan} />
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                req.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                req.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                'bg-amber-100 text-amber-700'
+                              }`}>
+                                {req.status === 'approved' ? '✓ Approved' :
+                                 req.status === 'rejected' ? '✗ Rejected' : '⏳ Pending'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
                 {/* 5. Submit Payment Proof */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                   <h3 className="font-semibold text-slate-900 mb-1">{tBilling('submitProofTitle')}</h3>
@@ -1164,7 +1257,7 @@ function SettingsPageContent() {
                   <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200 mb-4">
                     <div className="p-2 bg-blue-100 rounded-lg"><CreditCard className="w-5 h-5 text-blue-600" /></div>
                     <div className="flex-1">
-                      <p className="text-xs text-blue-600 font-medium">InstaPay Number</p>
+                      <p className="text-xs text-blue-600 font-medium">{tBilling('instaPayNumber')}</p>
                       <p className="text-lg font-bold text-blue-800 font-mono">{instapayNumber}</p>
                     </div>
                     <button type="button" onClick={() => { navigator.clipboard.writeText(instapayNumber); setSavedMessage(tCommon('copy')); setTimeout(() => setSavedMessage(''), 2000); }} className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"><Copy className="w-4 h-4" /></button>
@@ -1199,7 +1292,7 @@ function SettingsPageContent() {
         {activeTab === 'team' && (
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
             {(currentUser?.role === 'assistant' || currentUser?.role === 'teacher') ? (
-              <p className="text-slate-500">Only owners and admins can manage team members.</p>
+              <p className="text-slate-500">{tBilling('onlyOwnersCanManageTeam')}</p>
             ) : (
               <>
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
