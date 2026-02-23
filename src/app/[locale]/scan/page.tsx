@@ -543,7 +543,6 @@ export default function ScanPage() {
           },
           select: false,
         });
-        console.log('Late entry payment insert:', lateErr ? { error: lateErr } : { success: lateData });
       }
       setAddedAmountToBalance(fee);
       setScannedStudent({
@@ -591,8 +590,7 @@ export default function ScanPage() {
           group_id: effectiveGroupId,
         };
 
-        console.log('Recording payment:', { student_id: scannedStudent.id, center_id: centerId, amount: paymentAmount, method });
-        const { data: payData, error: payErr } = await dbInsert({
+        const { error: payErr } = await dbInsert({
           table: 'payments',
           data: paymentData,
           select: false,
@@ -600,8 +598,6 @@ export default function ScanPage() {
         if (payErr) {
           console.error('Payment insert FAILED:', payErr);
           if (typeof alert !== 'undefined') alert('Payment error: ' + (payErr instanceof Error ? payErr.message : String(payErr)));
-        } else {
-          console.log('Payment insert SUCCESS:', payData);
         }
 
         const scanData: Record<string, unknown> = {

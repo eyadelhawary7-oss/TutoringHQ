@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
 function isSuperAdmin(phone: string | null): boolean {
@@ -6,8 +6,7 @@ function isSuperAdmin(phone: string | null): boolean {
   return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function isAdminUser(supabaseAdmin: any, userId: string): Promise<boolean> {
+async function isAdminUser(supabaseAdmin: SupabaseClient, userId: string): Promise<boolean> {
   const { data } = await supabaseAdmin.from('admin_users').select('id').eq('id', userId).single();
   return !!data;
 }

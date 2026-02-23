@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
@@ -12,8 +12,7 @@ function isSuperAdmin(phone: string | null): boolean {
   return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function isAdminUser(supabaseAdmin: any, userId: string): Promise<boolean> {
+async function isAdminUser(supabaseAdmin: SupabaseClient, userId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from('admin_users')
     .select('id')
@@ -27,16 +26,12 @@ function generatePin(): string {
 }
 
 export async function GET(request: Request) {
-  console.log('==========================================');
-  console.log('[admin/centers] 🔍 Route called');
-
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-      console.log('[admin/centers] ❌ Server configuration error');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
@@ -64,11 +59,8 @@ export async function GET(request: Request) {
     const { data: { session: cookieSession } } = await supabase.auth.getSession();
 
     if (cookieSession) {
-      console.log('[admin/centers] ✅ Found session in cookies');
       userId = cookieSession.user.id;
     } else {
-      console.log('[admin/centers] ⚠️ No session in cookies, trying Authorization header...');
-
       // Try 2: Authorization header
       const authHeader = request.headers.get('Authorization');
       if (authHeader?.startsWith('Bearer ')) {
@@ -76,20 +68,14 @@ export async function GET(request: Request) {
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
         if (user && !error) {
-          console.log('[admin/centers] ✅ Found user via Authorization header');
           userId = user.id;
-        } else {
-          console.log('[admin/centers] ❌ Invalid token:', error?.message);
         }
       }
     }
 
     if (!userId) {
-      console.log('[admin/centers] ❌ No valid authentication found');
       return NextResponse.json({ error: 'Unauthorized - no session found' }, { status: 401 });
     }
-
-    console.log('[admin/centers] 🔐 User ID:', userId);
 
     // Check if user is admin
     const { data: adminUser } = await adminClient
@@ -111,17 +97,9 @@ export async function GET(request: Request) {
     const userPhone = cookieSession?.user?.phone ?? userData?.phone ?? null;
     const isPhoneAdmin = !!userPhone && superAdminPhones.includes(String(userPhone));
 
-    console.log('[admin/centers] 🔐 Admin check:', {
-      hasAdminUser: !!adminUser,
-      isPhoneAdmin,
-    });
-
     if (!adminUser && !isPhoneAdmin) {
-      console.log('[admin/centers] ❌ Not an admin');
       return NextResponse.json({ error: 'Forbidden - admin access required' }, { status: 403 });
     }
-
-    console.log('[admin/centers] ✅ Admin authorized');
 
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get('status') || 'all';
@@ -145,9 +123,7 @@ export async function GET(request: Request) {
       query = query.or(`name.ilike.${term},phone.ilike.${term}`);
     }
 
-    console.log('[admin/centers] 📡 Querying centers...');
     const { data: centersData, error } = await query;
-    console.log('[admin/centers] 📊 Query result:', { count: centersData?.length ?? 0, error: error?.message });
 
     if (error) {
       console.error('[admin/centers] ❌ Query error:', error);
@@ -284,16 +260,10 @@ export async function GET(request: Request) {
     });
 
     const pendingCenters = rows.filter((c: Record<string, unknown>) => c.status === 'pending');
-    console.log('[admin/centers] ✅ Returning', rows.length, 'centers,', pendingCenters.length, 'pending');
-    console.log('==========================================');
 
     return NextResponse.json({ centers: rows, pendingCenters });
   } catch (error) {
-    console.error('==========================================');
-    console.error('[admin/centers] 💥 CAUGHT ERROR:', error);
-    console.error('[admin/centers] Error message:', error instanceof Error ? error.message : String(error));
-    console.error('[admin/centers] Error stack:', error instanceof Error ? error.stack : 'No stack');
-    console.error('==========================================');
+    console.error('[admin/centers] Error:', error instanceof Error ? error.message : error);
 
     return NextResponse.json(
       {

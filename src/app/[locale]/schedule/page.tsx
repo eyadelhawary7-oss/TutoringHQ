@@ -316,7 +316,7 @@ export default function SchedulePage() {
                             }`}
                           >
                             {isConflict && <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />}
-                            <p className={`text-xs font-semibold truncate pr-5 ${isConflict ? 'text-red-800' : 'text-teal-800'}`}>{slot.group_name || '—'}</p>
+                            <p className={`text-xs font-semibold truncate pe-5 ${isConflict ? 'text-red-800' : 'text-teal-800'}`}>{slot.group_name || '—'}</p>
                             <p className={`text-xs truncate ${isConflict ? 'text-red-700' : 'text-teal-600'}`}>{slot.room_name || '—'}</p>
                             <p className={`text-xs ${isConflict ? 'text-red-600' : 'text-teal-500'}`}>{formatTimeForDisplay(slot.start_time)}–{formatTimeForDisplay(slot.end_time)}</p>
                             {canEdit && (

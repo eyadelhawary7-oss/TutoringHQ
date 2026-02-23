@@ -508,6 +508,12 @@ export default function DashboardPage() {
       }
 
       if (meData?.user?.center_id) {
+        // Center users must have can_view_dashboard to access dashboard
+        const canView = meData.user.can_view_dashboard === true || meData.user.role === 'owner' || meData.user.role === 'admin';
+        if (!canView) {
+          router.replace('/scan');
+          return;
+        }
         setCenterId(meData.user.center_id);
         setCenterBilling(meData.user.center ? {
           payment_due_date: meData.user.center.payment_due_date,
@@ -770,7 +776,7 @@ export default function DashboardPage() {
                   </Link>
                   <button
                     onClick={() => setShowUpgradeModal(false)}
-                    className="ml-2 px-4 py-2 bg-slate-100 rounded-lg text-sm text-slate-700"
+                    className="ms-2 px-4 py-2 bg-slate-100 rounded-lg text-sm text-slate-700"
                   >
                     {tCommon('cancel')}
                   </button>

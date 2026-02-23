@@ -26,7 +26,6 @@ function logError(context: string, err: unknown) {
  * The user's identity is verified before executing any operation.
  */
 export async function POST(request: Request) {
-  console.log('[api/db] POST handler called');
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -69,12 +68,10 @@ export async function POST(request: Request) {
     const { operation, table, data, filters, select: selectColumns, order, limit: rowLimit, single } = body;
 
     if (!table || typeof table !== 'string') {
-      console.log('[api/db] Validation failed: table required');
       return NextResponse.json({ error: "Field 'table' is required and must be a string", code: 'VALIDATION_ERROR' }, { status: 400 });
     }
 
     if (!VALID_OPERATIONS.includes(operation as (typeof VALID_OPERATIONS)[number])) {
-      console.log('[api/db] Validation failed: invalid operation', { operation });
       return NextResponse.json({
         error: `Field 'operation' must be one of: ${VALID_OPERATIONS.join(', ')}`,
         code: 'VALIDATION_ERROR',
@@ -82,7 +79,6 @@ export async function POST(request: Request) {
     }
 
     if (!ALLOWED_TABLES.includes(table as (typeof ALLOWED_TABLES)[number])) {
-      console.log('[api/db] Validation failed: table not allowed', { table });
       return NextResponse.json({
         error: `Table '${table}' is not allowed`,
         code: 'TABLE_NOT_ALLOWED',
@@ -91,7 +87,6 @@ export async function POST(request: Request) {
     }
 
     if ((operation === 'insert' || operation === 'update') && data === undefined) {
-      console.log('[api/db] Validation failed: data required for', operation);
       return NextResponse.json({
         error: `Field 'data' is required for operation '${operation}'`,
         code: 'VALIDATION_ERROR',
