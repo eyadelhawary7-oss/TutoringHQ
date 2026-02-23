@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
+import { PageHeader } from '@/components/shared';
 import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
 
 interface Room {
@@ -53,10 +54,16 @@ function formatTimeForDisplay(t: string | undefined): string {
   return (part ?? t).slice(0, 5);
 }
 
+function formatHour(h: number): string {
+  if (h === 0) return '12:00 AM';
+  if (h < 12) return `${h}:00 AM`;
+  if (h === 12) return '12:00 PM';
+  return `${h - 12}:00 PM`;
+}
+
 export default function SchedulePage() {
   const t = useTranslations('schedule');
   const tCommon = useTranslations('common');
-  const locale = useLocale();
   const router = useRouter();
   const { user, hasPermission } = useUser();
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -199,26 +206,54 @@ export default function SchedulePage() {
     );
   }
 
+  const [selectedDay, setSelectedDay] = useState(0);
+  const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
+
+  const getSlotsInCell = (day: number, hour: number) =>
+    slots.filter(s => {
+      if (Number(s.day_of_week) !== day) return false;
+      const startM = timeToMinutes(s.start_time);
+      const endM = timeToMinutes(s.end_time);
+      const hourStart = hour * 60;
+      const hourEnd = (hour + 1) * 60;
+      return startM < hourEnd && endM > hourStart;
+    });
+
+  const getConflictingSlotIds = useMemo(() => {
+    const conflictIds = new Set<string>();
+    for (const s1 of slots) {
+      for (const s2 of slots) {
+        if (s1.id >= s2.id) continue;
+        if (s1.room_id !== s2.room_id) continue;
+        if (Number(s1.day_of_week) !== Number(s2.day_of_week)) continue;
+        const a1 = timeToMinutes(s1.start_time);
+        const b1 = timeToMinutes(s1.end_time);
+        const a2 = timeToMinutes(s2.start_time);
+        const b2 = timeToMinutes(s2.end_time);
+        if (a1 < b2 && a2 < b1) {
+          conflictIds.add(s1.id);
+          conflictIds.add(s2.id);
+        }
+      }
+    }
+    return conflictIds;
+  }, [slots]);
+
   return (
-    <div className="p-4 md:p-6 space-y-5 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-foreground">
-          {t('title')}
-          {(user?.role === 'assistant' || user?.role === 'teacher') && hasPermission('can_view_schedule') && (
-            <span className="text-base font-normal text-muted-foreground ms-2">{t('viewOnly')}</span>
-          )}
-        </h1>
+    <div className="space-y-5 animate-fade-in">
+      <PageHeader
+        title={t('title')}
+        subtitle={(user?.role === 'assistant' || user?.role === 'teacher') && hasPermission('can_view_schedule') ? t('viewOnly', { defaultValue: 'View only' }) : undefined}
+      >
         {canEdit && (
           <button
             onClick={() => { setShowAddModal(true); setSlotError(''); }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-            style={{ background: 'hsl(var(--primary))' }}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
           >
-            <Plus size={14} /> {t('addSession')}
+            <Plus size={16} /> {t('addSession')}
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {slotSuccess && (
         <div className="p-3 rounded-lg bg-green-100 border border-green-500/30 text-green-700 text-sm">
@@ -234,63 +269,99 @@ export default function SchedulePage() {
           </svg>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-          {DAY_ORDER.map(day => {
-            const daySlots = slots.filter(s => Number(s.day_of_week) === day);
-            const color = DAY_COLORS[day];
-            return (
-              <div key={day} className="ch-card overflow-hidden">
-                <div className="px-3 py-2 text-xs font-bold text-white text-center" style={{ background: color }}>
+        <>
+          <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 mb-4 overflow-x-auto">
+            {DAY_ORDER.map(day => (
+              <button
+                key={day}
+                onClick={() => setSelectedDay(day)}
+                className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedDay === day
+                    ? 'bg-teal-600 text-white font-semibold'
+                    : 'text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                {t(DAY_KEYS[day])}
+              </button>
+            ))}
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="grid grid-cols-8 border-b border-slate-200">
+              <div className="py-3 px-3 text-xs font-semibold text-slate-400 uppercase bg-slate-50 border-e border-slate-200">{t('time')}</div>
+              {DAY_ORDER.map(day => (
+                <div key={day} className={`py-3 px-3 text-xs font-semibold text-slate-600 uppercase text-center bg-slate-50 border-e border-slate-200 last:border-e-0 ${selectedDay === day ? 'ring-1 ring-teal-500/30' : ''}`}>
                   {t(DAY_KEYS[day])}
                 </div>
-                <div className="p-2 space-y-2 min-h-[80px]">
-                  {daySlots.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-4">{t('noSlots')}</p>
-                  ) : daySlots.map(slot => (
-                    <div key={slot.id} className="rounded-lg p-2 text-xs" style={{ background: `${color}15`, borderInlineStart: `3px solid ${color}` }}>
-                      <div className="font-semibold text-foreground truncate">{slot.group_name || '—'}</div>
-                      <div className="text-muted-foreground">{slot.room_name || '—'}</div>
-                      <div className="flex items-center gap-1 text-muted-foreground mt-1">
-                        <Clock size={10} />
-                        <span className="font-mono">{formatTimeForDisplay(slot.start_time)}{'\u2013'}{formatTimeForDisplay(slot.end_time)}</span>
-                      </div>
-                      {canEdit && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); handleDeleteSlot(slot.id); }}
-                          className="mt-2 text-red-600 hover:text-red-700 text-[10px] font-medium"
-                        >
-                          {t('delete')}
-                        </button>
-                      )}
-                    </div>
-                  ))}
+              ))}
+            </div>
+            {HOURS.map(hour => (
+              <div key={hour} className="grid grid-cols-8 border-b border-slate-100 min-h-[60px]">
+                <div className="py-3 px-3 text-xs text-slate-400 bg-slate-50/50 border-e border-slate-200 self-start pt-2">
+                  {formatHour(hour)}
                 </div>
+                {DAY_ORDER.map(day => {
+                  const cellSlots = getSlotsInCell(day, hour);
+                  return (
+                    <div key={day} className="border-e border-slate-100 last:border-e-0 p-1.5">
+                      {cellSlots.map(slot => {
+                        const isConflict = getConflictingSlotIds.has(slot.id);
+                        return (
+                          <div
+                            key={slot.id}
+                            className={`relative rounded-lg p-2 cursor-pointer transition-colors group ${
+                              isConflict
+                                ? 'bg-red-50 border border-red-300 text-red-800'
+                                : 'bg-teal-50 border border-teal-200 hover:bg-teal-100'
+                            }`}
+                          >
+                            {isConflict && <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />}
+                            <p className={`text-xs font-semibold truncate pr-5 ${isConflict ? 'text-red-800' : 'text-teal-800'}`}>{slot.group_name || '—'}</p>
+                            <p className={`text-xs truncate ${isConflict ? 'text-red-700' : 'text-teal-600'}`}>{slot.room_name || '—'}</p>
+                            <p className={`text-xs ${isConflict ? 'text-red-600' : 'text-teal-500'}`}>{formatTimeForDisplay(slot.start_time)}–{formatTimeForDisplay(slot.end_time)}</p>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteSlot(slot.id); }}
+                                className={`hidden group-hover:block absolute top-1 end-1 p-0.5 rounded ${isConflict ? 'hover:bg-red-200 text-red-700' : 'hover:bg-teal-200 text-teal-700'}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {rooms.length === 0 && !isLoading && (
-        <p className="text-muted-foreground py-8 text-center">{t('noRooms')}</p>
+        <p className="text-slate-500 py-8 text-center">{t('noRooms')}</p>
       )}
 
       {/* Add Session Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddModal(false)}>
-          <div className="bg-card rounded-2xl border border-border shadow-xl p-6 max-w-sm mx-4 w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-foreground">{t('addSession')}</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900">{t('addSession')}</h2>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
             </div>
-            <form onSubmit={handleAddSlot} className="space-y-3">
+            <form onSubmit={handleAddSlot}>
+              <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">{t('group')}</label>
                 <select
                   value={formGroupId}
                   onChange={e => setFormGroupId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                   required
                 >
                   <option value="">{tCommon('select')}</option>
@@ -302,7 +373,7 @@ export default function SchedulePage() {
                 <select
                   value={formRoomId}
                   onChange={e => setFormRoomId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                   required
                 >
                   <option value="">{tCommon('select')}</option>
@@ -314,7 +385,7 @@ export default function SchedulePage() {
                 <select
                   value={formDay}
                   onChange={e => setFormDay(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                 >
                   {DAY_ORDER.map(d => <option key={d} value={d}>{t(DAY_KEYS[d])}</option>)}
                 </select>
@@ -326,7 +397,7 @@ export default function SchedulePage() {
                     type="time"
                     value={formStart}
                     onChange={e => setFormStart(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                   />
                 </div>
                 <div>
@@ -335,7 +406,7 @@ export default function SchedulePage() {
                     type="time"
                     value={formEnd}
                     onChange={e => setFormEnd(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                   />
                 </div>
               </div>
@@ -357,9 +428,10 @@ export default function SchedulePage() {
               {slotError && !hasConflict && (
                 <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">{slotError}</div>
               )}
-              <div className="flex gap-2 justify-end mt-4">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border text-muted-foreground hover:bg-muted">{tCommon('cancel')}</button>
-                <button type="submit" disabled={!formGroupId || !formRoomId || hasConflict || isSubmitting} className="px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{tCommon('save')}</button>
+              </div>
+              <div className="flex justify-end gap-3 p-6 pt-0">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
+                <button type="submit" disabled={!formGroupId || !formRoomId || hasConflict || isSubmitting} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">{t('addSession')}</button>
               </div>
             </form>
           </div>

@@ -16,6 +16,7 @@ import { syncQueuedScans } from '@/lib/sync';
 import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
+import { Camera, Bluetooth, Hash, BookOpen, ChevronRight } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useLayout } from '@/contexts/LayoutContext';
 
@@ -679,11 +680,14 @@ export default function ScanPage() {
 
   return (
     <>
-      {/* Main scanner UI — normal app navigation (sidebar/bottom bar) visible in idle */}
-      <div className="p-4 md:p-6 space-y-5 animate-fade-in">
-        {/* Top bar: title left, Online/Offline indicator top-right */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">{t('title')}</h1>
+      {/* Main scanner UI — max-w-lg mx-auto, full screen on mobile */}
+      <div className="max-w-lg mx-auto p-4 md:p-6 space-y-5 animate-fade-in">
+        {/* Page title bar */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
+            <p className="text-sm text-slate-500">Scan student QR codes to record attendance</p>
+          </div>
           <div className="flex items-center gap-2">
             {pendingCount > 0 && (
               <span className="text-xs text-amber-500 font-medium">
@@ -691,33 +695,26 @@ export default function ScanPage() {
               </span>
             )}
             {isSyncing ? (
-              <div className="flex items-center gap-1.5" title={tSync('syncing')}>
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-xs text-amber-500 hidden sm:inline">{tSync('syncing')}</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm" title={tSync('syncing')}>
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-xs font-medium text-slate-600">{tSync('syncing')}</span>
               </div>
             ) : (
-              <div
-                className={`flex items-center gap-1.5 ${isOnline ? 'text-green-500' : 'text-red-500'}`}
-                title={isOnline ? tSync('online') : tSync('offline')}
-              >
-                <div
-                  className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}
-                />
-                <span className="text-xs font-medium hidden sm:inline">
-                  {isOnline ? tSync('online') : tSync('offline')}
-                </span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm">
+                <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                <span className="text-xs font-medium text-slate-600">{isOnline ? tSync('online') : tSync('offline')}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* 3 input mode tabs — segmented control, active = teal */}
-        <div className="flex gap-1 p-1 rounded-xl border border-border w-full max-w-md" style={{ background: 'hsl(var(--muted))' }}>
+        {/* Tab bar: Camera / Bluetooth / Manual */}
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-6">
           {[
-            { key: 'camera' as const, label: t('camera'), icon: '📷' },
-            { key: 'bluetooth' as const, label: t('bluetooth'), icon: '🔗' },
-            { key: 'manual' as const, label: t('manualId'), icon: '🔢' },
-          ].map(({ key, label, icon }) => (
+            { key: 'camera' as const, label: t('camera'), Icon: Camera },
+            { key: 'bluetooth' as const, label: t('bluetooth'), Icon: Bluetooth },
+            { key: 'manual' as const, label: t('manualId'), Icon: Hash },
+          ].map(({ key, label, Icon }) => (
             <button
               key={key}
               onClick={() => {
@@ -732,20 +729,20 @@ export default function ScanPage() {
                   }, 100);
                 }
               }}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm transition-all ${
                 mode === key
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground'
+                  ? 'bg-white shadow-sm font-semibold text-slate-900'
+                  : 'font-medium text-slate-500 hover:text-slate-700'
               }`}
             >
-              <span>{icon}</span>
+              <Icon className={mode === key && key === 'camera' ? 'w-4 h-4 text-teal-600' : 'w-4 h-4'} />
               <span className="truncate">{label}</span>
             </button>
           ))}
         </div>
 
         {error && (
-          <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-center text-sm">
+          <div className="p-3 bg-red-50 text-red-600 rounded-lg text-center text-sm border border-red-200">
             {error}
           </div>
         )}
@@ -753,23 +750,37 @@ export default function ScanPage() {
         {/* Scanner body */}
         <div className="flex flex-col items-center gap-6">
           {mode === 'camera' && (
-            <CameraScanner
-              key={scannedStudent ? 'camera-hidden' : 'camera-active'}
-              onScan={handleScan}
-              isActive={!scannedStudent}
-            />
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden aspect-square w-full max-w-sm mx-auto shadow-2xl mb-6">
+              <CameraScanner
+                key={scannedStudent ? 'camera-hidden' : 'camera-active'}
+                onScan={handleScan}
+                isActive={!scannedStudent}
+                fillContainer
+              />
+              {/* Targeting overlay */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-48 h-48 border-2 border-white/50 rounded-2xl relative">
+                  <div className="absolute top-0 start-0 w-6 h-6 border-t-2 border-s-2 border-teal-400 rounded-tl-lg" />
+                  <div className="absolute top-0 end-0 w-6 h-6 border-t-2 border-e-2 border-teal-400 rounded-tr-lg" />
+                  <div className="absolute bottom-0 start-0 w-6 h-6 border-b-2 border-s-2 border-teal-400 rounded-bl-lg" />
+                  <div className="absolute bottom-0 end-0 w-6 h-6 border-b-2 border-e-2 border-teal-400 rounded-br-lg" />
+                </div>
+              </div>
+            </div>
           )}
 
           {mode === 'bluetooth' && (
-            <BluetoothScanner
-              key={scannedStudent ? 'bt-hidden' : 'bt-active'}
-              onScan={handleScan}
-              isActive={!scannedStudent}
-            />
+            <div className="w-full max-w-sm">
+              <BluetoothScanner
+                key={scannedStudent ? 'bt-hidden' : 'bt-active'}
+                onScan={handleScan}
+                isActive={!scannedStudent}
+              />
+            </div>
           )}
 
           {mode === 'manual' && !scannedStudent && (
-            <div className="w-full max-w-sm space-y-3">
+            <div className="space-y-3 w-full max-w-sm">
               <input
                 ref={manualInputRef}
                 type="text"
@@ -777,7 +788,7 @@ export default function ScanPage() {
                 value={manualIdInput}
                 onChange={(e) => setManualIdInput(e.target.value)}
                 placeholder={t('manualIdPlaceholder')}
-                className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white font-mono text-center text-lg tracking-widest"
                 dir="ltr"
                 autoFocus
                 onKeyDown={(e) => {
@@ -794,8 +805,7 @@ export default function ScanPage() {
                   handleScan(trimmed);
                 }}
                 disabled={!manualIdInput.trim()}
-                className="w-full py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                style={{ background: 'hsl(var(--primary))' }}
+                className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('checkIn')}
               </button>
@@ -804,35 +814,31 @@ export default function ScanPage() {
         </div>
       </div>
 
-      {/* Group Selector — Lovable-style modal */}
+      {/* Group Selector modal */}
       {needGroupSelection && scannedStudent && scannedStudent.groups && scannedStudent.groups.length >= 2 && (
-        <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-border overflow-hidden bg-card shadow-xl">
-            <div className="p-5 border-b border-border">
-              <h2 className="font-bold text-foreground text-lg">{t('selectGroupTitle')}</h2>
-              <p className="text-muted-foreground text-sm mt-1">{scannedStudent.name} — {scannedStudent.student_number ?? '—'}</p>
-              <p className="text-muted-foreground text-xs mt-0.5">{t('selectGroupDesc')}</p>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="p-6 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900">{t('selectGroupTitle')}</h2>
+              <p className="text-sm text-slate-500 mt-1">{t('selectGroupDesc')}</p>
             </div>
-            <div className="p-3 space-y-2">
+            <div className="p-4 space-y-2">
               {scannedStudent.groups.map((g) => (
                 <button
                   key={g.id}
                   onClick={() => handleGroupSelect(g)}
-                  className="w-full flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-start"
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-teal-300 transition-all text-start"
                 >
-                  <div>
-                    <div className="font-semibold text-foreground">{g.name}</div>
-                    <div className="text-sm text-muted-foreground">{t('perLesson')}</div>
+                  <div className="p-2 bg-teal-100 rounded-lg flex-shrink-0">
+                    <BookOpen className="w-4 h-4 text-teal-600" />
                   </div>
-                  <span className="font-bold text-foreground font-mono text-sm">{g.fee} {tCommon('egp')}</span>
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">{g.name}</p>
+                    <p className="text-xs text-slate-500">{t('perLesson')} · {tCommon('egp')} {g.fee}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 ms-auto" />
                 </button>
               ))}
-              <button
-                onClick={handleDismiss}
-                className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {tCommon('cancel')}
-              </button>
             </div>
           </div>
         </div>

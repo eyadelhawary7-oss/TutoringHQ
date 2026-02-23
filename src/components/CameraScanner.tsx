@@ -6,9 +6,11 @@ import { useTranslations } from 'next-intl';
 interface CameraScannerProps {
   onScan: (code: string) => void;
   isActive: boolean;
+  /** When true, fills parent container for embedded viewport */
+  fillContainer?: boolean;
 }
 
-export default function CameraScanner({ onScan, isActive }: CameraScannerProps) {
+export default function CameraScanner({ onScan, isActive, fillContainer }: CameraScannerProps) {
   const t = useTranslations('scan');
   const scannerRef = useRef<{ stop: () => Promise<void> } | null>(null);
   const [error, setError] = useState('');
@@ -86,8 +88,8 @@ export default function CameraScanner({ onScan, isActive }: CameraScannerProps) 
   if (!isActive) return null;
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div id="qr-reader" className="rounded-xl overflow-hidden" />
+    <div className={fillContainer ? 'absolute inset-0 w-full h-full min-h-0 [&_#qr-reader]:!w-full [&_#qr-reader]:!h-full' : 'w-full max-w-md mx-auto'}>
+      <div id="qr-reader" className={fillContainer ? 'w-full h-full min-h-0' : 'rounded-xl overflow-hidden'} />
       {error && (
         <p className="text-center text-red-500 mt-2 text-sm">{error}</p>
       )}

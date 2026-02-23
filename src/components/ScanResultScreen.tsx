@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Check, X, AlertTriangle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -72,169 +72,116 @@ export default function ScanResultScreen({
 
   const egp = (amount: number) => `${amount} ${tCommon('egp')}`;
 
-  // ─── GREEN (#16A34A): Already paid ───
+  // ─── GREEN (paid) ───
   if (isPaid) {
     return (
-      <div
-        className="scanner-green fixed inset-0 z-[100] flex flex-col items-center justify-center text-white animate-scale-in"
-        style={{ background: '#16A34A' }}
-      >
-        <div className="text-center px-6">
-          <div className="text-8xl mb-6">✓</div>
-          <div className="text-4xl font-black mb-2">{student.name}</div>
-          <div className="text-white/80 text-sm mb-3">{selectedGroup?.name ?? student.subject}</div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-white/20 mb-4">
-            <Check size={14} /> {t('studentPaid')}
-          </div>
-          {balanceDue > 0 && (
-            <div className="mt-4 px-4 py-3 rounded-xl bg-black/20 border border-white/20 text-sm text-amber-100 flex items-center gap-2">
-              <AlertTriangle size={16} />
-              <span>{t('balanceDue')}: {egp(balanceDue)}</span>
-            </div>
-          )}
-          <div className="text-white/60 text-xs mt-4">{t('autoDismiss')} {countdown} {t('seconds')}</div>
+      <div className="fixed inset-0 z-50 bg-green-600 flex flex-col items-center justify-center text-white p-6">
+        <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle className="w-16 h-16 text-white" />
         </div>
-        <button
-          onClick={onDismiss}
-          className="mt-10 px-8 py-3 rounded-xl font-bold text-sm bg-white/20 hover:bg-white/30 border border-white/30 transition-colors"
-        >
-          {t('nextStudent')}
-        </button>
+        <h2 className="text-3xl font-bold mb-2">{student.name}</h2>
+        <p className="text-green-200 text-lg mb-1">{selectedGroup?.name ?? student.subject}</p>
+        <p className="text-4xl font-bold font-mono mt-2 mb-6">{egp(selectedGroup?.fee ?? student.fee ?? 0)}</p>
+        {balanceDue > 0 && (
+          <div className="bg-white/20 rounded-xl p-4 mb-6 w-full max-w-sm text-center border border-white/30">
+            <p className="text-sm text-green-100">{t('balanceDue')}</p>
+            <p className="text-2xl font-bold font-mono">{egp(balanceDue)}</p>
+          </div>
+        )}
+        <p className="text-green-200 text-sm">{t('autoDismiss')} {countdown}{t('seconds')}...</p>
       </div>
     );
   }
 
-  // ─── YELLOW (#EAB308): Entry allowed — unpaid ───
+  // ─── YELLOW (late entry) ───
   if (isLateEntryGranted) {
     return (
-      <div
-        className="scanner-yellow fixed inset-0 z-[100] flex flex-col items-center justify-center text-white animate-scale-in"
-        style={{ background: '#EAB308' }}
-      >
-        <div className="text-center px-6">
-          <div className="text-7xl mb-6">⚠️</div>
-          <div className="text-4xl font-black mb-2 text-slate-900">{student.name}</div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-black/20 text-slate-900 mb-3">
-            <AlertTriangle size={14} /> {t('entryAllowedUnpaid')}
-          </div>
-          <div className="mt-3 px-4 py-3 rounded-xl bg-black/10 border border-black/20 text-sm space-y-1 text-slate-800">
-            {addedAmount > 0 && <div>{t('amountAddedToBalance', { amount: egp(addedAmount) })}</div>}
-            {balanceDue > 0 && <div className="font-bold">{t('balanceDue')}: {egp(balanceDue)}</div>}
-          </div>
-          <div className="text-slate-700 text-xs mt-3">{t('autoDismiss')} {countdown} {t('seconds')}</div>
+      <div className="fixed inset-0 z-50 bg-amber-500 flex flex-col items-center justify-center text-white p-6">
+        <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6">
+          <AlertTriangle className="w-16 h-16 text-white" />
         </div>
-        <button
-          onClick={onDismiss}
-          className="mt-10 px-8 py-3 rounded-xl font-bold text-sm bg-black/20 hover:bg-black/30 border border-black/30 text-slate-900 transition-colors"
-        >
+        <h2 className="text-3xl font-bold mb-2">{student.name}</h2>
+        <p className="text-amber-100 text-lg mb-2">{selectedGroup?.name ?? student.subject}</p>
+        <p className="text-amber-100 text-sm mb-4">{t('entryAllowedUnpaid')}</p>
+        <div className="bg-white/20 rounded-xl p-4 w-full max-w-sm text-center border border-white/30">
+          <p className="text-sm text-amber-100">{t('amountAddedToBalance', { amount: egp(addedAmount) })}</p>
+          <p className="text-3xl font-bold font-mono">{egp(addedAmount)}</p>
+        </div>
+        <button onClick={onDismiss} className="mt-6 px-8 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-colors border border-white/30">
           {t('nextStudent')}
         </button>
       </div>
     );
   }
 
-  // ─── PURPLE (#7C3AED): Payment pending confirmation ───
+  // ─── PURPLE (pending digital payment) ───
   if (isPending) {
     const methodLabel = student.last_payment_method
       ? PAYMENT_METHODS.find((m) => m.value === student.last_payment_method)?.labelKey ?? 'instapay'
-      : '';
+      : 'instapay';
     return (
-      <div
-        className="scanner-purple fixed inset-0 z-[100] flex flex-col items-center justify-center text-white animate-scale-in"
-        style={{ background: '#7C3AED' }}
-      >
-        <div className="text-center px-6">
-          <div className="text-7xl mb-6">⏳</div>
-          <div className="text-4xl font-black mb-2">{student.name}</div>
-          {methodLabel && <div className="text-white/80 text-sm mb-2">{t(methodLabel as 'cash')}</div>}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-white/20 mb-3">
-            <Clock size={14} /> {t('paymentPendingConfirmation')}
-          </div>
-          {balanceDue > 0 && (
-            <div className="mt-3 px-4 py-3 rounded-xl bg-black/20 border border-white/20 text-sm">
-              <div className="text-white/80">{t('pendingPayment')}</div>
-              <div className="font-bold text-white mt-1">{t('balanceDue')}: {egp(balanceDue)}</div>
-            </div>
-          )}
-          <div className="text-white/60 text-xs mt-3">{t('autoDismiss')} {countdown} {t('seconds')}</div>
+      <div className="fixed inset-0 z-50 bg-violet-600 flex flex-col items-center justify-center text-white p-6">
+        <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6">
+          <Clock className="w-16 h-16 text-white animate-pulse" />
         </div>
-        <button
-          onClick={onDismiss}
-          className="mt-10 px-8 py-3 rounded-xl font-bold text-sm bg-white/20 hover:bg-white/30 border border-white/30 transition-colors"
-        >
+        <h2 className="text-3xl font-bold mb-2">{student.name}</h2>
+        <p className="text-violet-200 text-lg mb-2">{selectedGroup?.name ?? student.subject}</p>
+        <p className="text-violet-200 text-sm mb-4">{t('paymentPendingConfirmation')}</p>
+        <div className="bg-white/20 rounded-xl p-4 w-full max-w-sm text-center border border-white/30">
+          <p className="text-sm text-violet-200">{t('pendingPayment')}</p>
+          <p className="text-3xl font-bold font-mono">{egp(addedAmount || balanceDue)}</p>
+          <p className="text-sm text-violet-300 mt-1 capitalize">via {t(methodLabel as 'cash')}</p>
+        </div>
+        <button onClick={onDismiss} className="mt-6 px-8 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-colors border border-white/30">
           {t('nextStudent')}
         </button>
       </div>
     );
   }
 
-  // ─── RED (#DC2626): Not paid — payment options ───
+  // ─── RED (unpaid) ───
   const fee = selectedGroup?.fee ?? student.fee ?? 0;
   return (
-    <div
-      className="scanner-red fixed inset-0 z-[100] flex flex-col text-white overflow-y-auto"
-      style={{ background: '#DC2626' }}
-    >
-      <div className="flex-1 flex flex-col items-center justify-center pt-10 pb-4 px-6 text-center">
-        <div className="text-7xl mb-5">✕</div>
-        <div className="text-3xl font-black mb-1">{student.name}</div>
-        <div className="text-white/80 text-sm mb-1">{selectedGroup?.name ?? student.subject}</div>
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-white/20 mb-2">
-          <X size={14} /> {t('notPaid')}
-        </div>
-        {fee > 0 && <div className="text-white/80 text-sm">{t('feePerLesson')}: {egp(fee)}</div>}
+    <div className="fixed inset-0 z-50 bg-red-600 flex flex-col items-center justify-center text-white p-6 overflow-y-auto">
+      <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6">
+        <XCircle className="w-16 h-16 text-white" />
       </div>
-      <div className="px-4 pb-4">
-        {/* 6 payment buttons in 3×2 grid */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          {PAYMENT_METHODS.map(({ key, value, icon, labelKey }) => (
-            <button
-              key={value}
-              disabled={isProcessing}
-              onClick={() =>
-                onPaymentSelect(
-                  value,
-                  selectedGroup?.id ?? student.groups?.[0]?.id,
-                  selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee
-                )
-              }
-              className="py-4 px-2 rounded-xl font-bold text-white text-sm transition-all hover:bg-white/20 disabled:opacity-50 bg-white/10 border border-white/30"
-            >
-              <span className="text-2xl block mb-1">{icon}</span>
-              <span className="text-xs">{t(labelKey as 'cash')}</span>
-            </button>
-          ))}
-        </div>
-        {canAllowLateEntry && onAllowLateEntry && (
+      <h2 className="text-3xl font-bold mb-2">{student.name}</h2>
+      <p className="text-red-200 text-lg mb-6">{selectedGroup?.name ?? student.subject}</p>
+      <p className="text-sm text-red-200 mb-3 uppercase tracking-wider font-semibold">{t('selectMethod')}</p>
+      <div className="grid grid-cols-2 gap-3 w-full max-w-sm mb-4">
+        {PAYMENT_METHODS.map(({ value, icon, labelKey }) => (
           <button
+            key={value}
             disabled={isProcessing}
-            onClick={onAllowLateEntry}
-            className="w-full py-3 rounded-xl font-bold text-sm border-2 border-amber-400 text-amber-200 hover:bg-amber-400/20 transition-colors mb-2 disabled:opacity-50"
+            onClick={() =>
+              onPaymentSelect(
+                value,
+                selectedGroup?.id ?? student.groups?.[0]?.id,
+                selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee
+              )
+            }
+            className="py-3 px-4 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-colors border border-white/30 text-sm disabled:opacity-50"
           >
-            {t('allowLateEntry')}
+            <span className="block mb-1">{icon}</span>
+            <span>{t(labelKey as 'cash')}</span>
           </button>
-        )}
-        <button
-          onClick={onDismiss}
-          className="w-full py-2 text-sm text-white/60 hover:text-white transition-colors"
-        >
-          {t('cancelScan')}
-        </button>
+        ))}
       </div>
+      {canAllowLateEntry && onAllowLateEntry && (
+        <button
+          disabled={isProcessing}
+          onClick={onAllowLateEntry}
+          className="w-full max-w-sm py-3 bg-white/10 hover:bg-white/20 border border-white/30 rounded-xl font-semibold transition-colors text-sm disabled:opacity-50"
+        >
+          {t('allowLateEntry')}
+        </button>
+      )}
       {isProcessing && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-          <svg
-            className="animate-spin h-12 w-12 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-10">
+          <svg className="animate-spin h-12 w-12 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         </div>
       )}

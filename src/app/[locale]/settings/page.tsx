@@ -9,7 +9,9 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
+import { PageHeader, RoleBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
+import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard } from 'lucide-react';
 
 type TabType = 'general' | 'billing' | 'team';
 
@@ -742,14 +744,14 @@ function SettingsPageContent() {
   return (
     <div className="min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <h1 className="text-2xl font-bold text-foreground mb-6">{t('title')}</h1>
+        <PageHeader title={t('title')} />
 
         {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-xl border border-border w-fit mb-6" style={{ background: 'hsl(var(--muted))' }}>
+        <div className="flex gap-1 p-1 rounded-xl border border-slate-200 w-fit mb-6 bg-white">
           <button
             onClick={() => setActiveTab('general')}
             className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === 'general' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+              activeTab === 'general' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             {t('general')}
@@ -757,7 +759,7 @@ function SettingsPageContent() {
           <button
             onClick={() => setActiveTab('billing')}
             className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === 'billing' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+              activeTab === 'billing' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             {t('billing')}
@@ -765,7 +767,7 @@ function SettingsPageContent() {
           <button
             onClick={() => setActiveTab('team')}
             className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === 'team' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+              activeTab === 'team' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             {t('teamMembers')}
@@ -782,102 +784,156 @@ function SettingsPageContent() {
         {activeTab === 'general' && (
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
             {/* 1. Center Information */}
-            <section className="ch-card">
-              <h2 className="text-base font-semibold text-foreground mb-4">{t('centerInfo')}</h2>
-              <div className="flex items-start gap-6 flex-wrap">
-                <div className="flex flex-col items-center gap-3">
-                  {center?.logo_url && !logoLoadFailed ? (
-                    <img src={center.logo_url} alt="Logo" className="w-20 h-20 rounded-full object-cover border-2 border-border" onError={() => setLogoLoadFailed(true)} />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-                      <Image src="/logo-icon.png" alt="CenterHQ" width={40} height={40} className="object-contain opacity-80" />
-                    </div>
-                  )}
-                  <label className="cursor-pointer px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 border border-primary/50 rounded-lg hover:bg-primary/10 transition-colors">
-                    {(center?.logo_url && !logoLoadFailed) ? t('logoChange') : t('logoUpload')}
-                    <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-                  </label>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-teal-100 rounded-xl flex-shrink-0">
+                  <Building2 className="w-5 h-5 text-teal-600" />
                 </div>
-                <div className="flex-1 min-w-[200px] space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('centerName')}</label>
-                    <div className="flex gap-2">
-                      <input type="text" value={centerName} onChange={(e) => setCenterName(e.target.value)} className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring" />
-                      <button onClick={handleSaveCenterName} className="px-4 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors shrink-0" style={{ background: 'hsl(var(--primary))' }}>{tCommon('save')}</button>
-                    </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">{t('centerInfo')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{t('centerName')} · {t('centerPhone')}</p>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex items-start gap-6 flex-wrap">
+                  <div className="relative w-20 h-20">
+                    {center?.logo_url && !logoLoadFailed ? (
+                      <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden">
+                        <img src={center.logo_url} alt="Logo" className="w-full h-full object-cover" onError={() => setLogoLoadFailed(true)} />
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden">
+                        <Building2 className="w-8 h-8 text-slate-400" />
+                      </div>
+                    )}
+                    <label className="absolute bottom-0 end-0 w-7 h-7 bg-teal-600 rounded-full flex items-center justify-center shadow-md hover:bg-teal-700 cursor-pointer">
+                      <Camera className="w-3.5 h-3.5 text-white" />
+                      <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                    </label>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('centerPhone')}</label>
-                    <div className="flex gap-2">
-                      <input type="tel" value={centerPhone} onChange={(e) => setCenterPhone(e.target.value)} dir="ltr" className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring" placeholder="01xxxxxxxxx" />
-                      <button type="button" onClick={handleSaveCenterPhone} className="px-4 py-2.5 text-white text-sm font-semibold rounded-lg shrink-0" style={{ background: 'hsl(var(--primary))' }}>{tCommon('save')}</button>
+                  <div className="flex-1 min-w-[200px] space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('centerName')}</label>
+                      <input type="text" value={centerName} onChange={(e) => setCenterName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('centerPhone')}</label>
+                      <input type="tel" value={centerPhone} onChange={(e) => setCenterPhone(e.target.value)} dir="ltr" placeholder="01xxxxxxxxx" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" />
+                    </div>
+                    <div className="flex justify-end">
+                      <button type="button" onClick={() => { handleSaveCenterName(); handleSaveCenterPhone(); }} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">{tCommon('save')}</button>
                     </div>
                   </div>
                 </div>
               </div>
-            </section>
+            </div>
 
             {/* 2. Subject Management */}
-            <section className="ch-card">
-              <h2 className="text-base font-semibold text-foreground mb-4">{t('subjects')}</h2>
-              <div className="space-y-2 mb-4">
-                {subjects.map((subject) => (
-                  <div key={subject.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                    {editingSubject === subject.id ? (
-                      <>
-                        <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm" />
-                        <button onClick={() => handleUpdateSubject(subject.id)} className="text-primary text-sm font-medium hover:underline">{tCommon('save')}</button>
-                        <button onClick={() => setEditingSubject(null)} className="text-muted-foreground text-sm hover:underline">{tCommon('cancel')}</button>
-                      </>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-blue-100 rounded-xl flex-shrink-0">
+                  <BookOpen className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">{t('subjects')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{t('subjectName')}</p>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {subjects.map((subject) => (
+                    editingSubject === subject.id ? (
+                      <div key={subject.id} className="flex items-center gap-2">
+                        <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white" />
+                        <button type="button" onClick={() => handleUpdateSubject(subject.id)} className="text-teal-600 text-sm font-medium hover:underline">{tCommon('save')}</button>
+                        <button type="button" onClick={() => setEditingSubject(null)} className="text-slate-500 text-sm hover:underline">{tCommon('cancel')}</button>
+                      </div>
                     ) : (
-                      <>
-                        <span className="flex-1 text-sm text-foreground font-medium">{subject.name}</span>
-                        <button onClick={() => { setEditingSubject(subject.id); setEditName(subject.name); }} className="text-primary text-sm hover:underline">{tCommon('edit')}</button>
-                        <button onClick={() => handleDeleteSubject(subject.id)} className="text-red-400 text-sm hover:underline">{tCommon('delete')}</button>
-                      </>
-                    )}
-                  </div>
-                ))}
+                      <span key={subject.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
+                        {subject.name}
+                        <button type="button" onClick={() => { setEditingSubject(subject.id); setEditName(subject.name); }} className="text-slate-500 hover:text-slate-700">{tCommon('edit')}</button>
+                        <button type="button" onClick={() => handleDeleteSubject(subject.id)} className="hover:text-red-500 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                      </span>
+                    )
+                  ))}
+                </div>
+                <form onSubmit={handleAddSubject} className="flex gap-2">
+                  <input type="text" value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder={t('subjectName')} className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500" required />
+                  <button type="submit" className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">{t('addSubject')}</button>
+                </form>
               </div>
-              <form onSubmit={handleAddSubject} className="flex gap-2">
-                <input type="text" value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder={t('subjectName')} className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm placeholder-muted-foreground" required />
-                <button type="submit" className="px-4 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap" style={{ background: 'hsl(var(--primary))' }}>{t('addSubject')}</button>
-              </form>
-            </section>
+            </div>
 
-            {/* 3. Team Members (compact) */}
-            <section className="ch-card">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-foreground">{t('teamMembers')}</h2>
-                <button onClick={() => setActiveTab('team')} className="px-4 py-2 text-white text-sm font-semibold rounded-lg transition-colors" style={{ background: 'hsl(var(--primary))' }}>{t('manageTeam')} →</button>
+            {/* 3. Team Members */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-purple-100 rounded-xl flex-shrink-0">
+                  <Users className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">{t('teamMembers')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{t('manageTeamDesc')}</p>
+                </div>
               </div>
-            </section>
+              <div className="p-6">
+                <button type="button" onClick={() => setActiveTab('team')} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors w-fit">
+                  <Users className="w-4 h-4" /> {t('manageTeam')} <ChevronRight className="w-4 h-4 ms-1" />
+                </button>
+              </div>
+            </div>
 
             {/* 4. Scanner Settings */}
-            <section className="ch-card">
-              <h2 className="text-base font-semibold text-foreground mb-1">{t('scanner')}</h2>
-              <p className="text-sm text-muted-foreground mb-3">{t('defaultMode')}</p>
-              <div className="inline-flex rounded-lg overflow-hidden border border-border">
-                <button onClick={() => handleScannerMode('camera')} className={`px-5 py-2.5 text-sm font-medium transition-colors ${scannerMode === 'camera' ? 'text-white' : 'bg-card text-muted-foreground hover:bg-muted'}`} style={scannerMode === 'camera' ? { background: 'hsl(var(--primary))' } : {}}>{t('camera')}</button>
-                <button onClick={() => handleScannerMode('bluetooth')} className={`px-5 py-2.5 text-sm font-medium transition-colors ${scannerMode === 'bluetooth' ? 'text-white' : 'bg-card text-muted-foreground hover:bg-muted'}`} style={scannerMode === 'bluetooth' ? { background: 'hsl(var(--primary))' } : {}}>{t('bluetooth')}</button>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-amber-100 rounded-xl flex-shrink-0">
+                  <QrCode className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">{t('scanner')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{t('defaultMode')}</p>
+                </div>
               </div>
-            </section>
+              <div className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{t('defaultMode')}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{t('defaultMode')}</p>
+                  </div>
+                  <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                    <button type="button" onClick={() => handleScannerMode('camera')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${scannerMode === 'camera' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>{t('camera')}</button>
+                    <button type="button" onClick={() => handleScannerMode('bluetooth')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${scannerMode === 'bluetooth' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>{t('bluetooth')}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* 5. Referral Program */}
-            <section className="ch-card">
-              <h2 className="text-base font-semibold text-foreground mb-2">{tReferral('title')}</h2>
-              <p className="text-sm text-muted-foreground mb-4">{tReferral('shareText')}</p>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-green-100 rounded-xl flex-shrink-0">
+                  <Gift className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">{tReferral('title')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{tReferral('shareText')}</p>
+                </div>
+              </div>
+              <div className="p-6">
               {referralData && (
                 <>
-                  <div className="flex items-center gap-3 mb-4 flex-wrap">
-                    <code className="text-lg font-mono font-bold text-foreground bg-background px-4 py-3 rounded-lg tracking-[0.2em] border border-border">{referralData.referralCode || '—'}</code>
-                    <button type="button" onClick={async () => { if (referralData.referralCode) { await navigator.clipboard.writeText(referralData.referralCode); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); } }} className="px-4 py-2.5 text-white text-sm font-semibold rounded-lg" style={{ background: 'hsl(var(--primary))' }}>{referralCopied ? tReferral('copied') : tReferral('copyCode')}</button>
+                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 mb-4">
+                    <div className="flex-1">
+                      <p className="text-xs text-slate-500 mb-1">{tReferral('yourCode')}</p>
+                      <p className="text-xl font-bold text-slate-900 font-mono tracking-widest">{referralData.referralCode || '—'}</p>
+                    </div>
+                    <button type="button" onClick={async () => { if (referralData.referralCode) { await navigator.clipboard.writeText(referralData.referralCode); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); } }} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-white text-slate-700 text-sm font-semibold rounded-lg transition-colors">
+                      <Copy className="w-4 h-4" /> {referralCopied ? tReferral('copied') : tReferral('copyCode')}
+                    </button>
                   </div>
-                  <div className="mb-4 p-4 bg-green-100 rounded-xl border border-green-500/30">
-                    <p className="text-sm font-medium text-green-700">{tReferral('totalEarned')}: {Number(referralData.totalEarned || 0).toLocaleString('ar-EG')} EGP</p>
-                  </div>
+                  <p className="text-sm text-slate-600 mb-2">40% of referred center&apos;s first month fee credited to your account</p>
+                  <p className="text-xs text-slate-500 mb-2">Total Referrals: {(referralData.rewards?.length ?? 0)} | Earned: EGP {Number(referralData.totalEarned || 0).toLocaleString('ar-EG')}</p>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">{tReferral('rewardsTable')}</p>
+                    <p className="text-sm font-medium text-slate-700 mb-2">{tReferral('rewardsTable')}</p>
                     {(referralData.rewards?.length ?? 0) > 0 ? (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -909,32 +965,69 @@ function SettingsPageContent() {
                   </div>
                 </>
               )}
-              {!referralData && <p className="text-sm text-muted-foreground">{tCommon('loading')}</p>}
-            </section>
-
-            {/* 6. Billing & Subscriptions (compact) */}
-            <section className="ch-card">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-foreground">{t('billing')}</h2>
-                <button onClick={() => setActiveTab('billing')} className="px-4 py-2 text-white text-sm font-semibold rounded-lg transition-colors" style={{ background: 'hsl(var(--primary))' }}>{t('billingLink')} →</button>
+              {!referralData && <p className="text-sm text-slate-500">{tCommon('loading')}</p>}
               </div>
-            </section>
+            </div>
 
-            {/* 7. WhatsApp Support - primary left border */}
-            <section className="ch-card border-l-4 border-l-primary">
-              <h2 className="text-base font-semibold text-foreground mb-2">WhatsApp Support</h2>
-              <p className="text-sm text-muted-foreground" dir="ltr">Contact support: support@centerhq.com | WhatsApp: +20 122 060 1410</p>
-              <p className="text-sm text-muted-foreground mt-2" dir="rtl">للدعم والتواصل: support@centerhq.com | واتساب: 01220601410</p>
-            </section>
+            {/* 6. Billing & Subscriptions */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-indigo-100 rounded-xl flex-shrink-0">
+                  <CreditCard className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">{t('billing')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{t('billingDesc')}</p>
+                </div>
+              </div>
+              <div className="p-6">
+                <button type="button" onClick={() => setActiveTab('billing')} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors w-fit">
+                  <CreditCard className="w-4 h-4" /> {t('billingLink')} <ChevronRight className="w-4 h-4 ms-1" />
+                </button>
+              </div>
+            </div>
+
+            {/* 7. WhatsApp Support */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-green-100 rounded-xl flex-shrink-0">
+                  <MessageCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">WhatsApp Support</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">Contact support via WhatsApp</p>
+                </div>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-slate-600 mb-3" dir="ltr">Contact support: support@centerhq.com | WhatsApp: +20 122 060 1410</p>
+                <a href={`https://wa.me/${ADMIN_NOTIFICATION_PHONE}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                  <MessageCircle className="w-4 h-4" /> Chat on WhatsApp
+                </a>
+              </div>
+            </div>
 
             {/* 8. Account */}
-            <section className="ch-card">
-              <h2 className="text-base font-semibold text-foreground mb-4">{t('account')}</h2>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/settings/reset-password" className="px-4 py-2.5 border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">{t('resetPassword')}</Link>
-                <button onClick={handleLogout} className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">{t('logout')}</button>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-red-100 rounded-xl flex-shrink-0">
+                  <Shield className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">{t('account')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">Security and sign out</p>
+                </div>
               </div>
-            </section>
+              <div className="p-6">
+                <div className="flex items-center gap-3">
+                  <Link href="/settings/reset-password" className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors">
+                    <KeyRound className="w-4 h-4" /> {t('resetPassword')}
+                  </Link>
+                  <button type="button" onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                    <LogOut className="w-4 h-4" /> {t('logout')}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -942,76 +1035,81 @@ function SettingsPageContent() {
         {activeTab === 'billing' && (
           <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
             {billingLoading ? (
-              <div className="flex justify-center py-16"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>
+              <div className="flex justify-center py-16"><div className="animate-spin h-8 w-8 border-2 border-teal-500 border-t-transparent rounded-full" /></div>
             ) : (
               <>
-                {/* 1. Current Plan - primary left border, primary badge */}
-                <section className="ch-card border-l-4 border-l-primary">
-                  <span className="inline-block px-2.5 py-0.5 text-xs font-semibold rounded text-white mb-4" style={{ background: 'hsl(var(--primary))' }}>{tBilling('currentPlan')}</span>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div><span className="text-xs text-muted-foreground block mb-0.5">{tBilling('plan')}</span><p className="font-semibold text-foreground">{currentPlanDetails?.name_en ?? billingData?.plan} / {currentPlanDetails?.name_ar ?? ''}</p></div>
-                    <div><span className="text-xs text-muted-foreground block mb-0.5">{tBilling('monthlyFeeLabel')}</span><p className="font-semibold text-foreground">{currentPlanDetails?.is_custom ? tBilling('custom') : `${Number(billingData?.is_early_adopter && typeof billingData?.early_adopter_price === 'number' ? billingData.early_adopter_price : currentPlanDetails?.monthly_fee ?? 0).toLocaleString('ar-EG')} ${tBilling('egp')}`}</p></div>
-                    <div><span className="text-xs text-muted-foreground block mb-0.5">{tBilling('studentsPerWeek')}</span><p className="font-semibold text-foreground">{currentPlanDetails?.is_custom ? '2,000+' : `≤${currentPlanDetails?.students_per_week_limit?.toLocaleString('ar-EG') ?? 0}`}</p></div>
-                    <div><span className="text-xs text-muted-foreground block mb-0.5">{tBilling('costPerStudent')}</span><p className="font-semibold text-foreground">{currentPlanDetails?.is_custom ? tBilling('negotiated') : `${Number(currentPlanDetails?.per_student_at_capacity_egp ?? 0).toLocaleString('ar-EG')} ${tBilling('egp')}`}</p></div>
+                {/* 1. Current Plan hero */}
+                <div className="bg-gradient-to-br from-teal-600 to-slate-800 rounded-2xl p-6 text-white mb-6 shadow-lg">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-teal-200 text-sm font-medium uppercase tracking-wider">{tBilling('currentPlan')}</p>
+                      <p className="text-4xl font-bold mt-1 capitalize">{(currentPlanDetails?.name_en ?? billingData?.plan) || 'Starter'}</p>
+                      <p className="text-teal-200 text-sm mt-2">Up to {currentPlanDetails?.is_custom ? '2,000+' : (currentPlanDetails?.students_per_week_limit?.toLocaleString('ar-EG') ?? 0)} students/week</p>
+                    </div>
+                    <div className="text-end">
+                      <p className="text-3xl font-bold font-mono">{currentPlanDetails?.is_custom ? tBilling('custom') : `${Number(billingData?.is_early_adopter && typeof billingData?.early_adopter_price === 'number' ? billingData.early_adopter_price : currentPlanDetails?.monthly_fee ?? 0).toLocaleString('ar-EG')}`} {tBilling('egp')}</p>
+                      <p className="text-teal-300 text-sm">/month · quarterly</p>
+                    </div>
                   </div>
-                </section>
+                  <div className="mt-4 pt-4 border-t border-teal-500/40 flex items-center justify-between">
+                    <p className="text-teal-200 text-sm">Next payment due: <span className="text-white font-semibold">—</span></p>
+                    <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full border border-green-500/30">Active</span>
+                  </div>
+                </div>
 
-                {/* 2. Fixed Monthly Plans - 5 cards in a row */}
-                <section>
-                  <h2 className="text-base font-semibold text-foreground mb-4">{tBilling('fixedPlans')}</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                    {plans.map((plan) => {
-                      const isCurrent = billingData?.plan === plan.id && billingData?.pricing_type === 'fixed';
-                      const isBestValue = plan.id === 'enterprise';
-                      const isTopCenters = plan.id === 'top_centers';
-                      const setupFees: Record<string, number> = { starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0 };
-                      const setupFee = plan.setup_fee_egp ?? setupFees[plan.id] ?? 0;
-                      return (
-                        <div key={plan.id} className={`relative rounded-xl p-4 border ${isCurrent ? 'border-primary bg-primary/10' : 'border-border bg-card'}`}>
-                          {isBestValue && !isTopCenters && <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-white">{tBilling('bestValue')}</span>}
-                          <h3 className="text-base font-bold text-foreground">{plan.name_en}</h3>
-                          <p className="text-xs text-muted-foreground">{plan.name_ar}</p>
-                          <div className="mt-3 space-y-1.5 text-sm">
-                            <div className="flex justify-between"><span className="text-muted-foreground">{tBilling('monthlyFeeLabel')}</span><span className="font-medium text-foreground">{plan.is_custom ? tBilling('custom') : `${Number(plan.monthly_fee).toLocaleString('ar-EG')} ${tBilling('egp')}`}</span></div>
-                            <div className="flex justify-between"><span className="text-muted-foreground">{tBilling('studentsPerWeek')}</span><span className="font-medium text-foreground">{plan.is_custom ? '2,000+' : `≤${plan.students_per_week_limit.toLocaleString('ar-EG')}`}</span></div>
-                            <div className="flex justify-between"><span className="text-muted-foreground">{tBilling('setup')}</span><span className="font-medium text-foreground">{plan.is_custom ? '—' : `${Number(setupFee).toLocaleString('ar-EG')} ${tBilling('egp')}`}</span></div>
+                {/* 2. Fixed Plans grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  {plans.map((plan) => {
+                    const isCurrent = billingData?.plan === plan.id && billingData?.pricing_type === 'fixed';
+                    const setupFees: Record<string, number> = { starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0 };
+                    const setupFee = plan.setup_fee_egp ?? setupFees[plan.id] ?? 0;
+                    return (
+                      <div key={plan.id} className={`bg-white rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-200'}`}>
+                        {isCurrent && (
+                          <div className="absolute -top-3 start-1/2 -translate-x-1/2">
+                            <span className="px-3 py-1 bg-teal-600 text-white text-xs font-semibold rounded-full shadow">Current Plan</span>
                           </div>
+                        )}
+                        <h3 className="font-bold text-slate-900 text-lg capitalize">{plan.name_en}</h3>
+                        <p className="text-sm text-slate-500 mt-1">Up to {plan.is_custom ? '2,000+' : plan.students_per_week_limit?.toLocaleString('ar-EG')} students/week</p>
+                        <div className="my-4">
+                          <span className="text-3xl font-bold text-slate-900 font-mono">{plan.is_custom ? tBilling('custom') : Number(plan.monthly_fee).toLocaleString('ar-EG')}</span>
+                          <span className="text-slate-500 text-sm"> {tBilling('egp')}/month</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </section>
+                        <p className="text-xs text-slate-400 mb-4">Setup fee: {tBilling('egp')} {plan.is_custom ? '—' : Number(setupFee).toLocaleString('ar-EG')}</p>
+                        <button type="button" onClick={() => !isCurrent && setShowPlanRequestModal(true)} className={isCurrent ? 'w-full py-2 rounded-lg text-sm font-semibold bg-teal-50 text-teal-600 border border-teal-200 cursor-default' : 'w-full py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors'} disabled={isCurrent}>{isCurrent ? 'Current Plan' : 'Request Upgrade'}</button>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                {/* 3. Pay-As-You-Go - slider 0-2500 */}
-                <section className="ch-card">
-                  <h2 className="text-base font-semibold text-foreground mb-1">{tBilling('paygTitle')}</h2>
-                  <p className="text-sm text-muted-foreground mb-4">{tBilling('paygSubtitle')}</p>
+                {/* 3. PAYG Calculator */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+                  <h3 className="font-semibold text-slate-900 mb-1">{tBilling('paygTitle')}</h3>
+                  <p className="text-sm text-slate-500 mb-4">{tBilling('paygSubtitle')}</p>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm text-muted-foreground mb-2">{tBilling('studentsPerWeekSlider')}: <strong className="text-foreground">{paygSlider.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-EG')}</strong></label>
-                      <input type="range" min={0} max={2500} step={10} value={paygSlider} onChange={(e) => setPaygSlider(Number(e.target.value))} className="w-full h-2.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary" />
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl" style={{ background: 'hsl(var(--muted))' }}>
-                      <div><span className="text-xs text-muted-foreground block">{tBilling('weeklyCost')}</span><p className="font-bold text-foreground text-sm">{paygResult.weekly.toLocaleString('ar-EG')} {tBilling('egp')}/week</p></div>
-                      <div><span className="text-xs text-muted-foreground block">{tBilling('monthlyFeeLabel')}</span><p className="font-semibold text-foreground text-sm">{paygResult.monthly.toLocaleString('ar-EG')} {tBilling('egp')}/month</p></div>
-                      <div><span className="text-xs text-muted-foreground block">{tBilling('rateTier')}</span><p className="font-semibold text-foreground text-sm">{paygResult.effectiveRate > 0 ? `${Number(paygResult.effectiveRate).toLocaleString('ar-EG')} ${tBilling('egp')}/${tBilling('perStudent')}` : '—'}</p></div>
-                      <div><span className="text-xs text-muted-foreground block">{tBilling('premiumVsFixed')}</span><p className={`font-semibold text-sm ${fixedSavesMoney ? 'text-green-700' : fixedComparison.isCustom ? 'text-muted-foreground' : 'text-amber-400'}`}>{fixedComparison.isCustom ? tBilling('contactUs') : fixedSavesMoney ? tBilling('fixedPlanBetter') : tBilling('paygCostsMore', { amount: `${savingsAmount.toLocaleString('ar-EG')} ${tBilling('egp')}` })}</p></div>
-                    </div>
-                    {paygResult.breakdown.length > 0 && (
-                      <div className="p-4 rounded-xl text-sm" style={{ background: 'hsl(var(--muted))' }}>
-                        <span className="text-xs text-muted-foreground block mb-2">Tier breakdown (0-150=4 EGP, 151-500=3, 501-1000=2.50, 1001-2000=2, 2001+=1.75)</span>
-                        {paygResult.breakdown.map((tier, i) => (
-                          <div key={i} className="flex justify-between text-foreground"><span>{tier.count.toLocaleString('ar-EG')} × {Number(tier.rate).toLocaleString('ar-EG')} {tBilling('egp')} =</span><span>{Number(tier.cost).toLocaleString('ar-EG')} {tBilling('egp')}</span></div>
-                        ))}
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium text-slate-700">{tBilling('studentsPerWeekSlider', { defaultValue: 'Students per week' })}</label>
+                        <span className="text-lg font-bold text-teal-600 font-mono">{paygSlider}</span>
                       </div>
-                    )}
-                    {fixedSavesMoney && (
-                      <div className="p-4 bg-green-100 rounded-xl border border-green-500/30">
-                        <p className="text-sm font-medium text-green-700">{tBilling('fixedPlanBetter')} Fixed plan: {fixedComparison.planFee?.toLocaleString('ar-EG')} {tBilling('egp')}/mo</p>
+                      <input type="range" min={1} max={2000} value={paygSlider} onChange={(e) => setPaygSlider(Number(e.target.value))} className="w-full accent-teal-600" />
+                    </div>
+                    <div className="p-4 bg-teal-50 rounded-xl border border-teal-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-teal-600 font-medium">Weekly Cost</p>
+                          <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.weekly.toLocaleString('ar-EG')} {tBilling('egp')}</p>
+                        </div>
+                        <div className="text-end">
+                          <p className="text-xs text-teal-600 font-medium">Monthly Est.</p>
+                          <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.monthly.toLocaleString('ar-EG')} {tBilling('egp')}</p>
+                        </div>
                       </div>
-                    )}
+                      <p className="text-xs text-teal-600 mt-2">Rate: {tBilling('egp')} {paygResult.effectiveRate}{tBilling('perStudentWeek', { defaultValue: '/student/week' })}</p>
+                    </div>
                   </div>
-                </section>
+                </div>
 
                 {/* 4. Want to change your plan? */}
                 {currentUser?.role === 'owner' && (
@@ -1024,71 +1122,74 @@ function SettingsPageContent() {
                   </section>
                 )}
 
-                {/* 5. Invoice History */}
-                <section className="ch-card">
-                  <h2 className="text-base font-semibold text-foreground mb-4">{tBilling('invoiceHistory')}</h2>
-                  {(billingData?.invoices?.length ?? 0) > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-border">
-                            <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tBilling('invoiceNumber')}</th>
-                            <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tBilling('date')}</th>
-                            <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tBilling('amount')}</th>
-                            <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tBilling('reference')}</th>
-                            <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tBilling('status')}</th>
-                            <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tBilling('proof')}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {billingData?.invoices?.map((inv) => {
-                            const status = inv.status?.toLowerCase?.() ?? '';
-                            const statusClass = status === 'paid' || status === 'approved' ? 'badge-confirmed' : status === 'rejected' ? 'badge-late' : 'bg-amber-100 text-amber-700';
-                            return (
-                              <tr key={inv.id || inv.invoice_number || String(inv.created_at)} className="border-b border-border">
-                                <td className="py-2 text-foreground">{inv.invoice_number || '—'}</td>
-                                <td className="py-2 text-muted-foreground">{inv.created_at ? new Date(inv.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
-                                <td className="py-2 font-mono text-foreground">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString('ar-EG')} {tBilling('egp')}</td>
-                                <td className="py-2 text-muted-foreground">{inv.payment_reference || '—'}</td>
-                                <td className="py-2"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusClass}`}>{inv.status}</span></td>
-                                <td className="py-2">{inv.payment_proof_url ? <a href={inv.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{tBilling('viewProof')}</a> : '—'}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : <p className="text-muted-foreground py-4">{tBilling('noInvoices')}</p>}
-                </section>
-
-                {/* 6. Payment Methods + 7. Submit Payment Proof */}
-                <section className="ch-card">
-                  <h2 className="text-base font-semibold text-foreground mb-4">{tBilling('paymentMethods')}</h2>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="font-mono text-lg font-bold text-primary">{instapayNumber}</span>
-                    <button type="button" onClick={() => { navigator.clipboard.writeText(instapayNumber); setSavedMessage(tCommon('copy')); setTimeout(() => setSavedMessage(''), 2000); }} className="px-3 py-1.5 text-sm bg-muted rounded-lg hover:bg-muted/80 text-foreground">{tCommon('copy')}</button>
+                {/* 4. Invoice History */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+                  <div className="p-6 border-b border-slate-100">
+                    <h3 className="font-semibold text-slate-900">{tBilling('invoiceHistory')}</h3>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-6">{tBilling('bankTransfer')}: {tBilling('bankTransferComingSoon')}</p>
+                  {(billingData?.invoices?.length ?? 0) > 0 ? (
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50">
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reference</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Period</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {billingData?.invoices?.map((inv) => {
+                          const status = inv.status?.toLowerCase?.() ?? '';
+                          const statusClass = status === 'paid' || status === 'approved' ? 'bg-green-100 text-green-700' : status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
+                          return (
+                            <tr key={inv.id || inv.invoice_number || String(inv.created_at)}>
+                              <td className="py-3 px-4 text-sm text-slate-700">{inv.created_at ? new Date(inv.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
+                              <td className="py-3 px-4 text-sm text-slate-700 font-mono">{inv.payment_reference || inv.invoice_number || '—'}</td>
+                              <td className="py-3 px-4 text-sm font-mono text-slate-700">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString('ar-EG')} {tBilling('egp')}</td>
+                              <td className="py-3 px-4 text-sm text-slate-500">{inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
+                              <td className="py-3 px-4"><span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusClass}`}>{inv.status}</span></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  ) : <p className="p-8 text-center text-slate-500">{tBilling('noInvoices')}</p>}
+                </div>
 
-                  <h3 className="text-base font-semibold text-foreground mb-4">{tBilling('submitProofTitle')}</h3>
+                {/* 5. Submit Payment Proof */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <h3 className="font-semibold text-slate-900 mb-1">{tBilling('submitProofTitle')}</h3>
+                  <p className="text-sm text-slate-500 mb-4">{tBilling('uploadProof')}</p>
+                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200 mb-4">
+                    <div className="p-2 bg-blue-100 rounded-lg"><CreditCard className="w-5 h-5 text-blue-600" /></div>
+                    <div className="flex-1">
+                      <p className="text-xs text-blue-600 font-medium">InstaPay Number</p>
+                      <p className="text-lg font-bold text-blue-800 font-mono">{instapayNumber}</p>
+                    </div>
+                    <button type="button" onClick={() => { navigator.clipboard.writeText(instapayNumber); setSavedMessage(tCommon('copy')); setTimeout(() => setSavedMessage(''), 2000); }} className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"><Copy className="w-4 h-4" /></button>
+                  </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">{tBilling('transferAmountLabel')}</label>
-                      <input type="number" min="0" step="0.01" value={proofAmount} onChange={(e) => setProofAmount(e.target.value)} placeholder={tBilling('transferAmountPlaceholder')} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring" />
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{tBilling('transferAmountLabel')}</label>
+                      <input type="number" min="0" step="0.01" value={proofAmount} onChange={(e) => setProofAmount(e.target.value)} placeholder={tBilling('transferAmountPlaceholder')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">{tBilling('instapayRefLabel')}</label>
-                      <input type="text" value={proofReference} onChange={(e) => setProofReference(e.target.value)} placeholder={tBilling('instapayRef')} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring" />
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{tBilling('instapayRefLabel')}</label>
+                      <input type="text" value={proofReference} onChange={(e) => setProofReference(e.target.value)} placeholder={tBilling('instapayRef')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">{tBilling('proofLabel')}</label>
-                      <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={handleFileChange} className="w-full text-sm text-muted-foreground file:me-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/20 file:text-primary file:font-medium hover:file:bg-primary/30" />
-                      {proofPreview && <img src={proofPreview} alt="Preview" className="mt-2 max-h-32 rounded-lg border border-border" />}
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{tBilling('proofLabel')}</label>
+                      <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-teal-400 transition-colors cursor-pointer" onClick={() => document.getElementById('proof-file-input')?.click()}>
+                        <input id="proof-file-input" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={handleFileChange} className="hidden" />
+                        {proofPreview ? <img src={proofPreview} alt="Preview" className="mx-auto mb-2 max-h-24 rounded-lg" /> : <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />}
+                        <p className="text-sm font-medium text-slate-600">{proofFile ? proofFile.name : 'Drop screenshot here or click to upload'}</p>
+                        <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+                      </div>
                     </div>
-                    <button onClick={handleSubmitPaymentProof} disabled={billingSaving || proofUploading || !proofAmount || parseFloat(proofAmount) <= 0 || !proofReference.trim()} className="w-full py-3 disabled:opacity-50 text-white font-semibold rounded-xl" style={{ background: 'hsl(var(--primary))' }}>{proofUploading ? tCommon('loading') : tBilling('submitPaymentProof')}</button>
-                    <p className="text-xs text-muted-foreground">{tBilling('paymentProofWhatsappNote')}</p>
+                    <button type="button" onClick={handleSubmitPaymentProof} disabled={billingSaving || proofUploading || !proofAmount || parseFloat(proofAmount) <= 0 || !proofReference.trim()} className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50">{proofUploading ? tCommon('loading') : tBilling('submitPaymentProof')}</button>
                   </div>
-                </section>
+                </div>
               </>
             )}
           </div>
@@ -1098,76 +1199,82 @@ function SettingsPageContent() {
         {activeTab === 'team' && (
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
             {(currentUser?.role === 'assistant' || currentUser?.role === 'teacher') ? (
-              <p className="text-muted-foreground">Only owners and admins can manage team members.</p>
+              <p className="text-slate-500">Only owners and admins can manage team members.</p>
             ) : (
               <>
-                <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
                   <div>
-                    <h2 className="text-lg font-bold text-foreground">{t('teamMembers')}</h2>
-                    {limits && <p className="text-sm text-muted-foreground">{t('teamMembersCount', { current: teamMembers.length, max: limits.maxTeachers })}</p>}
+                    <h2 className="text-2xl font-bold text-slate-900">{t('teamMembers')}</h2>
+                    {limits && <p className="text-sm text-slate-500 mt-0.5">{t('teamMembersCount', { current: teamMembers.length, max: limits.maxTeachers })}</p>}
                   </div>
-                  <button onClick={() => setShowInviteModal(true)} disabled={limits ? !limits.canAddTeacher : false} className="px-4 py-2.5 disabled:opacity-50 text-white text-sm font-semibold rounded-lg" style={{ background: 'hsl(var(--primary))' }}>{t('inviteMemberPlus')}</button>
+                  <button onClick={() => setShowInviteModal(true)} disabled={limits ? !limits.canAddTeacher : false} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"><UserPlus className="w-4 h-4" /> {t('inviteMemberPlus')}</button>
                 </div>
 
-                {lastInvitePassword && <div className="p-4 bg-green-100 rounded-xl border border-green-500/30 text-sm text-green-700"><p className="font-medium">{t('inviteSuccess')}</p><p className="mt-1">{t('passwordIs', { password: lastInvitePassword })}</p></div>}
+                {lastInvitePassword && <div className="p-4 bg-green-100 rounded-xl border border-green-500/30 text-sm text-green-700 mb-4"><p className="font-medium">{t('inviteSuccess')}</p><p className="mt-1">{t('passwordIs', { password: lastInvitePassword })}</p></div>}
 
-                <div className="bg-card rounded-xl overflow-hidden border border-border">
+                <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border">
-                          <th className="px-4 py-3 text-start text-xs font-medium text-muted-foreground">{t('inviteName')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-medium text-muted-foreground">{t('invitePhone')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-medium text-muted-foreground">{t('role')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-medium text-muted-foreground">{t('status')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-medium text-muted-foreground">{t('permissions')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-medium text-muted-foreground">{tCommon('actions')}</th>
+                        <tr className="border-b border-slate-200 bg-slate-50">
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('inviteName')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('invitePhone')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('role')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('permissions')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('status')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{tCommon('actions')}</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100">
                         {teamMembers.map((member) => {
                           const isSelf = member.id === userId;
                           const isPermReadOnly = isOwner(member) || isSelf;
                           const permChecked = (k: string) => isOwner(member) ? true : (assistantPermissions[member.id]?.[k] ?? false);
-                          const permBadges = [
-                            { key: 'can_scan', label: t('canScan') },
-                            { key: 'can_view_payments', label: t('canViewPayments') },
-                            { key: 'can_view_dashboard', label: t('canViewDashboard') },
+                          const PERM_CHIPS = [
+                            { key: 'can_scan', emoji: '📷', title: 'Scanner' },
+                            { key: 'can_view_payments', emoji: '💳', title: 'Payments' },
+                            { key: 'can_view_dashboard', emoji: '📊', title: 'Dashboard' },
+                            { key: 'can_manage_students', emoji: '👥', title: 'Students' },
+                            { key: 'can_manage_groups', emoji: '📚', title: 'Groups' },
+                            { key: 'can_view_settings', emoji: '⚙️', title: 'Settings' },
                           ];
                           return (
-                            <tr key={member.id} className={`border-b border-border ${member.is_active === false ? 'opacity-60' : ''}`}>
-                              <td className="px-4 py-3 font-medium text-foreground">{member.name || '—'}{isSelf && <span className="text-xs text-muted-foreground ms-1">({t('you')})</span>}</td>
-                              <td className="px-4 py-3 text-muted-foreground font-mono" dir="ltr">{member.phone}</td>
-                              <td className="px-4 py-3"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getRoleBadgeClass(member.role)}`}>{getRoleLabel(member.role)}</span></td>
-                              <td className="px-4 py-3">
-                                {member.is_active === false ? <span className="px-2 py-0.5 text-xs font-medium rounded-full badge-late">{t('deactivatedStatus')}</span> : <span className="px-2 py-0.5 text-xs font-medium rounded-full badge-confirmed">{t('activeStatus')}</span>}
-                              </td>
+                            <tr key={member.id} className={member.is_active === false ? 'opacity-60' : ''}>
+                              <td className="px-4 py-3 font-medium text-slate-900">{member.name || '—'}{isSelf && <span className="text-xs text-slate-500 ms-1">({t('you')})</span>}</td>
+                              <td className="px-4 py-3 text-slate-600 font-mono" dir="ltr">{member.phone}</td>
+                              <td className="px-4 py-3"><RoleBadge role={member.role} /></td>
                               <td className="px-4 py-3">
                                 {editingPermissionsId === member.id ? (
                                   <div className="space-y-2">
                                     <div className="flex flex-wrap gap-x-3 gap-y-1">
                                       {PERMISSION_KEYS.map(({ key, labelKey }) => (
-                                        <label key={key} className={`flex items-center gap-1.5 text-xs select-none ${isPermReadOnly ? 'cursor-default opacity-75' : 'cursor-pointer text-foreground'}`}>
-                                          <input type="checkbox" checked={permChecked(key)} onChange={(e) => !isPermReadOnly && handlePermissionToggle(member.id, key, e.target.checked)} disabled={isPermReadOnly} className="w-3.5 h-3.5 rounded accent-primary" />
+                                        <label key={key} className={`flex items-center gap-1.5 text-xs select-none ${isPermReadOnly ? 'cursor-default opacity-75' : 'cursor-pointer text-slate-700'}`}>
+                                          <input type="checkbox" checked={permChecked(key)} onChange={(e) => !isPermReadOnly && handlePermissionToggle(member.id, key, e.target.checked)} disabled={isPermReadOnly} className="w-3.5 h-3.5 rounded accent-teal-600" />
                                           {t(labelKey)}
                                         </label>
                                       ))}
                                     </div>
-                                    <button type="button" onClick={() => setEditingPermissionsId(null)} className="text-xs text-primary hover:underline">{tCommon('cancel')}</button>
+                                    <button type="button" onClick={() => setEditingPermissionsId(null)} className="text-xs text-teal-600 hover:underline">{tCommon('cancel')}</button>
                                   </div>
                                 ) : (
                                   <div className="flex flex-wrap gap-1">
-                                    {permBadges.map(({ key, label }) => (permChecked(key) ? <span key={key} className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-foreground">{label}</span> : null))}
-                                    {permBadges.every(p => !permChecked(p.key)) && <span className="text-muted-foreground text-xs">—</span>}
-                                    {canEditPermissions(member) && <button type="button" onClick={() => setEditingPermissionsId(member.id)} className="text-primary hover:underline text-xs ms-1">{t('editPermissions')}</button>}
+                                    {PERM_CHIPS.map(({ key, emoji, title }) => (
+                                      <span key={key} className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'}`} title={title}>{emoji}</span>
+                                    ))}
+                                    {canEditPermissions(member) && <button type="button" onClick={() => setEditingPermissionsId(member.id)} className="text-teal-600 hover:underline text-xs ms-1">{t('editPermissions')}</button>}
                                   </div>
                                 )}
                               </td>
                               <td className="px-4 py-3">
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${member.is_active !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                  {member.is_active !== false ? t('activeStatus') : t('deactivatedStatus')}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
                                 {!isSelf && !isOwner(member) && (
-                                  <div className="flex flex-col gap-1">
-                                    <button onClick={() => handleToggleActive(member)} className={`text-xs hover:underline text-start ${member.is_active === false ? 'text-green-700' : 'text-amber-400'}`}>{member.is_active === false ? t('activate') : t('deactivate')}</button>
-                                    <button onClick={() => handleRemoveMember(member)} className="text-red-400 hover:underline text-xs text-start">{t('removeMember')}</button>
+                                  <div className="flex items-center gap-1">
+                                    <button type="button" onClick={() => setEditingPermissionsId(member.id)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-500" title={t('editPermissions')}><Pencil className="w-4 h-4" /></button>
+                                    <button type="button" onClick={() => handleToggleActive(member)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-slate-500 hover:text-red-600" title={member.is_active !== false ? t('deactivate') : t('activate')}><UserX className="w-4 h-4" /></button>
                                   </div>
                                 )}
                               </td>
@@ -1175,18 +1282,18 @@ function SettingsPageContent() {
                           );
                         })}
                         {pendingInvites.map((inv, idx) => (
-                          <tr key={`pending-${idx}`} className="border-b border-border">
-                            <td className="px-4 py-3 text-muted-foreground">—</td>
-                            <td className="px-4 py-3 font-mono text-muted-foreground" dir="ltr">{inv.phone}</td>
-                            <td className="px-4 py-3"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getRoleBadgeClass(inv.role)}`}>{getRoleLabel(inv.role)}</span></td>
-                            <td className="px-4 py-3"><span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">{t('pendingInvite')}</span></td>
+                          <tr key={`pending-${idx}`} className="border-b border-slate-100">
+                            <td className="px-4 py-3 text-slate-500">—</td>
+                            <td className="px-4 py-3 font-mono text-slate-500" dir="ltr">{inv.phone}</td>
+                            <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                             <td className="px-4 py-3">—</td>
+                            <td className="px-4 py-3"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">{t('pendingInvite')}</span></td>
                             <td className="px-4 py-3">—</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                    {teamMembers.length === 0 && pendingInvites.length === 0 && <p className="p-8 text-center text-muted-foreground">{t('noTeamMembers')}</p>}
+                    {teamMembers.length === 0 && pendingInvites.length === 0 && <p className="p-8 text-center text-slate-500">{t('noTeamMembers')}</p>}
                   </div>
                 </div>
               </>
@@ -1214,25 +1321,37 @@ function SettingsPageContent() {
           </div>
         )}
 
-        {/* Invite Modal - Name, Phone, Role, Permission toggles */}
+        {/* Invite Modal */}
         {showInviteModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowInviteModal(false)}>
-            <div className="bg-card rounded-2xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto border border-border" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-lg font-semibold text-foreground mb-4">{t('inviteMember')}</h3>
-              {inviteError && <p className="text-sm text-red-400 mb-3">{inviteError}</p>}
-              <form onSubmit={handleInvite} className="space-y-4">
-                <div><label className="block text-sm font-medium text-muted-foreground mb-1">{t('inviteName')}</label><input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder={t('inviteName')} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm" /></div>
-                <div><label className="block text-sm font-medium text-muted-foreground mb-1">{t('invitePhone')}</label><input type="tel" value={invitePhone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setInvitePhone(v); setInviteError(''); }} placeholder="01220601310" dir="ltr" className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm" required /></div>
-                <div><label className="block text-sm font-medium text-muted-foreground mb-1">{t('role')}</label><select value={inviteRole} onChange={(e) => { const v = e.target.value; if (v === 'assistant' || v === 'teacher') setInviteRole(v); }} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm"><option value="assistant">{t('assistant')}</option><option value="teacher">{tNav('roleTeacher')}</option></select></div>
-                <div className="space-y-3"><label className="block text-sm font-medium text-muted-foreground">{t('permissions')}</label><div className="flex flex-wrap gap-x-4 gap-y-2">
-                  {[{ key: 'can_scan', labelKey: 'canScan' }, { key: 'can_view_payments', labelKey: 'canViewPayments' }, { key: 'can_view_dashboard', labelKey: 'canViewDashboard' }, { key: 'can_manage_students', labelKey: 'canManageStudents' }, { key: 'can_manage_groups', labelKey: 'canManageGroups' }, { key: 'can_view_settings', labelKey: 'canViewSettings' }].map(({ key, labelKey }) => (
-                    <label key={key} className="flex items-center gap-2 text-xs cursor-pointer text-foreground">
-                      <input type="checkbox" checked={invitePerms[key] ?? false} onChange={(e) => setInvitePerms(p => ({ ...p, [key]: e.target.checked }))} className="w-4 h-4 rounded accent-primary" />
-                      {t(labelKey)}
-                    </label>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowInviteModal(false)}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-6 border-b border-slate-200">
+                <h2 className="text-lg font-bold text-slate-900">{t('inviteMember')}</h2>
+                <button type="button" onClick={() => setShowInviteModal(false)} className="p-2 hover:bg-slate-100 rounded-lg"><X className="w-5 h-5 text-slate-500" /></button>
+              </div>
+              <form onSubmit={handleInvite} className="p-6 space-y-4">
+                {inviteError && <p className="text-sm text-red-500">{inviteError}</p>}
+                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('inviteName')}</label><input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder={t('inviteName')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" /></div>
+                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('invitePhone')}</label><input type="tel" value={invitePhone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setInvitePhone(v); setInviteError(''); }} placeholder="01220601310" dir="ltr" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" required /></div>
+                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('role')}</label><select value={inviteRole} onChange={(e) => { const v = e.target.value; if (v === 'assistant' || v === 'teacher') setInviteRole(v); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"><option value="assistant">{t('assistant')}</option><option value="teacher">{tNav('roleTeacher')}</option></select></div>
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-slate-700">{t('permissions')}</p>
+                  {[{ key: 'can_scan', labelKey: 'canScan', Icon: Camera }, { key: 'can_view_payments', labelKey: 'canViewPayments', Icon: CreditCard }, { key: 'can_view_dashboard', labelKey: 'canViewDashboard', Icon: LayoutDashboard }, { key: 'can_manage_students', labelKey: 'canManageStudents', Icon: Users }, { key: 'can_manage_groups', labelKey: 'canManageGroups', Icon: BookOpen }, { key: 'can_view_settings', labelKey: 'canViewSettings', Icon: Shield }].map(({ key, labelKey, Icon }) => (
+                    <div key={key} className="flex items-center justify-between py-2 border-b border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm text-slate-700">{t(labelKey)}</span>
+                      </div>
+                      <button type="button" role="switch" aria-checked={invitePerms[key] ?? false} onClick={() => setInvitePerms(p => ({ ...p, [key]: !(p[key] ?? false) }))} className={`relative w-10 h-5 rounded-full transition-colors ${invitePerms[key] ?? false ? 'bg-teal-600' : 'bg-slate-200'}`}>
+                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${invitePerms[key] ?? false ? 'start-5' : 'start-0.5'}`} />
+                      </button>
+                    </div>
                   ))}
-                </div></div>
-                <div className="flex gap-2 pt-2"><button type="submit" disabled={inviteSubmitting || !invitePhone.trim()} className="flex-1 px-4 py-2.5 disabled:opacity-50 text-white text-sm font-semibold rounded-lg" style={{ background: 'hsl(var(--primary))' }}>{inviteSubmitting ? tCommon('loading') : t('invite')}</button><button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2.5 bg-muted rounded-lg text-sm text-foreground">{tCommon('cancel')}</button></div>
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg">{tCommon('cancel')}</button>
+                  <button type="submit" disabled={inviteSubmitting || !invitePhone.trim()} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50">{inviteSubmitting ? tCommon('loading') : t('invite')}</button>
+                </div>
               </form>
             </div>
           </div>
