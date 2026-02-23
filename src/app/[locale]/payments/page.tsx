@@ -9,6 +9,7 @@ import { exportPaymentsToExcel } from '@/lib/excel-export';
 import { hasPlanFeature } from '@/lib/plans';
 import { Link } from '@/i18n/routing';
 import { Download, Search, Check, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { MethodBadge, PaymentStatusBadge } from '@/components/shared';
 
 interface PaymentRecord {
   id: string;
@@ -359,11 +360,14 @@ export default function PaymentsPage() {
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="p-4 md:p-6 space-y-5 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-xl font-bold text-[var(--text-primary)]">{t('title')}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{t('transactionLog')}</p>
+        </div>
         <button
           onClick={handleExport}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
         >
           <Download size={14} /> {t('exportExcel')}
         </button>
@@ -405,49 +409,53 @@ export default function PaymentsPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: t('confirmedLabel'), value: `${kpis.confirmedTotal.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} ${tCommon('egp')}`, color: '#16A34A', icon: Check },
-          { label: t('filterPending'), value: kpis.pendingCount, color: '#F59E0B', icon: Clock },
-          { label: t('lateEntry'), value: kpis.lateCount, color: '#7C3AED', icon: AlertTriangle },
-        ].map(({ label, value, color, icon: Icon }) => (
-          <div key={label} className="ch-card p-3 md:p-4 flex items-center gap-2 md:gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${color}18`, color }}><Icon size={16} /></div>
+          { label: t('confirmedLabel'), value: `${kpis.confirmedTotal.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} ${tCommon('egp')}`, iconBg: 'bg-green-100', iconCls: 'text-green-600', icon: Check },
+          { label: t('filterPending'), value: kpis.pendingCount, iconBg: 'bg-amber-100', iconCls: 'text-amber-600', icon: Clock },
+          { label: t('lateEntry'), value: kpis.lateCount, iconBg: 'bg-blue-100', iconCls: 'text-blue-600', icon: AlertTriangle },
+        ].map(({ label, value, iconBg, iconCls, icon: Icon }) => (
+          <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-center gap-3">
+            <div className={`p-3 rounded-full shrink-0 ${iconBg}`}><Icon size={18} className={iconCls} /></div>
             <div className="min-w-0">
-              <div className="font-black text-lg md:text-xl font-mono text-foreground">{value}</div>
-              <div className="text-xs text-muted-foreground truncate">{label}</div>
+              <div className="font-black text-lg md:text-xl font-mono text-slate-900">{value}</div>
+              <div className="text-xs text-slate-500 truncate">{label}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* View toggle */}
-      <div className="flex gap-1 p-1 rounded-xl border border-border w-fit" style={{ background: 'hsl(var(--muted))' }}>
+      <div className="flex border-b border-slate-200 w-fit gap-4">
         {[
           { key: 'log', label: t('transactionLog') },
           { key: 'summary', label: t('studentSummary') },
         ].map(({ key, label }) => (
-          <button key={key} onClick={() => setView(key as 'log' | 'summary')} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${view === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+          <button
+            key={key}
+            onClick={() => setView(key as 'log' | 'summary')}
+            className={`pb-3 text-sm font-medium transition-colors border-b-2 -mb-px ${view === key ? 'text-teal-600 border-teal-600' : 'text-slate-500 border-transparent hover:text-slate-700'}`}
+          >
             {label}
           </button>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="space-y-3">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
         <div className="relative">
-          <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
+          <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder={t('searchStudent', { defaultValue: 'Search student...' })}
-            className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-slate-400"
+            className="w-full ps-9 pe-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           {(['all', 'confirmed', 'pending', 'late'] as const).map(s => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${statusFilter === s ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${statusFilter === s ? 'border-teal-500 bg-teal-50 text-teal-600' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
             >
               {s === 'all' ? tCommon('all', { defaultValue: 'All' }) : s === 'confirmed' ? t('confirmedStatus') : s === 'pending' ? t('filterPending') : t('lateEntry')}
             </button>
@@ -457,20 +465,20 @@ export default function PaymentsPage() {
               type="date"
               value={dateFrom}
               onChange={e => setDateFrom(e.target.value)}
-              className="px-3 py-1.5 rounded-lg text-xs border border-input bg-background text-foreground"
+              className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 bg-white text-slate-900"
             />
             <input
               type="date"
               value={dateTo}
               onChange={e => setDateTo(e.target.value)}
-              className="px-3 py-1.5 rounded-lg text-xs border border-input bg-background text-foreground"
+              className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 bg-white text-slate-900"
             />
           </div>
-          <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs border border-input bg-background text-foreground">
+          <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 bg-white text-slate-900">
             <option value="all">{t('allGroups', { defaultValue: 'All Groups' })}</option>
             {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
-          <select value={methodFilter} onChange={e => setMethodFilter(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs border border-input bg-background text-foreground">
+          <select value={methodFilter} onChange={e => setMethodFilter(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 bg-white text-slate-900">
             <option value="all">{t('allMethods', { defaultValue: 'All Methods' })}</option>
             {methods.map(m => <option key={m} value={m}>{formatMethod(m)}</option>)}
           </select>
@@ -489,44 +497,41 @@ export default function PaymentsPage() {
         <>
           {/* Transaction Log */}
           {view === 'log' && (
-            <div className="ch-card overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead style={{ background: 'hsl(var(--muted))' }}>
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{t('student')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{t('group')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{t('amount')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{t('paymentMethod')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{t('recordedBy', { defaultValue: 'Recorded By' })}</th>
-                      {canViewPayments && <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>}
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('student')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{t('group')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('amount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('paymentMethod')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{t('recordedBy', { defaultValue: 'Recorded By' })}</th>
+                      {canViewPayments && <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {filtered.map(p => (
-                      <tr key={p.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-foreground">{p.student_name}</div>
-                          <div className="text-xs text-muted-foreground font-mono" dir="ltr">{p.student_number}</div>
+                      <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900">
+                          <div className="font-medium">{p.student_name}</div>
+                          <div className="text-xs text-slate-500 font-mono" dir="ltr">{p.student_number}</div>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-xs">{p.group_name}</td>
-                        <td className="px-4 py-3 font-bold text-foreground font-mono">{p.amount} {tCommon('egp')}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs">{formatMethod(p.method)}</td>
-                        <td className="px-4 py-3">
-                          <span className={p.confirmed === true && p.status === 'confirmed' ? 'badge-confirmed' : p.status === 'late' ? 'badge-late' : 'badge-pending'}>
-                            {p.confirmed === true && p.status === 'confirmed' ? t('confirmedStatus') : p.status === 'late' ? t('lateEntry') : t('filterPending')}
-                          </span>
+                        <td className="py-3.5 px-4 text-sm text-slate-500 hidden md:table-cell">{p.group_name}</td>
+                        <td className="py-3.5 px-4 text-sm font-bold text-slate-900 font-mono">{p.amount} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4 text-sm"><MethodBadge method={p.method} /></td>
+                        <td className="py-3.5 px-4 text-sm">
+                          <PaymentStatusBadge status={p.status} confirmed={p.confirmed === true} />
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">{p.recorded_by_name ?? '\u2014'}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-500 hidden lg:table-cell">{p.recorded_by_name ?? '\u2014'}</td>
                         {canViewPayments && (
-                          <td className="px-4 py-3">
+                          <td className="py-3.5 px-4 text-sm">
                             {(p.confirmed === false || p.status === 'pending') && p.status !== 'late' && canConfirmPayments ? (
                               <button
                                 onClick={() => handleConfirm(p.id)}
                                 disabled={confirmingId === p.id}
-                                className="px-3 py-1 rounded-lg text-xs font-semibold text-white disabled:opacity-50 transition-colors"
-                                style={{ background: '#16A34A' }}
+                                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
                               >
                                 {t('confirm')}
                               </button>
@@ -538,7 +543,7 @@ export default function PaymentsPage() {
                   </tbody>
                 </table>
               </div>
-              {filtered.length === 0 && <p className="p-8 text-center text-muted-foreground">{t('noPaymentsYet')}</p>}
+              {filtered.length === 0 && <p className="p-8 text-center text-slate-500">{t('noPaymentsYet')}</p>}
             </div>
           )}
 
@@ -548,27 +553,27 @@ export default function PaymentsPage() {
               <div className="flex justify-end">
                 <button
                   onClick={() => setSortOrder(prev => prev === 'high' ? 'low' : 'high')}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors"
+                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
                 >
                   {sortOrder === 'high' ? t('sortHighToLow') : t('sortLowToHigh')}
                 </button>
               </div>
               {sortedStudents.map(s => (
-                <div key={s.student_id} className="ch-card overflow-hidden">
+                <div key={s.student_id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <button
                     onClick={() => setExpandedStudent(expandedStudent === s.student_id ? null : s.student_id)}
-                    className="w-full p-4 flex items-center justify-between text-start"
+                    className="w-full p-4 flex items-center justify-between text-start hover:bg-slate-50 transition-colors"
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">{s.student_name}</span>
+                        <span className="font-semibold text-slate-900">{s.student_name}</span>
                         {s.balance_due > 0 && (
-                          <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold font-mono bg-red-100 text-red-700">
                             {s.balance_due.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}
                           </span>
                         )}
                       </div>
-                      <div className="font-mono text-xs text-muted-foreground" dir="ltr">{s.student_number}</div>
+                      <div className="font-mono text-xs text-slate-500" dir="ltr">{s.student_number}</div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-end">
@@ -576,30 +581,36 @@ export default function PaymentsPage() {
                         {s.total_pending > 0 && <span className="text-xs font-mono text-amber-600 me-2">{s.total_pending.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</span>}
                         {s.total_late > 0 && <span className="badge-late">{s.total_late} {t('lateEntry')}</span>}
                       </div>
-                      {expandedStudent === s.student_id ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                      {expandedStudent === s.student_id ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
                     </div>
                   </button>
                   {expandedStudent === s.student_id && (
-                    <div className="border-t border-border">
-                      {records.filter(r => r.student_id === s.student_id).map(p => (
-                        <div key={p.id} className="flex items-center justify-between px-4 py-2 text-xs border-b border-border last:border-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground">{p.group_name}</span>
-                            <span className="text-muted-foreground">{formatMethod(p.method)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-foreground">{p.amount} {tCommon('egp')}</span>
-                            <span className={p.confirmed === true && p.status === 'confirmed' ? 'badge-confirmed' : p.status === 'late' ? 'badge-late' : 'badge-pending'}>
-                              {p.confirmed === true && p.status === 'confirmed' ? t('confirmedStatus') : p.status === 'late' ? t('lateEntry') : t('filterPending')}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="border-t border-slate-200">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-200 bg-slate-50">
+                            <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('group')}</th>
+                            <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('paymentMethod')}</th>
+                            <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('amount')}</th>
+                            <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {records.filter(r => r.student_id === s.student_id).map(p => (
+                            <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="py-3.5 px-4 text-sm text-slate-500">{p.group_name}</td>
+                              <td className="py-3.5 px-4 text-sm"><MethodBadge method={p.method} /></td>
+                              <td className="py-3.5 px-4 text-sm font-bold text-slate-900 font-mono">{p.amount} {tCommon('egp')}</td>
+                              <td className="py-3.5 px-4 text-sm"><PaymentStatusBadge status={p.status} confirmed={p.confirmed === true} /></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>
               ))}
-              {sortedStudents.length === 0 && <p className="p-8 text-center text-muted-foreground">{t('noPaymentsYet')}</p>}
+              {sortedStudents.length === 0 && <p className="p-8 text-center text-slate-500">{t('noPaymentsYet')}</p>}
             </div>
           )}
         </>

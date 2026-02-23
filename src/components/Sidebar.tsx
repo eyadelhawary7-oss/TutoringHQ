@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
@@ -103,13 +102,12 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       />
 
       <aside
-        className={`flex flex-col fixed top-0 bottom-0 h-screen transition-transform duration-300 z-50 print:hidden w-64 md:w-56 ${
+        className={`flex flex-col fixed top-0 bottom-0 h-screen transition-transform duration-300 z-50 print:hidden w-64 md:w-56 bg-slate-900 ${
           isRTL ? 'right-0' : 'left-0'
         } ${open ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'}`}
-        style={{ background: 'var(--gradient-navy)' }}
       >
       {/* Logo + Close */}
-      <div className="flex items-center justify-between gap-3 px-4 h-16 border-b border-white/10">
+      <div className="flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800">
         <Link
           href={isSuperAdminOnly ? '/admin' : '/dashboard'}
           className="flex items-center gap-3 shrink-0"
@@ -117,27 +115,33 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
           {user?.center?.logo_url ? (
             <img src={user.center.logo_url} alt={centerName} className="w-9 h-9 rounded-lg shrink-0 object-contain" />
           ) : (
-            <Image src="/logo-icon.png" alt="CenterHQ" width={36} height={36} className="w-9 h-9 rounded-lg shrink-0 object-contain" />
+            <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center shrink-0">
+              <span className="text-white font-bold text-sm">CH</span>
+            </div>
           )}
           <span className="font-bold text-white text-lg tracking-tight">CenterHQ</span>
         </Link>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors" aria-label="Close menu">
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" aria-label="Close menu">
           <X size={20} />
         </button>
       </div>
 
       {/* Center name */}
       {user && (
-        <div className="px-4 py-3 border-b border-white/10">
-          <p className="text-xs text-white/40 mb-0.5">{tSettings('centerName')}</p>
-          <p className="text-sm font-semibold text-white truncate">{centerName}</p>
+        <div className="px-4 py-3 border-b border-slate-800">
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">{tSettings('centerName')}</p>
+          <p className="text-sm font-semibold text-slate-300 truncate">{centerName}</p>
         </div>
       )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
         {isSuperAdminOnly && (
-          <Link href="/admin" className={`nav-item ${pathname?.startsWith('/admin') ? 'active' : ''}`} onClick={onClose}>
+          <Link
+            href="/admin"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            onClick={onClose}
+          >
             <Shield size={18} className="shrink-0" />
             <span>{t('admin')}</span>
           </Link>
@@ -145,14 +149,23 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         {navItems.map(({ key, href, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + '/');
           return (
-            <Link key={href} href={href} className={`nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${isActive ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              onClick={onClose}
+            >
               <Icon size={18} className="shrink-0" />
               <span>{t(key)}</span>
             </Link>
           );
         })}
         {isAdmin && !isSuperAdminOnly && (
-          <Link href="/admin" className={`nav-item ${pathname?.startsWith('/admin') ? 'active' : ''}`} onClick={onClose}>
+          <Link
+            href="/admin"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            onClick={onClose}
+          >
             <Shield size={18} className="shrink-0" />
             <span>{t('admin')}</span>
           </Link>
@@ -160,22 +173,25 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       </nav>
 
       {/* Bottom */}
-      <div className="p-2 border-t border-white/10 space-y-1">
+      <div className="border-t border-slate-800 p-4 bg-slate-800/50">
         {user && (
-          <div className="px-3 py-2 rounded-lg" style={{ background: 'hsl(var(--sidebar-accent))' }}>
-            <p className="text-xs text-white/50">{t('logout')}</p>
-            <p className="text-sm font-medium text-white">{centerName}</p>
-            {roleLabelKey && (
-              <span className="text-xs px-1.5 py-0.5 rounded-full text-white/70" style={{ background: 'hsl(var(--primary) / 0.3)' }}>
-                {t(roleLabelKey)}
-              </span>
-            )}
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-white text-sm font-bold">{(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{centerName}</p>
+              <p className="text-xs text-slate-400">{roleLabelKey ? t(roleLabelKey) : ''}</p>
+            </div>
           </div>
         )}
         {user && (
-          <button onClick={handleLogout} className="nav-item w-full">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full"
+          >
             <LogOut size={16} />
-            <span className="text-sm">{t('logout')}</span>
+            <span>{t('logout')}</span>
           </button>
         )}
       </div>

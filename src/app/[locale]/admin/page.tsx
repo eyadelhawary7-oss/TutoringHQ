@@ -43,25 +43,8 @@ import {
   Cell,
 } from 'recharts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
+import { PlanBadge, BillingStatusBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-
-const PLAN_LABELS: Record<string, string> = {
-  starter: 'Starter',
-  pro: 'Pro',
-  business: 'Business',
-  enterprise: 'Enterprise',
-  top_centers: 'Top Centers',
-  payg: 'PAYG',
-};
-
-const PLAN_COLORS: Record<string, string> = {
-  starter: 'border-gray-400 bg-gray-50 text-gray-700',
-  pro: 'border-blue-400 bg-blue-50 text-blue-700',
-  business: 'border-teal-400 bg-teal-50 text-teal-700',
-  enterprise: 'border-purple-400 bg-purple-50 text-purple-700',
-  top_centers: 'border-amber-400 bg-amber-50 text-amber-700',
-  payg: 'border-indigo-400 bg-indigo-50 text-indigo-700',
-};
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -88,6 +71,7 @@ interface OverviewData {
   totalCenters: number;
   activeCenters: number;
   pendingSignups: number;
+  suspendedCenters?: number;
   totalStudents: number;
   totalMRR?: number;
   mrr?: number;
@@ -566,12 +550,6 @@ export default function AdminPage() {
     }
   };
 
-  const PlanBadge = ({ plan }: { plan?: string }) => (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${PLAN_COLORS[plan || 'starter'] || PLAN_COLORS.starter}`}>
-      {PLAN_LABELS[plan || 'starter'] || plan}
-    </span>
-  );
-
   if (isLoading && !overview && !loadError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -601,19 +579,21 @@ export default function AdminPage() {
   return (
     <div className="flex min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Admin Sidebar */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 border-e border-border bg-card">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-bold text-foreground">{tAdmin('title')}</h2>
-          <Link href="/dashboard" className="text-xs text-primary hover:underline mt-1 block">{tAdmin('backToMyCenter')}</Link>
+      <aside className="hidden md:flex flex-col w-56 shrink-0 border-e border-slate-200 bg-slate-900">
+        <div className="p-4 border-b border-slate-700">
+          <h2 className="font-bold text-white">{tAdmin('title')}</h2>
+          <Link href="/dashboard" className="text-xs text-teal-400 hover:underline mt-1 block">{tAdmin('backToMyCenter')}</Link>
         </div>
         <nav className="flex-1 p-2 space-y-0.5">
           {ADMIN_NAV.map(({ key, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start ${
-                tab === key ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'
-              }`}
+              className={
+                tab === key
+                  ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-teal-600/10 text-teal-400 font-medium w-full text-start'
+                  : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full text-start'
+              }
             >
               <Icon size={18} />
               <span>{tAdmin(key)}</span>
@@ -623,15 +603,17 @@ export default function AdminPage() {
       </aside>
 
       {/* Mobile tab bar */}
-      <div className="md:hidden fixed top-0 start-0 end-0 z-20 border-b border-border overflow-x-auto scrollbar-hide bg-card">
+      <div className="md:hidden fixed top-0 start-0 end-0 z-20 border-b border-slate-200 overflow-x-auto scrollbar-hide bg-white">
         <div className="flex px-2 py-1.5 gap-1">
           {ADMIN_NAV.map(({ key, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${
-                tab === key ? 'bg-primary/20 text-primary' : 'text-muted-foreground'
-              }`}
+              className={
+                tab === key
+                  ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap bg-teal-600/10 text-teal-600'
+                  : 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap text-slate-500'
+              }
             >
               <Icon size={14} />
               <span>{tAdmin(key)}</span>
@@ -645,79 +627,146 @@ export default function AdminPage() {
         {/* Overview */}
         {tab === 'overview' && overview && (
           <>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Platform Health</h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            {/* Section: PLATFORM HEALTH */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">PLATFORM HEALTH</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
               {[
-                { label: tAdmin('totalCenters'), value: String(overview.totalCenters ?? 0), color: '#3B82F6' },
-                { label: tAdmin('activeCenters'), value: String(overview.activeCenters ?? 0), color: '#16A34A' },
-                { label: tAdmin('pendingSignups'), value: String(overview.pendingSignups ?? 0), color: '#F59E0B' },
-                { label: tAdmin('totalMRREgp', { defaultValue: 'Total MRR in EGP' }), value: `${(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('ar-EG')} ${tCommon('egp')}`, color: '#0D9488' },
-                { label: tAdmin('totalStudents'), value: String(overview.totalStudents ?? 0), color: '#7C3AED' },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="glass p-4 rounded-xl">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: `${color}20`, color }}>
-                    <LayoutDashboard size={16} />
+                { label: tAdmin('totalCenters'), value: String(overview.totalCenters ?? 0), iconBg: 'bg-teal-100', iconColor: 'text-teal-600', Icon: Building2 },
+                { label: tAdmin('activeCenters'), value: String(overview.activeCenters ?? 0), iconBg: 'bg-green-100', iconColor: 'text-green-600', Icon: LayoutDashboard },
+                { label: tAdmin('pendingSignups'), value: String(overview.pendingSignups ?? 0), iconBg: 'bg-amber-100', iconColor: 'text-amber-600', Icon: Clock },
+                { label: tAdmin('suspendedCenters', { defaultValue: 'Suspended Centers' }), value: String(overview.suspendedCenters ?? 0), iconBg: 'bg-red-100', iconColor: 'text-red-600', Icon: AlertTriangle },
+                { label: tAdmin('totalStudents'), value: String(overview.totalStudents ?? 0), iconBg: 'bg-blue-100', iconColor: 'text-blue-600', Icon: Users },
+              ].map(({ label, value, iconBg, iconColor, Icon }) => (
+                <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500 mb-1">{label}</p>
+                      <p className="text-2xl font-bold text-slate-900 font-mono">{value}</p>
+                    </div>
+                    <div className={`p-3 rounded-full ${iconBg}`}>
+                      <Icon className={`w-5 h-5 ${iconColor}`} />
+                    </div>
                   </div>
-                  <div className="text-xl font-black font-mono text-foreground">{value}</div>
-                  <div className="text-xs text-muted-foreground">{label}</div>
                 </div>
               ))}
             </div>
 
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mt-6">Revenue</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-              <div className="glass p-4 rounded-xl">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#0D948820', color: '#0D9488' }}><TrendingUp size={16} /></div>
-                <div className="text-lg font-black font-mono text-foreground">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</div>
-                <div className="text-xs text-muted-foreground">{tAdmin('mrr')}</div>
+            {/* Section: REVENUE */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">REVENUE</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">{tAdmin('mrr')}</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-green-100">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
+                </div>
               </div>
-              <div className="glass p-4 rounded-xl">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#DC262620', color: '#DC2626' }}><AlertTriangle size={16} /></div>
-                <div className="text-lg font-black font-mono text-foreground">{overview.pendingRevenue?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</div>
-                <div className="text-xs text-muted-foreground">Outstanding Invoices</div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Outstanding Invoices</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingRevenue?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-red-100">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  </div>
+                </div>
               </div>
-              <div className="glass p-4 rounded-xl">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#16A34A20', color: '#16A34A' }}><CreditCard size={16} /></div>
-                <div className="text-lg font-black font-mono text-foreground">{overview.revenueThisMonth?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</div>
-                <div className="text-xs text-muted-foreground">Collected This Month</div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Collected This Month</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.revenueThisMonth?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-teal-100">
+                    <CreditCard className="w-5 h-5 text-teal-600" />
+                  </div>
+                </div>
               </div>
-              <div className="glass p-4 rounded-xl">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#3B82F620', color: '#3B82F6' }}><BarChart3 size={16} /></div>
-                <div className="text-lg font-black font-mono text-foreground">{overview.totalRevenueCollected != null && overview.pendingRevenue != null && overview.totalRevenueCollected + overview.pendingRevenue > 0 ? Math.round(overview.totalRevenueCollected / (overview.totalRevenueCollected + overview.pendingRevenue) * 100) : '—'}%</div>
-                <div className="text-xs text-muted-foreground">Collection Rate</div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Collection Rate</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.totalRevenueCollected != null && overview.pendingRevenue != null && overview.totalRevenueCollected + overview.pendingRevenue > 0 ? Math.round(overview.totalRevenueCollected / (overview.totalRevenueCollected + overview.pendingRevenue) * 100) : '—'}%</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-blue-100">
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mt-6">Security & Alerts</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-              <div className="glass p-4 rounded-xl">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#16A34A20', color: '#16A34A' }}><Shield size={16} /></div>
-                <div className="text-lg font-black font-mono text-foreground">0</div>
-                <div className="text-xs text-muted-foreground">Failed Logins 24h</div>
-              </div>
-              <div className="glass p-4 rounded-xl">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#0D948820', color: '#0D9488' }}><Users size={16} /></div>
-                <div className="text-lg font-black font-mono text-foreground">{overview.pendingSignups ?? 0}</div>
-                <div className="text-xs text-muted-foreground">New Signups 7d</div>
-              </div>
-              <div className="glass p-4 rounded-xl">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#16A34A20', color: '#16A34A' }}><ShieldAlert size={16} /></div>
-                <div className="text-lg font-black font-mono text-foreground">0</div>
-                <div className="text-xs text-muted-foreground">Flagged Activity</div>
-              </div>
-              <div className="glass p-4 rounded-xl">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: '#16A34A20', color: '#16A34A' }}><Activity size={16} /></div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <div className="text-sm font-bold font-mono text-foreground">All systems operational</div>
+            {/* Section: SECURITY & ALERTS */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">SECURITY & ALERTS</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Failed Logins 24h</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">0</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-orange-100">
+                    <Shield className="w-5 h-5 text-orange-600" />
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">System Status</div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">New Signups 7d</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingSignups ?? 0}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-purple-100">
+                    <Users className="w-5 h-5 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Flagged Activity</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">0</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-red-100">
+                    <ShieldAlert className="w-5 h-5 text-red-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">System Status</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                      </span>
+                      <span className="text-sm font-semibold text-slate-900">All systems operational</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-full bg-green-100">
+                    <Activity className="w-5 h-5 text-green-600" />
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               {(signupsWeekly.length > 0 || (overview.signupsChart?.length ?? 0) > 0) && (
-                <div className="glass p-5 rounded-xl">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                   <h3 className="font-bold text-foreground mb-4">{tAdmin('newCentersPerWeek', { defaultValue: 'New Centers per Week' })}</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={signupsWeekly.length > 0 ? signupsWeekly : overview.signupsChart!}>
@@ -731,7 +780,7 @@ export default function AdminPage() {
                 </div>
               )}
               {(overview.monthlyRevenue?.length ?? 0) > 0 && (
-                <div className="glass p-5 rounded-xl">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                   <h3 className="font-bold text-foreground mb-4">{tAdmin('monthlyRevenueChart', { defaultValue: 'Monthly Revenue' })}</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={overview.monthlyRevenue}>
@@ -747,7 +796,7 @@ export default function AdminPage() {
             </div>
 
             {(overview.recentActivity?.length ?? 0) > 0 && (
-              <div className="glass p-5 rounded-xl">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                 <h3 className="font-bold text-foreground mb-3">{tAdmin('recentActivity')}</h3>
                 <div className="space-y-3">
                   {overview.recentActivity!.slice(0, 5).map((a, i) => (
@@ -797,40 +846,40 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="glass overflow-hidden rounded-xl">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Owner</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tCommon('phone')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('studentsCount')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('lastActive') ?? 'Last Active'}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('usage') ?? 'Usage'}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('createdAt')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tCommon('phone')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('studentsCount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('lastActive') ?? 'Last Active'}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('usage') ?? 'Usage'}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {filteredCenters.map((c) => (
-                      <tr key={c.id} className="border-t border-border hover:bg-muted/30">
-                        <td className="px-4 py-3 font-medium text-foreground">{c.name}</td>
-                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
-                        <td className="px-4 py-3"><PlanBadge plan={c.plan} /></td>
-                        <td className="px-4 py-3">
+                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{c.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
+                        <td className="py-3.5 px-4"><PlanBadge plan={c.plan} /></td>
+                        <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[c.status || 'active'] || STATUS_STYLES.active}`}>
                             {c.status || 'active'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-mono text-muted-foreground hidden md:table-cell">{c.students_count ?? 0}</td>
-                        <td className={`px-4 py-3 text-xs hidden lg:table-cell ${(c.last_active?.includes('days') || c.last_active === 'Never') ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>{c.last_active ?? '—'}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground hidden lg:table-cell">{c.usage_scans ?? 0}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3">
+                        <td className="py-3.5 px-4 text-sm text-slate-600 font-mono hidden md:table-cell">{c.students_count ?? 0}</td>
+                        <td className={`py-3.5 px-4 text-xs hidden lg:table-cell ${(c.last_active?.includes('days') || c.last_active === 'Never') ? 'text-red-600 font-semibold' : 'text-slate-600'}`}>{c.last_active ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden lg:table-cell">{c.usage_scans ?? 0}</td>
+                        <td className="py-3.5 px-4 text-xs text-slate-600 hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4">
                           <div className="relative">
                             <button
                               onClick={() => setOpenActionsId(openActionsId === c.id ? null : c.id)}
@@ -880,73 +929,53 @@ export default function AdminPage() {
         {tab === 'billing' && (
           <>
             <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('billing')}</h2>
-            <div className="glass overflow-hidden rounded-xl mb-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('billingPeriod')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('nextDue')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('amount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('nextDue')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {billingData.map((b) => {
                       const isPaid = b.billing_status === 'paid';
-                      const nextDueStr = b.nextDue ?? b.next_payment_due;
-                      const nextDueDate = nextDueStr ? new Date(nextDueStr) : null;
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      let statusKey: 'paid' | 'overdue' | 'dueSoon' | 'due' = 'due';
-                      if (isPaid) statusKey = 'paid';
-                      else if (nextDueDate && nextDueDate < today) statusKey = 'overdue';
-                      else if (nextDueDate) {
-                        const daysUntil = Math.ceil((nextDueDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-                        statusKey = daysUntil <= 7 ? 'dueSoon' : 'due';
-                      }
-                      const statusConfig = {
-                        paid: { label: '✅ Paid', className: STATUS_STYLES.active },
-                        overdue: { label: '🔴 Overdue', className: 'bg-red-100 text-red-700' },
-                        dueSoon: { label: '🟡 Due Soon', className: 'bg-amber-100 text-amber-700' },
-                        due: { label: 'Due', className: 'bg-gray-100 text-gray-700' },
-                      };
-                      const sc = statusConfig[statusKey];
+                      const nextDueStr = b.nextDue ?? b.next_payment_due ?? '';
+                      const billingStatus = b.billing_status ?? b.status ?? 'active';
                       return (
-                        <tr key={b.id} className="border-t border-border hover:bg-muted/30">
-                          <td className="px-4 py-3 font-medium text-foreground">{b.name}</td>
-                          <td className="px-4 py-3"><PlanBadge plan={b.plan} /></td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell">{b.billing_period ?? '—'}</td>
-                          <td className="px-4 py-3 font-mono font-bold text-foreground">{(b.amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
-                          <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{nextDueStr ?? '—'}</td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${sc.className}`}>
-                              {sc.label}
-                            </span>
+                        <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{b.name}</td>
+                          <td className="py-3.5 px-4"><PlanBadge plan={b.plan} /></td>
+                          <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{b.billing_period ?? '—'}</td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(b.amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                          <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{nextDueStr || '—'}</td>
+                          <td className="py-3.5 px-4">
+                            <BillingStatusBadge status={isPaid ? 'paid' : (billingStatus === 'overdue' ? 'overdue' : 'active')} nextDue={nextDueStr || new Date().toISOString()} />
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-1 flex-wrap">
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-2">
                               {!isPaid && (
-                                <>
-                                  <button
-                                    onClick={() => handleMarkPaid(b.id, b.amount ?? 0, b.billing_period ?? 'monthly')}
-                                    disabled={actionLoading}
-                                    className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
-                                  >
-                                    {tAdmin('markAsPaid')}
-                                  </button>
-                                  <button
-                                    onClick={() => { /* TODO: wire /api/admin/billing send-reminder */ }}
-                                    disabled={actionLoading}
-                                    className="px-2 py-1 rounded text-xs font-semibold border border-border hover:bg-muted disabled:opacity-50"
-                                  >
-                                    {tAdmin('sendReminder')}
-                                  </button>
-                                </>
+                                <button
+                                  onClick={() => handleMarkPaid(b.id, b.amount ?? 0, b.billing_period ?? 'monthly')}
+                                  disabled={actionLoading}
+                                  className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  {tAdmin('markAsPaid')}
+                                </button>
                               )}
+                              <button
+                                onClick={() => { /* TODO: wire /api/admin/billing send-reminder */ }}
+                                disabled={actionLoading}
+                                className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {tAdmin('sendReminder')}
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -960,22 +989,22 @@ export default function AdminPage() {
             {pendingInvoices.length > 0 && (
               <>
                 <h3 className="font-bold text-foreground mt-6 mb-3">{tAdmin('pendingInvoices')}</h3>
-                <div className="glass overflow-hidden rounded-xl mb-6">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted">
-                        <tr>
-                          <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                          <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
-                          <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50">
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('amount')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100">
                         {pendingInvoices.map((inv) => (
-                          <tr key={inv.id} className="border-t border-border">
-                            <td className="px-4 py-3 font-medium text-foreground">{inv.centerName}</td>
-                            <td className="px-4 py-3 font-mono font-bold">{(inv.payment_amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
-                            <td className="px-4 py-3 flex gap-1">
+                          <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{inv.centerName}</td>
+                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(inv.payment_amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                            <td className="py-3.5 px-4">
                               <button
                                 onClick={() => {
                                   if ((inv.payment_amount ?? 0) > 50000) {
@@ -985,11 +1014,11 @@ export default function AdminPage() {
                                   }
                                 }}
                                 disabled={actionLoading}
-                                className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700"
+                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
                               >
                                 {tAdmin('approvePay')}
                               </button>
-                              <button onClick={() => handleInvoiceAction(inv.id, 'reject')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-700">
+                              <button onClick={() => handleInvoiceAction(inv.id, 'reject')} disabled={actionLoading} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50">
                                 {tAdmin('rejectPayment')}
                               </button>
                             </td>
@@ -1003,26 +1032,26 @@ export default function AdminPage() {
             )}
 
             <h3 className="font-bold text-foreground mt-6 mb-3">{tAdmin('paymentHistory')}</h3>
-            <div className="glass overflow-hidden rounded-xl">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('billingPeriod')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('recordedBy')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('amount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('recordedBy')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {paymentHistory.map((p, i) => (
-                      <tr key={i} className="border-t border-border">
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3 font-medium text-foreground">{p.centerName}</td>
-                        <td className="px-4 py-3 font-mono font-bold">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{p.billing_period ?? '—'}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
+                      <tr key={i} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{p.centerName}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{p.billing_period ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1036,43 +1065,43 @@ export default function AdminPage() {
         {tab === 'planRequests' && (
           <>
             <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('planRequests')}</h2>
-            <div className="glass overflow-hidden rounded-xl">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Current → Requested</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Current → Requested</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {planRequests.map((pr) => (
-                      <tr key={pr.id} className="border-t border-border">
-                        <td className="px-4 py-3 font-medium text-foreground">{pr.centerName}</td>
-                        <td className="px-4 py-3">
+                      <tr key={pr.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{pr.centerName}</td>
+                        <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
                             <PlanBadge plan={pr.current_plan} />
-                            <span className="text-muted-foreground">→</span>
+                            <span className="text-slate-500">→</span>
                             <PlanBadge plan={pr.requested_plan} />
-                            {pr.priceDiffFormatted && <span className="text-xs text-muted-foreground">{pr.priceDiffFormatted}</span>}
+                            {pr.priceDiffFormatted && <span className="text-xs text-slate-500">{pr.priceDiffFormatted}</span>}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3">
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pr.status === 'pending' ? STATUS_STYLES.pending : pr.status === 'approved' ? STATUS_STYLES.active : STATUS_STYLES.rejected}`}>
                             {pr.status === 'pending' ? tAdmin('pending') : pr.status === 'approved' ? tAdmin('approved') : tAdmin('rejected')}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="py-3.5 px-4">
                           {pr.status === 'pending' && (
-                            <div className="flex gap-1">
-                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700">
+                            <div className="flex gap-2">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50">
                                 {tAdmin('approve')}
                               </button>
-                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-700">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50">
                                 {tAdmin('reject')}
                               </button>
                             </div>
@@ -1091,37 +1120,37 @@ export default function AdminPage() {
         {tab === 'pendingSignups' && (
           <>
             <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('pendingSignups')}</h2>
-            <div className="glass overflow-hidden rounded-xl">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Center</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Owner</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('phone')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tCommon('email')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('referredBy')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Center</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('phone')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tCommon('email')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('referredBy')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {pendingSignups.map((ps) => (
-                      <tr key={ps.id} className="border-t border-border">
-                        <td className="px-4 py-3 font-medium text-foreground">{ps.name}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{ps.owner_name ?? '—'}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground" dir="ltr">{ps.phone ?? '—'}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{ps.email ?? '—'}</td>
-                        <td className="px-4 py-3"><PlanBadge plan={ps.plan} /></td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1">
-                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700">
+                      <tr key={ps.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{ps.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{ps.owner_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600" dir="ltr">{ps.phone ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{ps.email ?? '—'}</td>
+                        <td className="py-3.5 px-4"><PlanBadge plan={ps.plan} /></td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex gap-2">
+                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50">
                               {tAdmin('approve')}
                             </button>
-                            <button onClick={() => setShowRejectReason(ps)} className="px-2 py-1 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-700">
+                            <button onClick={() => setShowRejectReason(ps)} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors">
                               {tAdmin('reject')}
                             </button>
                           </div>
@@ -1129,7 +1158,7 @@ export default function AdminPage() {
                       </tr>
                     ))}
                     {pendingSignups.length === 0 && (
-                      <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">{tAdmin('noPending')}</td></tr>
+                      <tr><td colSpan={8} className="py-8 px-4 text-center text-slate-500">{tAdmin('noPending')}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1147,25 +1176,25 @@ export default function AdminPage() {
                 + {tAdmin('addAdmin', { defaultValue: 'Add Admin' })}
               </button>
             </div>
-            <div className="glass overflow-hidden rounded-xl">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('phone')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">Role</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('joinedDate')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('phone')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('joinedDate')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {internalTeam.map((m) => (
-                    <tr key={m.id} className="border-t border-border">
-                      <td className="px-4 py-3 font-medium text-foreground">{m.name}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground" dir="ltr">{m.phone ?? m.email ?? '—'}</td>
-                      <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-xs font-semibold border border-purple-400 bg-purple-50  text-purple-700 ">{m.role}</span></td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
-                      <td className="px-4 py-3">
+                    <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{m.name}</td>
+                      <td className="py-3.5 px-4 font-mono text-xs text-slate-600" dir="ltr">{m.phone ?? m.email ?? '—'}</td>
+                      <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">{m.role}</span></td>
+                      <td className="py-3.5 px-4 text-sm text-slate-600">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
+                      <td className="py-3.5 px-4">
                         {m.role !== 'super_admin' && m.role !== 'admin' && (
                           <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50">
                             {tAdmin('remove')}
@@ -1197,9 +1226,9 @@ export default function AdminPage() {
                 { label: 'Converted', value: leads.filter(l => l.stage === 'converted').length },
                 { label: 'Conversion Rate', value: leads.length > 0 ? `${Math.round((leads.filter(l => l.stage === 'converted').length / leads.length) * 100)}%` : '0%' },
               ].map(({ label, value }) => (
-                <div key={label} className="glass p-4 rounded-xl">
-                  <div className="text-xl font-black font-mono text-foreground">{value}</div>
-                  <div className="text-xs text-muted-foreground">{label}</div>
+                <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <div className="text-2xl font-bold font-mono text-slate-900">{value}</div>
+                  <div className="text-sm text-slate-500">{label}</div>
                 </div>
               ))}
             </div>
@@ -1212,7 +1241,7 @@ export default function AdminPage() {
                   </div>
                   <div className="space-y-2">
                     {leads.filter(l => l.stage === stage).map((lead) => (
-                      <div key={lead.id} onClick={() => setSelectedLead(lead)} className="ch-card p-3 cursor-pointer hover:shadow-md transition-shadow border border-border">
+                      <div key={lead.id} onClick={() => setSelectedLead(lead)} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow">
                         <p className="font-semibold text-sm text-foreground">{lead.name}</p>
                         <p className="text-xs text-muted-foreground">{lead.contact_person}</p>
                         <p className="text-xs font-mono text-muted-foreground mt-1" dir="ltr">{lead.phone}</p>
@@ -1234,8 +1263,8 @@ export default function AdminPage() {
           <>
             <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('analytics') ?? 'Analytics'}</h2>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="glass p-5 rounded-xl">
-                <h3 className="font-semibold text-foreground mb-4">Centers by Plan</h3>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Centers by Plan</h3>
                 <div className="flex items-center gap-6">
                   <ResponsiveContainer width={160} height={160}>
                     <PieChart>
@@ -1280,8 +1309,8 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-              <div className="glass p-5 rounded-xl">
-                <h3 className="font-semibold text-foreground mb-4">Centers by Status</h3>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Centers by Status</h3>
                 <div className="flex items-center gap-6">
                   <ResponsiveContainer width={160} height={160}>
                     <PieChart>
@@ -1325,8 +1354,8 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="glass p-5 rounded-xl">
-                <h3 className="font-semibold text-foreground mb-4">Top 5 Centers by Students</h3>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Top 5 Centers by Students</h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={[...centers].sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -1337,8 +1366,8 @@ export default function AdminPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="glass p-5 rounded-xl">
-                <h3 className="font-semibold text-foreground mb-4">Top 5 Centers by Revenue</h3>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Top 5 Centers by Revenue</h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={[...centers].filter(c => (c.status ?? 'active') === 'active').sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -1357,9 +1386,9 @@ export default function AdminPage() {
                 { label: 'Centers with 0 Students', value: centers.filter(c => (c.students_count ?? 0) === 0).length },
                 { label: 'Centers at Risk', value: centers.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
               ].map(({ label, value }) => (
-                <div key={label} className="glass p-4 rounded-xl">
-                  <div className="text-xl font-black font-mono text-foreground">{value}</div>
-                  <div className="text-xs text-muted-foreground">{label}</div>
+                <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <div className="text-2xl font-bold font-mono text-slate-900">{value}</div>
+                  <div className="text-sm text-slate-500">{label}</div>
                 </div>
               ))}
             </div>
@@ -1378,22 +1407,22 @@ export default function AdminPage() {
             </div>
             <div className="p-5 space-y-4">
               {[
-                { label: 'Owner', value: detailCenter.owner?.name ?? detailCenter.owner_name ?? '—' },
-                { label: tCommon('phone'), value: detailCenter.phone ?? '—' },
-                { label: tCommon('email'), value: detailCenter.email ?? '—' },
-                { label: 'Plan', value: PLAN_LABELS[detailCenter.plan ?? 'starter'] ?? detailCenter.plan },
-                { label: tAdmin('billingPeriod'), value: detailCenter.billing_period ?? '—' },
-                { label: tAdmin('studentsCount'), value: String(detailCenter.students_count ?? 0) },
-                { label: tCommon('status'), value: detailCenter.status ?? '—' },
-                { label: tAdmin('nextDue'), value: detailCenter.next_due ?? '—' },
-                { label: tAdmin('referralCode'), value: detailCenter.referral_code ?? '—' },
-                { label: tAdmin('lastActive'), value: detailCenter.last_active ?? '—' },
-                { label: tAdmin('usage'), value: String(detailCenter.usage_scans ?? 0) },
-                { label: tAdmin('createdAt'), value: detailCenter.created_at ? new Date(detailCenter.created_at).toLocaleDateString() : '—' },
-              ].map(({ label, value }) => (
+                { label: 'Owner', value: detailCenter.owner?.name ?? detailCenter.owner_name ?? '—', isPlan: false },
+                { label: tCommon('phone'), value: detailCenter.phone ?? '—', isPlan: false },
+                { label: tCommon('email'), value: detailCenter.email ?? '—', isPlan: false },
+                { label: 'Plan', value: detailCenter.plan, isPlan: true },
+                { label: tAdmin('billingPeriod'), value: detailCenter.billing_period ?? '—', isPlan: false },
+                { label: tAdmin('studentsCount'), value: String(detailCenter.students_count ?? 0), isPlan: false },
+                { label: tCommon('status'), value: detailCenter.status ?? '—', isPlan: false },
+                { label: tAdmin('nextDue'), value: detailCenter.next_due ?? '—', isPlan: false },
+                { label: tAdmin('referralCode'), value: detailCenter.referral_code ?? '—', isPlan: false },
+                { label: tAdmin('lastActive'), value: detailCenter.last_active ?? '—', isPlan: false },
+                { label: tAdmin('usage'), value: String(detailCenter.usage_scans ?? 0), isPlan: false },
+                { label: tAdmin('createdAt'), value: detailCenter.created_at ? new Date(detailCenter.created_at).toLocaleDateString() : '—', isPlan: false },
+              ].map(({ label, value, isPlan }) => (
                 <div key={label}>
-                  <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-                  <p className="font-medium text-foreground">{value}</p>
+                  <p className="text-xs text-slate-500 mb-0.5">{label}</p>
+                  {isPlan ? <PlanBadge plan={value} /> : <p className="font-medium text-slate-900">{value}</p>}
                 </div>
               ))}
             </div>

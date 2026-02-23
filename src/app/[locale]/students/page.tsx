@@ -531,65 +531,90 @@ export default function StudentsPage() {
     <>
       <div className="p-4 md:p-6 space-y-5 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-foreground">{t('title')}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{students.length} {tCommon('students')}</p>
+            <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-xs me-1.5">{students.length}</span>
+              {tCommon('students')}
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/students/import"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
             >
               <Upload size={14} /> {t('import')}
             </Link>
             <Link
               href="/students/print"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
             >
               <QrCode size={14} /> {t('printQr')}
             </Link>
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
-              style={{ background: 'hsl(var(--primary))' }}
+              className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
             >
               <Plus size={14} /> {t('addStudent')}
             </button>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('searchPlaceholder')}
-            className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            dir="auto"
-          />
+        {/* Filter bar */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('searchPlaceholder')}
+                className="w-full ps-9 pe-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                dir="auto"
+              />
+            </div>
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100">
+              <button
+                type="button"
+                onClick={() => setSubjectFilter(null)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${subjectFilter === null ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+              >
+                {tCommon('all', { defaultValue: 'All' })}
+              </button>
+              {distinctSubjects.map((sub) => (
+                <button
+                  key={sub}
+                  type="button"
+                  onClick={() => setSubjectFilter(subjectFilter === sub ? null : sub)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${subjectFilter === sub ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="ch-card p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
-              <Users size={18} />
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-center gap-3">
+            <div className="p-3 rounded-full bg-teal-100 shrink-0">
+              <Users size={18} className="text-teal-600" />
             </div>
             <div>
-              <div className="text-xl font-black font-mono">{students.length}</div>
-              <div className="text-xs text-muted-foreground">{t('totalStudents')}</div>
+              <div className="text-xl font-black font-mono text-slate-900">{students.length}</div>
+              <div className="text-xs text-slate-500">{t('totalStudents')}</div>
             </div>
           </div>
-          <div className="ch-card p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#16A34A18', color: '#16A34A' }}>
-              <Users size={18} />
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-center gap-3">
+            <div className="p-3 rounded-full bg-green-100 shrink-0">
+              <Users size={18} className="text-green-600" />
             </div>
             <div>
-              <div className="text-xl font-black font-mono">{activeCount}</div>
-              <div className="text-xs text-muted-foreground">{t('activeStudents')}</div>
+              <div className="text-xl font-black font-mono text-slate-900">{activeCount}</div>
+              <div className="text-xs text-slate-500">{t('activeStudents')}</div>
             </div>
           </div>
         </div>
@@ -630,55 +655,55 @@ export default function StudentsPage() {
         ) : (
           <>
             {/* Table desktop */}
-            <div className="hidden md:block ch-card overflow-hidden">
+            <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <table className="w-full text-sm">
-                <thead style={{ background: 'hsl(var(--muted))' }}>
-                  <tr>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{t('studentNumber')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('phone')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{t('groups')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{t('balance')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('studentNumber')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('phone')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('groups')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('balance')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {filteredStudents.map((s) => {
                     const bal = balanceByStudent[s.id] ?? 0;
                     const isActive = s.is_active !== false;
                     return (
-                      <tr key={s.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 font-medium text-foreground">{s.name}</td>
-                        <td className="px-4 py-3 font-mono text-muted-foreground text-xs">{s.student_number || ''}</td>
-                        <td className="px-4 py-3 font-mono text-muted-foreground" dir="ltr">{s.phone || ''}</td>
-                        <td className="px-4 py-3">
+                      <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{s.name}</td>
+                        <td className="py-3.5 px-4 text-sm font-mono text-slate-500">{s.student_number || ''}</td>
+                        <td className="py-3.5 px-4 text-sm font-mono text-slate-500" dir="ltr">{s.phone || ''}</td>
+                        <td className="py-3.5 px-4 text-sm">
                           <div className="flex flex-wrap gap-1">
                             {(studentGroupsMap[s.id]?.names ?? []).slice(0, 2).map((n, i) => (
-                              <span key={i} className="px-2 py-0.5 rounded-full text-xs font-medium border border-border text-muted-foreground">{n}</span>
+                              <span key={i} className="px-2 py-0.5 rounded-full text-xs font-medium border border-slate-200 text-slate-600">{n}</span>
                             ))}
                             {(studentGroupsMap[s.id]?.names ?? []).length > 2 && (
-                              <span className="text-xs text-muted-foreground">+{(studentGroupsMap[s.id]?.names ?? []).length - 2}</span>
+                              <span className="text-xs text-slate-500">+{(studentGroupsMap[s.id]?.names ?? []).length - 2}</span>
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className={isActive ? 'badge-confirmed' : 'badge-late'}>
+                        <td className="py-3.5 px-4 text-sm">
+                          <span className={isActive ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-700' : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-700'}>
                             {isActive ? tCommon('active') : tCommon('inactive')}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="py-3.5 px-4 text-sm">
                           {bal > 0 ? (
-                            <span className="font-mono font-bold text-red-600 text-sm">{locale === 'ar' ? toAr(Math.round(bal)) : Math.round(bal).toLocaleString()} {tCommon('egp')}</span>
+                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold font-mono bg-red-100 text-red-700">{locale === 'ar' ? toAr(Math.round(bal)) : Math.round(bal).toLocaleString()} {tCommon('egp')}</span>
                           ) : (
-                            <span className="text-muted-foreground">&mdash;</span>
+                            <span className="text-slate-400">&mdash;</span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="py-3.5 px-4 text-sm">
                           <div className="flex items-center gap-1">
-                            <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" title={tCommon('edit')}><Edit size={14} /></button>
-                            <button onClick={() => openQRModal(s)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" title={t('viewQR')}><Eye size={14} /></button>
-                            <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title={tCommon('delete')}><Trash2 size={14} /></button>
+                            <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900" title={tCommon('edit')}><Edit size={14} /></button>
+                            <button onClick={() => openQRModal(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900" title={t('viewQR')}><Eye size={14} /></button>
+                            <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600" title={tCommon('delete')}><Trash2 size={14} /></button>
                           </div>
                         </td>
                       </tr>
@@ -692,28 +717,32 @@ export default function StudentsPage() {
             <div className="md:hidden space-y-3">
               {filteredStudents.map((s) => {
                 const bal = balanceByStudent[s.id] ?? 0;
+                const isActive = s.is_active !== false;
                 return (
-                  <div key={s.id} className="ch-card p-4">
+                  <div key={s.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">{s.name}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-slate-900">{s.name}</span>
                           {bal > 0 && (
-                            <span className="text-xs font-bold text-red-600 font-mono">{locale === 'ar' ? toAr(Math.round(bal)) : Math.round(bal).toLocaleString()} {tCommon('egp')}</span>
+                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold font-mono bg-red-100 text-red-700">{locale === 'ar' ? toAr(Math.round(bal)) : Math.round(bal).toLocaleString()} {tCommon('egp')}</span>
                           )}
+                          <span className={isActive ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-700' : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-700'}>
+                            {isActive ? tCommon('active') : tCommon('inactive')}
+                          </span>
                         </div>
-                        <div className="font-mono text-xs text-muted-foreground mt-0.5">{s.student_number || ''}</div>
-                        {s.phone && <div className="font-mono text-xs text-muted-foreground" dir="ltr">{s.phone}</div>}
+                        <div className="font-mono text-xs text-slate-500 mt-0.5">{s.student_number || ''}</div>
+                        {s.phone && <div className="font-mono text-xs text-slate-500" dir="ltr">{s.phone}</div>}
                         <div className="flex flex-wrap gap-1 mt-2">
                           {(studentGroupsMap[s.id]?.names ?? []).map((n, i) => (
-                            <span key={i} className="px-2 py-0.5 rounded-full text-xs border border-border text-muted-foreground">{n}</span>
+                            <span key={i} className="px-2 py-0.5 rounded-full text-xs border border-slate-200 text-slate-600">{n}</span>
                           ))}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Edit size={14} /></button>
-                        <button onClick={() => openQRModal(s)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Eye size={14} /></button>
-                        <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground"><Trash2 size={14} /></button>
+                        <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><Edit size={14} /></button>
+                        <button onClick={() => openQRModal(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><Eye size={14} /></button>
+                        <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-500"><Trash2 size={14} /></button>
                       </div>
                     </div>
                   </div>

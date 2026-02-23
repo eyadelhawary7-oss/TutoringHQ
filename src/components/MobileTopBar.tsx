@@ -29,17 +29,11 @@ export default function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
   };
 
   return (
-    <header
-      className="md:hidden sticky top-0 z-30 h-14 flex items-center justify-between px-4 border-b print:hidden"
-      style={{
-        background: 'hsl(var(--card))',
-        borderColor: 'hsl(var(--border))',
-      }}
-    >
+    <header className="md:hidden fixed top-0 inset-x-0 z-40 bg-white border-b border-slate-200 px-4 h-14 flex items-center justify-between print:hidden">
       <div className="flex items-center gap-2">
         {onMenuClick && (
           <button onClick={onMenuClick} className="p-2 -ms-2 rounded-lg hover:bg-slate-100 transition-colors" aria-label="Open menu">
-            <Menu size={20} style={{ color: 'hsl(var(--foreground))' }} />
+            <Menu size={20} className="text-slate-900" />
           </button>
         )}
         <Link
@@ -52,15 +46,14 @@ export default function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
             <Image src="/logo-icon.png" alt="CenterHQ" width={28} height={28} className="w-7 h-7 rounded-lg shrink-0 object-contain" />
           )}
         </Link>
-        <span className="font-bold text-sm" style={{ color: 'hsl(var(--card-foreground))' }}>CenterHQ</span>
+        <span className="font-bold text-sm text-slate-900">CenterHQ</span>
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <button
           onClick={handleLocaleToggle}
           disabled={isPending}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors hover:bg-slate-100 disabled:opacity-50"
-          style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
         >
           <Globe size={13} />
           <span>{locale === 'ar' ? 'EN' : '\u0639'}</span>
