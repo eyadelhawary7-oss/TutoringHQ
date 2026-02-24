@@ -73,7 +73,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen w-full bg-slate-50">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden md:ms-64">
         {/* Desktop topbar */}
         <header className="hidden md:flex items-center justify-between h-14 px-6 border-b border-slate-200 bg-white shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
