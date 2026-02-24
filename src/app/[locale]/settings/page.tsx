@@ -96,6 +96,9 @@ const ADMIN_NOTIFICATION_PHONE = '201220601410';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
+const LOGO_MAX_SIZE = 2 * 1024 * 1024; // 2MB
+const LOGO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 const PERMISSION_KEYS: { key: string; labelKey: string }[] = [
   { key: 'can_scan', labelKey: 'canScan' },
   { key: 'can_view_payments', labelKey: 'canViewPayments' },
@@ -154,7 +157,7 @@ function SettingsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale();
-  const { user: currentUser, hasPermission } = useUser();
+  const { user: currentUser, hasPermission, refreshUser } = useUser();
   const isRTL = locale === 'ar';
 
   // Tab from URL or default
@@ -192,6 +195,7 @@ function SettingsPageContent() {
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [logoToast, setLogoToast] = useState<'success' | 'error' | null>(null);
 
   // Billing
   const [billingData, setBillingData] = useState<{
@@ -449,37 +453,78 @@ function SettingsPageContent() {
     }
   };
 
-  // IMPORTANT: Create 'center-logos' bucket in Supabase Storage Dashboard
-  // Set bucket to PUBLIC so images are accessible via public URL
-  // Add RLS policy: authenticated users can upload to their own center_id folder
+  const showLogoToast = (type: 'success' | 'error') => {
+    setLogoToast(type);
+    setTimeout(() => setLogoToast(null), 3000);
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file || !center?.id) return;
-    setLogoUploading(true);
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${center.id}/logo.${fileExt}`;
-    const { error: uploadError } = await supabase.storage
-      .from('center-logos')
-      .upload(filePath, file, { upsert: true });
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      setLogoUploading(false);
+
+    if (!LOGO_ALLOWED_TYPES.includes(file.type)) {
+      console.error('[handleLogoUpload] Invalid file type:', file.type);
+      showLogoToast('error');
       return;
     }
-    const { data: { publicUrl } } = supabase.storage
-      .from('center-logos')
-      .getPublicUrl(filePath);
-    const { error: updateError } = await supabase
-      .from('centers')
-      .update({ logo_url: publicUrl })
-      .eq('id', center.id);
-    if (!updateError) {
-      setLogoUrl(publicUrl + '?t=' + Date.now());
-      setCenter(prev => prev ? { ...prev, logo_url: publicUrl } : null);
-      setLogoLoadFailed(false);
-      showSaved();
+    if (file.size > LOGO_MAX_SIZE) {
+      console.error('[handleLogoUpload] File too large:', file.size, 'max:', LOGO_MAX_SIZE);
+      showLogoToast('error');
+      return;
     }
-    setLogoUploading(false);
+
+    setLogoUploading(true);
+    setLogoToast(null);
+    const fileExt = file.name.split('.').pop() || 'png';
+    const filePath = `${center.id}/logo.${fileExt}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('center-logos')
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) {
+        console.error('[handleLogoUpload] Upload error:', uploadError);
+        setLogoUploading(false);
+        showLogoToast('error');
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('center-logos')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await dbUpdate({
+        table: 'centers',
+        data: { logo_url: publicUrl },
+        filters: [{ column: 'id', op: 'eq', value: center.id }],
+      });
+      if (updateError) {
+        console.error('[handleLogoUpload] DB update error:', updateError);
+        setLogoUploading(false);
+        showLogoToast('error');
+        return;
+      }
+
+      const { data: refreshedCenter } = await dbSelect({
+        table: 'centers',
+        select: 'logo_url',
+        filters: [{ column: 'id', op: 'eq', value: center.id }],
+        single: true,
+      });
+      const newLogoUrl = (refreshedCenter as { logo_url?: string } | null)?.logo_url ?? publicUrl;
+
+      setLogoUrl(newLogoUrl + '?t=' + Date.now());
+      setCenter(prev => prev ? { ...prev, logo_url: newLogoUrl } : null);
+      setLogoLoadFailed(false);
+      await refreshUser();
+      showLogoToast('success');
+    } catch (err) {
+      console.error('[handleLogoUpload] Unexpected error:', err);
+      showLogoToast('error');
+    } finally {
+      setLogoUploading(false);
+    }
   };
 
   const handleAddSubject = async (e: React.FormEvent) => {
@@ -847,12 +892,26 @@ function SettingsPageContent() {
                       )}
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp"
                         className="hidden"
                         onChange={handleLogoUpload}
                         disabled={logoUploading}
                       />
                     </label>
+                    {logoToast === 'success' && (
+                      <div className="absolute -bottom-1 start-0 end-0 text-center">
+                        <span className="inline-block px-2 py-0.5 bg-green-600 text-white text-xs rounded-full">
+                          تم رفع الشعار بنجاح
+                        </span>
+                      </div>
+                    )}
+                    {logoToast === 'error' && (
+                      <div className="absolute -bottom-1 start-0 end-0 text-center">
+                        <span className="inline-block px-2 py-0.5 bg-red-600 text-white text-xs rounded-full">
+                          فشل رفع الشعار، حاول مرة أخرى
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-[200px] space-y-4">
                     <div>

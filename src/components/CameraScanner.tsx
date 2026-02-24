@@ -3,6 +3,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+/** Normal "no QR in frame" messages from html5-qrcode - suppress these (not real errors). */
+const SUPPRESS_ERROR_PATTERNS = [
+  'No MultiFormat Readers',
+  'No barcode or QR code detected',
+  'NotFoundException',
+  'FormatException',
+];
+
+/** Real camera/initialization failures - only show banner for these. */
+const SHOW_ERROR_PATTERNS = [
+  'NotAllowedError',
+  'NotFoundError',
+  'NotReadableError',
+  'Camera access denied',
+];
+
+function isRealCameraError(msg: string): boolean {
+  return SHOW_ERROR_PATTERNS.some((p) => msg.includes(p));
+}
+
+function isSuppressibleScanError(msg: string): boolean {
+  return SUPPRESS_ERROR_PATTERNS.some((p) => msg.includes(p));
+}
+
 interface CameraScannerProps {
   onScan: (code: string) => void;
   isActive: boolean;
@@ -15,6 +39,8 @@ export default function CameraScanner({ onScan, isActive, fillContainer }: Camer
   const scannerRef = useRef<{ stop: () => Promise<void> } | null>(null);
   const [error, setError] = useState('');
   const startedRef = useRef(false);
+  const onScanRef = useRef(onScan);
+  onScanRef.current = onScan;
 
   useEffect(() => {
     if (!isActive) return;
@@ -48,20 +74,25 @@ export default function CameraScanner({ onScan, isActive, fillContainer }: Camer
             qrbox: { width: 250, height: 250 },
           },
           (decodedText: string) => {
-            onScan(decodedText);
+            onScanRef.current(decodedText);
           },
-          () => {
-            // Ignore scan failures (expected when no QR in frame)
+          (errorMessage: string) => {
+            // Suppress normal "no QR in frame" errors (fired every frame when nothing to decode)
+            if (isSuppressibleScanError(errorMessage)) return;
+            // Only show banner for actual camera/initialization failures
+            if (isRealCameraError(errorMessage)) {
+              setError(t('scanError'));
+            }
           }
         );
         startedRef.current = true;
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        if (errMsg.includes('NotFoundError') || errMsg.includes('device not found')) {
-          setError(t('scanError') + ' (No camera found)');
+        // Only show banner for actual camera/initialization failures
+        if (isRealCameraError(errMsg) || errMsg.includes('device not found')) {
+          setError(errMsg.includes('NotFoundError') ? t('scanError') + ' (No camera found)' : t('scanError'));
         } else {
           console.error('Camera error:', errMsg);
-          setError(t('scanError'));
         }
       }
     };
@@ -83,7 +114,7 @@ export default function CameraScanner({ onScan, isActive, fillContainer }: Camer
         scannerRef.current = null;
       }
     };
-  }, [isActive, onScan, t]);
+  }, [isActive, t]);
 
   if (!isActive) return null;
 

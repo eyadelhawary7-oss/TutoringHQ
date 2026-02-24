@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbCount } from '@/lib/db-proxy';
+import { dbSelect } from '@/lib/db-proxy';
 import { exportDashboardToExcel } from '@/lib/excel-export';
 import { hasPlanFeature } from '@/lib/plans';
 import { useUser } from '@/contexts/UserContext';
@@ -113,168 +113,149 @@ export default function DashboardPage() {
 
   const loadDashboard = useCallback(async (cId: string, inactPeriod: InactivePeriod = '7d', range: 7 | 30 = 7) => {
     try {
-      // Today's attendance count
-      const { count: attendanceCount } = await dbCount({
-        table: 'attendance_scans',
-        filters: [
-          { column: 'center_id', op: 'eq', value: cId },
-          { column: 'scanned_at', op: 'gte', value: startOfToday() },
-        ],
-      });
-
-      // Student payment stats
-      const { data: studentsRaw } = await dbSelect({
-        table: 'students',
-        select: 'id, name, subject, fee, payment_status',
-        filters: [{ column: 'center_id', op: 'eq', value: cId }],
-      });
-      const students = (studentsRaw || []) as { id: string; name: string; subject: string; fee: number; payment_status: string }[];
-
-      const paidCount = students.filter(s => s.payment_status === 'paid').length;
-      const unpaidCount = students.filter(s => s.payment_status === 'unpaid').length;
-      const pendingCount = students.filter(s => s.payment_status === 'pending').length;
-
+      const todayStart = startOfToday();
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+      const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const dayLabels = locale === 'ar' ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-      // Collected today: only CONFIRMED payments
-      const { data: confirmedTodayPayments } = await dbSelect({
-        table: 'payments',
-        select: 'amount, method',
-        filters: [
-          { column: 'center_id', op: 'eq', value: cId },
-          { column: 'confirmed', op: 'eq', value: true },
-          { column: 'paid_at', op: 'gte', value: startOfToday() },
-          { column: 'paid_at', op: 'lte', value: todayEnd.toISOString() },
-        ],
+      // Batch 1: 4 parallel queries
+      const [
+        paymentsResult,
+        attendanceResult,
+        studentsResult,
+        recentPaymentsResult,
+      ] = await Promise.all([
+        dbSelect({
+          table: 'payments',
+          select: 'amount, confirmed, status, method, paid_at, student_id',
+          filters: [
+            { column: 'center_id', op: 'eq', value: cId },
+            { column: 'paid_at', op: 'gte', value: thirtyDaysAgo.toISOString() },
+            { column: 'paid_at', op: 'lte', value: todayEnd.toISOString() },
+          ],
+        }),
+        dbSelect({
+          table: 'attendance_scans',
+          select: 'student_id, scanned_at',
+          filters: [
+            { column: 'center_id', op: 'eq', value: cId },
+            { column: 'scanned_at', op: 'gte', value: thirtyDaysAgo.toISOString() },
+          ],
+          order: { column: 'scanned_at', ascending: false },
+        }),
+        dbSelect({
+          table: 'students',
+          select: 'id, name, subject, fee, payment_status, student_number, created_at',
+          filters: [{ column: 'center_id', op: 'eq', value: cId }],
+        }),
+        dbSelect({
+          table: 'payments',
+          select: 'id, student_id, amount, status, confirmed, group_id, paid_at, students(name, student_number), student_groups(name)',
+          filters: [
+            { column: 'center_id', op: 'eq', value: cId },
+            { column: 'paid_at', op: 'gte', value: monthStart },
+          ],
+          order: { column: 'paid_at', ascending: false },
+          limit: 10,
+        }),
+      ]);
+
+      const paymentsData = (paymentsResult.data || []) as { amount: number; confirmed?: boolean; status?: string; method?: string; paid_at?: string; student_id?: string }[];
+      const scansData = (attendanceResult.data || []) as { student_id: string; scanned_at: string }[];
+      const students = (studentsResult.data || []) as { id: string; name: string; subject: string; fee: number; payment_status: string; student_number?: string; created_at: string }[];
+      const recentPaymentsRaw = (recentPaymentsResult.data || []) as { id: string; student_id: string; amount: number; status: string; confirmed?: boolean; group_id?: string; students?: { name?: string; student_number?: string } | null; student_groups?: { name?: string } | null }[];
+
+      // Derive KPIs from payments
+      const todayPayments = paymentsData.filter(p => {
+        if (!p.paid_at) return false;
+        const d = new Date(p.paid_at);
+        return d >= new Date(todayStart) && d <= todayEnd;
       });
+      const todayRevenue = todayPayments.filter(p => p.confirmed).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const studentPendingCount = students.filter(s => s.payment_status === 'pending').length;
+      const allPending = paymentsData.filter(p => !p.confirmed && p.status === 'pending');
+      const totalPending = allPending.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
 
-      const todayPayments = (confirmedTodayPayments || []) as { amount: number; method: string }[];
-      const todayRevenue = todayPayments.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const monthPmts = paymentsData.filter(p => p.paid_at && p.paid_at >= monthStart && p.paid_at <= monthEnd);
+      const monthTotal = monthPmts.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const monthConfirmed = monthPmts.filter(p => p.confirmed).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const monthPending = monthPmts.filter(p => !p.confirmed && p.status === 'pending').reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const monthLate = monthPmts.filter(p => p.status === 'late').reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
 
-      // Yesterday for delta calculation
+      const methodMap = new Map<string, number>();
+      monthPmts.filter(p => p.confirmed).forEach(p => {
+        const method = p.method || 'cash';
+        methodMap.set(method, (methodMap.get(method) || 0) + parseFloat(String(p.amount || 0)));
+      });
+      const revenueByMethod = Array.from(methodMap.entries()).map(([method, amount]) => ({ method, amount }));
+
+      const todayScans = scansData.filter(s => {
+        const d = new Date(s.scanned_at);
+        return d >= new Date(todayStart) && d <= todayEnd;
+      });
+      const attendanceCount = todayScans.length;
+
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStart = new Date(yesterday);
       yesterdayStart.setHours(0, 0, 0, 0);
       const yesterdayEnd = new Date(yesterday);
       yesterdayEnd.setHours(23, 59, 59, 999);
-      const [{ count: yesterdayAttendance }, { data: yesterdayPaymentsRaw }] = await Promise.all([
-        dbCount({
-          table: 'attendance_scans',
-          filters: [
-            { column: 'center_id', op: 'eq', value: cId },
-            { column: 'scanned_at', op: 'gte', value: yesterdayStart.toISOString() },
-            { column: 'scanned_at', op: 'lte', value: yesterdayEnd.toISOString() },
-          ],
-        }),
-        dbSelect({
-          table: 'payments',
-          select: 'amount',
-          filters: [
-            { column: 'center_id', op: 'eq', value: cId },
-            { column: 'confirmed', op: 'eq', value: true },
-            { column: 'paid_at', op: 'gte', value: yesterdayStart.toISOString() },
-            { column: 'paid_at', op: 'lte', value: yesterdayEnd.toISOString() },
-          ],
-        }),
-      ]);
-      const yesterdayRev = ((yesterdayPaymentsRaw || []) as { amount: number }[]).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
-      const yesterAtt = yesterdayAttendance || 0;
-      const scanDeltaPct = yesterAtt > 0 ? Math.round(((attendanceCount || 0) - yesterAtt) / yesterAtt * 100) : 0;
+      const yesterdayScans = scansData.filter(s => {
+        const d = new Date(s.scanned_at);
+        return d >= yesterdayStart && d <= yesterdayEnd;
+      });
+      const yesterdayAttendance = yesterdayScans.length;
+      const yesterdayRev = paymentsData.filter(p => {
+        if (!p.paid_at || !p.confirmed) return false;
+        const d = new Date(p.paid_at);
+        return d >= yesterdayStart && d <= yesterdayEnd;
+      }).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const scanDeltaPct = yesterdayAttendance > 0 ? Math.round((attendanceCount - yesterdayAttendance) / yesterdayAttendance * 100) : 0;
       const revenueDeltaPct = yesterdayRev > 0 ? Math.round((todayRevenue - yesterdayRev) / yesterdayRev * 100) : 0;
 
-      // Total pending (lifetime): unconfirmed payments with status pending
-      const { data: allPendingPayments } = await dbSelect({
-        table: 'payments',
-        select: 'amount',
-        filters: [
-          { column: 'center_id', op: 'eq', value: cId },
-          { column: 'confirmed', op: 'eq', value: false },
-          { column: 'status', op: 'eq', value: 'pending' },
-        ],
-      });
-      const allPending = (allPendingPayments || []) as { amount?: number }[];
-      const totalPending = allPending.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
+      const paidCount = students.filter(s => s.payment_status === 'paid').length;
+      const unpaidCount = students.filter(s => s.payment_status === 'unpaid').length;
 
-      // Monthly revenue (current month)
-      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-      const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString();
-      const { data: monthPayments } = await dbSelect({
-        table: 'payments',
-        select: 'amount, confirmed, status, method',
-        filters: [
-          { column: 'center_id', op: 'eq', value: cId },
-          { column: 'paid_at', op: 'gte', value: monthStart },
-          { column: 'paid_at', op: 'lte', value: monthEnd },
-        ],
-      });
-      const monthPmts = (monthPayments || []) as { amount: number; confirmed?: boolean; status?: string; method?: string }[];
-      const monthTotal = monthPmts.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
-      const monthConfirmed = monthPmts.filter(p => p.confirmed === true).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
-      const monthPending = monthPmts.filter(p => p.confirmed === false && p.status === 'pending').reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
-      const monthLate = monthPmts.filter(p => p.status === 'late').reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
-
-      // Revenue by method (from this month's confirmed payments)
-      const methodMap = new Map<string, number>();
-      const confirmedMonth = monthPmts.filter(p => p.confirmed === true);
-      confirmedMonth.forEach(p => {
-        const method = p.method || 'cash';
-        const current = methodMap.get(method) || 0;
-        methodMap.set(method, current + parseFloat(String(p.amount || 0)));
-      });
-      const revenueByMethod = Array.from(methodMap.entries()).map(([method, amount]) => ({ method, amount }));
-
-      // Attendance trend (range days)
-      const trendData: { date: string; count: number }[] = [];
-      const dayLabels = locale === 'ar' ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      // Trend data: group scans by date
+      const scansByDate: Record<string, number> = {};
       for (let i = range - 1; i >= 0; i--) {
         const day = new Date();
         day.setDate(day.getDate() - i);
-        const dayStart = new Date(day);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(day);
-        dayEnd.setHours(23, 59, 59, 999);
-
-        const { count } = await dbCount({
-          table: 'attendance_scans',
-          filters: [
-            { column: 'center_id', op: 'eq', value: cId },
-            { column: 'scanned_at', op: 'gte', value: dayStart.toISOString() },
-            { column: 'scanned_at', op: 'lte', value: dayEnd.toISOString() },
-          ],
-        });
-
+        const dayKey = day.toISOString().slice(0, 10);
+        scansByDate[dayKey] = 0;
+      }
+      scansData.forEach(s => {
+        const key = s.scanned_at?.slice(0, 10);
+        if (key && key in scansByDate) scansByDate[key]++;
+      });
+      const trendData: { date: string; count: number }[] = [];
+      for (let i = range - 1; i >= 0; i--) {
+        const day = new Date();
+        day.setDate(day.getDate() - i);
+        const dayKey = day.toISOString().slice(0, 10);
         const isToday = i === 0;
         trendData.push({
           date: isToday ? (locale === 'ar' ? 'اليوم' : 'Today') : dayLabels[day.getDay()],
-          count: count || 0,
+          count: scansByDate[dayKey] ?? 0,
         });
       }
 
-      // Revenue by day by method (for stacked bar chart)
+      // Revenue chart: group payments by date and method
+      const defaultMethods = { cash: 0, instapay: 0, vodafone: 0, orange: 0, fawry: 0, bank: 0, other: 0 };
       const revenueChartData: { date: string; day: string; cash: number; instapay: number; vodafone: number; orange: number; fawry: number; bank: number; other: number }[] = [];
       for (let i = range - 1; i >= 0; i--) {
         const day = new Date();
         day.setDate(day.getDate() - i);
-        const dayStart = new Date(day);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(day);
-        dayEnd.setHours(23, 59, 59, 999);
-
-        const { data: dayPayments } = await dbSelect({
-          table: 'payments',
-          select: 'amount, method',
-          filters: [
-            { column: 'center_id', op: 'eq', value: cId },
-            { column: 'confirmed', op: 'eq', value: true },
-            { column: 'paid_at', op: 'gte', value: dayStart.toISOString() },
-            { column: 'paid_at', op: 'lte', value: dayEnd.toISOString() },
-          ],
-        });
-        const pmts = (dayPayments || []) as { amount: number; method?: string }[];
-        const byMethod: Record<string, number> = { cash: 0, instapay: 0, vodafone: 0, orange: 0, fawry: 0, bank: 0, other: 0 };
-        for (const p of pmts) {
+        const dayKey = `${day.getDate()}/${day.getMonth() + 1}`;
+        const byMethod = { ...defaultMethods };
+        paymentsData.filter(p => p.confirmed && p.paid_at).forEach(p => {
+          const d = new Date(p.paid_at!);
+          if (d.toDateString() !== day.toDateString()) return;
           const m = (p.method || 'cash').toLowerCase();
           const amt = parseFloat(String(p.amount || 0));
           if (m === 'cash') byMethod.cash += amt;
@@ -284,64 +265,25 @@ export default function DashboardPage() {
           else if (m === 'fawry') byMethod.fawry += amt;
           else if (m === 'bank_transfer' || m === 'bank') byMethod.bank += amt;
           else byMethod.other += amt;
-        }
+        });
         const isToday = i === 0;
         revenueChartData.push({
-          date: `${day.getDate()}/${day.getMonth() + 1}`,
+          date: dayKey,
           day: isToday ? (locale === 'ar' ? 'اليوم' : 'Today') : dayLabels[day.getDay()],
-          cash: 0,
-          instapay: 0,
-          vodafone: 0,
-          orange: 0,
-          fawry: 0,
-          bank: 0,
-          other: 0,
           ...byMethod,
         });
       }
 
-      // Recent payments (with student and group names)
-      const { data: recentPaymentsRaw } = await dbSelect({
-        table: 'payments',
-        select: 'id, student_id, amount, status, confirmed, group_id, students(name, student_number), student_groups(name)',
-        filters: [{ column: 'center_id', op: 'eq', value: cId }],
-        order: { column: 'paid_at', ascending: false },
-        limit: 10,
-      });
-      type PaymentRow = { id: string; student_id: string; amount: number; status: string; confirmed?: boolean; group_id?: string; students?: { name?: string; student_number?: string } | null; student_groups?: { name?: string } | null };
-      const studentIds = [...new Set(((recentPaymentsRaw || []) as PaymentRow[]).map(p => p.student_id).filter(Boolean))];
-      const groupIds = [...new Set(((recentPaymentsRaw || []) as PaymentRow[]).map(p => p.group_id).filter(Boolean))];
-      let studentMap: Record<string, { name: string; student_number?: string }> = {};
-      let groupMap: Record<string, string> = {};
-      if (studentIds.length > 0) {
-        const { data: studentsData } = await dbSelect({
-          table: 'students',
-          select: 'id, name, student_number',
-          filters: [{ column: 'id', op: 'in', value: studentIds }],
-        });
-        const students = (studentsData || []) as { id: string; name?: string; student_number?: string }[];
-        studentMap = Object.fromEntries(students.map(s => [s.id, { name: s.name || '—', student_number: s.student_number }]));
-      }
-      if (groupIds.length > 0) {
-        const { data: groupsData } = await dbSelect({
-          table: 'student_groups',
-          select: 'id, name',
-          filters: [{ column: 'id', op: 'in', value: groupIds }],
-        });
-        const groups = (groupsData || []) as { id: string; name?: string }[];
-        groupMap = Object.fromEntries(groups.map(g => [g.id, g.name || '—']));
-      }
-      const recentPayments: { id: string; student_name: string; student_number?: string; group_name?: string; amount: number; status: string; confirmed?: boolean }[] = ((recentPaymentsRaw || []) as PaymentRow[]).map(p => ({
+      const recentPayments: RecentPaymentRow[] = recentPaymentsRaw.map(p => ({
         id: p.id,
-        student_name: p.students?.name ?? studentMap[p.student_id]?.name ?? '—',
-        student_number: p.students?.student_number ?? studentMap[p.student_id]?.student_number,
-        group_name: p.student_groups?.name ?? (p.group_id ? groupMap[p.group_id] : undefined),
+        student_name: p.students?.name ?? '—',
+        student_number: p.students?.student_number,
+        group_name: p.student_groups?.name,
         amount: parseFloat(String(p.amount || 0)),
         status: p.confirmed === true ? 'confirmed' : (p.status === 'late' ? 'late' : 'pending'),
         confirmed: p.confirmed,
       }));
 
-      // Weekly trend: this week vs last week attendance
       const now = new Date();
       const dayOfWeek = now.getDay();
       const diffToMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -353,106 +295,54 @@ export default function DashboardPage() {
       thisWeekEnd.setHours(23, 59, 59, 999);
       const lastWeekStart = new Date(thisWeekStart);
       lastWeekStart.setDate(thisWeekStart.getDate() - 7);
-      const lastWeekEnd = new Date(thisWeekStart);
-      lastWeekEnd.setDate(thisWeekStart.getDate() - 1);
+      const lastWeekEnd = new Date(lastWeekStart);
+      lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
       lastWeekEnd.setHours(23, 59, 59, 999);
-
-      const [{ count: thisWeekCount }, { count: lastWeekCount }] = await Promise.all([
-        dbCount({
-          table: 'attendance_scans',
-          filters: [
-            { column: 'center_id', op: 'eq', value: cId },
-            { column: 'scanned_at', op: 'gte', value: thisWeekStart.toISOString() },
-            { column: 'scanned_at', op: 'lte', value: thisWeekEnd.toISOString() },
-          ],
-        }),
-        dbCount({
-          table: 'attendance_scans',
-          filters: [
-            { column: 'center_id', op: 'eq', value: cId },
-            { column: 'scanned_at', op: 'gte', value: lastWeekStart.toISOString() },
-            { column: 'scanned_at', op: 'lte', value: lastWeekEnd.toISOString() },
-          ],
-        }),
-      ]);
-      const thisWeek = thisWeekCount || 0;
-      const lastWeek = lastWeekCount || 0;
+      const thisWeekScans = scansData.filter(s => {
+        const d = new Date(s.scanned_at);
+        return d >= thisWeekStart && d <= thisWeekEnd;
+      });
+      const lastWeekScans = scansData.filter(s => {
+        const d = new Date(s.scanned_at);
+        return d >= lastWeekStart && d <= lastWeekEnd;
+      });
+      const thisWeek = thisWeekScans.length;
+      const lastWeek = lastWeekScans.length;
       const weeklyTrendPct = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : 0;
-
-      // Collection rate
       const collectionRatePct = monthTotal > 0 ? Math.round((monthConfirmed / monthTotal) * 100) : 0;
 
-      // New students (created in last 7 days)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const { count: newStudentsCount } = await dbCount({
-        table: 'students',
-        filters: [
-          { column: 'center_id', op: 'eq', value: cId },
-          { column: 'created_at', op: 'gte', value: sevenDaysAgo.toISOString() },
-        ],
-      });
+      const newStudentsCount = students.filter(s => new Date(s.created_at) >= sevenDaysAgo).length;
 
-      // At risk: balance_due > 0 and no attendance in 14+ days
-      const { data: allPayments } = await dbSelect({
-        table: 'payments',
-        select: 'student_id, amount, confirmed, status',
-        filters: [{ column: 'center_id', op: 'eq', value: cId }],
+      const lastScanByStudent: Record<string, string> = {};
+      scansData.forEach(s => {
+        if (!lastScanByStudent[s.student_id]) lastScanByStudent[s.student_id] = s.scanned_at;
       });
       const balanceByStudent: Record<string, number> = {};
-      for (const p of (allPayments || []) as { student_id: string; amount: number; confirmed?: boolean; status?: string }[]) {
-        if (p.confirmed === false && p.status !== 'late') {
-          balanceByStudent[p.student_id] = (balanceByStudent[p.student_id] || 0) + parseFloat(String(p.amount || 0));
-        }
-      }
-      const { data: allScans } = await dbSelect({
-        table: 'attendance_scans',
-        select: 'student_id, scanned_at',
-        filters: [{ column: 'center_id', op: 'eq', value: cId }],
-        order: { column: 'scanned_at', ascending: false },
+      paymentsData.filter(p => !p.confirmed && p.status !== 'late').forEach(p => {
+        if (p.student_id) balanceByStudent[p.student_id] = (balanceByStudent[p.student_id] || 0) + parseFloat(String(p.amount || 0));
       });
-      const lastScanByStudent: Record<string, string> = {};
-      for (const s of (allScans || []) as { student_id: string; scanned_at: string }[]) {
-        if (!lastScanByStudent[s.student_id]) lastScanByStudent[s.student_id] = s.scanned_at;
-      }
       const fourteenDaysAgo = new Date();
       fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
       let atRiskCount = 0;
       for (const sid of Object.keys(balanceByStudent)) {
         if ((balanceByStudent[sid] || 0) <= 0) continue;
-        const lastScan = lastScanByStudent[sid];
-        if (!lastScan || new Date(lastScan) < fourteenDaysAgo) atRiskCount++;
+        if (!lastScanByStudent[sid] || new Date(lastScanByStudent[sid]) < fourteenDaysAgo) atRiskCount++;
       }
 
-      // Inactive students: no attendance in >= periodDays
       const periodD = periodDays[inactPeriod];
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - periodD);
-      const { data: studentsFull } = await dbSelect({
-        table: 'students',
-        select: 'id, name, student_number, created_at',
-        filters: [{ column: 'center_id', op: 'eq', value: cId }],
-      });
-      const studentList = (studentsFull || []) as { id: string; name: string; student_number?: string; created_at: string }[];
-      const inactiveStudents: InactiveStudent[] = [];
-      for (const st of studentList) {
-        const lastScan = lastScanByStudent[st.id];
-        const lastScannedAt = lastScan || null;
-        const lastDate = lastScannedAt ? new Date(lastScannedAt) : null;
-        const isInactive = !lastDate || lastDate < cutoffDate;
-        if (isInactive) {
-          const daysAbsent = lastDate
-            ? Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
-            : 0;
-          inactiveStudents.push({
-            id: st.id,
-            name: st.name || '—',
-            student_number: st.student_number || '—',
-            last_scanned_at: lastScannedAt,
-            days_absent: daysAbsent,
-          });
-        }
-      }
+      const inactiveStudents: InactiveStudent[] = students
+        .map(st => {
+          const lastScannedAt = lastScanByStudent[st.id] || null;
+          const lastDate = lastScannedAt ? new Date(lastScannedAt) : null;
+          if (lastDate && lastDate >= cutoffDate) return null;
+          const daysAbsent = lastDate ? Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          return { id: st.id, name: st.name || '—', student_number: st.student_number || '—', last_scanned_at: lastScannedAt, days_absent: daysAbsent };
+        })
+        .filter((s): s is InactiveStudent => s !== null);
       inactiveStudents.sort((a, b) => (b.days_absent || 0) - (a.days_absent || 0));
 
       setData({
@@ -460,7 +350,7 @@ export default function DashboardPage() {
         totalStudents: students.length,
         paidCount,
         unpaidCount,
-        pendingCount,
+        pendingCount: studentPendingCount,
         todayRevenue,
         totalPending,
         revenueByMethod,
@@ -521,22 +411,21 @@ export default function DashboardPage() {
           name: meData.user.center.name,
           plan: meData.user.center.plan,
         } : null);
-        // Fetch plan usage for capacity widget
-        try {
-          const limitsRes = await fetch('/api/settings/limits', {
-            headers: { 'Authorization': `Bearer ${session.access_token}` },
-          });
-          if (limitsRes.ok) {
-            const limitsData = await limitsRes.json();
-            setPlanUsage({
-              plan: limitsData.plan || 'starter',
-              weeklyUniqueStudents: limitsData.weeklyUniqueStudents ?? 0,
-              studentLimit: limitsData.studentLimit ?? 150,
-            });
-          }
-        } catch {
-          // ignore
-        }
+        // Fetch plan usage in parallel (don't block dashboard load)
+        fetch('/api/settings/limits', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        })
+          .then((res) => res.ok ? res.json() : null)
+          .then((limitsData) => {
+            if (limitsData) {
+              setPlanUsage({
+                plan: limitsData.plan || 'starter',
+                weeklyUniqueStudents: limitsData.weeklyUniqueStudents ?? 0,
+                studentLimit: limitsData.studentLimit ?? 150,
+              });
+            }
+          })
+          .catch(() => {});
       }
     };
     init();
@@ -582,6 +471,7 @@ export default function DashboardPage() {
     }
     setIsExporting(true);
     try {
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
       const [studentsRes, attendanceRes, paymentsRes] = await Promise.all([
         dbSelect({
           table: 'students',
@@ -592,14 +482,20 @@ export default function DashboardPage() {
         dbSelect({
           table: 'attendance_scans',
           select: 'student_id, scanned_at',
-          filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+          filters: [
+            { column: 'center_id', op: 'eq', value: centerId },
+            { column: 'scanned_at', op: 'gte', value: startOfMonth },
+          ],
           order: { column: 'scanned_at', ascending: false },
           limit: 500,
         }),
         dbSelect({
           table: 'payments',
           select: 'student_id, amount, method, paid_at, recorded_by',
-          filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+          filters: [
+            { column: 'center_id', op: 'eq', value: centerId },
+            { column: 'paid_at', op: 'gte', value: startOfMonth },
+          ],
           order: { column: 'paid_at', ascending: false },
           limit: 500,
         }),
@@ -797,11 +693,93 @@ export default function DashboardPage() {
           )}
 
           {isLoading ? (
-            <div className="text-center py-16">
-              <svg className="animate-spin h-8 w-8 text-teal-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
+            <div className="space-y-6">
+              {/* KPI Cards skeleton */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                {canViewRevenue && (
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+                      <div className="h-6 w-12 rounded-full bg-slate-200 animate-pulse" />
+                    </div>
+                    <div className="h-8 w-24 mt-3 rounded bg-slate-200 animate-pulse" />
+                    <div className="h-4 w-20 mt-2 rounded bg-slate-200 animate-pulse" />
+                  </div>
+                )}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+                    <div className="h-6 w-12 rounded-full bg-slate-200 animate-pulse" />
+                  </div>
+                  <div className="h-8 w-16 mt-3 rounded bg-slate-200 animate-pulse" />
+                  <div className="h-4 w-20 mt-2 rounded bg-slate-200 animate-pulse" />
+                </div>
+                {canViewRevenue && (
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+                      <div className="h-6 w-8 rounded-full bg-slate-200 animate-pulse" />
+                    </div>
+                    <div className="h-8 w-12 mt-3 rounded bg-slate-200 animate-pulse" />
+                    <div className="h-4 w-24 mt-2 rounded bg-slate-200 animate-pulse" />
+                  </div>
+                )}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+                    <div className="h-6 w-10 rounded-full bg-slate-200 animate-pulse" />
+                  </div>
+                  <div className="h-8 w-16 mt-3 rounded bg-slate-200 animate-pulse" />
+                  <div className="h-4 w-24 mt-2 rounded bg-slate-200 animate-pulse" />
+                </div>
+              </div>
+              {/* Weekly Performance skeleton */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-4 w-36 rounded bg-slate-200 animate-pulse" />
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
+                      <div className="h-4 w-24 rounded bg-slate-200 animate-pulse" />
+                      <div className="h-6 w-16 rounded bg-slate-200 animate-pulse" />
+                      <div className="h-1.5 w-full rounded bg-slate-200 animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Quick Actions skeleton */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-4 w-28 rounded bg-slate-200 animate-pulse" />
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-200 animate-pulse shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-24 rounded bg-slate-200 animate-pulse" />
+                        <div className="h-3 w-full rounded bg-slate-200 animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Charts skeleton */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <div className="h-5 w-32 mb-4 rounded bg-slate-200 animate-pulse" />
+                  <div className="h-48 rounded bg-slate-200 animate-pulse" />
+                </div>
+                {canViewRevenue && (
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <div className="h-5 w-32 mb-4 rounded bg-slate-200 animate-pulse" />
+                    <div className="h-48 rounded bg-slate-200 animate-pulse" />
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="space-y-6">

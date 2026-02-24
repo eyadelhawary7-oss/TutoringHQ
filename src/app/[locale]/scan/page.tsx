@@ -745,25 +745,27 @@ export default function ScanPage() {
 
         {/* Scanner body */}
         <div className="flex flex-col items-center gap-6">
-          {mode === 'camera' && (
-            <div className="relative bg-slate-900 rounded-2xl overflow-hidden aspect-square w-full max-w-sm mx-auto shadow-2xl mb-6">
-              <CameraScanner
-                key={scannedStudent ? 'camera-hidden' : 'camera-active'}
-                onScan={handleScan}
-                isActive={!scannedStudent}
-                fillContainer
-              />
-              {/* Targeting overlay */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-48 h-48 border-2 border-white/50 rounded-2xl relative">
-                  <div className="absolute top-0 start-0 w-6 h-6 border-t-2 border-s-2 border-teal-400 rounded-tl-lg" />
-                  <div className="absolute top-0 end-0 w-6 h-6 border-t-2 border-e-2 border-teal-400 rounded-tr-lg" />
-                  <div className="absolute bottom-0 start-0 w-6 h-6 border-b-2 border-s-2 border-teal-400 rounded-bl-lg" />
-                  <div className="absolute bottom-0 end-0 w-6 h-6 border-b-2 border-e-2 border-teal-400 rounded-br-lg" />
-                </div>
+          {/* Camera: always mounted but hidden when not active — avoids unmount side effects that reset tab */}
+          <div
+            className={`relative bg-slate-900 rounded-2xl overflow-hidden aspect-square w-full max-w-sm mx-auto shadow-2xl mb-6 ${mode !== 'camera' ? 'hidden' : ''}`}
+            aria-hidden={mode !== 'camera'}
+          >
+            <CameraScanner
+              key={scannedStudent ? 'camera-hidden' : 'camera-active'}
+              onScan={handleScan}
+              isActive={mode === 'camera' && !scannedStudent}
+              fillContainer
+            />
+            {/* Targeting overlay */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-48 h-48 border-2 border-white/50 rounded-2xl relative">
+                <div className="absolute top-0 start-0 w-6 h-6 border-t-2 border-s-2 border-teal-400 rounded-tl-lg" />
+                <div className="absolute top-0 end-0 w-6 h-6 border-t-2 border-e-2 border-teal-400 rounded-tr-lg" />
+                <div className="absolute bottom-0 start-0 w-6 h-6 border-b-2 border-s-2 border-teal-400 rounded-bl-lg" />
+                <div className="absolute bottom-0 end-0 w-6 h-6 border-b-2 border-e-2 border-teal-400 rounded-br-lg" />
               </div>
             </div>
-          )}
+          </div>
 
           {mode === 'bluetooth' && (
             <div className="w-full max-w-sm">

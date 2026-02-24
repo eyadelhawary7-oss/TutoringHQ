@@ -1,18 +1,14 @@
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { type NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
 const intlMiddleware = createMiddleware(routing);
 
-// Routes that don't require authentication
 const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/'];
-
-// Routes that should not have locale prefix handling  
 const apiRoutes = ['/auth/callback'];
 
 function isPublicRoute(pathname: string): boolean {
-  // Strip locale prefix if present
   const cleanPath = pathname.replace(/^\/(ar|en)/, '') || '/';
   return publicRoutes.some(route => cleanPath === route || cleanPath.startsWith(route + '/'));
 }
@@ -24,12 +20,10 @@ function isApiRoute(pathname: string): boolean {
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip API routes from intl middleware
   if (isApiRoute(pathname)) {
     return NextResponse.next();
   }
 
-  // Skip static assets and Next.js internals
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -40,15 +34,16 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Run intl middleware first for locale handling
   const intlResponse = intlMiddleware(request);
 
-  // For public routes, just return intl response
   if (isPublicRoute(pathname)) {
     return intlResponse;
   }
 
-  // For protected routes, check auth via cookie
+  let supabaseResponse = intlResponse;
+  type CookieEntry = { name: string; value: string; options?: Record<string, unknown> };
+  let storedCookies: CookieEntry[] = [];
+
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -57,21 +52,17 @@ export default async function middleware(request: NextRequest) {
       return intlResponse;
     }
 
-    // Get auth token from cookies
-    const accessToken = request.cookies.get('sb-access-token')?.value
-      || request.cookies.get(`sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`)?.value;
-
-    // If no auth cookie found, let the page handle auth check client-side
-    // This avoids blocking server-side rendering while still allowing client-side auth
-    if (!accessToken) {
-      return intlResponse;
-    }
-
-    // Check subscription status for authenticated routes
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-      global: {
-        headers: { Authorization: `Bearer ${accessToken}` },
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          storedCookies = cookiesToSet as CookieEntry[];
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, (options ?? {}) as Record<string, unknown>)
+          );
+        },
       },
     });
 
@@ -92,17 +83,18 @@ export default async function middleware(request: NextRequest) {
           .single();
 
         const cleanPath = pathname.replace(/^\/(ar|en)/, '') || '/';
-        const localePrefix = pathname.startsWith('/en') ? '/en' : '';
-        const suspendedPath = `${localePrefix}/suspended`;
-        /** Allow suspended users to access billing page to submit payment proof */
+        const localePrefix = pathname.startsWith('/en') ? '/en' : pathname.startsWith('/ar') ? '/ar' : '';
+        const suspendedPath = `${localePrefix || '/en'}/suspended`;
         const isBillingPage = cleanPath === '/settings/billing' || cleanPath.startsWith('/settings/billing');
 
         if (!cleanPath.startsWith('/suspended')) {
+          let shouldRedirect = false;
+          let redirectUrl = '';
+
           if (center?.status === 'suspended') {
             if (!isBillingPage) {
-              const suspendedUrl = new URL(suspendedPath, request.url);
-              suspendedUrl.searchParams.set('reason', 'center_suspended');
-              return NextResponse.redirect(suspendedUrl);
+              shouldRedirect = true;
+              redirectUrl = `${suspendedPath}?reason=center_suspended`;
             }
           } else {
             const billingStatus = (center as { billing_status?: string })?.billing_status;
@@ -111,12 +103,19 @@ export default async function middleware(request: NextRequest) {
               const suspendDate = new Date(autoSuspendAt);
               if (new Date() >= suspendDate) {
                 if (!isBillingPage) {
-                  const suspendedUrl = new URL(suspendedPath, request.url);
-                  suspendedUrl.searchParams.set('reason', 'payment_overdue');
-                  return NextResponse.redirect(suspendedUrl);
+                  shouldRedirect = true;
+                  redirectUrl = `${suspendedPath}?reason=payment_overdue`;
                 }
               }
             }
+          }
+
+          if (shouldRedirect && redirectUrl) {
+            const redirectResp = NextResponse.redirect(new URL(redirectUrl, request.url));
+            storedCookies.forEach(({ name, value, options }) =>
+              redirectResp.cookies.set(name, value, options ?? {})
+            );
+            return redirectResp;
           }
         }
 
@@ -127,19 +126,21 @@ export default async function middleware(request: NextRequest) {
           .single();
 
         if (subscription?.status === 'suspended' && !cleanPath.startsWith('/suspended')) {
-          const suspendedUrl = new URL(suspendedPath, request.url);
-          return NextResponse.redirect(suspendedUrl);
+          const redirectResp = NextResponse.redirect(new URL(suspendedPath, request.url));
+          storedCookies.forEach(({ name, value, options }) =>
+            redirectResp.cookies.set(name, value, options ?? {})
+          );
+          return redirectResp;
         }
       }
     }
   } catch {
-    // If any auth check fails, continue normally
+    // Auth check failed, continue
   }
 
-  return intlResponse;
+  return supabaseResponse;
 }
 
 export const config = {
-  // Match all routes except API, Next.js internals, and static files
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
