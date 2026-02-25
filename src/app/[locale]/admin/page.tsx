@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Link } from '@/i18n/routing';
@@ -54,6 +55,7 @@ import {
   Cell,
 } from 'recharts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
+import { AdminSidebar } from '@/components/AdminSidebar';
 import { PlanBadge, BillingStatusBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 
@@ -65,7 +67,7 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 };
 
-type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'cardOrders' | 'salesPipeline' | 'analytics';
+type AdminTab = 'overview' | 'ceoDashboard' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'cardOrders' | 'salesPipeline' | 'analytics';
 
 const ADMIN_NAV: { key: AdminTab; icon: typeof LayoutDashboard }[] = [
   { key: 'overview', icon: LayoutDashboard },
@@ -256,10 +258,10 @@ export default function AdminPage() {
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const router = useRouter();
+  const pathname = usePathname();
   const { setHideShell } = useLayout();
 
   const [tab, setTab] = useState<AdminTab>('overview');
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -793,92 +795,7 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Admin Sidebar - desktop only */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 border-e border-slate-200 bg-slate-900">
-        <div className="p-4 border-b border-slate-700">
-          <h2 className="font-bold text-white">{tAdmin('title')}</h2>
-          <Link href="/dashboard" className="text-xs text-teal-400 hover:underline mt-1 block">{tAdmin('backToMyCenter')}</Link>
-        </div>
-        <nav className="flex-1 p-2 space-y-0.5">
-          {ADMIN_NAV.map(({ key, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={
-                tab === key
-                  ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-teal-600/10 text-teal-400 font-medium w-full text-start'
-                  : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full text-start'
-              }
-            >
-              <Icon size={18} />
-              <span>{tAdmin(key)}</span>
-              {key === 'cardOrders' && cardOrdersUnread > 0 && (
-                <span className="ms-auto min-w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                  {cardOrdersUnread}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
-      </aside>
-
-      {/* Mobile top bar + hamburger */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 md:hidden">
-        <div>
-          <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
-          <h2 className="font-bold text-slate-900 text-sm capitalize">{tab}</h2>
-        </div>
-        <button
-          onClick={() => setMobileNavOpen(true)}
-          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-        >
-          <Menu className="w-5 h-5 text-slate-600" />
-        </button>
-      </div>
-
-      {/* Mobile slide-out nav drawer */}
-      {mobileNavOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setMobileNavOpen(false)}
-          />
-          <div className="absolute top-0 start-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <span className="font-bold text-slate-900">Admin Panel</span>
-              <button onClick={() => setMobileNavOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-              {ADMIN_NAV.map(({ key, icon: Icon }) => (
-                <button
-                  key={key}
-                  onClick={() => { setTab(key); setMobileNavOpen(false); }}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    tab === key
-                      ? 'bg-teal-50 text-teal-700'
-                      : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  {tAdmin(key)}
-                  {key === 'cardOrders' && cardOrdersUnread > 0 && (
-                    <span className="ms-auto min-w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                      {cardOrdersUnread}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </nav>
-            <div className="p-4 border-t border-slate-200">
-              <Link href="/dashboard" className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700">
-                <ArrowLeft className="w-4 h-4" /> Back to My Center
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname} />
 
       {/* Toast for new card order */}
       {toast && (
@@ -888,7 +805,7 @@ export default function AdminPage() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 p-4 md:p-6 overflow-auto">
+      <div className="flex-1 p-4 md:p-6 overflow-auto mt-12 md:mt-0">
         {/* Overview */}
         {tab === 'overview' && overview && (
           <>
