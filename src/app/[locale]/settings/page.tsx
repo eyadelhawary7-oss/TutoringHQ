@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
@@ -188,6 +188,7 @@ function SettingsPageContent() {
   const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[]; pending?: { referred_center_name: string; referred_center_plan: string; reward_status: string }[]; totalEarned: number } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Billing
   const [billingData, setBillingData] = useState<{
@@ -441,13 +442,14 @@ function SettingsPageContent() {
     const { error: uploadError } = await supabase.storage.from('center-logos').upload(path, file, { upsert: true });
     if (uploadError) { console.error('Logo upload error:', uploadError); return; }
     const { data: publicData } = supabase.storage.from('center-logos').getPublicUrl(path);
-    const { error } = await dbUpdate({ table: 'centers', data: { logo_url: publicData.publicUrl }, filters: [{ column: 'id', op: 'eq', value: centerId }] });
+    const cacheBustedUrl = publicData.publicUrl + '?t=' + Date.now();
+    const { error } = await dbUpdate({ table: 'centers', data: { logo_url: cacheBustedUrl }, filters: [{ column: 'id', op: 'eq', value: centerId }] });
     if (error) {
       console.error('Logo dbUpdate error:', error);
       return;
     }
     await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'logo' } });
-    setCenter(prev => prev ? { ...prev, logo_url: publicData.publicUrl } : null);
+    setCenter(prev => prev ? { ...prev, logo_url: cacheBustedUrl } : null);
     setLogoLoadFailed(false);
     showSaved();
   };
@@ -797,7 +799,7 @@ function SettingsPageContent() {
                   )}
                   <label className="cursor-pointer px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 border border-primary/50 rounded-lg hover:bg-primary/10 transition-colors">
                     {(center?.logo_url && !logoLoadFailed) ? t('logoChange') : t('logoUpload')}
-                    <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                    <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                   </label>
                 </div>
                 <div className="flex-1 min-w-[200px] space-y-4">
