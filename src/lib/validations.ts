@@ -261,6 +261,14 @@ export const studentGroupSchema = z.object({
   center_id: z.string().uuid().optional(),
 });
 
+/** Card order student entry */
+const cardOrderStudentSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  student_number: z.string().optional(),
+  qr_code: z.string().optional().nullable(),
+});
+
 /** DB route - table-specific validation for insert/update */
 export const dbInsertSchemas: Record<string, z.ZodType> = {
   students: studentImportRowSchema.extend({
@@ -268,4 +276,16 @@ export const dbInsertSchemas: Record<string, z.ZodType> = {
   }),
   student_groups: studentGroupSchema,
   payments: paymentSchema.extend({ center_id: z.string().uuid().optional() }),
+  card_orders: z.object({
+    center_id: z.string().uuid(),
+    created_by: z.string().uuid(),
+    students: z.array(cardOrderStudentSchema),
+    quantity: z.number().int().min(0),
+    price_per_card: z.number().min(0).optional().default(3),
+    delivery_fee: z.number().min(0).optional().default(0),
+    total_amount: z.number().min(0),
+    status: z.enum(['pending', 'confirmed', 'printing', 'shipped', 'delivered']).optional().default('pending'),
+    delivery_address: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+  }),
 };

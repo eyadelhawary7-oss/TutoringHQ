@@ -1312,5 +1312,21 @@
     "orContactUs": "Or contact us",
     "billOverdueWarning": "فاتورتك متأخرة. التأخر أكثر من 15 يوم يؤدي لإيقاف حسابك",
     "billOverdueWarningEn": "Your bill is overdue. Accounts suspended after 15 days"
+  },
+  "cardOrders": {
+    "orderIdCards": "Order ID Cards",
+    "selectStudents": "Select Students",
+    "previewCard": "Preview & Customize",
+    "orderSummary": "Order Summary",
+    "pricePerCard": "Price per card (EGP)",
+    "deliveryFee": "Delivery fee (EGP)",
+    "totalAmount": "Total",
+    "submitOrder": "Submit Order",
+    "orderSuccess": "Order submitted! We'll contact you on WhatsApp to confirm.",
+    "frontOfCard": "Front",
+    "backOfCard": "Back",
+    "poweredBy": "Powered by CenterHQ",
+    "cardOrders": "Card Orders",
+    "newOrder": "New card order from"
   }
 }

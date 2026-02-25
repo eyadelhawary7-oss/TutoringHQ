@@ -1307,5 +1307,21 @@
     "orContactUs": "أو تواصل معنا",
     "billOverdueWarning": "فاتورتك متأخرة. التأخر أكثر من 15 يوم يؤدي لإيقاف حسابك",
     "billOverdueWarningEn": "Your bill is overdue. Accounts suspended after 15 days"
+  },
+  "cardOrders": {
+    "orderIdCards": "طلب بطاقات هوية",
+    "selectStudents": "اختر الطلاب",
+    "previewCard": "معاينة وتخصيص",
+    "orderSummary": "ملخص الطلب",
+    "pricePerCard": "سعر البطاقة (جنيه)",
+    "deliveryFee": "رسوم التوصيل (جنيه)",
+    "totalAmount": "الإجمالي",
+    "submitOrder": "تقديم الطلب",
+    "orderSuccess": "تم تقديم الطلب! سنتواصل معك على واتساب للتأكيد.",
+    "frontOfCard": "الأمام",
+    "backOfCard": "الخلف",
+    "poweredBy": "مدعوم من CenterHQ",
+    "cardOrders": "طلبات البطاقات",
+    "newOrder": "طلب بطاقة جديد من"
   }
 }
