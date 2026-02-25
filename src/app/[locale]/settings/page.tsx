@@ -439,7 +439,7 @@ function SettingsPageContent() {
     const ext = file.name.split('.').pop();
     const path = `${centerId}/logo.${ext}`;
     const { error: uploadError } = await supabase.storage.from('center-logos').upload(path, file, { upsert: true });
-    if (uploadError) return;
+    if (uploadError) { console.error('Logo upload error:', uploadError); return; }
     const { data: publicData } = supabase.storage.from('center-logos').getPublicUrl(path);
     const { error } = await dbUpdate({ table: 'centers', data: { logo_url: publicData.publicUrl }, filters: [{ column: 'id', op: 'eq', value: centerId }] });
     if (!error) {
