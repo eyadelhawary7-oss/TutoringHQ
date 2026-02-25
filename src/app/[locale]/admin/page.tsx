@@ -38,7 +38,6 @@ import {
 } from 'recharts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { supabase } from '@/lib/supabase';
 
 const PLAN_LABELS: Record<string, string> = {
   starter: 'Starter',
