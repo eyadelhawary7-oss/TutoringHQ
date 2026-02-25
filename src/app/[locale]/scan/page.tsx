@@ -76,6 +76,8 @@ export default function ScanPage() {
   const [addedAmountToBalance, setAddedAmountToBalance] = useState(0);
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Sync students to IndexedDB when center is available
   const fetchAndSyncStudents = useCallback(async () => {
@@ -613,6 +615,8 @@ export default function ScanPage() {
       setTimeout(() => manualInputRef.current?.focus(), 100);
     }
   };
+
+  if (!mounted) return null;
 
   return (
     <>
