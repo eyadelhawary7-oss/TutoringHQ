@@ -308,7 +308,7 @@ export default function OnboardingPage() {
               <button
                 onClick={handleGetStarted}
                 disabled={loading || (!centerId && !centerName.trim())}
-                className="btn-primary px-8 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-3 rounded-xl text-sm font-semibold text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? tCommon('loading') : t('getStarted')}
               </button>
@@ -318,25 +318,25 @@ export default function OnboardingPage() {
           {/* Step 2: Add Students */}
           {step === 1 && (
             <div className="space-y-5">
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">{t('addStudents')}</h2>
+              <h2 className="text-xl font-bold text-foreground">{t('addStudents')}</h2>
               <div className="grid grid-cols-2 gap-3">
-                <Link href="/students/import" className="glass p-5 text-center hover:shadow-md transition-shadow">
+                <Link href="/students/import" className="ch-card p-5 text-center hover:shadow-md transition-shadow border border-border">
                   <Upload size={24} className="mx-auto mb-2 text-primary" />
-                  <div className="font-semibold text-[var(--text-primary)] text-sm">{t('importFromFile')}</div>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">{t('importFromFileDesc')}</div>
+                  <div className="font-semibold text-foreground text-sm">{t('importFromFile')}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{t('importFromFileDesc')}</div>
                 </Link>
-                <div className="glass p-5 text-center border-primary/30">
+                <div className="ch-card p-5 text-center border-primary/30 border border-border">
                   <Users size={24} className="mx-auto mb-2 text-primary" />
-                  <div className="font-semibold text-[var(--text-primary)] text-sm">{t('addManually')}</div>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">{t('addManuallyDesc')}</div>
+                  <div className="font-semibold text-foreground text-sm">{t('addManually')}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{t('addManuallyDesc')}</div>
                 </div>
               </div>
-              <div className="glass p-4 space-y-3">
+              <div className="ch-card p-4 space-y-3 border border-border">
                 <input
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
                   placeholder={t('studentNamePlaceholder')}
-                  className="w-full px-3 py-2.5 rounded-lg glass-input text-sm"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm"
                 />
                 <input
                   value={studentPhone}
@@ -344,20 +344,20 @@ export default function OnboardingPage() {
                   placeholder={t('phoneOptional')}
                   type="tel"
                   dir="ltr"
-                  className="w-full px-3 py-2.5 rounded-lg glass-input text-sm"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm"
                 />
                 <button
                   onClick={handleAddStudent}
                   disabled={loading || !studentName.trim()}
-                  className="btn-primary w-full py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+                  className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-primary disabled:opacity-50"
                 >
                   {loading ? tCommon('loading') : tCommon('add')}
                 </button>
               </div>
               <p className="text-sm text-[var(--text-muted)] text-center">{t('studentsAdded', { count: studentCount })}</p>
               <div className="flex justify-between">
-                <button onClick={() => setStep(2)} className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)]">{t('skip')}</button>
-                <button onClick={() => setStep(2)} className="btn-primary px-6 py-2.5 rounded-xl text-sm font-semibold text-white">{t('next')}</button>
+                <button onClick={() => setStep(2)} className="text-sm text-muted-foreground hover:text-foreground">{t('skip')}</button>
+                <button onClick={() => setStep(2)} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white bg-primary">{t('next')}</button>
               </div>
             </div>
           )}
@@ -365,18 +365,18 @@ export default function OnboardingPage() {
           {/* Step 3: Create Groups */}
           {step === 2 && (
             <div className="space-y-5">
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">{t('createGroups')}</h2>
-              <div className="glass p-4 space-y-3">
+              <h2 className="text-xl font-bold text-foreground">{t('createGroups')}</h2>
+              <div className="ch-card p-4 space-y-3 border border-border">
                 <input
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
                   placeholder={t('groupNamePlaceholder')}
-                  className="w-full px-3 py-2.5 rounded-lg glass-input text-sm"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm"
                 />
                 <select
                   value={groupSubject}
                   onChange={(e) => setGroupSubject(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg glass-input text-sm"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm"
                 >
                   <option value="">{t('selectSubject')}</option>
                   {subjects.map((s) => (
@@ -398,12 +398,12 @@ export default function OnboardingPage() {
                   placeholder={t('feePerLessonPlaceholder')}
                   type="number"
                   min="0"
-                  className="w-full px-3 py-2.5 rounded-lg glass-input text-sm font-mono"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm font-mono"
                 />
                 <button
                   onClick={handleAddGroup}
                   disabled={loading || !groupName.trim()}
-                  className="btn-primary w-full py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+                  className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-primary disabled:opacity-50"
                 >
                   {loading ? tCommon('loading') : t('addGroup')}
                 </button>
@@ -411,7 +411,7 @@ export default function OnboardingPage() {
               {groups.length > 0 && (
                 <div className="space-y-2">
                   {groups.map((g, i) => (
-                    <div key={i} className="glass p-3 flex items-center justify-between">
+                    <div key={i} className="ch-card p-3 flex items-center justify-between border border-border">
                       <div>
                         <div className="font-semibold text-[var(--text-primary)] text-sm">{g.name}</div>
                         <div className="text-xs text-[var(--text-muted)]">{g.subject || '\u2014'} &mdash; {g.fee || '0'} EGP</div>
@@ -422,8 +422,8 @@ export default function OnboardingPage() {
                 </div>
               )}
               <div className="flex justify-between">
-                <button onClick={() => setStep(3)} className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)]">{t('skip')}</button>
-                <button onClick={() => setStep(3)} className="btn-primary px-6 py-2.5 rounded-xl text-sm font-semibold text-white">{t('next')}</button>
+                <button onClick={() => setStep(3)} className="text-sm text-muted-foreground hover:text-foreground">{t('skip')}</button>
+                <button onClick={() => setStep(3)} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white bg-primary">{t('next')}</button>
               </div>
             </div>
           )}
@@ -432,11 +432,11 @@ export default function OnboardingPage() {
           {step === 3 && (
             <div className="text-center space-y-6">
               <QrCode size={64} className="mx-auto text-primary" />
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">{t('qrReady')}</h2>
-              <p className="text-[var(--text-muted)]">{t('qrMessage')}</p>
+              <h2 className="text-xl font-bold text-foreground">{t('qrReady')}</h2>
+              <p className="text-muted-foreground">{t('qrMessage')}</p>
               <Link
                 href="/students/print"
-                className="inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-semibold border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-semibold border border-border text-foreground hover:bg-muted transition-colors"
               >
                 {t('printQrCards')}
               </Link>
@@ -444,7 +444,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={handleFinishSetup}
                   disabled={loading}
-                  className="btn-primary px-8 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                  className="px-8 py-3 rounded-lg text-sm font-semibold text-white bg-primary disabled:opacity-50"
                 >
                   {loading ? tCommon('loading') : t('finishSetup')}
                 </button>

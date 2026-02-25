@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
@@ -20,20 +19,18 @@ import {
   Settings,
   Shield,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
+  X,
 } from 'lucide-react';
 
 const SIDEBAR_EXPANDED = 256;
 const SIDEBAR_COLLAPSED = 64;
-const STORAGE_KEY = 'centerhq-sidebar-collapsed';
 
 interface SidebarProps {
-  collapsed?: boolean;
-  onCollapsedChange?: (collapsed: boolean) => void;
+  open?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ collapsed: controlledCollapsed, onCollapsedChange }: SidebarProps) {
+export default function Sidebar({ open = false, onClose }: SidebarProps) {
   const t = useTranslations('nav');
   const tSettings = useTranslations('settings');
   const pathname = usePathname();
@@ -43,18 +40,6 @@ export default function Sidebar({ collapsed: controlledCollapsed, onCollapsedCha
   const [isAdmin, setIsAdmin] = useState(false);
 
   const isRTL = locale === 'ar';
-
-  const [internalCollapsed, setInternalCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem(STORAGE_KEY) === 'true';
-  });
-
-  const collapsed = controlledCollapsed ?? internalCollapsed;
-  const setCollapsed = (value: boolean) => {
-    if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEY, String(value));
-    if (onCollapsedChange) onCollapsedChange(value);
-    else setInternalCollapsed(value);
-  };
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -105,19 +90,24 @@ export default function Sidebar({ collapsed: controlledCollapsed, onCollapsedCha
   const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : isSuperAdminOnly ? 'roleAdmin' : null;
   const centerName = user?.center?.name || user?.name || user?.phone || 'User';
 
-  const CollapseIcon = isRTL
-    ? (collapsed ? ChevronLeft : ChevronRight)
-    : (collapsed ? ChevronRight : ChevronLeft);
+  if (!open) return null;
 
   return (
-    <aside
-      className={`hidden md:flex flex-col h-screen sticky top-0 transition-all duration-300 z-40 shrink-0 print:hidden ${
-        collapsed ? 'w-16' : 'w-64'
-      }`}
-      style={{ background: 'var(--gradient-navy)' }}
-    >
-      {/* Logo */}
-      <div className={`flex items-center gap-3 px-4 h-16 border-b border-white/10 ${collapsed ? 'justify-center px-0' : ''}`}>
+    <>
+      {/* Backdrop - mobile and desktop when overlay */}
+      <div
+        className="fixed inset-0 bg-black/50 z-40 md:z-40 print:hidden"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <aside
+        className={`flex flex-col fixed top-0 bottom-0 h-screen transition-transform duration-300 z-50 print:hidden w-64 md:w-56 bg-slate-900 ${
+          isRTL ? 'right-0' : 'left-0'
+        } ${open ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'}`}
+      >
+      {/* Logo + Close */}
+      <div className="flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800">
         <Link
           href={isSuperAdminOnly ? '/admin' : '/dashboard'}
           className="flex items-center gap-3 shrink-0"
@@ -125,19 +115,22 @@ export default function Sidebar({ collapsed: controlledCollapsed, onCollapsedCha
           {user?.center?.logo_url ? (
             <img src={user.center.logo_url} alt={centerName} className="w-9 h-9 rounded-lg shrink-0 object-contain" />
           ) : (
-            <Image src="/logo-icon.png" alt="CenterHQ" width={36} height={36} className="w-9 h-9 rounded-lg shrink-0 object-contain" />
+            <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center shrink-0">
+              <span className="text-white font-bold text-sm">CH</span>
+            </div>
           )}
-        </Link>
-        {!collapsed && (
           <span className="font-bold text-white text-lg tracking-tight">CenterHQ</span>
-        )}
+        </Link>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" aria-label="Close menu">
+          <X size={20} />
+        </button>
       </div>
 
       {/* Center name */}
-      {!collapsed && user && (
-        <div className="px-4 py-3 border-b border-white/10">
-          <p className="text-xs text-white/40 mb-0.5">{tSettings('centerName')}</p>
-          <p className="text-sm font-semibold text-white truncate">{centerName}</p>
+      {user && (
+        <div className="px-4 py-3 border-b border-slate-800">
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">{tSettings('centerName')}</p>
+          <p className="text-sm font-semibold text-slate-300 truncate">{centerName}</p>
         </div>
       )}
 
@@ -146,11 +139,11 @@ export default function Sidebar({ collapsed: controlledCollapsed, onCollapsedCha
         {isSuperAdminOnly && (
           <Link
             href="/admin"
-            className={`nav-item ${pathname?.startsWith('/admin') ? 'active' : ''} ${collapsed ? 'justify-center px-0 py-2.5' : ''}`}
-            title={collapsed ? t('admin') : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            onClick={onClose}
           >
             <Shield size={18} className="shrink-0" />
-            {!collapsed && <span>{t('admin')}</span>}
+            <span>{t('admin')}</span>
           </Link>
         )}
         {navItems.map(({ key, href, icon: Icon }) => {
@@ -159,61 +152,51 @@ export default function Sidebar({ collapsed: controlledCollapsed, onCollapsedCha
             <Link
               key={href}
               href={href}
-              className={`nav-item ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0 py-2.5' : ''}`}
-              title={collapsed ? t(key) : undefined}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${isActive ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              onClick={onClose}
             >
               <Icon size={18} className="shrink-0" />
-              {!collapsed && <span>{t(key)}</span>}
+              <span>{t(key)}</span>
             </Link>
           );
         })}
         {isAdmin && !isSuperAdminOnly && (
           <Link
             href="/admin"
-            className={`nav-item ${pathname?.startsWith('/admin') ? 'active' : ''} ${collapsed ? 'justify-center px-0 py-2.5' : ''}`}
-            title={collapsed ? t('admin') : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            onClick={onClose}
           >
             <Shield size={18} className="shrink-0" />
-            {!collapsed && <span>{t('admin')}</span>}
+            <span>{t('admin')}</span>
           </Link>
         )}
       </nav>
 
       {/* Bottom */}
-      <div className="p-2 border-t border-white/10 space-y-1">
-        {!collapsed && user && (
-          <div className="px-3 py-2 rounded-lg" style={{ background: 'hsl(var(--sidebar-accent))' }}>
-            <p className="text-xs text-white/50">{t('logout')}</p>
-            <p className="text-sm font-medium text-white">{centerName}</p>
-            {roleLabelKey && (
-              <span className="text-xs px-1.5 py-0.5 rounded-full text-white/70" style={{ background: 'hsl(var(--primary) / 0.3)' }}>
-                {t(roleLabelKey)}
-              </span>
-            )}
+      <div className="border-t border-slate-800 p-4 bg-slate-800/50">
+        {user && (
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-white text-sm font-bold">{(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{centerName}</p>
+              <p className="text-xs text-slate-400">{roleLabelKey ? t(roleLabelKey) : ''}</p>
+            </div>
           </div>
         )}
         {user && (
           <button
             onClick={handleLogout}
-            className={`nav-item w-full ${collapsed ? 'justify-center px-0' : ''}`}
-            title={collapsed ? t('logout') : undefined}
+            className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full"
           >
             <LogOut size={16} />
-            {!collapsed && <span className="text-sm">{t('logout')}</span>}
+            <span>{t('logout')}</span>
           </button>
         )}
       </div>
-
-      {/* Toggle button */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute top-1/2 -translate-y-1/2 w-5 h-10 rounded-e-lg flex items-center justify-center transition-colors z-50 bg-white/10 hover:bg-white/20 text-white/60 hover:text-white"
-        style={{ [isRTL ? 'right' : 'left']: '100%' }}
-        aria-label="Toggle sidebar"
-      >
-        <CollapseIcon size={12} />
-      </button>
     </aside>
+    </>
   );
 }
 

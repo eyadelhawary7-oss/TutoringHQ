@@ -44,18 +44,10 @@ export function QRCard({
         style={{ background: 'rgba(0,0,0,0.35)' }}
       >
         {centerLogo ? (
-          <img
-            src={centerLogo}
-            alt=""
-            className="w-6 h-6 object-contain shrink-0"
-            style={{ width: 24, height: 24 }}
-          />
+          <img src={centerLogo} alt="" className="h-8 w-8 object-contain rounded shrink-0" />
         ) : (
-          <div
-            className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black text-white shrink-0"
-            style={{ background: '#0D9488' }}
-          >
-            CH
+          <div className="h-8 w-8 bg-white/20 rounded flex items-center justify-center shrink-0">
+            <span className="text-white text-xs font-bold">CH</span>
           </div>
         )}
         <span className="text-[11px] font-medium text-white truncate max-w-[45mm]" style={{ fontSize: '11px' }}>

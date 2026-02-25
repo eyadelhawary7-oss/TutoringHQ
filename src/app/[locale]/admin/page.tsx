@@ -20,9 +20,23 @@ import {
   ExternalLink,
   Trash2,
   MoreVertical,
+  Target,
+  BarChart3,
+  Plus,
+  Shield,
+  ShieldAlert,
+  Activity,
+  TrendingUp,
+  Eye,
+  Menu,
+  ArrowLeft,
+  CheckCircle,
+  XCircle,
+  BadgeCheck,
+  Bell,
+  MessageCircle,
   ChevronDown,
   IdCard,
-  MessageCircle,
   ChevronUp,
 } from 'lucide-react';
 import {
@@ -35,27 +49,13 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
+import { PlanBadge, BillingStatusBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-
-const PLAN_LABELS: Record<string, string> = {
-  starter: 'Starter',
-  pro: 'Pro',
-  business: 'Business',
-  enterprise: 'Enterprise',
-  top_centers: 'Top Centers',
-  payg: 'PAYG',
-};
-
-const PLAN_COLORS: Record<string, string> = {
-  starter: 'border-gray-400 bg-gray-50 text-gray-700',
-  pro: 'border-blue-400 bg-blue-50 text-blue-700',
-  business: 'border-teal-400 bg-teal-50 text-teal-700',
-  enterprise: 'border-purple-400 bg-purple-50 text-purple-700',
-  top_centers: 'border-amber-400 bg-amber-50 text-amber-700',
-  payg: 'border-indigo-400 bg-indigo-50 text-indigo-700',
-};
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -65,7 +65,7 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 };
 
-type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'cardOrders';
+type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'cardOrders' | 'salesPipeline' | 'analytics';
 
 const ADMIN_NAV: { key: AdminTab; icon: typeof LayoutDashboard }[] = [
   { key: 'overview', icon: LayoutDashboard },
@@ -75,18 +75,24 @@ const ADMIN_NAV: { key: AdminTab; icon: typeof LayoutDashboard }[] = [
   { key: 'planRequests', icon: FileText },
   { key: 'pendingSignups', icon: Clock },
   { key: 'internalTeam', icon: Users },
+  { key: 'salesPipeline', icon: Target },
+  { key: 'analytics', icon: BarChart3 },
 ];
 
 interface OverviewData {
   totalCenters: number;
   activeCenters: number;
   pendingSignups: number;
+  suspendedCenters?: number;
   totalStudents: number;
   totalMRR?: number;
   mrr?: number;
   signupsChart?: { date: string; count: number }[];
   monthlyRevenue?: { month: string; revenue: number }[];
   recentActivity?: Array<{ id?: string; action?: string; details?: unknown; created_at?: string }>;
+  totalRevenueCollected?: number;
+  revenueThisMonth?: number;
+  pendingRevenue?: number;
 }
 
 interface CenterRow {
@@ -107,11 +113,28 @@ interface CenterRow {
   referral_code?: string | null;
   referral_code_used?: string | null;
   referring_center_name?: string | null;
+  last_active?: string;
+  usage_scans?: number;
 }
+
+interface SalesLead {
+  id: string;
+  name: string;
+  contact_person: string;
+  phone: string;
+  area: string;
+  source: string;
+  stage: 'prospect' | 'contacted' | 'demo_scheduled' | 'converted';
+  notes: string;
+}
+
+const AREAS = ['Nasr City', 'Heliopolis', 'Maadi', '6th October', 'Sheikh Zayed', 'Dokki', 'Mohandeseen', 'Other'];
+const SOURCES = ['Referral', 'Walk-in', 'WhatsApp', 'Social Media', 'Cold Call', 'Other'];
 
 interface BillingRow {
   id: string;
   name: string;
+  phone?: string;
   plan?: string;
   amount?: number;
   billing_period?: string;
@@ -236,6 +259,8 @@ export default function AdminPage() {
   const { setHideShell } = useLayout();
 
   const [tab, setTab] = useState<AdminTab>('overview');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [centerSearch, setCenterSearch] = useState('');
@@ -245,7 +270,7 @@ export default function AdminPage() {
   const [centers, setCenters] = useState<CenterRow[]>([]);
   const [billingData, setBillingData] = useState<BillingRow[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<Array<{ centerName: string; amount: number; paid_at?: string; billing_period?: string; recorded_by?: string }>>([]);
-  const [pendingInvoices, setPendingInvoices] = useState<Array<{ id: string; centerName: string; payment_amount?: number; center_id: string; payment_proof_url?: string }>>([]);
+  const [pendingInvoices, setPendingInvoices] = useState<Array<{ id: string; centerName: string; payment_amount?: number; center_id: string; payment_proof_url?: string | null }>>([]);
   const [pendingSignups, setPendingSignups] = useState<PendingSignup[]>([]);
   const [planRequests, setPlanRequests] = useState<PlanRequest[]>([]);
   const [internalTeam, setInternalTeam] = useState<TeamMember[]>([]);
@@ -264,11 +289,18 @@ export default function AdminPage() {
     | null
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [changePlanModal, setChangePlanModal] = useState<{ centerId: string; centerName: string; currentPlan: string } | null>(null);
+  const [newPlan, setNewPlan] = useState('');
+  const [changingPlan, setChangingPlan] = useState(false);
   const [addAdminForm, setAddAdminForm] = useState({ name: '', phone: '', email: '' });
   const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
   const [cardOrdersUnread, setCardOrdersUnread] = useState(0);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string } | null>(null);
+  const [leads, setLeads] = useState<SalesLead[]>([]);
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
+  const [addLeadForm, setAddLeadForm] = useState<{ name: string; contactPerson: string; phone: string; area: string; source: string; stage: SalesLead['stage']; notes: string }>({ name: '', contactPerson: '', phone: '', area: '', source: '', stage: 'prospect', notes: '' });
 
   useEffect(() => {
     setHideShell(true);
@@ -447,7 +479,7 @@ export default function AdminPage() {
   }, [loadOverview]);
 
   useEffect(() => {
-    if (tab === 'centers') loadCenters();
+    if (tab === 'centers' || tab === 'analytics') loadCenters();
   }, [tab, loadCenters]);
   useEffect(() => {
     if (tab === 'billing') loadBilling();
@@ -504,7 +536,12 @@ export default function AdminPage() {
       c.name?.toLowerCase().includes(centerSearch.toLowerCase()) ||
       c.phone?.includes(centerSearch) ||
       (c.owner?.name ?? c.owner_name ?? '').toLowerCase().includes(centerSearch.toLowerCase());
-    const matchStatus = statusFilter === 'all' || (c.status ?? 'active') === statusFilter;
+    const isAtRisk = (c.last_active?.includes('days') || c.last_active === 'Never') ?? false;
+    const matchStatus = statusFilter === 'all'
+      ? true
+      : statusFilter === 'at_risk'
+        ? isAtRisk
+        : (c.status ?? 'active') === statusFilter;
     return matchSearch && matchStatus;
   });
 
@@ -581,6 +618,45 @@ export default function AdminPage() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const sendWhatsAppReminder = (
+    centerPhone: string,
+    centerName: string,
+    amount: number,
+    nextDue: string
+  ) => {
+    // Normalize phone — strip everything except digits
+    let phone = centerPhone.replace(/\D/g, '');
+    // Ensure Egyptian country code
+    if (phone.startsWith('0')) phone = '2' + phone; // 01x -> 201x
+    if (!phone.startsWith('20')) phone = '20' + phone;
+    const formattedAmount = amount.toLocaleString('ar-EG');
+    const formattedDue = new Date(nextDue).toLocaleDateString('ar-EG', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const message = encodeURIComponent(
+      `السلام عليكم ${centerName} 👋\n\n` +
+      `نود تذكيركم بأن دفعة اشتراككم في CenterHQ بقيمة *${formattedAmount} ج.م* مستحقة بتاريخ *${formattedDue}*.\n\n` +
+      `يمكنكم تسوية الدفع ورفع إثبات الدفع من خلال:\n` +
+      `🔗 https://center-hq.vercel.app/settings/billing\n\n` +
+      `شكراً لثقتكم بـ CenterHQ 🙏`
+    );
+    const waUrl = `https://wa.me/${phone}?text=${message}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const contactViaWhatsApp = (phone: string, centerName: string) => {
+    let normalized = phone.replace(/\D/g, '');
+    if (normalized.startsWith('0')) normalized = '2' + normalized;
+    if (!normalized.startsWith('20')) normalized = '20' + normalized;
+    const message = encodeURIComponent(
+      `السلام عليكم 👋\n\n` +
+      `شكراً لتسجيلكم في CenterHQ!\n\n` +
+      `نود التواصل معكم لإتمام إعداد حساب "${centerName}" والتعرف على احتياجاتكم.\n\n` +
+      `متى يناسبكم التحدث؟ 🙏`
+    );
+    window.open(`https://wa.me/${normalized}?text=${message}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleMarkPaid = async (centerId: string, amount: number, billingPeriod: string) => {
@@ -689,12 +765,6 @@ export default function AdminPage() {
     }
   };
 
-  const PlanBadge = ({ plan }: { plan?: string }) => (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${PLAN_COLORS[plan || 'starter'] || PLAN_COLORS.starter}`}>
-      {PLAN_LABELS[plan || 'starter'] || plan}
-    </span>
-  );
-
   if (isLoading && !overview && !loadError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -722,21 +792,23 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Admin Sidebar */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 border-e border-border bg-card">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-bold text-foreground">{tAdmin('title')}</h2>
-          <Link href="/dashboard" className="text-xs text-primary hover:underline mt-1 block">{tAdmin('backToMyCenter')}</Link>
+    <div className="flex flex-col md:flex-row min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Admin Sidebar - desktop only */}
+      <aside className="hidden md:flex flex-col w-56 shrink-0 border-e border-slate-200 bg-slate-900">
+        <div className="p-4 border-b border-slate-700">
+          <h2 className="font-bold text-white">{tAdmin('title')}</h2>
+          <Link href="/dashboard" className="text-xs text-teal-400 hover:underline mt-1 block">{tAdmin('backToMyCenter')}</Link>
         </div>
         <nav className="flex-1 p-2 space-y-0.5">
           {ADMIN_NAV.map(({ key, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start ${
-                tab === key ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'
-              }`}
+              className={
+                tab === key
+                  ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-teal-600/10 text-teal-400 font-medium w-full text-start'
+                  : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full text-start'
+              }
             >
               <Icon size={18} />
               <span>{tAdmin(key)}</span>
@@ -750,28 +822,63 @@ export default function AdminPage() {
         </nav>
       </aside>
 
-      {/* Mobile tab bar */}
-      <div className="md:hidden fixed top-0 start-0 end-0 z-20 border-b border-border overflow-x-auto scrollbar-hide bg-card">
-        <div className="flex px-2 py-1.5 gap-1">
-          {ADMIN_NAV.map(({ key, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap relative ${
-                tab === key ? 'bg-primary/20 text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              <Icon size={14} />
-              <span>{tAdmin(key)}</span>
-              {key === 'cardOrders' && cardOrdersUnread > 0 && (
-                <span className="absolute -top-0.5 -end-0.5 min-w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">
-                  {cardOrdersUnread}
-                </span>
-              )}
-            </button>
-          ))}
+      {/* Mobile top bar + hamburger */}
+      <div className="flex items-center justify-between p-4 border-b border-slate-200 md:hidden">
+        <div>
+          <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
+          <h2 className="font-bold text-slate-900 text-sm capitalize">{tab}</h2>
         </div>
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <Menu className="w-5 h-5 text-slate-600" />
+        </button>
       </div>
+
+      {/* Mobile slide-out nav drawer */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <div className="absolute top-0 start-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <span className="font-bold text-slate-900">Admin Panel</span>
+              <button onClick={() => setMobileNavOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+              {ADMIN_NAV.map(({ key, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => { setTab(key); setMobileNavOpen(false); }}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    tab === key
+                      ? 'bg-teal-50 text-teal-700'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {tAdmin(key)}
+                  {key === 'cardOrders' && cardOrdersUnread > 0 && (
+                    <span className="ms-auto min-w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                      {cardOrdersUnread}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+            <div className="p-4 border-t border-slate-200">
+              <Link href="/dashboard" className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700">
+                <ArrowLeft className="w-4 h-4" /> Back to My Center
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast for new card order */}
       {toast && (
@@ -781,31 +888,150 @@ export default function AdminPage() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 p-4 md:p-6 overflow-auto pt-14 md:pt-6">
+      <div className="flex-1 p-4 md:p-6 overflow-auto">
         {/* Overview */}
         {tab === 'overview' && overview && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            {/* Section: PLATFORM HEALTH */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">PLATFORM HEALTH</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
               {[
-                { label: tAdmin('totalCenters'), value: String(overview.totalCenters ?? 0), color: '#3B82F6' },
-                { label: tAdmin('activeCenters'), value: String(overview.activeCenters ?? 0), color: '#16A34A' },
-                { label: tAdmin('pendingSignups'), value: String(overview.pendingSignups ?? 0), color: '#F59E0B' },
-                { label: tAdmin('totalMRREgp', { defaultValue: 'Total MRR in EGP' }), value: `${(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('ar-EG')} ${tCommon('egp')}`, color: '#0D9488' },
-                { label: tAdmin('totalStudents'), value: String(overview.totalStudents ?? 0), color: '#7C3AED' },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="glass p-4 rounded-xl">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: `${color}20`, color }}>
-                    <LayoutDashboard size={16} />
+                { label: tAdmin('totalCenters'), value: String(overview.totalCenters ?? 0), iconBg: 'bg-teal-100', iconColor: 'text-teal-600', Icon: Building2 },
+                { label: tAdmin('activeCenters'), value: String(overview.activeCenters ?? 0), iconBg: 'bg-green-100', iconColor: 'text-green-600', Icon: LayoutDashboard },
+                { label: tAdmin('pendingSignups'), value: String(overview.pendingSignups ?? 0), iconBg: 'bg-amber-100', iconColor: 'text-amber-600', Icon: Clock },
+                { label: tAdmin('suspendedCenters', { defaultValue: 'Suspended Centers' }), value: String(overview.suspendedCenters ?? 0), iconBg: 'bg-red-100', iconColor: 'text-red-600', Icon: AlertTriangle },
+                { label: tAdmin('totalStudents'), value: String(overview.totalStudents ?? 0), iconBg: 'bg-blue-100', iconColor: 'text-blue-600', Icon: Users },
+              ].map(({ label, value, iconBg, iconColor, Icon }) => (
+                <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500 mb-1">{label}</p>
+                      <p className="text-2xl font-bold text-slate-900 font-mono">{value}</p>
+                    </div>
+                    <div className={`p-3 rounded-full ${iconBg}`}>
+                      <Icon className={`w-5 h-5 ${iconColor}`} />
+                    </div>
                   </div>
-                  <div className="text-xl font-black font-mono text-foreground">{value}</div>
-                  <div className="text-xs text-muted-foreground">{label}</div>
                 </div>
               ))}
             </div>
 
+            {/* Section: REVENUE */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">REVENUE</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">{tAdmin('mrr')}</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-green-100">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Outstanding Invoices</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingRevenue?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-red-100">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Collected This Month</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.revenueThisMonth?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-teal-100">
+                    <CreditCard className="w-5 h-5 text-teal-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Collection Rate</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.totalRevenueCollected != null && overview.pendingRevenue != null && overview.totalRevenueCollected + overview.pendingRevenue > 0 ? Math.round(overview.totalRevenueCollected / (overview.totalRevenueCollected + overview.pendingRevenue) * 100) : '—'}%</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-blue-100">
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section: SECURITY & ALERTS */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">SECURITY & ALERTS</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Failed Logins 24h</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">0</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-orange-100">
+                    <Shield className="w-5 h-5 text-orange-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">New Signups 7d</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingSignups ?? 0}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-purple-100">
+                    <Users className="w-5 h-5 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Flagged Activity</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">0</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-red-100">
+                    <ShieldAlert className="w-5 h-5 text-red-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">System Status</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                      </span>
+                      <span className="text-sm font-semibold text-slate-900">All systems operational</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-full bg-green-100">
+                    <Activity className="w-5 h-5 text-green-600" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               {(signupsWeekly.length > 0 || (overview.signupsChart?.length ?? 0) > 0) && (
-                <div className="glass p-5 rounded-xl">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                   <h3 className="font-bold text-foreground mb-4">{tAdmin('newCentersPerWeek', { defaultValue: 'New Centers per Week' })}</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={signupsWeekly.length > 0 ? signupsWeekly : overview.signupsChart!}>
@@ -819,7 +1045,7 @@ export default function AdminPage() {
                 </div>
               )}
               {(overview.monthlyRevenue?.length ?? 0) > 0 && (
-                <div className="glass p-5 rounded-xl">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                   <h3 className="font-bold text-foreground mb-4">{tAdmin('monthlyRevenueChart', { defaultValue: 'Monthly Revenue' })}</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={overview.monthlyRevenue}>
@@ -835,7 +1061,7 @@ export default function AdminPage() {
             </div>
 
             {(overview.recentActivity?.length ?? 0) > 0 && (
-              <div className="glass p-5 rounded-xl">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                 <h3 className="font-bold text-foreground mb-3">{tAdmin('recentActivity')}</h3>
                 <div className="space-y-3">
                   {overview.recentActivity!.slice(0, 5).map((a, i) => (
@@ -870,48 +1096,55 @@ export default function AdminPage() {
                   className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-border bg-muted text-foreground text-sm"
                 />
               </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2.5 rounded-xl border border-border bg-muted text-foreground text-sm"
-              >
-                <option value="all">{tCommon('all')}</option>
-                <option value="active">{tCommon('active')}</option>
-                <option value="suspended">{tAdmin('suspended')}</option>
-                <option value="pending">{tAdmin('pending')}</option>
-              </select>
+              <div className="flex gap-1 flex-wrap">
+                {['all', 'active', 'pending', 'suspended', 'at_risk'].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      statusFilter === s ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {s === 'all' ? tCommon('all') : s === 'at_risk' ? (tAdmin('atRisk') ?? 'At Risk') : s === 'active' ? tCommon('active') : s === 'pending' ? tAdmin('pending') : tAdmin('suspended')}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="glass overflow-hidden rounded-xl">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Owner</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tCommon('phone')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('studentsCount')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('createdAt')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tCommon('phone')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('studentsCount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('lastActive') ?? 'Last Active'}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('usage') ?? 'Usage'}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {filteredCenters.map((c) => (
-                      <tr key={c.id} className="border-t border-border hover:bg-muted/30">
-                        <td className="px-4 py-3 font-medium text-foreground">{c.name}</td>
-                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
-                        <td className="px-4 py-3"><PlanBadge plan={c.plan} /></td>
-                        <td className="px-4 py-3">
+                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{c.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
+                        <td className="py-3.5 px-4"><PlanBadge plan={c.plan} /></td>
+                        <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[c.status || 'active'] || STATUS_STYLES.active}`}>
                             {c.status || 'active'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-mono text-muted-foreground hidden md:table-cell">{c.students_count ?? 0}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3">
+                        <td className="py-3.5 px-4 text-sm text-slate-600 font-mono hidden md:table-cell">{c.students_count ?? 0}</td>
+                        <td className={`py-3.5 px-4 text-xs hidden lg:table-cell ${(c.last_active?.includes('days') || c.last_active === 'Never') ? 'text-red-600 font-semibold' : 'text-slate-600'}`}>{c.last_active ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden lg:table-cell">{c.usage_scans ?? 0}</td>
+                        <td className="py-3.5 px-4 text-xs text-slate-600 hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4">
                           <div className="relative">
                             <button
                               onClick={() => setOpenActionsId(openActionsId === c.id ? null : c.id)}
@@ -937,7 +1170,7 @@ export default function AdminPage() {
                                       <Check size={14} />{tAdmin('reactivate')}
                                     </button>
                                   )}
-                                  <button onClick={() => { /* TODO: Change Plan modal */ setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
+                                  <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
                                     <CreditCard size={14} />{tAdmin('changePlan')}
                                   </button>
                                   <button onClick={() => { setShowDeleteConfirm(c); setDeleteConfirmName(''); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start">
@@ -961,73 +1194,55 @@ export default function AdminPage() {
         {tab === 'billing' && (
           <>
             <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('billing')}</h2>
-            <div className="glass overflow-hidden rounded-xl mb-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('billingPeriod')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('nextDue')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('amount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('nextDue')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {billingData.map((b) => {
                       const isPaid = b.billing_status === 'paid';
-                      const nextDueStr = b.nextDue ?? b.next_payment_due;
-                      const nextDueDate = nextDueStr ? new Date(nextDueStr) : null;
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      let statusKey: 'paid' | 'overdue' | 'dueSoon' | 'due' = 'due';
-                      if (isPaid) statusKey = 'paid';
-                      else if (nextDueDate && nextDueDate < today) statusKey = 'overdue';
-                      else if (nextDueDate) {
-                        const daysUntil = Math.ceil((nextDueDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-                        statusKey = daysUntil <= 7 ? 'dueSoon' : 'due';
-                      }
-                      const statusConfig = {
-                        paid: { label: '✅ Paid', className: STATUS_STYLES.active },
-                        overdue: { label: '🔴 Overdue', className: 'bg-red-100 text-red-700' },
-                        dueSoon: { label: '🟡 Due Soon', className: 'bg-amber-100 text-amber-700' },
-                        due: { label: 'Due', className: 'bg-gray-100 text-gray-700' },
-                      };
-                      const sc = statusConfig[statusKey];
+                      const nextDueStr = b.nextDue ?? b.next_payment_due ?? '';
+                      const billingStatus = b.billing_status ?? b.status ?? 'active';
                       return (
-                        <tr key={b.id} className="border-t border-border hover:bg-muted/30">
-                          <td className="px-4 py-3 font-medium text-foreground">{b.name}</td>
-                          <td className="px-4 py-3"><PlanBadge plan={b.plan} /></td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell">{b.billing_period ?? '—'}</td>
-                          <td className="px-4 py-3 font-mono font-bold text-foreground">{(b.amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
-                          <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{nextDueStr ?? '—'}</td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${sc.className}`}>
-                              {sc.label}
-                            </span>
+                        <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{b.name}</td>
+                          <td className="py-3.5 px-4"><PlanBadge plan={b.plan} /></td>
+                          <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{b.billing_period ?? '—'}</td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(b.amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                          <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{nextDueStr || '—'}</td>
+                          <td className="py-3.5 px-4">
+                            <BillingStatusBadge status={isPaid ? 'paid' : (billingStatus === 'overdue' ? 'overdue' : 'active')} nextDue={nextDueStr || new Date().toISOString()} />
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-1 flex-wrap">
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-2 flex-nowrap">
                               {!isPaid && (
-                                <>
-                                  <button
-                                    onClick={() => handleMarkPaid(b.id, b.amount ?? 0, b.billing_period ?? 'monthly')}
-                                    disabled={actionLoading}
-                                    className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
-                                  >
-                                    {tAdmin('markAsPaid')}
-                                  </button>
-                                  <button
-                                    onClick={() => { /* TODO: wire /api/admin/billing send-reminder */ }}
-                                    disabled={actionLoading}
-                                    className="px-2 py-1 rounded text-xs font-semibold border border-border hover:bg-muted disabled:opacity-50"
-                                  >
-                                    {tAdmin('sendReminder')}
-                                  </button>
-                                </>
+                                <button
+                                  onClick={() => handleMarkPaid(b.id, b.amount ?? 0, b.billing_period ?? 'monthly')}
+                                  disabled={actionLoading}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50"
+                                >
+                                  <BadgeCheck className="w-4 h-4" />
+                                  {tAdmin('markAsPaid')}
+                                </button>
                               )}
+                              <button
+                                onClick={() => sendWhatsAppReminder(b.phone ?? '', b.name ?? '', b.amount ?? 0, nextDueStr || '')}
+                                disabled={actionLoading}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-slate-700 text-sm font-semibold rounded-lg whitespace-nowrap transition-all disabled:opacity-50"
+                              >
+                                <Bell className="w-4 h-4" />
+                                {tAdmin('sendReminder')}
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1041,38 +1256,56 @@ export default function AdminPage() {
             {pendingInvoices.length > 0 && (
               <>
                 <h3 className="font-bold text-foreground mt-6 mb-3">{tAdmin('pendingInvoices')}</h3>
-                <div className="glass overflow-hidden rounded-xl mb-6">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted">
-                        <tr>
-                          <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                          <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
-                          <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50">
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('amount')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100">
                         {pendingInvoices.map((inv) => (
-                          <tr key={inv.id} className="border-t border-border">
-                            <td className="px-4 py-3 font-medium text-foreground">{inv.centerName}</td>
-                            <td className="px-4 py-3 font-mono font-bold">{(inv.payment_amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
-                            <td className="px-4 py-3 flex gap-1">
-                              <button
-                                onClick={() => {
-                                  if ((inv.payment_amount ?? 0) > 50000) {
-                                    setPasswordConfirm({ type: 'approve_invoice', inv: { id: inv.id, centerName: inv.centerName, payment_amount: inv.payment_amount ?? 0 } });
-                                  } else {
-                                    handleInvoiceAction(inv.id, 'approve');
-                                  }
-                                }}
-                                disabled={actionLoading}
-                                className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700"
-                              >
-                                {tAdmin('approvePay')}
-                              </button>
-                              <button onClick={() => handleInvoiceAction(inv.id, 'reject')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-700">
-                                {tAdmin('rejectPayment')}
-                              </button>
+                          <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{inv.centerName}</td>
+                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(inv.payment_amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-2 flex-nowrap">
+                                {inv.payment_proof_url ? (
+                                  <button
+                                    onClick={() => setViewingProof(inv.payment_proof_url || null)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors border border-blue-200"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" /> View Proof
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-slate-400 px-3">No image</span>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    if ((inv.payment_amount ?? 0) > 50000) {
+                                      setPasswordConfirm({ type: 'approve_invoice', inv: { id: inv.id, centerName: inv.centerName, payment_amount: inv.payment_amount ?? 0 } });
+                                    } else {
+                                      handleInvoiceAction(inv.id, 'approve');
+                                    }
+                                  }}
+                                  disabled={actionLoading}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  {tAdmin('approvePay')}
+                                </button>
+                                <button
+                                  onClick={() => handleInvoiceAction(inv.id, 'reject')}
+                                  disabled={actionLoading}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  {tAdmin('rejectPayment')}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1084,26 +1317,26 @@ export default function AdminPage() {
             )}
 
             <h3 className="font-bold text-foreground mt-6 mb-3">{tAdmin('paymentHistory')}</h3>
-            <div className="glass overflow-hidden rounded-xl">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('billingPeriod')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{tAdmin('recordedBy')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('amount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('recordedBy')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {paymentHistory.map((p, i) => (
-                      <tr key={i} className="border-t border-border">
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3 font-medium text-foreground">{p.centerName}</td>
-                        <td className="px-4 py-3 font-mono font-bold">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{p.billing_period ?? '—'}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
+                      <tr key={i} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{p.centerName}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{p.billing_period ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1117,43 +1350,45 @@ export default function AdminPage() {
         {tab === 'planRequests' && (
           <>
             <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('planRequests')}</h2>
-            <div className="glass overflow-hidden rounded-xl">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Current → Requested</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Current → Requested</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {planRequests.map((pr) => (
-                      <tr key={pr.id} className="border-t border-border">
-                        <td className="px-4 py-3 font-medium text-foreground">{pr.centerName}</td>
-                        <td className="px-4 py-3">
+                      <tr key={pr.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{pr.centerName}</td>
+                        <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
                             <PlanBadge plan={pr.current_plan} />
-                            <span className="text-muted-foreground">→</span>
+                            <span className="text-slate-500">→</span>
                             <PlanBadge plan={pr.requested_plan} />
-                            {pr.priceDiffFormatted && <span className="text-xs text-muted-foreground">{pr.priceDiffFormatted}</span>}
+                            {pr.priceDiffFormatted && <span className="text-xs text-slate-500">{pr.priceDiffFormatted}</span>}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3">
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pr.status === 'pending' ? STATUS_STYLES.pending : pr.status === 'approved' ? STATUS_STYLES.active : STATUS_STYLES.rejected}`}>
                             {pr.status === 'pending' ? tAdmin('pending') : pr.status === 'approved' ? tAdmin('approved') : tAdmin('rejected')}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="py-3.5 px-4">
                           {pr.status === 'pending' && (
-                            <div className="flex gap-1">
-                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700">
+                            <div className="flex items-center gap-2 flex-nowrap">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50">
+                                <CheckCircle className="w-4 h-4" />
                                 {tAdmin('approve')}
                               </button>
-                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-700">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50">
+                                <XCircle className="w-4 h-4" />
                                 {tAdmin('reject')}
                               </button>
                             </div>
@@ -1172,37 +1407,47 @@ export default function AdminPage() {
         {tab === 'pendingSignups' && (
           <>
             <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('pendingSignups')}</h2>
-            <div className="glass overflow-hidden rounded-xl">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Center</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Owner</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('phone')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tCommon('email')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">Plan</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{tAdmin('referredBy')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Center</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('phone')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Email</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('referredBy')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {pendingSignups.map((ps) => (
-                      <tr key={ps.id} className="border-t border-border">
-                        <td className="px-4 py-3 font-medium text-foreground">{ps.name}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{ps.owner_name ?? '—'}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground" dir="ltr">{ps.phone ?? '—'}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{ps.email ?? '—'}</td>
-                        <td className="px-4 py-3"><PlanBadge plan={ps.plan} /></td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1">
-                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700">
+                      <tr key={ps.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{ps.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{ps.owner_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600" dir="ltr">{ps.phone ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{ps.email ?? '—'}</td>
+                        <td className="py-3.5 px-4"><PlanBadge plan={ps.plan} /></td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2 flex-nowrap">
+                            <button
+                              onClick={() => contactViaWhatsApp(ps.phone ?? '', ps.name ?? '')}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm"
+                              title="Contact on WhatsApp"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">WhatsApp</span>
+                            </button>
+                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50">
+                              <CheckCircle className="w-3.5 h-3.5" />
                               {tAdmin('approve')}
                             </button>
-                            <button onClick={() => setShowRejectReason(ps)} className="px-2 py-1 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-700">
+                            <button onClick={() => setShowRejectReason(ps)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm">
+                              <XCircle className="w-3.5 h-3.5" />
                               {tAdmin('reject')}
                             </button>
                           </div>
@@ -1210,7 +1455,7 @@ export default function AdminPage() {
                       </tr>
                     ))}
                     {pendingSignups.length === 0 && (
-                      <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">{tAdmin('noPending')}</td></tr>
+                      <tr><td colSpan={8} className="py-8 px-4 text-center text-slate-500">{tAdmin('noPending')}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1356,25 +1601,25 @@ export default function AdminPage() {
                 + {tAdmin('addAdmin', { defaultValue: 'Add Admin' })}
               </button>
             </div>
-            <div className="glass overflow-hidden rounded-xl">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('name')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('phone')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">Role</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('joinedDate')}</th>
-                    <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('phone')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('joinedDate')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {internalTeam.map((m) => (
-                    <tr key={m.id} className="border-t border-border">
-                      <td className="px-4 py-3 font-medium text-foreground">{m.name}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground" dir="ltr">{m.phone ?? m.email ?? '—'}</td>
-                      <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-xs font-semibold border border-purple-400 bg-purple-50  text-purple-700 ">{m.role}</span></td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
-                      <td className="px-4 py-3">
+                    <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{m.name}</td>
+                      <td className="py-3.5 px-4 font-mono text-xs text-slate-600" dir="ltr">{m.phone ?? m.email ?? '—'}</td>
+                      <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">{m.role}</span></td>
+                      <td className="py-3.5 px-4 text-sm text-slate-600">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
+                      <td className="py-3.5 px-4">
                         {m.role !== 'super_admin' && m.role !== 'admin' && (
                           <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50">
                             {tAdmin('remove')}
@@ -1385,6 +1630,192 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </>
+        )}
+
+        {/* Sales Pipeline */}
+        {tab === 'salesPipeline' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-foreground">{tAdmin('salesPipeline') ?? 'Sales Pipeline'}</h2>
+              <button onClick={() => setShowAddLead(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary">
+                <Plus size={16} />{tAdmin('addLead') ?? 'Add Lead'}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+              {[
+                { label: 'Total Leads', value: leads.length },
+                { label: 'Contacted', value: leads.filter(l => l.stage === 'contacted').length },
+                { label: 'Demo Scheduled', value: leads.filter(l => l.stage === 'demo_scheduled').length },
+                { label: 'Converted', value: leads.filter(l => l.stage === 'converted').length },
+                { label: 'Conversion Rate', value: leads.length > 0 ? `${Math.round((leads.filter(l => l.stage === 'converted').length / leads.length) * 100)}%` : '0%' },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <div className="text-2xl font-bold font-mono text-slate-900">{value}</div>
+                  <div className="text-sm text-slate-500">{label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {(['prospect', 'contacted', 'demo_scheduled', 'converted'] as const).map((stage) => (
+                <div key={stage} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-sm text-foreground">{stage.replace('_', ' ')}</h3>
+                    <span className="text-xs font-mono text-muted-foreground">{leads.filter(l => l.stage === stage).length}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {leads.filter(l => l.stage === stage).map((lead) => (
+                      <div key={lead.id} onClick={() => setSelectedLead(lead)} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow">
+                        <p className="font-semibold text-sm text-foreground">{lead.name}</p>
+                        <p className="text-xs text-muted-foreground">{lead.contact_person}</p>
+                        <p className="text-xs font-mono text-muted-foreground mt-1" dir="ltr">{lead.phone}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground">{lead.area}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{lead.source}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Analytics */}
+        {tab === 'analytics' && (
+          <>
+            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('analytics') ?? 'Analytics'}</h2>
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Centers by Plan</h3>
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
+                          { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
+                          { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
+                          { name: 'Enterprise', value: centers.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
+                          { name: 'Top Centers', value: centers.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={70}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
+                          { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
+                          { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
+                          { name: 'Enterprise', value: centers.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
+                          { name: 'Top Centers', value: centers.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
+                        ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 flex-1">
+                    {['Starter', 'Pro', 'Business', 'Enterprise', 'Top Centers'].map((name, i) => {
+                      const val = centers.filter(c => c.plan === (name === 'Top Centers' ? 'top_centers' : name.toLowerCase())).length;
+                      const colors = ['#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'];
+                      return (
+                        <div key={name} className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
+                          <span className="text-sm text-muted-foreground flex-1">{name}</span>
+                          <span className="text-sm font-bold font-mono text-foreground">{val}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Centers by Status</h3>
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Active', value: centers.filter(c => (c.status ?? 'active') === 'active').length, color: '#16A34A' },
+                          { name: 'Pending', value: centers.filter(c => c.status === 'pending').length, color: '#F59E0B' },
+                          { name: 'Suspended', value: centers.filter(c => c.status === 'suspended').length, color: '#DC2626' },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={70}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {[
+                          { color: '#16A34A' },
+                          { color: '#F59E0B' },
+                          { color: '#DC2626' },
+                        ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 flex-1">
+                    {['Active', 'Pending', 'Suspended'].map((name, i) => {
+                      const statusKey = name.toLowerCase();
+                      const val = centers.filter(c => (c.status ?? 'active') === statusKey).length;
+                      const colors = ['#16A34A', '#F59E0B', '#DC2626'];
+                      return (
+                        <div key={name} className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
+                          <span className="text-sm text-muted-foreground flex-1">{name}</span>
+                          <span className="text-sm font-bold font-mono text-foreground">{val}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Top 5 Centers by Students</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={[...centers].sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
+                    <Tooltip />
+                    <Bar dataKey="students_count" fill="#0D9488" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Top 5 Centers by Revenue</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={[...centers].filter(c => (c.status ?? 'active') === 'active').sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
+                    <Tooltip />
+                    <Bar dataKey="students_count" fill="#3B82F6" radius={[0, 4, 4, 0]} name="Est. revenue proxy" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { label: 'Avg Students/Center', value: centers.length > 0 ? Math.round(centers.reduce((s, c) => s + (c.students_count ?? 0), 0) / centers.length) : 0 },
+                { label: 'Avg Revenue/Center', value: centers.filter(c => (c.status ?? 'active') === 'active').length > 0 ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, centers.filter(c => (c.status ?? 'active') === 'active').length)).toLocaleString('ar-EG')} ${tCommon('egp')}` : '—' },
+                { label: 'Centers with 0 Students', value: centers.filter(c => (c.students_count ?? 0) === 0).length },
+                { label: 'Centers at Risk', value: centers.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <div className="text-2xl font-bold font-mono text-slate-900">{value}</div>
+                  <div className="text-sm text-slate-500">{label}</div>
+                </div>
+              ))}
             </div>
           </>
         )}
@@ -1401,20 +1832,22 @@ export default function AdminPage() {
             </div>
             <div className="p-5 space-y-4">
               {[
-                { label: 'Owner', value: detailCenter.owner?.name ?? detailCenter.owner_name ?? '—' },
-                { label: tCommon('phone'), value: detailCenter.phone ?? '—' },
-                { label: tCommon('email'), value: detailCenter.email ?? '—' },
-                { label: 'Plan', value: PLAN_LABELS[detailCenter.plan ?? 'starter'] ?? detailCenter.plan },
-                { label: tAdmin('billingPeriod'), value: detailCenter.billing_period ?? '—' },
-                { label: tAdmin('studentsCount'), value: String(detailCenter.students_count ?? 0) },
-                { label: tCommon('status'), value: detailCenter.status ?? '—' },
-                { label: tAdmin('nextDue'), value: detailCenter.next_due ?? '—' },
-                { label: tAdmin('referralCode'), value: detailCenter.referral_code ?? '—' },
-                { label: tAdmin('createdAt'), value: detailCenter.created_at ? new Date(detailCenter.created_at).toLocaleDateString() : '—' },
-              ].map(({ label, value }) => (
+                { label: 'Owner', value: detailCenter.owner?.name ?? detailCenter.owner_name ?? '—', isPlan: false },
+                { label: tCommon('phone'), value: detailCenter.phone ?? '—', isPlan: false },
+                { label: tCommon('email'), value: detailCenter.email ?? '—', isPlan: false },
+                { label: 'Plan', value: detailCenter.plan, isPlan: true },
+                { label: tAdmin('billingPeriod'), value: detailCenter.billing_period ?? '—', isPlan: false },
+                { label: tAdmin('studentsCount'), value: String(detailCenter.students_count ?? 0), isPlan: false },
+                { label: tCommon('status'), value: detailCenter.status ?? '—', isPlan: false },
+                { label: tAdmin('nextDue'), value: detailCenter.next_due ?? '—', isPlan: false },
+                { label: tAdmin('referralCode'), value: detailCenter.referral_code ?? '—', isPlan: false },
+                { label: tAdmin('lastActive'), value: detailCenter.last_active ?? '—', isPlan: false },
+                { label: tAdmin('usage'), value: String(detailCenter.usage_scans ?? 0), isPlan: false },
+                { label: tAdmin('createdAt'), value: detailCenter.created_at ? new Date(detailCenter.created_at).toLocaleDateString() : '—', isPlan: false },
+              ].map(({ label, value, isPlan }) => (
                 <div key={label}>
-                  <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-                  <p className="font-medium text-foreground">{value}</p>
+                  <p className="text-xs text-slate-500 mb-0.5">{label}</p>
+                  {isPlan ? <PlanBadge plan={value} /> : <p className="font-medium text-slate-900">{value}</p>}
                 </div>
               ))}
             </div>
@@ -1527,6 +1960,191 @@ export default function AdminPage() {
                 {tAdmin('reject')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Lead Modal */}
+      {showAddLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddLead(false)}>
+          <div className="rounded-2xl border border-border p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto bg-card" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-foreground mb-4">{tAdmin('addLead') ?? 'Add Lead'}</h3>
+            <div className="space-y-3">
+              <input placeholder="Center Name" value={addLeadForm.name} onChange={(e) => setAddLeadForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+              <input placeholder="Contact Person" value={addLeadForm.contactPerson} onChange={(e) => setAddLeadForm(f => ({ ...f, contactPerson: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+              <input placeholder={tCommon('phone')} type="tel" dir="ltr" value={addLeadForm.phone} onChange={(e) => setAddLeadForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+              <select value={addLeadForm.area} onChange={(e) => setAddLeadForm(f => ({ ...f, area: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                <option value="">Area</option>
+                {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+              <select value={addLeadForm.source} onChange={(e) => setAddLeadForm(f => ({ ...f, source: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                <option value="">Source</option>
+                {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                <option value="prospect">Prospect</option>
+                <option value="contacted">Contacted</option>
+                <option value="demo_scheduled">Demo Scheduled</option>
+                <option value="converted">Converted</option>
+              </select>
+              <textarea placeholder="Notes" value={addLeadForm.notes} onChange={(e) => setAddLeadForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm h-20 resize-none" />
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => setShowAddLead(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button
+                onClick={() => {
+                  if (addLeadForm.name.trim()) {
+                    setLeads(prev => [...prev, {
+                      id: `sl-${Date.now()}`,
+                      name: addLeadForm.name.trim(),
+                      contact_person: addLeadForm.contactPerson,
+                      phone: addLeadForm.phone,
+                      area: addLeadForm.area,
+                      source: addLeadForm.source,
+                      stage: addLeadForm.stage,
+                      notes: addLeadForm.notes,
+                    }]);
+                    setAddLeadForm({ name: '', contactPerson: '', phone: '', area: '', source: '', stage: 'prospect', notes: '' });
+                    setShowAddLead(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary"
+              >
+                {tCommon('save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lead Detail Slide-over */}
+      {selectedLead && (
+        <div className="fixed inset-0 z-50" onClick={() => setSelectedLead(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-card" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h2 className="font-bold text-foreground text-lg">{selectedLead.name}</h2>
+              <button onClick={() => setSelectedLead(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div><p className="text-xs text-muted-foreground mb-0.5">Contact Person</p><p className="font-medium text-foreground">{selectedLead.contact_person}</p></div>
+              <div><p className="text-xs text-muted-foreground mb-0.5">{tCommon('phone')}</p><p className="font-medium text-foreground" dir="ltr">{selectedLead.phone}</p></div>
+              <div><p className="text-xs text-muted-foreground mb-0.5">Area</p><p className="font-medium text-foreground">{selectedLead.area}</p></div>
+              <div><p className="text-xs text-muted-foreground mb-0.5">Source</p><p className="font-medium text-foreground">{selectedLead.source}</p></div>
+              <div><p className="text-xs text-muted-foreground mb-0.5">Notes</p><p className="font-medium text-foreground">{selectedLead.notes}</p></div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Change Stage</p>
+                <select
+                  value={selectedLead.stage}
+                  onChange={(e) => {
+                    const newStage = e.target.value as SalesLead['stage'];
+                    setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, stage: newStage } : l));
+                    setSelectedLead({ ...selectedLead, stage: newStage });
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-muted text-foreground text-sm"
+                >
+                  <option value="prospect">Prospect</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="demo_scheduled">Demo Scheduled</option>
+                  <option value="converted">Converted</option>
+                </select>
+              </div>
+              <button onClick={() => { setLeads(prev => prev.filter(l => l.id !== selectedLead.id)); setSelectedLead(null); }} className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-destructive border border-destructive/30 hover:bg-destructive/10">
+                {tCommon('delete')} Lead
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Plan Modal */}
+      {changePlanModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Change Plan</h2>
+                <p className="text-sm text-slate-500 mt-0.5">{changePlanModal.centerName}</p>
+              </div>
+              <button onClick={() => { setChangePlanModal(null); setNewPlan(''); }} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-slate-500 mb-3">
+                  Current plan: <span className="font-semibold text-slate-900 capitalize">{changePlanModal.currentPlan}</span>
+                </p>
+                <label className="text-sm font-medium text-slate-700 block mb-2">New Plan</label>
+                <select
+                  value={newPlan}
+                  onChange={(e) => setNewPlan(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                >
+                  <option value="">Select a plan...</option>
+                  <option value="starter">Starter — ≤150 students — EGP 2,000/mo</option>
+                  <option value="pro">Pro — ≤500 students — EGP 4,500/mo</option>
+                  <option value="business">Business — ≤1,000 students — EGP 6,500/mo</option>
+                  <option value="enterprise">Enterprise — ≤2,000 students — EGP 9,000/mo</option>
+                  <option value="top_centers">Top Centers — Custom</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 pt-0">
+              <button
+                onClick={() => { setChangePlanModal(null); setNewPlan(''); }}
+                className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!newPlan || newPlan === changePlanModal.currentPlan || changingPlan}
+                onClick={async () => {
+                  if (!newPlan) return;
+                  setChangingPlan(true);
+                  try {
+                    await handleCenterAction(changePlanModal.centerId, 'change_plan', { newPlan });
+                    setChangePlanModal(null);
+                    setNewPlan('');
+                    loadCenters();
+                  } finally {
+                    setChangingPlan(false);
+                  }
+                }}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                {changingPlan ? 'Saving...' : 'Change Plan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Proof Image Modal */}
+      {viewingProof && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingProof(null)}>
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-white font-semibold">Payment Proof</span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewingProof}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Open Original
+                </a>
+                <button onClick={() => setViewingProof(null)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+            <img
+              src={viewingProof}
+              alt="Payment proof"
+              className="w-full rounded-xl shadow-2xl max-h-[80vh] object-contain bg-white"
+            />
           </div>
         </div>
       )}

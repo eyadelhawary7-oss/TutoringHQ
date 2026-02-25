@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
@@ -12,8 +12,7 @@ function isSuperAdmin(phone: string | null): boolean {
   return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function isAdminUser(supabaseAdmin: any, userId: string): Promise<boolean> {
+async function isAdminUser(supabaseAdmin: SupabaseClient, userId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from('admin_users')
     .select('id')
@@ -27,16 +26,12 @@ function generatePin(): string {
 }
 
 export async function GET(request: Request) {
-  console.log('==========================================');
-  console.log('[admin/centers] 🔍 Route called');
-
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-      console.log('[admin/centers] ❌ Server configuration error');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
@@ -64,11 +59,8 @@ export async function GET(request: Request) {
     const { data: { session: cookieSession } } = await supabase.auth.getSession();
 
     if (cookieSession) {
-      console.log('[admin/centers] ✅ Found session in cookies');
       userId = cookieSession.user.id;
     } else {
-      console.log('[admin/centers] ⚠️ No session in cookies, trying Authorization header...');
-
       // Try 2: Authorization header
       const authHeader = request.headers.get('Authorization');
       if (authHeader?.startsWith('Bearer ')) {
@@ -76,20 +68,14 @@ export async function GET(request: Request) {
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
         if (user && !error) {
-          console.log('[admin/centers] ✅ Found user via Authorization header');
           userId = user.id;
-        } else {
-          console.log('[admin/centers] ❌ Invalid token:', error?.message);
         }
       }
     }
 
     if (!userId) {
-      console.log('[admin/centers] ❌ No valid authentication found');
       return NextResponse.json({ error: 'Unauthorized - no session found' }, { status: 401 });
     }
-
-    console.log('[admin/centers] 🔐 User ID:', userId);
 
     // Check if user is admin
     const { data: adminUser } = await adminClient
@@ -111,17 +97,9 @@ export async function GET(request: Request) {
     const userPhone = cookieSession?.user?.phone ?? userData?.phone ?? null;
     const isPhoneAdmin = !!userPhone && superAdminPhones.includes(String(userPhone));
 
-    console.log('[admin/centers] 🔐 Admin check:', {
-      hasAdminUser: !!adminUser,
-      isPhoneAdmin,
-    });
-
     if (!adminUser && !isPhoneAdmin) {
-      console.log('[admin/centers] ❌ Not an admin');
       return NextResponse.json({ error: 'Forbidden - admin access required' }, { status: 403 });
     }
-
-    console.log('[admin/centers] ✅ Admin authorized');
 
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get('status') || 'all';
@@ -145,9 +123,7 @@ export async function GET(request: Request) {
       query = query.or(`name.ilike.${term},phone.ilike.${term}`);
     }
 
-    console.log('[admin/centers] 📡 Querying centers...');
     const { data: centersData, error } = await query;
-    console.log('[admin/centers] 📊 Query result:', { count: centersData?.length ?? 0, error: error?.message });
 
     if (error) {
       console.error('[admin/centers] ❌ Query error:', error);
@@ -170,17 +146,49 @@ export async function GET(request: Request) {
     // Weekly unique students (past 7 days) per center for limit display
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
     const { data: weeklyScans } = centerIds.length > 0
       ? await adminClient
           .from('attendance_scans')
-          .select('center_id, student_id')
+          .select('center_id, student_id, scanned_at')
           .in('center_id', centerIds)
           .gte('scanned_at', weekAgo.toISOString())
       : { data: [] };
     const weeklyUniqueByCenter: Record<string, Set<string>> = {};
-    for (const row of (weeklyScans || []) as { center_id: string; student_id: string }[]) {
+    const lastScanByCenter: Record<string, string> = {};
+    for (const row of (weeklyScans || []) as { center_id: string; student_id: string; scanned_at?: string }[]) {
       if (!weeklyUniqueByCenter[row.center_id]) weeklyUniqueByCenter[row.center_id] = new Set();
       weeklyUniqueByCenter[row.center_id].add(row.student_id);
+      if (row.scanned_at && (!lastScanByCenter[row.center_id] || row.scanned_at > lastScanByCenter[row.center_id])) {
+        lastScanByCenter[row.center_id] = row.scanned_at;
+      }
+    }
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const { data: allScansForLast } = centerIds.length > 0
+      ? await adminClient
+          .from('attendance_scans')
+          .select('center_id, scanned_at')
+          .in('center_id', centerIds)
+          .gte('scanned_at', ninetyDaysAgo.toISOString())
+          .order('scanned_at', { ascending: false })
+          .limit(1000)
+      : { data: [] };
+    for (const row of (allScansForLast || []) as { center_id: string; scanned_at: string }[]) {
+      if (!lastScanByCenter[row.center_id]) lastScanByCenter[row.center_id] = row.scanned_at;
+    }
+    const { data: monthScans } = centerIds.length > 0
+      ? await adminClient
+          .from('attendance_scans')
+          .select('center_id')
+          .in('center_id', centerIds)
+          .gte('scanned_at', monthStart.toISOString())
+      : { data: [] };
+    const usageScansByCenter: Record<string, number> = {};
+    for (const row of (monthScans || []) as { center_id: string }[]) {
+      usageScansByCenter[row.center_id] = (usageScansByCenter[row.center_id] ?? 0) + 1;
     }
 
     const { data: owners } = await adminClient
@@ -221,6 +229,20 @@ export async function GET(request: Request) {
       const limitStatus = maxStudents < 999999
         ? (weeklyUnique >= maxStudents ? 'over' : weeklyUnique >= maxStudents * 0.9 ? 'approaching' : 'ok')
         : 'unlimited';
+      const lastScan = lastScanByCenter[c.id as string];
+      const now = new Date();
+      let lastActive = 'Never';
+      if (lastScan) {
+        const d = new Date(lastScan);
+        const diffMs = now.getTime() - d.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        if (diffMins < 60) lastActive = `${diffMins}m ago`;
+        else if (diffHours < 24) lastActive = `${diffHours}h ago`;
+        else if (diffDays < 7) lastActive = `${diffDays}d ago`;
+        else lastActive = `${diffDays} days ago`;
+      }
       return {
         ...c,
         students_count: studentCounts[c.id as string] ?? 0,
@@ -232,20 +254,16 @@ export async function GET(request: Request) {
         next_due: (c as { next_payment_due?: string }).next_payment_due || (c as { next_billing_date?: string }).next_billing_date,
         referring_center_name: referring?.name ?? null,
         referral_code_used: referring?.referral_code ?? null,
+        last_active: lastActive,
+        usage_scans: usageScansByCenter[c.id as string] ?? 0,
       };
     });
 
     const pendingCenters = rows.filter((c: Record<string, unknown>) => c.status === 'pending');
-    console.log('[admin/centers] ✅ Returning', rows.length, 'centers,', pendingCenters.length, 'pending');
-    console.log('==========================================');
 
     return NextResponse.json({ centers: rows, pendingCenters });
   } catch (error) {
-    console.error('==========================================');
-    console.error('[admin/centers] 💥 CAUGHT ERROR:', error);
-    console.error('[admin/centers] Error message:', error instanceof Error ? error.message : String(error));
-    console.error('[admin/centers] Error stack:', error instanceof Error ? error.stack : 'No stack');
-    console.error('==========================================');
+    console.error('[admin/centers] Error:', error instanceof Error ? error.message : error);
 
     return NextResponse.json(
       {

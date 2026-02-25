@@ -508,6 +508,12 @@ export default function DashboardPage() {
       }
 
       if (meData?.user?.center_id) {
+        // Center users must have can_view_dashboard to access dashboard
+        const canView = meData.user.can_view_dashboard === true || meData.user.role === 'owner' || meData.user.role === 'admin';
+        if (!canView) {
+          router.replace('/scan');
+          return;
+        }
         setCenterId(meData.user.center_id);
         setCenterBilling(meData.user.center ? {
           payment_due_date: meData.user.center.payment_due_date,
@@ -645,7 +651,7 @@ export default function DashboardPage() {
               </Link>
               <Link
                 href="/payments"
-                className="block p-8 ch-card hover:shadow-md transition-all duration-200"
+                className="block bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-all duration-200"
               >
                 <p className="text-sm text-muted-foreground">{t('unpaidCount')}</p>
                 <p className="text-3xl font-bold text-foreground mt-1">{data.unpaidCount}</p>
@@ -729,10 +735,10 @@ export default function DashboardPage() {
   return (
     <div className="p-4 md:p-6 space-y-6 animate-fade-in">
           {paymentDueBanner}
-          <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">{t('confirmedOnly')}</p>
+              <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
+              <p className="text-sm text-slate-500 mt-0.5">{t('confirmedOnly')}</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 p-1 rounded-xl border border-border bg-muted">
@@ -749,7 +755,7 @@ export default function DashboardPage() {
               <button
               onClick={handleExport}
               disabled={isExporting || isLoading}
-              className="px-4 py-2 text-sm font-medium border border-border text-muted-foreground hover:bg-muted rounded-lg disabled:opacity-50"
+              className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
             >
               {isExporting ? t('exporting') : t('exportData')}
             </button>
@@ -770,7 +776,7 @@ export default function DashboardPage() {
                   </Link>
                   <button
                     onClick={() => setShowUpgradeModal(false)}
-                    className="ml-2 px-4 py-2 bg-slate-100 rounded-lg text-sm text-slate-700"
+                    className="ms-2 px-4 py-2 bg-slate-100 rounded-lg text-sm text-slate-700"
                   >
                     {tCommon('cancel')}
                   </button>
@@ -801,143 +807,149 @@ export default function DashboardPage() {
             <div className="space-y-6">
               {/* KPI Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <div className="kpi-card animate-slide-up">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
-                      <QrCode size={20} />
-                    </div>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
-                      {data.scanDeltaPct >= 0 ? '+' : ''}{data.scanDeltaPct}{t('pct')}
-                    </span>
-                  </div>
-                  <p className="text-2xl font-black text-foreground font-mono mt-1">{locale === 'ar' ? toAr(data.todayAttendance) : data.todayAttendance}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{t('todayScans')}</p>
-                </div>
                 {canViewRevenue && (
-                  <div className="kpi-card animate-slide-up">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up">
                     <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#16A34A18', color: '#16A34A' }}>
-                        <TrendingUp size={20} />
+                      <div className="p-3 rounded-full bg-teal-100 shrink-0">
+                        <TrendingUp size={20} className="text-teal-600" />
                       </div>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: '#16A34A18', color: '#16A34A' }}>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-600">
                         {data.revenueDeltaPct >= 0 ? '+' : ''}{data.revenueDeltaPct}{t('pct')}
                       </span>
                     </div>
-                    <p className="text-2xl font-black text-foreground font-mono mt-1">
+                    <p className="text-2xl font-black text-slate-900 font-mono mt-1">
                       {locale === 'ar' ? toAr(Math.round(data.todayRevenue)) : Math.round(data.todayRevenue).toLocaleString()} ج.م
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t('todayRevenue')}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{t('todayRevenue')}</p>
                   </div>
                 )}
-                <div className="kpi-card animate-slide-up">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up">
                   <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#F59E0B18', color: '#F59E0B' }}>
-                      <Users size={20} />
+                    <div className="p-3 rounded-full bg-blue-100 shrink-0">
+                      <QrCode size={20} className="text-blue-600" />
                     </div>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: '#F59E0B18', color: '#F59E0B' }}>
-                      +{locale === 'ar' ? toAr(data.newStudentsCount) : data.newStudentsCount}
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                      {data.scanDeltaPct >= 0 ? '+' : ''}{data.scanDeltaPct}{t('pct')}
                     </span>
                   </div>
-                  <p className="text-2xl font-black text-foreground font-mono mt-1">{locale === 'ar' ? toAr(data.totalStudents) : data.totalStudents}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{t('activeStudents')}</p>
+                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">{locale === 'ar' ? toAr(data.todayAttendance) : data.todayAttendance}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t('todayScans')}</p>
                 </div>
                 {canViewRevenue && (
-                  <div className="kpi-card animate-slide-up">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up">
                     <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#7C3AED18', color: '#7C3AED' }}>
-                        <CreditCard size={20} />
+                      <div className="p-3 rounded-full bg-amber-100 shrink-0">
+                        <CreditCard size={20} className="text-amber-600" />
                       </div>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: '#7C3AED18', color: '#7C3AED' }}>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">
                         {data.pendingCount}
                       </span>
                     </div>
-                    <p className="text-2xl font-black text-foreground font-mono mt-1">{data.pendingCount}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t('pendingPayments')}</p>
+                    <p className="text-2xl font-black text-slate-900 font-mono mt-1">{data.pendingCount}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{t('pendingPayments')}</p>
                   </div>
                 )}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up">
+                  <div className="flex items-center justify-between">
+                    <div className="p-3 rounded-full bg-green-100 shrink-0">
+                      <Users size={20} className="text-green-600" />
+                    </div>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-600">
+                      +{locale === 'ar' ? toAr(data.newStudentsCount) : data.newStudentsCount}
+                    </span>
+                  </div>
+                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">{locale === 'ar' ? toAr(data.totalStudents) : data.totalStudents}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t('activeStudents')}</p>
+                </div>
               </div>
 
               {/* Weekly Performance */}
               <div>
-                <h2 className="text-lg font-bold text-foreground mb-3">{t('weeklyPerformance')}</h2>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('weeklyPerformance')}</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                  <div className="ch-card p-4 flex flex-col gap-2">
-                    <p className="text-xs text-muted-foreground">{t('collectionRate')}</p>
-                    <p className="text-xl font-bold text-foreground">{data.collectionRatePct}%</p>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
+                    <p className="text-xs text-slate-500">{t('collectionRate')}</p>
+                    <p className="text-xl font-bold text-slate-900">{data.collectionRatePct}%</p>
                     <Progress value={data.collectionRatePct} className="h-1.5" />
                   </div>
-                  <div className="ch-card p-4 flex flex-col gap-2">
-                    <p className="text-xs text-muted-foreground">{t('avgRevenueStudent')}</p>
-                    <p className="text-xl font-bold text-foreground font-mono">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
+                    <p className="text-xs text-slate-500">{t('avgRevenueStudent')}</p>
+                    <p className="text-xl font-bold text-slate-900 font-mono">
                       {locale === 'ar' ? toAr(Math.round(data.monthConfirmed / (data.totalStudents || 1))) : Math.round(data.monthConfirmed / (data.totalStudents || 1)).toLocaleString()} ج.م
                     </p>
                   </div>
-                  <div className="ch-card p-4 flex flex-col gap-2">
-                    <p className="text-xs text-muted-foreground">{t('totalUnpaidBalance')}</p>
-                    <p className={`text-xl font-bold font-mono ${data.totalPending > 0 ? 'text-destructive' : 'text-foreground'}`}>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
+                    <p className="text-xs text-slate-500">{t('totalUnpaidBalance')}</p>
+                    <p className={`text-xl font-bold font-mono ${data.totalPending > 0 ? 'text-destructive' : 'text-slate-900'}`}>
                       {locale === 'ar' ? toAr(Math.round(data.totalPending)) : Math.round(data.totalPending).toLocaleString()} ج.م
                     </p>
                   </div>
-                  <div className="ch-card p-4 flex flex-col gap-2">
-                    <p className="text-xs text-muted-foreground">{t('topGroupWeek')}</p>
-                    <p className="text-xl font-bold text-foreground">—</p>
-                    <p className="text-xs text-muted-foreground">{data.todayAttendance} {t('scans')}</p>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
+                    <p className="text-xs text-slate-500">{t('topGroupWeek')}</p>
+                    <p className="text-xl font-bold text-slate-900">—</p>
+                    <p className="text-xs text-slate-500">{data.todayAttendance} {t('scans')}</p>
                   </div>
                 </div>
               </div>
 
               {/* Quick Actions */}
               <div>
-                <h2 className="text-lg font-bold text-foreground mb-3">{t('quickActions')}</h2>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('quickActions')}</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <Link
                     href="/scan"
-                    className="ch-card p-4 flex items-start gap-3 hover:shadow-md transition-shadow group"
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3 hover:shadow-md transition-shadow group"
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
-                      <Camera size={20} />
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-teal-100">
+                      <Camera size={20} className="text-teal-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t('scanStudent')}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t('scanStudentDesc')}</p>
+                      <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('scanStudent')}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{t('scanStudentDesc')}</p>
                     </div>
                   </Link>
                   <Link
                     href="/students"
-                    className="ch-card p-4 flex items-start gap-3 hover:shadow-md transition-shadow group"
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3 hover:shadow-md transition-shadow group"
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#16A34A18', color: '#16A34A' }}>
-                      <UserPlus size={20} />
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-green-100">
+                      <UserPlus size={20} className="text-green-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t('addStudent')}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t('addStudentDesc')}</p>
+                      <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('addStudent')}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{t('addStudentDesc')}</p>
                     </div>
                   </Link>
                   <Link
                     href="/payments?filter=pending"
-                    className="ch-card p-4 flex items-start gap-3 hover:shadow-md transition-shadow group"
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3 hover:shadow-md transition-shadow group"
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#DC262618', color: '#DC2626' }}>
-                      <DollarSign size={20} />
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-100">
+                      <DollarSign size={20} className="text-amber-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t('viewUnpaid')}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t('viewUnpaidDesc')}</p>
+                      <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('viewUnpaid')}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{t('viewUnpaidDesc')}</p>
                     </div>
                   </Link>
                   <button
                     type="button"
                     onClick={handleExport}
                     disabled={isExporting}
-                    className="ch-card p-4 flex items-start gap-3 hover:shadow-md transition-shadow group text-start w-full disabled:opacity-50"
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3 hover:shadow-md transition-shadow group text-start w-full disabled:opacity-50"
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#3B82F618', color: '#3B82F6' }}>
-                      <FileSpreadsheet size={20} />
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100">
+                      <FileSpreadsheet size={20} className="text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t('exportReport')}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t('exportReportDesc')}</p>
+                      <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('exportReport')}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{t('exportReportDesc')}</p>
                     </div>
                   </button>
                 </div>
@@ -945,59 +957,64 @@ export default function DashboardPage() {
 
               {/* Charts Row */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="ch-card p-5">
-                  <h3 className="font-semibold text-foreground mb-4">{t('attendanceChart')}</h3>
-                  <AttendanceAreaChart data={data.trendData} />
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4">{t('attendanceChart')}</h3>
+                  <AttendanceAreaChart data={data.trendData ?? []} />
                 </div>
                 {canViewRevenue && (
-                  <div className="ch-card p-5">
-                    <h3 className="font-semibold text-foreground mb-4">{t('revenueChart')}</h3>
-                    <RevenueStackedChart data={data.revenueChartData} />
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <h3 className="font-semibold text-slate-900 mb-4">{t('revenueChart')}</h3>
+                    <RevenueStackedChart data={data.revenueChartData ?? []} />
                   </div>
                 )}
               </div>
 
               {/* Payment Methods Donut */}
               {canViewRevenue && (
-                <div className="ch-card p-5">
-                  <h3 className="font-semibold text-foreground mb-4">{t('paymentMethods')}</h3>
-                  <PaymentMethodsDonut data={data.revenueByMethod} />
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4">{t('paymentMethods')}</h3>
+                  <PaymentMethodsDonut data={data.revenueByMethod ?? []} />
                 </div>
               )}
 
               {/* Recent Payments */}
               {canViewRevenue && (
-                <div className="ch-card p-5">
-                  <h3 className="font-semibold text-foreground mb-4">{t('recentPayments')}</h3>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('recentPayments')}</span>
+                      <div className="flex-1 h-px bg-slate-200" />
+                    </div>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border">
-                          <th className="text-start py-2 text-muted-foreground font-medium">{tPayments('studentName')}</th>
-                          <th className="text-start py-2 text-muted-foreground font-medium hidden sm:table-cell">{tPayments('group')}</th>
-                          <th className="text-start py-2 text-muted-foreground font-medium">{tPayments('amount')}</th>
-                          <th className="text-start py-2 text-muted-foreground font-medium">{tCommon('status')}</th>
+                        <tr className="border-b border-slate-200 bg-slate-50">
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tPayments('studentName')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">{tPayments('group')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tPayments('amount')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {data.recentPayments.slice(0, 5).map(p => (
-                          <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                            <td className="py-2.5">
-                              <div className="font-medium text-foreground">{p.student_name}</div>
-                              {p.student_number && <div className="text-xs text-muted-foreground font-mono">{p.student_number}</div>}
+                      <tbody className="divide-y divide-slate-100">
+                        {(data.recentPayments ?? []).slice(0, 5).map(p => (
+                          <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3.5 px-4 text-sm text-slate-900">
+                              <div className="font-medium">{p.student_name}</div>
+                              {p.student_number && <div className="text-xs text-slate-500 font-mono">{p.student_number}</div>}
                             </td>
-                            <td className="py-2.5 hidden sm:table-cell text-muted-foreground">{p.group_name ?? '—'}</td>
-                            <td className="py-2.5 font-bold text-foreground font-mono">{Math.round(p.amount).toLocaleString()} ج.م</td>
-                            <td className="py-2.5">
+                            <td className="py-3.5 px-4 text-sm text-slate-500 hidden sm:table-cell">{p.group_name ?? '—'}</td>
+                            <td className="py-3.5 px-4 text-sm font-bold text-slate-900 font-mono">{Math.round(p.amount).toLocaleString()} ج.م</td>
+                            <td className="py-3.5 px-4 text-sm">
                               <span className={p.status === 'confirmed' ? 'badge-confirmed' : p.status === 'pending' ? 'badge-pending' : 'badge-late'}>
                                 {p.status === 'confirmed' ? tPayments('confirmedStatus') : p.status === 'pending' ? tPayments('filterPending') : tPayments('lateEntry')}
                               </span>
                             </td>
                           </tr>
                         ))}
-                        {data.recentPayments.length === 0 && (
+                        {(data.recentPayments ?? []).length === 0 && (
                           <tr>
-                            <td colSpan={4} className="py-8 text-center text-muted-foreground text-sm">{tCommon('noData')}</td>
+                            <td colSpan={4} className="py-8 text-center text-slate-500 text-sm">{tCommon('noData')}</td>
                           </tr>
                         )}
                       </tbody>
@@ -1007,10 +1024,13 @@ export default function DashboardPage() {
               )}
 
               {/* Inactive Students Section */}
-              <div className="ch-card p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">{t('inactiveStudents')}</h2>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('inactiveStudents')}</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
                 <InactiveList
-                  students={data.inactiveStudents}
+                  students={data.inactiveStudents ?? []}
                   period={inactivePeriod}
                   onPeriodChange={setInactivePeriod}
                 />

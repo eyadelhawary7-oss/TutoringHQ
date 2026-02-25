@@ -286,16 +286,18 @@ export default function GroupsPage() {
   };
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-4 md:p-6 space-y-5 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-foreground">{t('title')}</h1>
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="space-y-6 animate-fade-in">
+      {/* Page header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{groups.length} {t('title')}</p>
+        </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-          style={{ background: 'hsl(var(--primary))' }}
+          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
         >
-          <Plus size={14} /> {t('addGroup')}
+          <Plus size={16} /> {t('addGroup')}
         </button>
       </div>
 
@@ -307,27 +309,24 @@ export default function GroupsPage() {
           </svg>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {groups.map(g => (
             <div
               key={g.id}
-              className="ch-card p-5 hover:shadow-md transition-shadow cursor-pointer group"
+              className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer group"
               onClick={() => setDetailGroup(g)}
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
-                  <BookOpen size={18} />
+                <div className="p-2 bg-teal-100 rounded-lg">
+                  <BookOpen className="w-5 h-5 text-teal-600" />
                 </div>
-                <span className="text-2xl font-black text-foreground font-mono">{(g.fee ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')}</span>
+                <span className="text-xs text-slate-400">{g.member_count ?? 0} {tCommon('students')}</span>
               </div>
-              <h3 className="font-bold text-foreground mb-1">{g.name}</h3>
-              <p className="text-sm text-muted-foreground mb-3">{g.subject ?? '\u2014'}</p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{g.member_count ?? 0} {tCommon('students')}</span>
-                <span className="text-xs text-muted-foreground truncate max-w-[120px]">{g.teacher_name ?? '\u2014'}</span>
-              </div>
-              <div className="mt-3 pt-3 border-t border-border flex items-center gap-1 text-xs text-primary">
-                {t('viewDetails')} <ChevronRight size={12} />
+              <h3 className="font-semibold text-slate-900 mb-1">{g.name}</h3>
+              <p className="text-sm text-slate-500 mb-3">{g.subject ?? '\u2014'}</p>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-900 font-mono">EGP {(g.fee ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')}</span>
+                <span className="text-xs text-slate-400">per lesson</span>
               </div>
             </div>
           ))}
@@ -336,13 +335,13 @@ export default function GroupsPage() {
 
       {/* Add Group Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddModal(false)}>
-          <div className="bg-card rounded-2xl border border-border p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-foreground">{t('addGroup')}</h3>
-              <button onClick={() => setShowAddModal(false)}><X size={18} className="text-muted-foreground" /></button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900">{t('addGroup')}</h2>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
             </div>
-            <form onSubmit={handleAddGroup} className="space-y-3">
+            <form onSubmit={handleAddGroup} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">{t('groupName')}</label>
                 <input

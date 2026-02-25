@@ -94,8 +94,8 @@ export function BottomNav() {
   return (
     <>
       {/* Bottom Tab Bar */}
-      <nav className="md:hidden fixed bottom-0 start-0 end-0 z-50 border-t border-border print:hidden" style={{ background: 'hsl(var(--card))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex items-stretch h-14">
+      <nav className="md:hidden fixed bottom-0 start-0 end-0 z-50 bg-white border-t border-slate-200 print:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="flex items-stretch h-16">
           {visiblePrimaryItems.map(({ key, path, icon: Icon }) => {
             const active = isActive(path);
             return (
@@ -103,12 +103,12 @@ export function BottomNav() {
                 key={path}
                 href={path}
                 className={cn(
-                  'flex-1 flex flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors',
-                  active ? 'text-primary' : 'text-muted-foreground'
+                  'flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 transition-colors',
+                  active ? 'text-teal-600' : 'text-slate-400'
                 )}
               >
-                <Icon size={20} className={cn(active && 'text-primary')} />
-                <span className="text-[10px]">{t(key)}</span>
+                <Icon size={24} className={cn(active && 'text-teal-600')} />
+                <span className={cn('text-xs font-medium', active && 'text-teal-600')}>{t(key)}</span>
               </Link>
             );
           })}
@@ -116,10 +116,10 @@ export function BottomNav() {
           <button
             type="button"
             onClick={() => setShowMore(true)}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs font-medium text-muted-foreground"
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-slate-400"
           >
-            <MoreHorizontal size={20} />
-            <span className="text-[10px]">{t('more')}</span>
+            <MoreHorizontal size={24} />
+            <span>{t('more')}</span>
           </button>
         </div>
       </nav>
@@ -129,14 +129,13 @@ export function BottomNav() {
         <div className="md:hidden fixed inset-0 z-[60] print:hidden" onClick={() => setShowMore(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
-            className="absolute bottom-0 start-0 end-0 rounded-t-2xl border-t border-border p-4 pb-8"
-            style={{ background: 'hsl(var(--card))' }}
+            className="absolute bottom-0 start-0 end-0 rounded-t-2xl border-t border-slate-200 bg-white p-4 pb-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">{t('more')}</h3>
-              <button onClick={() => setShowMore(false)} className="p-1 rounded-lg hover:bg-muted">
-                <X size={18} className="text-muted-foreground" />
+              <h3 className="font-semibold text-slate-900">{t('more')}</h3>
+              <button onClick={() => setShowMore(false)} className="p-1 rounded-lg hover:bg-slate-100">
+                <X size={18} className="text-slate-500" />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -147,12 +146,12 @@ export function BottomNav() {
                     key={path}
                     href={path}
                     onClick={() => setShowMore(false)}
-                    className={cn(
-                      'flex items-center gap-3 p-3 rounded-xl border transition-colors',
-                      active
-                        ? 'border-primary/30 bg-primary/5 text-primary'
-                        : 'border-border text-foreground hover:bg-muted'
-                    )}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-xl border border-slate-200 transition-colors',
+                    active
+                      ? 'border-teal-500 bg-teal-50 text-teal-600'
+                      : 'text-slate-900 hover:bg-slate-50'
+                  )}
                   >
                     <Icon size={20} />
                     <span className="font-medium text-sm">{t(key)}</span>
@@ -165,10 +164,10 @@ export function BottomNav() {
                 href="/admin"
                 onClick={() => setShowMore(false)}
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl border transition-colors mt-3',
+                  'flex items-center gap-3 p-3 rounded-xl border border-slate-200 transition-colors mt-3',
                   cleanPath.startsWith('/admin')
-                    ? 'border-primary/30 bg-primary/5 text-primary'
-                    : 'border-border text-foreground hover:bg-muted'
+                    ? 'border-teal-500 bg-teal-50 text-teal-600'
+                    : 'text-slate-900 hover:bg-slate-50'
                 )}
               >
                 <Shield size={20} />
@@ -179,7 +178,7 @@ export function BottomNav() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="mt-4 flex w-full items-center gap-3 rounded-xl border border-border p-3 text-sm font-medium text-destructive hover:bg-muted transition-colors"
+                className="mt-4 flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-sm font-medium text-red-600 hover:bg-slate-50 transition-colors"
               >
                 <LogOut size={20} />
                 <span>{t('logout')}</span>

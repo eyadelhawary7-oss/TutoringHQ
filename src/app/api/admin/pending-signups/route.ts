@@ -4,9 +4,6 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-  console.log('==========================================');
-  console.log('[admin/pending-signups] 🔍 Route called');
-
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -75,10 +72,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    console.log('[admin/pending-signups] ✅ Admin authorized');
-
-    console.log('[admin/pending-signups] 📡 Querying pending centers...');
-
     // Try full query first, fallback to basic columns if extended columns don't exist
     let pendingCenters: Record<string, unknown>[] | null = null;
     let error: { message: string } | null = null;
@@ -90,7 +83,6 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false });
 
     if (fullResult.error) {
-      console.warn('[admin/pending-signups] ⚠️ Full query failed, trying basic columns:', fullResult.error.message);
       const basicResult = await adminClient
         .from('centers')
         .select('id, name, phone, plan, status, created_at')
@@ -102,12 +94,6 @@ export async function GET(request: Request) {
       pendingCenters = fullResult.data;
       error = fullResult.error;
     }
-
-    console.log('[admin/pending-signups] 📊 Query result:', {
-      count: pendingCenters?.length || 0,
-      error: error?.message,
-      firstRow: pendingCenters?.[0] || null,
-    });
 
     if (error) {
       console.error('[admin/pending-signups] ❌ Query error:', error);
@@ -139,14 +125,9 @@ export async function GET(request: Request) {
       };
     });
 
-    console.log('[admin/pending-signups] ✅ Returning', rows.length, 'pending signups');
-    console.log('==========================================');
-
     return NextResponse.json({ signups: rows });
   } catch (error) {
-    console.error('==========================================');
-    console.error('[admin/pending-signups] 💥 Error:', error);
-    console.error('==========================================');
+    console.error('[admin/pending-signups] Error:', error);
 
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

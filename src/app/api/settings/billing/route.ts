@@ -52,7 +52,6 @@ async function getUserContext(request: NextRequest) {
     .eq('id', user.id)
     .single();
 
-  console.log('getUserContext debug:', { authUserId: user.id, userRecord });
   if (!userRecord?.center_id) return null;
 
   return { user: userRecord, supabaseAdmin };
@@ -69,7 +68,6 @@ function getMonthBounds() {
 }
 
 export async function GET(request: NextRequest) {
-  console.log('Billing GET handler called');
   try {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -96,13 +94,13 @@ export async function GET(request: NextRequest) {
     try {
       const { data: plansData } = await ctx.supabaseAdmin.from('pricing_plans').select('*').order('sort_order', { ascending: true });
       if (plansData) plans = plansData;
-    } catch (e) { console.log('pricing_plans query failed, using empty'); }
+    } catch { /* pricing_plans query failed, using empty */ }
 
     let paygRates: unknown[] = [];
     try {
       const { data: paygData } = await ctx.supabaseAdmin.from('payg_rates').select('*').order('sort_order', { ascending: true });
       if (paygData) paygRates = paygData;
-    } catch (e) { console.log('payg_rates query failed, using empty'); }
+    } catch { /* payg_rates query failed, using empty */ }
 
     const { start: monthStart, end: monthEnd } = getMonthBounds();
 
@@ -173,8 +171,7 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(20);
       if (invData) invoices = invData;
-    } catch (e) { console.log('invoices query failed, using empty'); }
-    console.log('Billing GET invoices:', invoices?.length ?? 0);
+    } catch { /* invoices query failed, using empty */ }
 
     const currentPlanDetails = (plans || []).find((p) => (p as { id: string }).id === plan);
 
@@ -302,7 +299,6 @@ export async function PUT(request: NextRequest) {
         console.error('Invoice insert error:', insertErr);
         return NextResponse.json({ error: insertErr.message }, { status: 500 });
       }
-      console.log('Invoice insert result:', { data: insertData, error: null });
       return NextResponse.json({ success: true });
     }
 

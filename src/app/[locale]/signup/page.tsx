@@ -142,7 +142,7 @@ export default function SignupPage() {
         </button>
       </div>
 
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-xl mb-3 shadow-lg" style={{ background: 'hsl(var(--primary))' }}>CH</div>
           <h1 className="text-xl font-black text-white">CenterHQ</h1>
@@ -328,8 +328,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading || !formData.terms}
-              className="w-full py-3 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
-              style={{ background: 'hsl(var(--primary))' }}
+              className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg text-base tracking-wide disabled:opacity-50"
             >
               {loading ? t('submitting') : t('submitRequest')}
             </button>

@@ -29,8 +29,6 @@ export async function POST(request: Request) {
     }
 
     const normalizedPhone = normalizePhone(phone);
-    console.log('[login] Raw phone input:', JSON.stringify(phone));
-    console.log('[login] Normalized phone:', JSON.stringify(normalizedPhone));
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -41,11 +39,6 @@ export async function POST(request: Request) {
       .select('id, phone, name, role, center_id')
       .eq('phone', normalizedPhone)
       .maybeSingle();
-
-    console.log('[login] Query result:', {
-      user: user ? { id: user.id, phone: user.phone } : null,
-      error: error ? { message: error.message, code: error.code } : null,
-    });
 
     if (error) {
       console.error('[login] Supabase query error:', error);

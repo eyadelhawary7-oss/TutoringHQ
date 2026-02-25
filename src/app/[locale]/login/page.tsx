@@ -183,6 +183,11 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Demo hint */}
+            <p className="text-xs text-muted-foreground border border-dashed border-border rounded-lg px-3 py-2">
+              <span className="font-semibold">Demo:</span> 01000000000 / 123456
+            </p>
+
             {/* Error */}
             {error && (
               <div className="rounded-lg px-3 py-2.5 text-sm font-medium" style={{ background: 'hsl(var(--destructive) / 0.1)', color: 'hsl(var(--destructive))' }}>

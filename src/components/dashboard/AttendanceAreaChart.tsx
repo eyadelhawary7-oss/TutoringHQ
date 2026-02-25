@@ -6,8 +6,8 @@ interface AttendanceAreaChartProps {
   data: { date: string; count: number }[];
 }
 
-export default function AttendanceAreaChart({ data }: AttendanceAreaChartProps) {
-  if (data.length === 0) {
+export default function AttendanceAreaChart({ data = [] }: AttendanceAreaChartProps) {
+  if (!data?.length) {
     return (
         <div className="flex items-center justify-center h-[200px] text-muted-foreground">
         <p className="text-sm">---</p>
