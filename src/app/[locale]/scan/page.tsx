@@ -17,7 +17,6 @@ import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
 import { useUser } from '@/contexts/UserContext';
-import { useLayout } from '@/contexts/LayoutContext';
 
 type ScanMode = 'camera' | 'bluetooth' | 'manual';
 
@@ -52,15 +51,16 @@ async function hasPaidToday(studentId: string, centerId: string, groupId?: strin
   return Array.isArray(data) ? data.length > 0 : !!data;
 }
 
+let persistedMode: ScanMode = 'camera';
+
 export default function ScanPage() {
   const t = useTranslations('scan');
   const tSync = useTranslations('sync');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const { user, hasPermission } = useUser();
-  const { setHideShell } = useLayout();
 
-  const [mode, setMode] = useState<ScanMode>('camera');
+  const [mode, setMode] = useState<ScanMode>(persistedMode);
   const [manualIdInput, setManualIdInput] = useState('');
   const manualInputRef = useRef<HTMLInputElement>(null);
   const [scannedStudent, setScannedStudent] = useState<Student | null>(null);
@@ -76,8 +76,11 @@ export default function ScanPage() {
   const [addedAmountToBalance, setAddedAmountToBalance] = useState(0);
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
+  const modeRef = useRef<ScanMode>('camera');
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => { persistedMode = mode; }, [mode]);
 
   // Sync students to IndexedDB when center is available
   const fetchAndSyncStudents = useCallback(async () => {
@@ -100,11 +103,6 @@ export default function ScanPage() {
   }, [centerId]);
 
   const canAllowLateEntry = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_allow_late_entry');
-
-  useEffect(() => {
-    setHideShell(!!scannedStudent);
-    return () => setHideShell(false);
-  }, [scannedStudent, setHideShell]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -273,7 +271,7 @@ export default function ScanPage() {
         setNeedGroupSelection(true);
         setScannedStudent({ ...student, payment_status: '', last_payment_method: null });
         isProcessingRef.current = false;
-        if (mode === 'manual') setManualIdInput('');
+        if (modeRef.current === 'manual') setManualIdInput('');
         return;
       }
 
@@ -353,13 +351,13 @@ export default function ScanPage() {
           setScannedStudent(null);
           setSelectedGroup(null);
           isProcessingRef.current = false;
-          if (mode === 'manual') {
+          if (modeRef.current === 'manual') {
             setManualIdInput('');
             manualInputRef.current?.focus();
           }
         }, 3000);
       }
-      if (mode === 'manual' && !paidToday) {
+      if (modeRef.current === 'manual' && !paidToday) {
         setManualIdInput('');
         manualInputRef.current?.focus();
       }
@@ -367,7 +365,7 @@ export default function ScanPage() {
       setError(t('scanError'));
       isProcessingRef.current = false;
     }
-  }, [centerId, userId, t, mode]);
+  }, [centerId, userId, t]);
 
   const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee: number }) => {
     if (!scannedStudent || !centerId || !userId) return;
