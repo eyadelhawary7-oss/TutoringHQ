@@ -5,7 +5,7 @@ import { normalizePhone } from '@/lib/utils/phone';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { centerName, ownerName, phone, city, plan, notes } = body;
+    const { centerName, ownerName, phone, city, plan, notes, billing_period } = body;
 
     if (!centerName?.trim() || !ownerName?.trim() || !phone?.trim() || !plan) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         status: 'pending',
         subscription_status: 'pending',
         billing_type: 'fixed',
-        billing_period: 'quarterly',
+        billing_period: ['monthly', 'quarterly', 'biannual', 'yearly'].includes(billing_period) ? billing_period : 'quarterly',
         billing_amount: pricing.monthly,
         referral_code: generateReferralCode(),
         requested_at: new Date().toISOString(),

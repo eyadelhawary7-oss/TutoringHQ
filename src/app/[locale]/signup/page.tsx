@@ -16,6 +16,27 @@ const PLANS = [
   { value: 'top_centers', name: 'ميجا سنتر', fee: 0, limit: 0, custom: true, perStudentWeek: null as string | null },
 ];
 
+const getAdjustedPrice = (basePrice: number, period: string) => {
+  if (period === 'monthly') return Math.round(basePrice * 1.1);
+  if (period === 'quarterly') return basePrice;
+  if (period === 'biannual') return Math.round(basePrice * 0.95);
+  if (period === 'yearly') return Math.round(basePrice * 0.9);
+  return basePrice;
+};
+
+type BillingPeriod = {
+  value: 'monthly' | 'quarterly' | 'biannual' | 'yearly'
+  label: string
+  badge?: string
+}
+
+const BILLING_PERIODS: BillingPeriod[] = [
+  { value: 'monthly', label: 'شهري' },
+  { value: 'quarterly', label: 'ربع سنوي' },
+  { value: 'biannual', label: 'نصف سنوي' },
+  { value: 'yearly', label: 'سنوي', badge: 'شهرين مجاناً' },
+];
+
 export default function SignupPage() {
   const t = useTranslations('signup');
   const tl = useTranslations('landing');
@@ -25,6 +46,7 @@ export default function SignupPage() {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
+  const [billingPeriod, setBillingPeriod] = useState('quarterly');
   const [formData, setFormData] = useState({
     centerName: '',
     ownerName: '',
@@ -63,7 +85,7 @@ export default function SignupPage() {
       const response = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, phone }),
+        body: JSON.stringify({ ...formData, phone, billing_period: billingPeriod }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -128,8 +150,17 @@ export default function SignupPage() {
     );
   }
 
+  const getBillingLabel = (planFee: number) => {
+    const adj = getAdjustedPrice(planFee, billingPeriod);
+    if (billingPeriod === 'monthly') return 'يتجدد شهرياً';
+    if (billingPeriod === 'quarterly') return `يُدفع كل 3 شهور: ${(adj * 3).toLocaleString('en-US')} جنيه`;
+    if (billingPeriod === 'biannual') return `يُدفع كل 6 شهور: ${(adj * 6).toLocaleString('en-US')} جنيه`;
+    if (billingPeriod === 'yearly') return `يُدفع سنوياً: ${(adj * 12).toLocaleString('en-US')} جنيه`;
+    return '';
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: 'var(--gradient-hero)' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 font-['Cairo',sans-serif]" style={{ background: 'var(--gradient-hero)', fontFamily: "'Cairo', sans-serif" }} dir="rtl">
       {/* Language toggle */}
       <div className="absolute top-4 end-4">
         <button
@@ -231,6 +262,31 @@ export default function SignupPage() {
               </select>
             </div>
 
+            {/* Billing Period */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">دورة الفاتورة</label>
+              <div className="flex flex-wrap gap-2">
+                {BILLING_PERIODS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setBillingPeriod(opt.value)}
+                    className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                      billingPeriod === opt.value ? 'text-white' : 'bg-slate-100 text-slate-600'
+                    }`}
+                    style={billingPeriod === opt.value ? { backgroundColor: '#0D9488' } : {}}
+                  >
+                    {opt.label}
+                    {opt.badge && (
+                      <span className="absolute -top-1.5 -start-1 bg-amber-100 text-amber-700 text-xs rounded-full px-2 py-0.5 whitespace-nowrap">
+                        {opt.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Plan */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">{t('selectPlan')}</label>
@@ -273,11 +329,14 @@ export default function SignupPage() {
                           {plan.custom ? (
                             <span className="text-sm font-bold text-muted-foreground font-mono">{tl('custom')}</span>
                           ) : (
-                            <span className="text-sm font-bold text-foreground font-mono">{plan.fee.toLocaleString('en-US')} {tc('egp')}</span>
+                            <span className="text-sm font-bold text-foreground font-mono">{getAdjustedPrice(plan.fee, billingPeriod).toLocaleString('en-US')} {tc('egp')}</span>
                           )}
                         </div>
                         {!plan.custom && (
-                          <p className="text-xs text-muted-foreground mt-0.5">حتى {plan.limit.toLocaleString('en-US')} طالب/أسبوع</p>
+                          <>
+                            <p className="text-xs text-slate-500 mt-0.5">{getBillingLabel(plan.fee)}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">حتى {plan.limit.toLocaleString('en-US')} طالب/أسبوع</p>
+                          </>
                         )}
                         {plan.perStudentWeek && (
                           <p className="text-xs font-medium mt-0.5" style={{ color: '#16A34A' }}>• {plan.perStudentWeek} جنيه للطالب أسبوعياً</p>
