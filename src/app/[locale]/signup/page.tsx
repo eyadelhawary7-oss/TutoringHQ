@@ -9,11 +9,11 @@ const WHATSAPP_ADMIN = 'https://wa.me/201220601410';
 const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=I%20am%20interested%20in%20the%20TOP%20CENTERS%20plan';
 
 const PLANS = [
-  { value: 'starter', labelKey: 'planStarter' as const, fee: 2000, limit: 150, perStudentWeek: '3.33' },
-  { value: 'pro', labelKey: 'planPro' as const, fee: 4500, limit: 500, perStudentWeek: '2.25' },
-  { value: 'business', labelKey: 'planBusiness' as const, fee: 6500, limit: 1000, perStudentWeek: '1.63' },
-  { value: 'enterprise', labelKey: 'planEnterprise' as const, fee: 9000, limit: 2000, perStudentWeek: '1.13' },
-  { value: 'top_centers', labelKey: 'planTopCenters' as const, fee: 0, limit: 0, custom: true, perStudentWeek: null as string | null },
+  { value: 'starter', name: 'سنتر صغير', fee: 2000, limit: 150, perStudentWeek: '3.33' },
+  { value: 'pro', name: 'سنتر متوسط', fee: 4500, limit: 500, perStudentWeek: '2.25' },
+  { value: 'business', name: 'سنتر كبير', fee: 6500, limit: 1000, perStudentWeek: '1.63' },
+  { value: 'enterprise', name: 'سنتر ضخم', fee: 9000, limit: 2000, perStudentWeek: '1.13' },
+  { value: 'top_centers', name: 'ميجا سنتر', fee: 0, limit: 0, custom: true, perStudentWeek: null as string | null },
 ];
 
 export default function SignupPage() {
@@ -243,6 +243,7 @@ export default function SignupPage() {
                         ? 'border-primary/60 bg-primary/5'
                         : 'border-border hover:border-primary/30'
                     }`}
+                    style={plan.custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.3)' } : {}}
                     onClick={(e) => {
                       if (plan.custom) {
                         e.preventDefault();
@@ -268,18 +269,18 @@ export default function SignupPage() {
                     </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold text-sm text-foreground">{tl(plan.labelKey)}</span>
+                          <span className="font-semibold text-sm text-foreground">{plan.name}</span>
                           {plan.custom ? (
                             <span className="text-sm font-bold text-muted-foreground font-mono">{tl('custom')}</span>
                           ) : (
-                            <span className="text-sm font-bold text-foreground font-mono">{plan.fee.toLocaleString()} {tc('egp')}</span>
+                            <span className="text-sm font-bold text-foreground font-mono">{plan.fee.toLocaleString('en-US')} {tc('egp')}</span>
                           )}
                         </div>
                         {!plan.custom && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{tl('upToXStudentsWeek', { count: plan.limit.toLocaleString() })}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">حتى {plan.limit.toLocaleString('en-US')} طالب/أسبوع</p>
                         )}
                         {plan.perStudentWeek && (
-                          <p className="text-xs font-medium mt-0.5" style={{ color: '#16A34A' }}>{tl('perStudentWeekShort', { amount: plan.perStudentWeek })}</p>
+                          <p className="text-xs font-medium mt-0.5" style={{ color: '#16A34A' }}>• {plan.perStudentWeek} جنيه للطالب أسبوعياً</p>
                         )}
                         {plan.custom && (
                           <p className="text-xs text-green-600 mt-0.5 font-medium">{t('contactWhatsApp')}</p>

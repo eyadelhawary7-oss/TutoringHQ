@@ -3,18 +3,17 @@
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { QrCode, CreditCard, Calendar, BarChart3, Wifi, Bluetooth, Globe } from 'lucide-react';
-import { toAr } from '@/lib/number-utils';
 import { useTransition } from 'react';
 import Image from 'next/image';
 
 const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=مرحباً، أنا مهتم بخطة كبار السناتر لأكثر من 2000 طالب أسبوعياً';
 
 const PLANS = [
-  { key: 'planStarter', fee: 2000, limit: 150, setupFee: 1000, tier: 'starter' as const, perStudentWeek: '3.33', studentLabelKey: 'studentsLimit' as const, studentLabelCount: 150 },
-  { key: 'planPro', fee: 4500, limit: 500, setupFee: 2000, tier: 'pro' as const, popular: true, perStudentWeek: '2.25', studentLabelKey: 'studentsLimit' as const, studentLabelCount: 500 },
-  { key: 'planBusiness', fee: 6500, limit: 1000, setupFee: 3000, tier: 'business' as const, perStudentWeek: '1.63', studentLabelKey: 'studentsLimit' as const, studentLabelCount: 1000 },
-  { key: 'planEnterprise', fee: 9000, limit: 2000, setupFee: 5000, tier: 'enterprise' as const, perStudentWeek: '1.13', studentLabelKey: 'studentsLimit' as const, studentLabelCount: 2000 },
-  { key: 'planTopCenters', fee: 0, limit: 0, setupFee: 0, tier: 'top_centers' as const, custom: true, perStudentWeek: null, studentLabelKey: 'topCentersLimit' as const },
+  { name: 'سنتر صغير', fee: 2000, limit: 150, setupFee: 1000, tier: 'starter' as const, perStudentWeek: '3.33' },
+  { name: 'سنتر متوسط', fee: 4500, limit: 500, setupFee: 2000, tier: 'pro' as const, popular: true, perStudentWeek: '2.25' },
+  { name: 'سنتر كبير', fee: 6500, limit: 1000, setupFee: 3000, tier: 'business' as const, perStudentWeek: '1.63' },
+  { name: 'سنتر ضخم', fee: 9000, limit: 2000, setupFee: 5000, tier: 'enterprise' as const, bestValue: true, perStudentWeek: '1.13' },
+  { name: 'ميجا سنتر', fee: 0, limit: 0, setupFee: 0, tier: 'top_centers' as const, custom: true, perStudentWeek: null as string | null },
 ];
 
 const FEATURES = [
@@ -26,11 +25,8 @@ const FEATURES = [
   { key: 'feature6', icon: Bluetooth, color: '#0EA5E9', bgColor: '#0EA5E918' },
 ];
 
-function formatPrice(n: number, locale: string) {
-  if (locale === 'ar') {
-    return toAr(n);
-  }
-  return new Intl.NumberFormat('en-US').format(n);
+function formatPrice(n: number) {
+  return n.toLocaleString('en-US');
 }
 
 export default function LandingPage() {
@@ -164,34 +160,40 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
             {PLANS.map((plan) => (
               <div
-                key={plan.key}
+                key={plan.tier}
                 className={`relative ch-card p-5 flex flex-col transition-all hover:shadow-md ${plan.popular ? 'ring-2 ring-primary scale-[1.02]' : ''}`}
+                style={plan.custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.3)' } : {}}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-white whitespace-nowrap" style={{ background: 'hsl(var(--primary))' }}>
-                    {t('mostPopular')}
+                    الأكثر اختياراً
+                  </div>
+                )}
+                {plan.bestValue && (
+                  <div className="absolute -top-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-white whitespace-nowrap bg-green-600">
+                    الأفضل قيمة
                   </div>
                 )}
 
                 <div className="mb-4">
-                  <h3 className="font-bold text-foreground text-lg">{t(plan.key)}</h3>
+                  <h3 className="font-bold text-foreground text-lg">{plan.name}</h3>
                   {plan.custom ? (
                     <div className="mt-2">
                       <span className="text-2xl font-black text-foreground font-mono">{t('custom')}</span>
                     </div>
                   ) : (
                     <div className="mt-2 flex items-baseline gap-1">
-                      <span className="text-3xl font-black text-foreground font-mono">{formatPrice(plan.fee, locale)}</span>
+                      <span className="text-3xl font-black text-foreground font-mono">{formatPrice(plan.fee)}</span>
                       <span className="text-sm text-muted-foreground">{tc('egp')}</span>
                     </div>
                   )}
                   {!plan.custom && <p className="text-xs text-muted-foreground mt-1">{t('monthlyFee')}</p>}
                   <ul className="mt-1 space-y-0.5 text-[13px]" style={{ color: '#64748B' }} dir="rtl">
-                    <li>• {plan.studentLabelKey === 'topCentersLimit' ? t('topCentersLimit') : t('studentsLimit', { count: formatPrice(plan.studentLabelCount!, locale) })}</li>
+                    <li>• {plan.custom ? '2,000+ طالب/أسبوع' : `حتى ${formatPrice(plan.limit)} طالب/أسبوع`}</li>
                     {plan.perStudentWeek ? (
-                      <li>• {t('perStudentWeek', { amount: plan.perStudentWeek })}</li>
+                      <li>• {plan.perStudentWeek} جنيه/طالب/أسبوع</li>
                     ) : plan.custom ? (
-                      <li>• {t('customPricingNote')}</li>
+                      <li>• تسعير مخصص حسب الاحتياج</li>
                     ) : null}
                   </ul>
                 </div>
@@ -199,7 +201,7 @@ export default function LandingPage() {
                 <div className="flex-1">
                   {!plan.custom && (
                     <p className="text-[12px]" style={{ color: '#64748B' }}>
-                      {t('setupFeeShort', { amount: formatPrice(plan.setupFee, locale) })}
+                      رسوم التفعيل: {formatPrice(plan.setupFee)} جنيه
                     </p>
                   )}
                 </div>

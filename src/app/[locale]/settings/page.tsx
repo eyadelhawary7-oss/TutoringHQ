@@ -75,12 +75,15 @@ interface PaygRate {
 }
 
 // ========== Constants ==========
+const PLAN_DISPLAY_NAMES: Record<string, string> = { starter: 'سنتر صغير', pro: 'سنتر متوسط', business: 'سنتر كبير', enterprise: 'سنتر ضخم', top_centers: 'ميجا سنتر' };
+const PLAN_PER_STUDENT_WEEK: Record<string, string> = { starter: '3.33', pro: '2.25', business: '1.63', enterprise: '1.13', top_centers: '' };
+
 const FALLBACK_PLANS: PricingPlan[] = [
-  { id: 'starter', name_en: 'Starter', name_ar: 'أساسي', students_per_week_limit: 150, monthly_fee: 2000, per_student_at_capacity_egp: 13.33, setup_fee_egp: 1000, is_custom: false },
-  { id: 'pro', name_en: 'Pro', name_ar: 'محترف', students_per_week_limit: 500, monthly_fee: 4500, per_student_at_capacity_egp: 9, setup_fee_egp: 2000, is_custom: false },
-  { id: 'business', name_en: 'Business', name_ar: 'أعمال', students_per_week_limit: 1000, monthly_fee: 6500, per_student_at_capacity_egp: 6.5, setup_fee_egp: 3000, is_custom: false },
-  { id: 'enterprise', name_en: 'Enterprise', name_ar: 'مؤسسات', students_per_week_limit: 2000, monthly_fee: 9000, per_student_at_capacity_egp: 4.5, setup_fee_egp: 5000, is_custom: false },
-  { id: 'top_centers', name_en: 'Top Centers', name_ar: 'كبار السناتر', students_per_week_limit: 999999, monthly_fee: 0, per_student_at_capacity_egp: 0, setup_fee_egp: 0, is_custom: true },
+  { id: 'starter', name_en: 'سنتر صغير', name_ar: 'سنتر صغير', students_per_week_limit: 150, monthly_fee: 2000, per_student_at_capacity_egp: 13.33, setup_fee_egp: 1000, is_custom: false },
+  { id: 'pro', name_en: 'سنتر متوسط', name_ar: 'سنتر متوسط', students_per_week_limit: 500, monthly_fee: 4500, per_student_at_capacity_egp: 9, setup_fee_egp: 2000, is_custom: false },
+  { id: 'business', name_en: 'سنتر كبير', name_ar: 'سنتر كبير', students_per_week_limit: 1000, monthly_fee: 6500, per_student_at_capacity_egp: 6.5, setup_fee_egp: 3000, is_custom: false },
+  { id: 'enterprise', name_en: 'سنتر ضخم', name_ar: 'سنتر ضخم', students_per_week_limit: 2000, monthly_fee: 9000, per_student_at_capacity_egp: 4.5, setup_fee_egp: 5000, is_custom: false },
+  { id: 'top_centers', name_en: 'ميجا سنتر', name_ar: 'ميجا سنتر', students_per_week_limit: 999999, monthly_fee: 0, per_student_at_capacity_egp: 0, setup_fee_egp: 0, is_custom: true },
 ];
 
 const FALLBACK_PAYG: PaygRate[] = [
@@ -1128,12 +1131,17 @@ function SettingsPageContent() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-teal-200 text-sm font-medium uppercase tracking-wider">{tBilling('currentPlan')}</p>
-                      <p className="text-4xl font-bold mt-1 capitalize">{(currentPlanDetails?.name_en ?? billingData?.plan) || 'Starter'}</p>
-                      <p className="text-teal-200 text-sm mt-2">Up to {currentPlanDetails?.is_custom ? '2,000+' : (currentPlanDetails?.students_per_week_limit?.toLocaleString('ar-EG') ?? 0)} students/week</p>
+                      <p className="text-4xl font-bold mt-1">{PLAN_DISPLAY_NAMES[billingData?.plan ?? 'starter'] ?? currentPlanDetails?.name_en ?? billingData?.plan ?? 'سنتر صغير'}</p>
+                      <p className="text-teal-200 text-sm mt-2">حتى {currentPlanDetails?.is_custom ? '2,000+' : (currentPlanDetails?.students_per_week_limit?.toLocaleString('en-US') ?? 0)} طالب/أسبوع</p>
                     </div>
                     <div className="text-end">
-                      <p className="text-3xl font-bold font-mono">{currentPlanDetails?.is_custom ? tBilling('custom') : `${Number(billingData?.is_early_adopter && typeof billingData?.early_adopter_price === 'number' ? billingData.early_adopter_price : currentPlanDetails?.monthly_fee ?? 0).toLocaleString('ar-EG')}`} {tBilling('egp')}</p>
-                      <p className="text-teal-300 text-sm">/month · quarterly</p>
+                      <p className="text-3xl font-bold font-mono">{currentPlanDetails?.is_custom ? tBilling('custom') : (() => {
+                        const fee = billingData?.is_early_adopter && typeof billingData?.early_adopter_price === 'number' ? billingData.early_adopter_price : currentPlanDetails?.monthly_fee ?? 0;
+                        const limit = currentPlanDetails?.students_per_week_limit ?? 150;
+                        const perWeek = limit > 0 ? (fee / 4 / limit).toFixed(2) : '—';
+                        return perWeek;
+                      })()} {tBilling('egp')}</p>
+                      <p className="text-teal-300 text-sm">تكلفة/طالب/أسبوع</p>
                     </div>
                   </div>
                   <div className="mt-4 pt-4 border-t border-teal-500/40 flex items-center justify-between">
@@ -1148,30 +1156,30 @@ function SettingsPageContent() {
                     const isCurrent = billingData?.plan === plan.id && billingData?.pricing_type === 'fixed';
                     const setupFees: Record<string, number> = { starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0 };
                     const setupFee = plan.setup_fee_egp ?? setupFees[plan.id] ?? 0;
-                    const perStudentWeekMap: Record<string, string> = { starter: '3.33', pro: '2.25', business: '1.63', enterprise: '1.13', top_centers: '' };
-                    const perStudentWeek = plan.is_custom ? null : (perStudentWeekMap[plan.id] ?? (plan.students_per_week_limit > 0 ? (plan.monthly_fee / (plan.students_per_week_limit * 4)).toFixed(2) : null));
+                    const perStudentWeek = plan.is_custom ? null : (PLAN_PER_STUDENT_WEEK[plan.id] ?? (plan.students_per_week_limit > 0 ? (plan.monthly_fee / (plan.students_per_week_limit * 4)).toFixed(2) : null));
+                    const planName = PLAN_DISPLAY_NAMES[plan.id] ?? plan.name_en ?? plan.name_ar;
                     return (
-                      <div key={plan.id} className={`bg-white rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-200'}`}>
+                      <div key={plan.id} className={`bg-white rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-200'}`} style={plan.is_custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.3)' } : {}}>
                         {isCurrent && (
                           <div className="absolute -top-3 start-1/2 -translate-x-1/2">
                             <span className="px-3 py-1 bg-teal-600 text-white text-xs font-semibold rounded-full shadow">{tBilling('currentPlan')}</span>
                           </div>
                         )}
-                        <h3 className="font-bold text-slate-900 text-lg capitalize">{plan.name_en}</h3>
-                        <ul className="text-sm text-slate-500 mt-1 space-y-0.5">
-                          <li>• Up to {plan.is_custom ? '2,000+' : plan.students_per_week_limit?.toLocaleString('ar-EG')} students/week</li>
+                        <h3 className="font-bold text-slate-900 text-lg">{planName}</h3>
+                        <ul className="text-sm text-slate-500 mt-1 space-y-0.5" dir="rtl">
+                          <li>• حتى {plan.is_custom ? '2,000+' : plan.students_per_week_limit?.toLocaleString('en-US')} طالب/أسبوع</li>
                           {perStudentWeek && (
-                            <li>• {tBilling('perStudentWeek', { amount: perStudentWeek })}</li>
+                            <li>• {perStudentWeek} جنيه/طالب/أسبوع</li>
                           )}
                           {plan.is_custom && (
-                            <li>• {tBilling('customPricingNote')}</li>
+                            <li>• تسعير مخصص حسب الاحتياج</li>
                           )}
                         </ul>
                         <div className="my-4">
-                          <span className="text-3xl font-bold text-slate-900 font-mono">{plan.is_custom ? tBilling('custom') : Number(plan.monthly_fee).toLocaleString('ar-EG')}</span>
+                          <span className="text-3xl font-bold text-slate-900 font-mono">{plan.is_custom ? tBilling('custom') : Number(plan.monthly_fee).toLocaleString('en-US')}</span>
                           <span className="text-slate-500 text-sm"> {tBilling('egp')}/month</span>
                         </div>
-                        <p className="text-xs text-slate-400 mb-4">Setup fee: {tBilling('egp')} {plan.is_custom ? '—' : Number(setupFee).toLocaleString('ar-EG')}</p>
+                        <p className="text-xs text-slate-400 mb-4">Setup fee: {tBilling('egp')} {plan.is_custom ? '—' : Number(setupFee).toLocaleString('en-US')}</p>
                         <button type="button" onClick={() => !isCurrent && setShowPlanRequestModal(true)} className={isCurrent ? 'w-full py-2 rounded-lg text-sm font-semibold bg-teal-50 text-teal-600 border border-teal-200 cursor-default' : 'w-full py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors'} disabled={isCurrent}>{isCurrent ? 'Current Plan' : 'Request Upgrade'}</button>
                       </div>
                     );
@@ -1194,11 +1202,11 @@ function SettingsPageContent() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs text-teal-600 font-medium">{tBilling('weeklyCost')}</p>
-                          <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.weekly.toLocaleString('ar-EG')} {tBilling('egp')}</p>
+                          <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.weekly.toLocaleString('en-US')} {tBilling('egp')}</p>
                         </div>
                         <div className="text-end">
                           <p className="text-xs text-teal-600 font-medium">{tBilling('monthlyEst')}</p>
-                          <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.monthly.toLocaleString('ar-EG')} {tBilling('egp')}</p>
+                          <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.monthly.toLocaleString('en-US')} {tBilling('egp')}</p>
                         </div>
                       </div>
                       <p className="text-xs text-teal-600 mt-2">Rate: {tBilling('egp')} {paygResult.effectiveRate}{tBilling('perStudentWeek', { defaultValue: '/student/week' })}</p>
@@ -1454,7 +1462,7 @@ function SettingsPageContent() {
               <p className="text-sm text-muted-foreground mb-4">{tBilling('selectPlan')}</p>
               <div className="space-y-2 mb-6">
                 {plans.filter(p => p.id !== 'top_centers').map(p => (
-                  <button key={p.id} type="button" onClick={() => setChangePlanSelect(p.id)} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === p.id ? 'border-primary bg-primary/20 text-foreground' : 'border-border bg-card text-foreground hover:bg-muted'}`}>{p.name_en} / {p.name_ar} — {p.monthly_fee > 0 ? `${Number(p.monthly_fee).toLocaleString('ar-EG')} ${tBilling('egp')}/mo` : tBilling('custom')}</button>
+                  <button key={p.id} type="button" onClick={() => setChangePlanSelect(p.id)} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === p.id ? 'border-primary bg-primary/20 text-foreground' : 'border-border bg-card text-foreground hover:bg-muted'}`}>{PLAN_DISPLAY_NAMES[p.id] ?? p.name_en} — {p.monthly_fee > 0 ? `${Number(p.monthly_fee).toLocaleString('en-US')} ${tBilling('egp')}/mo` : tBilling('custom')}</button>
                 ))}
                 <button type="button" onClick={() => setChangePlanSelect('payg')} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === 'payg' ? 'border-primary bg-primary/20 text-foreground' : 'border-border bg-card text-foreground hover:bg-muted'}`}>Pay-As-You-Go</button>
               </div>
