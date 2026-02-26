@@ -1359,6 +1359,9 @@
     "backOfCard": "الخلف",
     "poweredBy": "مدعوم من CenterHQ",
     "cardOrders": "طلبات البطاقات",
-    "newOrder": "طلب بطاقة جديد من"
+    "newOrder": "طلب بطاقة جديد من",
+    "selectAll": "تحديد الكل",
+    "clear": "إلغاء التحديد",
+    "studentsSelected": "{count} طالب محدد"
   }
 }

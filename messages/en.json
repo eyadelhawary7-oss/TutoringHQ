@@ -1370,6 +1370,9 @@
     "backOfCard": "Back",
     "poweredBy": "Powered by CenterHQ",
     "cardOrders": "Card Orders",
-    "newOrder": "New card order from"
+    "newOrder": "New card order from",
+    "selectAll": "Select All",
+    "clear": "Clear",
+    "studentsSelected": "{count} students selected"
   }
 }
