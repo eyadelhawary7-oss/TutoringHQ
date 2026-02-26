@@ -161,7 +161,7 @@ function SettingsPageContent() {
   const isRTL = locale === 'ar';
 
   // Tab from URL or default
-  const tabParam = searchParams.get('tab') as TabType | null;
+  const tabParam = searchParams?.get('tab') as TabType | null;
   const [activeTab, setActiveTab] = useState<TabType>(tabParam && ['general', 'billing', 'team'].includes(tabParam) ? tabParam : 'general');
 
   useEffect(() => {
@@ -1148,6 +1148,8 @@ function SettingsPageContent() {
                     const isCurrent = billingData?.plan === plan.id && billingData?.pricing_type === 'fixed';
                     const setupFees: Record<string, number> = { starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0 };
                     const setupFee = plan.setup_fee_egp ?? setupFees[plan.id] ?? 0;
+                    const perStudentWeekMap: Record<string, string> = { starter: '3.33', pro: '2.25', business: '1.63', enterprise: '1.13', top_centers: '' };
+                    const perStudentWeek = plan.is_custom ? null : (perStudentWeekMap[plan.id] ?? (plan.students_per_week_limit > 0 ? (plan.monthly_fee / (plan.students_per_week_limit * 4)).toFixed(2) : null));
                     return (
                       <div key={plan.id} className={`bg-white rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-200'}`}>
                         {isCurrent && (
@@ -1156,7 +1158,15 @@ function SettingsPageContent() {
                           </div>
                         )}
                         <h3 className="font-bold text-slate-900 text-lg capitalize">{plan.name_en}</h3>
-                        <p className="text-sm text-slate-500 mt-1">Up to {plan.is_custom ? '2,000+' : plan.students_per_week_limit?.toLocaleString('ar-EG')} students/week</p>
+                        <ul className="text-sm text-slate-500 mt-1 space-y-0.5">
+                          <li>• Up to {plan.is_custom ? '2,000+' : plan.students_per_week_limit?.toLocaleString('ar-EG')} students/week</li>
+                          {perStudentWeek && (
+                            <li>• {tBilling('perStudentWeek', { amount: perStudentWeek })}</li>
+                          )}
+                          {plan.is_custom && (
+                            <li>• {tBilling('customPricingNote')}</li>
+                          )}
+                        </ul>
                         <div className="my-4">
                           <span className="text-3xl font-bold text-slate-900 font-mono">{plan.is_custom ? tBilling('custom') : Number(plan.monthly_fee).toLocaleString('ar-EG')}</span>
                           <span className="text-slate-500 text-sm"> {tBilling('egp')}/month</span>

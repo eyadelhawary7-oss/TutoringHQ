@@ -10,11 +10,11 @@ import Image from 'next/image';
 const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=مرحباً، أنا مهتم بخطة كبار السناتر لأكثر من 2000 طالب أسبوعياً';
 
 const PLANS = [
-  { key: 'planStarter', fee: 2000, limit: 150, setupFee: 1000, tier: 'starter' as const },
-  { key: 'planPro', fee: 4500, limit: 500, setupFee: 2000, tier: 'pro' as const, popular: true },
-  { key: 'planBusiness', fee: 6500, limit: 1000, setupFee: 3000, tier: 'business' as const },
-  { key: 'planEnterprise', fee: 9000, limit: 2000, setupFee: 5000, tier: 'enterprise' as const },
-  { key: 'planTopCenters', fee: 0, limit: 0, setupFee: 0, tier: 'top_centers' as const, custom: true },
+  { key: 'planStarter', fee: 2000, limit: 150, setupFee: 1000, tier: 'starter' as const, perStudentWeek: '3.33', studentLabelKey: 'studentsLimit' as const, studentLabelCount: 150 },
+  { key: 'planPro', fee: 4500, limit: 500, setupFee: 2000, tier: 'pro' as const, popular: true, perStudentWeek: '2.25', studentLabelKey: 'studentsLimit' as const, studentLabelCount: 500 },
+  { key: 'planBusiness', fee: 6500, limit: 1000, setupFee: 3000, tier: 'business' as const, perStudentWeek: '1.63', studentLabelKey: 'studentsLimit' as const, studentLabelCount: 1000 },
+  { key: 'planEnterprise', fee: 9000, limit: 2000, setupFee: 5000, tier: 'enterprise' as const, perStudentWeek: '1.13', studentLabelKey: 'studentsLimit' as const, studentLabelCount: 2000 },
+  { key: 'planTopCenters', fee: 0, limit: 0, setupFee: 0, tier: 'top_centers' as const, custom: true, perStudentWeek: null, studentLabelKey: 'topCentersLimit' as const },
 ];
 
 const FEATURES = [
@@ -185,23 +185,23 @@ export default function LandingPage() {
                       <span className="text-sm text-muted-foreground">{tc('egp')}</span>
                     </div>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">{t('monthlyFee')}</p>
+                  {!plan.custom && <p className="text-xs text-muted-foreground mt-1">{t('monthlyFee')}</p>}
+                  <ul className="mt-1 space-y-0.5 text-[13px]" style={{ color: '#64748B' }} dir="rtl">
+                    <li>• {plan.studentLabelKey === 'topCentersLimit' ? t('topCentersLimit') : t('studentsLimit', { count: formatPrice(plan.studentLabelCount!, locale) })}</li>
+                    {plan.perStudentWeek ? (
+                      <li>• {t('perStudentWeek', { amount: plan.perStudentWeek })}</li>
+                    ) : plan.custom ? (
+                      <li>• {t('customPricingNote')}</li>
+                    ) : null}
+                  </ul>
                 </div>
 
-                <div className="flex-1 space-y-2 text-sm">
+                <div className="flex-1">
                   {!plan.custom && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('studentLimitLabel')}</span>
-                        <span className="font-semibold text-foreground font-mono">{formatPrice(plan.limit, locale)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('setupFee')}</span>
-                        <span className="font-semibold text-foreground font-mono">{formatPrice(plan.setupFee, locale)} {tc('egp')}</span>
-                      </div>
-                    </>
+                    <p className="text-[12px]" style={{ color: '#64748B' }}>
+                      {t('setupFeeShort', { amount: formatPrice(plan.setupFee, locale) })}
+                    </p>
                   )}
-                  <p className="text-xs text-muted-foreground">{t('studentsPerWeek')}</p>
                 </div>
 
                 {plan.custom ? (

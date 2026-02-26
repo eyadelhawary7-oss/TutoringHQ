@@ -783,7 +783,7 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
-      <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname} />
+      <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname ?? undefined} />
 
       {/* Toast for new card order */}
       {toast && (
