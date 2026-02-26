@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Link } from '@/i18n/routing';
@@ -35,6 +36,9 @@ import {
   BadgeCheck,
   Bell,
   MessageCircle,
+  ChevronDown,
+  IdCard,
+  ChevronUp,
 } from 'lucide-react';
 import {
   LineChart,
@@ -51,6 +55,7 @@ import {
   Cell,
 } from 'recharts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
+import { AdminSidebar } from '@/components/AdminSidebar';
 import { PlanBadge, BillingStatusBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 
@@ -62,18 +67,7 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 };
 
-type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'salesPipeline' | 'analytics';
-
-const ADMIN_NAV: { key: AdminTab; icon: typeof LayoutDashboard }[] = [
-  { key: 'overview', icon: LayoutDashboard },
-  { key: 'centers', icon: Building2 },
-  { key: 'billing', icon: CreditCard },
-  { key: 'planRequests', icon: FileText },
-  { key: 'pendingSignups', icon: Clock },
-  { key: 'internalTeam', icon: Users },
-  { key: 'salesPipeline', icon: Target },
-  { key: 'analytics', icon: BarChart3 },
-];
+type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'salesPipeline' | 'analytics' | 'ceoDashboard' | 'cardOrders';
 
 interface OverviewData {
   totalCenters: number;
@@ -172,6 +166,66 @@ interface TeamMember {
   created_at?: string;
 }
 
+interface CardOrder {
+  id: string;
+  center_id: string;
+  center_name: string;
+  center_phone?: string | null;
+  students: Array<{ id: string; name: string; student_number?: string; qr_code?: string }>;
+  quantity: number;
+  total_amount: number;
+  status: string;
+  delivery_address?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+function CardOrderPreview({
+  students,
+  centerName,
+  centerLogo,
+}: {
+  students: Array<{ id: string; name: string; student_number?: string; qr_code?: string }>;
+  centerName: string;
+  centerLogo: string | null;
+}) {
+  const [side, setSide] = useState<'front' | 'back'>('front');
+  const first = students[0];
+  const initials = centerName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative w-48 aspect-[85.6/54] rounded-xl overflow-hidden shadow-lg border border-border bg-white">
+        {side === 'front' ? (
+          <>
+            <div className="absolute top-0 left-0 right-0 h-[20%] bg-gradient-to-br from-teal-600 to-teal-700" />
+            <div className="absolute top-0 left-0 right-0 h-[20%] flex items-center justify-between px-2 py-1">
+              {centerLogo ? <img src={centerLogo} alt="" className="h-5 w-5 object-contain" /> : <div className="h-5 w-5 rounded-full bg-teal-600 flex items-center justify-center text-white text-[8px] font-bold">{initials}</div>}
+              <span className="text-white text-[10px] font-medium truncate">{centerName}</span>
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pt-[12%]">
+              <div className="w-16 h-16 bg-white rounded flex items-center justify-center">
+                {first?.qr_code ? <img src={first.qr_code} alt="" className="w-14 h-14" /> : <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />}
+              </div>
+              <div className="mt-1 text-xs font-bold text-slate-900 truncate max-w-full px-1">{first?.name ?? '—'}</div>
+              <div className="text-[9px] font-mono text-teal-600">{first?.student_number ?? '—'}</div>
+            </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
+            {centerLogo ? <img src={centerLogo} alt="" className="w-16 h-16 object-contain" /> : <div className="w-12 h-12 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-bold">{initials}</div>}
+            <div className="mt-1 font-bold text-slate-900 text-xs">{centerName}</div>
+            <div className="absolute bottom-1 text-[6px] text-gray-400">Powered by CenterHQ</div>
+          </div>
+        )}
+      </div>
+      <div className="flex gap-1">
+        <button onClick={() => setSide('front')} className={`px-2 py-1 rounded text-xs ${side === 'front' ? 'bg-primary text-white' : 'bg-muted'}`}>Front</button>
+        <button onClick={() => setSide('back')} className={`px-2 py-1 rounded text-xs ${side === 'back' ? 'bg-primary text-white' : 'bg-muted'}`}>Back</button>
+      </div>
+    </div>
+  );
+}
+
 function formatActivitySummary(action: string, details?: unknown): string {
   const d = details as Record<string, unknown> | undefined;
   if (action === 'center_create') return 'New signup';
@@ -192,10 +246,10 @@ export default function AdminPage() {
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const router = useRouter();
+  const pathname = usePathname();
   const { setHideShell } = useLayout();
 
   const [tab, setTab] = useState<AdminTab>('overview');
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -229,6 +283,10 @@ export default function AdminPage() {
   const [newPlan, setNewPlan] = useState('');
   const [changingPlan, setChangingPlan] = useState(false);
   const [addAdminForm, setAddAdminForm] = useState({ name: '', phone: '', email: '' });
+  const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
+  const [cardOrdersUnread, setCardOrdersUnread] = useState(0);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string } | null>(null);
   const [leads, setLeads] = useState<SalesLead[]>([]);
   const [showAddLead, setShowAddLead] = useState(false);
   const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
@@ -365,6 +423,44 @@ export default function AdminPage() {
     }
   }, [getSession]);
 
+  const loadCardOrders = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/card-orders', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setCardOrders(data.orders || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
+  const playNewOrderChime = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+      const freqs = [523, 659, 784];
+      let t = 0;
+      freqs.forEach((freq) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+        osc.start(t);
+        osc.stop(t + 0.15);
+        t += 0.15;
+      });
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     setIsLoading(true);
     loadOverview()
@@ -387,6 +483,43 @@ export default function AdminPage() {
   useEffect(() => {
     if (tab === 'internalTeam') loadInternalTeam();
   }, [tab, loadInternalTeam]);
+  useEffect(() => {
+    if (tab === 'cardOrders') {
+      loadCardOrders();
+      setCardOrdersUnread(0);
+    }
+  }, [tab, loadCardOrders]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('card_orders_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'card_orders' },
+        async (payload) => {
+          const newRow = payload.new as Record<string, unknown>;
+          const centerId = newRow?.center_id as string;
+          let centerName = 'Unknown';
+          if (centerId) {
+            try {
+              const { data: center } = await supabase.from('centers').select('name').eq('id', centerId).single();
+              centerName = (center as { name?: string })?.name ?? centerName;
+            } catch {
+              // ignore
+            }
+          }
+          setCardOrdersUnread((c) => c + 1);
+          playNewOrderChime();
+          setToast({ msg: `🪪 ${tAdmin('cardOrdersNewOrder', { defaultValue: 'New card order from' })} ${centerName}!` });
+          setTimeout(() => setToast(null), 5000);
+          loadCardOrders();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadCardOrders, playNewOrderChime, tAdmin]);
 
   const filteredCenters = centers.filter((c) => {
     const matchSearch = !centerSearch.trim() ||
@@ -488,8 +621,8 @@ export default function AdminPage() {
     // Ensure Egyptian country code
     if (phone.startsWith('0')) phone = '2' + phone; // 01x -> 201x
     if (!phone.startsWith('20')) phone = '20' + phone;
-    const formattedAmount = amount.toLocaleString('ar-EG');
-    const formattedDue = new Date(nextDue).toLocaleDateString('ar-EG', {
+    const formattedAmount = amount.toLocaleString('en-US');
+    const formattedDue = new Date(nextDue).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
     const message = encodeURIComponent(
@@ -584,6 +717,25 @@ export default function AdminPage() {
     }
   };
 
+  const handleCardOrderStatusUpdate = async (orderId: string, status: string) => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/card-orders', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ orderId, status }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      loadCardOrders();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleRemoveTeamMember = async (memberId: string) => {
     const headers = await getAuthHeaders();
     if (!headers || !confirm(tAdmin('confirmRemoveTeamMember'))) return;
@@ -631,85 +783,17 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Admin Sidebar - desktop only */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 border-e border-slate-200 bg-slate-900">
-        <div className="p-4 border-b border-slate-700">
-          <h2 className="font-bold text-white">{tAdmin('title')}</h2>
-          <Link href="/dashboard" className="text-xs text-teal-400 hover:underline mt-1 block">{tAdmin('backToMyCenter')}</Link>
-        </div>
-        <nav className="flex-1 p-2 space-y-0.5">
-          {ADMIN_NAV.map(({ key, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={
-                tab === key
-                  ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-teal-600/10 text-teal-400 font-medium w-full text-start'
-                  : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full text-start'
-              }
-            >
-              <Icon size={18} />
-              <span>{tAdmin(key)}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname} />
 
-      {/* Mobile top bar + hamburger */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 md:hidden">
-        <div>
-          <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
-          <h2 className="font-bold text-slate-900 text-sm capitalize">{tab}</h2>
-        </div>
-        <button
-          onClick={() => setMobileNavOpen(true)}
-          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-        >
-          <Menu className="w-5 h-5 text-slate-600" />
-        </button>
-      </div>
-
-      {/* Mobile slide-out nav drawer */}
-      {mobileNavOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setMobileNavOpen(false)}
-          />
-          <div className="absolute top-0 start-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <span className="font-bold text-slate-900">Admin Panel</span>
-              <button onClick={() => setMobileNavOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-              {ADMIN_NAV.map(({ key, icon: Icon }) => (
-                <button
-                  key={key}
-                  onClick={() => { setTab(key); setMobileNavOpen(false); }}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    tab === key
-                      ? 'bg-teal-50 text-teal-700'
-                      : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  {tAdmin(key)}
-                </button>
-              ))}
-            </nav>
-            <div className="p-4 border-t border-slate-200">
-              <Link href="/dashboard" className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700">
-                <ArrowLeft className="w-4 h-4" /> Back to My Center
-              </Link>
-            </div>
-          </div>
+      {/* Toast for new card order */}
+      {toast && (
+        <div className="fixed bottom-4 start-4 end-4 md:start-auto md:end-4 md:max-w-sm z-50 p-4 rounded-xl bg-card border border-border shadow-lg animate-fade-in">
+          <p className="text-sm font-medium text-foreground">{toast.msg}</p>
         </div>
       )}
 
       {/* Main content */}
-      <div className="flex-1 p-4 md:p-6 overflow-auto">
+      <div className="flex-1 p-4 md:p-6 overflow-auto mt-12 md:mt-0">
         {/* Overview */}
         {tab === 'overview' && overview && (
           <>
@@ -750,7 +834,7 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">{tAdmin('mrr')}</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('en-US')} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-green-100">
                     <TrendingUp className="w-5 h-5 text-green-600" />
@@ -761,7 +845,7 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">Outstanding Invoices</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingRevenue?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingRevenue?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-red-100">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -772,7 +856,7 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">Collected This Month</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.revenueThisMonth?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.revenueThisMonth?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-teal-100">
                     <CreditCard className="w-5 h-5 text-teal-600" />
@@ -1039,7 +1123,7 @@ export default function AdminPage() {
                           <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{b.name}</td>
                           <td className="py-3.5 px-4"><PlanBadge plan={b.plan} /></td>
                           <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{b.billing_period ?? '—'}</td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(b.amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(b.amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
                           <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{nextDueStr || '—'}</td>
                           <td className="py-3.5 px-4">
                             <BillingStatusBadge status={isPaid ? 'paid' : (billingStatus === 'overdue' ? 'overdue' : 'active')} nextDue={nextDueStr || new Date().toISOString()} />
@@ -1091,7 +1175,7 @@ export default function AdminPage() {
                         {pendingInvoices.map((inv) => (
                           <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
                             <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{inv.centerName}</td>
-                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(inv.payment_amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(inv.payment_amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-2 flex-nowrap">
                                 {inv.payment_proof_url ? (
@@ -1155,7 +1239,7 @@ export default function AdminPage() {
                       <tr key={i} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3.5 px-4 text-sm text-slate-600">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
                         <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{p.centerName}</td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{p.amount.toLocaleString('en-US')} {tCommon('egp')}</td>
                         <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{p.billing_period ?? '—'}</td>
                         <td className="py-3.5 px-4 text-sm text-slate-600 hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
                       </tr>
@@ -1277,6 +1361,134 @@ export default function AdminPage() {
                     ))}
                     {pendingSignups.length === 0 && (
                       <tr><td colSpan={8} className="py-8 px-4 text-center text-slate-500">{tAdmin('noPending')}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Card Orders */}
+        {tab === 'cardOrders' && (
+          <>
+            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('cardOrders')}</h2>
+            <div className="glass overflow-hidden rounded-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('orderId', { defaultValue: 'Order ID' })}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('centerName', { defaultValue: 'Center' })}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('studentsCount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cardOrders.map((order) => {
+                      const statusColors: Record<string, string> = {
+                        pending: 'bg-amber-100 text-amber-700',
+                        confirmed: 'bg-blue-100 text-blue-700',
+                        printing: 'bg-purple-100 text-purple-700',
+                        shipped: 'bg-teal-100 text-teal-700',
+                        delivered: 'bg-green-100 text-green-700',
+                      };
+                      const sc = statusColors[order.status] || statusColors.pending;
+                      const isExpanded = expandedOrderId === order.id;
+                      return (
+                        <>
+                          <tr
+                            key={order.id}
+                            className="border-t border-border hover:bg-muted/30 cursor-pointer"
+                            onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                          >
+                            <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{order.id.slice(0, 8)}…</td>
+                            <td className="px-4 py-3 font-medium text-foreground">{order.center_name}</td>
+                            <td className="px-4 py-3 font-mono">{order.quantity}</td>
+                            <td className="px-4 py-3 font-mono font-bold">{order.total_amount.toLocaleString('en-US')} {tCommon('egp')}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${sc}`}>
+                                {order.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground">{order.created_at ? new Date(order.created_at).toLocaleDateString() : '—'}</td>
+                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                              <span className="inline-flex">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr key={`${order.id}-exp`} className="border-t border-border bg-muted/20">
+                              <td colSpan={7} className="px-4 py-4">
+                                <div className="space-y-4">
+                                  <div>
+                                    <p className="text-xs font-medium text-muted-foreground mb-2">{tAdmin('studentsInOrder', { defaultValue: 'Students' })}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {order.students.map((s) => (
+                                        <span key={s.id} className="px-2 py-1 rounded-lg bg-background border border-border text-sm">
+                                          {s.name} <span className="font-mono text-muted-foreground">{s.student_number || ''}</span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap gap-4 items-start">
+                                    <div className="flex-1 min-w-[200px]">
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">{tAdmin('deliveryAddress', { defaultValue: 'Delivery Address' })}</p>
+                                      <p className="text-sm">{order.delivery_address || '—'}</p>
+                                      {order.notes && (
+                                        <>
+                                          <p className="text-xs font-medium text-muted-foreground mt-2 mb-1">{tAdmin('notes', { defaultValue: 'Notes' })}</p>
+                                          <p className="text-sm">{order.notes}</p>
+                                        </>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                      <div>
+                                        <label className="block text-xs font-medium text-muted-foreground mb-1">{tCommon('status')}</label>
+                                        <select
+                                          value={order.status}
+                                          onChange={(e) => handleCardOrderStatusUpdate(order.id, e.target.value)}
+                                          disabled={actionLoading}
+                                          className="px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                                        >
+                                          <option value="pending">pending</option>
+                                          <option value="confirmed">confirmed</option>
+                                          <option value="printing">printing</option>
+                                          <option value="shipped">shipped</option>
+                                          <option value="delivered">delivered</option>
+                                        </select>
+                                      </div>
+                                      {order.center_phone && (
+                                        <a
+                                          href={`https://wa.me/20${order.center_phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(`مرحباً، بخصوص طلب البطاقات رقم ${order.id.slice(0, 8)}...`)}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700"
+                                        >
+                                          <MessageCircle size={14} /> {tAdmin('contactWhatsApp', { defaultValue: 'Contact on WhatsApp' })}
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="pt-2">
+                                    <p className="text-xs font-medium text-muted-foreground mb-2">{tAdmin('cardPreview', { defaultValue: 'Card Preview' })}</p>
+                                    <CardOrderPreview
+                                      students={order.students}
+                                      centerName={order.center_name}
+                                      centerLogo={null}
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })}
+                    {cardOrders.length === 0 && (
+                      <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">{tAdmin('noCardOrders', { defaultValue: 'No card orders yet' })}</td></tr>
                     )}
                   </tbody>
                 </table>

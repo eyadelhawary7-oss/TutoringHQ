@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
@@ -193,6 +193,7 @@ function SettingsPageContent() {
   const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[]; pending?: { referred_center_name: string; referred_center_plan: string; reward_status: string }[]; totalEarned: number } | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoToast, setLogoToast] = useState<'success' | 'error' | null>(null);
@@ -461,66 +462,47 @@ function SettingsPageContent() {
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !center?.id) return;
+    if (!file || !centerId || !userId || !center?.id) return;
 
     if (!LOGO_ALLOWED_TYPES.includes(file.type)) {
-      console.error('[handleLogoUpload] Invalid file type:', file.type);
       showLogoToast('error');
       return;
     }
     if (file.size > LOGO_MAX_SIZE) {
-      console.error('[handleLogoUpload] File too large:', file.size, 'max:', LOGO_MAX_SIZE);
       showLogoToast('error');
       return;
     }
 
     setLogoUploading(true);
     setLogoToast(null);
-    const fileExt = file.name.split('.').pop() || 'png';
-    const filePath = `${center.id}/logo.${fileExt}`;
+    const ext = file.name.split('.').pop() || 'png';
+    const path = `${centerId}/logo.${ext}`;
 
     try {
-      const { error: uploadError } = await supabase.storage
-        .from('center-logos')
-        .upload(filePath, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from('center-logos').upload(path, file, { upsert: true });
       if (uploadError) {
-        console.error('[handleLogoUpload] Upload error:', uploadError);
+        console.error('Logo upload error:', uploadError);
         setLogoUploading(false);
         showLogoToast('error');
         return;
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('center-logos')
-        .getPublicUrl(filePath);
-
-      const { error: updateError } = await dbUpdate({
-        table: 'centers',
-        data: { logo_url: publicUrl },
-        filters: [{ column: 'id', op: 'eq', value: center.id }],
-      });
-      if (updateError) {
-        console.error('[handleLogoUpload] DB update error:', updateError);
+      const { data: publicData } = supabase.storage.from('center-logos').getPublicUrl(path);
+      const cacheBustedUrl = publicData.publicUrl + '?t=' + Date.now();
+      const { error } = await dbUpdate({ table: 'centers', data: { logo_url: cacheBustedUrl }, filters: [{ column: 'id', op: 'eq', value: centerId }] });
+      if (error) {
+        console.error('Logo dbUpdate error:', error);
         setLogoUploading(false);
         showLogoToast('error');
         return;
       }
-
-      const { data: refreshedCenter } = await dbSelect({
-        table: 'centers',
-        select: 'logo_url',
-        filters: [{ column: 'id', op: 'eq', value: center.id }],
-        single: true,
-      });
-      const newLogoUrl = (refreshedCenter as { logo_url?: string } | null)?.logo_url ?? publicUrl;
-
-      setLogoUrl(newLogoUrl + '?t=' + Date.now());
-      setCenter(prev => prev ? { ...prev, logo_url: newLogoUrl } : null);
+      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'logo' } });
+      setLogoUrl(cacheBustedUrl);
+      setCenter(prev => prev ? { ...prev, logo_url: cacheBustedUrl } : null);
       setLogoLoadFailed(false);
       await refreshUser();
       showLogoToast('success');
     } catch (err) {
-      console.error('[handleLogoUpload] Unexpected error:', err);
+      console.error('Logo upload error:', err);
       showLogoToast('error');
     } finally {
       setLogoUploading(false);
@@ -891,6 +873,7 @@ function SettingsPageContent() {
                         <Camera className="w-4 h-4 text-white" />
                       )}
                       <input
+                        ref={logoInputRef}
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"

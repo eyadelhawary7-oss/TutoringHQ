@@ -7,7 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
 import { toAr } from '@/lib/number-utils';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard } from 'lucide-react';
+import { CardOrderModal } from '@/components/CardOrderModal';
 import { QRCard } from '@/components/QRCard';
 
 interface Student {
@@ -76,6 +77,7 @@ export default function StudentsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [centerInfo, setCenterInfo] = useState<{ name?: string; logo_url?: string } | null>(null);
+  const [showCardOrderModal, setShowCardOrderModal] = useState(false);
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -546,12 +548,12 @@ export default function StudentsPage() {
             >
               <Upload size={14} /> {t('import')}
             </Link>
-            <Link
-              href="/students/print"
+            <button
+              onClick={() => setShowCardOrderModal(true)}
               className="flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
             >
-              <QrCode size={14} /> {t('printQr')}
-            </Link>
+              <CreditCard size={14} /> 🪪 Order ID Cards
+            </button>
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
@@ -877,6 +879,17 @@ export default function StudentsPage() {
             {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-500 hover:underline">{t('regenerateQR')}</button>}
           </div>
         </div>
+      )}
+
+      {/* Order ID Cards Modal */}
+      {centerId && (
+        <CardOrderModal
+          isOpen={showCardOrderModal}
+          onClose={() => setShowCardOrderModal(false)}
+          students={students}
+          centerId={centerId}
+          centerInfo={centerInfo}
+        />
       )}
     </>
   );

@@ -50,7 +50,31 @@
     "inactive": "غير نشط",
     "students": "طلاب",
     "all": "الكل",
-    "amount": "المبلغ"
+    "amount": "المبلغ",
+    "view": "عرض",
+    "date": "التاريخ"
+  },
+  "idCards": {
+    "totalOrders": "إجمالي الطلبات",
+    "statusPending": "قيد الانتظار",
+    "statusConfirmed": "مؤكد",
+    "statusPrinting": "قيد الطباعة",
+    "statusShipped": "تم الشحن",
+    "statusDelivered": "تم التسليم",
+    "newOrderBanner": "طلب بطاقات جديد من",
+    "viewOrder": "عرض الطلب",
+    "adminTitle": "طلبات البطاقات",
+    "adminSubtitle": "إدارة طلبات البطاقات الفيزيائية من السناتر",
+    "orderNumber": "رقم الطلب",
+    "cards": "البطاقات",
+    "total": "الإجمالي",
+    "cardPreview": "معاينة البطاقة",
+    "deliveryAddress": "عنوان التسليم",
+    "notes": "ملاحظات",
+    "delivery": "التوصيل",
+    "updateStatus": "تحديث الحالة",
+    "noOrders": "لا توجد طلبات بعد",
+    "noOrdersDesc": "ستظهر طلبات البطاقات من السناتر هنا"
   },
   "landing": {
     "subtitle": "نظام إدارة السناتر",
@@ -955,6 +979,8 @@
     "noPending": "لا توجد طلبات معلقة",
     "confirmReject": "هل أنت متأكد من رفض هذا الطلب؟",
     "overview": "نظرة عامة",
+    "ceoDashboard": "لوحة المدير التنفيذي",
+    "cardOrders": "طلبات البطاقات",
     "billing": "الفواتير",
     "planRequests": "طلبات تغيير الخطة",
     "pendingSignups": "طلبات الاشتراك",
@@ -1314,6 +1340,25 @@
     "overdueStatus": "متأخر",
     "orContactUs": "أو تواصل معنا",
     "billOverdueWarning": "فاتورتك متأخرة. التأخر أكثر من 15 يوم يؤدي لإيقاف حسابك",
-    "billOverdueWarningEn": "Your bill is overdue. Accounts suspended after 15 days"
+    "billOverdueWarningEn": "Your bill is overdue. Accounts suspended after 15 days",
+    "whatsappSupport": "دعم واتساب",
+    "contactSupportViaWhatsapp": "تواصل معنا عبر واتساب",
+    "securityAndSignOut": "الأمان وتسجيل الخروج"
+  },
+  "cardOrders": {
+    "orderIdCards": "طلب بطاقات هوية",
+    "selectStudents": "اختر الطلاب",
+    "previewCard": "معاينة وتخصيص",
+    "orderSummary": "ملخص الطلب",
+    "pricePerCard": "سعر البطاقة (جنيه)",
+    "deliveryFee": "رسوم التوصيل (جنيه)",
+    "totalAmount": "الإجمالي",
+    "submitOrder": "تقديم الطلب",
+    "orderSuccess": "تم تقديم الطلب! سنتواصل معك على واتساب للتأكيد.",
+    "frontOfCard": "الأمام",
+    "backOfCard": "الخلف",
+    "poweredBy": "مدعوم من CenterHQ",
+    "cardOrders": "طلبات البطاقات",
+    "newOrder": "طلب بطاقة جديد من"
   }
 }

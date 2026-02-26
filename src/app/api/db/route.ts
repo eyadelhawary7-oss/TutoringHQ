@@ -9,6 +9,7 @@ const ALLOWED_TABLES = [
   'audit_log', 'subscriptions', 'whatsapp_messages', 'whatsapp_incoming',
   'permissions', 'demo_requests', 'center_invites', 'student_group_members',
   'wa_templates', 'paid_parents', 'reminder_settings',
+  'card_orders',
 ] as const;
 
 const VALID_OPERATIONS = ['select', 'insert', 'update', 'delete', 'count'] as const;
