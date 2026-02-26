@@ -1332,7 +1332,10 @@
     "overdueStatus": "متأخر",
     "orContactUs": "أو تواصل معنا",
     "billOverdueWarning": "فاتورتك متأخرة. التأخر أكثر من 15 يوم يؤدي لإيقاف حسابك",
-    "billOverdueWarningEn": "Your bill is overdue. Accounts suspended after 15 days"
+    "billOverdueWarningEn": "Your bill is overdue. Accounts suspended after 15 days",
+    "whatsappSupport": "دعم واتساب",
+    "contactSupportViaWhatsapp": "تواصل معنا عبر واتساب",
+    "securityAndSignOut": "الأمان وتسجيل الخروج"
   },
   "cardOrders": {
     "orderIdCards": "طلب بطاقات هوية",

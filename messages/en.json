@@ -1343,7 +1343,10 @@
     "overdueStatus": "Overdue",
     "orContactUs": "Or contact us",
     "billOverdueWarning": "فاتورتك متأخرة. التأخر أكثر من 15 يوم يؤدي لإيقاف حسابك",
-    "billOverdueWarningEn": "Your bill is overdue. Accounts suspended after 15 days"
+    "billOverdueWarningEn": "Your bill is overdue. Accounts suspended after 15 days",
+    "whatsappSupport": "WhatsApp Support",
+    "contactSupportViaWhatsapp": "Contact Support via WhatsApp",
+    "securityAndSignOut": "Security & Sign Out"
   },
   "cardOrders": {
     "orderIdCards": "Order ID Cards",
