@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { usePathname } from '@/i18n/routing';
+import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Link } from '@/i18n/routing';
@@ -67,19 +67,7 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 };
 
-type AdminTab = 'overview' | 'ceoDashboard' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'cardOrders' | 'salesPipeline' | 'analytics';
-
-const ADMIN_NAV: { key: AdminTab; icon: typeof LayoutDashboard }[] = [
-  { key: 'overview', icon: LayoutDashboard },
-  { key: 'centers', icon: Building2 },
-  { key: 'billing', icon: CreditCard },
-  { key: 'cardOrders', icon: IdCard },
-  { key: 'planRequests', icon: FileText },
-  { key: 'pendingSignups', icon: Clock },
-  { key: 'internalTeam', icon: Users },
-  { key: 'salesPipeline', icon: Target },
-  { key: 'analytics', icon: BarChart3 },
-];
+type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'salesPipeline' | 'analytics' | 'ceoDashboard' | 'cardOrders';
 
 interface OverviewData {
   totalCenters: number;
@@ -633,8 +621,8 @@ export default function AdminPage() {
     // Ensure Egyptian country code
     if (phone.startsWith('0')) phone = '2' + phone; // 01x -> 201x
     if (!phone.startsWith('20')) phone = '20' + phone;
-    const formattedAmount = amount.toLocaleString('ar-EG');
-    const formattedDue = new Date(nextDue).toLocaleDateString('ar-EG', {
+    const formattedAmount = amount.toLocaleString('en-US');
+    const formattedDue = new Date(nextDue).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
     const message = encodeURIComponent(
@@ -846,7 +834,7 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">{tAdmin('mrr')}</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('en-US')} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-green-100">
                     <TrendingUp className="w-5 h-5 text-green-600" />
@@ -857,7 +845,7 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">Outstanding Invoices</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingRevenue?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingRevenue?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-red-100">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -868,7 +856,7 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">Collected This Month</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.revenueThisMonth?.toLocaleString('ar-EG') ?? '—'} {tCommon('egp')}</p>
+                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.revenueThisMonth?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-teal-100">
                     <CreditCard className="w-5 h-5 text-teal-600" />
@@ -1135,7 +1123,7 @@ export default function AdminPage() {
                           <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{b.name}</td>
                           <td className="py-3.5 px-4"><PlanBadge plan={b.plan} /></td>
                           <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{b.billing_period ?? '—'}</td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(b.amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(b.amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
                           <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{nextDueStr || '—'}</td>
                           <td className="py-3.5 px-4">
                             <BillingStatusBadge status={isPaid ? 'paid' : (billingStatus === 'overdue' ? 'overdue' : 'active')} nextDue={nextDueStr || new Date().toISOString()} />
@@ -1187,7 +1175,7 @@ export default function AdminPage() {
                         {pendingInvoices.map((inv) => (
                           <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
                             <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{inv.centerName}</td>
-                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(inv.payment_amount ?? 0).toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(inv.payment_amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-2 flex-nowrap">
                                 {inv.payment_proof_url ? (
@@ -1251,7 +1239,7 @@ export default function AdminPage() {
                       <tr key={i} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3.5 px-4 text-sm text-slate-600">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
                         <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{p.centerName}</td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{p.amount.toLocaleString('en-US')} {tCommon('egp')}</td>
                         <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{p.billing_period ?? '—'}</td>
                         <td className="py-3.5 px-4 text-sm text-slate-600 hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
                       </tr>
@@ -1420,7 +1408,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{order.id.slice(0, 8)}…</td>
                             <td className="px-4 py-3 font-medium text-foreground">{order.center_name}</td>
                             <td className="px-4 py-3 font-mono">{order.quantity}</td>
-                            <td className="px-4 py-3 font-mono font-bold">{order.total_amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                            <td className="px-4 py-3 font-mono font-bold">{order.total_amount.toLocaleString('en-US')} {tCommon('egp')}</td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${sc}`}>
                                 {order.status}

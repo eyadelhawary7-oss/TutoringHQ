@@ -548,17 +548,11 @@ export default function StudentsPage() {
             >
               <Upload size={14} /> {t('import')}
             </Link>
-            <Link
-              href="/students/print"
-              className="flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
-            >
-              <QrCode size={14} /> {t('printQr')}
-            </Link>
             <button
               onClick={() => setShowCardOrderModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
             >
-              <CreditCard size={14} /> {t('orderIdCards', { defaultValue: 'Order ID Cards' })}
+              <CreditCard size={14} /> 🪪 Order ID Cards
             </button>
             <button
               onClick={() => setShowAddModal(true)}
