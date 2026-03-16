@@ -67,8 +67,6 @@ export default withSentryConfig(withBundleAnalyzer(withNextIntl(nextConfig)), {
   sourcemaps: {
     disable: true,
   },
-  // Route browser requests to Sentry through a Next.js rewrite
-  tunnelRoute: "/monitoring",
   // Hides source maps from generated client bundles
   // Automatically tree-shake Sentry logger statements to reduce bundle size
   webpack: {
