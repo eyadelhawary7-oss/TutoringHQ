@@ -91,21 +91,23 @@ export async function GET(request: Request) {
     }
 
     // Fetch center logo/name and billing when user has center
-    let center: { logo_url?: string; name?: string; payment_due_date?: string; auto_suspend_at?: string; billing_status?: string; plan?: string } | null = null;
+    let center: { logo_url?: string; name?: string; phone?: string; payment_due_date?: string; auto_suspend_at?: string; billing_status?: string; plan?: string; delivery_address?: Record<string, unknown> } | null = null;
     if (userRecord.center_id) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
-        .select('logo_url, name, payment_due_date, auto_suspend_at, billing_status, plan')
+        .select('logo_url, name, phone, payment_due_date, auto_suspend_at, billing_status, plan, delivery_address')
         .eq('id', userRecord.center_id)
         .single();
       if (centerRow) {
         center = {
           logo_url: centerRow.logo_url ?? undefined,
           name: centerRow.name ?? undefined,
+          phone: centerRow.phone ?? undefined,
           payment_due_date: centerRow.payment_due_date ?? undefined,
           auto_suspend_at: centerRow.auto_suspend_at ?? undefined,
           billing_status: centerRow.billing_status ?? undefined,
           plan: centerRow.plan ?? undefined,
+          delivery_address: centerRow.delivery_address ?? undefined,
         };
       }
     }

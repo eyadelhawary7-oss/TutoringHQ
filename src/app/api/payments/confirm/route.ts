@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
       .from('payments')
       .update({
         status: 'confirmed',
+        confirmed: true,
         confirmed_by: ctx.user.id,
         confirmed_at: new Date().toISOString(),
       })

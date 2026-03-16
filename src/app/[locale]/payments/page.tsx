@@ -18,6 +18,7 @@ interface PaymentRecord {
   method: string;
   paid_at: string;
   status: string;
+  confirmed?: boolean;
   recorded_by?: string | null;
   student_name?: string;
   student_number?: string;
@@ -59,16 +60,6 @@ function getTodayISO() {
   return d.toISOString().slice(0, 10);
 }
 
-function getMonthStartEnd() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return {
-    start: start.toISOString().slice(0, 10),
-    end: end.toISOString().slice(0, 10),
-  };
-}
-
 export default function PaymentsPage() {
   const t = useTranslations('payments');
   const tCommon = useTranslations('common');
@@ -79,7 +70,7 @@ export default function PaymentsPage() {
   const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
 
   const [records, setRecords] = useState<PaymentRecord[]>([]);
-  const [studentsBalanceDue, setStudentsBalanceDue] = useState<number>(0);
+  const [stats, setStats] = useState<{ totalToday: number; totalMonth: number; pendingCount: number; pendingAmount: number; balanceDue: number }>({ totalToday: 0, totalMonth: 0, pendingCount: 0, pendingAmount: 0, balanceDue: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [methodFilter, setMethodFilter] = useState('all');
@@ -126,7 +117,7 @@ export default function PaymentsPage() {
 
       const { data: paymentsData, error: payErr } = await dbSelect({
         table: 'payments',
-        select: 'id, student_id, center_id, amount, method, recorded_by, paid_at, status, students(name, student_number)',
+        select: 'id, student_id, center_id, amount, method, recorded_by, paid_at, status, confirmed, students(name, student_number)',
         filters,
         order: { column: 'paid_at', ascending: false },
       });
@@ -148,8 +139,18 @@ export default function PaymentsPage() {
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
       });
       const allStudents = (allStudentsData || []) as { id: string; name: string; student_number?: string; balance_due?: number }[];
-      const totalBalance = allStudents.reduce((sum, s) => sum + (Number(s.balance_due) || 0), 0);
-      setStudentsBalanceDue(totalBalance);
+
+      const statsRes = await fetch('/api/payments/stats', { headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats({
+          totalToday: statsData.totalToday ?? 0,
+          totalMonth: statsData.totalMonth ?? 0,
+          pendingCount: statsData.pendingCount ?? 0,
+          pendingAmount: statsData.pendingAmount ?? 0,
+          balanceDue: statsData.balanceDue ?? 0,
+        });
+      }
 
       if (studentIds.length > 0) {
         studentMap = Object.fromEntries(
@@ -194,30 +195,6 @@ export default function PaymentsPage() {
     });
   }, [records, searchQuery]);
 
-  const stats = useMemo(() => {
-    const today = getTodayISO();
-    const { start: monthStart, end: monthEnd } = getMonthStartEnd();
-
-    const totalToday = records
-      .filter(r => r.status === 'confirmed' && r.paid_at?.startsWith(today))
-      .reduce((s, r) => s + (r.amount ?? 0), 0);
-
-    const pendingPayments = records.filter(r => r.status === 'pending');
-    const pendingCount = pendingPayments.length;
-    const pendingAmount = pendingPayments.reduce((s, r) => s + (r.amount ?? 0), 0);
-
-    const totalMonth = records
-      .filter(r => r.status === 'confirmed' && r.paid_at >= `${monthStart}T00:00:00` && r.paid_at <= `${monthEnd}T23:59:59`)
-      .reduce((s, r) => s + (r.amount ?? 0), 0);
-
-    return {
-      totalToday,
-      pendingCount,
-      pendingAmount,
-      balanceDue: studentsBalanceDue,
-      totalMonth,
-    };
-  }, [records, studentsBalanceDue]);
 
   const handleConfirm = async (paymentId: string) => {
     if (!canViewPayments) return;
@@ -297,8 +274,8 @@ export default function PaymentsPage() {
     return <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls}`}>{labels[key] ?? method ?? '—'}</span>;
   };
 
-  const formatStatus = (status: string) => {
-    if (status === 'confirmed') {
+  const formatStatus = (r: PaymentRecord) => {
+    if (r.confirmed === true || r.status === 'confirmed') {
       return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">{t('confirmedStatus')}</span>;
     }
     return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">{t('filterPending')}</span>;
@@ -461,17 +438,17 @@ export default function PaymentsPage() {
                     </td>
                     <td className="py-3.5 px-4 text-sm font-bold font-mono text-slate-900 text-end">{p.amount} {tCommon('egp')}</td>
                     <td className="py-3.5 px-4 text-sm text-end">{formatMethod(p.method)}</td>
-                    <td className="py-3.5 px-4 text-sm text-end">{formatStatus(p.status)}</td>
+                    <td className="py-3.5 px-4 text-sm text-end">{formatStatus(p)}</td>
                     <td className="py-3.5 px-4 text-sm text-slate-500 text-end">{p.recorded_by_name ?? '—'}</td>
                     <td className="py-3.5 px-4 text-sm text-end">
-                      {p.status === 'confirmed' ? (
+                      {(p.confirmed === true || p.status === 'confirmed') ? (
                         <Check size={18} className="text-green-600 inline" />
-                      ) : p.status === 'pending' && canViewPayments ? (
+                      ) : (p.confirmed === false || p.status === 'pending') && canViewPayments ? (
                         <button
                           onClick={() => setConfirmModal(p)}
                           className="px-3 py-1.5 border border-teal-500 text-teal-600 hover:bg-teal-50 text-xs font-semibold rounded-lg transition-colors"
                         >
-                          {t('confirmPayment')}
+                          {t('confirmReceipt', { defaultValue: 'تأكيد الاستلام' })}
                         </button>
                       ) : null}
                     </td>

@@ -90,7 +90,7 @@ export default function StudentsPage() {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
-  const [centerInfo, setCenterInfo] = useState<{ name?: string; logo_url?: string } | null>(null);
+  const [centerInfo, setCenterInfo] = useState<{ name?: string; logo_url?: string; phone?: string; delivery_address?: Record<string, unknown> } | null>(null);
   const [showCardOrderModal, setShowCardOrderModal] = useState(false);
 
   useEffect(() => {
@@ -105,7 +105,7 @@ export default function StudentsPage() {
 
       if (!meData?.user?.center_id) return;
       setCenterId(meData.user.center_id);
-      setCenterInfo(meData.user.center ? { name: meData.user.center.name, logo_url: meData.user.center.logo_url } : null);
+      setCenterInfo(meData.user.center ? { name: meData.user.center.name, logo_url: meData.user.center.logo_url, phone: meData.user.center.phone, delivery_address: meData.user.center.delivery_address } : null);
 
       const { data } = await dbSelect({
         table: 'students',
@@ -986,6 +986,14 @@ export default function StudentsPage() {
           students={students}
           centerId={centerId}
           centerInfo={centerInfo}
+          onSuccess={async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const meRes = await fetch('/api/me', { headers: { Authorization: `Bearer ${session.access_token}` } });
+              const meData = await meRes.json();
+              if (meData?.user?.center) setCenterInfo({ name: meData.user.center.name, logo_url: meData.user.center.logo_url, phone: meData.user.center.phone, delivery_address: meData.user.center.delivery_address });
+            }
+          }}
         />
       )}
     </>

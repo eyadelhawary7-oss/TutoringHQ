@@ -1,13 +1,43 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
-import { X, Search, ChevronRight, ChevronLeft, RotateCcw } from 'lucide-react';
+import { X, Search, ChevronRight, ChevronLeft } from 'lucide-react';
 import QRCode from 'qrcode';
-import { dbInsert } from '@/lib/db-proxy';
+import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
 import { toAr } from '@/lib/number-utils';
+
+const EGYPT_GOVERNORATES = [
+  { value: 'cairo', labelAr: 'القاهرة', labelEn: 'Cairo' },
+  { value: 'giza', labelAr: 'الجيزة', labelEn: 'Giza' },
+  { value: 'alexandria', labelAr: 'الإسكندرية', labelEn: 'Alexandria' },
+  { value: 'port_said', labelAr: 'بورسعيد', labelEn: 'Port Said' },
+  { value: 'suez', labelAr: 'السويس', labelEn: 'Suez' },
+  { value: 'asyut', labelAr: 'أسيوط', labelEn: 'Asyut' },
+  { value: 'aswan', labelAr: 'أسوان', labelEn: 'Aswan' },
+  { value: 'beheira', labelAr: 'البحيرة', labelEn: 'Beheira' },
+  { value: 'beni_suef', labelAr: 'بني سويف', labelEn: 'Beni Suef' },
+  { value: 'damietta', labelAr: 'دمياط', labelEn: 'Damietta' },
+  { value: 'faiyum', labelAr: 'الفيوم', labelEn: 'Faiyum' },
+  { value: 'gharbia', labelAr: 'الغربية', labelEn: 'Gharbia' },
+  { value: 'ismailia', labelAr: 'الإسماعيلية', labelEn: 'Ismailia' },
+  { value: 'kafr_el_sheikh', labelAr: 'كفر الشيخ', labelEn: 'Kafr El Sheikh' },
+  { value: 'luxor', labelAr: 'الأقصر', labelEn: 'Luxor' },
+  { value: 'matrouh', labelAr: 'مطروح', labelEn: 'Matrouh' },
+  { value: 'minya', labelAr: 'المنيا', labelEn: 'Minya' },
+  { value: 'monufia', labelAr: 'المنوفية', labelEn: 'Monufia' },
+  { value: 'new_valley', labelAr: 'الوادي الجديد', labelEn: 'New Valley' },
+  { value: 'north_sinai', labelAr: 'شمال سيناء', labelEn: 'North Sinai' },
+  { value: 'qalyubia', labelAr: 'القليوبية', labelEn: 'Qalyubia' },
+  { value: 'qena', labelAr: 'قنا', labelEn: 'Qena' },
+  { value: 'red_sea', labelAr: 'البحر الأحمر', labelEn: 'Red Sea' },
+  { value: 'sharqia', labelAr: 'الشرقية', labelEn: 'Sharqia' },
+  { value: 'sohag', labelAr: 'سوهاج', labelEn: 'Sohag' },
+  { value: 'south_sinai', labelAr: 'جنوب سيناء', labelEn: 'South Sinai' },
+  { value: 'dakahlia', labelAr: 'الدقهلية', labelEn: 'Dakahlia' },
+];
 
 interface Student {
   id: string;
@@ -19,6 +49,18 @@ interface Student {
 interface CenterInfo {
   name?: string;
   logo_url?: string;
+  phone?: string;
+  delivery_address?: DeliveryAddress;
+}
+
+interface DeliveryAddress {
+  full_name?: string;
+  phone?: string;
+  governorate?: string;
+  city?: string;
+  street?: string;
+  building?: string;
+  landmark?: string;
 }
 
 interface CardOrderModalProps {
@@ -49,7 +91,16 @@ export function CardOrderModal({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(0);
-  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryForm, setDeliveryForm] = useState<DeliveryAddress>({
+    full_name: '',
+    phone: '',
+    governorate: '',
+    city: '',
+    street: '',
+    building: '',
+    landmark: '',
+  });
+  const [useSavedAddress, setUseSavedAddress] = useState(true);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -58,6 +109,32 @@ export function CardOrderModal({
 
   const centerName = centerInfo?.name ?? 'CenterHQ';
   const centerLogo = centerInfo?.logo_url ?? null;
+  const centerPhone = centerInfo?.phone ?? null;
+  const savedDelivery = centerInfo?.delivery_address;
+  const hasSavedAddress = !!(savedDelivery && (savedDelivery.full_name || savedDelivery.phone || savedDelivery.governorate));
+
+  useEffect(() => {
+    if (isOpen && hasSavedAddress) setUseSavedAddress(true);
+    else if (isOpen && !hasSavedAddress) setUseSavedAddress(false);
+  }, [isOpen, hasSavedAddress]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const hasSaved = savedDelivery && (savedDelivery.full_name || savedDelivery.phone || savedDelivery.governorate);
+    if (hasSaved && useSavedAddress) {
+      setDeliveryForm({
+        full_name: savedDelivery!.full_name ?? '',
+        phone: savedDelivery!.phone ?? '',
+        governorate: savedDelivery!.governorate ?? '',
+        city: savedDelivery!.city ?? '',
+        street: savedDelivery!.street ?? '',
+        building: savedDelivery!.building ?? '',
+        landmark: savedDelivery!.landmark ?? '',
+      });
+    } else if (!useSavedAddress) {
+      setDeliveryForm({ full_name: '', phone: '', governorate: '', city: '', street: '', building: '', landmark: '' });
+    }
+  }, [isOpen, savedDelivery, useSavedAddress]);
   const centerInitials = centerName
     .split(/\s+/)
     .map((w) => w[0])
@@ -129,6 +206,19 @@ export function CardOrderModal({
     setStep((s) => Math.max(1, s - 1));
   };
 
+  const formatDeliveryForDisplay = (d: DeliveryAddress): string => {
+    const parts = [
+      d.full_name,
+      d.phone,
+      d.governorate ? EGYPT_GOVERNORATES.find((g) => g.value === d.governorate)?.labelAr ?? d.governorate : null,
+      d.city,
+      d.street,
+      d.building,
+      d.landmark,
+    ].filter(Boolean);
+    return parts.join('، ') || '';
+  };
+
   const handleSubmit = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user?.id || !centerId) return;
@@ -141,6 +231,17 @@ export function CardOrderModal({
         qr_code: qrDataUrls[s.id] || s.qr_code || '',
       }));
 
+      const deliveryPayload = {
+        full_name: deliveryForm.full_name?.trim() || null,
+        phone: deliveryForm.phone?.trim() || null,
+        governorate: deliveryForm.governorate || null,
+        city: deliveryForm.city?.trim() || null,
+        street: deliveryForm.street?.trim() || null,
+        building: deliveryForm.building?.trim() || null,
+        landmark: deliveryForm.landmark?.trim() || null,
+      };
+      const deliveryDisplay = formatDeliveryForDisplay(deliveryForm);
+
       await dbInsert({
         table: 'card_orders',
         data: {
@@ -152,11 +253,19 @@ export function CardOrderModal({
           delivery_fee: deliveryFee,
           total_amount: totalAmount,
           status: 'pending',
-          delivery_address: deliveryAddress.trim() || null,
+          delivery_address: deliveryDisplay || null,
           notes: notes.trim() || null,
         },
         select: false,
       });
+
+      if (deliveryDisplay) {
+        await dbUpdate({
+          table: 'centers',
+          data: { delivery_address: deliveryPayload },
+          filters: [{ column: 'id', op: 'eq', value: centerId }],
+        });
+      }
 
       setSubmitSuccess(true);
       onSuccess?.();
@@ -175,7 +284,7 @@ export function CardOrderModal({
     setSelectedIds(new Set());
     setSearchQuery('');
     setDeliveryFee(0);
-    setDeliveryAddress('');
+    setDeliveryForm({ full_name: '', phone: '', governorate: '', city: '', street: '', building: '', landmark: '' });
     setNotes('');
     setSubmitSuccess(false);
     setCardSide('front');
@@ -343,20 +452,21 @@ export function CardOrderModal({
                           </div>
                         </div>
                       </div>
-                      {/* Back */}
+                      {/* Back - center name + contact info (no external images to avoid screenshot/iframe issues) */}
                       <div
                         className="absolute inset-0 bg-white rounded-xl overflow-hidden"
                         style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                       >
                         <div className="flex flex-col items-center justify-center h-full p-4">
-                          {centerLogo ? (
-                            <img src={centerLogo} alt="" className="w-[40%] max-w-[80px] object-contain" />
-                          ) : (
-                            <div className="w-16 h-16 rounded-full bg-teal-600 flex items-center justify-center text-white text-lg font-bold">
-                              {centerInitials}
+                          <div className="w-14 h-14 rounded-full bg-teal-600 flex items-center justify-center text-white text-lg font-bold shrink-0">
+                            {centerInitials}
+                          </div>
+                          <div className="mt-2 font-bold text-slate-900 text-sm text-center leading-tight">{centerName}</div>
+                          {centerPhone && (
+                            <div className="mt-1 text-[10px] text-teal-600 font-mono" dir="ltr">
+                              {centerPhone}
                             </div>
                           )}
-                          <div className="mt-2 font-bold text-slate-900 text-sm text-center">{centerName}</div>
                           <div className="absolute bottom-2 text-[8px] text-gray-400">{t('poweredBy')}</div>
                         </div>
                       </div>
@@ -390,17 +500,55 @@ export function CardOrderModal({
                       className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm font-mono"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      {t('deliveryAddress', { defaultValue: 'Delivery Address' })}
-                    </label>
-                    <textarea
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder={t('deliveryAddressPlaceholder', { defaultValue: 'Enter delivery address...' })}
-                      className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm min-h-[80px]"
-                      rows={3}
-                    />
+                  <div className="space-y-3 border border-border rounded-xl p-4 bg-muted/20">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="use-saved-addr"
+                        checked={useSavedAddress}
+                        onChange={(e) => setUseSavedAddress(e.target.checked)}
+                        disabled={!hasSavedAddress}
+                        className="rounded accent-primary"
+                      />
+                      <label htmlFor="use-saved-addr" className="text-sm font-medium text-foreground">
+                        {t('useSavedAddress', { defaultValue: 'Use saved address' })}
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">{t('fullName', { defaultValue: 'Full name' })}</label>
+                        <input type="text" value={deliveryForm.full_name} onChange={(e) => setDeliveryForm((f) => ({ ...f, full_name: e.target.value }))} placeholder={t('fullNamePlaceholder', { defaultValue: 'الاسم الكامل' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">{t('phone', { defaultValue: 'Phone' })}</label>
+                        <input type="tel" value={deliveryForm.phone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setDeliveryForm((f) => ({ ...f, phone: v })); }} placeholder="01XXXXXXXXX" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm font-mono" dir="ltr" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-foreground mb-1">{t('governorate', { defaultValue: 'Governorate' })}</label>
+                        <select value={deliveryForm.governorate} onChange={(e) => setDeliveryForm((f) => ({ ...f, governorate: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                          <option value="">{t('selectGovernorate', { defaultValue: 'اختر المحافظة' })}</option>
+                          {EGYPT_GOVERNORATES.map((g) => (
+                            <option key={g.value} value={g.value}>{isRTL ? g.labelAr : g.labelEn}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">{t('cityDistrict', { defaultValue: 'City / District' })}</label>
+                        <input type="text" value={deliveryForm.city} onChange={(e) => setDeliveryForm((f) => ({ ...f, city: e.target.value }))} placeholder={t('cityPlaceholder', { defaultValue: 'المدينة / الحي' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">{t('streetAddress', { defaultValue: 'Street address' })}</label>
+                        <input type="text" value={deliveryForm.street} onChange={(e) => setDeliveryForm((f) => ({ ...f, street: e.target.value }))} placeholder={t('streetPlaceholder', { defaultValue: 'الشارع' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">{t('buildingApartment', { defaultValue: 'Building / Apartment' })}</label>
+                        <input type="text" value={deliveryForm.building} onChange={(e) => setDeliveryForm((f) => ({ ...f, building: e.target.value }))} placeholder={t('buildingPlaceholder', { defaultValue: 'المبنى / الشقة' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">{t('landmarkOptional', { defaultValue: 'Landmark (optional)' })}</label>
+                        <input type="text" value={deliveryForm.landmark} onChange={(e) => setDeliveryForm((f) => ({ ...f, landmark: e.target.value }))} placeholder={t('landmarkPlaceholder', { defaultValue: 'علامة مميزة' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-muted-foreground mb-1">
