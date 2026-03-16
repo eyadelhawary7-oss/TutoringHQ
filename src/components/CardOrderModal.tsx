@@ -87,6 +87,9 @@ export function CardOrderModal({
   const locale = useLocale();
   const isRTL = locale === 'ar';
 
+  const savedDelivery = centerInfo?.delivery_address;
+  const hasSavedAddress = !!(savedDelivery && (savedDelivery.full_name || savedDelivery.phone || savedDelivery.governorate));
+
   const [step, setStep] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -110,8 +113,6 @@ export function CardOrderModal({
   const centerName = centerInfo?.name ?? 'CenterHQ';
   const centerLogo = centerInfo?.logo_url ?? null;
   const centerPhone = centerInfo?.phone ?? null;
-  const savedDelivery = centerInfo?.delivery_address;
-  const hasSavedAddress = !!(savedDelivery && (savedDelivery.full_name || savedDelivery.phone || savedDelivery.governorate));
 
   useEffect(() => {
     if (isOpen && hasSavedAddress) setUseSavedAddress(true);
