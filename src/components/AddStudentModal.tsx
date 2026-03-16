@@ -97,8 +97,7 @@ export default function AddStudentModal({
     setIsLoading(true);
     try {
       const group = groups.find((g) => g.id === groupId);
-      const fee = monthlyFee !== '' ? Number(monthlyFee) || 0 : (group?.fee ?? 0);
-
+      // Fee comes from group (groups.fee), not from students table
       const { data: inserted, error: insertError } = await dbInsert({
         table: 'students',
         data: {
@@ -107,7 +106,6 @@ export default function AddStudentModal({
           phone: phone.trim() || null,
           parent_phone: parentPhone.trim() || null,
           subject: subjects.find((s) => s.id === subjectId)?.name || group?.subject || null,
-          fee,
           payment_status: 'unpaid',
         },
         select: 'id, name, student_number',

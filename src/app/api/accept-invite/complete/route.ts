@@ -45,11 +45,11 @@ export async function POST(request: Request) {
       digits.startsWith('0') ? digits : '0' + digits,
     ].filter(Boolean);
 
-    let invite: { id: string; center_id: string; role: string; invited_name?: string; phone: string } | null = null;
+    let invite: { id: string; center_id: string; role: string; invited_name?: string; phone: string; teacher_group_ids?: string[]; invited_permissions?: Record<string, boolean> } | null = null;
     for (const p of phoneVariants) {
       const { data } = await supabaseAdmin
         .from('center_invites')
-        .select('id, center_id, role, invited_name, phone')
+        .select('id, center_id, role, invited_name, phone, teacher_group_ids, invited_permissions')
         .eq('phone', p)
         .eq('status', 'pending')
         .limit(1)
@@ -99,14 +99,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error: userInsertError } = await supabaseAdmin.from('users').insert({
+    const userPayload: Record<string, unknown> = {
       id: user.id,
       center_id: invite.center_id,
       role: invite.role || 'assistant',
       phone: storedPhone,
       name: invite.invited_name || null,
       phone_verified: true,
-    });
+    };
+    if (invite.role === 'teacher' && invite.teacher_group_ids?.length) {
+      userPayload.teacher_group_ids = invite.teacher_group_ids;
+    }
+    if (invite.role === 'assistant' && invite.invited_permissions && typeof invite.invited_permissions === 'object') {
+      const perms = invite.invited_permissions as Record<string, boolean>;
+      if (typeof perms.can_scan === 'boolean') userPayload.can_scan = perms.can_scan;
+      if (typeof perms.can_view_payments === 'boolean') userPayload.can_view_payments = perms.can_view_payments;
+      if (typeof perms.can_record_payments === 'boolean') userPayload.can_record_payments = perms.can_record_payments;
+      if (typeof perms.can_view_dashboard === 'boolean') userPayload.can_view_dashboard = perms.can_view_dashboard;
+      if (typeof perms.can_view_revenue === 'boolean') userPayload.can_view_revenue = perms.can_view_revenue;
+      if (typeof perms.can_manage_students === 'boolean') userPayload.can_manage_students = perms.can_manage_students;
+      if (typeof perms.can_manage_groups === 'boolean') userPayload.can_manage_groups = perms.can_manage_groups;
+      if (typeof perms.can_allow_late_entry === 'boolean') userPayload.can_allow_late_entry = perms.can_allow_late_entry;
+      if (typeof perms.can_manage_rooms === 'boolean') userPayload.can_manage_rooms = perms.can_manage_rooms;
+      if (typeof perms.can_view_schedule === 'boolean') userPayload.can_view_schedule = perms.can_view_schedule;
+      if (typeof perms.can_view_settings === 'boolean') userPayload.can_view_settings = perms.can_view_settings;
+    }
+    const { error: userInsertError } = await supabaseAdmin.from('users').insert(userPayload);
 
     if (userInsertError) {
       console.error('Accept invite complete user insert:', userInsertError);

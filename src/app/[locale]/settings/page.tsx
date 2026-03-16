@@ -84,7 +84,6 @@ const PLAN_DISPLAY_NAMES: Record<string, string> = { nascent: 'ناشئ', nano: 
 const PLAN_PER_STUDENT_WEEK: Record<string, string> = { nascent: '3.69', nano: '3.69', starter: '3.33', pro: '2.25', business: '1.63', enterprise: '1.13', top_centers: '' };
 
 const FALLBACK_PLANS: PricingPlan[] = [
-  { id: 'nascent', name_en: 'Nascent', name_ar: 'ناشئ', students_per_week_limit: 75, monthly_fee: 1200, per_student_at_capacity_egp: 16, setup_fee_egp: 500, is_custom: false },
   { id: 'nano', name_en: 'Nano', name_ar: 'ناشئ', students_per_week_limit: 75, monthly_fee: 1200, per_student_at_capacity_egp: 3.69, setup_fee_egp: 500, is_custom: false },
   { id: 'starter', name_en: 'سنتر صغير', name_ar: 'سنتر صغير', students_per_week_limit: 150, monthly_fee: 2000, per_student_at_capacity_egp: 13.33, setup_fee_egp: 1000, is_custom: false },
   { id: 'pro', name_en: 'سنتر متوسط', name_ar: 'سنتر متوسط', students_per_week_limit: 500, monthly_fee: 4500, per_student_at_capacity_egp: 9, setup_fee_egp: 2000, is_custom: false },
@@ -141,14 +140,13 @@ function calculatePaygCost(_rates: PaygRate[], students: number) {
 }
 
 function getFixedPlanComparison(plans: PricingPlan[], students: number) {
-  const nascent = plans.find(p => p.id === 'nascent');
-  const nano = plans.find(p => p.id === 'nano');
+  const nanoPlan = plans.find(p => p.id === 'nano') ?? plans.find(p => p.id === 'nascent');
   const starter = plans.find(p => p.id === 'starter');
   const pro = plans.find(p => p.id === 'pro');
   const business = plans.find(p => p.id === 'business');
   const enterprise = plans.find(p => p.id === 'enterprise');
   const top = plans.find(p => p.id === 'top_centers');
-  if (students <= 75) return { planName: nascent?.name_en ?? 'Nascent', planNameAr: nascent?.name_ar ?? 'ناشئ', planFee: nascent?.monthly_fee ?? 1200, isCustom: false };
+  if (students <= 75) return { planName: nanoPlan?.name_en ?? 'Nano', planNameAr: nanoPlan?.name_ar ?? 'ناشئ', planFee: nanoPlan?.monthly_fee ?? 1200, isCustom: false };
   if (students <= 150) return { planName: starter?.name_en ?? 'Starter', planNameAr: starter?.name_ar ?? 'أساسي', planFee: starter?.monthly_fee ?? 2000, isCustom: false };
   if (students <= 500) return { planName: pro?.name_en ?? 'Pro', planNameAr: pro?.name_ar ?? 'محترف', planFee: pro?.monthly_fee ?? 4500, isCustom: false };
   if (students <= 1000) return { planName: business?.name_en ?? 'Business', planNameAr: business?.name_ar ?? 'أعمال', planFee: business?.monthly_fee ?? 6500, isCustom: false };
@@ -156,9 +154,11 @@ function getFixedPlanComparison(plans: PricingPlan[], students: number) {
   return { planName: top?.name_en ?? 'Top Centers', planNameAr: top?.name_ar ?? 'كبار السناتر', planFee: 0, isCustom: true };
 }
 
-// Filter out pro_plus if it exists
+// Filter out pro_plus and deduplicate nascent/nano (keep nano only, drop nascent when both exist)
 function filterPlans(plans: PricingPlan[]): PricingPlan[] {
-  return (plans ?? FALLBACK_PLANS).filter(p => p.id !== 'pro_plus');
+  const raw = (plans ?? FALLBACK_PLANS).filter(p => p.id !== 'pro_plus');
+  const hasNano = raw.some(p => p.id === 'nano');
+  return raw.filter(p => p.id !== 'nascent' || !hasNano);
 }
 
 function SettingsPageContent() {
@@ -261,6 +261,8 @@ function SettingsPageContent() {
     can_scan: true, can_view_payments: true, can_view_dashboard: true,
     can_manage_students: false, can_manage_groups: false, can_view_settings: false,
   });
+  const [inviteTeacherGroupIds, setInviteTeacherGroupIds] = useState<string[]>([]);
+  const [inviteGroups, setInviteGroups] = useState<{ id: string; name: string; subject?: string }[]>([]);
 
   // Redirect assistants/teachers without can_view_settings
   useEffect(() => {
@@ -268,6 +270,21 @@ function SettingsPageContent() {
       router.replace('/dashboard');
     }
   }, [currentUser, hasPermission, router]);
+
+  // Load groups when invite modal opens (for teacher Assign Groups)
+  useEffect(() => {
+    if (!showInviteModal || !centerId) return;
+    const load = async () => {
+      const { data } = await dbSelect({
+        table: 'student_groups',
+        select: 'id, name, subject',
+        filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+        order: { column: 'name' },
+      });
+      setInviteGroups((data as { id: string; name: string; subject?: string }[]) ?? []);
+    };
+    load();
+  }, [showInviteModal, centerId]);
 
   // Load general + center data
   useEffect(() => {
@@ -751,10 +768,17 @@ function SettingsPageContent() {
     setInviteSubmitting(true);
     try {
       const { getCsrfHeaders } = await import('@/lib/csrf-client');
+      const body: Record<string, unknown> = { name: inviteName.trim() || '', phone: phoneToSend, role: inviteRole };
+      if (inviteRole === 'teacher' && inviteTeacherGroupIds.length) {
+        body.teacher_group_ids = inviteTeacherGroupIds;
+      }
+      if (inviteRole === 'assistant') {
+        body.permissions = invitePerms;
+      }
       const res = await fetch('/api/invite-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, ...await getCsrfHeaders(session.access_token) },
-        body: JSON.stringify({ name: inviteName.trim() || '', phone: phoneToSend, role: inviteRole }),
+        body: JSON.stringify(body),
       });
       const result = await res.json();
       if (!res.ok) {
@@ -775,6 +799,7 @@ function SettingsPageContent() {
         setInviteName('');
         setInvitePhone('');
         setInviteRole('assistant');
+        setInviteTeacherGroupIds([]);
         setPendingInvites(prev => [...prev, { phone: phoneToSend, role: inviteRole, status: 'pending' }]);
         setShowInviteModal(false);
         setSavedMessage(result.message || t('inviteSuccess'));
@@ -1542,7 +1567,7 @@ function SettingsPageContent() {
                     <h2 className="text-2xl font-bold text-slate-900">{t('teamMembers')}</h2>
                     {limits && <p className="text-sm text-slate-500 mt-0.5">{t('teamMembersCount', { current: teamMembers.length, max: limits.maxTeachers })}</p>}
                   </div>
-                  <button onClick={() => setShowInviteModal(true)} disabled={limits ? !limits.canAddTeacher : false} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"><UserPlus className="w-4 h-4" /> {t('inviteMemberPlus')}</button>
+                  <button onClick={() => { setInviteRole('assistant'); setInviteTeacherGroupIds([]); setInvitePerms({ can_scan: true, can_view_payments: true, can_view_dashboard: true, can_manage_students: false, can_manage_groups: false, can_view_settings: false }); setShowInviteModal(true); }} disabled={limits ? !limits.canAddTeacher : false} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"><UserPlus className="w-4 h-4" /> {t('inviteMemberPlus')}</button>
                 </div>
 
                 {lastInvitePassword && <div className="p-4 bg-green-100 rounded-xl border border-green-500/30 text-sm text-green-700 mb-4"><p className="font-medium">{t('inviteSuccess')}</p><p className="mt-1">{t('passwordIs', { password: lastInvitePassword })}</p></div>}
@@ -1669,20 +1694,37 @@ function SettingsPageContent() {
                 <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('inviteName')}</label><input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder={t('inviteName')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" /></div>
                 <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('invitePhone')}</label><input type="tel" value={invitePhone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setInvitePhone(v); setInviteError(''); }} placeholder="01220601310" dir="ltr" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" required /></div>
                 <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('role')}</label><select value={inviteRole} onChange={(e) => { const v = e.target.value; if (v === 'assistant' || v === 'teacher') setInviteRole(v); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"><option value="assistant">{t('assistant')}</option><option value="teacher">{tNav('roleTeacher')}</option></select></div>
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-slate-700">{t('permissions')}</p>
-                  {[{ key: 'can_scan', labelKey: 'canScan', Icon: Camera }, { key: 'can_view_payments', labelKey: 'canViewPayments', Icon: CreditCard }, { key: 'can_view_dashboard', labelKey: 'canViewDashboard', Icon: LayoutDashboard }, { key: 'can_manage_students', labelKey: 'canManageStudents', Icon: Users }, { key: 'can_manage_groups', labelKey: 'canManageGroups', Icon: BookOpen }, { key: 'can_view_settings', labelKey: 'canViewSettings', Icon: Shield }].map(({ key, labelKey, Icon }) => (
-                    <div key={key} className="flex items-center justify-between py-2 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm text-slate-700">{t(labelKey)}</span>
+                {inviteRole === 'teacher' ? (
+                  <>
+                    <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3 border border-slate-200">{t('teacherAccessInfo')}</p>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('assignGroups')}</label>
+                      <div className="mt-1 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1">
+                        {inviteGroups.length === 0 ? <p className="text-sm text-slate-500 py-2">{tCommon('noData')}</p> : inviteGroups.map((g) => (
+                          <label key={g.id} className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-slate-50 rounded px-2">
+                            <input type="checkbox" checked={inviteTeacherGroupIds.includes(g.id)} onChange={(e) => setInviteTeacherGroupIds(prev => e.target.checked ? [...prev, g.id] : prev.filter(id => id !== g.id))} className="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
+                            <span className="text-sm text-slate-700">{g.name}{g.subject ? ` (${g.subject})` : ''}</span>
+                          </label>
+                        ))}
                       </div>
-                      <button type="button" role="switch" aria-checked={invitePerms[key] ?? false} onClick={() => setInvitePerms(p => ({ ...p, [key]: !(p[key] ?? false) }))} className={`relative w-10 h-5 rounded-full transition-colors ${invitePerms[key] ?? false ? 'bg-teal-600' : 'bg-slate-200'}`}>
-                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${invitePerms[key] ?? false ? 'start-5' : 'start-0.5'}`} />
-                      </button>
                     </div>
-                  ))}
-                </div>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-slate-700">{t('permissions')}</p>
+                    {[{ key: 'can_scan', labelKey: 'canScan', Icon: Camera }, { key: 'can_view_payments', labelKey: 'canViewPayments', Icon: CreditCard }, { key: 'can_view_dashboard', labelKey: 'canViewDashboard', Icon: LayoutDashboard }, { key: 'can_manage_students', labelKey: 'canManageStudents', Icon: Users }, { key: 'can_manage_groups', labelKey: 'canManageGroups', Icon: BookOpen }, { key: 'can_view_settings', labelKey: 'canViewSettings', Icon: Shield }].map(({ key, labelKey, Icon }) => (
+                      <div key={key} className="flex items-center justify-between py-2 border-b border-slate-100">
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-4 h-4 text-slate-400" />
+                          <span className="text-sm text-slate-700">{t(labelKey)}</span>
+                        </div>
+                        <button type="button" role="switch" aria-checked={invitePerms[key] ?? false} onClick={() => setInvitePerms(p => ({ ...p, [key]: !(p[key] ?? false) }))} className={`relative w-10 h-5 rounded-full transition-colors ${invitePerms[key] ?? false ? 'bg-teal-600' : 'bg-slate-200'}`}>
+                          <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${invitePerms[key] ?? false ? 'start-5' : 'start-0.5'}`} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex justify-end gap-3 pt-4">
                   <button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg">{tCommon('cancel')}</button>
                   <button type="submit" disabled={inviteSubmitting || !invitePhone.trim()} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50">{inviteSubmitting ? tCommon('loading') : t('invite')}</button>

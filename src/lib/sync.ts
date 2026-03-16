@@ -36,17 +36,20 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
 
       // If there was a payment action, record it (per-session: payments table is source of truth)
       if (scan.payment_action) {
-        const isPending = (scan.payment_action as { isPending?: boolean }).isPending ?? false;
+        const method = String((scan.payment_action as { method?: string }).method ?? '').toLowerCase();
+        const isCash = method === 'cash' || method === 'نقدي';
+        const isPending = isCash ? false : ((scan.payment_action as { isPending?: boolean }).isPending ?? false);
         const groupId = (scan.payment_action as { group_id?: string }).group_id;
         const payData: Record<string, unknown> = {
           student_id: scan.student_id,
           center_id: scan.center_id,
           amount: scan.payment_action.amount,
-          method: scan.payment_action.method,
+          method: method === 'نقدي' ? 'cash' : scan.payment_action.method,
           recorded_by: scan.scanned_by,
           paid_at: scan.scanned_at,
-          status: isPending ? 'pending' : 'confirmed',
-          confirmed: !scan.payment_action.isPending,
+          status: isCash ? 'confirmed' : (isPending ? 'pending' : 'confirmed'),
+          confirmed: isCash || !(scan.payment_action as { isPending?: boolean }).isPending,
+          confirmed_at: isCash ? scan.scanned_at : undefined,
         };
         if (groupId) payData.group_id = groupId;
         await dbInsert({

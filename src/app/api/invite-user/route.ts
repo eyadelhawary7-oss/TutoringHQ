@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    const { name, phone, role } = parsed.data;
+    const { name, phone, role, teacher_group_ids, permissions } = parsed.data;
 
     const phoneE164 = normalizePhone(String(phone).trim());
 
@@ -107,18 +107,23 @@ export async function POST(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app';
     const acceptInviteUrl = `${appUrl}/en/accept-invite`;
 
+    const invitePayload: Record<string, unknown> = {
+      center_id: currentUser.center_id,
+      phone: phoneE164,
+      role: role || 'assistant',
+      invited_name: name.trim() || null,
+      status: 'pending',
+    };
+    if (role === 'teacher' && teacher_group_ids?.length) {
+      invitePayload.teacher_group_ids = teacher_group_ids;
+    }
+    if (role === 'assistant' && permissions && Object.keys(permissions).length) {
+      invitePayload.invited_permissions = permissions;
+    }
+
     const { error: inviteErr } = await supabaseAdmin
       .from('center_invites')
-      .upsert(
-        {
-          center_id: currentUser.center_id,
-          phone: phoneE164,
-          role: role || 'assistant',
-          invited_name: name.trim() || null,
-          status: 'pending',
-        },
-        { onConflict: 'center_id,phone' }
-      );
+      .upsert(invitePayload, { onConflict: 'center_id,phone' });
 
     if (inviteErr) {
       console.error('Invite insert error:', inviteErr);

@@ -17,7 +17,7 @@ import { syncQueuedScans } from '@/lib/sync';
 import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
-import { Camera, Bluetooth, Hash, BookOpen, ChevronRight } from 'lucide-react';
+import { Camera, Bluetooth, Hash, BookOpen, ChevronRight, Search } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 
 type ScanMode = 'camera' | 'bluetooth' | 'manual';
@@ -31,7 +31,7 @@ interface Student {
   parent_phone?: string | null;
   student_number?: string | null;
   last_payment_method?: string | null;
-  groups?: { id: string; name: string; fee: number }[];
+  groups?: { id: string; name: string; fee: number; subject?: string | null }[];
 }
 
 /** Fire-and-forget: notify parent of scan (async, no await). */
@@ -79,7 +79,7 @@ export default function ScanPage() {
   const manualInputRef = useRef<HTMLInputElement>(null);
   const [scannedStudent, setScannedStudent] = useState<Student | null>(null);
   const [needGroupSelection, setNeedGroupSelection] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee: number } | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee: number; subject?: string | null } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -89,6 +89,7 @@ export default function ScanPage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [addedAmountToBalance, setAddedAmountToBalance] = useState(0);
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
   const modeRef = useRef<ScanMode>('camera');
@@ -120,17 +121,17 @@ export default function ScanPage() {
         const members = (membersData || []) as { student_id: string; group_id: string }[];
 
         const groupIds = [...new Set(members.map(m => m.group_id))];
-        let groupsMap: Record<string, { id: string; name: string; fee: number }> = {};
+        let groupsMap: Record<string, { id: string; name: string; fee: number; subject?: string | null }> = {};
         if (groupIds.length > 0) {
           const { data: groupsData } = await dbSelect({
             table: 'student_groups',
-            select: 'id, name, fee',
+            select: 'id, name, fee, subject',
             filters: [{ column: 'id', op: 'in', value: groupIds }],
           });
           groupsMap = Object.fromEntries(
-            ((groupsData || []) as { id: string; name?: string; fee?: number }[]).map(g => [
+            ((groupsData || []) as { id: string; name?: string; fee?: number; subject?: string | null }[]).map(g => [
               g.id,
-              { id: g.id, name: g.name ?? '', fee: g.fee ?? 0 },
+              { id: g.id, name: g.name ?? '', fee: g.fee ?? 0, subject: g.subject ?? null },
             ])
           );
         }
@@ -602,7 +603,7 @@ export default function ScanPage() {
 
     const scannedAt = new Date().toISOString();
     const sessionDate = scannedAt.split('T')[0];
-    const isCash = method === 'cash';
+    const isCash = method === 'cash' || method === 'نقدي';
     const paymentAmount = amount ?? scannedStudent.fee ?? 0;
     const effectiveGroupId = groupId ?? selectedGroup?.id ?? scannedStudent.groups?.[0]?.id ?? null;
 
@@ -612,11 +613,12 @@ export default function ScanPage() {
           student_id: scannedStudent.id,
           center_id: centerId,
           amount: paymentAmount,
-          method,
+          method: method === 'نقدي' ? 'cash' : method,
           recorded_by: userId,
           paid_at: scannedAt,
           status: isCash ? 'confirmed' : 'pending',
           confirmed: isCash,
+          ...(isCash && { confirmed_at: scannedAt }),
           group_id: effectiveGroupId,
         };
 
@@ -845,35 +847,62 @@ export default function ScanPage() {
         </div>
       </div>
 
-      {/* Group Selector modal */}
-      {needGroupSelection && scannedStudent && scannedStudent.groups && scannedStudent.groups.length >= 2 && (
+      {/* Group Selector sheet */}
+      {needGroupSelection && scannedStudent && scannedStudent.groups && scannedStudent.groups.length >= 2 && (() => {
+        const q = groupSearchQuery.trim().toLowerCase();
+        const filteredGroupsForSheet = q
+          ? scannedStudent.groups.filter((g) =>
+              g.name.toLowerCase().includes(q) ||
+              ((g as { subject?: string | null }).subject ?? '').toLowerCase().includes(q)
+            )
+          : scannedStudent.groups;
+        return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
-            <div className="p-6 border-b border-slate-200">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] flex flex-col">
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-12 h-1 rounded-full bg-slate-300" aria-hidden />
+            </div>
+            <div className="p-4 pb-2 border-b border-slate-200 shrink-0">
               <h2 className="text-lg font-bold text-slate-900">{t('selectGroupTitle')}</h2>
               <p className="text-sm text-slate-500 mt-1">{t('selectGroupDesc')}</p>
+              {/* Search */}
+              <div className="relative mt-3">
+                <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+                <input
+                  type="search"
+                  placeholder={tCommon('search')}
+                  value={groupSearchQuery}
+                  onChange={(e) => setGroupSearchQuery(e.target.value)}
+                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
             </div>
-            <div className="p-4 space-y-2">
-              {scannedStudent.groups.map((g) => (
+            <div className="p-4 overflow-y-auto flex-1 divide-y divide-slate-200">
+              {filteredGroupsForSheet.map((g) => (
                 <button
                   key={g.id}
                   onClick={() => handleGroupSelect(g)}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-teal-300 transition-all text-start"
+                  className="w-full flex items-center gap-3 min-h-[56px] py-4 px-4 rounded-xl hover:bg-slate-50 transition-all text-start first:pt-0"
                 >
                   <div className="p-2 bg-teal-100 rounded-lg flex-shrink-0">
                     <BookOpen className="w-4 h-4 text-teal-600" />
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-900 text-sm">{g.name}</p>
-                    <p className="text-xs text-slate-500">{t('perLesson')} · {tCommon('egp')} {g.fee}</p>
+                    {(g as { subject?: string | null }).subject && (
+                      <p className="text-xs text-slate-500 mt-0.5">{(g as { subject?: string | null }).subject}</p>
+                    )}
+                    <p className="text-xs font-medium text-teal-600 mt-1">{t('perLesson')} · {tCommon('egp')} {g.fee}</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 ms-auto" />
+                  <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 </button>
               ))}
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {scannedStudent && !needGroupSelection && (
         <ScanResultScreen

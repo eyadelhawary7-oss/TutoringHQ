@@ -120,21 +120,15 @@ export default function ImportStudentsPage() {
     const groupHeader = Object.keys(columnMap).find((k) => columnMap[k] === 'group');
     if (!nameHeader) return [];
 
-    const base: { center_id: string; name: string; phone: string | null; fee: number; payment_status: 'unpaid' }[] = [];
+    // Fee comes from group (groups.fee), not from students table
+    const base: { center_id: string; name: string; phone: string | null; payment_status: 'unpaid' }[] = [];
     for (const row of parsedData.rows) {
       const name = String(row[nameHeader] ?? '').trim();
       if (!name) continue;
-      let fee = 0;
-      if (groupHeader) {
-        const groupName = String(row[groupHeader] ?? '').trim();
-        const g = groups.find((gr) => gr.name === groupName);
-        fee = g?.fee ?? 0;
-      }
       base.push({
         center_id: centerId,
         name,
         phone: phoneHeader ? String(row[phoneHeader] ?? '').trim() || null : null,
-        fee,
         payment_status: 'unpaid',
       });
     }

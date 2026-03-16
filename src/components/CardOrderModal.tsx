@@ -380,7 +380,7 @@ export function CardOrderModal({
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">
-                      {t('deliveryFee')} (EGP)
+                      {t('deliveryFee')}
                     </label>
                     <input
                       type="number"

@@ -115,6 +115,19 @@ export const studentImportRowSchema = z.object({
   monthly_fee: z.number().min(0).optional().default(0),
 });
 
+/** Students table insert - fee comes from group, NOT from students table. Strips fee/monthly_fee. */
+export const studentInsertSchema = z.object({
+  center_id: z.string().uuid(),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(200),
+  phone: z.string().optional().nullable(),
+  parent_phone: z.string().optional().nullable(),
+  subject: z.string().optional().nullable(),
+  payment_status: z.enum(['paid', 'unpaid', 'pending']).optional().default('unpaid'),
+}).transform((data) => {
+  const { fee: _f, monthly_fee: _m, ...rest } = data as Record<string, unknown> & { fee?: unknown; monthly_fee?: unknown };
+  return rest;
+});
+
 export const whatsappSettingsSchema = z.object({
   individual_alerts_enabled: z.boolean(),
 });
@@ -133,9 +146,11 @@ export const demoRequestSchema = z.object({
 
 /** Invite team member */
 export const inviteUserSchema = z.object({
-  name: z.string().min(2, 'Name required').max(100).regex(/^[a-zA-Z\s\u0600-\u06FF]+$/, 'Invalid characters'),
+  name: z.string().max(100).regex(/^[a-zA-Z\s\u0600-\u06FF]*$/, 'Invalid characters').optional().default(''),
   phone: egyptianPhoneRequired,
   role: z.enum(['assistant', 'teacher']),
+  teacher_group_ids: z.array(z.string().uuid()).optional(),
+  permissions: z.record(z.string(), z.boolean()).optional(),
 });
 
 /** Admin team - add member */
@@ -276,9 +291,7 @@ const cardOrderStudentSchema = z.object({
 
 /** DB route - table-specific validation for insert/update */
 export const dbInsertSchemas: Record<string, z.ZodType> = {
-  students: studentImportRowSchema.extend({
-    center_id: z.string().uuid().optional(),
-  }),
+  students: studentInsertSchema,
   student_groups: studentGroupSchema,
   payments: paymentSchema.extend({ center_id: z.string().uuid().optional() }),
   card_orders: z.object({

@@ -513,13 +513,13 @@ export default function StudentsPage() {
     try {
       const selectedGroup = groups.find((g) => g.id === addForm.groupId);
       const subjectValue = selectedGroup?.subject ?? subjects.find((s) => s.id === addForm.subjectId)?.name ?? null;
+      // Fee comes from group (groups.fee), not from students table
       const insertPayload = {
         center_id: centerId,
         name: addForm.name.trim(),
         phone: addForm.phone.trim() || null,
         parent_phone: addForm.parentPhone.trim() || null,
         subject: subjectValue,
-        fee: Number(addForm.monthlyFee) || (selectedGroup?.fee ?? 0),
         payment_status: 'unpaid',
       };
       const { data: inserted, error } = await dbInsert({
