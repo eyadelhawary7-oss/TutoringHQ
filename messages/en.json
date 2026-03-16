@@ -1703,6 +1703,7 @@
     "previewCard": "Preview & Customize",
     "orderSummary": "Order Summary",
     "pricePerCard": "Price per card (EGP)",
+    "cardColor": "Card Color",
     "deliveryFee": "Delivery fee (EGP)",
     "deliveryAddress": "Delivery Address",
     "deliveryAddressPlaceholder": "Enter delivery address",

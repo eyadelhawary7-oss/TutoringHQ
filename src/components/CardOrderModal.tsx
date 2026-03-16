@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
-import { X, Search, ChevronRight, ChevronLeft } from 'lucide-react';
+import { X, Search, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import QRCode from 'qrcode';
 import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
@@ -51,6 +51,7 @@ interface CenterInfo {
   logo_url?: string;
   phone?: string;
   delivery_address?: DeliveryAddress;
+  card_color?: string;
 }
 
 interface DeliveryAddress {
@@ -73,6 +74,17 @@ interface CardOrderModalProps {
 }
 
 const PRICE_PER_CARD = 3;
+
+const CARD_COLORS = [
+  { value: '#0D9488', label: 'Teal' },
+  { value: '#1E3A5F', label: 'Navy' },
+  { value: '#1A1A1A', label: 'Black' },
+  { value: '#7C3AED', label: 'Purple' },
+  { value: '#DC2626', label: 'Red' },
+  { value: '#EA580C', label: 'Orange' },
+  { value: '#B45309', label: 'Gold' },
+  { value: '#15803D', label: 'Green' },
+] as const;
 
 export function CardOrderModal({
   isOpen,
@@ -109,6 +121,7 @@ export function CardOrderModal({
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
   const [qrDataUrls, setQrDataUrls] = useState<Record<string, string>>({});
+  const [selectedColor, setSelectedColor] = useState<string>('#0D9488');
 
   const centerName = centerInfo?.name ?? 'CenterHQ';
   const centerLogo = centerInfo?.logo_url ?? null;
@@ -118,6 +131,15 @@ export function CardOrderModal({
     if (isOpen && hasSavedAddress) setUseSavedAddress(true);
     else if (isOpen && !hasSavedAddress) setUseSavedAddress(false);
   }, [isOpen, hasSavedAddress]);
+
+  useEffect(() => {
+    if (isOpen && centerInfo?.card_color) {
+      const c = centerInfo.card_color;
+      setSelectedColor(CARD_COLORS.some((x) => x.value === c) ? c : '#0D9488');
+    } else if (isOpen && !centerInfo?.card_color) {
+      setSelectedColor('#0D9488');
+    }
+  }, [isOpen, centerInfo?.card_color]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -260,13 +282,13 @@ export function CardOrderModal({
         select: false,
       });
 
-      if (deliveryDisplay) {
-        await dbUpdate({
-          table: 'centers',
-          data: { delivery_address: deliveryPayload },
-          filters: [{ column: 'id', op: 'eq', value: centerId }],
-        });
-      }
+      const centerUpdates: Record<string, unknown> = { card_color: selectedColor };
+      if (deliveryDisplay) centerUpdates.delivery_address = deliveryPayload;
+      await dbUpdate({
+        table: 'centers',
+        data: centerUpdates,
+        filters: [{ column: 'id', op: 'eq', value: centerId }],
+      });
 
       setSubmitSuccess(true);
       onSuccess?.();
@@ -289,6 +311,7 @@ export function CardOrderModal({
     setNotes('');
     setSubmitSuccess(false);
     setCardSide('front');
+    setSelectedColor(centerInfo?.card_color && CARD_COLORS.some((x) => x.value === centerInfo.card_color) ? centerInfo.card_color : '#0D9488');
   };
 
   const handleClose = () => {
@@ -421,13 +444,13 @@ export function CardOrderModal({
                       >
                         <div
                           className="absolute top-0 left-0 right-0 h-[20%]"
-                          style={{ background: 'linear-gradient(135deg, #0D9488 0%, #0f766e 100%)' }}
+                          style={{ background: `linear-gradient(135deg, ${selectedColor} 0%, ${selectedColor}dd 100%)` }}
                         />
                         <div className="absolute top-0 left-0 right-0 h-[20%] flex items-center justify-between px-3 py-2">
                           {centerLogo ? (
                             <img src={centerLogo} alt="" className="h-6 w-6 object-contain" />
                           ) : (
-                            <div className="h-6 w-6 rounded-full bg-teal-600 flex items-center justify-center text-white text-[10px] font-bold">
+                            <div className="h-6 w-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ backgroundColor: selectedColor }}>
                               {centerInitials}
                             </div>
                           )}
@@ -459,7 +482,7 @@ export function CardOrderModal({
                         style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                       >
                         <div className="flex flex-col items-center justify-center h-full p-4">
-                          <div className="w-14 h-14 rounded-full bg-teal-600 flex items-center justify-center text-white text-lg font-bold shrink-0">
+                          <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0" style={{ backgroundColor: selectedColor }}>
                             {centerInitials}
                           </div>
                           <div className="mt-2 font-bold text-slate-900 text-sm text-center leading-tight">{centerName}</div>
@@ -489,6 +512,27 @@ export function CardOrderModal({
                   </button>
                 </div>
                 <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t('cardColor', { defaultValue: 'Card Color' })}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {CARD_COLORS.map(({ value }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setSelectedColor(value)}
+                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-transform shrink-0 ${
+                            selectedColor === value ? 'scale-110 border-foreground' : 'border-border hover:border-muted-foreground'
+                          }`}
+                          style={{ backgroundColor: value }}
+                          aria-label={value}
+                        >
+                          {selectedColor === value && <Check size={20} className="text-white drop-shadow" strokeWidth={3} />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">
                       {t('deliveryFee')}

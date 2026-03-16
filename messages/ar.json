@@ -1692,6 +1692,7 @@
     "previewCard": "معاينة وتخصيص",
     "orderSummary": "ملخص الطلب",
     "pricePerCard": "سعر البطاقة (جنيه)",
+    "cardColor": "لون الكارت",
     "deliveryFee": "رسوم التوصيل (EGP)",
     "deliveryAddress": "عنوان التوصيل",
     "deliveryAddressPlaceholder": "أدخل عنوان التوصيل",
