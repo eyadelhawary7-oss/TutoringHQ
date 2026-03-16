@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname } from '@/i18n/routing';
+import { supabase } from '@/lib/supabase';
 import {
   TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
   Users, Building2, AlertTriangle, CheckCircle, Clock, Search,
@@ -181,6 +182,37 @@ export default function CeoDashboard() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [chartTab, setChartTab] = useState<'monthly' | 'weekly' | 'daily'>('monthly');
   const [unitEconOpen, setUnitEconOpen] = useState(false);
+
+  const [mrrData, setMrrData] = useState<{
+    snapshots: Array<{ date: string; mrr?: number; active_centers?: number; new_centers?: number; churned_centers?: number }>;
+    summary: { currentMrr: number; activeCenters: number; newThisMonth: number; churnedThisMonth: number };
+    hasData: boolean;
+  } | null>(null);
+  const [mrrLoading, setMrrLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMrr = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setMrrLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/ceo/mrr', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setMrrData(json);
+        }
+      } catch {
+        setMrrData(null);
+      } finally {
+        setMrrLoading(false);
+      }
+    };
+    fetchMrr();
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => setLastUpdated(new Date()), 5 * 60 * 1000);
@@ -397,6 +429,103 @@ export default function CeoDashboard() {
               <p className="text-[11px] text-slate-400 mt-1">{COLLECTION_RATE > 90 ? 'On track' : COLLECTION_RATE > 75 ? 'Needs attention' : 'Critical'}</p>
             </div>
           </div>
+
+          {/* ═══════════════════════════════════════════════
+              إيرادات المنصة — MRR Snapshots (from mrr_snapshots)
+          ═══════════════════════════════════════════════ */}
+          <SectionLabel>إيرادات المنصة</SectionLabel>
+          {mrrLoading ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm h-[120px] animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
+                      <TrendingUp size={16} className="text-teal-600" />
+                    </div>
+                  </div>
+                  <div className="font-mono text-2xl font-bold text-slate-900">
+                    EGP {(mrrData?.summary?.currentMrr ?? 0).toLocaleString('ar-EG')}
+                  </div>
+                  <span className="text-[13px] font-medium text-slate-500">MRR الآن</span>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                      <Building2 size={16} className="text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="font-mono text-2xl font-bold text-slate-900">{mrrData?.summary?.activeCenters ?? 0}</div>
+                  <span className="text-[13px] font-medium text-slate-500">السناتر النشطة</span>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                      <Users size={16} className="text-green-600" />
+                    </div>
+                  </div>
+                  <div className="font-mono text-2xl font-bold text-slate-900">{mrrData?.summary?.newThisMonth ?? 0}</div>
+                  <span className="text-[13px] font-medium text-slate-500">سناتر جديدة هذا الشهر</span>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                      <TrendingDown size={16} className="text-red-600" />
+                    </div>
+                  </div>
+                  <div className="font-mono text-2xl font-bold text-slate-900">{mrrData?.summary?.churnedThisMonth ?? 0}</div>
+                  <span className="text-[13px] font-medium text-slate-500">سناتر غادرت هذا الشهر</span>
+                </div>
+              </div>
+              <div className="mt-4 bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
+                <h3 className="text-[13px] font-semibold text-slate-600 mb-4">إيرادات المنصة — آخر 30 يوماً</h3>
+                {mrrData?.hasData ? (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={mrrData?.snapshots ?? []}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11, fill: '#94A3B8' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(dateStr: string) => {
+                          const d = new Date(dateStr + 'T12:00:00Z');
+                          return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+                        }}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#94A3B8' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(val: number) => val.toLocaleString('ar-EG') + ' ج'}
+                      />
+                      <Tooltip
+                        labelFormatter={(label: unknown) =>
+                          new Date(String(label ?? '') + 'T12:00:00Z').toLocaleDateString('ar-EG', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        }
+                        formatter={(val: unknown) => [`EGP ${Number(val).toLocaleString('ar-EG')}`, 'MRR']}
+                      />
+                      <Line type="monotone" dataKey="mrr" stroke="#0D9488" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center py-12 text-slate-400">
+                    <p className="font-medium">لا توجد بيانات بعد</p>
+                    <p className="text-sm mt-1">ستظهر البيانات تلقائياً بعد منتصف الليل</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {/* ═══════════════════════════════════════════════
               ROW 3 — Revenue Over Time + Revenue Streams

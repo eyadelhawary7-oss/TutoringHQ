@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
+import { useBranchStore } from '@/stores/branchStore';
 import type { PermissionKey, UserRole } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import {
@@ -13,6 +14,7 @@ import {
   Users,
   QrCode,
   CreditCard,
+  ClipboardList,
   BookOpen,
   DoorOpen,
   Calendar,
@@ -20,7 +22,15 @@ import {
   Shield,
   LogOut,
   X,
+  Gift,
+  KeyRound,
+  BarChart3,
+  GraduationCap,
+  Building2,
+  Gauge,
 } from 'lucide-react';
+import { ChangePinModal } from '@/components/admin/ChangePinModal';
+import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
 
 const SIDEBAR_EXPANDED = 256;
 const SIDEBAR_COLLAPSED = 64;
@@ -38,6 +48,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
   const locale = useLocale();
   const { user, hasPermission } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
 
   const isRTL = locale === 'ar';
 
@@ -64,14 +75,23 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
     router.refresh();
   };
 
-  const allNavItems: { key: string; href: string; icon: React.ElementType; permission?: PermissionKey; ownerAdminOnly?: boolean }[] = [
+  const BENCHMARKS_LAUNCH = new Date('2025-03-15');
+  const showBenchmarksNewBadge = (Date.now() - BENCHMARKS_LAUNCH.getTime()) / (24 * 60 * 60 * 1000) < 30;
+
+  const allNavItems: { key: string; href: string; icon: React.ElementType; permission?: PermissionKey; ownerAdminOnly?: boolean; ownerOnly?: boolean; showNewBadge?: boolean }[] = [
     { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
+    { key: 'analytics', href: '/analytics', icon: BarChart3, permission: 'can_view_revenue' },
+    { key: 'benchmarks', href: '/benchmarks', icon: Gauge, permission: 'can_view_dashboard', showNewBadge: true },
     { key: 'scanner', href: '/scan', icon: QrCode, permission: 'can_scan' },
     { key: 'students', href: '/students', icon: Users, permission: 'can_manage_students' },
     { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
+    { key: 'attendance', href: '/attendance', icon: ClipboardList, permission: 'can_scan' },
     { key: 'groups', href: '/groups', icon: BookOpen, permission: 'can_manage_groups' },
     { key: 'rooms', href: '/rooms', icon: DoorOpen, ownerAdminOnly: true },
     { key: 'schedule', href: '/schedule', icon: Calendar, permission: 'can_view_schedule' },
+    { key: 'academic', href: '/academic', icon: GraduationCap, ownerAdminOnly: true },
+    { key: 'referrals', href: '/referrals', icon: Gift, ownerOnly: true },
+    { key: 'branches', href: '/branches', icon: Building2, ownerAdminOnly: true },
     { key: 'settings', href: '/settings', icon: Settings, permission: 'can_view_settings' },
   ];
 
@@ -80,6 +100,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
     ? []
     : user
       ? allNavItems.filter((item) => {
+          if (item.ownerOnly) return user.role === 'owner';
           if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin';
           if (user.role === 'owner' || user.role === 'admin') return true;
           if (!item.permission) return true;
@@ -88,7 +109,9 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       : [];
 
   const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : isSuperAdminOnly ? 'roleAdmin' : null;
-  const centerName = user?.center?.name || user?.name || user?.phone || 'User';
+  const { branches, activeCenterId } = useBranchStore();
+  const activeBranch = branches.find((b) => b.id === activeCenterId);
+  const centerName = activeBranch?.name || user?.center?.name || user?.name || user?.phone || 'User';
 
   return (
     <>
@@ -128,13 +151,8 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         </button>
       </div>
 
-      {/* Center name */}
-      {user && (
-        <div className="px-4 py-3 border-b border-slate-800">
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">{tSettings('centerName')}</p>
-          <p className="text-sm font-semibold text-slate-300 truncate">{centerName}</p>
-        </div>
-      )}
+      {/* Center name / Branch switcher */}
+      {user && <BranchSwitcher />}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
@@ -148,8 +166,9 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
             <span>{t('admin')}</span>
           </Link>
         )}
-        {navItems.map(({ key, href, icon: Icon }) => {
+        {navItems.map(({ key, href, icon: Icon, showNewBadge }) => {
           const isActive = pathname === href || pathname.startsWith(href + '/');
+          const showBadge = showNewBadge && showBenchmarksNewBadge;
           return (
             <Link
               key={href}
@@ -159,6 +178,11 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
             >
               <Icon size={18} className="shrink-0" />
               <span>{t(key)}</span>
+              {showBadge && (
+                <span className="ms-auto px-1.5 py-0.5 text-[10px] font-semibold bg-teal-500/20 text-teal-400 rounded">
+                  {t('newBadge')}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -188,15 +212,25 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
           </div>
         )}
         {user && (
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full"
-          >
-            <LogOut size={16} />
-            <span>{t('logout')}</span>
-          </button>
+          <>
+            <button
+              onClick={() => setIsPinModalOpen(true)}
+              className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full"
+            >
+              <KeyRound size={16} />
+              <span>تغيير الرمز السري</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full"
+            >
+              <LogOut size={16} />
+              <span>{t('logout')}</span>
+            </button>
+          </>
         )}
       </div>
+      <ChangePinModal isOpen={isPinModalOpen} onClose={() => setIsPinModalOpen(false)} />
     </aside>
     </>
   );

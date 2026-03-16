@@ -16,11 +16,21 @@ import AttendanceAreaChart from '@/components/dashboard/AttendanceAreaChart';
 import RevenueStackedChart from '@/components/dashboard/RevenueStackedChart';
 import PaymentMethodsDonut from '@/components/dashboard/PaymentMethodsDonut';
 import InactiveList, { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
-import { QrCode, TrendingUp, Users, CreditCard, Camera, UserPlus, DollarSign, FileSpreadsheet } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { QrCode, TrendingUp, Users, CreditCard, Camera, UserPlus, DollarSign, FileSpreadsheet, Printer, X } from 'lucide-react';
 import { toAr } from '@/lib/number-utils';
 
 function isOwnerOrAdmin(role?: string): boolean {
   return role === 'owner' || role === 'admin';
+}
+
+const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatMonthLabel(monthStr: string, locale: string): string {
+  const [y, m] = monthStr.split('-').map(Number);
+  if (locale === 'ar') return AR_MONTHS[(m || 1) - 1] ?? monthStr;
+  return EN_MONTHS[(m || 1) - 1] ?? monthStr;
 }
 
 export interface RecentPaymentRow {
@@ -100,6 +110,17 @@ export default function DashboardPage() {
   const [centerId, setCenterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [statsData, setStatsData] = useState<{
+    revenueToday: number;
+    activeStudentsThisWeek: number;
+    attendanceToday: number;
+    pendingBalance: number;
+    monthlyRevenue: { month: string; amount: number }[];
+    recentActivity: { type: 'payment' | 'scan'; student: string; detail: string; time: string }[];
+    enrollment_surge_active?: boolean;
+    surge_message?: string | null;
+  } | null>(null);
+  const [surgeDismissed, setSurgeDismissed] = useState(false);
 
   const startOfToday = () => {
     const now = new Date();
@@ -437,21 +458,65 @@ export default function DashboardPage() {
     }
   }, [centerId, inactivePeriod, timeRange, loadDashboard]);
 
+  useEffect(() => {
+    const key = centerId ? `surge-dismissed-${centerId}` : '';
+    setSurgeDismissed(typeof window !== 'undefined' && key ? localStorage.getItem(key) === '1' : false);
+  }, [centerId]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!centerId) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch('/api/dashboard/stats', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setStatsData(json);
+        }
+      } catch {
+        // Non-fatal
+      }
+    };
+    fetchStats();
+  }, [centerId]);
+
   // Real-time updates
   useEffect(() => {
     if (!centerId) return;
+
+    const refetchStats = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch('/api/dashboard/stats', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) setStatsData(await res.json());
+      } catch {
+        // Non-fatal
+      }
+    };
 
     const channel = supabase
       .channel('dashboard-updates')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'attendance_scans', filter: `center_id=eq.${centerId}` },
-        () => loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7)
+        () => {
+          loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7);
+          refetchStats();
+        }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'payments', filter: `center_id=eq.${centerId}` },
-        () => loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7)
+        () => {
+          loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7);
+          refetchStats();
+        }
       )
       .subscribe();
 
@@ -628,8 +693,28 @@ export default function DashboardPage() {
     return null;
   })();
 
+  const showSurgeAlert = statsData?.enrollment_surge_active && !surgeDismissed;
+  const dismissSurge = () => {
+    setSurgeDismissed(true);
+    if (centerId && typeof window !== 'undefined') {
+      localStorage.setItem(`surge-dismissed-${centerId}`, '1');
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6 animate-fade-in">
+          {showSurgeAlert && statsData?.surge_message && (
+            <div className="mb-6 p-4 bg-teal-50 border border-teal-300 rounded-xl flex items-center justify-between gap-4">
+              <span className="text-teal-800 font-medium">{statsData.surge_message}</span>
+              <button
+                onClick={dismissSurge}
+                className="p-2 rounded-lg hover:bg-teal-100 text-teal-600"
+                aria-label="Dismiss"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          )}
           {paymentDueBanner}
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -783,63 +868,95 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* KPI Cards */}
+              {/* KPI Cards - 4 stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                {canViewRevenue && (
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up">
-                    <div className="flex items-center justify-between">
-                      <div className="p-3 rounded-full bg-teal-100 shrink-0">
-                        <TrendingUp size={20} className="text-teal-600" />
-                      </div>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-600">
-                        {data.revenueDeltaPct >= 0 ? '+' : ''}{data.revenueDeltaPct}{t('pct')}
-                      </span>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up border-l-4 border-l-teal-500">
+                  <div className="flex items-center justify-between">
+                    <div className="p-3 rounded-full bg-teal-100 shrink-0">
+                      <TrendingUp size={20} className="text-teal-600" />
                     </div>
-                    <p className="text-2xl font-black text-slate-900 font-mono mt-1">
-                      {locale === 'ar' ? toAr(Math.round(data.todayRevenue)) : Math.round(data.todayRevenue).toLocaleString()} ج.م
-                    </p>
-                    <p className="text-xs text-slate-500 mt-0.5">{t('todayRevenue')}</p>
                   </div>
-                )}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up">
+                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">
+                    {locale === 'ar' ? toAr(Math.round(statsData?.revenueToday ?? data.todayRevenue ?? 0)) : Math.round(statsData?.revenueToday ?? data.todayRevenue ?? 0).toLocaleString()} {tCommon('egp')}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t('revenueTodayLabel')}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up border-l-4 border-l-blue-500">
                   <div className="flex items-center justify-between">
                     <div className="p-3 rounded-full bg-blue-100 shrink-0">
-                      <QrCode size={20} className="text-blue-600" />
+                      <Users size={20} className="text-blue-600" />
                     </div>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
-                      {data.scanDeltaPct >= 0 ? '+' : ''}{data.scanDeltaPct}{t('pct')}
-                    </span>
                   </div>
-                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">{locale === 'ar' ? toAr(data.todayAttendance) : data.todayAttendance}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{t('todayScans')}</p>
+                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">{locale === 'ar' ? toAr(statsData?.activeStudentsThisWeek ?? 0) : (statsData?.activeStudentsThisWeek ?? 0)}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t('activeStudentsThisWeek')}</p>
                 </div>
-                {canViewRevenue && (
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up">
-                    <div className="flex items-center justify-between">
-                      <div className="p-3 rounded-full bg-amber-100 shrink-0">
-                        <CreditCard size={20} className="text-amber-600" />
-                      </div>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">
-                        {data.pendingCount}
-                      </span>
-                    </div>
-                    <p className="text-2xl font-black text-slate-900 font-mono mt-1">{data.pendingCount}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{t('pendingPayments')}</p>
-                  </div>
-                )}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up border-l-4 border-l-green-500">
                   <div className="flex items-center justify-between">
                     <div className="p-3 rounded-full bg-green-100 shrink-0">
-                      <Users size={20} className="text-green-600" />
+                      <QrCode size={20} className="text-green-600" />
                     </div>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-600">
-                      +{locale === 'ar' ? toAr(data.newStudentsCount) : data.newStudentsCount}
-                    </span>
                   </div>
-                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">{locale === 'ar' ? toAr(data.totalStudents) : data.totalStudents}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{t('activeStudents')}</p>
+                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">{locale === 'ar' ? toAr(statsData?.attendanceToday ?? data.todayAttendance ?? 0) : (statsData?.attendanceToday ?? data.todayAttendance ?? 0)}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t('attendanceTodayLabel')}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up border-l-4 border-l-amber-500">
+                  <div className="flex items-center justify-between">
+                    <div className="p-3 rounded-full bg-amber-100 shrink-0">
+                      <CreditCard size={20} className="text-amber-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">
+                    {locale === 'ar' ? toAr(Math.round(statsData?.pendingBalance ?? data.totalPending ?? 0)) : Math.round(statsData?.pendingBalance ?? data.totalPending ?? 0).toLocaleString()} {tCommon('egp')}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t('pendingPayments')}</p>
                 </div>
               </div>
+
+              {/* MRR / Monthly Revenue Chart */}
+              {canViewRevenue && (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4">{t('monthlyRevenueChart')}</h3>
+                  {(() => {
+                    const mrrData = (statsData?.monthlyRevenue ?? []).map((r) => ({
+                      ...r,
+                      label: formatMonthLabel(r.month, locale),
+                      amount: r.amount,
+                    }));
+                    const hasAnyData = mrrData.some((d) => d.amount > 0);
+                    if (mrrData.length === 0 || !hasAnyData) {
+                      return (
+                        <div className="flex items-center justify-center h-[260px] text-slate-500">
+                          <p className="text-sm">{t('noDataForChart')}</p>
+                        </div>
+                      );
+                    }
+                    if (mrrData.length === 1) {
+                      return (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <BarChart data={mrrData}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
+                            <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => (locale === 'ar' ? toAr(v) : v.toLocaleString())} />
+                            <Tooltip formatter={(v: number | undefined) => [`${locale === 'ar' ? toAr(v ?? 0) : (v ?? 0).toLocaleString()} ${tCommon('egp')}`, '']} labelFormatter={(l) => `${l}`} />
+                            <Bar dataKey="amount" fill="#0D9488" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      );
+                    }
+                    return (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <LineChart data={mrrData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
+                          <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => (locale === 'ar' ? toAr(v) : v.toLocaleString())} />
+                          <Tooltip formatter={(v: number | undefined) => [`${locale === 'ar' ? toAr(v ?? 0) : (v ?? 0).toLocaleString()} ${tCommon('egp')}`, '']} labelFormatter={(l) => l} />
+                          <Line type="monotone" dataKey="amount" stroke="#0D9488" strokeWidth={2} dot={{ fill: '#0D9488', r: 4 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    );
+                  })()}
+                </div>
+              )}
 
               {/* Weekly Performance */}
               <div>
@@ -882,54 +999,40 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <Link
                     href="/scan"
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3 hover:shadow-md transition-shadow group"
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-teal-100">
                       <Camera size={20} className="text-teal-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('scanStudent')}</p>
-                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{t('scanStudentDesc')}</p>
-                    </div>
+                    <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('scanNow')}</p>
                   </Link>
                   <Link
                     href="/students"
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3 hover:shadow-md transition-shadow group"
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-green-100">
                       <UserPlus size={20} className="text-green-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('addStudent')}</p>
-                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{t('addStudentDesc')}</p>
-                    </div>
+                    <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('addStudent')}</p>
                   </Link>
                   <Link
-                    href="/payments?filter=pending"
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3 hover:shadow-md transition-shadow group"
+                    href="/students/print"
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100">
+                      <Printer size={20} className="text-blue-600" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('printCards')}</p>
+                  </Link>
+                  <Link
+                    href="/payments?status=pending"
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-100">
                       <DollarSign size={20} className="text-amber-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('viewUnpaid')}</p>
-                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{t('viewUnpaidDesc')}</p>
-                    </div>
+                    <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('pendingPayments')}</p>
                   </Link>
-                  <button
-                    type="button"
-                    onClick={handleExport}
-                    disabled={isExporting}
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3 hover:shadow-md transition-shadow group text-start w-full disabled:opacity-50"
-                  >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100">
-                      <FileSpreadsheet size={20} className="text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('exportReport')}</p>
-                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{t('exportReportDesc')}</p>
-                    </div>
-                  </button>
                 </div>
               </div>
 
@@ -955,51 +1058,40 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Recent Payments */}
-              {canViewRevenue && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('recentPayments')}</span>
-                      <div className="flex-1 h-px bg-slate-200" />
+              {/* Recent Activity Feed */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('recentActivity')}</span>
+                    <div className="flex-1 h-px bg-slate-200" />
+                  </div>
+                  <ul className="space-y-2">
+                    {(statsData?.recentActivity ?? []).slice(0, 15).map((item, i) => (
+                      <li key={i} className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-0">
+                        <span className="text-lg shrink-0">{item.type === 'payment' ? '💰' : '📋'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900">{item.student}</p>
+                          <p className="text-xs text-slate-500">{item.detail}</p>
+                        </div>
+                        <span className="text-xs text-slate-400 shrink-0">{item.time}</span>
+                      </li>
+                    ))}
+                    {(statsData?.recentActivity ?? []).length === 0 && (
+                      <li className="py-8 text-center text-slate-500 text-sm">{tCommon('noData')}</li>
+                    )}
+                  </ul>
+                  <div className="mt-4 pt-4 border-t border-slate-200">
+                    <div className="flex gap-3">
+                      <Link href="/payments" className="text-sm font-semibold text-teal-600 hover:text-teal-700">
+                        {t('viewAll')} →
+                      </Link>
+                      <Link href="/attendance" className="text-sm font-semibold text-teal-600 hover:text-teal-700">
+                        {t('viewAllAttendance')} →
+                      </Link>
                     </div>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50">
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tPayments('studentName')}</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">{tPayments('group')}</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tPayments('amount')}</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {(data.recentPayments ?? []).slice(0, 5).map(p => (
-                          <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3.5 px-4 text-sm text-slate-900">
-                              <div className="font-medium">{p.student_name}</div>
-                              {p.student_number && <div className="text-xs text-slate-500 font-mono">{p.student_number}</div>}
-                            </td>
-                            <td className="py-3.5 px-4 text-sm text-slate-500 hidden sm:table-cell">{p.group_name ?? '—'}</td>
-                            <td className="py-3.5 px-4 text-sm font-bold text-slate-900 font-mono">{Math.round(p.amount).toLocaleString()} ج.م</td>
-                            <td className="py-3.5 px-4 text-sm">
-                              <span className={p.status === 'confirmed' ? 'badge-confirmed' : p.status === 'pending' ? 'badge-pending' : 'badge-late'}>
-                                {p.status === 'confirmed' ? tPayments('confirmedStatus') : p.status === 'pending' ? tPayments('filterPending') : tPayments('lateEntry')}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                        {(data.recentPayments ?? []).length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="py-8 text-center text-slate-500 text-sm">{tCommon('noData')}</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
                 </div>
-              )}
+              </div>
 
               {/* Inactive Students Section */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">

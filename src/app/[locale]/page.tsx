@@ -5,16 +5,22 @@ import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { QrCode, CreditCard, Calendar, BarChart3, Wifi, Bluetooth, Globe } from 'lucide-react';
 import { useTransition } from 'react';
 import Image from 'next/image';
+import { PLAN_TIERS, getPerStudentPerWeek } from '@/lib/plan-tiers';
 
 const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=مرحباً، أنا مهتم بخطة كبار السناتر لأكثر من 2000 طالب أسبوعياً';
 
-const PLANS = [
-  { name: 'سنتر صغير', fee: 2000, limit: 150, setupFee: 1000, tier: 'starter' as const, perStudentWeek: '3.33' },
-  { name: 'سنتر متوسط', fee: 4500, limit: 500, setupFee: 2000, tier: 'pro' as const, popular: true, perStudentWeek: '2.25' },
-  { name: 'سنتر كبير', fee: 6500, limit: 1000, setupFee: 3000, tier: 'business' as const, perStudentWeek: '1.63' },
-  { name: 'سنتر ضخم', fee: 9000, limit: 2000, setupFee: 5000, tier: 'enterprise' as const, bestValue: true, perStudentWeek: '1.13' },
-  { name: 'ميجا سنتر', fee: 0, limit: 0, setupFee: 0, tier: 'top_centers' as const, custom: true, perStudentWeek: null as string | null },
-];
+const PLANS = PLAN_TIERS.map((p) => ({
+  nameAr: p.nameAr,
+  nameEn: p.nameEn,
+  fee: p.monthlyFee,
+  limit: p.maxStudentsPerWeek,
+  setupFee: p.setupFee,
+  tier: p.id as 'nascent' | 'nano' | 'starter' | 'pro' | 'business' | 'enterprise' | 'top_centers',
+  perStudentWeek: p.isCustom ? null : getPerStudentPerWeek(p),
+  popular: p.id === 'pro',
+  bestValue: p.id === 'enterprise',
+  custom: p.isCustom ?? false,
+}));
 
 const FEATURES = [
   { key: 'feature1', icon: QrCode, color: 'hsl(var(--primary))', bgColor: 'hsl(var(--primary) / 0.12)' },
@@ -162,7 +168,7 @@ export default function LandingPage() {
               <div
                 key={plan.tier}
                 className={`relative ch-card p-5 flex flex-col transition-all hover:shadow-md ${plan.popular ? 'ring-2 ring-primary scale-[1.02]' : ''}`}
-                style={plan.custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.3)' } : {}}
+                style={plan.custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.25)' } : {}}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-white whitespace-nowrap" style={{ background: 'hsl(var(--primary))' }}>
@@ -176,7 +182,7 @@ export default function LandingPage() {
                 )}
 
                 <div className="mb-4">
-                  <h3 className="font-bold text-foreground text-lg">{plan.name}</h3>
+                  <h3 className="font-bold text-foreground text-lg">{locale === 'ar' ? plan.nameAr : plan.nameEn}</h3>
                   {plan.custom ? (
                     <div className="mt-2">
                       <span className="text-2xl font-black text-foreground font-mono">{t('custom')}</span>
@@ -185,13 +191,14 @@ export default function LandingPage() {
                     <div className="mt-2 flex items-baseline gap-1">
                       <span className="text-3xl font-black text-foreground font-mono">{formatPrice(plan.fee)}</span>
                       <span className="text-sm text-muted-foreground">{tc('egp')}</span>
+                      <span className="text-base font-normal text-slate-400">{tc('perMonth')}</span>
                     </div>
                   )}
                   {!plan.custom && <p className="text-xs text-muted-foreground mt-1">{t('monthlyFee')}</p>}
                   <ul className="mt-1 space-y-0.5 text-[13px]" style={{ color: '#64748B' }} dir="rtl">
                     <li>• {plan.custom ? '2,000+ طالب/أسبوع' : `حتى ${formatPrice(plan.limit)} طالب/أسبوع`}</li>
                     {plan.perStudentWeek ? (
-                      <li>• {plan.perStudentWeek} جنيه/طالب/أسبوع</li>
+                      <li>• {plan.perStudentWeek} {tc('perStudentPerWeek')}</li>
                     ) : plan.custom ? (
                       <li>• تسعير مخصص حسب الاحتياج</li>
                     ) : null}

@@ -1,0 +1,313 @@
+import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
+
+async function getUserContext(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
+
+  const authHeader = request.headers.get('Authorization');
+  const accessToken = authHeader?.replace('Bearer ', '');
+  if (!accessToken) return null;
+
+  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+
+  const { data: { user }, error } = await supabaseAuth.auth.getUser();
+  if (error || !user) return null;
+
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false },
+  });
+
+  const { data: userRecord } = await supabaseAdmin
+    .from('users')
+    .select('id, center_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!userRecord?.center_id) return null;
+
+  return { centerId: userRecord.center_id, supabaseAdmin };
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const ctx = await getUserContext(request);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { centerId, supabaseAdmin } = ctx;
+    const now = new Date();
+
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    const [
+      paymentsRes,
+      studentsRes,
+      groupsRes,
+      expensesRes,
+    ] = await Promise.all([
+      supabaseAdmin
+        .from('payments')
+        .select('amount, paid_at, method, group_id, student_id, status')
+        .eq('center_id', centerId)
+        .gte('paid_at', sixMonthsAgo.toISOString()),
+      supabaseAdmin
+        .from('students')
+        .select('id, name, balance_due, phone, student_number')
+        .eq('center_id', centerId)
+        .gt('balance_due', 0),
+      supabaseAdmin
+        .from('student_groups')
+        .select('id, name')
+        .eq('center_id', centerId),
+      supabaseAdmin
+        .from('center_expenses')
+        .select('month, rent, salaries, utilities, other')
+        .eq('center_id', centerId)
+        .gte('month', sixMonthsAgo.toISOString().slice(0, 7) + '-01'),
+    ]);
+
+    const payments = (paymentsRes.data || []) as { amount: number; paid_at: string; method: string; group_id: string | null; student_id: string | null; status: string }[];
+    const studentsWithBalance = (studentsRes.data || []) as { id: string; name: string; balance_due: number; phone: string | null; student_number: string | null }[];
+    const groups = (groupsRes.data || []) as { id: string; name: string }[];
+    const expenses = (expensesRes.data || []) as { month: string; rent: number; salaries: number; utilities: number; other: number }[];
+
+    const groupMap = new Map(groups.map((g) => [g.id, g.name]));
+
+    const confirmedPayments = payments.filter((p) => p.status === 'confirmed' || p.status === 'paid');
+    const monthPayments = confirmedPayments.filter((p) => p.paid_at >= monthStart.toISOString() && p.paid_at <= monthEnd.toISOString());
+
+    const mrr = monthPayments.reduce((s, p) => s + (p.amount ?? 0), 0);
+    const outstanding_total = studentsWithBalance.reduce((s, st) => s + (Number(st.balance_due) || 0), 0);
+
+    const expectedThisMonth = studentsWithBalance.length > 0
+      ? studentsWithBalance.reduce((s, st) => s + (Number(st.balance_due) || 0), 0) + monthPayments.reduce((s, p) => s + (p.amount ?? 0), 0)
+      : monthPayments.reduce((s, p) => s + (p.amount ?? 0), 0);
+    const collectedThisMonth = monthPayments.reduce((s, p) => s + (p.amount ?? 0), 0);
+    const collection_rate = expectedThisMonth > 0 ? (collectedThisMonth / expectedThisMonth) * 100 : 100;
+
+    const totalStudentsPaid = new Set(monthPayments.map((p) => p.student_id).filter(Boolean)).size;
+    const avg_payment_per_student = totalStudentsPaid > 0 ? collectedThisMonth / totalStudentsPaid : 0;
+
+    const revenueByGroup: { group_id: string; group_name: string; amount: number }[] = [];
+    const groupRevenue = new Map<string, number>();
+    for (const p of confirmedPayments) {
+      const gid = p.group_id ?? 'ungrouped';
+      const gname = gid === 'ungrouped' ? (groups.length ? 'بدون مجموعة' : '—') : (groupMap.get(gid) ?? gid);
+      groupRevenue.set(gid, (groupRevenue.get(gid) ?? 0) + (p.amount ?? 0));
+    }
+    for (const [gid, amt] of groupRevenue) {
+      revenueByGroup.push({
+        group_id: gid,
+        group_name: gid === 'ungrouped' ? 'بدون مجموعة' : (groupMap.get(gid) ?? gid),
+        amount: amt,
+      });
+    }
+    revenueByGroup.sort((a, b) => b.amount - a.amount);
+
+    const byMonth: Record<string, number> = {};
+    for (let i = 5; i >= 0; i--) {
+      const m = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`;
+      byMonth[key] = 0;
+    }
+    confirmedPayments.forEach((p) => {
+      if (!p.paid_at) return;
+      const d = new Date(p.paid_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (key in byMonth) byMonth[key] += p.amount ?? 0;
+    });
+    const mrr_trend = Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, amount]) => ({ month, amount }));
+
+    const methodMap = new Map<string, number>();
+    confirmedPayments.forEach((p) => {
+      const method = p.method || 'other';
+      methodMap.set(method, (methodMap.get(method) ?? 0) + (p.amount ?? 0));
+    });
+    const payment_method_distribution = Array.from(methodMap.entries()).map(([method, amount]) => ({ method, amount }));
+
+    const studentIds = studentsWithBalance.map((s) => s.id);
+    let lastPayments: { student_id: string; paid_at: string }[] = [];
+    if (studentIds.length > 0) {
+      const { data: lastP } = await supabaseAdmin
+        .from('payments')
+        .select('student_id, paid_at')
+        .in('student_id', studentIds)
+        .eq('center_id', centerId)
+        .eq('status', 'confirmed')
+        .order('paid_at', { ascending: false });
+      lastPayments = (lastP || []) as { student_id: string; paid_at: string }[];
+    }
+
+    const lastPaymentByStudent = new Map<string, string>();
+    for (const lp of lastPayments) {
+      if (lp.student_id && !lastPaymentByStudent.has(lp.student_id)) {
+        lastPaymentByStudent.set(lp.student_id, lp.paid_at);
+      }
+    }
+
+    const membersRes = studentIds.length > 0
+      ? await supabaseAdmin
+          .from('student_group_members')
+          .select('student_id, group_id')
+          .in('student_id', studentIds)
+      : { data: [] };
+    const members = (membersRes.data || []) as { student_id: string; group_id: string }[];
+    const studentGroups = new Map<string, string[]>();
+    for (const m of members) {
+      const gname = groupMap.get(m.group_id) ?? '';
+      if (!studentGroups.has(m.student_id)) studentGroups.set(m.student_id, []);
+      if (gname) studentGroups.get(m.student_id)!.push(gname);
+    }
+
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const todayMs = Date.now();
+    const msPerDay = 24 * 60 * 60 * 1000;
+
+    const aging_report: { student_id: string; student_name: string; group_name: string; days_overdue: number; amount: number }[] = [];
+    for (const st of studentsWithBalance) {
+      const lastPaid = lastPaymentByStudent.get(st.id);
+      const dueDate = lastPaid ? new Date(lastPaid).getTime() + 30 * msPerDay : firstOfMonth;
+      const days_overdue = Math.max(0, Math.floor((todayMs - dueDate) / msPerDay));
+      const groupNames = studentGroups.get(st.id) ?? [];
+      aging_report.push({
+        student_id: st.id,
+        student_name: st.name ?? '',
+        group_name: groupNames.join(' • ') || '—',
+        days_overdue,
+        amount: Number(st.balance_due) || 0,
+      });
+    }
+    aging_report.sort((a, b) => b.days_overdue - a.days_overdue);
+
+    const expensesByMonth = new Map<string, { rent: number; salaries: number; utilities: number; other: number }>();
+    for (const e of expenses) {
+      const key = e.month.slice(0, 7);
+      expensesByMonth.set(key, {
+        rent: Number(e.rent) || 0,
+        salaries: Number(e.salaries) || 0,
+        utilities: Number(e.utilities) || 0,
+        other: Number(e.other) || 0,
+      });
+    }
+
+    const incomeByMonth = new Map<string, number>();
+    for (const t of mrr_trend) {
+      incomeByMonth.set(t.month, t.amount);
+    }
+
+    const pnl_months = [...new Set([...expensesByMonth.keys(), ...incomeByMonth.keys()])].sort();
+
+    // Academic: current_period_type, academic_year_average_attendance, enrollment_surge_active, surge_message
+    const { data: academicYear } = await supabaseAdmin
+      .from('academic_years')
+      .select('id, start_date, end_date')
+      .eq('center_id', centerId)
+      .eq('is_current', true)
+      .maybeSingle();
+
+    let current_period_type = 'normal';
+    let academic_year_average_attendance: number | null = null;
+    let enrollment_surge_active = false;
+    let surge_message: string | null = null;
+
+    if (academicYear) {
+      const { data: periods } = await supabaseAdmin
+        .from('academic_periods')
+        .select('period_type, start_date, end_date')
+        .eq('academic_year_id', (academicYear as { id: string }).id);
+      const periodList = (periods ?? []) as { period_type: string; start_date: string; end_date: string }[];
+      const todayStr = now.toISOString().slice(0, 10);
+      for (const p of periodList) {
+        if (todayStr >= p.start_date && todayStr <= p.end_date) {
+          current_period_type = p.period_type;
+          break;
+        }
+      }
+
+      const yearStart = new Date((academicYear as { start_date: string }).start_date + 'T12:00:00');
+      const { data: yearScans } = await supabaseAdmin
+        .from('attendance_scans')
+        .select('student_id, scanned_at')
+        .eq('center_id', centerId)
+        .gte('scanned_at', yearStart.toISOString());
+      const { count: totalStudents } = await supabaseAdmin
+        .from('students')
+        .select('*', { count: 'exact', head: true })
+        .eq('center_id', centerId);
+      const uniquePerWeek = new Map<string, Set<string>>();
+      for (const s of (yearScans || []) as { student_id: string; scanned_at: string }[]) {
+        const d = new Date(s.scanned_at);
+        const weekKey = `${d.getFullYear()}-W${Math.ceil(d.getDate() / 7)}`;
+        if (!uniquePerWeek.has(weekKey)) uniquePerWeek.set(weekKey, new Set());
+        uniquePerWeek.get(weekKey)!.add(s.student_id);
+      }
+      const avgWeeklyUnique = uniquePerWeek.size > 0
+        ? [...uniquePerWeek.values()].reduce((s, set) => s + set.size, 0) / uniquePerWeek.size
+        : 0;
+      academic_year_average_attendance = (totalStudents ?? 0) > 0
+        ? Math.round((avgWeeklyUnique / (totalStudents ?? 1)) * 10000) / 100
+        : 0;
+
+      const twentyOneDaysAgo = new Date(now.getTime() - 21 * 24 * 60 * 60 * 1000);
+      const { data: newStudents } = await supabaseAdmin
+        .from('students')
+        .select('id, created_at')
+        .eq('center_id', centerId)
+        .gte('created_at', twentyOneDaysAgo.toISOString());
+      const studentsCreated = (newStudents ?? []) as { id: string; created_at: string }[];
+      const examPeriods = periodList.filter((p) => p.period_type === 'exam');
+      for (const ep of examPeriods) {
+        const examStart = new Date(ep.start_date + 'T12:00:00');
+        const daysToExam = Math.ceil((examStart.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+        if (daysToExam > 0 && daysToExam <= 21) {
+          const newLast7 = studentsCreated.filter((s) => new Date(s.created_at) >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)).length;
+          const newPrev14 = studentsCreated.filter((s) => {
+            const d = new Date(s.created_at);
+            return d >= new Date(now.getTime() - 21 * 24 * 60 * 60 * 1000) && d < new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          }).length;
+          const avg3Week = (newLast7 + newPrev14) / 3;
+          const growthPct = avg3Week > 0 ? ((newLast7 - avg3Week) / avg3Week) * 100 : 0;
+          if (growthPct > 5) {
+            enrollment_surge_active = true;
+            surge_message = `موسم الامتحانات قادم خلال ${daysToExam} يوم`;
+            break;
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({
+      mrr,
+      outstanding_total,
+      collection_rate,
+      avg_payment_per_student: Math.round(avg_payment_per_student * 100) / 100,
+      revenue_by_group: revenueByGroup,
+      mrr_trend,
+      payment_method_distribution,
+      aging_report,
+      expenses_by_month: Object.fromEntries(expensesByMonth),
+      income_by_month: Object.fromEntries(incomeByMonth),
+      pnl_months,
+      current_period_type,
+      academic_year_average_attendance,
+      enrollment_surge_active,
+      surge_message,
+    });
+  } catch (error) {
+    console.error('[analytics/revenue] Error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}

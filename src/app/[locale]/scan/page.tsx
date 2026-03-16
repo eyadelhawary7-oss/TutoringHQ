@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert } from '@/lib/db-proxy';
 import {
   syncStudentsToLocal,
+  getAllStudentsOffline,
   getStudentOffline,
   queueScan,
   getUnsyncedCount,
@@ -31,6 +32,18 @@ interface Student {
   student_number?: string | null;
   last_payment_method?: string | null;
   groups?: { id: string; name: string; fee: number }[];
+}
+
+/** Fire-and-forget: notify parent of scan (async, no await). */
+function notifyParentScan(studentId: string, result: 'attended' | 'absent' | 'pending_payment') {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session) return;
+    fetch('/api/parents/notify-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ student_id: studentId, result }),
+    }).catch(() => {});
+  });
 }
 
 /** Check if student paid TODAY for a specific group (per-session payment logic). payments table is source of truth. */
@@ -71,6 +84,7 @@ export default function ScanPage() {
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
   const [isOnline, setIsOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -85,7 +99,7 @@ export default function ScanPage() {
 
   // Sync students (with groups) to IndexedDB when center is available and online
   const fetchAndSyncStudents = useCallback(async () => {
-    if (!centerId || !navigator.onLine) return;
+    if (!centerId) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -95,48 +109,57 @@ export default function ScanPage() {
         select: 'id, name, phone, parent_phone, subject, fee, qr_code, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
       });
-      const students = (studentsRaw || []) as { id: string; name?: string; phone?: string; subject?: string; fee?: number; student_number?: string | null }[];
+      const studentsList = (studentsRaw || []) as { id: string; name?: string; phone?: string; subject?: string; fee?: number; student_number?: string | null }[];
 
-      if (students.length === 0) return;
-
-      // Fetch group memberships and group details for each student
-      const { data: membersData } = await dbSelect({
-        table: 'student_group_members',
-        select: 'student_id, group_id',
-        filters: [{ column: 'student_id', op: 'in', value: students.map(s => s.id) }],
-      });
-      const members = (membersData || []) as { student_id: string; group_id: string }[];
-
-      const groupIds = [...new Set(members.map(m => m.group_id))];
-      let groupsMap: Record<string, { id: string; name: string; fee: number }> = {};
-      if (groupIds.length > 0) {
-        const { data: groupsData } = await dbSelect({
-          table: 'student_groups',
-          select: 'id, name, fee',
-          filters: [{ column: 'id', op: 'in', value: groupIds }],
+      if (studentsList.length > 0) {
+        const { data: membersData } = await dbSelect({
+          table: 'student_group_members',
+          select: 'student_id, group_id',
+          filters: [{ column: 'student_id', op: 'in', value: studentsList.map(s => s.id) }],
         });
-        groupsMap = Object.fromEntries(
-          ((groupsData || []) as { id: string; name?: string; fee?: number }[]).map(g => [
-            g.id,
-            { id: g.id, name: g.name ?? '', fee: g.fee ?? 0 },
-          ])
+        const members = (membersData || []) as { student_id: string; group_id: string }[];
+
+        const groupIds = [...new Set(members.map(m => m.group_id))];
+        let groupsMap: Record<string, { id: string; name: string; fee: number }> = {};
+        if (groupIds.length > 0) {
+          const { data: groupsData } = await dbSelect({
+            table: 'student_groups',
+            select: 'id, name, fee',
+            filters: [{ column: 'id', op: 'in', value: groupIds }],
+          });
+          groupsMap = Object.fromEntries(
+            ((groupsData || []) as { id: string; name?: string; fee?: number }[]).map(g => [
+              g.id,
+              { id: g.id, name: g.name ?? '', fee: g.fee ?? 0 },
+            ])
+          );
+        }
+
+        const studentsWithGroups = studentsList.map(s => {
+          const studentGroups = members
+            .filter(m => m.student_id === s.id)
+            .map(m => groupsMap[m.group_id])
+            .filter(Boolean);
+          return {
+            ...s,
+            groups: studentGroups,
+          };
+        }) as Student[];
+
+        await syncStudentsToLocal(
+          studentsWithGroups as unknown as (Record<string, unknown> & { id: string; student_number?: string | null })[]
         );
+        setStudents(studentsWithGroups);
+      } else {
+        setStudents([]);
       }
-
-      const studentsWithGroups = students.map(s => {
-        const studentGroups = members
-          .filter(m => m.student_id === s.id)
-          .map(m => groupsMap[m.group_id])
-          .filter(Boolean);
-        return {
-          ...s,
-          groups: studentGroups,
-        };
-      });
-
-      await syncStudentsToLocal(studentsWithGroups);
-    } catch (err) {
-      console.error('Failed to sync students:', err);
+    } catch {
+      try {
+        const cached = await getAllStudentsOffline();
+        setStudents((cached ?? []) as Student[]);
+      } catch {
+        setStudents([]);
+      }
     }
   }, [centerId]);
 
@@ -160,10 +183,14 @@ export default function ScanPage() {
     loadUser();
   }, []);
 
+  // Initial load and background sync when device regains connectivity
   useEffect(() => {
-    if (centerId) {
-      fetchAndSyncStudents();
-    }
+    if (!centerId) return;
+    fetchAndSyncStudents();
+    window.addEventListener('online', fetchAndSyncStudents);
+    return () => {
+      window.removeEventListener('online', fetchAndSyncStudents);
+    };
   }, [centerId, fetchAndSyncStudents]);
 
   // Online/offline and pending count
@@ -384,6 +411,7 @@ export default function ScanPage() {
             select: false,
           });
           if (attendErr) console.error('Attendance scan insert FAILED:', attendErr);
+          else notifyParentScan(student.id, 'attended');
         } else {
           await queueScan({
             student_id: student.id,
@@ -479,6 +507,7 @@ export default function ScanPage() {
           select: false,
         });
         if (attendErr) console.error('Attendance scan insert FAILED:', attendErr);
+        else notifyParentScan(student.id, 'attended');
       } else {
         await queueScan({
           student_id: student.id,
@@ -514,7 +543,7 @@ export default function ScanPage() {
 
     try {
       if (navigator.onLine) {
-        await dbInsert({
+        const { error: scanErrLate } = await dbInsert({
           table: 'attendance_scans',
           data: {
             student_id: scannedStudent.id,
@@ -528,6 +557,7 @@ export default function ScanPage() {
           },
           select: false,
         });
+        if (!scanErrLate) notifyParentScan(scannedStudent.id, 'pending_payment');
         const { data: lateData, error: lateErr } = await dbInsert({
           table: 'payments',
           data: {
@@ -618,6 +648,7 @@ export default function ScanPage() {
           select: false,
         });
         if (scanErr) console.error('Attendance scan insert FAILED:', scanErr);
+        else notifyParentScan(scannedStudent.id, isCash ? 'attended' : 'pending_payment');
         await dbInsert({
           table: 'audit_log',
           data: {

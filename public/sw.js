@@ -1,10 +1,14 @@
-const CACHE_NAME = 'centerhq-v2';
+const CACHE_NAME = 'centerhq-v3';
 
 const PRECACHE_URLS = [
+  '/ar/dashboard',
+  '/en/dashboard',
   '/ar/scan',
   '/en/scan',
   '/ar/scanner',
   '/en/scanner',
+  '/manifest.json',
+  '/icons/icon.svg',
 ];
 
 self.addEventListener('install', (event) => {
@@ -114,9 +118,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Pages: stale-while-revalidate
+  // Pages: stale-while-revalidate (with offline navigation fallback)
   event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
+    (async function () {
+      if (event.request.mode === 'navigate') {
+        try {
+          return await fetch(event.request);
+        } catch {
+          try {
+            const cache = await caches.open(CACHE_NAME);
+            const arScan = await cache.match('/ar/scan');
+            if (arScan) return arScan;
+            const enScan = await cache.match('/en/scan');
+            if (enScan) return enScan;
+          } catch {
+            // caches.open or cache.match failed — fall through to HTML fallback
+          }
+          return new Response(
+            `<html><body><h2 style="font-family:sans-serif;text-align:center;margin-top:40px">افتح التطبيق مرة واحدة وأنت متصل بالإنترنت لتفعيل وضع عدم الاتصال</h2></body></html>`,
+            { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+          );
+        }
+      }
+      const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(event.request);
 
       const networkPromise = fetch(event.request)
@@ -143,7 +167,7 @@ self.addEventListener('fetch', (event) => {
       }
 
       return new Response('Offline', { status: 503 });
-    })
+    })()
   );
 });
 

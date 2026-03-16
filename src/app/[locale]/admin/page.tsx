@@ -56,6 +56,8 @@ import {
 } from 'recharts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { ALL_ADMIN_PERMISSIONS } from '@/lib/admin-roles';
 import { PlanBadge, BillingStatusBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 
@@ -67,7 +69,7 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 };
 
-type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'internalTeam' | 'salesPipeline' | 'analytics' | 'ceoDashboard' | 'cardOrders';
+type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'referrals' | 'internalTeam' | 'salesPipeline' | 'analytics' | 'ceoDashboard' | 'cardOrders';
 
 interface OverviewData {
   totalCenters: number;
@@ -120,6 +122,24 @@ interface SalesLead {
 
 const AREAS = ['Nasr City', 'Heliopolis', 'Maadi', '6th October', 'Sheikh Zayed', 'Dokki', 'Mohandeseen', 'Other'];
 const SOURCES = ['Referral', 'Walk-in', 'WhatsApp', 'Social Media', 'Cold Call', 'Other'];
+const AREA_LABELS: Record<string, string> = {
+  'Nasr City': 'القاهرة - مدينة نصر',
+  Heliopolis: 'القاهرة - مصر الجديدة',
+  Maadi: 'القاهرة - المعادي',
+  '6th October': 'الجيزة - أكتوبر',
+  'Sheikh Zayed': 'الجيزة - الشيخ زايد',
+  Dokki: 'القاهرة - الدقي',
+  Mohandeseen: 'القاهرة - المهندسين',
+  Other: 'غيره',
+};
+const SOURCE_LABELS: Record<string, string> = {
+  Referral: 'إحالة',
+  'Walk-in': 'زيارة ميدانية',
+  WhatsApp: 'واتساب',
+  'Social Media': 'تواصل اجتماعي',
+  'Cold Call': 'توصية',
+  Other: 'غيره',
+};
 
 interface BillingRow {
   id: string;
@@ -163,6 +183,7 @@ interface TeamMember {
   phone?: string;
   email?: string;
   role: string;
+  custom_permissions?: string[];
   created_at?: string;
 }
 
@@ -255,6 +276,8 @@ export default function AdminPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [centerSearch, setCenterSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [filterPlan, setFilterPlan] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('newest');
 
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [centers, setCenters] = useState<CenterRow[]>([]);
@@ -283,6 +306,8 @@ export default function AdminPage() {
   const [newPlan, setNewPlan] = useState('');
   const [changingPlan, setChangingPlan] = useState(false);
   const [addAdminForm, setAddAdminForm] = useState({ name: '', phone: '', email: '' });
+  const [selectedRole, setSelectedRole] = useState<string>('internal_viewer');
+  const [customPerms, setCustomPerms] = useState<string[]>([]);
   const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
   const [cardOrdersUnread, setCardOrdersUnread] = useState(0);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
@@ -291,6 +316,8 @@ export default function AdminPage() {
   const [showAddLead, setShowAddLead] = useState(false);
   const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
   const [addLeadForm, setAddLeadForm] = useState<{ name: string; contactPerson: string; phone: string; area: string; source: string; stage: SalesLead['stage']; notes: string }>({ name: '', contactPerson: '', phone: '', area: '', source: '', stage: 'prospect', notes: '' });
+  const [adminReferrals, setAdminReferrals] = useState<Array<{ id: string; referrer_name: string; referred_name: string; referral_code: string; status: string; created_at: string }>>([]);
+  const [adminPendingPayouts, setAdminPendingPayouts] = useState<Array<{ center_id: string; center_name: string; code: string; amount: number }>>([]);
 
   useEffect(() => {
     setHideShell(true);
@@ -438,6 +465,22 @@ export default function AdminPage() {
     }
   }, [getSession]);
 
+  const loadAdminReferrals = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/referrals', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setAdminReferrals(data.referrals || []);
+      setAdminPendingPayouts(data.pendingPayouts || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
   const playNewOrderChime = useCallback(() => {
     try {
       const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
@@ -484,6 +527,9 @@ export default function AdminPage() {
     if (tab === 'internalTeam') loadInternalTeam();
   }, [tab, loadInternalTeam]);
   useEffect(() => {
+    if (tab === 'referrals') loadAdminReferrals();
+  }, [tab, loadAdminReferrals]);
+  useEffect(() => {
     if (tab === 'cardOrders') {
       loadCardOrders();
       setCardOrdersUnread(0);
@@ -521,19 +567,49 @@ export default function AdminPage() {
     };
   }, [loadCardOrders, playNewOrderChime, tAdmin]);
 
-  const filteredCenters = centers.filter((c) => {
-    const matchSearch = !centerSearch.trim() ||
-      c.name?.toLowerCase().includes(centerSearch.toLowerCase()) ||
-      c.phone?.includes(centerSearch) ||
-      (c.owner?.name ?? c.owner_name ?? '').toLowerCase().includes(centerSearch.toLowerCase());
-    const isAtRisk = (c.last_active?.includes('days') || c.last_active === 'Never') ?? false;
-    const matchStatus = statusFilter === 'all'
-      ? true
-      : statusFilter === 'at_risk'
-        ? isAtRisk
-        : (c.status ?? 'active') === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const PLAN_SORT_ORDER: Record<string, number> = {
+    nano: 1, starter: 2, pro: 3, business: 4, enterprise: 5, top_centers: 6,
+  };
+
+  const displayedCenters = useMemo(() => {
+    let result = centers.filter((c) => {
+      const matchSearch = !centerSearch.trim() ||
+        c.name?.toLowerCase().includes(centerSearch.toLowerCase()) ||
+        c.phone?.includes(centerSearch) ||
+        (c.owner?.name ?? c.owner_name ?? '').toLowerCase().includes(centerSearch.toLowerCase());
+      const isAtRisk = (c.last_active?.includes('days') || c.last_active === 'Never') ?? false;
+      const matchStatus = statusFilter === 'all'
+        ? true
+        : statusFilter === 'at_risk'
+          ? isAtRisk
+          : (c.status ?? 'active') === statusFilter;
+      return matchSearch && matchStatus;
+    });
+
+    if (filterPlan !== 'all') {
+      result = result.filter((c) => (c.plan ?? '') === filterPlan);
+    }
+
+    if (sortBy === 'newest') {
+      result = [...result].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    } else if (sortBy === 'oldest') {
+      result = [...result].sort((a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    } else if (sortBy === 'plan_high') {
+      result = [...result].sort((a, b) =>
+        (PLAN_SORT_ORDER[b.plan ?? ''] ?? 0) - (PLAN_SORT_ORDER[a.plan ?? ''] ?? 0)
+      );
+    } else if (sortBy === 'plan_low') {
+      result = [...result].sort((a, b) =>
+        (PLAN_SORT_ORDER[a.plan ?? ''] ?? 0) - (PLAN_SORT_ORDER[b.plan ?? ''] ?? 0)
+      );
+    }
+
+    return result;
+  }, [centers, centerSearch, statusFilter, filterPlan, sortBy]);
 
   // Aggregate signupsChart (daily) to weekly for "New Centers per Week"
   const signupsWeekly = useMemo(() => {
@@ -702,13 +778,16 @@ export default function AdminPage() {
           name: addAdminForm.name.trim(),
           phone: addAdminForm.phone.replace(/\D/g, ''),
           email: addAdminForm.email.trim() || undefined,
-          role: 'internal_admin',
+          role: selectedRole,
+          custom_permissions: selectedRole === 'custom' ? customPerms : [],
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed');
       setShowAddAdmin(false);
       setAddAdminForm({ name: '', phone: '', email: '' });
+      setSelectedRole('internal_viewer');
+      setCustomPerms([]);
       loadInternalTeam();
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed');
@@ -782,8 +861,10 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
-      <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname ?? undefined} />
+    <div className="flex flex-col min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+      <AdminHeader />
+      <div className="flex flex-col md:flex-row flex-1 pt-14">
+        <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname ?? undefined} />
 
       {/* Toast for new card order */}
       {toast && (
@@ -991,6 +1072,33 @@ export default function AdminPage() {
         {/* Centers */}
         {tab === 'centers' && (
           <>
+            <div className="flex gap-3 flex-wrap mb-3">
+              <select
+                value={filterPlan}
+                onChange={(e) => setFilterPlan(e.target.value)}
+                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white
+                           text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="all">كل الخطط</option>
+                <option value="nano">ناشئ</option>
+                <option value="starter">سنتر صغير</option>
+                <option value="pro">سنتر متوسط</option>
+                <option value="business">سنتر كبير</option>
+                <option value="enterprise">سنتر ضخم</option>
+                <option value="top_centers">ميجا سنتر</option>
+              </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white
+                           text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="newest">الأحدث أولاً</option>
+                <option value="oldest">الأقدم أولاً</option>
+                <option value="plan_high">الخطة: الأعلى أولاً</option>
+                <option value="plan_low">الخطة: الأدنى أولاً</option>
+              </select>
+            </div>
             <div className="flex flex-wrap gap-3 items-center mb-4">
               <div className="relative flex-1 min-w-[200px]">
                 <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
@@ -1034,7 +1142,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredCenters.map((c) => (
+                    {displayedCenters.map((c) => (
                       <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{c.name}</td>
                         <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
@@ -1369,6 +1477,103 @@ export default function AdminPage() {
           </>
         )}
 
+        {/* Referrals */}
+        {tab === 'referrals' && (
+          <>
+            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('referrals', { defaultValue: 'الإحالات' })}</h2>
+
+            <h3 className="font-semibold text-foreground mb-3">{tAdmin('allReferrals', { defaultValue: 'جميع الإحالات' })}</h3>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('referrer', { defaultValue: 'المُحيل' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('referredCenter', { defaultValue: 'السنتر المُحال' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('date', { defaultValue: 'التاريخ' })}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {adminReferrals.map((r) => (
+                      <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{r.referrer_name}</td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{r.referred_name}</td>
+                        <td className="py-3.5 px-4 font-mono text-sm text-slate-700">{r.referral_code}</td>
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${r.status === 'active' ? STATUS_STYLES.active : r.status === 'pending' ? STATUS_STYLES.pending : 'bg-slate-100 text-slate-700'}`}>
+                            {r.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-slate-600">{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
+                      </tr>
+                    ))}
+                    {adminReferrals.length === 0 && (
+                      <tr><td colSpan={5} className="py-8 px-4 text-center text-slate-500">{tAdmin('noReferrals', { defaultValue: 'لا توجد إحالات' })}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <h3 className="font-semibold text-foreground mb-3">{tAdmin('pendingPayouts', { defaultValue: 'المدفوعات المعلقة' })}</h3>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('centerName', { defaultValue: 'السنتر' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('amountAvailable', { defaultValue: 'المبلغ المتاح' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {adminPendingPayouts.map((p) => (
+                      <tr key={p.center_id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{p.center_name}</td>
+                        <td className="py-3.5 px-4 font-mono text-sm text-slate-700">{p.code}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-teal-600">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4">
+                          <button
+                            onClick={async () => {
+                              const headers = await getAuthHeaders();
+                              if (!headers) return;
+                              setActionLoading(true);
+                              try {
+                                const res = await fetch('/api/admin/referrals', {
+                                  method: 'POST',
+                                  headers,
+                                  body: JSON.stringify({ action: 'mark_paid', referrer_center_id: p.center_id }),
+                                });
+                                if (res.ok) loadAdminReferrals();
+                                else alert((await res.json())?.error || 'Failed');
+                              } catch (e) {
+                                alert(e instanceof Error ? e.message : 'Failed');
+                              } finally {
+                                setActionLoading(false);
+                              }
+                            }}
+                            disabled={actionLoading}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            {tAdmin('markAsPaid')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {adminPendingPayouts.length === 0 && (
+                      <tr><td colSpan={4} className="py-8 px-4 text-center text-slate-500">{tAdmin('noPendingPayouts', { defaultValue: 'لا توجد مدفوعات معلقة' })}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Card Orders */}
         {tab === 'cardOrders' && (
           <>
@@ -1525,7 +1730,7 @@ export default function AdminPage() {
                       <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">{m.role}</span></td>
                       <td className="py-3.5 px-4 text-sm text-slate-600">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
                       <td className="py-3.5 px-4">
-                        {m.role !== 'super_admin' && m.role !== 'admin' && (
+                        {!['super_admin', 'admin'].includes(m.role) && (
                           <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50">
                             {tAdmin('remove')}
                           </button>
@@ -1600,6 +1805,7 @@ export default function AdminPage() {
                     <PieChart>
                       <Pie
                         data={[
+                          { name: 'Nano', value: centers.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
                           { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
                           { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
                           { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
@@ -1614,6 +1820,7 @@ export default function AdminPage() {
                         dataKey="value"
                       >
                         {[
+                          { name: 'Nano', value: centers.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
                           { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
                           { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
                           { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
@@ -1625,9 +1832,10 @@ export default function AdminPage() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="space-y-2 flex-1">
-                    {['Starter', 'Pro', 'Business', 'Enterprise', 'Top Centers'].map((name, i) => {
-                      const val = centers.filter(c => c.plan === (name === 'Top Centers' ? 'top_centers' : name.toLowerCase())).length;
-                      const colors = ['#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'];
+                    {['Nano', 'Starter', 'Pro', 'Business', 'Enterprise', 'Top Centers'].map((name, i) => {
+                      const planKey = name === 'Top Centers' ? 'top_centers' : name.toLowerCase();
+                      const val = centers.filter(c => c.plan === planKey).length;
+                      const colors = ['#94A3B8', '#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'];
                       return (
                         <div key={name} className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
@@ -1814,7 +2022,7 @@ export default function AdminPage() {
       {/* Add Admin Modal */}
       {showAddAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddAdmin(false)}>
-          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-card" onClick={(e) => e.stopPropagation()}>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full max-h-[90vh] overflow-y-auto bg-card" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold text-foreground mb-4">{tAdmin('inviteTeamMember', { defaultValue: 'Add Admin' })}</h3>
             <p className="text-xs text-muted-foreground mb-3">{tAdmin('noTeamMembers', { defaultValue: 'User must have signed up at CenterHQ first.' })}</p>
             <div className="space-y-3">
@@ -1839,6 +2047,42 @@ export default function AdminPage() {
                 type="email"
                 className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm"
               />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">الدور / Role</label>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => { setSelectedRole(e.target.value); setCustomPerms([]); }}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm
+                             focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="internal_viewer">مشاهد / Viewer</option>
+                  <option value="internal_admin">مدير داخلي / Internal Admin</option>
+                  <option value="sales_rep">مندوب مبيعات / Sales Rep</option>
+                  <option value="support_agent">موظف دعم / Support Agent</option>
+                  <option value="accountant">محاسب / Accountant</option>
+                  <option value="custom">مخصص / Custom</option>
+                </select>
+              </div>
+              {selectedRole === 'custom' && (
+                <div className="border border-slate-200 rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium text-slate-700">الصلاحيات المسموح بها:</p>
+                  {ALL_ADMIN_PERMISSIONS.map((p) => (
+                    <label key={p.key} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={customPerms.includes(p.key)}
+                        onChange={(e) =>
+                          setCustomPerms((prev) =>
+                            e.target.checked ? [...prev, p.key] : prev.filter((k) => k !== p.key)
+                          )
+                        }
+                        className="rounded border-slate-300 text-teal-600"
+                      />
+                      <span>{p.labelAr}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex gap-2 justify-end mt-4">
               <button onClick={() => setShowAddAdmin(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
@@ -1872,30 +2116,51 @@ export default function AdminPage() {
       {/* Add Lead Modal */}
       {showAddLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddLead(false)}>
-          <div className="rounded-2xl border border-border p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto bg-card" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-foreground mb-4">{tAdmin('addLead') ?? 'Add Lead'}</h3>
+          <div className="rounded-2xl border border-border p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto bg-card text-start" dir="rtl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-foreground mb-4">إضافة عميل جديد</h3>
             <div className="space-y-3">
-              <input placeholder="Center Name" value={addLeadForm.name} onChange={(e) => setAddLeadForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
-              <input placeholder="Contact Person" value={addLeadForm.contactPerson} onChange={(e) => setAddLeadForm(f => ({ ...f, contactPerson: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
-              <input placeholder={tCommon('phone')} type="tel" dir="ltr" value={addLeadForm.phone} onChange={(e) => setAddLeadForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
-              <select value={addLeadForm.area} onChange={(e) => setAddLeadForm(f => ({ ...f, area: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
-                <option value="">Area</option>
-                {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
-              </select>
-              <select value={addLeadForm.source} onChange={(e) => setAddLeadForm(f => ({ ...f, source: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
-                <option value="">Source</option>
-                {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
-                <option value="prospect">Prospect</option>
-                <option value="contacted">Contacted</option>
-                <option value="demo_scheduled">Demo Scheduled</option>
-                <option value="converted">Converted</option>
-              </select>
-              <textarea placeholder="Notes" value={addLeadForm.notes} onChange={(e) => setAddLeadForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm h-20 resize-none" />
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">اسم السنتر</label>
+                <input placeholder="اسم السنتر التعليمي" value={addLeadForm.name} onChange={(e) => setAddLeadForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">اسم مسؤول التواصل</label>
+                <input placeholder="الاسم الكامل للمسؤول" value={addLeadForm.contactPerson} onChange={(e) => setAddLeadForm(f => ({ ...f, contactPerson: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">رقم الهاتف</label>
+                <input placeholder="01x xxxx xxxx" type="tel" dir="ltr" value={addLeadForm.phone} onChange={(e) => setAddLeadForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">المنطقة</label>
+                <select value={addLeadForm.area} onChange={(e) => setAddLeadForm(f => ({ ...f, area: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                  <option value="">المنطقة</option>
+                  {AREAS.map((a) => <option key={a} value={a}>{AREA_LABELS[a] ?? a}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">المصدر</label>
+                <select value={addLeadForm.source} onChange={(e) => setAddLeadForm(f => ({ ...f, source: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                  <option value="">المصدر</option>
+                  {SOURCES.map((s) => <option key={s} value={s}>{SOURCE_LABELS[s] ?? s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">مرحلة المسار</label>
+                <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                  <option value="prospect">عميل محتمل</option>
+                  <option value="contacted">تم التواصل</option>
+                  <option value="demo_scheduled">تم العرض</option>
+                  <option value="converted">تم الإغلاق</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">ملاحظات</label>
+                <textarea placeholder="أي ملاحظات إضافية..." value={addLeadForm.notes} onChange={(e) => setAddLeadForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm h-20 resize-none" />
+              </div>
             </div>
             <div className="flex gap-2 justify-end mt-4">
-              <button onClick={() => setShowAddLead(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button onClick={() => setShowAddLead(false)} className="px-4 py-2 rounded-lg text-sm border border-border">إلغاء</button>
               <button
                 onClick={() => {
                   if (addLeadForm.name.trim()) {
@@ -1915,7 +2180,7 @@ export default function AdminPage() {
                 }}
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary"
               >
-                {tCommon('save')}
+                حفظ
               </button>
             </div>
           </div>
@@ -1987,6 +2252,7 @@ export default function AdminPage() {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                 >
                   <option value="">Select a plan...</option>
+                  <option value="nano">Nano — ≤75 students — EGP 1,200/mo</option>
                   <option value="starter">Starter — ≤150 students — EGP 2,000/mo</option>
                   <option value="pro">Pro — ≤500 students — EGP 4,500/mo</option>
                   <option value="business">Business — ≤1,000 students — EGP 6,500/mo</option>
@@ -2078,6 +2344,7 @@ export default function AdminPage() {
           }}
         />
       )}
+      </div>
     </div>
   );
 }

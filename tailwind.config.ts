@@ -13,7 +13,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Söhne', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Ubuntu', 'Cantarell', 'Noto Sans', 'sans-serif', 'Helvetica Neue', 'Arial'],
-        mono: ['"Söhne Mono"', 'Monaco', '"Andale Mono"', '"Ubuntu Mono"', '"Courier New"', 'monospace'],
+        mono: ['var(--font-jetbrains)', 'monospace'],
+        cairo: ['var(--font-cairo)', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

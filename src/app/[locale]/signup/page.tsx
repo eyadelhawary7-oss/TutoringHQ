@@ -1,36 +1,34 @@
 'use client';
 
-import { useState, FormEvent, useTransition } from 'react';
+import { useState, useEffect, FormEvent, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
-import { Globe, CheckCircle } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Globe, CheckCircle, Check, X } from 'lucide-react';
+import { PLAN_TIERS, getEffectiveMonthlyRate, getTotalForPeriod, getPerStudentPerWeek } from '@/lib/plan-tiers';
+import type { BillingPeriod } from '@/lib/plan-tiers';
 
 const WHATSAPP_ADMIN = 'https://wa.me/201220601410';
 const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=I%20am%20interested%20in%20the%20TOP%20CENTERS%20plan';
 
-const PLANS = [
-  { value: 'starter', name: 'سنتر صغير', fee: 2000, limit: 150, perStudentWeek: '3.33' },
-  { value: 'pro', name: 'سنتر متوسط', fee: 4500, limit: 500, perStudentWeek: '2.25' },
-  { value: 'business', name: 'سنتر كبير', fee: 6500, limit: 1000, perStudentWeek: '1.63' },
-  { value: 'enterprise', name: 'سنتر ضخم', fee: 9000, limit: 2000, perStudentWeek: '1.13' },
-  { value: 'top_centers', name: 'ميجا سنتر', fee: 0, limit: 0, custom: true, perStudentWeek: null as string | null },
-];
+const PLANS = PLAN_TIERS.map((p) => ({
+  value: p.id,
+  nameAr: p.nameAr,
+  nameEn: p.nameEn,
+  fee: p.monthlyFee,
+  limit: p.maxStudentsPerWeek,
+  setupFee: p.setupFee,
+  perStudentWeek: p.isCustom ? null : getPerStudentPerWeek(p),
+  custom: p.isCustom ?? false,
+}));
 
-const getAdjustedPrice = (basePrice: number, period: string) => {
-  if (period === 'monthly') return Math.round(basePrice * 1.1);
-  if (period === 'quarterly') return basePrice;
-  if (period === 'biannual') return Math.round(basePrice * 0.95);
-  if (period === 'yearly') return Math.round(basePrice * 0.9);
-  return basePrice;
-};
-
-type BillingPeriod = {
-  value: 'monthly' | 'quarterly' | 'biannual' | 'yearly'
+type BillingPeriodOption = {
+  value: BillingPeriod
   label: string
   badge?: string
 }
 
-const BILLING_PERIODS: BillingPeriod[] = [
+const BILLING_PERIODS: BillingPeriodOption[] = [
   { value: 'monthly', label: 'شهري' },
   { value: 'quarterly', label: 'ربع سنوي' },
   { value: 'biannual', label: 'نصف سنوي' },
@@ -46,13 +44,13 @@ export default function SignupPage() {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
-  const [billingPeriod, setBillingPeriod] = useState('quarterly');
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('quarterly');
   const [formData, setFormData] = useState({
     centerName: '',
     ownerName: '',
     phone: '',
     email: '',
-    plan: 'pro',
+    plan: 'nascent',
     referralCode: '',
     terms: false,
     city: '',
@@ -61,6 +59,17 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [referralValidation, setReferralValidation] = useState<'idle' | 'valid' | 'invalid' | 'checking'>('idle');
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const refFromUrl = searchParams?.get('ref')?.trim().toUpperCase();
+    const refFromStorage = typeof window !== 'undefined' ? localStorage.getItem('referral_code')?.trim().toUpperCase() : null;
+    const code = refFromUrl || refFromStorage;
+    if (code) {
+      setFormData((f) => ({ ...f, referralCode: code }));
+    }
+  }, [searchParams]);
 
   const handleLocaleToggle = () => {
     const newLocale = locale === 'ar' ? 'en' : 'ar';
@@ -151,11 +160,12 @@ export default function SignupPage() {
   }
 
   const getBillingLabel = (planFee: number) => {
-    const adj = getAdjustedPrice(planFee, billingPeriod);
-    if (billingPeriod === 'monthly') return 'يتجدد شهرياً';
-    if (billingPeriod === 'quarterly') return `يُدفع كل 3 شهور: ${(adj * 3).toLocaleString('en-US')} جنيه`;
-    if (billingPeriod === 'biannual') return `يُدفع كل 6 شهور: ${(adj * 6).toLocaleString('en-US')} جنيه`;
-    if (billingPeriod === 'yearly') return `يُدفع سنوياً: ${(adj * 12).toLocaleString('en-US')} جنيه`;
+    const period = billingPeriod as BillingPeriod;
+    const total = getTotalForPeriod(planFee, period);
+    if (period === 'monthly') return `يُدفع شهرياً: ${total.toLocaleString('en-US')} جنيه`;
+    if (period === 'quarterly') return `يُدفع كل 3 شهور: ${total.toLocaleString('en-US')} جنيه`;
+    if (period === 'biannual') return `يُدفع كل 6 شهور: ${total.toLocaleString('en-US')} جنيه`;
+    if (period === 'yearly') return `يُدفع سنوياً: ${total.toLocaleString('en-US')} جنيه`;
     return '';
   };
 
@@ -299,7 +309,7 @@ export default function SignupPage() {
                         ? 'border-primary/60 bg-primary/5'
                         : 'border-border hover:border-primary/30'
                     }`}
-                    style={plan.custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.3)' } : {}}
+                    style={plan.custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.25)' } : {}}
                     onClick={(e) => {
                       if (plan.custom) {
                         e.preventDefault();
@@ -325,21 +335,27 @@ export default function SignupPage() {
                     </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold text-sm text-foreground">{plan.name}</span>
+                          <span className="font-semibold text-sm text-foreground">{locale === 'ar' ? plan.nameAr : plan.nameEn}</span>
                           {plan.custom ? (
                             <span className="text-sm font-bold text-muted-foreground font-mono">{tl('custom')}</span>
                           ) : (
-                            <span className="text-sm font-bold text-foreground font-mono">{getAdjustedPrice(plan.fee, billingPeriod).toLocaleString('en-US')} {tc('egp')}</span>
+                            <>
+                              <span className="text-sm font-bold text-foreground font-mono">{getEffectiveMonthlyRate(plan.fee, billingPeriod).toLocaleString('en-US')} {tc('egp')}</span>
+                              <span className="text-base font-normal text-slate-400">{tc('perMonth')}</span>
+                            </>
                           )}
                         </div>
                         {!plan.custom && (
                           <>
                             <p className="text-xs text-slate-500 mt-0.5">{getBillingLabel(plan.fee)}</p>
+                            {billingPeriod === 'yearly' && (
+                              <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">شهرين مجاناً</span>
+                            )}
                             <p className="text-xs text-muted-foreground mt-0.5">حتى {plan.limit.toLocaleString('en-US')} طالب/أسبوع</p>
                           </>
                         )}
                         {plan.perStudentWeek && (
-                          <p className="text-xs font-medium mt-0.5" style={{ color: '#16A34A' }}>• {plan.perStudentWeek} جنيه للطالب أسبوعياً</p>
+                          <p className="text-xs font-medium mt-0.5" style={{ color: '#16A34A' }}>• {plan.perStudentWeek} {tc('perStudentPerWeek')}</p>
                         )}
                         {plan.custom && (
                           <p className="text-xs text-green-600 mt-0.5 font-medium">{t('contactWhatsApp')}</p>
@@ -352,14 +368,52 @@ export default function SignupPage() {
 
             {/* Referral */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t('referralCode')}</label>
-              <input
-                type="text"
-                value={formData.referralCode}
-                onChange={e => setFormData(f => ({ ...f, referralCode: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring uppercase"
-                dir="ltr"
-              />
+              <label className="block text-sm font-medium text-foreground mb-1.5">{locale === 'ar' ? 'كود الإحالة (اختياري)' : 'Referral Code (optional)'}</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formData.referralCode}
+                  onChange={e => {
+                    setFormData(f => ({ ...f, referralCode: e.target.value }));
+                    setReferralValidation('idle');
+                  }}
+                  onBlur={async () => {
+                    const code = formData.referralCode.trim().toUpperCase();
+                    if (!code) {
+                      setReferralValidation('idle');
+                      return;
+                    }
+                    setReferralValidation('checking');
+                    try {
+                      const res = await fetch('/api/referral/validate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code }),
+                      });
+                      const data = await res.json();
+                      setReferralValidation(data.valid ? 'valid' : 'invalid');
+                    } catch {
+                      setReferralValidation('invalid');
+                    }
+                  }}
+                  placeholder={locale === 'ar' ? 'مثال: NASR-7X4K' : 'e.g. NASR-7X4K'}
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring uppercase"
+                  dir="ltr"
+                />
+                {referralValidation === 'valid' && (
+                  <span className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-green-600 text-sm">
+                    <Check className="w-4 h-4" /> {locale === 'ar' ? '✓ كود صحيح' : 'Valid code'}
+                  </span>
+                )}
+                {referralValidation === 'invalid' && (
+                  <span className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-red-600 text-sm">
+                    <X className="w-4 h-4" /> {locale === 'ar' ? 'كود غير صحيح' : 'Invalid code'}
+                  </span>
+                )}
+                {referralValidation === 'checking' && (
+                  <span className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{locale === 'ar' ? 'جاري التحقق...' : 'Checking...'}</span>
+                )}
+              </div>
             </div>
 
             {/* Notes */}

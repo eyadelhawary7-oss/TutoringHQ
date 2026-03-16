@@ -1,6 +1,8 @@
 'use client';
 
 const styles: Record<string, string> = {
+  nascent: 'bg-slate-100 text-slate-700 border border-slate-300',
+  nano: 'bg-slate-100 text-slate-700 border border-slate-300',
   starter: 'bg-slate-100 text-slate-700 border border-slate-300',
   pro: 'bg-blue-100 text-blue-700 border border-blue-300',
   business: 'bg-teal-100 text-teal-700 border border-teal-300',
@@ -10,6 +12,8 @@ const styles: Record<string, string> = {
 };
 
 const labels: Record<string, string> = {
+  nascent: 'ناشئ',
+  nano: 'سنتر نانو',
   starter: 'Starter',
   pro: 'Pro',
   business: 'Business',
@@ -24,7 +28,7 @@ export default function PlanBadge({ plan }: { plan?: string }) {
     <span
       className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[key] ?? styles.starter}`}
     >
-      {labels[key] ?? plan ?? 'Starter'}
+      {labels[key] ?? plan ?? 'Nano'}
     </span>
   );
 }

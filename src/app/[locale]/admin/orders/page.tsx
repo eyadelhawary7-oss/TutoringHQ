@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import {
@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 import CardTemplatePreview from '@/components/CardTemplatePreview';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 interface CardOrder {
   id: string;
@@ -98,10 +99,16 @@ export default function AdminOrders() {
   const tCommon = useTranslations('common');
   const tAdmin = useTranslations('admin');
   const pathname = usePathname();
+  const { closeMainSidebar } = useSidebar() ?? {};
   const [orders, setOrders] = useState(MOCK_ORDERS);
   const [filter, setFilter] = useState<'all' | CardOrder['status']>('all');
   const [slideOverId, setSlideOverId] = useState<string | null>(null);
   const [showNewBanner, setShowNewBanner] = useState(true);
+
+  // Close main sidebar when admin/orders mounts (prevents two sidebars on mobile)
+  useEffect(() => {
+    if (typeof closeMainSidebar === 'function') closeMainSidebar();
+  }, [closeMainSidebar]);
 
   // Play chime on mount for demo
   useEffect(() => {

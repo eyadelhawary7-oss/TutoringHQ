@@ -42,32 +42,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const centerId = ctx.user.center_id as string;
+
     const { data: center } = await ctx.supabaseAdmin
       .from('centers')
       .select('referral_code')
-      .eq('id', ctx.user.center_id)
+      .eq('id', centerId)
       .single();
 
-    // Earned: from referral_rewards (created only when admin approves referred center's first payment)
-    const { data: rewards } = await ctx.supabaseAdmin
-      .from('referral_rewards')
-      .select(`
-        id,
-        referred_center_id,
-        referred_center_plan,
-        first_month_fee,
-        reward_amount,
-        reward_status,
-        created_at
-      `)
-      .eq('referring_center_id', ctx.user.center_id)
+    // Referrals: our referred centers
+    const { data: referrals } = await ctx.supabaseAdmin
+      .from('referrals')
+      .select('id, referred_center_id, status, referred_first_paid_at')
+      .eq('referrer_center_id', centerId)
       .order('created_at', { ascending: false });
 
-    const referredCenterIds = (rewards || [])
-      .map((r: { referred_center_id: string }) => r.referred_center_id)
-      .filter(Boolean);
+    const referredCenterIds = [...new Set((referrals || []).map((r: { referred_center_id: string }) => r.referred_center_id).filter(Boolean))];
     const centerNames: Record<string, string> = {};
-
     if (referredCenterIds.length > 0) {
       const { data: centers } = await ctx.supabaseAdmin
         .from('centers')
@@ -78,45 +69,94 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const rewardsWithNames = (rewards || []).map((r: { id: string; referred_center_id: string; referred_center_plan: string; first_month_fee: number; reward_amount: number; reward_status: string; created_at: string }) => ({
-      ...r,
-      referred_center_name: centerNames[r.referred_center_id] ?? '—',
-      status: 'earned' as const,
-    }));
+    // referral_reward_records: monthly rewards (primary source)
+    const { data: rewardRecords } = await ctx.supabaseAdmin
+      .from('referral_reward_records')
+      .select('id, referral_id, referred_center_id, month_number, reward_percentage, base_amount, reward_amount, status, held_until, paid_at, period_month, created_at')
+      .eq('referrer_center_id', centerId)
+      .order('period_month', { ascending: false });
 
-    // Pending: centers that signed up with our code but have no approved payment yet
-    const { data: pendingCenters } = await ctx.supabaseAdmin
-      .from('centers')
-      .select('id, name, plan, subscription_status, created_at')
-      .eq('referred_by', ctx.user.center_id)
-      .neq('status', 'deleted');
-
-    const earnedCenterIds = new Set(referredCenterIds);
-    const pending = (pendingCenters || [])
-      .filter((c: { id: string }) => !earnedCenterIds.has(c.id))
-      .filter((c: { subscription_status?: string }) => (c.subscription_status ?? 'active') === 'active')
-      .map((c: { id: string; name: string; plan: string; created_at: string }) => ({
-        id: c.id,
-        referred_center_id: c.id,
-        referred_center_name: c.name || '—',
-        referred_center_plan: c.plan || '—',
-        reward_amount: 0,
-        reward_status: 'pending',
-        created_at: c.created_at,
-        status: 'pending' as const,
-      }));
-
-    const totalEarned = (rewards || []).reduce(
-      (sum: number, r: { reward_amount: number; reward_status: string }) =>
-        sum + (r.reward_status === 'paid' || r.reward_status === 'approved' || r.reward_status === 'pending' ? Number(r.reward_amount) : 0),
+    const records = rewardRecords || [];
+    const totalEarned = records.reduce(
+      (s: number, r: { reward_amount: number; status: string }) =>
+        s + (['available', 'held', 'paid', 'pending'].includes(r.status) ? Number(r.reward_amount ?? 0) : 0),
       0
     );
+    const available = records
+      .filter((r: { status: string }) => r.status === 'available')
+      .reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0);
+    const pending = records
+      .filter((r: { status: string }) => r.status === 'held' || r.status === 'pending')
+      .reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0);
+    const paidOut = records
+      .filter((r: { status: string }) => r.status === 'paid')
+      .reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0);
+
+    // Active referrals: group by referral
+    const referralMap = new Map<string, { referred_center_id: string; status: string; months: number; monthlyReward: number; total: number }>();
+    for (const ref of referrals || []) {
+      const refId = ref.id as string;
+      const refCenterId = ref.referred_center_id as string;
+      const refRecords = records.filter((r: { referral_id: string }) => r.referral_id === refId);
+      const monthCount = refRecords.length > 0 ? Math.max(...refRecords.map((r: { month_number: number }) => r.month_number)) : 0;
+      const monthlyReward = refRecords.length > 0
+        ? refRecords.reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0) / refRecords.length
+        : 0;
+      const total = refRecords.reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0);
+      referralMap.set(refId, {
+        referred_center_id: refCenterId,
+        status: ref.status as string,
+        months: monthCount,
+        monthlyReward,
+        total,
+      });
+    }
+    const activeReferrals = referrals
+      ? (referrals as { id: string }[]).map((r) => {
+          const meta = referralMap.get(r.id);
+          return {
+            id: r.id,
+            center_name: centerNames[meta?.referred_center_id ?? (r as { referred_center_id?: string }).referred_center_id ?? ''] ?? '—',
+            status: meta?.status ?? (r as { status?: string }).status ?? 'pending',
+            months: meta?.months ?? 0,
+            monthly_reward: meta?.monthlyReward ?? 0,
+            total: meta?.total ?? 0,
+          };
+        })
+      : [];
+
+    // Reward history
+    const rewardHistory = records.map((r: { id: string; referred_center_id: string; referred_center_name?: string; month_number: number; reward_percentage: number; base_amount: number; reward_amount: number; status: string; held_until?: string; paid_at?: string; period_month: string }) => ({
+      id: r.id,
+      referred_center_id: r.referred_center_id,
+      referred_center_name: centerNames[r.referred_center_id] ?? '—',
+      month_number: r.month_number,
+      reward_percentage: r.reward_percentage,
+      base_amount: r.base_amount,
+      reward_amount: r.reward_amount,
+      status: r.status,
+      held_until: r.held_until,
+      paid_at: r.paid_at,
+      period_month: r.period_month,
+    }));
+
+    // Payout requests
+    const { data: payoutRequests } = await ctx.supabaseAdmin
+      .from('payout_requests')
+      .select('id, amount_requested, status, payment_method, requested_at, processed_at')
+      .eq('center_id', centerId)
+      .order('requested_at', { ascending: false });
 
     return NextResponse.json({
       referralCode: center?.referral_code ?? '',
-      rewards: rewardsWithNames,
-      pending,
       totalEarned,
+      available,
+      pending,
+      paidOut,
+      totalReferrals: referrals?.length ?? 0,
+      activeReferrals,
+      rewardHistory,
+      payoutRequests: payoutRequests ?? [],
     });
   } catch (error) {
     return NextResponse.json(

@@ -26,6 +26,16 @@ export default function LoginPage() {
     startTransition(() => {
       router.replace(pathname, { locale: newLocale as 'ar' | 'en' });
     });
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      fetch('/api/user/locale', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ locale: newLocale }),
+      }).catch(() => undefined);
+    })();
   };
 
   const handleLogin = async (e: FormEvent) => {
@@ -83,11 +93,38 @@ export default function LoginPage() {
         const result = await res.json();
 
         if (result.centerId) {
-          router.push(result.needsOnboarding ? '/onboarding' : '/dashboard');
+          let targetLocale = 'ar';
+          try {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('preferred_locale')
+              .eq('id', data.user.id)
+              .maybeSingle();
+            if (userData?.preferred_locale === 'ar' || userData?.preferred_locale === 'en') {
+              targetLocale = userData.preferred_locale;
+            }
+          } catch {
+            // Fallback silently — never block login
+          }
+          const targetPath = result.needsOnboarding ? '/onboarding' : '/dashboard';
+          router.push(`/${targetLocale}${targetPath}`);
         } else if (result.contactSales) {
           setError(t('contactSales'));
         } else {
-          router.push('/onboarding');
+          let targetLocale = 'ar';
+          try {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('preferred_locale')
+              .eq('id', data.user.id)
+              .maybeSingle();
+            if (userData?.preferred_locale === 'ar' || userData?.preferred_locale === 'en') {
+              targetLocale = userData.preferred_locale;
+            }
+          } catch {
+            // Fallback silently — never block login
+          }
+          router.push(`/${targetLocale}/onboarding`);
         }
       }
     } catch {

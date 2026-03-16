@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -43,3 +44,7 @@ next-env.d.ts
 # Sentry Config File
 .env.sentry-build-plugin
 lovable-reference
+
+# Local font files (large binaries, add manually)
+public/fonts/*.woff2
+public/fonts/*.woff

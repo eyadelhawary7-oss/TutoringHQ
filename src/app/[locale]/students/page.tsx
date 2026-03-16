@@ -7,21 +7,30 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
 import { toAr } from '@/lib/number-utils';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard } from 'lucide-react';
+import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer } from 'lucide-react';
 import { CardOrderModal } from '@/components/CardOrderModal';
 import { QRCard } from '@/components/QRCard';
+import { PrintStatementModal } from '@/components/PrintStatementModal';
+import EmptyState from '@/components/empty-states/EmptyState';
+import { AtRiskPanel } from '@/components/students/AtRiskPanel';
+import { LifecycleBadge } from '@/components/students/LifecycleBadge';
+import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
+import { useUser } from '@/contexts/UserContext';
 
 interface Student {
   id: string;
   name: string;
   phone: string;
-  parent_phone: string;
+  parent_phone?: string | null;
+  parent_consent_given?: boolean;
   subject: string;
   fee: number;
   payment_status: string;
   student_number?: string;
   qr_code?: string | null;
   is_active?: boolean;
+  lifecycle_status?: 'enrolled' | 'active' | 'at_risk' | 'inactive' | 'churned';
+  sibling_family_id?: string | null;
 }
 
 interface Subject {
@@ -42,8 +51,11 @@ export default function StudentsPage() {
   const t = useTranslations('students');
   const tCommon = useTranslations('common');
   const locale = useLocale();
+  const { user, hasPermission } = useUser();
+  const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
 
   const [students, setStudents] = useState<Student[]>([]);
+  const [printStudent, setPrintStudent] = useState<{ id: string; name: string } | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [studentGroupsMap, setStudentGroupsMap] = useState<Record<string, { names: string[]; fees: number[]; subjects: string[]; groupIds: string[] }>>({});
@@ -72,7 +84,9 @@ export default function StudentsPage() {
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editParentPhone, setEditParentPhone] = useState('');
   const [editGroups, setEditGroups] = useState<string[]>([]);
+  const [editSiblingFamilyId, setEditSiblingFamilyId] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
@@ -386,21 +400,48 @@ export default function StudentsPage() {
     setEditStudent(s);
     setEditName(s.name || '');
     setEditPhone(s.phone || '');
+    setEditParentPhone(s.parent_phone || '');
     setEditGroups(studentGroupsMap[s.id]?.groupIds ?? []);
   };
+
+  function normalizeParentPhone(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('01')) return '+2' + digits;
+    if (digits.length === 10 && digits.startsWith('1')) return '+2' + digits;
+    if (phone.startsWith('+')) return phone;
+    return digits.length >= 10 ? '+2' + digits.slice(-10) : phone;
+  }
 
   const saveEdit = async () => {
     if (!editStudent || !centerId) return;
     setIsSavingEdit(true);
     try {
+      const parentPhoneNorm = editParentPhone.trim() ? normalizeParentPhone(editParentPhone.trim()) : null;
       await dbUpdate({
         table: 'students',
-        data: { name: editName.trim(), phone: editPhone.trim() || null },
+        data: {
+          name: editName.trim(),
+          phone: editPhone.trim() || null,
+          parent_phone: parentPhoneNorm,
+          sibling_family_id: editSiblingFamilyId,
+        },
         filters: [{ column: 'id', op: 'eq', value: editStudent.id }],
       });
       await dbDelete({ table: 'student_group_members', filters: [{ column: 'student_id', op: 'eq', value: editStudent.id }] });
       for (const gid of editGroups) {
         await dbInsert({ table: 'student_group_members', data: { student_id: editStudent.id, group_id: gid }, select: false });
+      }
+      if (parentPhoneNorm) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          try {
+            await fetch('/api/parents/request-consent', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              body: JSON.stringify({ student_id: editStudent.id, parent_phone: parentPhoneNorm }),
+            });
+          } catch {}
+        }
       }
       const updatedGroups = groups.filter((g) => editGroups.includes(g.id));
       setStudentGroupsMap((prev) => ({
@@ -413,7 +454,11 @@ export default function StudentsPage() {
         },
       }));
       setStudents((prev) =>
-        prev.map((s) => (s.id === editStudent.id ? { ...s, name: editName.trim(), phone: editPhone.trim() } : s))
+        prev.map((s) =>
+          s.id === editStudent.id
+            ? { ...s, name: editName.trim(), phone: editPhone.trim(), parent_phone: parentPhoneNorm ?? s.parent_phone, sibling_family_id: editSiblingFamilyId }
+            : s
+        )
       );
       setEditStudent(null);
     } catch (err) {
@@ -503,6 +548,27 @@ export default function StudentsPage() {
           data: { group_id: addForm.groupId, student_id: student.id },
           select: false,
         });
+      }
+      const parentPhoneNorm = addForm.parentPhone.trim()
+        ? (addForm.parentPhone.replace(/\D/g, '').length === 11 && addForm.parentPhone.replace(/\D/g, '').startsWith('01')
+          ? '+2' + addForm.parentPhone.replace(/\D/g, '')
+          : addForm.parentPhone.replace(/\D/g, '').length === 10 && addForm.parentPhone.replace(/\D/g, '').startsWith('1')
+            ? '+2' + addForm.parentPhone.replace(/\D/g, '')
+            : addForm.parentPhone.startsWith('+')
+              ? addForm.parentPhone
+              : '+2' + addForm.parentPhone.replace(/\D/g, '').slice(-10))
+        : null;
+      if (parentPhoneNorm) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await fetch('/api/parents/request-consent', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              body: JSON.stringify({ student_id: student.id, parent_phone: parentPhoneNorm }),
+            });
+          }
+        } catch {}
       }
       await auditLog({ centerId, userId, action: 'student_create', entityType: 'students', entityId: student.id, details: { name: addForm.name, student_number: studentNumber } });
       const addedGroup = groups.find((g) => g.id === addForm.groupId);
@@ -634,6 +700,8 @@ export default function StudentsPage() {
           </div>
         )}
 
+        <AtRiskPanel />
+
         {isLoading ? (
           <div className="text-center py-16">
             <svg className="animate-spin h-8 w-8 text-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -642,18 +710,14 @@ export default function StudentsPage() {
             </svg>
           </div>
         ) : students.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Users size={40} className="mx-auto mb-3 opacity-30" />
-            <p>{t('noStudents')}</p>
-            <div className="flex justify-center gap-3 mt-4">
-              <button onClick={() => setShowAddModal(true)} className="px-6 py-3 text-white rounded-lg" style={{ background: 'hsl(var(--primary))' }}>
-                {t('addStudent')}
-              </button>
-              <Link href="/students/import" className="px-6 py-3 border border-border text-foreground rounded-lg hover:bg-muted">
-                {t('import')}
-              </Link>
-            </div>
-          </div>
+          <EmptyState
+            icon={<Users />}
+            titleKey="students.title"
+            descriptionKey="students.description"
+            namespace="emptyStates"
+            actionLabel="students.action"
+            onAction={() => setShowAddModal(true)}
+          />
         ) : (
           <>
             {/* Table desktop */}
@@ -678,7 +742,12 @@ export default function StudentsPage() {
                       <tr key={s.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{s.name}</td>
                         <td className="py-3.5 px-4 text-sm font-mono text-slate-500">{s.student_number || ''}</td>
-                        <td className="py-3.5 px-4 text-sm font-mono text-slate-500" dir="ltr">{s.phone || ''}</td>
+                        <td className="py-3.5 px-4 text-sm">
+                          <span className="font-mono text-slate-500" dir="ltr">{s.phone || ''}</span>
+                          {s.parent_consent_given && (
+                            <span className="ms-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700" title={t('parentConsented', { defaultValue: 'موافقة ولي الأمر' })}>✓ ولي الأمر</span>
+                          )}
+                        </td>
                         <td className="py-3.5 px-4 text-sm">
                           <div className="flex flex-wrap gap-1">
                             {(studentGroupsMap[s.id]?.names ?? []).slice(0, 2).map((n, i) => (
@@ -690,9 +759,7 @@ export default function StudentsPage() {
                           </div>
                         </td>
                         <td className="py-3.5 px-4 text-sm">
-                          <span className={isActive ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-700' : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-700'}>
-                            {isActive ? tCommon('active') : tCommon('inactive')}
-                          </span>
+                          <LifecycleBadge status={s.lifecycle_status} fallbackActive={isActive} />
                         </td>
                         <td className="py-3.5 px-4 text-sm">
                           {bal > 0 ? (
@@ -703,6 +770,9 @@ export default function StudentsPage() {
                         </td>
                         <td className="py-3.5 px-4 text-sm">
                           <div className="flex items-center gap-1">
+                            {canViewPayments && (
+                              <button onClick={() => setPrintStudent({ id: s.id, name: s.name })} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900" title={t('statement.printStatement')}><Printer size={14} /></button>
+                            )}
                             <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900" title={tCommon('edit')}><Edit size={14} /></button>
                             <button onClick={() => openQRModal(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900" title={t('viewQR')}><Eye size={14} /></button>
                             <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600" title={tCommon('delete')}><Trash2 size={14} /></button>
@@ -729,12 +799,13 @@ export default function StudentsPage() {
                           {bal > 0 && (
                             <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold font-mono bg-red-100 text-red-700">{locale === 'ar' ? toAr(Math.round(bal)) : Math.round(bal).toLocaleString()} {tCommon('egp')}</span>
                           )}
-                          <span className={isActive ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-700' : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-700'}>
-                            {isActive ? tCommon('active') : tCommon('inactive')}
-                          </span>
+                          <LifecycleBadge status={s.lifecycle_status} fallbackActive={isActive} />
                         </div>
                         <div className="font-mono text-xs text-slate-500 mt-0.5">{s.student_number || ''}</div>
                         {s.phone && <div className="font-mono text-xs text-slate-500" dir="ltr">{s.phone}</div>}
+                        {s.parent_consent_given && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700 mt-0.5">✓ ولي الأمر</span>
+                        )}
                         <div className="flex flex-wrap gap-1 mt-2">
                           {(studentGroupsMap[s.id]?.names ?? []).map((n, i) => (
                             <span key={i} className="px-2 py-0.5 rounded-full text-xs border border-slate-200 text-slate-600">{n}</span>
@@ -742,6 +813,9 @@ export default function StudentsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
+                        {canViewPayments && (
+                          <button onClick={() => setPrintStudent({ id: s.id, name: s.name })} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><Printer size={14} /></button>
+                        )}
                         <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><Edit size={14} /></button>
                         <button onClick={() => openQRModal(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><Eye size={14} /></button>
                         <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-500"><Trash2 size={14} /></button>
@@ -774,6 +848,7 @@ export default function StudentsPage() {
               {addError && <p className="text-sm text-destructive">{addError}</p>}
               <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={t('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" required />
               <input value={addForm.phone} onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+              <input value={addForm.parentPhone} onChange={(e) => setAddForm((f) => ({ ...f, parentPhone: e.target.value }))} placeholder={t('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">{t('groupRequired')}</label>
                 <select value={addForm.groupId} onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" required>
@@ -802,6 +877,18 @@ export default function StudentsPage() {
             <div className="space-y-3">
               <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={t('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
               <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+              <input value={editParentPhone} onChange={(e) => setEditParentPhone(e.target.value)} placeholder={t('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+              {editStudent.parent_consent_given && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                  {t('parentConsented', { defaultValue: 'موافقة ولي الأمر ✓' })}
+                </span>
+              )}
+              <FamilyLinkingSection
+                centerId={centerId}
+                studentId={editStudent.id}
+                currentFamilyId={editSiblingFamilyId}
+                onFamilyChange={setEditSiblingFamilyId}
+              />
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">{t('assignGroups')}</label>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
@@ -879,6 +966,16 @@ export default function StudentsPage() {
             {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-500 hover:underline">{t('regenerateQR')}</button>}
           </div>
         </div>
+      )}
+
+      {/* Print Statement Modal */}
+      {printStudent && (
+        <PrintStatementModal
+          studentId={printStudent.id}
+          studentName={printStudent.name}
+          isOpen={true}
+          onClose={() => setPrintStudent(null)}
+        />
       )}
 
       {/* Order ID Cards Modal */}

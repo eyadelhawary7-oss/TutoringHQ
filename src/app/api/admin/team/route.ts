@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const { data: team, error } = await ctx.supabaseAdmin
       .from('admin_users')
-      .select('id, name, email, role, phone, created_at')
+      .select('id, name, email, role, phone, custom_permissions, created_at')
       .order('created_at', { ascending: true });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    const { name, email, phone, role } = parsed.data;
+    const { name, email, phone, role, custom_permissions } = parsed.data;
 
     // Format phone: remove non-digits, ensure starts with 20 (Egypt)
     let formattedPhone = phone.replace(/\D/g, '');
@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
 
     const adminEmail = (email || '').trim() || `${formattedPhone}@centerhq.placeholder`;
 
+    const customPerms = custom_permissions ?? [];
     const { error: insertError } = await ctx.supabaseAdmin
       .from('admin_users')
       .insert({
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
         email: adminEmail,
         phone: formattedPhone,
         role,
+        custom_permissions: customPerms,
       });
 
     if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
@@ -134,7 +136,7 @@ export async function PUT(request: NextRequest) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    const { memberId, role, password } = parsed.data;
+    const { memberId, role, custom_permissions, password } = parsed.data;
 
     // Password confirmation required for changing another admin's role
     const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
@@ -168,9 +170,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot change super admin role' }, { status: 400 });
     }
 
+    const updatePayload: { role: string; custom_permissions?: string[] } = { role };
+    if (role === 'custom' && custom_permissions) {
+      updatePayload.custom_permissions = custom_permissions;
+    }
     const { error } = await ctx.supabaseAdmin
       .from('admin_users')
-      .update({ role })
+      .update(updatePayload)
       .eq('id', memberId);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

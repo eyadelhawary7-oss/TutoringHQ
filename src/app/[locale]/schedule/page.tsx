@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { PageHeader } from '@/components/shared';
 import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
+import EmptyState from '@/components/empty-states/EmptyState';
 
 interface Room {
   id: string;
@@ -25,15 +26,17 @@ interface ScheduleSlot {
   id: string;
   room_id: string;
   group_id?: string | null;
+  teacher_id?: string | null;
   day_of_week: number | string;
   start_time: string;
   end_time: string;
   recurring?: boolean;
   room_name?: string;
   group_name?: string;
+  member_count?: number;
 }
 
-const DAY_KEYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const DAY_COLORS = ['#0D9488', '#7C3AED', '#F59E0B', '#DC2626', '#16A34A', '#0EA5E9', '#6B7280'];
 const DAY_ORDER = [0, 1, 2, 3, 4, 5, 6] as const;
 
@@ -64,6 +67,7 @@ function formatHour(h: number): string {
 export default function SchedulePage() {
   const t = useTranslations('schedule');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
   const { user, hasPermission } = useUser();
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -83,7 +87,15 @@ export default function SchedulePage() {
   const [slotError, setSlotError] = useState('');
   const [slotSuccess, setSlotSuccess] = useState('');
 
+  const isReadOnly = user?.role === 'teacher' || user?.role === 'assistant';
+  const isTeacher = user?.role === 'teacher';
   const canEdit = user?.role === 'owner' || user?.role === 'admin';
+
+  // Teacher group filter: schedule_slots has teacher_id column
+  const displaySlots = useMemo(() => {
+    if (!isTeacher || !userId) return slots;
+    return slots.filter((s) => s.teacher_id === userId);
+  }, [slots, isTeacher, userId]);
 
   useEffect(() => {
     if ((user?.role === 'assistant' || user?.role === 'teacher') && !hasPermission('can_view_schedule')) {
@@ -105,12 +117,21 @@ export default function SchedulePage() {
     const [roomsRes, groupsRes, slotsRes] = await Promise.all([
       dbSelect({ table: 'rooms', select: 'id, name, capacity', filters: [{ column: 'center_id', op: 'eq', value: cid }], order: { column: 'name' } }),
       dbSelect({ table: 'student_groups', select: 'id, name, subject', filters: [{ column: 'center_id', op: 'eq', value: cid }], order: { column: 'name' } }),
-      dbSelect({ table: 'schedule_slots', select: 'id, room_id, group_id, day_of_week, start_time, end_time, recurring', filters: [{ column: 'center_id', op: 'eq', value: cid }] }),
+      dbSelect({ table: 'schedule_slots', select: 'id, room_id, group_id, teacher_id, day_of_week, start_time, end_time, recurring', filters: [{ column: 'center_id', op: 'eq', value: cid }] }),
     ]);
 
     const roomsData = (roomsRes.data || []) as Room[];
     const groupsData = (groupsRes.data || []) as Group[];
     const slotsData = (slotsRes.data || []) as ScheduleSlot[];
+    const groupIds = groupsData.map((g) => g.id);
+    const membersRes = groupIds.length > 0
+      ? await dbSelect({ table: 'student_group_members', select: 'group_id', filters: [{ column: 'group_id', op: 'in' as const, value: groupIds }] })
+      : { data: [] };
+    const membersData = (membersRes.data || []) as { group_id: string }[];
+    const memberCountByGroup: Record<string, number> = {};
+    membersData.forEach((m) => {
+      memberCountByGroup[m.group_id] = (memberCountByGroup[m.group_id] || 0) + 1;
+    });
 
     setRooms(roomsData);
     setGroups(groupsData);
@@ -118,6 +139,7 @@ export default function SchedulePage() {
       ...s,
       room_name: roomsData.find(r => r.id === s.room_id)?.name ?? '',
       group_name: s.group_id ? groupsData.find(g => g.id === s.group_id)?.name ?? '' : '',
+      member_count: s.group_id ? memberCountByGroup[s.group_id] ?? 0 : 0,
     })));
     setIsLoading(false);
   };
@@ -128,13 +150,13 @@ export default function SchedulePage() {
     if (!formRoomId) return false;
     const startM = timeToMinutes(formStart);
     const endM = timeToMinutes(formEnd);
-    return slots.some(s =>
+    return displaySlots.some(s =>
       s.room_id === formRoomId &&
       Number(s.day_of_week) === formDay &&
       timeToMinutes(s.start_time) < endM &&
       timeToMinutes(s.end_time) > startM
     );
-  }, [slots, formRoomId, formDay, formStart, formEnd]);
+  }, [displaySlots, formRoomId, formDay, formStart, formEnd]);
 
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,7 +232,7 @@ export default function SchedulePage() {
   const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
 
   const getSlotsInCell = (day: number, hour: number) =>
-    slots.filter(s => {
+    displaySlots.filter(s => {
       if (Number(s.day_of_week) !== day) return false;
       const startM = timeToMinutes(s.start_time);
       const endM = timeToMinutes(s.end_time);
@@ -237,15 +259,24 @@ export default function SchedulePage() {
       }
     }
     return conflictIds;
-  }, [slots]);
+  }, [displaySlots]);
 
   return (
     <div className="space-y-5 animate-fade-in">
       <PageHeader
-        title={t('title')}
+        title={
+          <>
+            {isTeacher ? t('yourSchedule') : t('title')}
+            {isReadOnly && (
+              <span className="inline-flex items-center text-xs bg-teal-50 text-teal-700 border border-teal-200 rounded-full px-2 py-0.5 ms-2">
+                {t('readOnly')}
+              </span>
+            )}
+          </>
+        }
         subtitle={(user?.role === 'assistant' || user?.role === 'teacher') && hasPermission('can_view_schedule') ? t('viewOnly', { defaultValue: 'View only' }) : undefined}
       >
-        {canEdit && (
+        {!isReadOnly && canEdit && (
           <button
             onClick={() => { setShowAddModal(true); setSlotError(''); }}
             className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
@@ -270,6 +301,7 @@ export default function SchedulePage() {
         </div>
       ) : (
         <>
+          <div className="hidden md:block">
           <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 mb-4 overflow-x-auto">
             {DAY_ORDER.map(day => (
               <button
@@ -337,11 +369,67 @@ export default function SchedulePage() {
               </div>
             ))}
           </div>
+          </div>
+
+          {/* Teacher mobile list view */}
+          <div className={`md:hidden ${isTeacher ? 'block' : 'hidden'}`}>
+            {(() => {
+              const todayIndex = new Date().getDay();
+              const todaySessions = displaySlots.filter((s) => Number(s.day_of_week) === todayIndex);
+              const thisWeekSessions = displaySlots.filter((s) => Number(s.day_of_week) !== todayIndex);
+              return (
+                <>
+                  <h3 className="font-bold text-teal-700 text-sm mb-2">{t('today')}</h3>
+                  {todaySessions.length === 0 && (
+                    <p className="text-xs text-slate-400 mb-3">{t('noSessionsToday')}</p>
+                  )}
+                  {todaySessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="bg-white rounded-lg shadow-sm p-3 mb-2 border-r-4 border-teal-500"
+                      dir="rtl"
+                    >
+                      <div className="font-mono text-teal-600 text-sm">
+                        {formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}
+                      </div>
+                      <div className="font-bold text-sm mt-0.5">{session.group_name || '—'}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        {session.room_name || '—'} • {session.member_count ?? 0} طالب
+                      </div>
+                    </div>
+                  ))}
+                  <hr className="my-3" />
+                  <h3 className="font-bold text-slate-700 text-sm mb-2">{t('thisWeek')}</h3>
+                  {thisWeekSessions.length === 0 && (
+                    <p className="text-xs text-slate-400">{t('noSessionsWeek')}</p>
+                  )}
+                  {thisWeekSessions.map((session) => (
+                    <div key={session.id} className="bg-white rounded-lg shadow-sm p-3 mb-2" dir="rtl">
+                      <div className="font-mono text-teal-600 text-sm">
+                        {formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}
+                      </div>
+                      <div className="font-bold text-sm mt-0.5">{session.group_name || '—'}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        {session.room_name || '—'} • {session.member_count ?? 0} طالب
+                      </div>
+                    </div>
+                  ))}
+                </>
+              );
+            })()}
+          </div>
         </>
       )}
 
       {rooms.length === 0 && !isLoading && (
-        <p className="text-slate-500 py-8 text-center">{t('noRooms')}</p>
+        <EmptyState
+          icon={<Clock />}
+          titleKey="rooms.title"
+          descriptionKey="rooms.description"
+          namespace="emptyStates"
+          actionLabel="rooms.action"
+          onAction={() => router.push(`/${locale}/rooms`)}
+        />
       )}
 
       {/* Add Session Modal */}

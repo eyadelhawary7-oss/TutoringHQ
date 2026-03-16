@@ -6,6 +6,7 @@ import { useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { Globe, Menu } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface MobileTopBarProps {
   onMenuClick?: () => void;
@@ -26,6 +27,16 @@ export default function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
     startTransition(() => {
       router.replace(pathname, { locale: newLocale as 'ar' | 'en' });
     });
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      fetch('/api/user/locale', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ locale: newLocale }),
+      }).catch(() => undefined);
+    })();
   };
 
   return (

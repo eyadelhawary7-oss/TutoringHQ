@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ valid: false }, { status: 200 });
     }
-    const cleanCode = parsed.data.code.trim().toUpperCase();
-    if (cleanCode.length !== 8) {
+    const cleanCode = String(parsed.data.code).trim().toUpperCase();
+    if (!cleanCode) {
       return NextResponse.json({ valid: false }, { status: 200 });
     }
 
@@ -24,13 +24,37 @@ export async function POST(request: NextRequest) {
       auth: { persistSession: false },
     });
 
-    const { data } = await supabase
+    let centerId: string | null = null;
+    const { data: refCode } = await supabase
+      .from('referral_codes')
+      .select('center_id')
+      .eq('code', cleanCode)
+      .maybeSingle();
+    if (refCode?.center_id) centerId = refCode.center_id;
+
+    if (!centerId) {
+      const { data: centerByCode } = await supabase
+        .from('centers')
+        .select('id, name')
+        .eq('referral_code', cleanCode)
+        .maybeSingle();
+      if (centerByCode?.id) centerId = centerByCode.id;
+    }
+
+    if (!centerId) {
+      return NextResponse.json({ valid: false }, { status: 200 });
+    }
+
+    const { data: center } = await supabase
       .from('centers')
-      .select('id')
-      .eq('referral_code', cleanCode)
+      .select('name')
+      .eq('id', centerId)
       .single();
 
-    return NextResponse.json({ valid: !!data });
+    const name = center?.name ?? '';
+    const masked = name.length >= 2 ? name.slice(0, 2) + '***' : 'سنتر ***';
+
+    return NextResponse.json({ valid: true, referrerName: masked });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

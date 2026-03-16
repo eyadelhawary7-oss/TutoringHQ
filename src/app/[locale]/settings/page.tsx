@@ -11,7 +11,9 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import { PageHeader, RoleBadge, PlanBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
-import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard, Loader2, FileText } from 'lucide-react';
+import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard, Loader2, FileText, Calendar } from 'lucide-react';
+import { getPlanLevel } from '@/lib/plans';
+import { FEATURES } from '@/lib/features';
 
 type TabType = 'general' | 'billing' | 'team';
 
@@ -28,7 +30,10 @@ interface CenterInfo {
   logo_url: string | null;
   scanner_default_mode: string;
   phone?: string | null;
+  district?: string | null;
   max_teachers?: number;
+  daily_summary_enabled?: boolean;
+  summer_mode?: boolean;
 }
 
 interface TeamMember {
@@ -75,10 +80,12 @@ interface PaygRate {
 }
 
 // ========== Constants ==========
-const PLAN_DISPLAY_NAMES: Record<string, string> = { starter: 'سنتر صغير', pro: 'سنتر متوسط', business: 'سنتر كبير', enterprise: 'سنتر ضخم', top_centers: 'ميجا سنتر' };
-const PLAN_PER_STUDENT_WEEK: Record<string, string> = { starter: '3.33', pro: '2.25', business: '1.63', enterprise: '1.13', top_centers: '' };
+const PLAN_DISPLAY_NAMES: Record<string, string> = { nascent: 'ناشئ', nano: 'ناشئ', starter: 'سنتر صغير', pro: 'سنتر متوسط', business: 'سنتر كبير', enterprise: 'سنتر ضخم', top_centers: 'ميجا سنتر' };
+const PLAN_PER_STUDENT_WEEK: Record<string, string> = { nascent: '3.69', nano: '3.69', starter: '3.33', pro: '2.25', business: '1.63', enterprise: '1.13', top_centers: '' };
 
 const FALLBACK_PLANS: PricingPlan[] = [
+  { id: 'nascent', name_en: 'Nascent', name_ar: 'ناشئ', students_per_week_limit: 75, monthly_fee: 1200, per_student_at_capacity_egp: 16, setup_fee_egp: 500, is_custom: false },
+  { id: 'nano', name_en: 'Nano', name_ar: 'ناشئ', students_per_week_limit: 75, monthly_fee: 1200, per_student_at_capacity_egp: 3.69, setup_fee_egp: 500, is_custom: false },
   { id: 'starter', name_en: 'سنتر صغير', name_ar: 'سنتر صغير', students_per_week_limit: 150, monthly_fee: 2000, per_student_at_capacity_egp: 13.33, setup_fee_egp: 1000, is_custom: false },
   { id: 'pro', name_en: 'سنتر متوسط', name_ar: 'سنتر متوسط', students_per_week_limit: 500, monthly_fee: 4500, per_student_at_capacity_egp: 9, setup_fee_egp: 2000, is_custom: false },
   { id: 'business', name_en: 'سنتر كبير', name_ar: 'سنتر كبير', students_per_week_limit: 1000, monthly_fee: 6500, per_student_at_capacity_egp: 6.5, setup_fee_egp: 3000, is_custom: false },
@@ -134,11 +141,14 @@ function calculatePaygCost(_rates: PaygRate[], students: number) {
 }
 
 function getFixedPlanComparison(plans: PricingPlan[], students: number) {
+  const nascent = plans.find(p => p.id === 'nascent');
+  const nano = plans.find(p => p.id === 'nano');
   const starter = plans.find(p => p.id === 'starter');
   const pro = plans.find(p => p.id === 'pro');
   const business = plans.find(p => p.id === 'business');
   const enterprise = plans.find(p => p.id === 'enterprise');
   const top = plans.find(p => p.id === 'top_centers');
+  if (students <= 75) return { planName: nascent?.name_en ?? 'Nascent', planNameAr: nascent?.name_ar ?? 'ناشئ', planFee: nascent?.monthly_fee ?? 1200, isCustom: false };
   if (students <= 150) return { planName: starter?.name_en ?? 'Starter', planNameAr: starter?.name_ar ?? 'أساسي', planFee: starter?.monthly_fee ?? 2000, isCustom: false };
   if (students <= 500) return { planName: pro?.name_en ?? 'Pro', planNameAr: pro?.name_ar ?? 'محترف', planFee: pro?.monthly_fee ?? 4500, isCustom: false };
   if (students <= 1000) return { planName: business?.name_en ?? 'Business', planNameAr: business?.name_ar ?? 'أعمال', planFee: business?.monthly_fee ?? 6500, isCustom: false };
@@ -189,8 +199,11 @@ function SettingsPageContent() {
   // General
   const [centerName, setCenterName] = useState('');
   const [centerPhone, setCenterPhone] = useState('');
+  const [centerDistrict, setCenterDistrict] = useState('');
   const [newSubjectName, setNewSubjectName] = useState('');
   const [scannerMode, setScannerMode] = useState('camera');
+  const [dailySummaryEnabled, setDailySummaryEnabled] = useState(true);
+  const [summerModeEnabled, setSummerModeEnabled] = useState(false);
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [referralData, setReferralData] = useState<{ referralCode: string; rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[]; pending?: { referred_center_name: string; referred_center_plan: string; reward_status: string }[]; totalEarned: number } | null>(null);
@@ -227,6 +240,7 @@ function SettingsPageContent() {
   const [proofUploading, setProofUploading] = useState(false);
   const [billingSaving, setBillingSaving] = useState(false);
   const [planRequests, setPlanRequests] = useState<Array<{ id: string; current_plan: string; requested_plan: string; status: string; requested_at?: string }>>([]);
+  const [payNowLoading, setPayNowLoading] = useState(false);
 
   // Team
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -279,7 +293,10 @@ function SettingsPageContent() {
         setCenter(c);
         setCenterName(c.name || '');
         setCenterPhone(c.phone || '');
+        setCenterDistrict(c.district || '');
         setScannerMode(c.scanner_default_mode || 'camera');
+        setDailySummaryEnabled(c.daily_summary_enabled !== false);
+        setSummerModeEnabled(c.summer_mode === true);
         setLogoUrl(c.logo_url ?? null);
         setLogoLoadFailed(false);
       }
@@ -457,6 +474,21 @@ function SettingsPageContent() {
     }
   };
 
+  const handleSaveCenterDistrict = async () => {
+    if (!centerId || !userId) return;
+    const val = centerDistrict.trim() || null;
+    const { error } = await dbUpdate({
+      table: 'centers',
+      data: { district: val },
+      filters: [{ column: 'id', op: 'eq', value: centerId }],
+    });
+    if (!error) {
+      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'district' } });
+      setCenter(prev => prev ? { ...prev, district: val } : null);
+      showSaved();
+    }
+  };
+
   const showLogoToast = (type: 'success' | 'error') => {
     setLogoToast(type);
     setTimeout(() => setLogoToast(null), 3000);
@@ -561,6 +593,40 @@ function SettingsPageContent() {
     }
   };
 
+  const handleDailySummaryToggle = async (enabled: boolean) => {
+    if (!centerId || !userId) return;
+    setDailySummaryEnabled(enabled);
+    const { error } = await dbUpdate({
+      table: 'centers',
+      data: { daily_summary_enabled: enabled },
+      filters: [{ column: 'id', op: 'eq', value: centerId }],
+    });
+    if (!error) {
+      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'daily_summary_enabled', value: enabled } });
+      setCenter((prev) => (prev ? { ...prev, daily_summary_enabled: enabled } : null));
+      showSaved();
+    } else {
+      setDailySummaryEnabled(!enabled);
+    }
+  };
+
+  const handleSummerModeToggle = async (enabled: boolean) => {
+    if (!centerId || !userId) return;
+    setSummerModeEnabled(enabled);
+    const { error } = await dbUpdate({
+      table: 'centers',
+      data: { summer_mode: enabled },
+      filters: [{ column: 'id', op: 'eq', value: centerId }],
+    });
+    if (!error) {
+      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'summer_mode', value: enabled } });
+      setCenter((prev) => (prev ? { ...prev, summer_mode: enabled } : null));
+      showSaved();
+    } else {
+      setSummerModeEnabled(!enabled);
+    }
+  };
+
   // Billing handlers
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -647,6 +713,26 @@ function SettingsPageContent() {
       alert(err instanceof Error ? err.message : tBilling('updateFailed'));
     } finally {
       setBillingSaving(false);
+    }
+  };
+
+  const handlePayNow = async () => {
+    if (!FEATURES.PAYMOB_ENABLED || payNowLoading || currentUser?.role !== 'owner') return;
+    try {
+      setPayNowLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/billing/initiate-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed');
+      if (json.payment_url) window.open(json.payment_url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : tBilling('updateFailed'));
+    } finally {
+      setPayNowLoading(false);
     }
   };
 
@@ -908,8 +994,25 @@ function SettingsPageContent() {
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('centerPhone')}</label>
                       <input type="tel" value={centerPhone} onChange={(e) => setCenterPhone(e.target.value)} dir="ltr" placeholder="01xxxxxxxxx" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('district')}</label>
+                      <select value={centerDistrict} onChange={(e) => setCenterDistrict(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white">
+                        <option value="">—</option>
+                        <option value="nasr_city">مدينة نصر</option>
+                        <option value="maadi">المعادي</option>
+                        <option value="dokki">الدقي</option>
+                        <option value="heliopolis">هليوبوليس</option>
+                        <option value="new_cairo">القاهرة الجديدة</option>
+                        <option value="6th_october">السادس من أكتوبر</option>
+                        <option value="giza">الجيزة</option>
+                        <option value="zamalek">الزمالك</option>
+                        <option value="mohandiseen">المهندسين</option>
+                        <option value="other">أخرى</option>
+                      </select>
+                      <p className="text-xs text-slate-500 mt-1">{t('districtHint')}</p>
+                    </div>
                     <div className="flex justify-end">
-                      <button type="button" onClick={() => { handleSaveCenterName(); handleSaveCenterPhone(); }} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">{tCommon('save')}</button>
+                      <button type="button" onClick={() => { handleSaveCenterName(); handleSaveCenterPhone(); handleSaveCenterDistrict(); }} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">{tCommon('save')}</button>
                     </div>
                   </div>
                 </div>
@@ -995,6 +1098,66 @@ function SettingsPageContent() {
               </div>
             </div>
 
+            {/* 4b. Daily WhatsApp Summary */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-teal-100 rounded-xl flex-shrink-0">
+                  <MessageCircle className="w-5 h-5 text-teal-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">{t('dailySummary')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{t('dailySummaryDesc')}</p>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{t('dailySummaryToggle')}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{t('dailySummaryDesc')}</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={dailySummaryEnabled}
+                    onClick={() => handleDailySummaryToggle(!dailySummaryEnabled)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${dailySummaryEnabled ? 'bg-teal-600' : 'bg-slate-200'}`}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${dailySummaryEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 4c. Summer mode */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+                <div className="p-2.5 bg-amber-100 rounded-xl flex-shrink-0">
+                  <Calendar className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">{t('summerMode')}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{t('summerModeDesc')}</p>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{t('summerModeToggle')}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{t('summerModeDesc')}</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={summerModeEnabled}
+                    onClick={() => handleSummerModeToggle(!summerModeEnabled)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${summerModeEnabled ? 'bg-teal-600' : 'bg-slate-200'}`}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${summerModeEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* 5. Referral Program */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-slate-100">
@@ -1018,7 +1181,14 @@ function SettingsPageContent() {
                       <Copy className="w-4 h-4" /> {referralCopied ? tReferral('copied') : tReferral('copyCode')}
                     </button>
                   </div>
-                  <p className="text-sm text-slate-600 mb-2">40% of referred center&apos;s first month fee credited to your account</p>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/${locale}/settings/referrals`)}
+                    className="flex items-center gap-2 px-4 py-2 border border-teal-600 text-teal-600 rounded-lg text-sm hover:bg-teal-50 transition-colors"
+                  >
+                    {t('manageReferrals')}
+                  </button>
+                  <p className="text-sm text-slate-600 mb-2">{tReferral('referralRateDescription')}</p>
                   <p className="text-xs text-slate-500 mb-2">Total Referrals: {(referralData.rewards?.length ?? 0)} | Earned: EGP {Number(referralData.totalEarned || 0).toLocaleString('ar-EG')}</p>
                   <div>
                     <p className="text-sm font-medium text-slate-700 mb-2">{tReferral('rewardsTable')}</p>
@@ -1131,7 +1301,7 @@ function SettingsPageContent() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-teal-200 text-sm font-medium uppercase tracking-wider">{tBilling('currentPlan')}</p>
-                      <p className="text-4xl font-bold mt-1">{PLAN_DISPLAY_NAMES[billingData?.plan ?? 'starter'] ?? currentPlanDetails?.name_en ?? billingData?.plan ?? 'سنتر صغير'}</p>
+                      <p className="text-4xl font-bold mt-1">{PLAN_DISPLAY_NAMES[billingData?.plan ?? 'starter'] ?? currentPlanDetails?.name_en ?? billingData?.plan ?? 'سنتر نانو'}</p>
                       <p className="text-teal-200 text-sm mt-2">حتى {currentPlanDetails?.is_custom ? '2,000+' : (currentPlanDetails?.students_per_week_limit?.toLocaleString('en-US') ?? 0)} طالب/أسبوع</p>
                     </div>
                     <div className="text-end">
@@ -1144,9 +1314,21 @@ function SettingsPageContent() {
                       <p className="text-teal-300 text-sm">تكلفة/طالب/أسبوع</p>
                     </div>
                   </div>
-                  <div className="mt-4 pt-4 border-t border-teal-500/40 flex items-center justify-between">
+                  <div className="mt-4 pt-4 border-t border-teal-500/40 flex items-center justify-between flex-wrap gap-2">
                     <p className="text-teal-200 text-sm">Next payment due: <span className="text-white font-semibold">—</span></p>
-                    <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full border border-green-500/30">{tBilling('active')}</span>
+                    <div className="flex items-center gap-2">
+                      {FEATURES.PAYMOB_ENABLED && (
+                        <button
+                          type="button"
+                          onClick={handlePayNow}
+                          disabled={payNowLoading}
+                          className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {payNowLoading ? tCommon('loading') : 'ادفع الآن'}
+                        </button>
+                      )}
+                      <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full border border-green-500/30">{tBilling('active')}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -1154,12 +1336,12 @@ function SettingsPageContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   {plans.map((plan) => {
                     const isCurrent = billingData?.plan === plan.id && billingData?.pricing_type === 'fixed';
-                    const setupFees: Record<string, number> = { starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0 };
+                    const setupFees: Record<string, number> = { nascent: 500, nano: 500, starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0 };
                     const setupFee = plan.setup_fee_egp ?? setupFees[plan.id] ?? 0;
                     const perStudentWeek = plan.is_custom ? null : (PLAN_PER_STUDENT_WEEK[plan.id] ?? (plan.students_per_week_limit > 0 ? (plan.monthly_fee / (plan.students_per_week_limit * 4)).toFixed(2) : null));
                     const planName = PLAN_DISPLAY_NAMES[plan.id] ?? plan.name_en ?? plan.name_ar;
                     return (
-                      <div key={plan.id} className={`bg-white rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-200'}`} style={plan.is_custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.3)' } : {}}>
+                      <div key={plan.id} className={`bg-white rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-200'}`} style={plan.is_custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.25)' } : {}}>
                         {isCurrent && (
                           <div className="absolute -top-3 start-1/2 -translate-x-1/2">
                             <span className="px-3 py-1 bg-teal-600 text-white text-xs font-semibold rounded-full shadow">{tBilling('currentPlan')}</span>
@@ -1169,7 +1351,7 @@ function SettingsPageContent() {
                         <ul className="text-sm text-slate-500 mt-1 space-y-0.5" dir="rtl">
                           <li>• حتى {plan.is_custom ? '2,000+' : plan.students_per_week_limit?.toLocaleString('en-US')} طالب/أسبوع</li>
                           {perStudentWeek && (
-                            <li>• {perStudentWeek} جنيه/طالب/أسبوع</li>
+                            <li>• {perStudentWeek} {tCommon('perStudentPerWeek')}</li>
                           )}
                           {plan.is_custom && (
                             <li>• تسعير مخصص حسب الاحتياج</li>
@@ -1177,10 +1359,10 @@ function SettingsPageContent() {
                         </ul>
                         <div className="my-4">
                           <span className="text-3xl font-bold text-slate-900 font-mono">{plan.is_custom ? tBilling('custom') : Number(plan.monthly_fee).toLocaleString('en-US')}</span>
-                          <span className="text-slate-500 text-sm"> {tBilling('egp')}/month</span>
+                          {!plan.is_custom && <span className="text-base font-normal text-slate-400">{tCommon('perMonth')}</span>}
                         </div>
                         <p className="text-xs text-slate-400 mb-4">Setup fee: {tBilling('egp')} {plan.is_custom ? '—' : Number(setupFee).toLocaleString('en-US')}</p>
-                        <button type="button" onClick={() => !isCurrent && setShowPlanRequestModal(true)} className={isCurrent ? 'w-full py-2 rounded-lg text-sm font-semibold bg-teal-50 text-teal-600 border border-teal-200 cursor-default' : 'w-full py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors'} disabled={isCurrent}>{isCurrent ? 'Current Plan' : 'Request Upgrade'}</button>
+                        <button type="button" onClick={() => !isCurrent && (setChangePlanSelect(plan.id), setShowPlanRequestModal(true))} className={isCurrent ? 'w-full py-2 rounded-lg text-sm font-semibold bg-teal-50 text-teal-600 border border-teal-200 cursor-default' : 'w-full py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors'} disabled={isCurrent}>{isCurrent ? 'Current Plan' : (getPlanLevel(plan.id) > getPlanLevel(billingData?.plan) ? 'Request Upgrade' : 'Request Downgrade')}</button>
                       </div>
                     );
                   })}

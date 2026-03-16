@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     // Admin users are identified by admin_users table (source of truth)
     const { data: adminUser } = await supabaseAdmin
       .from('admin_users')
-      .select('id, role')
+      .select('id, role, custom_permissions')
       .eq('id', user.id)
       .single();
 
@@ -59,16 +59,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ isAdmin: false });
     }
 
-    let role = 'internal_viewer';
+    let role = adminUser?.role ?? 'admin';
     if (adminByPhone) role = 'super_admin';
-    else if (adminUser?.role === 'super_admin' || adminUser?.role === 'admin') role = 'super_admin';
-    else if (adminUser?.role === 'internal_admin') role = 'internal_admin';
-    else if (adminUser?.role === 'internal_viewer') role = 'internal_viewer';
+    const customPermissions = (adminUser?.custom_permissions as string[] | null) ?? [];
 
     console.log('✅ [admin/check] Admin verified, role:', role);
     return NextResponse.json({
       isAdmin: true,
       role,
+      customPermissions,
       hasCenter: false, // Admins don't have centers; they manage the platform globally
     });
   } catch (err) {

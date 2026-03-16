@@ -14,11 +14,15 @@ import {
   X,
   MoreHorizontal,
   LogOut,
+  ClipboardList,
   BookOpen,
   DoorOpen,
   Calendar,
   Settings,
   Shield,
+  BarChart3,
+  GraduationCap,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,9 +34,13 @@ const primaryItems: { key: string; path: string; icon: React.ElementType; permis
 ];
 
 const moreItems: { key: string; path: string; icon: React.ElementType; permission?: PermissionKey; ownerAdminOnly?: boolean }[] = [
+  { key: 'analytics', path: '/analytics', icon: BarChart3, permission: 'can_view_revenue' },
+  { key: 'attendance', path: '/attendance', icon: ClipboardList, permission: 'can_scan' },
   { key: 'groups', path: '/groups', icon: BookOpen, permission: 'can_manage_groups' },
   { key: 'rooms', path: '/rooms', icon: DoorOpen, ownerAdminOnly: true },
   { key: 'schedule', path: '/schedule', icon: Calendar, permission: 'can_view_schedule' },
+  { key: 'academic', path: '/academic', icon: GraduationCap, ownerAdminOnly: true },
+  { key: 'branches', path: '/branches', icon: Building2, ownerAdminOnly: true },
   { key: 'settings', path: '/settings', icon: Settings, permission: 'can_view_settings' },
 ];
 

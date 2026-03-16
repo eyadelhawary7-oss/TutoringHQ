@@ -62,15 +62,13 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     return null;
   }
 
-  // Determine role: phone-based admins are always super_admin
+  // Determine role: phone-based admins are always super_admin; only super_admin can manage team
   let internalRole: InternalRole = 'internal_viewer';
-  if (adminByPhone) {
+  if (adminByPhone || adminRow?.role === 'super_admin') {
     internalRole = 'super_admin';
-  } else if (adminRow?.role === 'super_admin' || adminRow?.role === 'admin') {
-    internalRole = 'super_admin';
-  } else if (adminRow?.role === 'internal_admin') {
+  } else if (adminRow?.role === 'admin' || adminRow?.role === 'internal_admin') {
     internalRole = 'internal_admin';
-  } else if (adminRow?.role === 'internal_viewer') {
+  } else if (adminRow?.role === 'sales_rep' || adminRow?.role === 'support_agent' || adminRow?.role === 'accountant' || adminRow?.role === 'custom' || adminRow?.role === 'internal_viewer') {
     internalRole = 'internal_viewer';
   }
 

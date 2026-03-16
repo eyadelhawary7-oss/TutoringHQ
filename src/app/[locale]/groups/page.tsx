@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { Plus, BookOpen, X, Users, ChevronRight, Search } from 'lucide-react';
+import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
+import EmptyState from '@/components/empty-states/EmptyState';
 
 interface Group {
   id: string;
@@ -14,6 +16,7 @@ interface Group {
   fee?: number;
   member_count?: number;
   teacher_name?: string | null;
+  max_capacity?: number | null;
 }
 
 interface Student {
@@ -31,6 +34,7 @@ interface Subject {
 export default function GroupsPage() {
   const t = useTranslations('groups');
   const tCommon = useTranslations('common');
+  const tHeatmap = useTranslations('heatmap');
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const { user } = useUser();
@@ -41,14 +45,17 @@ export default function GroupsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
+  const [expandedHeatmapId, setExpandedHeatmapId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee: '', studentIds: [] as string[] });
+  const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee: '', studentIds: [] as string[], maxCapacity: '' });
   const [addSearch, setAddSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState('');
   const [members, setMembers] = useState<{ student_id: string; student_name: string; student_number?: string }[]>([]);
   const [studentOtherGroups, setStudentOtherGroups] = useState<Record<string, string[]>>({});
   const [addMemberSearch, setAddMemberSearch] = useState('');
+  const [waitlist, setWaitlist] = useState<{ id: string; name: string; student_number?: string | null; parent_phone?: string | null }[]>([]);
+  const [activeTab, setActiveTab] = useState<'members' | 'waitlist'>('members');
 
   const loadData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -64,7 +71,7 @@ export default function GroupsPage() {
     const [groupsRes, studentsRes, subjectsRes, slotsRes] = await Promise.all([
       dbSelect({
         table: 'student_groups',
-        select: 'id, name, subject, fee',
+        select: 'id, name, subject, fee, max_capacity',
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
         order: { column: 'name' },
       }),
@@ -134,7 +141,21 @@ export default function GroupsPage() {
   useEffect(() => { loadData(); }, []);
 
   useEffect(() => {
-    if (!detailGroup) { setMembers([]); setStudentOtherGroups({}); return; }
+    if (!detailGroup) setExpandedHeatmapId(null);
+  }, [detailGroup]);
+
+  const loadWaitlist = useCallback(async (groupId: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch(`/api/groups/${groupId}/waitlist`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const data = await res.json();
+    setWaitlist(data?.waitlist ?? []);
+  }, []);
+
+  useEffect(() => {
+    if (!detailGroup) { setMembers([]); setStudentOtherGroups({}); setWaitlist([]); return; }
     const loadMembers = async () => {
       const { data: membersData } = await dbSelect({
         table: 'student_group_members',
@@ -167,7 +188,10 @@ export default function GroupsPage() {
       setStudentOtherGroups(map);
     };
     loadMembers();
-  }, [detailGroup, students, groups]);
+    if (detailGroup.max_capacity != null && detailGroup.max_capacity < 999) {
+      loadWaitlist(detailGroup.id);
+    }
+  }, [detailGroup, students, groups, loadWaitlist]);
 
   const studentsForAddModal = useMemo(() => {
     if (!addSearch.trim()) return students;
@@ -214,9 +238,10 @@ export default function GroupsPage() {
     const subjectName = subjects.find(s => s.id === addForm.subjectId)?.name ?? '';
     setIsAdding(true);
     try {
+      const maxCap = addForm.maxCapacity.trim() ? parseInt(addForm.maxCapacity, 10) : null;
       const { data, error } = await dbInsert({
         table: 'student_groups',
-        data: { center_id: centerId, name: addForm.name.trim(), subject: subjectName, fee: fee },
+        data: { center_id: centerId, name: addForm.name.trim(), subject: subjectName, fee: fee, max_capacity: maxCap && maxCap > 0 ? maxCap : null },
         single: true,
       });
       if (error) {
@@ -232,9 +257,9 @@ export default function GroupsPage() {
         for (const sid of addForm.studentIds) {
           await dbInsert({ table: 'student_group_members', data: { group_id: inserted.id, student_id: sid }, select: false });
         }
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addForm.studentIds.length, teacher_name: null }]);
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addForm.studentIds.length, teacher_name: null, max_capacity: maxCap }]);
         setShowAddModal(false);
-        setAddForm({ name: '', subjectId: '', fee: '', studentIds: [] });
+        setAddForm({ name: '', subjectId: '', fee: '', studentIds: [], maxCapacity: '' });
       } else {
         setAddError(t('groupCreatedRefresh', { defaultValue: 'Group created but could not refresh.' }));
       }
@@ -276,6 +301,20 @@ export default function GroupsPage() {
     });
     setMembers(prev => prev.filter(m => m.student_id !== studentId));
     setGroups(prev => prev.map(g => g.id === detailGroup.id ? { ...g, member_count: Math.max(0, (g.member_count ?? 1) - 1) } : g));
+    const maxCap = detailGroup.max_capacity ?? 999;
+    const newCount = (detailGroup.member_count ?? 1) - 1;
+    if (maxCap < 999 && newCount < maxCap) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        try {
+          await fetch(`/api/groups/${detailGroup.id}/notify-waitlist`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          loadWaitlist(detailGroup.id);
+        } catch {}
+      }
+    }
   };
 
   const toggleAddFormStudent = (studentId: string) => {
@@ -308,6 +347,15 @@ export default function GroupsPage() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         </div>
+      ) : groups.length === 0 ? (
+        <EmptyState
+          icon={<BookOpen />}
+          titleKey="groups.title"
+          descriptionKey="groups.description"
+          namespace="emptyStates"
+          actionLabel="groups.action"
+          onAction={() => setShowAddModal(true)}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {groups.map(g => (
@@ -375,6 +423,17 @@ export default function GroupsPage() {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{t('maxCapacity', { defaultValue: 'السعة القصوى (اختياري)' })}</label>
+                <input
+                  value={addForm.maxCapacity}
+                  onChange={e => setAddForm(prev => ({ ...prev, maxCapacity: e.target.value }))}
+                  type="number"
+                  min={0}
+                  placeholder={t('optional', { defaultValue: 'اختياري' })}
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm font-mono text-foreground"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">{t('assignStudents')}</label>
                 <div className="relative mb-2">
                   <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
@@ -418,9 +477,65 @@ export default function GroupsPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div><p className="text-xs text-muted-foreground">{t('subject')}</p><p className="font-semibold text-foreground">{detailGroup.subject ?? '\u2014'}</p></div>
                 <div><p className="text-xs text-muted-foreground">{t('feePerLesson')}</p><p className="font-semibold text-foreground font-mono">{(detailGroup.fee ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</p></div>
-                <div><p className="text-xs text-muted-foreground">{t('studentCount')}</p><p className="font-semibold text-foreground font-mono">{detailGroup.member_count ?? 0}</p></div>
+                <div><p className="text-xs text-muted-foreground">{t('studentCount')}</p><p className="font-semibold text-foreground font-mono">{detailGroup.member_count ?? 0}{detailGroup.max_capacity != null && detailGroup.max_capacity < 999 ? ` / ${detailGroup.max_capacity}` : ''}</p></div>
+              </div>
+              {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && (
+                <div className="flex gap-1 p-1 rounded-lg bg-muted/50">
+                  <button type="button" onClick={() => setActiveTab('members')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'members' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>{t('members')}</button>
+                  <button type="button" onClick={() => setActiveTab('waitlist')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'waitlist' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>{t('waitlist', { defaultValue: 'قائمة الانتظار' })} ({waitlist.length})</button>
+                </div>
+              )}
+              <div className="border-t border-border pt-4">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setExpandedHeatmapId(expandedHeatmapId === detailGroup.id ? null : detailGroup.id); }}
+                  className="text-sm text-teal-600 hover:text-teal-800 mt-2"
+                >
+                  {expandedHeatmapId === detailGroup.id ? tHeatmap('hide') : tHeatmap('show')}
+                </button>
+                {expandedHeatmapId === detailGroup.id && (
+                  <AttendanceHeatmap
+                    groupId={detailGroup.id}
+                    groupSize={detailGroup.member_count ?? 0}
+                    weeks={8}
+                  />
+                )}
               </div>
               <div className="border-t border-border pt-4">
+                {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && activeTab === 'waitlist' ? (
+                  <>
+                    <h3 className="font-bold text-foreground mb-3">{t('waitlist', { defaultValue: 'قائمة الانتظار' })}</h3>
+                    <div className="space-y-2 mb-4">
+                      {waitlist.map((w, i) => (
+                        <div key={w.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                          <div>
+                            <div className="text-sm font-medium text-foreground">#{i + 1} {w.name}</div>
+                            <div className="text-xs text-muted-foreground font-mono" dir="ltr">{w.student_number ?? w.parent_phone ?? '\u2014'}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {waitlist.length === 0 && <p className="text-sm text-muted-foreground">{t('noWaitlist', { defaultValue: 'لا يوجد في قائمة الانتظار' })}</p>}
+                    </div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">{t('addToWaitlist', { defaultValue: 'إضافة لقائمة الانتظار' })}</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {studentsForAddInDetail.filter(s => !waitlist.some(w => w.id === s.id)).slice(0, 10).map(s => (
+                        <button key={s.id} type="button" onClick={async () => {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session) return;
+                          await fetch(`/api/groups/${detailGroup.id}/waitlist`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                            body: JSON.stringify({ student_id: s.id }),
+                          });
+                          loadWaitlist(detailGroup.id);
+                        }} className="px-3 py-1.5 text-sm bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors">
+                          + {s.name}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
                 <h3 className="font-bold text-foreground mb-3 flex items-center gap-2"><Users size={16} /> {t('members')}</h3>
                 <div className="space-y-2 mb-4">
                   {members.map(m => (
@@ -462,6 +577,8 @@ export default function GroupsPage() {
                     );
                   })}
                 </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
