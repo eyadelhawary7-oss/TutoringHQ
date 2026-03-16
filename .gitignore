@@ -48,3 +48,4 @@ lovable-reference
 # Local font files (large binaries, add manually)
 public/fonts/*.woff2
 public/fonts/*.woff
+supabase/.temp/
