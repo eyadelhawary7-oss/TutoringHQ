@@ -87,9 +87,9 @@ export default async function LocaleLayout({
             </UserProvider>
             <ToastContainer />
           </ToastProvider>
+          <PwaInstallBanner />
         </NextIntlClientProvider>
         <ServiceWorkerRegistrarWrapper />
-        <PwaInstallBanner />
         <WebVitalsReporter />
         <Analytics />
         <SpeedInsights />

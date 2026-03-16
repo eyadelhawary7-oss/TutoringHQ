@@ -1,8 +1,10 @@
 {
   "plan": {
-    "nano": "Nano Center",
-    "nanoDescription": "For new and small centers",
-    "nano.description": "For new and small centers — up to 75 students per week"
+    "nano": {
+      "name": "Nano Center",
+      "description": "For new and small centers — up to 75 students per week"
+    },
+    "nanoDescription": "For new and small centers"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -115,10 +117,12 @@
     "hide": "Hide attendance",
     "noData": "No attendance data yet",
     "error": "Failed to load attendance data",
-    "legend.none": "No data",
-    "legend.low": "Below 50%",
-    "legend.medium": "50–80%",
-    "legend.high": "Above 80%"
+    "legend": {
+      "none": "No data",
+      "low": "Below 50%",
+      "medium": "50–80%",
+      "high": "Above 80%"
+    }
   },
   "idCards": {
     "totalOrders": "Total Orders",
