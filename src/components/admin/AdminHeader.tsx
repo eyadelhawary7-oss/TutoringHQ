@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from '@/i18n/routing';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -46,10 +46,10 @@ export function AdminHeader() {
 
   const handleLocaleToggle = () => {
     const newLocale = locale === 'ar' ? 'en' : 'ar';
-    localStorage.setItem('preferred-locale', newLocale);
-    startTransition(() => {
-      router.replace(pathname, { locale: newLocale as 'ar' | 'en' });
-    });
+    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
+    const basePath = pathname ?? `/${locale}`;
+    const newPath = basePath.replace(`/${locale}`, `/${newLocale}`);
+    startTransition(() => router.push(newPath));
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };

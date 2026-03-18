@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
 
     const fixedPlanComparison = { plan: '', price: 0, savings: 0 };
     if (thisWeekPayg.monthly > 0) {
-      const FIXED: Record<string, number> = { nascent: 1200, nano: 1200, starter: 2000, pro: 4500, business: 6500, enterprise: 9000 };
+      const FIXED: Record<string, number> = { nano: 1200, starter: 2000, pro: 4500, business: 6500, enterprise: 9000 };
       for (const [p, price] of Object.entries(FIXED)) {
         if (price < thisWeekPayg.monthly) {
           fixedPlanComparison.plan = p;

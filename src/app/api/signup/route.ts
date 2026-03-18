@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const validPlans = ['NASCENT', 'NANO', 'STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE'];
+    const validPlans = ['NANO', 'STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE'];
     const normalizedPlan = String(plan).toUpperCase();
     if (!validPlans.includes(normalizedPlan)) {
       return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 });
@@ -25,7 +25,6 @@ export async function POST(request: Request) {
     );
 
     const planPricing: Record<string, { monthly: number; setup: number }> = {
-      NASCENT: { monthly: 1200, setup: 500 },
       NANO: { monthly: 1200, setup: 500 },
       STARTER: { monthly: 2000, setup: 1000 },
       PRO: { monthly: 4500, setup: 2000 },

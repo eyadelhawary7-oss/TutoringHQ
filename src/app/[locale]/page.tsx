@@ -1,7 +1,8 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { Link, useRouter, usePathname } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
+import { useRouter, usePathname } from 'next/navigation';
 import { QrCode, CreditCard, Calendar, BarChart3, Wifi, Bluetooth, Globe } from 'lucide-react';
 import { useTransition } from 'react';
 import Image from 'next/image';
@@ -15,7 +16,7 @@ const PLANS = PLAN_TIERS.map((p) => ({
   fee: p.monthlyFee,
   limit: p.maxStudentsPerWeek,
   setupFee: p.setupFee,
-  tier: p.id as 'nascent' | 'nano' | 'starter' | 'pro' | 'business' | 'enterprise' | 'top_centers',
+  tier: p.id as 'nano' | 'starter' | 'pro' | 'business' | 'enterprise' | 'top_centers',
   perStudentWeek: p.isCustom ? null : getPerStudentPerWeek(p),
   popular: p.id === 'pro',
   bestValue: p.id === 'enterprise',
@@ -45,10 +46,10 @@ export default function LandingPage() {
 
   const handleLocaleToggle = () => {
     const newLocale = locale === 'ar' ? 'en' : 'ar';
-    localStorage.setItem('preferred-locale', newLocale);
-    startTransition(() => {
-      router.replace(pathname, { locale: newLocale as 'ar' | 'en' });
-    });
+    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
+    const basePath = pathname ?? `/${locale}`;
+    const newPath = basePath.replace(`/${locale}`, `/${newLocale}`);
+    startTransition(() => router.push(newPath));
   };
 
   return (

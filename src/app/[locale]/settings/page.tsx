@@ -80,8 +80,8 @@ interface PaygRate {
 }
 
 // ========== Constants ==========
-const PLAN_DISPLAY_NAMES: Record<string, string> = { nascent: 'ناشئ', nano: 'ناشئ', starter: 'سنتر صغير', pro: 'سنتر متوسط', business: 'سنتر كبير', enterprise: 'سنتر ضخم', top_centers: 'ميجا سنتر' };
-const PLAN_PER_STUDENT_WEEK: Record<string, string> = { nascent: '3.69', nano: '3.69', starter: '3.33', pro: '2.25', business: '1.63', enterprise: '1.13', top_centers: '' };
+const PLAN_DISPLAY_NAMES: Record<string, string> = { nano: 'ناشئ', starter: 'سنتر صغير', pro: 'سنتر متوسط', business: 'سنتر كبير', enterprise: 'سنتر ضخم', top_centers: 'ميجا سنتر' };
+const PLAN_PER_STUDENT_WEEK: Record<string, string> = { nano: '3.69', starter: '3.33', pro: '2.25', business: '1.63', enterprise: '1.13', top_centers: '' };
 
 const FALLBACK_PLANS: PricingPlan[] = [
   { id: 'nano', name_en: 'Nano', name_ar: 'ناشئ', students_per_week_limit: 75, monthly_fee: 1200, per_student_at_capacity_egp: 3.69, setup_fee_egp: 500, is_custom: false },
@@ -140,7 +140,7 @@ function calculatePaygCost(_rates: PaygRate[], students: number) {
 }
 
 function getFixedPlanComparison(plans: PricingPlan[], students: number) {
-  const nanoPlan = plans.find(p => p.id === 'nano') ?? plans.find(p => p.id === 'nascent');
+  const nanoPlan = plans.find(p => p.id === 'nano');
   const starter = plans.find(p => p.id === 'starter');
   const pro = plans.find(p => p.id === 'pro');
   const business = plans.find(p => p.id === 'business');
@@ -154,11 +154,9 @@ function getFixedPlanComparison(plans: PricingPlan[], students: number) {
   return { planName: top?.name_en ?? 'Top Centers', planNameAr: top?.name_ar ?? 'كبار السناتر', planFee: 0, isCustom: true };
 }
 
-// Filter out pro_plus and deduplicate nascent/nano (keep nano only, drop nascent when both exist)
+// Filter out pro_plus and nascent (legacy)
 function filterPlans(plans: PricingPlan[]): PricingPlan[] {
-  const raw = (plans ?? FALLBACK_PLANS).filter(p => p.id !== 'pro_plus');
-  const hasNano = raw.some(p => p.id === 'nano');
-  return raw.filter(p => p.id !== 'nascent' || !hasNano);
+  return (plans ?? FALLBACK_PLANS).filter(p => p.id !== 'pro_plus' && p.id !== 'nascent');
 }
 
 function SettingsPageContent() {
@@ -1361,7 +1359,7 @@ function SettingsPageContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   {plans.map((plan) => {
                     const isCurrent = billingData?.plan === plan.id && billingData?.pricing_type === 'fixed';
-                    const setupFees: Record<string, number> = { nascent: 500, nano: 500, starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0 };
+                    const setupFees: Record<string, number> = { nano: 500, starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0 };
                     const setupFee = plan.setup_fee_egp ?? setupFees[plan.id] ?? 0;
                     const perStudentWeek = plan.is_custom ? null : (PLAN_PER_STUDENT_WEEK[plan.id] ?? (plan.students_per_week_limit > 0 ? (plan.monthly_fee / (plan.students_per_week_limit * 4)).toFixed(2) : null));
                     const planName = PLAN_DISPLAY_NAMES[plan.id] ?? plan.name_en ?? plan.name_ar;

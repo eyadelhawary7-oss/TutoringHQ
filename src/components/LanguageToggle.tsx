@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale } from 'next-intl';
-import { useRouter, usePathname } from '@/i18n/routing';
+import { useRouter, usePathname } from 'next/navigation';
 import { useTransition, useEffect, useState } from 'react';
 
 export default function LanguageToggle() {
@@ -14,28 +14,28 @@ export default function LanguageToggle() {
   useEffect(() => {
     const id = setTimeout(() => {
       setMounted(true);
-      // Load saved locale from localStorage on mount
-    const savedLocale = localStorage.getItem('preferred-locale');
-    if (savedLocale && savedLocale !== locale) {
-      startTransition(() => {
-        router.replace(pathname, { locale: savedLocale as 'ar' | 'en' });
-      });
-    }
+      const savedLocale = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('NEXT_LOCALE='))
+        ?.split('=')[1] as 'ar' | 'en' | undefined;
+      if (savedLocale && savedLocale !== locale && (savedLocale === 'ar' || savedLocale === 'en')) {
+        const basePath = pathname ?? `/${locale}`;
+        const newPath = basePath.replace(`/${locale}`, `/${savedLocale}`);
+        if (newPath !== basePath) {
+          startTransition(() => router.push(newPath));
+        }
+      }
     }, 0);
     return () => clearTimeout(id);
   }, []);
 
   const handleLocaleChange = (newLocale: 'ar' | 'en') => {
-    // Save to localStorage
-    localStorage.setItem('preferred-locale', newLocale);
-    
-    // Navigate to the new locale
-    startTransition(() => {
-      router.replace(pathname, { locale: newLocale });
-    });
+    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
+    const basePath = pathname ?? `/${locale}`;
+    const newPath = basePath.replace(`/${locale}`, `/${newLocale}`);
+    startTransition(() => router.push(newPath));
   };
 
-  // Prevent hydration mismatch
   if (!mounted) {
     return (
       <div className="relative inline-block">

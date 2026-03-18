@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   const healthBands = (healthRes.data ?? []) as { health_score_band: string | null }[];
 
   const planPrices: Record<string, number> = {
-    nano: 1200, nascent: 1200, starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 12000,
+    nano: 1200, starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 12000,
   };
 
   const mrr = mrrSnapshot?.mrr ?? centers.reduce((s, c) => {

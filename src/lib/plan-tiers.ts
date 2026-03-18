@@ -15,14 +15,6 @@ export interface PlanTier {
 
 export const PLAN_TIERS: PlanTier[] = [
   {
-    id: 'nascent',
-    nameAr: 'ناشئ',
-    nameEn: 'Nascent',
-    monthlyFee: 1200,
-    setupFee: 500,
-    maxStudentsPerWeek: 75,
-  },
-  {
     id: 'nano',
     nameAr: 'ناشئ',
     nameEn: 'Nano',

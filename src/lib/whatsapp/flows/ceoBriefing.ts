@@ -98,7 +98,7 @@ export async function fetchCeoBriefingData(): Promise<CeoBriefingData> {
   ]);
 
   const planPrices: Partial<Record<string, number>> = {
-    nano: 1200, nascent: 1200, starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 12000,
+    nano: 1200, starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 12000,
   };
 
   let mrr = (mrrRes.data as { mrr?: number } | null)?.mrr ?? 0;

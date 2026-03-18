@@ -1,7 +1,6 @@
 'use client';
 
 const styles: Record<string, string> = {
-  nascent: 'bg-slate-100 text-slate-700 border border-slate-300',
   nano: 'bg-slate-100 text-slate-700 border border-slate-300',
   starter: 'bg-slate-100 text-slate-700 border border-slate-300',
   pro: 'bg-blue-100 text-blue-700 border border-blue-300',
@@ -12,7 +11,6 @@ const styles: Record<string, string> = {
 };
 
 const labels: Record<string, string> = {
-  nascent: 'ناشئ',
   nano: 'سنتر نانو',
   starter: 'Starter',
   pro: 'Pro',

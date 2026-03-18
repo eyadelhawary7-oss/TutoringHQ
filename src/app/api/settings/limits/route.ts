@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     const weeklyUniqueStudents = new Set((weeklyScans || []).map((s: { student_id: string }) => s.student_id)).size;
 
     const plan = (center as { plan?: string })?.plan || 'starter';
-    const planLimits: Record<string, number> = { nascent: 75, nano: 75, starter: 150, pro: 500, business: 1000, enterprise: 2000 };
+    const planLimits: Record<string, number> = { nano: 75, starter: 150, pro: 500, business: 1000, enterprise: 2000 };
     const studentLimit = plan === 'top_centers' || plan === 'payg' ? 999999 : Number(center.max_students ?? planLimits[plan] ?? 150);
 
     const currentTeachers = currentTeamMembers ?? 0;
