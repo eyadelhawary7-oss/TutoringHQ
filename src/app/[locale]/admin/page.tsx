@@ -290,15 +290,13 @@ export default function AdminPage() {
 
   const [detailCenter, setDetailCenter] = useState<CenterRow | null>(null);
   const [showSuspendConfirm, setShowSuspendConfirm] = useState<CenterRow | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<CenterRow | null>(null);
-  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [showRejectReason, setShowRejectReason] = useState<PendingSignup | null>(null);
   const [openActionsId, setOpenActionsId] = useState<string | null>(null);
   const [passwordConfirm, setPasswordConfirm] = useState<
     | { type: 'suspend'; center: CenterRow }
     | { type: 'approve_invoice'; inv: { id: string; centerName: string; payment_amount: number } }
-    | { type: 'delete'; center: CenterRow; confirmName: string }
     | null
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -630,10 +628,34 @@ export default function AdminPage() {
       .map(([, count], i) => ({ date: `W${i + 1}`, count }));
   }, [overview?.signupsChart]);
 
+  const handleDeleteCenter = async (centerId: string) => {
+    setDeleteConfirm(null);
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/centers?id=${centerId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      setCenters((prev) => prev.filter((c) => c.id !== centerId));
+      loadOverview();
+      setToast({ msg: tAdmin('centerDeleted', { defaultValue: 'Center deleted successfully' }) });
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Failed to delete center: ' + (err as Error).message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleCenterAction = async (
     centerId: string,
-    action: 'suspend' | 'reactivate' | 'change_plan' | 'delete' | 'approve' | 'reject',
-    extra?: { newPlan?: string; confirmName?: string; password?: string }
+    action: 'suspend' | 'reactivate' | 'change_plan' | 'approve' | 'reject',
+    extra?: { newPlan?: string; password?: string }
   ) => {
     const headers = await getAuthHeaders();
     if (!headers) return;
@@ -652,7 +674,7 @@ export default function AdminPage() {
         if (waUrl) window.open(waUrl, '_blank');
       }
       setShowSuspendConfirm(null);
-      setShowDeleteConfirm(null);
+      setDeleteConfirm(null);
       setShowRejectReason(null);
       setDetailCenter(null);
       loadCenters();
@@ -1186,7 +1208,7 @@ export default function AdminPage() {
                                   <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
                                     <CreditCard size={14} />{tAdmin('changePlan')}
                                   </button>
-                                  <button onClick={() => { setShowDeleteConfirm(c); setDeleteConfirmName(''); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start">
+                                  <button onClick={() => { setDeleteConfirm(c.id); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start">
                                     <Trash2 size={14} />{tCommon('delete')}
                                   </button>
                                 </div>
@@ -1987,30 +2009,30 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Delete Confirm */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ background: 'rgba(0, 0, 0, 0.5)', zIndex: 9998 }} onClick={() => setShowDeleteConfirm(null)}>
-          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-white" style={{ opacity: 1 }} onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-foreground mb-2">{tAdmin('deleteCenters')}</h3>
-            <p className="text-sm text-muted-foreground mb-3">{tAdmin('confirmDelete')}</p>
-            <p className="text-sm mb-2"><strong className="text-foreground">{showDeleteConfirm.name}</strong></p>
-            <input
-              value={deleteConfirmName}
-              onChange={(e) => setDeleteConfirmName(e.target.value)}
-              placeholder={showDeleteConfirm.name}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-muted text-foreground text-sm mb-3"
-            />
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+      {/* Delete Center Confirm */}
+      {deleteConfirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            style={{ background: 'white', borderRadius: 12, padding: 24, width: 360, maxWidth: '90vw' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{tAdmin('deleteCenters')}</h3>
+            <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
+              {tAdmin('deleteCenterPermanent', { defaultValue: 'This action cannot be undone. The center and all its data will be permanently deleted.' })}
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
-                disabled={deleteConfirmName !== showDeleteConfirm.name}
-                onClick={() => {
-                  if (deleteConfirmName === showDeleteConfirm.name) {
-                    setPasswordConfirm({ type: 'delete', center: showDeleteConfirm, confirmName: deleteConfirmName });
-                    setShowDeleteConfirm(null);
-                  }
-                }}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                onClick={() => setDeleteConfirm(null)}
+                style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: 14 }}
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                onClick={() => handleDeleteCenter(deleteConfirm)}
+                style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}
               >
                 {tCommon('delete')}
               </button>
@@ -2320,7 +2342,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Password Confirm Modal */}
+      {/* Password Confirm Modal (suspend, approve invoice) */}
       {passwordConfirm && (
         <PasswordConfirmModal
           isOpen={!!passwordConfirm}
@@ -2328,15 +2350,11 @@ export default function AdminPage() {
           title={
             passwordConfirm.type === 'suspend'
               ? tAdmin('confirmSuspend')
-              : passwordConfirm.type === 'delete'
-                ? tAdmin('deleteCenters')
-                : tAdmin('confirmApprovePayment')
+              : tAdmin('confirmApprovePayment')
           }
           onConfirm={async (password) => {
             if (passwordConfirm.type === 'suspend') {
               await handleCenterAction(passwordConfirm.center.id, 'suspend', { password });
-            } else if (passwordConfirm.type === 'delete') {
-              await handleCenterAction(passwordConfirm.center.id, 'delete', { confirmName: passwordConfirm.confirmName, password });
             } else {
               await handleInvoiceAction(passwordConfirm.inv.id, 'approve', password);
             }

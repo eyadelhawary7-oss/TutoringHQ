@@ -7,7 +7,7 @@ import { normalizePhone } from '@/lib/utils/phone';
 import { generateReferralCode } from '@/lib/referral';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 function isSuperAdmin(phone: string | null): boolean {
   const admins = process.env.SUPER_ADMIN_PHONES || '';
@@ -272,6 +272,83 @@ export async function GET(request: Request) {
         error: error instanceof Error ? error.message : 'Unknown error',
         type: error instanceof Error ? error.constructor?.name : undefined,
       },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    const authHeader = request.headers.get('Authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const adminByTable = await isAdminUser(supabaseAdmin, user.id);
+    const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', user.id).single();
+    const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
+
+    if (!adminByTable && !adminByPhone) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (!validateCSRFRequest(request, user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const centerId = searchParams.get('id');
+    if (!centerId) {
+      return NextResponse.json({ error: 'Missing center id' }, { status: 400 });
+    }
+
+    const { data: center, error: centerError } = await supabaseAdmin
+      .from('centers')
+      .select('id, name')
+      .eq('id', centerId)
+      .single();
+
+    if (centerError || !center) {
+      return NextResponse.json({ error: 'Center not found' }, { status: 404 });
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from('centers')
+      .update({ status: 'deleted', deleted_at: new Date().toISOString() })
+      .eq('id', centerId);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    await logAdminAction(user.id, 'delete_center', { centerId, centerName: center.name }, centerId);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
