@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createHash } from 'crypto';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
@@ -717,13 +718,27 @@ export async function PUT(request: Request) {
       );
     }
 
+    const hashedPin = createHash('sha256').update(pin).digest('hex');
     const { error: userInsertError } = await supabaseAdmin.from('users').insert({
       id: newAuthUser.user.id,
       center_id: centerId,
       role: 'owner',
       phone: intlPhone,
       name: ownerName,
-      phone_verified: true,
+      pin_code: hashedPin,
+      preferred_locale: 'ar',
+      can_scan: true,
+      can_view_payments: true,
+      can_record_payments: true,
+      can_view_dashboard: true,
+      can_view_revenue: true,
+      can_manage_students: true,
+      can_manage_groups: true,
+      can_manage_rooms: true,
+      can_view_schedule: true,
+      can_view_settings: true,
+      can_allow_late_entry: true,
+      is_active: true,
     });
 
     if (userInsertError) {

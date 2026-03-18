@@ -60,9 +60,15 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
       });
       if (authUpdateError) throw authUpdateError;
 
+      const encoder = new TextEncoder();
+      const data = encoder.encode(newPin);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashedPin = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
       const { error: dbUpdateError } = await supabase
         .from('users')
-        .update({ pin_code: newPin })
+        .update({ pin_code: hashedPin })
         .eq('id', user.id);
       if (dbUpdateError) throw dbUpdateError;
 

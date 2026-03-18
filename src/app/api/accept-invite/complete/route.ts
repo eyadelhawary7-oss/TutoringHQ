@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/utils/phone';
 
@@ -99,13 +100,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const hashedPin = createHash('sha256').update(pin).digest('hex');
     const userPayload: Record<string, unknown> = {
       id: user.id,
       center_id: invite.center_id,
       role: invite.role || 'assistant',
       phone: storedPhone,
       name: invite.invited_name || null,
-      phone_verified: true,
+      pin_code: hashedPin,
+      preferred_locale: 'ar',
+      is_active: true,
     };
     if (invite.role === 'teacher' && invite.teacher_group_ids?.length) {
       userPayload.teacher_group_ids = invite.teacher_group_ids;
@@ -122,7 +126,8 @@ export async function POST(request: Request) {
       if (typeof perms.can_allow_late_entry === 'boolean') userPayload.can_allow_late_entry = perms.can_allow_late_entry;
       if (typeof perms.can_manage_rooms === 'boolean') userPayload.can_manage_rooms = perms.can_manage_rooms;
       if (typeof perms.can_view_schedule === 'boolean') userPayload.can_view_schedule = perms.can_view_schedule;
-      if (typeof perms.can_view_settings === 'boolean') userPayload.can_view_settings = perms.can_view_settings;
+      const settingsPerm = perms.can_view_settings ?? perms.can_manage_settings;
+      if (typeof settingsPerm === 'boolean') userPayload.can_view_settings = settingsPerm;
     }
     const { error: userInsertError } = await supabaseAdmin.from('users').insert(userPayload);
 

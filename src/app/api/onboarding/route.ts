@@ -159,12 +159,19 @@ export async function POST(request: Request) {
       role: 'owner',
       phone: user.phone || '',
       name: centerName.trim(),
+      preferred_locale: 'ar',
       can_scan: true,
       can_view_payments: true,
+      can_record_payments: true,
       can_view_dashboard: true,
+      can_view_revenue: true,
       can_manage_students: true,
       can_manage_groups: true,
-      can_manage_settings: true,
+      can_manage_rooms: true,
+      can_view_schedule: true,
+      can_view_settings: true,
+      can_allow_late_entry: true,
+      is_active: true,
     });
 
     if (userError) {
