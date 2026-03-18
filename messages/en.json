@@ -37,6 +37,8 @@
   "common": {
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
+    "pin": "PIN",
+    "pinPlaceholder": "Enter your PIN",
     "welcome": "Welcome",
     "language": "Language",
     "home": "Home",

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 
 interface PasswordConfirmModalProps {
@@ -26,28 +27,35 @@ export default function PasswordConfirmModal({
   type = 'password',
 }: PasswordConfirmModalProps) {
   const t = useTranslations('common');
-  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password.trim()) return;
-    await onConfirm(password);
+    if (!pin.trim()) return;
+    await onConfirm(pin);
   };
 
   const handleClose = () => {
-    setPassword('');
+    setPin('');
     onClose();
   };
 
   if (!isOpen) return null;
 
-  return (
+  const modal = (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0, 0, 0, 0.5)', zIndex: 9999 }}
       onClick={handleClose}
     >
       <div
-        className="glass rounded-xl shadow-xl max-w-sm w-full p-6"
+        className="rounded-xl shadow-xl max-w-sm w-full p-6 bg-white"
+        style={{ opacity: 1 }}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">{title}</h3>
@@ -56,14 +64,14 @@ export default function PasswordConfirmModal({
         )}
         <form onSubmit={handleSubmit}>
           <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-            {t('password', { defaultValue: 'Password' })}
+            {t('pin', { defaultValue: 'PIN' })}
           </label>
           <input
             type={type}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={t('passwordPlaceholder', { defaultValue: 'Enter your password' })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-bg-tertiary text-text-primary mb-4"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder={t('pinPlaceholder', { defaultValue: 'Enter your PIN' })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-[var(--text-primary)] mb-4"
             autoComplete="current-password"
             autoFocus
             disabled={loading}
@@ -74,7 +82,7 @@ export default function PasswordConfirmModal({
           <div className="flex gap-2">
             <button
               type="submit"
-              disabled={!password.trim() || loading}
+              disabled={!pin.trim() || loading}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
             >
               {loading ? t('loading') : t('confirm')}
@@ -82,7 +90,7 @@ export default function PasswordConfirmModal({
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 glass rounded-lg"
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
             >
               {t('cancel')}
             </button>
@@ -91,4 +99,8 @@ export default function PasswordConfirmModal({
       </div>
     </div>
   );
+
+  return mounted && typeof document !== 'undefined'
+    ? createPortal(modal, document.body)
+    : null;
 }

@@ -13,7 +13,7 @@ export async function verifyPasswordForSensitiveAction(
   password: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!password || typeof password !== 'string' || password.trim().length === 0) {
-    return { ok: false, error: 'Password required' };
+    return { ok: false, error: 'PIN required' };
   }
 
   const authClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -31,7 +31,7 @@ export async function verifyPasswordForSensitiveAction(
     return {
       ok: false,
       error:
-        'Your account uses phone sign-in. Add an email and password in account settings to perform sensitive actions.',
+        'Your account uses phone sign-in. Add an email and PIN in account settings to perform sensitive actions.',
     };
   }
 
@@ -45,7 +45,7 @@ export async function verifyPasswordForSensitiveAction(
   });
 
   if (error) {
-    return { ok: false, error: 'Invalid password' };
+    return { ok: false, error: 'Invalid PIN' };
   }
 
   return { ok: true };

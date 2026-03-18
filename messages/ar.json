@@ -35,6 +35,8 @@
     "logout": "تسجيل الخروج"
   },
   "common": {
+    "pin": "رمز PIN",
+    "pinPlaceholder": "أدخل رمز PIN",
     "welcome": "مرحبا",
     "language": "اللغة",
     "home": "الرئيسية",

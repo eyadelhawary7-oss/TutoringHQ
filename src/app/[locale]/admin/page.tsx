@@ -1989,8 +1989,8 @@ export default function AdminPage() {
 
       {/* Delete Confirm */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowDeleteConfirm(null)}>
-          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-card" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ background: 'rgba(0, 0, 0, 0.5)', zIndex: 9998 }} onClick={() => setShowDeleteConfirm(null)}>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-white" style={{ opacity: 1 }} onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold text-foreground mb-2">{tAdmin('deleteCenters')}</h3>
             <p className="text-sm text-muted-foreground mb-3">{tAdmin('confirmDelete')}</p>
             <p className="text-sm mb-2"><strong className="text-foreground">{showDeleteConfirm.name}</strong></p>
