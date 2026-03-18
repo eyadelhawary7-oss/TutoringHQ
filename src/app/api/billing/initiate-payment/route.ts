@@ -56,7 +56,7 @@ async function getUserContext(request: NextRequest) {
 
   const { data: userRecord } = await supabaseAdmin
     .from('users')
-    .select('id, center_id, role, name, phone')
+    .select('id, center_id, role, phone')
     .eq('id', user.id)
     .single();
 

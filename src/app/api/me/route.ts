@@ -58,12 +58,12 @@ export async function GET(request: Request) {
 
     const { data: usersRow, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id, name, phone, role, center_id, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings, is_active')
+      .select('id, phone, role, center_id, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings, is_active')
       .eq('id', user.id)
       .single();
 
     if (usersRow) {
-      userRecord = usersRow;
+      userRecord = { ...usersRow, name: (usersRow as { phone?: string }).phone ?? null };
     } else {
       // User may be in admin_users but not in users (super admin without center)
       const { data: adminRow } = await supabaseAdmin

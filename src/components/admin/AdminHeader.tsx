@@ -23,9 +23,9 @@ export function AdminHeader() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserName(user.user_metadata?.name ?? user.email ?? '');
-      const { data: profile } = await supabase.from('users').select('name, phone').eq('id', user.id).single();
+      const { data: profile } = await supabase.from('users').select('phone').eq('id', user.id).single();
       if (profile) {
-        setUserName(profile.name || userName);
+        setUserName(profile.phone || userName);
         setUserPhone(profile.phone || '');
       } else {
         setUserPhone(user.phone || '');

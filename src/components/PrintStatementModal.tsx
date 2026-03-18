@@ -117,10 +117,10 @@ export function PrintStatementModal({
       if (uniqueIds.length > 0) {
         const { data: users } = await supabase
           .from('users')
-          .select('id, name')
+          .select('id, phone')
           .in('id', uniqueIds);
         for (const u of users || []) {
-          nameMap[u.id] = u.name ?? '—';
+          nameMap[u.id] = (u as { id: string; phone?: string }).phone ?? '—';
         }
       }
 

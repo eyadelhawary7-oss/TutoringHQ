@@ -1,4 +1,4 @@
-const CACHE_NAME = 'centerhq-v3';
+const CACHE_NAME = 'centerhq-v4';
 
 const PRECACHE_URLS = [
   '/ar/dashboard',
@@ -89,6 +89,15 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (!url.protocol.startsWith('http')) return;
 
+  // Skip font requests entirely — fonts are self-hosted
+  if (
+    url.hostname.includes('fonts.googleapis.com') ||
+    url.hostname.includes('fonts.gstatic.com') ||
+    event.request.destination === 'font'
+  ) {
+    return;
+  }
+
   // API: network only, return error JSON when offline
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
@@ -109,7 +118,8 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         return fetch(event.request).then((res) => {
           if (res.ok) {
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, res.clone()));
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
           }
           return res;
         });
@@ -145,7 +155,10 @@ self.addEventListener('fetch', (event) => {
 
       const networkPromise = fetch(event.request)
         .then((res) => {
-          if (res.ok) cache.put(event.request, res.clone());
+          if (res.ok) {
+            const clone = res.clone();
+            cache.put(event.request, clone);
+          }
           return res;
         })
         .catch(() => null);

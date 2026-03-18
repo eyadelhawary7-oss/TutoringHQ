@@ -47,7 +47,7 @@ export async function GET(request: Request) {
 
     const [usersRes, adminUsersRes, centersRes] = await Promise.all([
       userIds.length > 0
-        ? supabaseAdmin.from('users').select('id, name, phone').in('id', userIds)
+        ? supabaseAdmin.from('users').select('id, phone').in('id', userIds)
         : { data: [] },
       userIds.length > 0
         ? supabaseAdmin.from('admin_users').select('id, name').in('id', userIds)
@@ -58,8 +58,8 @@ export async function GET(request: Request) {
     ]);
 
     const usersById: Record<string, { name?: string | null; phone?: string }> = {};
-    (usersRes.data || []).forEach((u: { id: string; name?: string | null; phone?: string }) => {
-      usersById[u.id] = u;
+    (usersRes.data || []).forEach((u: { id: string; phone?: string }) => {
+      usersById[u.id] = { name: u.phone ?? null, phone: u.phone };
     });
     (adminUsersRes.data || []).forEach((u: { id: string; name?: string | null }) => {
       if (!usersById[u.id]) usersById[u.id] = { name: u.name ?? 'Admin' };

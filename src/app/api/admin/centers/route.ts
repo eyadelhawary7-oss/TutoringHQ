@@ -195,10 +195,10 @@ export async function GET(request: Request) {
 
     const { data: owners } = await adminClient
       .from('users')
-      .select('center_id, name, phone')
+      .select('center_id, phone')
       .eq('role', 'owner')
       .in('center_id', centerIds);
-    const ownerMap = new Map((owners || []).map((o: { center_id: string; name?: string; phone?: string }) => [o.center_id, { name: o.name, phone: o.phone }]));
+    const ownerMap = new Map((owners || []).map((o: { center_id: string; phone?: string }) => [o.center_id, { name: o.phone, phone: o.phone }]));
 
     const lastPaymentByCenter: Record<string, string> = {};
     const { data: latestPayments } = await adminClient
