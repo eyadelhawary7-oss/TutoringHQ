@@ -22,14 +22,11 @@ export function AdminHeader() {
     const loadUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      setUserName(user.user_metadata?.name ?? user.email ?? '');
-      const { data: profile } = await supabase.from('users').select('phone').eq('id', user.id).single();
-      if (profile) {
-        setUserName(profile.phone || userName);
-        setUserPhone(profile.phone || '');
-      } else {
-        setUserPhone(user.phone || '');
-      }
+      // Auth email format: {phoneDigits}@centerhq.local — derive phone without querying users (RLS blocks client)
+      const phone = user.email?.replace('@centerhq.local', '') ?? '';
+      const displayPhone = phone ? `+${phone}` : 'Admin';
+      setUserName(user.user_metadata?.name ?? displayPhone);
+      setUserPhone(displayPhone);
     };
     loadUser();
   }, []);
