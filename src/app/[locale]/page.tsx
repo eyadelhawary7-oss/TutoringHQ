@@ -1,8 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
-import { useRouter, usePathname } from 'next/navigation';
+import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { QrCode, CreditCard, Calendar, BarChart3, Wifi, Bluetooth, Globe } from 'lucide-react';
 import { useTransition } from 'react';
 import Image from 'next/image';
@@ -45,11 +44,8 @@ export default function LandingPage() {
   const [isPending, startTransition] = useTransition();
 
   const handleLocaleToggle = () => {
-    const newLocale = locale === 'ar' ? 'en' : 'ar';
-    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
-    const basePath = pathname ?? `/${locale}`;
-    const newPath = basePath.replace(`/${locale}`, `/${newLocale}`);
-    startTransition(() => router.push(newPath));
+    const next = locale === 'ar' ? 'en' : 'ar';
+    startTransition(() => router.replace(pathname, { locale: next }));
   };
 
   return (

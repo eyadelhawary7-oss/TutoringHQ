@@ -2,8 +2,7 @@
 
 import { useState, useEffect, FormEvent, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
-import { useRouter, usePathname } from 'next/navigation';
+import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { Globe, CheckCircle, Check, X } from 'lucide-react';
 import { PLAN_TIERS, getEffectiveMonthlyRate, getTotalForPeriod, getPerStudentPerWeek } from '@/lib/plan-tiers';
@@ -73,11 +72,8 @@ export default function SignupPage() {
   }, [searchParams]);
 
   const handleLocaleToggle = () => {
-    const newLocale = locale === 'ar' ? 'en' : 'ar';
-    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
-    const basePath = pathname ?? `/${locale}`;
-    const newPath = basePath.replace(`/${locale}`, `/${newLocale}`);
-    startTransition(() => router.push(newPath));
+    const next = locale === 'ar' ? 'en' : 'ar';
+    startTransition(() => router.replace(pathname, { locale: next }));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -171,7 +167,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 font-['Cairo',sans-serif]" style={{ background: 'var(--gradient-hero)', fontFamily: "'Cairo', sans-serif" }} dir="rtl">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 font-['Cairo',sans-serif]" style={{ background: 'var(--gradient-hero)', fontFamily: "'Cairo', sans-serif" }}>
       {/* Language toggle */}
       <div className="absolute top-4 end-4">
         <button

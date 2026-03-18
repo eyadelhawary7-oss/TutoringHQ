@@ -1,14 +1,19 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useTransition } from 'react';
 import Image from 'next/image';
-import { Link, useRouter } from '@/i18n/routing';
+import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { Globe } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
 import OTPInput from '@/components/OTPInput';
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const locale = useLocale();
+  const [isPending, startTransition] = useTransition();
   const [step, setStep] = useState<'phone' | 'otp' | 'new-password'>('phone');
   const [phone, setPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -16,7 +21,6 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const router = useRouter();
   const t = useTranslations('forgotPassword');
   const tLogin = useTranslations('login');
 
@@ -119,8 +123,23 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  const handleLocaleToggle = () => {
+    const next = locale === 'ar' ? 'en' : 'ar';
+    startTransition(() => router.replace(pathname, { locale: next }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-hero">
+      <div className="absolute top-4 end-4 z-10">
+        <button
+          onClick={handleLocaleToggle}
+          disabled={isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 text-white/70 hover:text-white transition-colors"
+        >
+          <Globe size={13} />
+          <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
+        </button>
+      </div>
       <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">

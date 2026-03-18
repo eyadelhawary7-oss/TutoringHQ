@@ -2,8 +2,7 @@
 
 import { useState, FormEvent, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
-import { useRouter, usePathname } from 'next/navigation';
+import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { Eye, EyeOff, Phone, Lock, Globe } from 'lucide-react';
 
@@ -22,21 +21,8 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 
   const handleLocaleToggle = () => {
-    const newLocale = locale === 'ar' ? 'en' : 'ar';
-    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
-    const basePath = pathname ?? `/${locale}`;
-    const newPath = basePath.replace(`/${locale}`, `/${newLocale}`);
-    startTransition(() => router.push(newPath));
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-      fetch('/api/user/locale', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ locale: newLocale }),
-      }).catch(() => undefined);
-    })();
+    const next = locale === 'ar' ? 'en' : 'ar';
+    startTransition(() => router.replace(pathname, { locale: next }));
   };
 
   const handleLogin = async (e: FormEvent) => {
