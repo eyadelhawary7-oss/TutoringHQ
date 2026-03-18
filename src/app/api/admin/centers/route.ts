@@ -334,13 +334,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Center not found' }, { status: 404 });
     }
 
-    const { error: updateError } = await supabaseAdmin
+    const { error: deleteError } = await supabaseAdmin
       .from('centers')
-      .update({ status: 'deleted', deleted_at: new Date().toISOString() })
+      .delete()
       .eq('id', centerId);
 
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
 
     await logAdminAction(user.id, 'delete_center', { centerId, centerName: center.name }, centerId);
