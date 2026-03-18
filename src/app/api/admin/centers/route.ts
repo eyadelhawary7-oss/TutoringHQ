@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { createHash } from 'crypto';
+import bcrypt from 'bcryptjs';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
@@ -695,36 +695,42 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: true, action: 'rejected' });
     }
 
-    // Approve - create auth user with username+password for hybrid login
-    const pin = generatePin();
-    const intlPhone = normalizePhone(phone);
+    // Approve - create auth user and owner profile
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedPin = await bcrypt.hash(pin, 10);
+    const normalizedPhone = normalizePhone(center.phone as string);
+    const phoneDigits = normalizedPhone.replace(/\D/g, '');
+    const authEmail = `${phoneDigits}@centerhq.local`;
 
-    const ownerName = center.name;
-    const emailForAuth = `${intlPhone.replace(/\D/g, '')}@centerhq.local`;
-
-    const { data: newAuthUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: emailForAuth,
-      phone: intlPhone,
-      phone_confirm: true,
-      email_confirm: true,
+    const { data: authData, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
+      email: authEmail,
       password: pin,
-      user_metadata: { name: ownerName },
+      email_confirm: true,
     });
 
-    if (createError || !newAuthUser.user) {
+    if (createAuthError) {
+      const msg = createAuthError.message || '';
+      if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('user already registered')) {
+        return NextResponse.json(
+          { error: 'This phone number is already registered. The center owner may have an existing account.' },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
-        { error: createError?.message || 'Failed to create user' },
+        { error: 'Failed to create auth user: ' + msg },
         { status: 500 }
       );
     }
+    if (!authData?.user?.id) {
+      return NextResponse.json({ error: 'Failed to create auth user' }, { status: 500 });
+    }
 
-    const hashedPin = createHash('sha256').update(pin).digest('hex');
-    const { error: userInsertError } = await supabaseAdmin.from('users').insert({
-      id: newAuthUser.user.id,
+    const { error: userError } = await supabaseAdmin.from('users').insert({
+      id: authData.user.id,
       center_id: centerId,
       role: 'owner',
-      phone: intlPhone,
-      name: ownerName,
+      phone: normalizedPhone,
+      name: (center.owner_name as string) ?? null,
       pin_code: hashedPin,
       preferred_locale: 'ar',
       can_scan: true,
@@ -741,9 +747,12 @@ export async function PUT(request: Request) {
       is_active: true,
     });
 
-    if (userInsertError) {
-      await supabaseAdmin.auth.admin.deleteUser(newAuthUser.user.id);
-      return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 });
+    if (userError) {
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      return NextResponse.json(
+        { error: 'Failed to create user profile: ' + userError.message },
+        { status: 500 }
+      );
     }
 
     const now = new Date();
@@ -803,25 +812,25 @@ export async function PUT(request: Request) {
     const displayOwnerName = (center.owner_name || center.name) as string;
     const centerName = center.name as string;
     const referralCode = generatedCode || '';
-    const normalizedPhone = (phone || '').replace(/^\+/, '').replace(/^0(\d{10})$/, '20$1');
+    const waPhone = (phone || '').replace(/^\+/, '').replace(/^0(\d{10})$/, '20$1');
 
     await sendWhatsAppMessage(
-      normalizedPhone,
+      waPhone,
       `أهلاً ${displayOwnerName} 👋\n\nتم تفعيل حساب ${centerName} على CenterHQ بنجاح! 🎉`
     );
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await sendWhatsAppMessage(
-      normalizedPhone,
+      waPhone,
       `📱 رابط تسجيل الدخول:\nhttps://center-hq.vercel.app/ar/login\n\n🔐 رقم الهاتف المسجل: ${phone}\n📋 الباقة: ${plan}`
     );
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await sendWhatsAppMessage(
-      normalizedPhone,
+      waPhone,
       `🎁 كود الإحالة الخاص بك: ${referralCode}\nشارك الكود مع أصحاب السناتر وأكسب 25% من اشتراكاتهم الشهرية!`
     );
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await sendWhatsAppMessage(
-      normalizedPhone,
+      waPhone,
       `كيف سير الأمور مع CenterHQ؟ 😊\nنحن هنا للمساعدة — رد على هذه الرسالة في أي وقت.`
     );
 
@@ -836,7 +845,7 @@ export async function PUT(request: Request) {
     const credentialsMessage = `تم تفعيل حسابك في CenterHQ! 🎉
 
 🔐 بيانات الدخول:
-📱 رقم الهاتف: ${intlPhone}
+📱 رقم الهاتف: ${phone}
 🔑 رمز PIN: ${pin}
 
 🌐 رابط الدخول:
@@ -847,9 +856,12 @@ ${appUrl}/login
     return NextResponse.json({
       success: true,
       action: 'approved',
-      credentials: { phone: intlPhone, pin },
+      pin,
+      phone: center.phone,
+      center_name: center.name,
+      credentials: { phone, pin },
       credentialsMessage,
-      whatsappUrl: `https://wa.me/${intlPhone.replace(/\D/g, '')}?text=${encodeURIComponent(credentialsMessage)}`,
+      whatsappUrl: `https://wa.me/${phoneDigits}?text=${encodeURIComponent(credentialsMessage)}`,
     });
   } catch (error) {
     return NextResponse.json(
