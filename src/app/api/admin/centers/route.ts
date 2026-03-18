@@ -277,6 +277,21 @@ export async function GET(request: Request) {
   }
 }
 
+async function safeDelete(
+  adminSupabase: SupabaseClient,
+  table: string,
+  column: string,
+  value: string,
+  label?: string
+): Promise<void> {
+  try {
+    const { error } = await adminSupabase.from(table).delete().eq(column, value);
+    if (error) console.warn(`[admin/centers DELETE] ${label ?? table} failed:`, error.message);
+  } catch (e) {
+    console.warn(`[admin/centers DELETE] ${label ?? table} error:`, e);
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -303,12 +318,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const adminByTable = await isAdminUser(supabaseAdmin, user.id);
-    const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', user.id).single();
+    const adminByTable = await isAdminUser(adminSupabase, user.id);
+    const { data: userRecord } = await adminSupabase.from('users').select('phone').eq('id', user.id).single();
     const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
 
     if (!adminByTable && !adminByPhone) {
@@ -324,26 +339,114 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Missing center id' }, { status: 400 });
     }
 
-    const { data: center, error: centerError } = await supabaseAdmin
+    const { data: center, error: fetchError } = await adminSupabase
       .from('centers')
-      .select('id, name')
+      .select('id, name, phone')
       .eq('id', centerId)
       .single();
 
-    if (centerError || !center) {
+    if (fetchError || !center) {
       return NextResponse.json({ error: 'Center not found' }, { status: 404 });
     }
 
-    const { error: deleteError } = await supabaseAdmin
+    const { data: centerUsers } = await adminSupabase
+      .from('users')
+      .select('id')
+      .eq('center_id', centerId);
+    const userIds = centerUsers?.map((u: { id: string }) => u.id) ?? [];
+
+    await safeDelete(adminSupabase, 'attendance_scans', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'wa_message_queue', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'wa_conversations', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'wa_inactivity_alerts', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'student_notes', 'center_id', centerId);
+
+    const { data: studentRows } = await adminSupabase.from('students').select('id').eq('center_id', centerId);
+    const studentIds = studentRows?.map((s: { id: string }) => s.id) ?? [];
+    if (studentIds.length > 0) {
+      for (const sid of studentIds) {
+        try {
+          await adminSupabase.from('parent_portal_tokens').delete().eq('student_id', sid);
+        } catch {
+          /* continue */
+        }
+      }
+    }
+
+    await safeDelete(adminSupabase, 'schedule_slots', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'students', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'student_groups', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'rooms', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'referrals', 'referrer_center_id', centerId);
+    await safeDelete(adminSupabase, 'referrals', 'referred_center_id', centerId);
+    await safeDelete(adminSupabase, 'referral_rewards', 'referrer_center_id', centerId);
+    await safeDelete(adminSupabase, 'referral_rewards', 'referred_center_id', centerId);
+    await safeDelete(adminSupabase, 'academic_periods', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'academic_years', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'holidays', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'admin_alerts', 'center_id', centerId);
+    await safeDelete(adminSupabase, 'center_invites', 'center_id', centerId);
+
+    try {
+      await adminSupabase.from('referral_codes').delete().eq('center_id', centerId);
+    } catch {
+      /* continue */
+    }
+    try {
+      await adminSupabase.from('admin_payments').delete().eq('center_id', centerId);
+    } catch {
+      /* continue */
+    }
+    try {
+      await adminSupabase.from('payments').delete().eq('center_id', centerId);
+    } catch {
+      /* continue */
+    }
+    try {
+      await adminSupabase.from('invoices').delete().eq('center_id', centerId);
+    } catch {
+      /* continue */
+    }
+
+    await adminSupabase.from('users').delete().eq('center_id', centerId);
+
+    const { error: centerDeleteError } = await adminSupabase
       .from('centers')
       .delete()
       .eq('id', centerId);
 
-    if (deleteError) {
-      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    if (centerDeleteError) {
+      return NextResponse.json({ error: centerDeleteError.message }, { status: 500 });
     }
 
-    await logAdminAction(user.id, 'delete_center', { centerId, centerName: center.name }, centerId);
+    for (const uid of userIds) {
+      try {
+        await adminSupabase.auth.admin.deleteUser(uid);
+      } catch {
+        /* continue */
+      }
+    }
+
+    if (center.phone) {
+      try {
+        const phoneDigits = (center.phone as string).replace(/\D/g, '');
+        const authEmail = `${phoneDigits}@centerhq.local`;
+        const { data: { users: authUsers } } = await adminSupabase.auth.admin.listUsers({ perPage: 100 });
+        const authUser = authUsers?.find((u) => u.email === authEmail);
+        if (authUser) {
+          await adminSupabase.auth.admin.deleteUser(authUser.id);
+        }
+      } catch {
+        /* continue */
+      }
+    }
+
+    await logAdminAction(user.id, 'delete_center', {
+      centerId,
+      centerName: center.name,
+      center_phone: center.phone,
+      users_deleted: userIds.length,
+    }, centerId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
