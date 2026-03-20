@@ -20,15 +20,6 @@ const cairo = localFont({
   preload: true,
 });
 
-const jetbrainsMono = localFont({
-  src: [
-    { path: '../../../public/fonts/JetBrainsMono-Regular.woff2', weight: '400' },
-    { path: '../../../public/fonts/JetBrainsMono-Medium.woff2', weight: '500' },
-  ],
-  variable: '--font-jetbrains',
-  display: 'swap',
-  preload: false,
-});
 import { UserProvider } from '@/contexts/UserContext';
 import { LayoutProvider } from '@/contexts/LayoutContext';
 import AppShell from '@/components/AppShell';
@@ -60,7 +51,7 @@ export default async function LocaleLayout({
 
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
   return (
-    <html lang={locale} dir={dir} className={`${cairo.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={`${cairo.variable}`} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/logo-icon-64.png" type="image/png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

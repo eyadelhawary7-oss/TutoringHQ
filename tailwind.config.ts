@@ -12,9 +12,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Söhne', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Ubuntu', 'Cantarell', 'Noto Sans', 'sans-serif', 'Helvetica Neue', 'Arial'],
-        mono: ['var(--font-jetbrains)', 'monospace'],
-        cairo: ['var(--font-cairo)', 'sans-serif'],
+        sans: ['Georgia', '"Times New Roman"', 'serif'],
+        mono: ['Georgia', '"Times New Roman"', 'serif'],
+        cairo: ['"Cairo-Arabic"', 'Georgia', '"Times New Roman"', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",

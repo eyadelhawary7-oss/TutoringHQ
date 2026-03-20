@@ -45,7 +45,7 @@ export default function RevenueBar({ data }: RevenueBarProps) {
                   style={{ width: '0%', background: gradient }}
                 />
               </div>
-              <span className="text-sm font-mono text-[var(--text-secondary)] w-10 text-end" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+              <span className="text-sm font-mono text-[var(--text-secondary)] w-10 text-end" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
                 {locale === 'ar' ? toAr(0) : 0}%
               </span>
             </div>
@@ -71,7 +71,7 @@ export default function RevenueBar({ data }: RevenueBarProps) {
                 style={{ width: `${pct}%`, background: gradient }}
               />
             </div>
-            <span className="text-sm font-mono text-[var(--text-secondary)] w-10 text-end" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+            <span className="text-sm font-mono text-[var(--text-secondary)] w-10 text-end" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
               {locale === 'ar' ? toAr(pct) : pct}%
             </span>
           </div>

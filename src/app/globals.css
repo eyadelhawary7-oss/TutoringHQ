@@ -3,6 +3,8 @@
 @plugin "tailwindcss-animate";
 
 @theme {
+  --font-sans: Georgia, "Times New Roman", serif;
+  --font-mono: Georgia, "Times New Roman", serif;
   --color-background: hsl(210 20% 97%);
   --color-foreground: hsl(215 28% 12%);
   --color-card: hsl(0 0% 100%);
@@ -152,27 +154,16 @@
   }
 
   html {
-    font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-background text-foreground;
-    font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     font-feature-settings: 'tnum';
     -webkit-font-smoothing: antialiased;
   }
 
-  [dir="rtl"] {
-    font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  }
-
-  [dir="ltr"] {
-    font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  }
-
-  .font-numbers, .font-mono {
-    font-family: "Söhne Mono", Monaco, "Andale Mono", "Ubuntu Mono", "Courier New", monospace;
+  .font-numbers {
     font-variant-numeric: tabular-nums;
   }
 }
@@ -369,4 +360,84 @@
     size: A4 portrait;
     margin: 0;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BILINGUAL TYPOGRAPHY SYSTEM
+   Cairo-Arabic: Arabic script characters only (unicode-range restricted)
+   Georgia: Latin characters (A-Z a-z) and numbers (0-9)
+   Both activate simultaneously on the same element via unicode-range.
+   Cairo's built-in Latin glyphs are excluded — Georgia handles all Latin.
+───────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Cairo-Arabic';
+  src: url('/fonts/Cairo-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-U+06FF, U+0750-U+077F, U+08A0-U+08FF,
+                 U+FB50-U+FDFF, U+FE70-U+FEFF,
+                 U+200C-U+200F, U+2010-U+2011, U+204F, U+2E41;
+}
+
+@font-face {
+  font-family: 'Cairo-Arabic';
+  src: url('/fonts/Cairo-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-U+06FF, U+0750-U+077F, U+08A0-U+08FF,
+                 U+FB50-U+FDFF, U+FE70-U+FEFF,
+                 U+200C-U+200F, U+2010-U+2011, U+204F, U+2E41;
+}
+
+@font-face {
+  font-family: 'Cairo-Arabic';
+  src: url('/fonts/Cairo-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-U+06FF, U+0750-U+077F, U+08A0-U+08FF,
+                 U+FB50-U+FDFF, U+FE70-U+FEFF,
+                 U+200C-U+200F, U+2010-U+2011, U+204F, U+2E41;
+}
+
+@font-face {
+  font-family: 'Cairo-Arabic';
+  src: url('/fonts/Cairo-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-U+06FF, U+0750-U+077F, U+08A0-U+08FF,
+                 U+FB50-U+FDFF, U+FE70-U+FEFF,
+                 U+200C-U+200F, U+2010-U+2011, U+204F, U+2E41;
+}
+
+/* Single authoritative base font stack.
+   Cairo-Arabic handles Arabic characters via unicode-range.
+   Georgia handles all Latin characters and numbers. */
+html,
+body {
+  font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif;
+}
+
+/* Belt-and-suspenders for number and code elements.
+   Ensures Georgia even inside Arabic-heavy components. */
+.font-mono,
+.tabular-nums,
+code,
+pre,
+kbd,
+samp {
+  font-family: Georgia, "Times New Roman", serif !important;
+}
+
+/* Tailwind v4 only: override font-cairo utility output.
+   In v4, the font-cairo utility generates font-family: var(--font-cairo).
+   next/font sets --font-cairo via a class selector with higher specificity
+   than :root or @theme, making those overrides ineffective at runtime.
+   This class-level !important rule is the correct and only reliable fix. */
+.font-cairo {
+  font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif !important;
 }

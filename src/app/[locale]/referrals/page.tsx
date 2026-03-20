@@ -331,7 +331,7 @@ export default function ReferralsPage() {
             <Gift className="w-5 h-5 text-teal-600" />
             {t('yourCode')}
           </h2>
-          <p className="font-mono text-2xl font-bold text-teal-600 mb-4" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+          <p className="font-mono text-2xl font-bold text-teal-600 mb-4" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
             {data?.referralCode || '—'}
           </p>
           <div className="flex flex-wrap gap-2">

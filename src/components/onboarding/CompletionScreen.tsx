@@ -57,7 +57,7 @@ export default function CompletionScreen({ centerId, centerPhone, onGoToDashboar
 
   return (
     <div className="text-center space-y-6 py-8">
-      <h1 className="text-4xl font-black text-foreground" style={{ fontFamily: 'var(--font-cairo)' }}>
+      <h1 className="text-4xl font-black text-foreground" style={{ fontFamily: "'Cairo-Arabic', Georgia, \"Times New Roman\", serif" }}>
         {t('completionTitle')}
       </h1>
       <p className="text-lg text-slate-500">{t('completionDesc')}</p>

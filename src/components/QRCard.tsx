@@ -83,7 +83,7 @@ export function QRCard({
           className="mt-[2.5mm] text-center font-bold leading-tight"
           style={{
             fontSize: `${14 * scale}px`,
-            fontFamily: 'var(--font-cairo), sans-serif',
+            fontFamily: "'Cairo-Arabic', Georgia, \"Times New Roman\", serif",
           }}
         >
           {student.name}
@@ -93,7 +93,7 @@ export function QRCard({
           style={{
             fontSize: `${10 * scale}px`,
             opacity: 0.7,
-            fontFamily: 'var(--font-jetbrains-mono), monospace',
+            fontFamily: 'Georgia, "Times New Roman", serif',
           }}
         >
           {student.student_number || '—'}
@@ -107,7 +107,7 @@ export function QRCard({
           style={{
             fontSize: '7px',
             opacity: 0.3,
-            fontFamily: 'var(--font-jetbrains-mono), monospace',
+            fontFamily: 'Georgia, "Times New Roman", serif',
           }}
         >
           CenterHQ
