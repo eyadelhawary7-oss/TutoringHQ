@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
@@ -14,6 +14,7 @@ import { PrintStatementModal } from '@/components/PrintStatementModal';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { AtRiskPanel } from '@/components/students/AtRiskPanel';
 import { LifecycleBadge } from '@/components/students/LifecycleBadge';
+import { SwipeRow } from '@/components/students/SwipeRow';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
 import { useUser } from '@/contexts/UserContext';
 
@@ -47,8 +48,66 @@ interface Group {
 
 type SortBy = 'name' | 'balance';
 
+type LifecycleFilter = 'all' | 'active' | 'at_risk' | 'inactive' | 'enrolled' | 'churned';
+
+function matchesLifecycle(
+  s: Student,
+  f: LifecycleFilter
+): boolean {
+  if (f === 'all') return true;
+  const st = s.lifecycle_status;
+  switch (f) {
+    case 'active':
+      return st === 'active';
+    case 'at_risk':
+      return st === 'at_risk';
+    case 'inactive':
+      return st === 'inactive';
+    case 'churned':
+      return st === 'churned';
+    case 'enrolled':
+      return st === 'enrolled' || st == null || st === undefined;
+    default:
+      return true;
+  }
+}
+
+type StudentStatusLabelKey =
+  | 'status_enrolled'
+  | 'status_active'
+  | 'status_at_risk'
+  | 'status_inactive'
+  | 'status_churned';
+
+function studentStatusLabelKey(lifecycle: Student['lifecycle_status']): StudentStatusLabelKey {
+  const x = lifecycle ?? 'enrolled';
+  if (x === 'active') return 'status_active';
+  if (x === 'at_risk') return 'status_at_risk';
+  if (x === 'inactive') return 'status_inactive';
+  if (x === 'churned') return 'status_churned';
+  return 'status_enrolled';
+}
+
+type FilterLabelKey =
+  | 'filter_all'
+  | 'filter_active'
+  | 'filter_at_risk'
+  | 'filter_inactive'
+  | 'filter_enrolled'
+  | 'filter_churned';
+
+function lifecycleFilterLabelKey(f: LifecycleFilter): FilterLabelKey {
+  if (f === 'all') return 'filter_all';
+  if (f === 'active') return 'filter_active';
+  if (f === 'at_risk') return 'filter_at_risk';
+  if (f === 'inactive') return 'filter_inactive';
+  if (f === 'enrolled') return 'filter_enrolled';
+  return 'filter_churned';
+}
+
 export default function StudentsPage() {
-  const t = useTranslations('students');
+  const ts = useTranslations('students');
+  const router = useRouter();
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const { user, hasPermission } = useUser();
@@ -64,6 +123,8 @@ export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
+  const [lifecycleFilter, setLifecycleFilter] = useState<LifecycleFilter>('all');
+  const [filterKey, setFilterKey] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({
     name: '',
@@ -252,6 +313,7 @@ export default function StudentsPage() {
         const subs = studentGroupsMap[s.id]?.subjects ?? [];
         if (!subs.includes(subjectFilter)) return false;
       }
+      if (!matchesLifecycle(s, lifecycleFilter)) return false;
       return true;
     });
     if (sortBy === 'name') {
@@ -260,7 +322,12 @@ export default function StudentsPage() {
       list = [...list].sort((a, b) => (balanceByStudent[b.id] ?? 0) - (balanceByStudent[a.id] ?? 0));
     }
     return list;
-  }, [students, searchQuery, subjectFilter, sortBy, studentGroupsMap, balanceByStudent]);
+  }, [students, searchQuery, subjectFilter, lifecycleFilter, sortBy, studentGroupsMap, balanceByStudent]);
+
+  const maxBalanceAcross = useMemo(
+    () => Math.max(1, ...students.map((s) => balanceByStudent[s.id] ?? 0)),
+    [students, balanceByStudent]
+  );
 
   const openQRModal = async (student: Student) => {
     setQrModalStudent(student);
@@ -289,7 +356,7 @@ export default function StudentsPage() {
   };
 
   const handleRegenerateQR = async () => {
-    if (!qrModalStudent || !confirm(t('regenerateQRConfirm', { defaultValue: 'This will invalidate the printed card. Are you sure?' }))) return;
+    if (!qrModalStudent || !confirm(ts('regenerateQRConfirm', { defaultValue: 'This will invalidate the printed card. Are you sure?' }))) return;
     try {
       const dataUrl = await QRCode.toDataURL(qrModalStudent.id, {
         width: 300,
@@ -362,7 +429,7 @@ export default function StudentsPage() {
   const handleGenerateAllQR = async () => {
     const needQR = students.filter((s) => !s.qr_code);
     if (needQR.length === 0) {
-      setGenerateSuccess(t('allStudentsHaveQR', { defaultValue: 'All students already have QR codes' }));
+      setGenerateSuccess(ts('allStudentsHaveQR', { defaultValue: 'All students already have QR codes' }));
       setTimeout(() => setGenerateSuccess(null), 3000);
       return;
     }
@@ -386,7 +453,7 @@ export default function StudentsPage() {
           prev.map((s) => (s.id === student.id ? { ...s, qr_code: dataUrl } : s))
         );
       }
-      setGenerateSuccess(t('qrGeneratedNew', { count: needQR.length, defaultValue: `Generating QR codes for ${needQR.length} new students...` }));
+      setGenerateSuccess(ts('qrGeneratedNew', { count: needQR.length, defaultValue: `Generating QR codes for ${needQR.length} new students...` }));
       setTimeout(() => setGenerateSuccess(null), 4000);
     } catch (err) {
       console.error('Bulk QR error:', err);
@@ -490,8 +557,6 @@ export default function StudentsPage() {
     }
   };
 
-  const activeCount = useMemo(() => students.filter((s) => s.is_active !== false).length, [students]);
-
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError('');
@@ -502,11 +567,11 @@ export default function StudentsPage() {
     const centerId = meData?.user?.center_id;
     const userId = meData?.user?.id;
     if (!centerId || !userId || !addForm.name.trim()) {
-      setAddError(t('nameRequired', { defaultValue: 'Name is required' }));
+      setAddError(ts('nameRequired', { defaultValue: 'Name is required' }));
       return;
     }
     if (!addForm.groupId) {
-      setAddError(t('groupRequiredError'));
+      setAddError(ts('groupRequiredError'));
       return;
     }
     setIsAdding(true);
@@ -597,57 +662,98 @@ export default function StudentsPage() {
 
   return (
     <>
-      <div className="p-4 md:p-6 space-y-5 animate-fade-in">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-xs me-1.5">{students.length}</span>
-              {tCommon('students')}
-            </p>
+      <div
+        className="bg-[var(--color-surface-0)] min-h-screen animate-fade-in
+          pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0"
+      >
+        <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
+            <div>
+              <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
+              <p className="text-xs text-[var(--color-text-secondary)]">{ts('subtitle')}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <Link
+                href="/students/import"
+                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)]
+                  text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]
+                  hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+              >
+                <Upload size={14} /> {ts('import')}
+              </Link>
+              <Link
+                href="/students/print"
+                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)]
+                  text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]
+                  hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+              >
+                <Printer size={14} /> {ts('print_cards')}
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowCardOrderModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)]
+                  text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]
+                  hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+              >
+                <CreditCard size={14} /> {ts('order_cards')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-brand-500 hover:opacity-90 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                <Plus size={14} /> {ts('add_student')}
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href="/students/import"
-              className="flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
-            >
-              <Upload size={14} /> {t('import')}
-            </Link>
-            <button
-              onClick={() => setShowCardOrderModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
-            >
-              <CreditCard size={14} /> 🪪 Order ID Cards
-            </button>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              <Plus size={14} /> {t('addStudent')}
-            </button>
-          </div>
-        </div>
 
-        {/* Filter bar */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="card p-3 flex items-center gap-3">
+              <span className="text-[var(--color-text-secondary)] text-xs">{ts('total_students')}</span>
+              <span className="text-lg font-bold text-[var(--color-text-primary)] ms-auto">
+                {students.length.toLocaleString('en-US')}
+              </span>
+            </div>
+            <div className="card p-3 flex items-center gap-3">
+              <span className="text-[var(--color-text-secondary)] text-xs">{ts('active_students')}</span>
+              <span className="text-lg font-bold text-[var(--color-success)] ms-auto">
+                {students.filter((s) => s.lifecycle_status === 'active').length.toLocaleString('en-US')}
+              </span>
+            </div>
+          </div>
+
+          <div className="card p-0 overflow-hidden mb-3">
+            <div className="relative">
+              <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-tertiary)]" />
               <input
                 type="search"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('searchPlaceholder')}
-                className="w-full ps-9 pe-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setFilterKey((k) => k + 1);
+                }}
+                placeholder={ts('search_placeholder')}
+                className="w-full bg-transparent ps-9 pe-4 py-3 text-sm text-[var(--color-text-primary)]
+                  placeholder:text-[var(--color-text-tertiary)] outline-none border-none"
                 dir="auto"
               />
             </div>
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100">
+          </div>
+
+          <div className="flex flex-col gap-3 mb-3">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--color-surface-2)] overflow-x-auto">
               <button
                 type="button"
-                onClick={() => setSubjectFilter(null)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${subjectFilter === null ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                onClick={() => {
+                  setSubjectFilter(null);
+                  setFilterKey((k) => k + 1);
+                }}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  subjectFilter === null
+                    ? 'bg-[var(--color-surface-1)] text-[var(--color-text-primary)] shadow-sm'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
               >
                 {tCommon('all', { defaultValue: 'All' })}
               </button>
@@ -655,185 +761,322 @@ export default function StudentsPage() {
                 <button
                   key={sub}
                   type="button"
-                  onClick={() => setSubjectFilter(subjectFilter === sub ? null : sub)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${subjectFilter === sub ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  onClick={() => {
+                    setSubjectFilter(subjectFilter === sub ? null : sub);
+                    setFilterKey((k) => k + 1);
+                  }}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    subjectFilter === sub
+                      ? 'bg-[var(--color-surface-1)] text-[var(--color-text-primary)] shadow-sm'
+                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                  }`}
                 >
                   {sub}
                 </button>
               ))}
             </div>
+
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {(['all', 'active', 'at_risk', 'inactive', 'enrolled', 'churned'] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => {
+                    setLifecycleFilter(f);
+                    setFilterKey((k) => k + 1);
+                  }}
+                  className={`shrink-0 px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${
+                    lifecycleFilter === f
+                      ? 'bg-[var(--color-brand-500)] text-white'
+                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
+                  }`}
+                >
+                  {ts(lifecycleFilterLabelKey(f))}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-[var(--color-text-tertiary)]">{ts('sort')}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSortBy('name');
+                  setFilterKey((k) => k + 1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  sortBy === 'name'
+                    ? 'bg-[var(--color-brand-500)] text-white'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
+                }`}
+              >
+                {ts('sortName')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSortBy('balance');
+                  setFilterKey((k) => k + 1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  sortBy === 'balance'
+                    ? 'bg-[var(--color-brand-500)] text-white'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
+                }`}
+              >
+                {ts('sortBalance')}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-center gap-3">
-            <div className="p-3 rounded-full bg-teal-100 shrink-0">
-              <Users size={18} className="text-teal-600" />
+        <div className="px-4 max-w-3xl mx-auto w-full space-y-4 pb-6">
+          {addSuccess && (
+            <div
+              className="p-4 rounded-xl border border-[var(--color-success)] bg-[rgba(16,185,129,0.08)]
+                text-[var(--color-success)] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            >
+              <p className="font-medium text-sm">
+                {ts('addStudentSuccess', { name: addSuccess.name, studentNumber: addSuccess.studentNumber })}
+              </p>
+              {addSuccess.qrDataUrl && <img src={addSuccess.qrDataUrl} alt="" className="w-16 h-16" />}
+              <button type="button" onClick={() => setAddSuccess(null)} className="text-sm underline">
+                {tCommon('cancel')}
+              </button>
             </div>
-            <div>
-              <div className="text-xl font-black font-mono text-slate-900">{students.length}</div>
-              <div className="text-xs text-slate-500">{t('totalStudents')}</div>
+          )}
+          {generateSuccess && (
+            <div className="p-4 rounded-xl border border-[var(--color-success)] bg-[rgba(16,185,129,0.08)] text-[var(--color-success)]">
+              <p className="font-medium text-sm">{generateSuccess}</p>
             </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-center gap-3">
-            <div className="p-3 rounded-full bg-green-100 shrink-0">
-              <Users size={18} className="text-green-600" />
-            </div>
-            <div>
-              <div className="text-xl font-black font-mono text-slate-900">{activeCount}</div>
-              <div className="text-xs text-slate-500">{t('activeStudents')}</div>
-            </div>
-          </div>
-        </div>
+          )}
 
-        {addSuccess && (
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800 rounded-lg flex items-center justify-between gap-4">
-            <p className="font-medium">{t('addStudentSuccess', { name: addSuccess.name, studentNumber: addSuccess.studentNumber })}</p>
-            {addSuccess.qrDataUrl && <img src={addSuccess.qrDataUrl} alt="QR" className="w-16 h-16" />}
-            <button onClick={() => setAddSuccess(null)} className="text-green-700 dark:text-green-400 hover:underline text-sm">{tCommon('cancel')}</button>
-          </div>
-        )}
-        {generateSuccess && (
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800 rounded-lg">
-            <p className="font-medium">{generateSuccess}</p>
-          </div>
-        )}
+          <AtRiskPanel />
 
-        <AtRiskPanel />
-
-        {isLoading ? (
-          <div className="text-center py-16">
-            <svg className="animate-spin h-8 w-8 text-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-          </div>
-        ) : students.length === 0 ? (
-          <EmptyState
-            icon={<Users />}
-            titleKey="students.title"
-            descriptionKey="students.description"
-            namespace="emptyStates"
-            actionLabel="students.action"
-            onAction={() => setShowAddModal(true)}
-          />
-        ) : (
-          <>
-            {/* Table desktop */}
-            <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('studentNumber')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('phone')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('groups')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('balance')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredStudents.map((s) => {
-                    const bal = balanceByStudent[s.id] ?? 0;
-                    const isActive = s.is_active !== false;
-                    return (
-                      <tr key={s.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{s.name}</td>
-                        <td className="py-3.5 px-4 text-sm font-mono text-slate-500">{s.student_number || ''}</td>
-                        <td className="py-3.5 px-4 text-sm">
-                          <span className="font-mono text-slate-500" dir="ltr">{s.phone || ''}</span>
-                          {s.parent_consent_given && (
-                            <span className="ms-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700" title={t('parentConsented', { defaultValue: 'موافقة ولي الأمر' })}>✓ ولي الأمر</span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 text-sm">
-                          <div className="flex flex-wrap gap-1">
-                            {(studentGroupsMap[s.id]?.names ?? []).slice(0, 2).map((n, i) => (
-                              <span key={i} className="px-2 py-0.5 rounded-full text-xs font-medium border border-slate-200 text-slate-600">{n}</span>
-                            ))}
-                            {(studentGroupsMap[s.id]?.names ?? []).length > 2 && (
-                              <span className="text-xs text-slate-500">+{(studentGroupsMap[s.id]?.names ?? []).length - 2}</span>
+          {isLoading ? (
+            <div className="text-center py-16">
+              <svg
+                className="animate-spin h-8 w-8 text-brand-500 mx-auto"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            </div>
+          ) : students.length === 0 ? (
+            <EmptyState
+              icon={<Users />}
+              titleKey="students.title"
+              descriptionKey="students.description"
+              namespace="emptyStates"
+              actionLabel="students.action"
+              onAction={() => setShowAddModal(true)}
+            />
+          ) : (
+            <div className="flex flex-col gap-2" key={filterKey}>
+              {filteredStudents.length === 0 ? (
+                <div className="card p-10 flex flex-col items-center gap-3 mt-4">
+                  <svg
+                    width="40"
+                    height="40"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    viewBox="0 0 24 24"
+                    className="text-[var(--color-text-tertiary)]"
+                  >
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                  </svg>
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">{ts('empty_title')}</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">{ts('empty_subtitle')}</p>
+                </div>
+              ) : (
+                filteredStudents.map((s, index) => {
+                  const bal = balanceByStudent[s.id] ?? 0;
+                  const balNum = Number(bal);
+                  const statusKey = studentStatusLabelKey(s.lifecycle_status);
+                  return (
+                    <SwipeRow
+                      key={s.id}
+                      actions={[
+                        {
+                          label: ts('swipe_edit'),
+                          variant: 'default',
+                          icon: (
+                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          ),
+                          onClick: () => openEdit(s),
+                        },
+                        {
+                          label: ts('swipe_scan'),
+                          variant: 'default',
+                          icon: <QrCode size={16} />,
+                          onClick: () => router.push('/scan'),
+                        },
+                        {
+                          label: ts('swipe_delete'),
+                          variant: 'danger',
+                          icon: (
+                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                              <path d="M10 11v6M14 11v6" />
+                            </svg>
+                          ),
+                          onClick: () => setDeleteTarget(s),
+                        },
+                      ]}
+                    >
+                      <div
+                        className="card p-4 cursor-pointer hover:border-[var(--color-brand-500)] transition-all duration-fast ease-out student-card-enter"
+                        style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
+                        onClick={() => openQRModal(s)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openQRModal(s);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <div
+                            className="w-9 h-9 rounded-full shrink-0 bg-[rgba(13,148,136,0.12)] text-brand-400 font-semibold text-sm
+                              flex items-center justify-center"
+                          >
+                            {(s.name ?? '?').charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{s.name}</p>
+                              <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey)} />
+                              {s.parent_consent_given && (
+                                <span
+                                  className="badge badge-success text-[10px] px-1.5 py-0"
+                                  title={ts('parentConsented', { defaultValue: 'Parent consented' })}
+                                >
+                                  ✓
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
+                              {s.student_number ?? ''}
+                              {s.phone ? ` · ${s.phone}` : ''}
+                            </p>
+                            {(studentGroupsMap[s.id]?.names ?? []).length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {(studentGroupsMap[s.id]?.names ?? []).slice(0, 3).map((n, gi) => (
+                                  <span
+                                    key={gi}
+                                    className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-[var(--color-border-subtle)]
+                                      text-[var(--color-text-secondary)]"
+                                  >
+                                    {n}
+                                  </span>
+                                ))}
+                                {(studentGroupsMap[s.id]?.names ?? []).length > 3 && (
+                                  <span className="text-[10px] text-[var(--color-text-tertiary)]">
+                                    +{(studentGroupsMap[s.id]?.names ?? []).length - 3}
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
-                        </td>
-                        <td className="py-3.5 px-4 text-sm">
-                          <LifecycleBadge status={s.lifecycle_status} fallbackActive={isActive} />
-                        </td>
-                        <td className="py-3.5 px-4 text-sm">
-                          {bal > 0 ? (
-                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold font-mono bg-red-100 text-red-700">{locale === 'ar' ? toAr(Math.round(bal)) : Math.round(bal).toLocaleString()} {tCommon('egp')}</span>
-                          ) : (
-                            <span className="text-slate-400">&mdash;</span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 text-sm">
-                          <div className="flex items-center gap-1">
-                            {canViewPayments && (
-                              <button onClick={() => setPrintStudent({ id: s.id, name: s.name })} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900" title={t('statement.printStatement')}><Printer size={14} /></button>
-                            )}
-                            <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900" title={tCommon('edit')}><Edit size={14} /></button>
-                            <button onClick={() => openQRModal(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900" title={t('viewQR')}><Eye size={14} /></button>
-                            <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600" title={tCommon('delete')}><Trash2 size={14} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile cards */}
-            <div className="md:hidden space-y-3">
-              {filteredStudents.map((s) => {
-                const bal = balanceByStudent[s.id] ?? 0;
-                const isActive = s.is_active !== false;
-                return (
-                  <div key={s.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-slate-900">{s.name}</span>
-                          {bal > 0 && (
-                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold font-mono bg-red-100 text-red-700">{locale === 'ar' ? toAr(Math.round(bal)) : Math.round(bal).toLocaleString()} {tCommon('egp')}</span>
-                          )}
-                          <LifecycleBadge status={s.lifecycle_status} fallbackActive={isActive} />
                         </div>
-                        <div className="font-mono text-xs text-slate-500 mt-0.5">{s.student_number || ''}</div>
-                        {s.phone && <div className="font-mono text-xs text-slate-500" dir="ltr">{s.phone}</div>}
-                        {s.parent_consent_given && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700 mt-0.5">✓ ولي الأمر</span>
-                        )}
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {(studentGroupsMap[s.id]?.names ?? []).map((n, i) => (
-                            <span key={i} className="px-2 py-0.5 rounded-full text-xs border border-slate-200 text-slate-600">{n}</span>
+
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="text-xs text-[var(--color-text-tertiary)] me-1">{ts('last_sessions')}</span>
+                          {Array.from({ length: 7 }).map((_, i) => (
+                            <div key={i} className="attendance-dot attendance-dot-unknown" />
                           ))}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {canViewPayments && (
-                          <button onClick={() => setPrintStudent({ id: s.id, name: s.name })} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><Printer size={14} /></button>
-                        )}
-                        <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><Edit size={14} /></button>
-                        <button onClick={() => openQRModal(s)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><Eye size={14} /></button>
-                        <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-500"><Trash2 size={14} /></button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
 
-        {filteredStudents.length === 0 && students.length > 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            <Users size={40} className="mx-auto mb-3 opacity-30" />
-            <p>{t('noStudents')}</p>
-          </div>
-        )}
+                        {balNum > 0 ? (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs text-[var(--color-danger)] font-medium">{ts('balance_due')}:</span>
+                              <span className="text-xs font-bold text-[var(--color-danger)]">
+                                {balNum.toLocaleString('en-US')} {tCommon('egp')}
+                              </span>
+                            </div>
+                            <div className="balance-bar">
+                              <div
+                                className="balance-bar-fill"
+                                style={{ width: `${Math.min(100, (balNum / maxBalanceAcross) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-[var(--color-text-tertiary)]">{ts('no_balance')}</p>
+                        )}
+
+                        <div className="hidden md:flex flex-wrap items-center justify-end gap-1 pt-3 mt-2 border-t border-[var(--color-border-subtle)]">
+                          {canViewPayments && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPrintStudent({ id: s.id, name: s.name });
+                              }}
+                              className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                              title={ts('statement.printStatement')}
+                            >
+                              <Printer size={14} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEdit(s);
+                            }}
+                            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                            title={tCommon('edit')}
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openQRModal(s);
+                            }}
+                            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                            title={ts('viewQR')}
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTarget(s);
+                            }}
+                            className="p-2 rounded-lg hover:bg-[rgba(239,68,68,0.12)] text-[var(--color-danger)]"
+                            title={tCommon('delete')}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </SwipeRow>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Add Student Modal */}
@@ -841,22 +1084,22 @@ export default function StudentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddModal(false)}>
           <div className="bg-card rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-foreground">{t('addStudent')}</h3>
+              <h3 className="font-bold text-foreground">{ts('addStudent')}</h3>
               <button onClick={() => setShowAddModal(false)}><X size={18} className="text-muted-foreground" /></button>
             </div>
             <form onSubmit={handleAddStudent} className="space-y-3">
               {addError && <p className="text-sm text-destructive">{addError}</p>}
-              <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={t('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" required />
+              <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" required />
               <input value={addForm.phone} onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
-              <input value={addForm.parentPhone} onChange={(e) => setAddForm((f) => ({ ...f, parentPhone: e.target.value }))} placeholder={t('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+              <input value={addForm.parentPhone} onChange={(e) => setAddForm((f) => ({ ...f, parentPhone: e.target.value }))} placeholder={ts('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('groupRequired')}</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{ts('groupRequired')}</label>
                 <select value={addForm.groupId} onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" required>
                   <option value="">{tCommon('select')}</option>
                   {groups.map((g) => (<option key={g.id} value={g.id}>{g.name} {g.fee != null ? `(EGP ${g.fee})` : ''}</option>))}
                 </select>
               </div>
-              <p className="text-xs text-muted-foreground">{t('autoGenerateNumber')}</p>
+              <p className="text-xs text-muted-foreground">{ts('autoGenerateNumber')}</p>
               <div className="flex gap-2 justify-end mt-4">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
                 <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{isAdding ? tCommon('loading') : tCommon('save')}</button>
@@ -875,12 +1118,12 @@ export default function StudentsPage() {
               <button onClick={() => setEditStudent(null)}><X size={18} className="text-muted-foreground" /></button>
             </div>
             <div className="space-y-3">
-              <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={t('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+              <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
               <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
-              <input value={editParentPhone} onChange={(e) => setEditParentPhone(e.target.value)} placeholder={t('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+              <input value={editParentPhone} onChange={(e) => setEditParentPhone(e.target.value)} placeholder={ts('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
               {editStudent.parent_consent_given && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                  {t('parentConsented', { defaultValue: 'موافقة ولي الأمر ✓' })}
+                  {ts('parentConsented', { defaultValue: 'موافقة ولي الأمر ✓' })}
                 </span>
               )}
               <FamilyLinkingSection
@@ -890,7 +1133,7 @@ export default function StudentsPage() {
                 onFamilyChange={setEditSiblingFamilyId}
               />
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('assignGroups')}</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{ts('assignGroups')}</label>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {groups.map((g) => (
                     <label key={g.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted cursor-pointer">
@@ -914,8 +1157,8 @@ export default function StudentsPage() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteTarget(null)}>
           <div className="bg-card rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-foreground text-lg mb-2">{t('deleteStudent')}</h3>
-            <p className="text-sm text-muted-foreground mb-3">{t('deleteStudentConfirm')}</p>
+            <h3 className="font-bold text-foreground text-lg mb-2">{ts('deleteStudent')}</h3>
+            <p className="text-sm text-muted-foreground mb-3">{ts('deleteStudentConfirm')}</p>
             <p className="font-medium text-foreground mb-5">{deleteTarget.name}</p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
@@ -930,7 +1173,7 @@ export default function StudentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }}>
           <div className="bg-card rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-foreground">{t('viewQR')}</h3>
+              <h3 className="font-bold text-foreground">{ts('viewQR')}</h3>
               <button onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} className="text-muted-foreground" /></button>
             </div>
             {/* Professional ID card */}
@@ -951,7 +1194,7 @@ export default function StudentsPage() {
               <div className="font-mono text-sm text-muted-foreground">{qrModalStudent.student_number || ''}</div>
               {(balanceByStudent[qrModalStudent.id] ?? 0) > 0 && (
                 <div className="mt-2 text-sm font-bold text-red-600">
-                  {t('balance')}: {locale === 'ar' ? toAr(Math.round(balanceByStudent[qrModalStudent.id]!)) : Math.round(balanceByStudent[qrModalStudent.id]!).toLocaleString()} {tCommon('egp')}
+                  {ts('balance')}: {locale === 'ar' ? toAr(Math.round(balanceByStudent[qrModalStudent.id]!)) : Math.round(balanceByStudent[qrModalStudent.id]!).toLocaleString()} {tCommon('egp')}
                 </div>
               )}
             </div>
@@ -963,7 +1206,7 @@ export default function StudentsPage() {
                 <QrCode size={14} /> {tCommon('print')}
               </button>
             </div>
-            {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-500 hover:underline">{t('regenerateQR')}</button>}
+            {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-500 hover:underline">{ts('regenerateQR')}</button>}
           </div>
         </div>
       )}
