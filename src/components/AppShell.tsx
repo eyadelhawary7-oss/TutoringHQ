@@ -90,28 +90,28 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider closeMainSidebar={closeMainSidebar}>
-    <div className="flex min-h-screen w-full bg-slate-50">
+    <div className="flex min-h-screen w-full bg-[var(--color-surface-0)]">
       <Sidebar open={sidebarOpen} onClose={closeMainSidebar} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden md:ms-64">
         {/* Desktop topbar */}
-        <header className="hidden md:flex items-center justify-between h-14 px-6 border-b border-slate-200 bg-white shrink-0 sticky top-0 z-30">
+        <header className="hidden md:flex items-center justify-between h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-100 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
               aria-label="Open menu"
             >
               <Menu size={20} />
             </button>
-            <span className="font-bold text-slate-900 text-lg">CenterHQ</span>
+            <span className="font-bold text-[var(--color-text-primary)] text-lg">CenterHQ</span>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <button
               onClick={handleLocaleToggle}
               disabled={isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] text-slate-700 hover:bg-slate-50 transition-colors"
             >
               <Globe size={14} />
               <span>{locale === 'ar' ? 'English' : 'العربية'}</span>
