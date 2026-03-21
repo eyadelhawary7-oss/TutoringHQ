@@ -1855,5 +1855,11 @@
       "tagline": "Made in Egypt 🇪🇬 for Egypt's centers",
       "rights": "© 2026 CenterHQ — EHG Intelligence. All rights reserved."
     }
+  },
+  "mobileShell": {
+    "tab_bar_label": "Primary navigation",
+    "pull_hint": "Pull to refresh",
+    "pull_release": "Release to refresh",
+    "refreshing": "Refreshing..."
   }
 }

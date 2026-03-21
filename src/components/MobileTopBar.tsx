@@ -40,7 +40,7 @@ export default function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
   };
 
   return (
-    <header className="md:hidden fixed top-0 inset-x-0 z-40 bg-white border-b border-slate-200 px-4 h-14 flex items-center justify-between print:hidden">
+    <header className="md:hidden fixed top-0 inset-x-0 z-40 bg-white border-b border-slate-200 px-4 min-h-14 flex items-center justify-between print:hidden">
       <div className="flex items-center gap-2">
         {onMenuClick && (
           <button onClick={onMenuClick} className="p-2 -ms-2 rounded-lg hover:bg-slate-100 transition-colors" aria-label="Open menu">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { usePathname } from '@/i18n/routing';
 import { useLayout } from '@/contexts/LayoutContext';
 import { useTranslations } from 'next-intl';
@@ -8,7 +9,8 @@ import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
 import Sidebar from '@/components/Sidebar';
 import MobileTopBar from '@/components/MobileTopBar';
-import { BottomNav } from '@/components/BottomNav';
+import { BottomTabBar } from '@/components/shell/BottomTabBar';
+import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 import { Globe, Menu } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
@@ -35,7 +37,7 @@ const PAGE_TITLE_MAP: Record<string, string> = {
   '/admin': 'nav.admin',
 };
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const t = useTranslations();
   const locale = useLocale();
@@ -125,15 +127,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* Mobile TopBar - includes hamburger */}
         <MobileTopBar onMenuClick={() => setSidebarOpen(true)} />
 
-        {/* Page content */}
-        <main className="flex-1 overflow-auto pb-20 md:pb-0">
-          <div className="p-6 max-w-7xl mx-auto pt-14 md:pt-6 pb-20 md:pb-8">
-            {children}
-          </div>
+        {/* Page content — scroll + safe-area padding on inner wrapper (MobileWrapper) */}
+        <main className="flex-1 flex flex-col min-h-0">
+          <MobileWrapper>{children}</MobileWrapper>
         </main>
       </div>
 
-      <BottomNav />
+      <BottomTabBar />
     </div>
     </SidebarProvider>
   );

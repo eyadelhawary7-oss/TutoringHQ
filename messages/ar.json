@@ -1844,5 +1844,11 @@
       "tagline": "مصنوع في مصر 🇪🇬 لسناتر مصر",
       "rights": "© 2026 CenterHQ — EHG Intelligence. جميع الحقوق محفوظة."
     }
+  },
+  "mobileShell": {
+    "tab_bar_label": "التنقل الرئيسي",
+    "pull_hint": "اسحب للتحديث",
+    "pull_release": "اترك للتحديث",
+    "refreshing": "جاري التحديث..."
   }
 }
