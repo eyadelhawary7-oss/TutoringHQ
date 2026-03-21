@@ -1736,5 +1736,123 @@
     "selectAll": "Select All",
     "clear": "Clear",
     "studentsSelected": "{count} students selected"
+  },
+  "landing": {
+    "nav": {
+      "login": "Login",
+      "signup": "Get Started Free"
+    },
+    "hero": {
+      "badge": "Founders Offer — 40% Off",
+      "headline_1": "Run your center",
+      "headline_2": "smarter",
+      "subheadline": "The all-in-one management platform built for Egyptian tutoring centers. QR attendance, Egyptian payments, WhatsApp automation, and instant reports.",
+      "cta_primary": "Get Started Free",
+      "cta_secondary": "See how it works",
+      "demo_attendance": "Mohamed Ahmed ✓"
+    },
+    "stats": {
+      "centers_label": "private centers in Egypt",
+      "centers_value": "20,000+",
+      "methods_label": "Egyptian payment methods",
+      "methods_value": "6",
+      "uptime_label": "uptime",
+      "uptime_value": "99.9%",
+      "support_label": "support",
+      "support_value": "24/7"
+    },
+    "features": {
+      "title": "Everything you need to run your center",
+      "subtitle": "Built specifically for Egyptian tutoring centers",
+      "items": {
+        "qr": {
+          "title": "Instant QR Attendance",
+          "desc": "Scan student QR codes in a second. Works offline and syncs automatically."
+        },
+        "payments": {
+          "title": "Egyptian Payments",
+          "desc": "Cash, InstaPay, Vodafone Cash, Orange Cash, Fawry, Bank Transfer — all built in."
+        },
+        "whatsapp": {
+          "title": "WhatsApp Automation",
+          "desc": "Payment reminders, attendance alerts, and daily summaries — sent automatically."
+        },
+        "analytics": {
+          "title": "Financial Intelligence",
+          "desc": "Revenue reports, student analytics, and KPIs on one dashboard."
+        },
+        "students": {
+          "title": "Student Management",
+          "desc": "Profiles, groups, schedules, and QR cards — all organized."
+        },
+        "branches": {
+          "title": "Multi-Branch",
+          "desc": "Manage multiple branches from one dashboard with separate reports."
+        }
+      }
+    },
+    "pricing": {
+      "title": "Pricing built for Egyptian centers",
+      "subtitle": "Pay in EGP. No hidden fees. No commission per student.",
+      "per_student": "EGP / student / week",
+      "per_month": "EGP / month",
+      "popular": "Most Popular",
+      "early_badge": "40% Founders Discount",
+      "cta": "Start Now",
+      "enterprise_cta": "Contact Us",
+      "students_up_to": "Up to",
+      "students_unit": "students / week",
+      "plans": {
+        "nano": {
+          "name": "Nano",
+          "students": "75",
+          "price_month": "1,200",
+          "price_per": "4.00",
+          "early_price": "720"
+        },
+        "starter": {
+          "name": "Starter",
+          "students": "150",
+          "price_month": "2,000",
+          "price_per": "3.33",
+          "early_price": "1,200"
+        },
+        "pro": {
+          "name": "Pro",
+          "students": "500",
+          "price_month": "4,500",
+          "price_per": "2.25",
+          "early_price": "2,700"
+        },
+        "business": {
+          "name": "Business",
+          "students": "1,000",
+          "price_month": "6,500",
+          "price_per": "1.63"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "students": "2,000",
+          "price_month": "9,000",
+          "price_per": "1.13"
+        },
+        "top_centers": {
+          "name": "Top Centers",
+          "students": "2,000+",
+          "price_month": "Custom pricing",
+          "price_per": ""
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to start?",
+      "subtitle": "First 10 centers get 40% off for life. No credit card required.",
+      "button": "Register your center now",
+      "note": "Free setup · Direct WhatsApp support"
+    },
+    "footer": {
+      "tagline": "Made in Egypt 🇪🇬 for Egypt's centers",
+      "rights": "© 2026 CenterHQ — EHG Intelligence. All rights reserved."
+    }
   }
 }

@@ -763,7 +763,40 @@ samp {
     border-radius: var(--radius-sm);
   }
 
+  /* ── QR scanner demo classes ─────────────────────── */
+  .qr-scan-line {
+    position: absolute;
+    inset-inline: 0;
+    height: 2px;
+    background: linear-gradient(
+      to left,
+      transparent,
+      var(--color-brand-400),
+      var(--color-brand-500),
+      var(--color-brand-400),
+      transparent
+    );
+    border-radius: var(--radius-full);
+    animation: qr-scan 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    box-shadow: 0 0 8px var(--color-brand-500), 0 0 16px rgba(13,148,136,0.40);
+  }
+  .qr-success-flash {
+    animation: qr-flash 0.4s var(--ease-out) both;
+  }
+
 } /* end @layer components */
+
+@keyframes qr-scan {
+  0%   { top: 8%;  opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 88%; opacity: 0; }
+}
+@keyframes qr-flash {
+  0%   { opacity: 0; transform: scale(0.8); }
+  60%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
 
 /* ── Scrollbar ───────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 4px; height: 4px; }
