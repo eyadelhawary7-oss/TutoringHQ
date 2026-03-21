@@ -9,20 +9,21 @@ import { exportDashboardToExcel } from '@/lib/excel-export';
 import { hasPlanFeature } from '@/lib/plans';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
-import AttendanceCard from '@/components/dashboard/AttendanceCard';
 import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
-import { Progress } from '@/components/ui/progress';
-import AttendanceAreaChart from '@/components/dashboard/AttendanceAreaChart';
-import RevenueStackedChart from '@/components/dashboard/RevenueStackedChart';
-import PaymentMethodsDonut from '@/components/dashboard/PaymentMethodsDonut';
-import InactiveList, { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { QrCode, TrendingUp, Users, CreditCard, Camera, UserPlus, DollarSign, FileSpreadsheet, Printer, X } from 'lucide-react';
-import { toAr } from '@/lib/number-utils';
-
-function isOwnerOrAdmin(role?: string): boolean {
-  return role === 'owner' || role === 'admin';
-}
+import { RevenueSparkline } from '@/components/dashboard/RevenueSparkline';
+import { AttendanceRing } from '@/components/dashboard/AttendanceRing';
+import { PaymentBar } from '@/components/dashboard/PaymentBar';
+import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
+import {
+  SkeletonStat,
+  SkeletonText,
+  SkeletonBlock,
+  SkeletonChart,
+  SkeletonPageHeader,
+  SkeletonCircle,
+  SkeletonRow,
+} from '@/components/ui/skeleton';
+import { QrCode, TrendingUp, Users, CreditCard, UserPlus, Printer, X } from 'lucide-react';
 
 const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -68,15 +69,20 @@ interface DashboardData {
   revenueDeltaPct: number;
 }
 
+type AtRiskRow = {
+  id: string;
+  name: string;
+  student_number?: string | null;
+  days_since_last_scan: number;
+};
+
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
-  const tPayments = useTranslations('payments');
   const tSettings = useTranslations('settings');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
-  const { user, hasPermission } = useUser();
-  const isOwnerOrAdminRole = isOwnerOrAdmin(user?.role);
+  const { user } = useUser();
   const canViewRevenue = user?.role === 'owner' || user?.role === 'admin' || user?.can_view_revenue === true;
 
   const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string; plan?: string } | null>(null);
@@ -121,6 +127,7 @@ export default function DashboardPage() {
     surge_message?: string | null;
   } | null>(null);
   const [surgeDismissed, setSurgeDismissed] = useState(false);
+  const [atRiskStudents, setAtRiskStudents] = useState<AtRiskRow[]>([]);
 
   const startOfToday = () => {
     const now = new Date();
@@ -483,6 +490,26 @@ export default function DashboardPage() {
     fetchStats();
   }, [centerId]);
 
+  useEffect(() => {
+    const fetchAtRisk = async () => {
+      if (!centerId) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch('/api/students/at-risk', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { students?: AtRiskRow[] };
+          setAtRiskStudents(json.students ?? []);
+        }
+      } catch {
+        setAtRiskStudents([]);
+      }
+    };
+    void fetchAtRisk();
+  }, [centerId]);
+
   // Real-time updates
   useEffect(() => {
     if (!centerId) return;
@@ -500,6 +527,22 @@ export default function DashboardPage() {
       }
     };
 
+    const refetchAtRisk = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch('/api/students/at-risk', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { students?: AtRiskRow[] };
+          setAtRiskStudents(json.students ?? []);
+        }
+      } catch {
+        // Non-fatal
+      }
+    };
+
     const channel = supabase
       .channel('dashboard-updates')
       .on(
@@ -507,7 +550,8 @@ export default function DashboardPage() {
         { event: '*', schema: 'public', table: 'attendance_scans', filter: `center_id=eq.${centerId}` },
         () => {
           loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7);
-          refetchStats();
+          void refetchStats();
+          void refetchAtRisk();
         }
       )
       .on(
@@ -515,7 +559,8 @@ export default function DashboardPage() {
         { event: '*', schema: 'public', table: 'payments', filter: `center_id=eq.${centerId}` },
         () => {
           loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7);
-          refetchStats();
+          void refetchStats();
+          void refetchAtRisk();
         }
       )
       .subscribe();
@@ -591,38 +636,42 @@ export default function DashboardPage() {
     }
   }, [centerId, canExportExcel]);
 
-  // Assistant dashboard: scan CTA + payment quick actions
   if (user?.role === 'assistant' && !isLoading) {
     return (
-      <div className="p-4 md:p-6 space-y-6 animate-fade-in">
-            <h1 className="text-2xl font-bold text-foreground mb-6">
-              {t('title')}
-            </h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Link
-                href="/scan"
-                className="block p-8 hover:opacity-90 rounded-2xl shadow-lg text-center transition-colors"
-                style={{ background: 'hsl(var(--primary))' }}
-              >
-                <svg className="w-16 h-16 mx-auto text-white mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                </svg>
-                <h2 className="text-xl font-bold text-white">{t('scanNow')}</h2>
-                <p className="text-white/60 text-sm mt-2">{t('scanSubtitle')}</p>
-              </Link>
-              <Link
-                href="/payments"
-                className="block bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-all duration-200"
-              >
-                <p className="text-sm text-muted-foreground">{t('unpaidCount')}</p>
-                <p className="text-3xl font-bold text-foreground mt-1">{data.unpaidCount}</p>
-                <p className="text-primary text-sm mt-2">{t('goToPayments')}</p>
-              </Link>
-            </div>
-            <div className="mt-6">
-              <AttendanceCard count={data.todayAttendance} label={t('attendance')} />
-            </div>
+      <div
+        className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 animate-fade-in
+          pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6"
+      >
+        <h1 className="text-2xl font-bold text-white mb-6">{t('title')}</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link
+            href="/scan"
+            className="card p-8 text-center transition-all duration-fast ease-out
+              hover:shadow-brand-sm hover:border-[var(--color-border-brand)] active:scale-[0.99]"
+          >
+            <QrCode className="w-16 h-16 mx-auto text-brand-400 mb-4" strokeWidth={1.5} />
+            <h2 className="text-xl font-bold text-white">{t('action_scan')}</h2>
+            <p className="text-[var(--color-text-secondary)] text-sm mt-2">{t('scanSubtitle')}</p>
+          </Link>
+          <Link
+            href="/payments"
+            className="card p-6 transition-all duration-fast ease-out
+              hover:shadow-brand-sm hover:border-[var(--color-border-brand)]"
+          >
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('unpaidCount')}</p>
+            <p className="text-3xl font-bold text-white mt-1">
+              {Number(data.unpaidCount).toLocaleString('en-US')}
+            </p>
+            <p className="text-brand-400 text-sm mt-2">{t('goToPayments')}</p>
+          </Link>
         </div>
+        <div className="card p-5 mt-6">
+          <p className="text-sm text-[var(--color-text-secondary)] mb-1">{t('stats.attendance_today')}</p>
+          <p className="text-2xl font-bold text-white">
+            {Number(data.todayAttendance).toLocaleString('en-US')}
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -633,16 +682,20 @@ export default function DashboardPage() {
     const diffMs = dueDate.getTime() - now;
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-    // Due soon (up to 5 days before due date)
     if (diffDays > 0 && diffDays <= 5) {
       return (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-xl flex flex-wrap items-center justify-between gap-4">
-          <span className="text-amber-800 font-medium">
+        <div
+          className="mb-4 p-4 rounded-xl border border-[var(--color-warning)]/40
+            bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4"
+        >
+          <span className="text-[var(--color-warning)] font-medium text-sm">
             {t('paymentDue', { days: diffDays, defaultValue: `Payment due in ${diffDays} days` })}
           </span>
           <button
+            type="button"
             onClick={() => router.push('/settings/billing')}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg"
+            className="px-4 py-2 rounded-lg font-medium text-white
+              bg-[var(--color-warning)] hover:opacity-90 transition-opacity"
           >
             {t('payNow', { defaultValue: 'Pay Now' })}
           </button>
@@ -650,10 +703,9 @@ export default function DashboardPage() {
       );
     }
 
-    // Overdue: countdown to suspension (7-day grace period)
     if (diffDays <= 0) {
       const suspendDate = new Date(centerBilling.payment_due_date);
-      suspendDate.setDate(suspendDate.getDate() + 7); // 7 days grace period
+      suspendDate.setDate(suspendDate.getDate() + 7);
 
       const hoursRemaining = Math.max(
         0,
@@ -662,13 +714,18 @@ export default function DashboardPage() {
 
       if (hoursRemaining <= 0) {
         return (
-          <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-xl flex flex-wrap items-center justify-between gap-4">
-            <span className="text-red-800 font-medium">
+          <div
+            className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40
+              bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4"
+          >
+            <span className="text-[var(--color-danger)] font-medium text-sm">
               {t('accountSuspended', { defaultValue: 'Account suspended due to overdue payment.' })}
             </span>
             <button
+              type="button"
               onClick={() => router.push('/settings/billing')}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg"
+              className="px-4 py-2 rounded-lg font-medium text-white
+                bg-[var(--color-danger)] hover:opacity-90 transition-opacity"
             >
               {t('payNow', { defaultValue: 'Pay Now' })}
             </button>
@@ -677,13 +734,21 @@ export default function DashboardPage() {
       }
 
       return (
-        <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-xl flex flex-wrap items-center justify-between gap-4">
-          <span className="text-red-800 font-medium">
-            {t('paymentOverdue', { hours: hoursRemaining, defaultValue: `Payment overdue! Account will be suspended in ${hoursRemaining} hours` })}
+        <div
+          className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40
+            bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4"
+        >
+          <span className="text-[var(--color-danger)] font-medium text-sm">
+            {t('paymentOverdue', {
+              hours: hoursRemaining,
+              defaultValue: `Payment overdue! Account will be suspended in ${hoursRemaining} hours`,
+            })}
           </span>
           <button
+            type="button"
             onClick={() => router.push('/settings/billing')}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg"
+            className="px-4 py-2 rounded-lg font-medium text-white
+              bg-[var(--color-danger)] hover:opacity-90 transition-opacity"
           >
             {t('payNow', { defaultValue: 'Pay Now' })}
           </button>
@@ -701,412 +766,406 @@ export default function DashboardPage() {
     }
   };
 
+  const revenueTodayKpi = Number(statsData?.revenueToday ?? data.todayRevenue ?? 0);
+  const activeStudentsThisWeek = Number(statsData?.activeStudentsThisWeek ?? 0);
+  const attendanceTodayCount = Number(statsData?.attendanceToday ?? data.todayAttendance ?? 0);
+  const pendingBalanceKpi = Number(statsData?.pendingBalance ?? data.totalPending ?? 0);
+  const attendanceRate =
+    activeStudentsThisWeek > 0
+      ? Math.min(100, (attendanceTodayCount / activeStudentsThisWeek) * 100)
+      : 0;
+  const monthlyRevenueData = (statsData?.monthlyRevenue ?? []).map((r) => ({
+    month: formatMonthLabel(r.month, locale),
+    revenue: Number(r.amount) || 0,
+  }));
+  const collectionRate = Number(data.collectionRatePct ?? 0);
+  const avgRevenue =
+    data.totalStudents > 0
+      ? Math.round(Number(data.monthConfirmed) / data.totalStudents)
+      : 0;
+  const unpaidBalance = Number(data.totalPending ?? 0);
+  const confirmedPaymentsAmount = Number(data.monthConfirmed ?? 0);
+  const pendingPaymentsAmount = Number(data.monthPending ?? 0);
+  const topGroup: string | null = null;
+  const egpSuffix = tCommon('egp');
+
   return (
-    <div className="p-4 md:p-6 space-y-6 animate-fade-in">
-          {showSurgeAlert && statsData?.surge_message && (
-            <div className="mb-6 p-4 bg-teal-50 border border-teal-300 rounded-xl flex items-center justify-between gap-4">
-              <span className="text-teal-800 font-medium">{statsData.surge_message}</span>
+    <div
+      className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 animate-fade-in
+        pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6"
+    >
+      {showSurgeAlert && statsData?.surge_message && (
+        <div
+          className="card mb-4 p-4 border-[var(--color-border-brand)] flex items-center justify-between gap-4"
+        >
+          <span className="text-sm font-medium text-white">{statsData.surge_message}</span>
+          <button
+            type="button"
+            onClick={dismissSurge}
+            className="p-2 rounded-lg text-brand-400 hover:bg-[var(--color-surface-3)] transition-colors"
+            aria-label={tCommon('cancel')}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+      {paymentDueBanner}
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('subtitle')}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div
+            className="flex items-center gap-1 p-1 rounded-xl border border-[var(--color-border-subtle)]
+              bg-[var(--color-surface-2)]"
+          >
+            {(['7', '30'] as const).map((r) => (
               <button
-                onClick={dismissSurge}
-                className="p-2 rounded-lg hover:bg-teal-100 text-teal-600"
-                aria-label="Dismiss"
+                key={r}
+                type="button"
+                onClick={() => setTimeRange(r)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  timeRange === r
+                    ? 'bg-[var(--color-surface-3)] text-white shadow-sm'
+                    : 'text-[var(--color-text-secondary)]'
+                }`}
               >
-                <X className="w-5 h-5" />
+                {r === '7' ? t('last7Days') : t('last30Days')}
               </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={isExporting || isLoading}
+            className="px-4 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm font-semibold
+              text-white bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)]
+              transition-colors disabled:opacity-50"
+          >
+            {isExporting ? t('exporting') : t('exportData')}
+          </button>
+        </div>
+      </div>
+
+      {planUsage && planUsage.studentLimit < 999999 && (
+        <div className="mb-4">
+          <PlanUsageCard
+            plan={planUsage.plan}
+            weeklyUniqueStudents={planUsage.weeklyUniqueStudents}
+            studentLimit={planUsage.studentLimit}
+          />
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="space-y-4">
+          <SkeletonPageHeader />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <SkeletonStat key={i} />
+            ))}
+          </div>
+          {canViewRevenue && (
+            <div className="card p-4">
+              <SkeletonText className="w-32 h-5 mb-3" />
+              <SkeletonBlock className="w-full h-14 rounded-lg" />
             </div>
           )}
-          {paymentDueBanner}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-              <p className="text-sm text-slate-500 mt-0.5">{t('confirmedOnly')}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 p-1 rounded-xl border border-border bg-muted">
-                {(['7', '30'] as const).map(r => (
-                  <button
-                    key={r}
-                    onClick={() => setTimeRange(r)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${timeRange === r ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
-                  >
-                    {r === '7' ? t('last7Days') : t('last30Days')}
-                  </button>
-                ))}
-              </div>
-              <button
-              onClick={handleExport}
-              disabled={isExporting || isLoading}
-              className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
-            >
-              {isExporting ? t('exporting') : t('exportData')}
-            </button>
-            {showUpgradeModal && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowUpgradeModal(false)}>
-                <div className="bg-card rounded-2xl border border-border shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    {tSettings('upgradeToUnlockFeature')}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {t('exportExcelUpgrade', { defaultValue: 'Excel/CSV export is available on Pro plan and above.' })}
-                  </p>
-                  <Link
-                    href="/settings/billing"
-                    className="inline-block px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg"
-                  >
-                    {t('upgradePlan')}
-                  </Link>
-                  <button
-                    onClick={() => setShowUpgradeModal(false)}
-                    className="ms-2 px-4 py-2 bg-slate-100 rounded-lg text-sm text-slate-700"
-                  >
-                    {tCommon('cancel')}
-                  </button>
+          <div>
+            <SkeletonText className="w-28 h-4 mb-3 uppercase" />
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="card p-4 flex flex-col items-center gap-2">
+                  <SkeletonCircle className="w-10 h-10" />
+                  <SkeletonText className="w-20 h-3" />
                 </div>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="card p-5">
+              <SkeletonText className="w-36 h-5 mb-4" />
+              <SkeletonBlock className="w-full h-28 rounded-lg" />
+            </div>
+            <div className="card p-5">
+              <SkeletonText className="w-36 h-5 mb-4" />
+              <SkeletonBlock className="w-full h-16 rounded-lg" />
+            </div>
+          </div>
+          <SkeletonChart className="[&_.skeleton]:h-32" />
+          <div className="card p-5">
+            <SkeletonText className="w-40 h-5 mb-4" />
+            <SkeletonRow />
+            <SkeletonRow />
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            {canViewRevenue && (
+              <div className="card p-4 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[var(--color-text-secondary)] font-medium">
+                    {t('stats.revenue_today')}
+                  </span>
+                  <TrendingUp className="w-5 h-5 text-brand-400 shrink-0" strokeWidth={2} />
+                </div>
+                <span className="text-xl font-bold text-white">
+                  {Number(revenueTodayKpi).toLocaleString('en-US')}
+                  <span className="text-sm font-normal text-[var(--color-text-tertiary)] ms-1">
+                    {egpSuffix}
+                  </span>
+                </span>
               </div>
             )}
+            <div className="card p-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--color-text-secondary)] font-medium">
+                  {t('stats.active_students')}
+                </span>
+                <Users className="w-5 h-5 text-[var(--color-info)] shrink-0" strokeWidth={2} />
+              </div>
+              <span className="text-xl font-bold text-white">
+                {Number(activeStudentsThisWeek).toLocaleString('en-US')}
+              </span>
+            </div>
+            <div className="card p-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--color-text-secondary)] font-medium">
+                  {t('stats.attendance_today')}
+                </span>
+                <QrCode className="w-5 h-5 text-[var(--color-success)] shrink-0" strokeWidth={2} />
+              </div>
+              <span className="text-xl font-bold text-white">
+                {Number(attendanceTodayCount).toLocaleString('en-US')}
+              </span>
+            </div>
+            <div className="card p-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--color-text-secondary)] font-medium">
+                  {t('stats.pending_payments')}
+                </span>
+                <CreditCard className="w-5 h-5 text-[var(--color-warning)] shrink-0" strokeWidth={2} />
+              </div>
+              <span className="text-xl font-bold text-white">
+                {Number(pendingBalanceKpi).toLocaleString('en-US')}
+                <span className="text-sm font-normal text-[var(--color-text-tertiary)] ms-1">
+                  {egpSuffix}
+                </span>
+              </span>
             </div>
           </div>
 
-          {planUsage && planUsage.studentLimit < 999999 && (
-            <div className="mb-6">
-              <PlanUsageCard
-                plan={planUsage.plan}
-                weeklyUniqueStudents={planUsage.weeklyUniqueStudents}
-                studentLimit={planUsage.studentLimit}
+          {canViewRevenue && monthlyRevenueData.length > 0 && (
+            <div className="card p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-semibold text-white">{t('sparkline_title')}</span>
+              </div>
+              <RevenueSparkline data={monthlyRevenueData} currencySuffix={egpSuffix} />
+            </div>
+          )}
+
+          <div className="mb-6">
+            <h2
+              className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3 uppercase tracking-wide"
+            >
+              {t('quick_actions')}
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/scan"
+                className="card p-4 flex flex-col items-center gap-2 text-center
+                  hover:shadow-brand-sm hover:border-[var(--color-border-brand)]
+                  transition-all duration-fast ease-out active:scale-[0.97]"
+              >
+                <span
+                  className="w-10 h-10 rounded-lg flex items-center justify-center
+                    bg-[rgba(13,148,136,0.12)] text-brand-400"
+                >
+                  <QrCode className="w-5 h-5" strokeWidth={2} />
+                </span>
+                <span className="text-xs font-medium text-white">{t('action_scan')}</span>
+              </Link>
+              <Link
+                href="/students"
+                className="card p-4 flex flex-col items-center gap-2 text-center
+                  hover:shadow-brand-sm hover:border-[var(--color-border-brand)]
+                  transition-all duration-fast ease-out active:scale-[0.97]"
+              >
+                <span
+                  className="w-10 h-10 rounded-lg flex items-center justify-center
+                    bg-[rgba(59,130,246,0.12)] text-[var(--color-info)]"
+                >
+                  <UserPlus className="w-5 h-5" strokeWidth={2} />
+                </span>
+                <span className="text-xs font-medium text-white">{t('action_add_student')}</span>
+              </Link>
+              <Link
+                href="/payments"
+                className="card p-4 flex flex-col items-center gap-2 text-center
+                  hover:shadow-brand-sm hover:border-[var(--color-border-brand)]
+                  transition-all duration-fast ease-out active:scale-[0.97]"
+              >
+                <span
+                  className="w-10 h-10 rounded-lg flex items-center justify-center
+                    bg-[rgba(245,158,11,0.12)] text-[var(--color-warning)]"
+                >
+                  <CreditCard className="w-5 h-5" strokeWidth={2} />
+                </span>
+                <span className="text-xs font-medium text-white">{t('action_payments')}</span>
+              </Link>
+              <Link
+                href="/students/print"
+                className="card p-4 flex flex-col items-center gap-2 text-center
+                  hover:shadow-brand-sm hover:border-[var(--color-border-brand)]
+                  transition-all duration-fast ease-out active:scale-[0.97]"
+              >
+                <span
+                  className="w-10 h-10 rounded-lg flex items-center justify-center
+                    bg-[rgba(16,185,129,0.12)] text-[var(--color-success)]"
+                >
+                  <Printer className="w-5 h-5" strokeWidth={2} />
+                </span>
+                <span className="text-xs font-medium text-white">{t('action_print')}</span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="card p-5">
+              <h2 className="text-sm font-semibold text-white mb-4">{t('attendance_title')}</h2>
+              <AttendanceRing
+                rate={attendanceRate}
+                todayCount={attendanceTodayCount}
+                label={t('attendance_title')}
               />
             </div>
-          )}
+            <div className="card p-5">
+              <h2 className="text-sm font-semibold text-white mb-4">{t('payments_title')}</h2>
+              <PaymentBar
+                confirmed={confirmedPaymentsAmount}
+                pending={pendingPaymentsAmount}
+                confirmedLabel={t('confirmed')}
+                pendingLabel={t('pending')}
+                currencySuffix={egpSuffix}
+              />
+            </div>
+          </div>
 
-          {isLoading ? (
-            <div className="space-y-6">
-              {/* KPI Cards skeleton */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                {canViewRevenue && (
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
-                      <div className="h-6 w-12 rounded-full bg-slate-200 animate-pulse" />
-                    </div>
-                    <div className="h-8 w-24 mt-3 rounded bg-slate-200 animate-pulse" />
-                    <div className="h-4 w-20 mt-2 rounded bg-slate-200 animate-pulse" />
-                  </div>
-                )}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
-                    <div className="h-6 w-12 rounded-full bg-slate-200 animate-pulse" />
-                  </div>
-                  <div className="h-8 w-16 mt-3 rounded bg-slate-200 animate-pulse" />
-                  <div className="h-4 w-20 mt-2 rounded bg-slate-200 animate-pulse" />
-                </div>
-                {canViewRevenue && (
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
-                      <div className="h-6 w-8 rounded-full bg-slate-200 animate-pulse" />
-                    </div>
-                    <div className="h-8 w-12 mt-3 rounded bg-slate-200 animate-pulse" />
-                    <div className="h-4 w-24 mt-2 rounded bg-slate-200 animate-pulse" />
-                  </div>
-                )}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
-                    <div className="h-6 w-10 rounded-full bg-slate-200 animate-pulse" />
-                  </div>
-                  <div className="h-8 w-16 mt-3 rounded bg-slate-200 animate-pulse" />
-                  <div className="h-4 w-24 mt-2 rounded bg-slate-200 animate-pulse" />
-                </div>
+          <div className="card p-5 mb-4">
+            <h2 className="text-sm font-semibold text-white mb-4">{t('performance_title')}</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-[var(--color-text-secondary)]">{t('collection_rate')}</span>
+                <span className="text-xl font-bold text-white">
+                  {Number(collectionRate).toLocaleString('en-US')}%
+                </span>
               </div>
-              {/* Weekly Performance skeleton */}
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-4 w-36 rounded bg-slate-200 animate-pulse" />
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
-                      <div className="h-4 w-24 rounded bg-slate-200 animate-pulse" />
-                      <div className="h-6 w-16 rounded bg-slate-200 animate-pulse" />
-                      <div className="h-1.5 w-full rounded bg-slate-200 animate-pulse" />
-                    </div>
-                  ))}
-                </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-[var(--color-text-secondary)]">{t('avg_revenue')}</span>
+                <span className="text-xl font-bold text-white">
+                  {Number(avgRevenue).toLocaleString('en-US')}
+                  <span className="text-xs text-[var(--color-text-tertiary)] ms-1">{egpSuffix}</span>
+                </span>
               </div>
-              {/* Quick Actions skeleton */}
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-4 w-28 rounded bg-slate-200 animate-pulse" />
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-200 animate-pulse shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 w-24 rounded bg-slate-200 animate-pulse" />
-                        <div className="h-3 w-full rounded bg-slate-200 animate-pulse" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-[var(--color-text-secondary)]">{t('unpaid_balance')}</span>
+                <span className="text-xl font-bold text-[var(--color-warning)]">
+                  {Number(unpaidBalance).toLocaleString('en-US')}
+                  <span className="text-xs ms-1">{egpSuffix}</span>
+                </span>
               </div>
-              {/* Charts skeleton */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <div className="h-5 w-32 mb-4 rounded bg-slate-200 animate-pulse" />
-                  <div className="h-48 rounded bg-slate-200 animate-pulse" />
-                </div>
-                {canViewRevenue && (
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                    <div className="h-5 w-32 mb-4 rounded bg-slate-200 animate-pulse" />
-                    <div className="h-48 rounded bg-slate-200 animate-pulse" />
-                  </div>
-                )}
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-[var(--color-text-secondary)]">{t('top_group')}</span>
+                <span className="text-base font-bold text-white truncate">
+                  {topGroup ?? t('no_data')}
+                </span>
               </div>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {/* KPI Cards - 4 stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up border-l-4 border-l-teal-500">
-                  <div className="flex items-center justify-between">
-                    <div className="p-3 rounded-full bg-teal-100 shrink-0">
-                      <TrendingUp size={20} className="text-teal-600" />
-                    </div>
-                  </div>
-                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">
-                    {locale === 'ar' ? toAr(Math.round(statsData?.revenueToday ?? data.todayRevenue ?? 0)) : Math.round(statsData?.revenueToday ?? data.todayRevenue ?? 0).toLocaleString()} {tCommon('egp')}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">{t('revenueTodayLabel')}</p>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up border-l-4 border-l-blue-500">
-                  <div className="flex items-center justify-between">
-                    <div className="p-3 rounded-full bg-blue-100 shrink-0">
-                      <Users size={20} className="text-blue-600" />
-                    </div>
-                  </div>
-                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">{locale === 'ar' ? toAr(statsData?.activeStudentsThisWeek ?? 0) : (statsData?.activeStudentsThisWeek ?? 0)}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{t('activeStudentsThisWeek')}</p>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up border-l-4 border-l-green-500">
-                  <div className="flex items-center justify-between">
-                    <div className="p-3 rounded-full bg-green-100 shrink-0">
-                      <QrCode size={20} className="text-green-600" />
-                    </div>
-                  </div>
-                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">{locale === 'ar' ? toAr(statsData?.attendanceToday ?? data.todayAttendance ?? 0) : (statsData?.attendanceToday ?? data.todayAttendance ?? 0)}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{t('attendanceTodayLabel')}</p>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 animate-slide-up border-l-4 border-l-amber-500">
-                  <div className="flex items-center justify-between">
-                    <div className="p-3 rounded-full bg-amber-100 shrink-0">
-                      <CreditCard size={20} className="text-amber-600" />
-                    </div>
-                  </div>
-                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">
-                    {locale === 'ar' ? toAr(Math.round(statsData?.pendingBalance ?? data.totalPending ?? 0)) : Math.round(statsData?.pendingBalance ?? data.totalPending ?? 0).toLocaleString()} {tCommon('egp')}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">{t('pendingPayments')}</p>
-                </div>
-              </div>
+          </div>
 
-              {/* MRR / Monthly Revenue Chart */}
-              {canViewRevenue && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <h3 className="font-semibold text-slate-900 mb-4">{t('monthlyRevenueChart')}</h3>
-                  {(() => {
-                    const mrrData = (statsData?.monthlyRevenue ?? []).map((r) => ({
-                      ...r,
-                      label: formatMonthLabel(r.month, locale),
-                      amount: r.amount,
-                    }));
-                    const hasAnyData = mrrData.some((d) => d.amount > 0);
-                    if (mrrData.length === 0 || !hasAnyData) {
-                      return (
-                        <div className="flex items-center justify-center h-[260px] text-slate-500">
-                          <p className="text-sm">{t('noDataForChart')}</p>
-                        </div>
-                      );
-                    }
-                    if (mrrData.length === 1) {
-                      return (
-                        <ResponsiveContainer width="100%" height={260}>
-                          <BarChart data={mrrData}>
-                            <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
-                            <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => (locale === 'ar' ? toAr(v) : v.toLocaleString())} />
-                            <Tooltip formatter={(v: number | undefined) => [`${locale === 'ar' ? toAr(v ?? 0) : (v ?? 0).toLocaleString()} ${tCommon('egp')}`, '']} labelFormatter={(l) => `${l}`} />
-                            <Bar dataKey="amount" fill="#0D9488" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      );
-                    }
-                    return (
-                      <ResponsiveContainer width="100%" height={260}>
-                        <LineChart data={mrrData}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
-                          <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => (locale === 'ar' ? toAr(v) : v.toLocaleString())} />
-                          <Tooltip formatter={(v: number | undefined) => [`${locale === 'ar' ? toAr(v ?? 0) : (v ?? 0).toLocaleString()} ${tCommon('egp')}`, '']} labelFormatter={(l) => l} />
-                          <Line type="monotone" dataKey="amount" stroke="#0D9488" strokeWidth={2} dot={{ fill: '#0D9488', r: 4 }} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {/* Weekly Performance */}
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('weeklyPerformance')}</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
-                    <p className="text-xs text-slate-500">{t('collectionRate')}</p>
-                    <p className="text-xl font-bold text-slate-900">{data.collectionRatePct}%</p>
-                    <Progress value={data.collectionRatePct} className="h-1.5" />
-                  </div>
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
-                    <p className="text-xs text-slate-500">{t('avgRevenueStudent')}</p>
-                    <p className="text-xl font-bold text-slate-900 font-mono">
-                      {locale === 'ar' ? toAr(Math.round(data.monthConfirmed / (data.totalStudents || 1))) : Math.round(data.monthConfirmed / (data.totalStudents || 1)).toLocaleString()} ج.م
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
-                    <p className="text-xs text-slate-500">{t('totalUnpaidBalance')}</p>
-                    <p className={`text-xl font-bold font-mono ${data.totalPending > 0 ? 'text-destructive' : 'text-slate-900'}`}>
-                      {locale === 'ar' ? toAr(Math.round(data.totalPending)) : Math.round(data.totalPending).toLocaleString()} ج.م
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-2">
-                    <p className="text-xs text-slate-500">{t('topGroupWeek')}</p>
-                    <p className="text-xl font-bold text-slate-900">—</p>
-                    <p className="text-xs text-slate-500">{data.todayAttendance} {t('scans')}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('quickActions')}</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <Link
-                    href="/scan"
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
-                  >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-teal-100">
-                      <Camera size={20} className="text-teal-600" />
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('scanNow')}</p>
-                  </Link>
-                  <Link
-                    href="/students"
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
-                  >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-green-100">
-                      <UserPlus size={20} className="text-green-600" />
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('addStudent')}</p>
-                  </Link>
-                  <Link
-                    href="/students/print"
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
-                  >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100">
-                      <Printer size={20} className="text-blue-600" />
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('printCards')}</p>
-                  </Link>
-                  <Link
-                    href="/payments?status=pending"
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
-                  >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-100">
-                      <DollarSign size={20} className="text-amber-600" />
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">{t('pendingPayments')}</p>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Charts Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <h3 className="font-semibold text-slate-900 mb-4">{t('attendanceChart')}</h3>
-                  <AttendanceAreaChart data={data.trendData ?? []} />
-                </div>
-                {canViewRevenue && (
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                    <h3 className="font-semibold text-slate-900 mb-4">{t('revenueChart')}</h3>
-                    <RevenueStackedChart data={data.revenueChartData ?? []} />
-                  </div>
-                )}
-              </div>
-
-              {/* Payment Methods Donut */}
-              {canViewRevenue && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <h3 className="font-semibold text-slate-900 mb-4">{t('paymentMethods')}</h3>
-                  <PaymentMethodsDonut data={data.revenueByMethod ?? []} />
-                </div>
-              )}
-
-              {/* Recent Activity Feed */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('recentActivity')}</span>
-                    <div className="flex-1 h-px bg-slate-200" />
-                  </div>
-                  <ul className="space-y-2">
-                    {(statsData?.recentActivity ?? []).slice(0, 15).map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-0">
-                        <span className="text-lg shrink-0">{item.type === 'payment' ? '💰' : '📋'}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900">{item.student}</p>
-                          <p className="text-xs text-slate-500">{item.detail}</p>
-                        </div>
-                        <span className="text-xs text-slate-400 shrink-0">{item.time}</span>
-                      </li>
-                    ))}
-                    {(statsData?.recentActivity ?? []).length === 0 && (
-                      <li className="py-8 text-center text-slate-500 text-sm">{tCommon('noData')}</li>
-                    )}
-                  </ul>
-                  <div className="mt-4 pt-4 border-t border-slate-200">
-                    <div className="flex gap-3">
-                      <Link href="/payments" className="text-sm font-semibold text-teal-600 hover:text-teal-700">
-                        {t('viewAll')} →
-                      </Link>
-                      <Link href="/attendance" className="text-sm font-semibold text-teal-600 hover:text-teal-700">
-                        {t('viewAllAttendance')} →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Inactive Students Section */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">{t('inactiveStudents')}</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <InactiveList
-                  students={data.inactiveStudents ?? []}
-                  period={inactivePeriod}
-                  onPeriodChange={setInactivePeriod}
-                />
-              </div>
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-white">{t('at_risk_title')}</h2>
+              <Link href="/students" className="text-xs text-brand-400 hover:text-brand-300">
+                {t('view_all')}
+              </Link>
             </div>
-          )}
-      </div>
+
+            {atRiskStudents.length === 0 ? (
+              <p className="text-sm text-[var(--color-text-secondary)] text-center py-4">
+                {t('at_risk_empty')}
+              </p>
+            ) : (
+              <div className="flex flex-col divide-y divide-[var(--color-border-subtle)]">
+                {atRiskStudents.slice(0, 5).map((student) => (
+                  <div
+                    key={student.id}
+                    className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div
+                      className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center
+                        bg-[rgba(239,68,68,0.12)] text-[var(--color-danger)] font-semibold text-sm"
+                    >
+                      {student.name?.charAt(0) ?? '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{student.name}</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">
+                        {student.student_number ?? ''}
+                      </p>
+                    </div>
+                    <span className="badge badge-danger text-xs flex-shrink-0">
+                      {Number(student.days_since_last_scan).toLocaleString('en-US')} {t('at_risk_days')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {showUpgradeModal && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowUpgradeModal(false)}
+          onKeyDown={(e) => e.key === 'Escape' && setShowUpgradeModal(false)}
+          role="presentation"
+        >
+          <div
+            className="card rounded-2xl max-w-md w-full p-6 border-[var(--color-border-subtle)]"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {tSettings('upgradeToUnlockFeature')}
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+              {t('exportExcelUpgrade', {
+                defaultValue: 'Excel/CSV export is available on Pro plan and above.',
+              })}
+            </p>
+            <Link
+              href="/settings/billing"
+              className="inline-block px-4 py-2 bg-brand-500 hover:opacity-90 text-white text-sm font-medium rounded-lg"
+            >
+              {t('upgradePlan')}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setShowUpgradeModal(false)}
+              className="ms-2 px-4 py-2 rounded-lg text-sm text-white bg-[var(--color-surface-3)]"
+            >
+              {tCommon('cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
