@@ -971,3 +971,17 @@ samp {
   background: rgba(13,148,136,0.30);
   color: var(--color-text-primary);
 }
+
+/* ── Light mode — white text readability fix ────────────────
+   S5 dashboard uses text-white hardcoded on headings and numbers.
+   In light mode these become invisible. Override to dark text.
+──────────────────────────────────────────────────────────── */
+html.light .text-white {
+  color: var(--color-text-primary) !important;
+}
+
+html.light .text-white\/90,
+html.light .text-white\/80,
+html.light .text-white\/70 {
+  color: var(--color-text-secondary) !important;
+}
