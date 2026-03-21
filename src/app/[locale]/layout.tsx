@@ -72,7 +72,7 @@ export default async function LocaleLayout({
         <meta name="apple-mobile-web-app-title" content="CenterHQ" />
       </head>
       <body
-        className="antialiased bg-background text-foreground font-cairo"
+        className="antialiased bg-[var(--color-surface-0)] text-foreground font-cairo"
         suppressHydrationWarning
       >
         <NextIntlClientProvider messages={messages}>
