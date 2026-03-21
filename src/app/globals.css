@@ -203,11 +203,82 @@
   --space-stack-lg:      1rem;
 }
 
+/* ── Global theme enforcement ───────────────────────────────
+   Forces ALL pages to respect dark/light tokens regardless of
+   hardcoded Tailwind classes on pages not yet redesigned.
+──────────────────────────────────────────────────────────── */
+
+/* Dark mode: browser scrollbars + system UI use dark styling */
+:root {
+  color-scheme: dark;
+}
+
+/* Override hardcoded light backgrounds in dark mode */
+html:not(.light) .bg-white,
+html:not(.light) .bg-gray-50,
+html:not(.light) .bg-gray-100,
+html:not(.light) .bg-slate-50,
+html:not(.light) .bg-slate-100,
+html:not(.light) .bg-background,
+html:not(.light) [class*="bg-white"] {
+  background-color: var(--color-surface-1) !important;
+}
+
+/* Override hardcoded dark text in dark mode */
+html:not(.light) .text-gray-900,
+html:not(.light) .text-slate-900,
+html:not(.light) .text-gray-800,
+html:not(.light) .text-slate-800,
+html:not(.light) .text-black {
+  color: var(--color-text-primary) !important;
+}
+
+html:not(.light) .text-gray-600,
+html:not(.light) .text-slate-600,
+html:not(.light) .text-gray-500,
+html:not(.light) .text-slate-500 {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Override hardcoded light borders in dark mode */
+html:not(.light) .border-gray-200,
+html:not(.light) .border-slate-200,
+html:not(.light) .border-gray-100,
+html:not(.light) .border-slate-100 {
+  border-color: var(--color-border-subtle) !important;
+}
+
+/* Override hardcoded light input/select/textarea backgrounds in dark mode */
+html:not(.light) input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+html:not(.light) select,
+html:not(.light) textarea {
+  background-color: var(--color-surface-2) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+/* Light mode: surface-0 tokens flip to light values (already handled
+   by html.light vars above, but ensure S5 dashboard bg classes flip) */
+html.light .bg-\[var\(--color-surface-0\)\] {
+  background-color: #f8fafc !important;
+}
+
+/* Light mode: input/select/textarea */
+html.light input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.18) !important;
+}
+
 /* ── Light theme overrides ──────────────────────────────────
    Applied when <html class="light"> is set by ThemeToggle.
    Overrides the dark defaults from :root.
 ──────────────────────────────────────────────────────────── */
 html.light {
+  color-scheme: light;
+
   /* Surfaces — white to light grey */
   --color-surface-0: #f8fafc;
   --color-surface-1: #ffffff;
