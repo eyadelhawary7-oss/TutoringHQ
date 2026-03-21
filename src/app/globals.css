@@ -46,6 +46,191 @@
   --radius-lg: 0.75rem;
   --radius-xl: calc(0.75rem + 4px);
   --radius-2xl: calc(0.75rem + 8px);
+
+  /* ── Brand (Teal) ───────────────────────────────────── */
+  --color-brand-50:  #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #0D9488;
+  --color-brand-600: #0f766e;
+  --color-brand-700: #115e59;
+  --color-brand-800: #134e4a;
+  --color-brand-900: #042f2e;
+
+  /* ── Navy ───────────────────────────────────────────── */
+  --color-navy-50:  #f8fafc;
+  --color-navy-100: #f1f5f9;
+  --color-navy-200: #e2e8f0;
+  --color-navy-300: #cbd5e1;
+  --color-navy-400: #94a3b8;
+  --color-navy-500: #64748b;
+  --color-navy-600: #475569;
+  --color-navy-700: #334155;
+  --color-navy-800: #1e293b;
+  --color-navy-900: #0f172a;
+  --color-navy-950: #080f1a;
+
+  /* ── Gold (Amber #F59E0B) ───────────────────────────── */
+  --color-gold-50:  #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #fcd34d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #F59E0B;
+  --color-gold-600: #d97706;
+  --color-gold-700: #b45309;
+  --color-gold-800: #92400e;
+  --color-gold-900: #78350f;
+
+  /* ── Surface Layers ─────────────────────────────────── */
+  --color-surface-0: #080f1a;
+  --color-surface-1: #0f172a;
+  --color-surface-2: #1e293b;
+  --color-surface-3: #334155;
+  --color-surface-4: #475569;
+
+  /* ── Semantic States ────────────────────────────────── */
+  --color-success:       #10b981;
+  --color-success-muted: #064e3b;
+  --color-warning:       #F59E0B;
+  --color-warning-muted: #451a03;
+  --color-danger:        #ef4444;
+  --color-danger-muted:  #450a0a;
+  --color-info:          #3b82f6;
+  --color-info-muted:    #1e3a5f;
+
+  /* ── Shadows (dark-UI optimised — intentionally override Tailwind defaults) ── */
+  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.40);
+  --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.50), 0 1px 2px -1px rgba(0,0,0,0.40);
+  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.55), 0 2px 4px -2px rgba(0,0,0,0.45);
+  --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.60), 0 4px 6px -4px rgba(0,0,0,0.50);
+  --shadow-xl:  0 20px 25px -5px rgba(0,0,0,0.65), 0 8px 10px -6px rgba(0,0,0,0.55);
+  --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.80);
+
+  /* Teal glow */
+  --shadow-brand-sm: 0 0 0 1px rgba(13,148,136,0.30), 0 4px 12px -2px rgba(13,148,136,0.25);
+  --shadow-brand-md: 0 0 0 1px rgba(13,148,136,0.35), 0 8px 24px -4px rgba(13,148,136,0.35);
+  --shadow-brand-lg: 0 0 0 1px rgba(13,148,136,0.40), 0 16px 40px -6px rgba(13,148,136,0.45);
+
+  /* Gold glow */
+  --shadow-gold-sm: 0 0 0 1px rgba(245,158,11,0.30), 0 4px 12px -2px rgba(245,158,11,0.20);
+
+  /* Input focus ring */
+  --shadow-focus: 0 0 0 2px rgba(13,148,136,0.50);
+
+  /* ── Radius (intentionally override Tailwind defaults for dark-UI consistency) ── */
+  --radius-xs:     2px;
+  --radius-sm:     4px;
+  --radius-md:     8px;
+  --radius-lg:     12px;
+  --radius-xl:     16px;
+  --radius-2xl:    20px;
+  --radius-3xl:    24px;
+  --radius-full:   9999px;
+
+  /* Semantic aliases */
+  --radius-card:   16px;
+  --radius-panel:  12px;
+  --radius-badge:  9999px;
+  --radius-button: 8px;
+  --radius-input:  8px;
+  --radius-modal:  20px;
+
+  /* ── Durations ──────────────────────────────────────── */
+  --duration-instant: 80ms;
+  --duration-fast:    150ms;
+  --duration-normal:  220ms;
+  --duration-slow:    350ms;
+  --duration-slower:  500ms;
+  --duration-lazy:    700ms;
+
+  /* ── Easings ─────────────────────────────────────────── */
+  /* --ease-out intentionally overrides Tailwind default with a snappier decelerate curve */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-linear: linear;
+
+  /* ── Animate-* (Tailwind v4: --animate-* in @theme generates animate-* classes) ── */
+  --animate-fade-in:         fade-in 220ms cubic-bezier(0.16,1,0.3,1) both;
+  --animate-fade-in-up:      fade-in-up 350ms cubic-bezier(0.16,1,0.3,1) both;
+  --animate-scale-in:        scale-in 200ms cubic-bezier(0.34,1.56,0.64,1) both;
+  --animate-slide-in-right:  slide-in-right 220ms cubic-bezier(0.16,1,0.3,1) both;
+  --animate-slide-in-bottom: slide-in-bottom 220ms cubic-bezier(0.16,1,0.3,1) both;
+  --animate-pulse-ring:      pulse-ring 2s cubic-bezier(0.4,0,0.6,1) infinite;
+  --animate-skeleton:        skeleton-sweep 700ms linear infinite;
+}
+
+:root {
+  /* ── Semantic text colors (var() only) ──────────── */
+  --color-text-primary:   #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary:  #64748b;
+  --color-text-disabled:  #475569;
+  --color-text-inverse:   #0f172a;
+  --color-text-brand:     #0D9488;
+  --color-text-amber:     #F59E0B;
+
+  /* ── Semantic border colors (var() only) ─────────── */
+  --color-border-subtle:  rgba(148, 163, 184, 0.08);
+  --color-border-default: rgba(148, 163, 184, 0.14);
+  --color-border-strong:  rgba(148, 163, 184, 0.24);
+  --color-border-brand:   rgba(13, 148, 136, 0.40);
+
+  /* ── Overlay (var() only) ─────────────────────────── */
+  --overlay-light: rgba(248, 250, 252, 0.05);
+  --overlay-mid:   rgba(248, 250, 252, 0.10);
+  --overlay-heavy: rgba(8, 15, 26, 0.75);
+
+  /* ── Backdrop blur amounts (bare px values — NO blur() wrapper) ── */
+  /* Usage: backdrop-filter: blur(var(--blur-sm))                     */
+  --blur-sm:  4px;
+  --blur-md:  8px;
+  --blur-lg:  16px;
+  --blur-xl:  24px;
+
+  /* ── Semantic spacing (var() only) ───────────────── */
+  --space-page-x:        1rem;
+  --space-page-x-md:     1.5rem;
+  --space-card-padding:  1.25rem;
+  --space-section-gap:   1.5rem;
+  --space-stack-sm:      0.5rem;
+  --space-stack-md:      0.75rem;
+  --space-stack-lg:      1rem;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-bottom {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.95); opacity: 0.8; }
+  50%  { transform: scale(1.05); opacity: 0.4; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+@keyframes skeleton-sweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 @layer base {
@@ -440,4 +625,154 @@ samp {
    This class-level !important rule is the correct and only reliable fix. */
 .font-cairo {
   font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif !important;
+}
+
+@layer components {
+
+  /* ── Cards ───────────────────────────────────────── */
+  .card {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-md);
+  }
+  .card-elevated {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-lg);
+  }
+  .card-brand {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-brand);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-brand-sm);
+  }
+
+  /* ── Inputs ──────────────────────────────────────── */
+  .input-base {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-input);
+    color: var(--color-text-primary);
+    transition: border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+  }
+  .input-base:focus {
+    outline: none;
+    border-color: var(--color-brand-500);
+    box-shadow: var(--shadow-focus);
+  }
+
+  /* ── Buttons ─────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-button);
+    font-weight: 600;
+    transition: transform var(--duration-instant) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+  .btn-primary {
+    background-color: var(--color-brand-500);
+    color: #fff;
+    box-shadow: var(--shadow-brand-sm);
+  }
+  .btn-primary:hover {
+    background-color: var(--color-brand-600);
+    box-shadow: var(--shadow-brand-md);
+  }
+  .btn-ghost {
+    background-color: transparent;
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-secondary);
+  }
+  .btn-ghost:hover {
+    background-color: var(--overlay-light);
+    border-color: var(--color-border-strong);
+    color: var(--color-text-primary);
+  }
+
+  /* ── Badges / Pills ──────────────────────────────── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1875rem 0.625rem;
+    border-radius: var(--radius-badge);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .badge-brand   { background: rgba(13,148,136,0.15);  color: var(--color-brand-400); }
+  .badge-gold    { background: rgba(245,158,11,0.15);   color: var(--color-gold-400); }
+  .badge-success { background: rgba(16,185,129,0.15);   color: #34d399; }
+  .badge-danger  { background: rgba(239,68,68,0.15);    color: #f87171; }
+  .badge-neutral { background: var(--color-surface-3);  color: var(--color-text-secondary); }
+
+  /* ── Divider ─────────────────────────────────────── */
+  .divider {
+    height: 1px;
+    background: var(--color-border-subtle);
+    margin: 0;
+  }
+
+  /* ── Glow text ───────────────────────────────────── */
+  .text-glow-brand {
+    color: var(--color-brand-400);
+    text-shadow: 0 0 20px rgba(13,148,136,0.50);
+  }
+  .text-glow-gold {
+    color: var(--color-gold-400);
+    text-shadow: 0 0 20px rgba(245,158,11,0.50);
+  }
+
+  /* ── Skeleton loading pulse ──────────────────────── */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-2) 25%,
+      var(--color-surface-3) 50%,
+      var(--color-surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-skeleton);
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── Page background ─────────────────────────────── */
+  .page-bg {
+    background: var(--color-surface-0);
+    min-height: 100dvh;
+  }
+
+  /* ── Focus ring (keyboard nav) ───────────────────── */
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+} /* end @layer components */
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--color-surface-4); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-brand-600); }
+
+/* ── Selection ───────────────────────────────────────── */
+::selection {
+  background: rgba(13,148,136,0.30);
+  color: var(--color-text-primary);
 }
