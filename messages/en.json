@@ -648,6 +648,25 @@
     "balanceDue": "Balance due",
     "amountAddedToBalance": "{amount} added to balance"
   },
+  "scanner": {
+    "title": "QR Scanner",
+    "subtitle": "Scan student QR code to record attendance",
+    "scanning": "Ready to scan...",
+    "scan_success": "Attendance recorded",
+    "scan_error": "Unknown student",
+    "scan_already": "Already recorded today",
+    "offline_banner": "You are offline — data will sync when connected",
+    "sound_on": "Sound on",
+    "sound_off": "Sound off",
+    "history_title": "Recent Scans",
+    "history_empty": "No scans yet",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "tab_camera": "Camera",
+    "tab_bluetooth": "Bluetooth",
+    "tab_manual": "Manual Entry",
+    "tab_bar_label": "Scanner tabs"
+  },
   "sync": {
     "online": "Online",
     "offline": "Offline",

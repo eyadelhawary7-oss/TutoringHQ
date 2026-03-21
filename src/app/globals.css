@@ -985,3 +985,94 @@ html.light .text-white\/80,
 html.light .text-white\/70 {
   color: var(--color-text-secondary) !important;
 }
+
+/* ── S6 Scanner ──────────────────────────────────────────── */
+@keyframes scan-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }
+  50%       { opacity: 0.85; box-shadow: 0 0 0 8px rgba(13, 148, 136, 0); }
+}
+
+@keyframes scan-line-sweep {
+  0%   { transform: translateY(0%); opacity: 0.8; }
+  50%  { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0.8; }
+}
+
+@keyframes result-slide-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.scanner-frame {
+  position: relative;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.scanner-frame.scanning {
+  animation: scan-pulse 2s ease-in-out infinite;
+}
+
+.scanner-frame.success {
+  box-shadow: 0 0 0 3px var(--color-success), 0 0 24px rgba(16,185,129,0.3);
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.scanner-frame.error {
+  box-shadow: 0 0 0 3px var(--color-danger), 0 0 24px rgba(239,68,68,0.3);
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.scan-line {
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-brand-500),
+    transparent
+  );
+  animation: scan-line-sweep 2s linear infinite;
+}
+
+.scan-result {
+  animation: result-slide-in var(--duration-normal) var(--ease-out);
+}
+
+.scan-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--color-brand-500);
+  border-style: solid;
+}
+
+.scan-corner-tl {
+  top: 12px;
+  inset-inline-start: 12px;
+  border-width: 3px 0 0 3px;
+  border-start-start-radius: 4px;
+}
+
+.scan-corner-tr {
+  top: 12px;
+  inset-inline-end: 12px;
+  border-width: 3px 3px 0 0;
+  border-start-end-radius: 4px;
+}
+
+.scan-corner-bl {
+  bottom: 12px;
+  inset-inline-start: 12px;
+  border-width: 0 0 3px 3px;
+  border-end-start-radius: 4px;
+}
+
+.scan-corner-br {
+  bottom: 12px;
+  inset-inline-end: 12px;
+  border-width: 0 3px 3px 0;
+  border-end-end-radius: 4px;
+}

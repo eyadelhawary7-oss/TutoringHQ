@@ -645,6 +645,25 @@
     "balanceDue": "الرصيد المستحق",
     "amountAddedToBalance": "تم إضافة {amount} للرصيد"
   },
+  "scanner": {
+    "title": "مسح QR",
+    "subtitle": "امسح كود QR الخاص بالطالب",
+    "scanning": "جاهز للمسح...",
+    "scan_success": "تم تسجيل الحضور",
+    "scan_error": "طالب غير معروف",
+    "scan_already": "تم التسجيل مسبقاً",
+    "offline_banner": "أنت غير متصل — سيتم المزامنة عند الاتصال",
+    "sound_on": "الصوت مفعّل",
+    "sound_off": "الصوت معطّل",
+    "history_title": "آخر عمليات المسح",
+    "history_empty": "لا توجد عمليات مسح بعد",
+    "connected": "متصل",
+    "disconnected": "غير متصل",
+    "tab_camera": "الكاميرا",
+    "tab_bluetooth": "بلوتوث",
+    "tab_manual": "إدخال يدوي",
+    "tab_bar_label": "تبويبات الماسح"
+  },
   "sync": {
     "online": "متصل",
     "offline": "غير متصل",

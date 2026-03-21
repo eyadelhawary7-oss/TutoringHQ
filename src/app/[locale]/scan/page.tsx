@@ -69,6 +69,7 @@ let persistedMode: ScanMode = 'camera';
 
 export default function ScanPage() {
   const t = useTranslations('scan');
+  const ts = useTranslations('scanner');
   const tSync = useTranslations('sync');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -85,7 +86,7 @@ export default function ScanPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
+  const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [addedAmountToBalance, setAddedAmountToBalance] = useState(0);
@@ -94,6 +95,21 @@ export default function ScanPage() {
   const isProcessingRef = useRef(false);
   const modeRef = useRef<ScanMode>('camera');
   const [mounted, setMounted] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('chq-scanner-sound') !== 'false';
+  });
+  const [scanHistory, setScanHistory] = useState<
+    Array<{
+      id: string;
+      studentName: string;
+      time: Date;
+      status: 'success' | 'error' | 'duplicate';
+    }>
+  >([]);
+  const resultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [scanFrameState, setScanFrameState] = useState<'idle' | 'success' | 'error'>('idle');
+  const [lastSuccessStudentName, setLastSuccessStudentName] = useState('');
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { persistedMode = mode; }, [mode]);
@@ -235,6 +251,35 @@ export default function ScanPage() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+    };
+  }, []);
+
+  const playBeep = useCallback((success: boolean) => {
+    if (!soundEnabled) return;
+    if (typeof window === 'undefined') return;
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = success ? 880 : 440;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } catch (_) {}
+  }, [soundEnabled]);
+
+  const vibrate = useCallback((pattern: number | number[]) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  }, []);
+
   const normalizeForLookup = (input: string): { byId: boolean; value: string } => {
     const trimmed = input.trim();
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -332,6 +377,25 @@ export default function ScanPage() {
 
       if (!student) {
         setError(t('studentNotFound'));
+        playBeep(false);
+        vibrate([100, 50, 100]);
+        setScanFrameState('error');
+        if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+        resultTimeoutRef.current = setTimeout(() => {
+          setScanFrameState('idle');
+          resultTimeoutRef.current = null;
+        }, 2000);
+        setScanHistory((prev) =>
+          [
+            {
+              id: Date.now().toString(),
+              studentName: ts('scan_error'),
+              time: new Date(),
+              status: 'error' as const,
+            },
+            ...prev,
+          ].slice(0, 10)
+        );
         isProcessingRef.current = false;
         setTimeout(() => setError(''), 3000);
         return;
@@ -423,6 +487,27 @@ export default function ScanPage() {
           const count = await getUnsyncedCount();
           setPendingCount(count);
         }
+        setLastSuccessStudentName(studentForDisplay.name);
+        playBeep(true);
+        vibrate(100);
+        if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+        resultTimeoutRef.current = setTimeout(() => {
+          setScanFrameState('idle');
+          setLastSuccessStudentName('');
+          resultTimeoutRef.current = null;
+        }, 2500);
+        setScanFrameState('success');
+        setScanHistory((prev) =>
+          [
+            {
+              id: Date.now().toString(),
+              studentName: studentForDisplay.name,
+              time: new Date(),
+              status: 'success' as const,
+            },
+            ...prev,
+          ].slice(0, 10)
+        );
         dismissTimerRef.current = setTimeout(() => {
           setScannedStudent(null);
           setSelectedGroup(null);
@@ -439,9 +524,28 @@ export default function ScanPage() {
       }
     } catch {
       setError(t('scanError'));
+      playBeep(false);
+      vibrate([100, 50, 100]);
+      setScanFrameState('error');
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+      resultTimeoutRef.current = setTimeout(() => {
+        setScanFrameState('idle');
+        resultTimeoutRef.current = null;
+      }, 2000);
+      setScanHistory((prev) =>
+        [
+          {
+            id: Date.now().toString(),
+            studentName: ts('scan_error'),
+            time: new Date(),
+            status: 'error' as const,
+          },
+          ...prev,
+        ].slice(0, 10)
+      );
       isProcessingRef.current = false;
     }
-  }, [centerId, userId, t]);
+  }, [centerId, userId, t, ts, playBeep, vibrate]);
 
   const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee: number }) => {
     if (!scannedStudent || !centerId || !userId) return;
@@ -519,6 +623,27 @@ export default function ScanPage() {
         const count = await getUnsyncedCount();
         setPendingCount(count);
       }
+      setLastSuccessStudentName(studentForDisplay.name);
+      playBeep(true);
+      vibrate(100);
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+      resultTimeoutRef.current = setTimeout(() => {
+        setScanFrameState('idle');
+        setLastSuccessStudentName('');
+        resultTimeoutRef.current = null;
+      }, 2500);
+      setScanFrameState('success');
+      setScanHistory((prev) =>
+        [
+          {
+            id: Date.now().toString(),
+            studentName: studentForDisplay.name,
+            time: new Date(),
+            status: 'success' as const,
+          },
+          ...prev,
+        ].slice(0, 10)
+      );
       dismissTimerRef.current = setTimeout(() => {
         setScannedStudent(null);
         setSelectedGroup(null);
@@ -532,7 +657,7 @@ export default function ScanPage() {
       setManualIdInput('');
       manualInputRef.current?.focus();
     }
-  }, [scannedStudent, centerId, userId, mode]);
+  }, [scannedStudent, centerId, userId, mode, playBeep, vibrate]);
 
   const handleAllowLateEntry = async () => {
     if (!scannedStudent || !centerId || !userId || !canAllowLateEntry) return;
@@ -696,6 +821,10 @@ export default function ScanPage() {
 
   const handleDismiss = () => {
     if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+    resultTimeoutRef.current = null;
+    setScanFrameState('idle');
+    setLastSuccessStudentName('');
     setScannedStudent(null);
     setNeedGroupSelection(false);
     setSelectedGroup(null);
@@ -709,141 +838,292 @@ export default function ScanPage() {
 
   if (!mounted) return null;
 
+  const scannerFrameTone =
+    scanFrameState === 'success' ? 'success' : scanFrameState === 'error' ? 'error' : 'scanning';
+
   return (
     <>
-      {/* Main scanner UI — max-w-lg mx-auto, full screen on mobile */}
-      <div className="max-w-lg mx-auto p-4 md:p-6 space-y-5 animate-fade-in">
-        {/* Page title bar */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-            <p className="text-sm text-slate-500">Scan student QR codes to record attendance</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {pendingCount > 0 && (
-              <span className="text-xs text-amber-500 font-medium">
-                ({pendingCount} {t('pending')})
-              </span>
-            )}
-            {isSyncing ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm" title={tSync('syncing')}>
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-xs font-medium text-slate-600">{tSync('syncing')}</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm">
-                <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                <span className="text-xs font-medium text-slate-600">{isOnline ? tSync('online') : tSync('offline')}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Tab bar: Camera / Bluetooth / Manual */}
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-6">
-          {[
-            { key: 'camera' as const, label: t('camera'), Icon: Camera },
-            { key: 'bluetooth' as const, label: t('bluetooth'), Icon: Bluetooth },
-            { key: 'manual' as const, label: t('manualId'), Icon: Hash },
-          ].map(({ key, label, Icon }) => (
-            <button
-              key={key}
-              onClick={() => {
-                setMode(key);
-                if (key === 'manual') {
-                  setManualIdInput('');
-                  setTimeout(() => manualInputRef.current?.focus(), 100);
-                } else if (key === 'bluetooth') {
-                  setTimeout(() => {
-                    const btInput = document.querySelector('[data-bluetooth-scanner-input]') as HTMLInputElement | null;
-                    btInput?.focus();
-                  }, 100);
-                }
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm transition-all ${
-                mode === key
-                  ? 'bg-white shadow-sm font-semibold text-slate-900'
-                  : 'font-medium text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <Icon className={mode === key && key === 'camera' ? 'w-4 h-4 text-teal-600' : 'w-4 h-4'} />
-              <span className="truncate">{label}</span>
-            </button>
-          ))}
-        </div>
-
-        {error && (
-          <div className="p-3 bg-red-50 text-red-600 rounded-lg text-center text-sm border border-red-200">
-            {error}
+      <div
+        className="bg-[var(--color-surface-0)] min-h-screen flex flex-col animate-fade-in
+          pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0"
+      >
+        {!isOnline && (
+          <div
+            className="bg-[var(--color-warning)] text-white text-xs font-medium px-4 py-2
+              flex items-center gap-2 justify-center"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <line x1="1" y1="1" x2="23" y2="23" />
+              <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" />
+            </svg>
+            {ts('offline_banner')}
           </div>
         )}
 
-        {/* Scanner body */}
-        <div className="flex flex-col items-center gap-6">
-          {/* Camera: always mounted but hidden when not active — avoids unmount side effects that reset tab */}
-          <div
-            className={`relative bg-slate-900 rounded-2xl overflow-hidden aspect-square w-full max-w-sm mx-auto shadow-2xl mb-6 ${mode !== 'camera' ? 'hidden' : ''}`}
-            aria-hidden={mode !== 'camera'}
-          >
-            <CameraScanner
-              key={scannedStudent ? 'camera-hidden' : 'camera-active'}
-              onScan={handleScan}
-              isActive={mode === 'camera' && !scannedStudent}
-              fillContainer
-            />
-            {/* Targeting overlay */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-48 h-48 border-2 border-white/50 rounded-2xl relative">
-                <div className="absolute top-0 start-0 w-6 h-6 border-t-2 border-s-2 border-teal-400 rounded-tl-lg" />
-                <div className="absolute top-0 end-0 w-6 h-6 border-t-2 border-e-2 border-teal-400 rounded-tr-lg" />
-                <div className="absolute bottom-0 start-0 w-6 h-6 border-b-2 border-s-2 border-teal-400 rounded-bl-lg" />
-                <div className="absolute bottom-0 end-0 w-6 h-6 border-b-2 border-e-2 border-teal-400 rounded-br-lg" />
-              </div>
-            </div>
+        <div className="flex flex-col gap-3 px-4 pt-4 pb-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
+            <p className="text-xs text-[var(--color-text-secondary)]">{ts('subtitle')}</p>
           </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                const next = !soundEnabled;
+                setSoundEnabled(next);
+                localStorage.setItem('chq-scanner-sound', String(next));
+              }}
+              aria-label={soundEnabled ? ts('sound_on') : ts('sound_off')}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-badge
+                border border-[var(--color-border-default)] text-[var(--color-text-secondary)]
+                hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)]
+                transition-colors duration-fast ease-out"
+            >
+              {soundEnabled ? (
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <line x1="23" y1="9" x2="17" y2="15" />
+                  <line x1="17" y1="9" x2="23" y2="15" />
+                </svg>
+              )}
+              {soundEnabled ? ts('sound_on') : ts('sound_off')}
+            </button>
+            {pendingCount > 0 && (
+              <span className="text-xs text-[var(--color-warning)] font-medium">
+                ({Number(pendingCount).toLocaleString('en-US')} {t('pending')})
+              </span>
+            )}
+            {isSyncing ? (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-surface-1)]
+                  border border-[var(--color-border-subtle)] shadow-sm"
+                title={tSync('syncing')}
+              >
+                <span className="w-2 h-2 rounded-full bg-[var(--color-warning)] animate-pulse" />
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{tSync('syncing')}</span>
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-surface-1)]
+                  border border-[var(--color-border-subtle)] shadow-sm"
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${isOnline ? 'bg-[var(--color-success)] animate-pulse' : 'bg-[var(--color-danger)]'}`}
+                />
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">
+                  {isOnline ? ts('connected') : ts('disconnected')}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
 
-          {mode === 'bluetooth' && (
-            <div className="w-full max-w-sm">
-              <BluetoothScanner
-                key={scannedStudent ? 'bt-hidden' : 'bt-active'}
-                onScan={handleScan}
-                isActive={!scannedStudent}
-              />
-            </div>
-          )}
-
-          {mode === 'manual' && !scannedStudent && (
-            <div className="space-y-3 w-full max-w-sm">
-              <input
-                ref={manualInputRef}
-                type="text"
-                inputMode="text"
-                value={manualIdInput}
-                onChange={(e) => setManualIdInput(e.target.value)}
-                placeholder={t('manualIdPlaceholder')}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white font-mono text-center text-lg tracking-widest"
-                dir="ltr"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && manualIdInput.trim()) {
-                    e.preventDefault();
-                    handleScan(manualIdInput.trim());
+        <div className="flex-1 flex flex-col px-4 gap-4 max-w-lg mx-auto w-full pb-4">
+          <div
+            className="flex gap-1 bg-[var(--color-surface-2)] p-1 rounded-xl"
+            role="tablist"
+            aria-label={ts('tab_bar_label')}
+          >
+            {[
+              { key: 'camera' as const, label: ts('tab_camera'), Icon: Camera },
+              { key: 'bluetooth' as const, label: ts('tab_bluetooth'), Icon: Bluetooth },
+              { key: 'manual' as const, label: ts('tab_manual'), Icon: Hash },
+            ].map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={mode === key}
+                onClick={() => {
+                  setMode(key);
+                  if (key === 'manual') {
+                    setManualIdInput('');
+                    setTimeout(() => manualInputRef.current?.focus(), 100);
+                  } else if (key === 'bluetooth') {
+                    setTimeout(() => {
+                      const btInput = document.querySelector('[data-bluetooth-scanner-input]') as HTMLInputElement | null;
+                      btInput?.focus();
+                    }, 100);
                   }
                 }}
-              />
-              <button
-                onClick={() => {
-                  const trimmed = manualIdInput.trim();
-                  if (!trimmed) return;
-                  handleScan(trimmed);
-                }}
-                disabled={!manualIdInput.trim()}
-                className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm transition-all ${
+                  mode === key
+                    ? 'bg-[var(--color-surface-1)] shadow-sm font-semibold text-[var(--color-text-primary)]'
+                    : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
               >
-                {t('checkIn')}
+                <Icon className={mode === key && key === 'camera' ? 'w-4 h-4 text-brand-400' : 'w-4 h-4'} />
+                <span className="truncate">{label}</span>
               </button>
+            ))}
+          </div>
+
+          {error && (
+            <div
+              className="p-3 rounded-lg text-center text-sm border border-[var(--color-danger)]
+                bg-[rgba(239,68,68,0.08)] text-[var(--color-danger)]"
+            >
+              {error}
             </div>
           )}
+
+          <div className="flex flex-col items-center gap-4 flex-1">
+            <div
+              className={`scanner-frame w-full max-w-sm aspect-square bg-[var(--color-surface-2)] ${scannerFrameTone} ${
+                mode !== 'camera' ? 'hidden' : ''
+              }`}
+              aria-hidden={mode !== 'camera'}
+            >
+              <div className="absolute inset-0 z-0 min-h-0">
+                <CameraScanner
+                  key={scannedStudent ? 'camera-hidden' : 'camera-active'}
+                  onScan={handleScan}
+                  isActive={mode === 'camera' && !scannedStudent}
+                  fillContainer
+                />
+              </div>
+              <div className="scan-corner scan-corner-tl z-10 pointer-events-none" />
+              <div className="scan-corner scan-corner-tr z-10 pointer-events-none" />
+              <div className="scan-corner scan-corner-bl z-10 pointer-events-none" />
+              <div className="scan-corner scan-corner-br z-10 pointer-events-none" />
+              {scanFrameState !== 'success' && scanFrameState !== 'error' && (
+                <div className="scan-line z-20 pointer-events-none" />
+              )}
+              {scanFrameState === 'success' && (
+                <div
+                  className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3
+                    bg-[rgba(16,185,129,0.08)] scan-result"
+                >
+                  <div
+                    className="w-16 h-16 rounded-full bg-[var(--color-success)] flex items-center justify-center"
+                  >
+                    <svg width="32" height="32" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-[var(--color-success)]">{ts('scan_success')}</p>
+                  <p className="text-base font-bold text-[var(--color-text-primary)] px-4 text-center truncate max-w-full">
+                    {lastSuccessStudentName}
+                  </p>
+                </div>
+              )}
+              {scanFrameState === 'error' && (
+                <div
+                  className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3
+                    bg-[rgba(239,68,68,0.08)] scan-result"
+                >
+                  <div
+                    className="w-16 h-16 rounded-full bg-[var(--color-danger)] flex items-center justify-center"
+                  >
+                    <svg width="32" height="32" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-[var(--color-danger)]">{ts('scan_error')}</p>
+                </div>
+              )}
+            </div>
+
+            {mode === 'bluetooth' && (
+              <div className="w-full max-w-sm">
+                <BluetoothScanner
+                  key={scannedStudent ? 'bt-hidden' : 'bt-active'}
+                  onScan={handleScan}
+                  isActive={!scannedStudent}
+                />
+              </div>
+            )}
+
+            {mode === 'manual' && !scannedStudent && (
+              <div className="space-y-3 w-full max-w-sm">
+                <input
+                  ref={manualInputRef}
+                  type="text"
+                  inputMode="text"
+                  value={manualIdInput}
+                  onChange={(e) => setManualIdInput(e.target.value)}
+                  placeholder={t('manualIdPlaceholder')}
+                  className="w-full px-4 py-3 border border-[var(--color-border-default)] rounded-xl text-sm
+                    focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-[var(--color-surface-1)]
+                    font-mono text-center text-lg tracking-widest text-[var(--color-text-primary)]"
+                  dir="ltr"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && manualIdInput.trim()) {
+                      e.preventDefault();
+                      handleScan(manualIdInput.trim());
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const trimmed = manualIdInput.trim();
+                    if (!trimmed) return;
+                    handleScan(trimmed);
+                  }}
+                  disabled={!manualIdInput.trim()}
+                  className="w-full py-3 bg-brand-500 hover:opacity-90 text-white font-semibold rounded-xl
+                    transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('checkIn')}
+                </button>
+              </div>
+            )}
+
+            <div className="w-full max-w-sm mt-2">
+              <h2
+                className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-2"
+              >
+                {ts('history_title')}
+              </h2>
+              {scanHistory.length === 0 ? (
+                <p className="text-sm text-[var(--color-text-tertiary)] text-center py-6">{ts('history_empty')}</p>
+              ) : (
+                <div className="card overflow-hidden">
+                  {scanHistory.map((scan) => (
+                    <div
+                      key={scan.id}
+                      className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border-subtle)]
+                        last:border-b-0"
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full shrink-0 ${
+                          scan.status === 'success' || scan.status === 'duplicate'
+                            ? 'bg-[var(--color-success)]'
+                            : 'bg-[var(--color-danger)]'
+                        }`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                          {scan.studentName}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">
+                          {scan.time.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                      <span
+                        className={`badge text-xs shrink-0 ${
+                          scan.status === 'success' || scan.status === 'duplicate' ? 'badge-success' : 'badge-danger'
+                        }`}
+                      >
+                        {scan.status === 'error' ? '✗' : '✓'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
