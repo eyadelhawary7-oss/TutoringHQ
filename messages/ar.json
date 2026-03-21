@@ -70,7 +70,9 @@
     "view": "عرض",
     "date": "التاريخ",
     "perMonth": "/شهر",
-    "perStudentPerWeek": "جنيه للطالب أسبوعياً"
+    "perStudentPerWeek": "جنيه للطالب أسبوعياً",
+    "switchToLightTheme": "التبديل إلى الوضع الفاتح",
+    "switchToDarkTheme": "التبديل إلى الوضع الداكن"
   },
   "emptyStates": {
     "students": {

@@ -13,6 +13,7 @@ import { BottomTabBar } from '@/components/shell/BottomTabBar';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 import { Globe, Menu } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
@@ -106,6 +107,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <span className="font-bold text-slate-900 text-lg">CenterHQ</span>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <button
               onClick={handleLocaleToggle}
               disabled={isPending}

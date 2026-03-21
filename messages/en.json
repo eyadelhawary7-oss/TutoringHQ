@@ -72,7 +72,9 @@
     "view": "View",
     "date": "Date",
     "perMonth": "/month",
-    "perStudentPerWeek": "EGP/student/week"
+    "perStudentPerWeek": "EGP/student/week",
+    "switchToLightTheme": "Switch to light mode",
+    "switchToDarkTheme": "Switch to dark mode"
   },
   "emptyStates": {
     "students": {

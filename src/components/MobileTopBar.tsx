@@ -6,6 +6,7 @@ import { useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { Globe, Menu } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { supabase } from '@/lib/supabase';
 
 interface MobileTopBarProps {
@@ -61,6 +62,7 @@ export default function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <button
           onClick={handleLocaleToggle}
           disabled={isPending}

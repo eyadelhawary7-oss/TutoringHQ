@@ -62,6 +62,16 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir} className={`${cairo.variable}`} suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+      try {
+        var t = localStorage.getItem('chq-theme');
+        if (t === 'light') document.documentElement.classList.add('light');
+      } catch(e) {}
+    `,
+          }}
+        />
         <link rel="icon" href="/logo-icon-64.png" type="image/png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />

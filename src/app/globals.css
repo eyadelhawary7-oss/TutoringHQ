@@ -203,6 +203,97 @@
   --space-stack-lg:      1rem;
 }
 
+/* ── Light theme overrides ──────────────────────────────────
+   Applied when <html class="light"> is set by ThemeToggle.
+   Overrides the dark defaults from :root.
+──────────────────────────────────────────────────────────── */
+html.light {
+  /* Surfaces — white to light grey */
+  --color-surface-0: #f8fafc;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f1f5f9;
+  --color-surface-3: #e2e8f0;
+  --color-surface-4: #cbd5e1;
+
+  /* Text — dark on light */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #94a3b8;
+  --color-text-inverse: #ffffff;
+
+  /* Borders */
+  --color-border-subtle: rgba(15, 23, 42, 0.08);
+  --color-border-default: rgba(15, 23, 42, 0.14);
+  --color-border-strong: rgba(15, 23, 42, 0.24);
+
+  /* Shadows — lighter for light theme */
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08),
+               0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.10),
+               0 2px 4px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.12),
+               0 4px 10px rgba(15, 23, 42, 0.08);
+
+  /* Keep brand, success, warning, danger, info unchanged */
+  /* They look correct on both dark and light backgrounds */
+}
+
+/* Light theme — component overrides */
+html.light .card {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.10);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+html.light .card-elevated {
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
+}
+
+html.light .tab-bar {
+  background: #ffffff;
+  border-top-color: rgba(15, 23, 42, 0.10);
+}
+
+html.light .top-bar {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom-color: rgba(15, 23, 42, 0.10);
+}
+
+html.light .pull-indicator {
+  background: #f1f5f9;
+  border-bottom-color: rgba(15, 23, 42, 0.10);
+}
+
+html.light .input-base {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+}
+
+html.light .btn-ghost {
+  color: #475569;
+}
+
+html.light .btn-ghost:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+html.light .page-bg {
+  background: #f8fafc;
+}
+
+html.light .skeleton {
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f1f5f9 50%,
+    #e2e8f0 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sweep 700ms linear infinite;
+}
+
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
