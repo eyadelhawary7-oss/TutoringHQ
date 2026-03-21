@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 
 type Plan = {
@@ -17,6 +17,7 @@ type Plan = {
 
 export default function LocaleHomePage() {
   const t = useTranslations('landing');
+  const locale = useLocale();
 
   const plans: Plan[] = [
     {
@@ -74,7 +75,7 @@ export default function LocaleHomePage() {
       priceMonth: null,
       pricePer: null,
       earlyPrice: null,
-      students: '2,000',
+      students: '2,000+',
       hasEarly: false,
       popular: false,
       isTopCenters: true,
@@ -168,6 +169,13 @@ export default function LocaleHomePage() {
             Center<span className="text-brand-500">HQ</span>
           </span>
           <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              locale={locale === 'ar' ? 'en' : 'ar'}
+              className="btn btn-ghost text-sm px-3 py-2 font-mono"
+            >
+              {locale === 'ar' ? 'EN' : 'عر'}
+            </Link>
             <Link href="/login" className="btn btn-ghost text-sm px-4 py-2">
               {t('nav.login')}
             </Link>
@@ -364,7 +372,8 @@ export default function LocaleHomePage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xl font-bold text-white">{t(`pricing.plans.${plan.key}.name`)}</span>
                   <span className="badge badge-neutral text-xs">
-                    {t('pricing.students_up_to')} {plan.students} {t('pricing.students_unit')}
+                    {plan.isTopCenters ? t('pricing.students_more') : t('pricing.students_up_to')}{' '}
+                    {plan.students} {t('pricing.students_unit')}
                   </span>
                 </div>
 

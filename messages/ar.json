@@ -1790,6 +1790,7 @@
       "cta": "ابدأ الآن",
       "enterprise_cta": "تواصل معنا",
       "students_up_to": "حتى",
+      "students_more": "أكثر من",
       "students_unit": "طالب / أسبوع",
       "plans": {
         "nano": {
@@ -1827,7 +1828,7 @@
         },
         "top_centers": {
           "name": "كبار السناتر",
-          "students": "+2,000",
+          "students": "2,000+",
           "price_month": "تسعير مخصص",
           "price_per": ""
         }
