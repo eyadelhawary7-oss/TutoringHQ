@@ -46,7 +46,7 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
         >
           {t('phoneLabel')}
         </label>
-        <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2 bg-bg-tertiary" dir="ltr">
+        <div className="flex items-center gap-2 border border-[var(--color-border-default)] rounded-lg px-3 py-2 bg-bg-tertiary" dir="ltr">
           <span className="text-text-secondary font-medium shrink-0 text-sm select-none">+20</span>
           <input
             id="phone"

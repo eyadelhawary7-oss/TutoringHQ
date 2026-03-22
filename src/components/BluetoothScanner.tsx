@@ -56,13 +56,13 @@ export default function BluetoothScanner({ onScan, isActive }: BluetoothScannerP
             handleSubmit();
           }
         }}
-        className="w-full px-5 py-4 rounded-xl border border-slate-300 bg-white text-slate-900 text-lg text-center focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder:text-slate-400"
+        className="w-full px-5 py-4 rounded-xl border border-slate-300 bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-lg text-center focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder:text-[var(--color-text-tertiary)]"
         placeholder={t('scanHere')}
         autoFocus
         autoComplete="off"
         dir="ltr"
       />
-      <p className="text-xs text-slate-500 mt-2 text-center">{t('bluetoothMode')}</p>
+      <p className="text-xs text-[var(--color-text-secondary)] mt-2 text-center">{t('bluetoothMode')}</p>
     </div>
   );
 }

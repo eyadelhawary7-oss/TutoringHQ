@@ -329,8 +329,8 @@ export default function GroupsPage() {
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{groups.length} {t('title')}</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{groups.length} {t('title')}</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -361,7 +361,7 @@ export default function GroupsPage() {
           {groups.map(g => (
             <div
               key={g.id}
-              className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer group"
+              className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer group"
               onClick={() => setDetailGroup(g)}
             >
               <div className="flex items-start justify-between mb-3">
@@ -370,10 +370,10 @@ export default function GroupsPage() {
                 </div>
                 <span className="text-xs text-slate-400">{g.member_count ?? 0} {tCommon('students')}</span>
               </div>
-              <h3 className="font-semibold text-slate-900 mb-1">{g.name}</h3>
-              <p className="text-sm text-slate-500 mb-3">{g.subject ?? '\u2014'}</p>
+              <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject ?? '\u2014'}</p>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-900 font-mono">EGP {(g.fee ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')}</span>
+                <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">EGP {(g.fee ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')}</span>
                 <span className="text-xs text-slate-400">per lesson</span>
               </div>
             </div>
@@ -384,27 +384,27 @@ export default function GroupsPage() {
       {/* Add Group Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-slate-200">
-              <h2 className="text-lg font-bold text-slate-900">{t('addGroup')}</h2>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('addGroup')}</h2>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg transition-colors"><X className="w-5 h-5 text-[var(--color-text-secondary)]" /></button>
             </div>
             <form onSubmit={handleAddGroup} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('groupName')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('groupName')}</label>
                 <input
                   value={addForm.name}
                   onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('subject')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('subject')}</label>
                 <select
                   value={addForm.subjectId}
                   onChange={e => setAddForm(prev => ({ ...prev, subjectId: e.target.value }))}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
                   required
                 >
                   <option value="">{tCommon('select')}</option>
@@ -412,51 +412,51 @@ export default function GroupsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('feePerLesson')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('feePerLesson')}</label>
                 <input
                   value={addForm.fee}
                   onChange={e => setAddForm(prev => ({ ...prev, fee: e.target.value }))}
                   type="number"
                   min={0}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm font-mono text-foreground"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('maxCapacity', { defaultValue: 'السعة القصوى (اختياري)' })}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('maxCapacity', { defaultValue: 'السعة القصوى (اختياري)' })}</label>
                 <input
                   value={addForm.maxCapacity}
                   onChange={e => setAddForm(prev => ({ ...prev, maxCapacity: e.target.value }))}
                   type="number"
                   min={0}
                   placeholder={t('optional', { defaultValue: 'اختياري' })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm font-mono text-foreground"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('assignStudents')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('assignStudents')}</label>
                 <div className="relative mb-2">
                   <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
                   <input
                     value={addSearch}
                     onChange={e => setAddSearch(e.target.value)}
                     placeholder={t('searchStudents')}
-                    className="w-full ps-9 pe-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-slate-400"
+                    className="w-full ps-9 pe-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
                   />
                 </div>
                 <div className="max-h-32 overflow-y-auto border border-border rounded-lg p-2 space-y-1">
                   {studentsForAddModal.map(s => (
                     <label key={s.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer">
                       <input type="checkbox" checked={addForm.studentIds.includes(s.id)} onChange={() => toggleAddFormStudent(s.id)} className="rounded accent-primary" />
-                      <span className="text-sm text-foreground">{s.name}</span>
-                      <span className="text-xs text-muted-foreground font-mono ms-auto" dir="ltr">{s.student_number ?? '\u2014'}</span>
+                      <span className="text-sm text-[var(--color-text-primary)]">{s.name}</span>
+                      <span className="text-xs text-[var(--color-text-secondary)] font-mono ms-auto" dir="ltr">{s.student_number ?? '\u2014'}</span>
                     </label>
                   ))}
                 </div>
               </div>
               {addError && <p className="text-sm text-red-600">{addError}</p>}
               <div className="flex gap-2 justify-end mt-4">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border text-muted-foreground">{tCommon('cancel')}</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border text-[var(--color-text-secondary)]">{tCommon('cancel')}</button>
                 <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{tCommon('save')}</button>
               </div>
             </form>
@@ -468,21 +468,21 @@ export default function GroupsPage() {
       {detailGroup && (
         <div className="fixed inset-0 z-50" onClick={() => setDetailGroup(null)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md bg-card border-s border-border overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md bg-[var(--color-surface-1)] border-s border-border overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-border flex items-center justify-between">
-              <h2 className="font-bold text-foreground text-lg">{detailGroup.name}</h2>
+              <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{detailGroup.name}</h2>
               <button onClick={() => setDetailGroup(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <div><p className="text-xs text-muted-foreground">{t('subject')}</p><p className="font-semibold text-foreground">{detailGroup.subject ?? '\u2014'}</p></div>
-                <div><p className="text-xs text-muted-foreground">{t('feePerLesson')}</p><p className="font-semibold text-foreground font-mono">{(detailGroup.fee ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</p></div>
-                <div><p className="text-xs text-muted-foreground">{t('studentCount')}</p><p className="font-semibold text-foreground font-mono">{detailGroup.member_count ?? 0}{detailGroup.max_capacity != null && detailGroup.max_capacity < 999 ? ` / ${detailGroup.max_capacity}` : ''}</p></div>
+                <div><p className="text-xs text-[var(--color-text-secondary)]">{t('subject')}</p><p className="font-semibold text-[var(--color-text-primary)]">{detailGroup.subject ?? '\u2014'}</p></div>
+                <div><p className="text-xs text-[var(--color-text-secondary)]">{t('feePerLesson')}</p><p className="font-semibold text-[var(--color-text-primary)] font-mono">{(detailGroup.fee ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</p></div>
+                <div><p className="text-xs text-[var(--color-text-secondary)]">{t('studentCount')}</p><p className="font-semibold text-[var(--color-text-primary)] font-mono">{detailGroup.member_count ?? 0}{detailGroup.max_capacity != null && detailGroup.max_capacity < 999 ? ` / ${detailGroup.max_capacity}` : ''}</p></div>
               </div>
               {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && (
                 <div className="flex gap-1 p-1 rounded-lg bg-muted/50">
-                  <button type="button" onClick={() => setActiveTab('members')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'members' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>{t('members')}</button>
-                  <button type="button" onClick={() => setActiveTab('waitlist')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'waitlist' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>{t('waitlist', { defaultValue: 'قائمة الانتظار' })} ({waitlist.length})</button>
+                  <button type="button" onClick={() => setActiveTab('members')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'members' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('members')}</button>
+                  <button type="button" onClick={() => setActiveTab('waitlist')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'waitlist' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('waitlist', { defaultValue: 'قائمة الانتظار' })} ({waitlist.length})</button>
                 </div>
               )}
               <div className="border-t border-border pt-4">
@@ -504,19 +504,19 @@ export default function GroupsPage() {
               <div className="border-t border-border pt-4">
                 {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && activeTab === 'waitlist' ? (
                   <>
-                    <h3 className="font-bold text-foreground mb-3">{t('waitlist', { defaultValue: 'قائمة الانتظار' })}</h3>
+                    <h3 className="font-bold text-[var(--color-text-primary)] mb-3">{t('waitlist', { defaultValue: 'قائمة الانتظار' })}</h3>
                     <div className="space-y-2 mb-4">
                       {waitlist.map((w, i) => (
                         <div key={w.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                           <div>
-                            <div className="text-sm font-medium text-foreground">#{i + 1} {w.name}</div>
-                            <div className="text-xs text-muted-foreground font-mono" dir="ltr">{w.student_number ?? w.parent_phone ?? '\u2014'}</div>
+                            <div className="text-sm font-medium text-[var(--color-text-primary)]">#{i + 1} {w.name}</div>
+                            <div className="text-xs text-[var(--color-text-secondary)] font-mono" dir="ltr">{w.student_number ?? w.parent_phone ?? '\u2014'}</div>
                           </div>
                         </div>
                       ))}
-                      {waitlist.length === 0 && <p className="text-sm text-muted-foreground">{t('noWaitlist', { defaultValue: 'لا يوجد في قائمة الانتظار' })}</p>}
+                      {waitlist.length === 0 && <p className="text-sm text-[var(--color-text-secondary)]">{t('noWaitlist', { defaultValue: 'لا يوجد في قائمة الانتظار' })}</p>}
                     </div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">{t('addToWaitlist', { defaultValue: 'إضافة لقائمة الانتظار' })}</h4>
+                    <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{t('addToWaitlist', { defaultValue: 'إضافة لقائمة الانتظار' })}</h4>
                     <div className="flex flex-wrap gap-2">
                       {studentsForAddInDetail.filter(s => !waitlist.some(w => w.id === s.id)).slice(0, 10).map(s => (
                         <button key={s.id} type="button" onClick={async () => {
@@ -536,29 +536,29 @@ export default function GroupsPage() {
                   </>
                 ) : (
                   <>
-                <h3 className="font-bold text-foreground mb-3 flex items-center gap-2"><Users size={16} /> {t('members')}</h3>
+                <h3 className="font-bold text-[var(--color-text-primary)] mb-3 flex items-center gap-2"><Users size={16} /> {t('members')}</h3>
                 <div className="space-y-2 mb-4">
                   {members.map(m => (
                     <div key={m.student_id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                       <div>
-                        <div className="text-sm font-medium text-foreground">{m.student_name}</div>
-                        <div className="text-xs text-muted-foreground font-mono" dir="ltr">{m.student_number ?? '\u2014'}</div>
+                        <div className="text-sm font-medium text-[var(--color-text-primary)]">{m.student_name}</div>
+                        <div className="text-xs text-[var(--color-text-secondary)] font-mono" dir="ltr">{m.student_number ?? '\u2014'}</div>
                       </div>
                       <button type="button" onClick={() => handleRemoveMember(m.student_id)} className="text-xs text-red-600 hover:text-red-700 font-medium">
                         {t('remove')}
                       </button>
                     </div>
                   ))}
-                  {members.length === 0 && <p className="text-sm text-muted-foreground">{t('noMembers')}</p>}
+                  {members.length === 0 && <p className="text-sm text-[var(--color-text-secondary)]">{t('noMembers')}</p>}
                 </div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">{t('addStudent')}</h4>
+                <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{t('addStudent')}</h4>
                 <div className="relative mb-2">
                   <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
                   <input
                     value={addMemberSearch}
                     onChange={e => setAddMemberSearch(e.target.value)}
                     placeholder={t('searchStudents')}
-                    className="w-full ps-9 pe-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-slate-400"
+                    className="w-full ps-9 pe-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">

@@ -46,7 +46,7 @@ export function QRCard({
         {centerLogo ? (
           <img src={centerLogo} alt="" className="h-8 w-8 object-contain rounded shrink-0" />
         ) : (
-          <div className="h-8 w-8 bg-white/20 rounded flex items-center justify-center shrink-0">
+          <div className="h-8 w-8 bg-[var(--color-surface-1)]/20 rounded flex items-center justify-center shrink-0">
             <span className="text-white text-xs font-bold">CH</span>
           </div>
         )}

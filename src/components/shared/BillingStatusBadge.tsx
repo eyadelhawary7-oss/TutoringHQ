@@ -39,7 +39,7 @@ export default function BillingStatusBadge({ status, nextDue }: BillingStatusBad
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] text-xs font-semibold">
       Due
     </span>
   );

@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-bg-primary" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-md mx-auto px-4 py-12">
         <div className="glass rounded-xl p-6 shadow">
-          <h1 className="text-2xl font-bold text-slate-900 mb-6">{t('title')}</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-6">{t('title')}</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
@@ -79,7 +79,7 @@ export default function ResetPasswordPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-2">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                 {t('newPinLabel')}
               </label>
               <input
@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
                 placeholder="••••••"
                 maxLength={6}
                 required
-                className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-gray-300 rounded-lg text-center text-2xl tracking-widest font-mono"
+                className="w-full px-4 py-3 bg-[var(--color-surface-0)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] rounded-lg text-center text-2xl tracking-widest font-mono"
                 autoComplete="off"
                 dir="ltr"
               />
@@ -104,7 +104,7 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-2">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                 {t('confirmPinLabel')}
               </label>
               <input
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
                 placeholder="••••••"
                 maxLength={6}
                 required
-                className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-gray-300 rounded-lg text-center text-2xl tracking-widest font-mono"
+                className="w-full px-4 py-3 bg-[var(--color-surface-0)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] rounded-lg text-center text-2xl tracking-widest font-mono"
                 autoComplete="off"
                 dir="ltr"
               />

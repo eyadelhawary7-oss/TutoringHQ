@@ -135,7 +135,7 @@ export default function AnalyticsPage() {
   if (!canViewRevenue) {
     return (
       <div className="p-6">
-        <p className="text-muted-foreground">{ta('noAccess')}</p>
+        <p className="text-[var(--color-text-secondary)]">{ta('noAccess')}</p>
       </div>
     );
   }
@@ -143,7 +143,7 @@ export default function AnalyticsPage() {
   if (loading && !data) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[300px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--color-text-secondary)]" />
       </div>
     );
   }

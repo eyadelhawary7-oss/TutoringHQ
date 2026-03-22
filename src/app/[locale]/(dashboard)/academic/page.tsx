@@ -291,8 +291,8 @@ export default function AcademicPage() {
       <PageHeader title={t('title')} subtitle={t('subtitle')} />
 
       {/* Section 1: Current year card */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
-        <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+      <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
+        <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-teal-600" />
           {t('currentYear')}
         </h2>
@@ -342,8 +342,8 @@ export default function AcademicPage() {
           ) : (
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xl font-semibold text-slate-900">{currentYear.name}</p>
-                <p className="text-slate-600 text-sm mt-1">
+                <p className="text-xl font-semibold text-[var(--color-text-primary)]">{currentYear.name}</p>
+                <p className="text-[var(--color-text-secondary)] text-sm mt-1">
                   {formatDateAr(currentYear.start_date)} — {formatDateAr(currentYear.end_date)}
                 </p>
               </div>
@@ -356,22 +356,22 @@ export default function AcademicPage() {
                     end_date: currentYear.end_date,
                   });
                 }}
-                className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50"
+                className="p-2 rounded-lg border border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]"
               >
-                <Pencil className="w-4 h-4 text-slate-600" />
+                <Pencil className="w-4 h-4 text-[var(--color-text-secondary)]" />
               </button>
             </div>
           )
         ) : (
-          <p className="text-slate-500">{t('noYear')}</p>
+          <p className="text-[var(--color-text-secondary)]">{t('noYear')}</p>
         )}
       </div>
 
       {/* Section 2: Timeline bar */}
       {currentYear && yearDays > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
-          <h2 className="font-bold text-slate-900 mb-4">{t('timeline')}</h2>
-          <div className="relative h-10 rounded-lg overflow-hidden bg-slate-100">
+        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
+          <h2 className="font-bold text-[var(--color-text-primary)] mb-4">{t('timeline')}</h2>
+          <div className="relative h-10 rounded-lg overflow-hidden bg-[var(--color-surface-2)]">
             {currentYearPeriods.map((p) => {
               const style = getSegmentStyle(p.start_date, p.end_date, p.period_type);
               const isCurrent = isCurrentWeek(p.start_date, p.end_date);
@@ -406,9 +406,9 @@ export default function AcademicPage() {
       )}
 
       {/* Section 3: Period management */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+      <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-slate-900">{t('periods')}</h2>
+          <h2 className="font-bold text-[var(--color-text-primary)]">{t('periods')}</h2>
           {currentYear && (
             <button
               onClick={() => {
@@ -427,12 +427,12 @@ export default function AcademicPage() {
             {currentYearPeriods.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50"
+                className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]"
               >
                 <div className="flex items-center gap-3">
                   <span className={`w-3 h-3 rounded ${PERIOD_COLORS[p.period_type]}`} />
                   <span className="font-medium">{p.name}</span>
-                  <span className="text-slate-500 text-sm">
+                  <span className="text-[var(--color-text-secondary)] text-sm">
                     {formatDateShort(p.start_date)} — {formatDateShort(p.end_date)}
                   </span>
                 </div>
@@ -457,12 +457,12 @@ export default function AcademicPage() {
             ))}
           </div>
         ) : (
-          <p className="text-slate-500 text-sm">{t('noPeriods')}</p>
+          <p className="text-[var(--color-text-secondary)] text-sm">{t('noPeriods')}</p>
         )}
 
-        <div className="mt-6 pt-4 border-t border-slate-100">
+        <div className="mt-6 pt-4 border-t border-[var(--color-border-subtle)]">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-slate-800">{t('holidays')}</h3>
+            <h3 className="font-medium text-[var(--color-text-primary)]">{t('holidays')}</h3>
             <button
               onClick={() => {
                 setHolidayForm({ name: '', date: '', is_recurring: false });
@@ -479,7 +479,7 @@ export default function AcademicPage() {
               {holidays.map((h) => (
                 <div
                   key={h.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-slate-100"
+                  className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border-subtle)]"
                 >
                   <span>{h.name} — {formatDateShort(h.date)}</span>
                   <div className="flex gap-2">
@@ -503,7 +503,7 @@ export default function AcademicPage() {
               ))}
             </div>
           ) : (
-            <p className="text-slate-500 text-sm mt-2">{t('noHolidays')}</p>
+            <p className="text-[var(--color-text-secondary)] text-sm mt-2">{t('noHolidays')}</p>
           )}
         </div>
       </div>
@@ -529,7 +529,7 @@ export default function AcademicPage() {
       {/* Modals */}
       {showNewYearModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <div className="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-md w-full">
             <h3 className="font-bold text-lg mb-4">{t('createNewYear')}</h3>
             <div className="space-y-3">
               <input
@@ -573,7 +573,7 @@ export default function AcademicPage() {
 
       {showPeriodModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <div className="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-md w-full">
             <h3 className="font-bold text-lg mb-4">{periodForm.id ? t('editPeriod') : t('addPeriod')}</h3>
             <div className="space-y-3">
               <select
@@ -627,7 +627,7 @@ export default function AcademicPage() {
 
       {showHolidayModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <div className="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-md w-full">
             <h3 className="font-bold text-lg mb-4">{holidayForm.id ? t('editHoliday') : t('addHoliday')}</h3>
             <div className="space-y-3">
               <input

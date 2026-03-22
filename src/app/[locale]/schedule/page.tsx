@@ -302,36 +302,36 @@ export default function SchedulePage() {
       ) : (
         <>
           <div className="hidden md:block">
-          <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 mb-4 overflow-x-auto">
+          <div className="flex gap-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-xl p-1 mb-4 overflow-x-auto">
             {DAY_ORDER.map(day => (
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
-                className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedDay === day ? 'bg-teal-600 text-white font-semibold' : 'text-slate-500 hover:bg-slate-50'}`}
+                className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedDay === day ? 'bg-teal-600 text-white font-semibold' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-0)]'}`}
               >
                 {t(DAY_KEYS[day])}
               </button>
             ))}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="grid grid-cols-8 border-b border-slate-200">
-              <div className="py-3 px-3 text-xs font-semibold text-slate-400 uppercase bg-slate-50 border-e border-slate-200">{t('time')}</div>
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+            <div className="grid grid-cols-8 border-b border-[var(--color-border-subtle)]">
+              <div className="py-3 px-3 text-xs font-semibold text-slate-400 uppercase bg-[var(--color-surface-0)] border-e border-[var(--color-border-subtle)]">{t('time')}</div>
               {DAY_ORDER.map(day => (
-                <div key={day} className={`py-3 px-3 text-xs font-semibold text-slate-600 uppercase text-center bg-slate-50 border-e border-slate-200 last:border-e-0 ${selectedDay === day ? 'ring-1 ring-teal-500/30' : ''}`}>
+                <div key={day} className={`py-3 px-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase text-center bg-[var(--color-surface-0)] border-e border-[var(--color-border-subtle)] last:border-e-0 ${selectedDay === day ? 'ring-1 ring-teal-500/30' : ''}`}>
                   {t(DAY_KEYS[day])}
                 </div>
               ))}
             </div>
             {HOURS.map(hour => (
-              <div key={hour} className="grid grid-cols-8 border-b border-slate-100 min-h-[60px]">
-                <div className="py-3 px-3 text-xs text-slate-400 bg-slate-50/50 border-e border-slate-200 self-start pt-2">
+              <div key={hour} className="grid grid-cols-8 border-b border-[var(--color-border-subtle)] min-h-[60px]">
+                <div className="py-3 px-3 text-xs text-slate-400 bg-[var(--color-surface-0)]/50 border-e border-[var(--color-border-subtle)] self-start pt-2">
                   {formatHour(hour)}
                 </div>
                 {DAY_ORDER.map(day => {
                   const cellSlots = getSlotsInCell(day, hour);
                   return (
-                    <div key={day} className="border-e border-slate-100 last:border-e-0 p-1.5">
+                    <div key={day} className="border-e border-[var(--color-border-subtle)] last:border-e-0 p-1.5">
                       {cellSlots.map(slot => {
                         const isConflict = getConflictingSlotIds.has(slot.id);
                         return (
@@ -378,7 +378,7 @@ export default function SchedulePage() {
                   {todaySessions.map((session) => (
                     <div
                       key={session.id}
-                      className="bg-white rounded-lg shadow-sm p-3 mb-2 border-r-4 border-teal-500"
+                      className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2 border-r-4 border-teal-500"
                       dir="rtl"
                     >
                       <div className="font-mono text-teal-600 text-sm">
@@ -391,12 +391,12 @@ export default function SchedulePage() {
                     </div>
                   ))}
                   <hr className="my-3" />
-                  <h3 className="font-bold text-slate-700 text-sm mb-2">{t('thisWeek')}</h3>
+                  <h3 className="font-bold text-[var(--color-text-primary)] text-sm mb-2">{t('thisWeek')}</h3>
                   {thisWeekSessions.length === 0 && (
                     <p className="text-xs text-slate-400">{t('noSessionsWeek')}</p>
                   )}
                   {thisWeekSessions.map((session) => (
-                    <div key={session.id} className="bg-white rounded-lg shadow-sm p-3 mb-2" dir="rtl">
+                    <div key={session.id} className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2" dir="rtl">
                       <div className="font-mono text-teal-600 text-sm">
                         {formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}
                       </div>
@@ -427,21 +427,21 @@ export default function SchedulePage() {
       {/* Add Session Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-slate-200">
-              <h2 className="text-lg font-bold text-slate-900">{t('addSession')}</h2>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                <X className="w-5 h-5 text-slate-500" />
+          <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('addSession')}</h2>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg transition-colors">
+                <X className="w-5 h-5 text-[var(--color-text-secondary)]" />
               </button>
             </div>
             <form onSubmit={handleAddSlot}>
               <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('group')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('group')}</label>
                 <select
                   value={formGroupId}
                   onChange={e => setFormGroupId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
                   required
                 >
                   <option value="">{tCommon('select')}</option>
@@ -449,11 +449,11 @@ export default function SchedulePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('room')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('room')}</label>
                 <select
                   value={formRoomId}
                   onChange={e => setFormRoomId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
                   required
                 >
                   <option value="">{tCommon('select')}</option>
@@ -461,32 +461,32 @@ export default function SchedulePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('day')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('day')}</label>
                 <select
                   value={formDay}
                   onChange={e => setFormDay(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
                 >
                   {DAY_ORDER.map(d => <option key={d} value={d}>{t(DAY_KEYS[d])}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">{t('startTime')}</label>
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('startTime')}</label>
                   <input
                     type="time"
                     value={formStart}
                     onChange={e => setFormStart(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                    className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">{t('endTime')}</label>
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('endTime')}</label>
                   <input
                     type="time"
                     value={formEnd}
                     onChange={e => setFormEnd(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                    className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
                   />
                 </div>
               </div>
@@ -497,7 +497,7 @@ export default function SchedulePage() {
                   onChange={e => setFormRecurring(e.target.checked)}
                   className="rounded accent-primary"
                 />
-                <span className="text-sm text-foreground">{t('recurring')}</span>
+                <span className="text-sm text-[var(--color-text-primary)]">{t('recurring')}</span>
               </label>
               {hasConflict && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
@@ -510,7 +510,7 @@ export default function SchedulePage() {
               )}
               </div>
               <div className="flex justify-end gap-3 p-6 pt-0">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
                 <button type="submit" disabled={!formGroupId || !formRoomId || hasConflict || isSubmitting} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">{t('addSession')}</button>
               </div>
             </form>

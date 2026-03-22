@@ -48,7 +48,7 @@ export default function FileUploadZone({ onFileSelected, isLoading }: FileUpload
       onDragOver={handleDragOver}
       onDragLeave={() => setIsDragOver(false)}
       onClick={() => fileInputRef.current?.click()}
-      className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${isDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400 hover:bg-bg-secondary'} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${isDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-[var(--color-border-default)] hover:border-indigo-400 hover:bg-bg-secondary'} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <input
         ref={fileInputRef}

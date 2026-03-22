@@ -23,7 +23,7 @@ const PLAN_PRICES: Record<Plan, number> = {
   starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 12000,
 };
 const PLAN_COLORS: Record<Plan, string> = {
-  starter: 'bg-slate-100 text-slate-600 border-slate-200',
+  starter: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]',
   pro: 'bg-blue-50 text-blue-700 border-blue-200',
   business: 'bg-teal-50 text-teal-700 border-teal-200',
   enterprise: 'bg-purple-50 text-purple-700 border-purple-200',
@@ -159,13 +159,13 @@ type DateRange = '7d' | '30d' | '90d' | 'year' | 'custom';
 function ChartTooltipContent({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg">
-      <p className="text-xs font-medium text-slate-500 mb-1">{label}</p>
+    <div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 shadow-lg">
+      <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-1">{label}</p>
       {payload.map((entry: any, i: number) => (
         <div key={i} className="flex items-center gap-2 text-xs">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          <span className="text-slate-600">{entry.name}:</span>
-          <span className="font-mono font-semibold text-slate-900">{fmtEGP(entry.value)}</span>
+          <span className="text-[var(--color-text-secondary)]">{entry.name}:</span>
+          <span className="font-mono font-semibold text-[var(--color-text-primary)]">{fmtEGP(entry.value)}</span>
         </div>
       ))}
     </div>
@@ -250,10 +250,10 @@ export default function CeoDashboard() {
 
       <div className="flex-1 overflow-auto mt-12 md:mt-0 bg-[#F8FAFC]">
         {/* ─── TOP BAR ─── */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4">
+        <div className="sticky top-0 z-10 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">CEO Dashboard</h1>
+              <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">CEO Dashboard</h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <RefreshCw size={11} className="text-slate-400" />
                 <span className="text-[11px] text-slate-400">
@@ -266,24 +266,24 @@ export default function CeoDashboard() {
               <div className="relative">
                 <button
                   onClick={() => setShowDateDropdown(!showDateDropdown)}
-                  className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:shadow transition-shadow"
+                  className="flex items-center gap-1.5 rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] shadow-sm hover:shadow transition-shadow"
                 >
                   {dateRangeLabels[dateRange]}
                   <ChevronDown size={14} className="text-slate-400" />
                 </button>
                 {showDateDropdown && (
-                  <div className="absolute right-0 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg z-50">
+                  <div className="absolute right-0 mt-1 w-48 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] py-1 shadow-lg z-50">
                     {(Object.entries(dateRangeLabels) as [DateRange, string][]).map(([k, label]) => (
                       <button key={k} onClick={() => { setDateRange(k); setShowDateDropdown(false); }}
-                        className={cn('w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors',
-                          dateRange === k ? 'text-teal-700 bg-teal-50 font-medium' : 'text-slate-600'
+                        className={cn('w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface-0)] transition-colors',
+                          dateRange === k ? 'text-teal-700 bg-teal-50 font-medium' : 'text-[var(--color-text-secondary)]'
                         )}>{label}</button>
                     ))}
                   </div>
                 )}
               </div>
               {/* Compare */}
-              <button className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 shadow-sm hover:shadow transition-shadow">
+              <button className="flex items-center gap-1.5 rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-2 text-sm text-[var(--color-text-secondary)] shadow-sm hover:shadow transition-shadow">
                 Compare to: Previous period
                 <ChevronDown size={14} className="text-slate-400" />
               </button>
@@ -298,12 +298,12 @@ export default function CeoDashboard() {
           ═══════════════════════════════════════════════ */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
             {/* Total Revenue */}
-            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[13px] font-semibold text-slate-500">Total Revenue</span>
+                <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">Total Revenue</span>
                 <TrendPill value={REV_CHANGE} />
               </div>
-              <div className="font-mono text-[32px] font-bold text-slate-900 leading-tight">{fmtEGP(TOTAL_REVENUE)}</div>
+              <div className="font-mono text-[32px] font-bold text-[var(--color-text-primary)] leading-tight">{fmtEGP(TOTAL_REVENUE)}</div>
               <div className="h-16 mt-3 -mx-1">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={REVENUE_SPARKLINE}>
@@ -321,12 +321,12 @@ export default function CeoDashboard() {
             </div>
 
             {/* MRR */}
-            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[13px] font-semibold text-slate-500">MRR</span>
+                <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">MRR</span>
                 <TrendPill value={MRR_CHANGE} />
               </div>
-              <div className="font-mono text-[32px] font-bold text-slate-900 leading-tight">{fmtEGP(MRR)}</div>
+              <div className="font-mono text-[32px] font-bold text-[var(--color-text-primary)] leading-tight">{fmtEGP(MRR)}</div>
               <div className="h-16 mt-3 -mx-1">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={MRR_BARS} barSize={8}>
@@ -338,9 +338,9 @@ export default function CeoDashboard() {
             </div>
 
             {/* NRR */}
-            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[13px] font-semibold text-slate-500">Net Revenue Retention</span>
+                <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">Net Revenue Retention</span>
                 <span className={cn(
                   'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold',
                   NRR > 100 ? 'bg-emerald-50 text-emerald-700' : NRR >= 90 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
@@ -361,7 +361,7 @@ export default function CeoDashboard() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-mono text-[11px] font-bold text-slate-700">{NRR}%</span>
+                    <span className="font-mono text-[11px] font-bold text-[var(--color-text-primary)]">{NRR}%</span>
                   </div>
                 </div>
               </div>
@@ -374,31 +374,31 @@ export default function CeoDashboard() {
           ═══════════════════════════════════════════════ */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
             {/* Active Centers */}
-            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                   <Building2 size={16} className="text-blue-600" />
                 </div>
               </div>
-              <div className="font-mono text-2xl font-bold text-slate-900">{activeCenters.length}</div>
-              <span className="text-[13px] font-medium text-slate-500">Active Centers</span>
+              <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{activeCenters.length}</div>
+              <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">Active Centers</span>
               <p className="text-[11px] text-slate-400 mt-1">+{NEW_CENTERS_MONTH} new, -1 churned vs last month</p>
             </div>
 
             {/* New This Month */}
-            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
                   <Users size={16} className="text-teal-600" />
                 </div>
               </div>
-              <div className="font-mono text-2xl font-bold text-slate-900">{NEW_CENTERS_MONTH}</div>
-              <span className="text-[13px] font-medium text-slate-500">New This Month</span>
+              <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{NEW_CENTERS_MONTH}</div>
+              <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">New This Month</span>
               <p className="text-[11px] text-slate-400 mt-1">{PENDING_PIPELINE} in pipeline</p>
             </div>
 
             {/* Churn Rate */}
-            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-2 mb-2">
                 <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center',
                   CHURN_RATE < 2 ? 'bg-emerald-50' : CHURN_RATE < 5 ? 'bg-amber-50' : 'bg-red-50'
@@ -409,12 +409,12 @@ export default function CeoDashboard() {
               <div className={cn('font-mono text-2xl font-bold',
                 CHURN_RATE < 2 ? 'text-emerald-700' : CHURN_RATE < 5 ? 'text-amber-600' : 'text-red-600'
               )}>{CHURN_RATE}%</div>
-              <span className="text-[13px] font-medium text-slate-500">Churn Rate</span>
+              <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">Churn Rate</span>
               <p className="text-[11px] text-slate-400 mt-1">&lt;2% target</p>
             </div>
 
             {/* Collection Rate */}
-            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-2 mb-2">
                 <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center',
                   COLLECTION_RATE > 90 ? 'bg-emerald-50' : COLLECTION_RATE > 75 ? 'bg-amber-50' : 'bg-red-50'
@@ -425,7 +425,7 @@ export default function CeoDashboard() {
               <div className={cn('font-mono text-2xl font-bold',
                 COLLECTION_RATE > 90 ? 'text-emerald-700' : COLLECTION_RATE > 75 ? 'text-amber-600' : 'text-red-600'
               )}>{COLLECTION_RATE}%</div>
-              <span className="text-[13px] font-medium text-slate-500">Collection Rate</span>
+              <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">Collection Rate</span>
               <p className="text-[11px] text-slate-400 mt-1">{COLLECTION_RATE > 90 ? 'On track' : COLLECTION_RATE > 75 ? 'Needs attention' : 'Critical'}</p>
             </div>
           </div>
@@ -437,53 +437,53 @@ export default function CeoDashboard() {
           {mrrLoading ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm h-[120px] animate-pulse" />
+                <div key={i} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm h-[120px] animate-pulse" />
               ))}
             </div>
           ) : (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
                       <TrendingUp size={16} className="text-teal-600" />
                     </div>
                   </div>
-                  <div className="font-mono text-2xl font-bold text-slate-900">
+                  <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">
                     EGP {(mrrData?.summary?.currentMrr ?? 0).toLocaleString('ar-EG')}
                   </div>
-                  <span className="text-[13px] font-medium text-slate-500">MRR الآن</span>
+                  <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">MRR الآن</span>
                 </div>
-                <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                       <Building2 size={16} className="text-blue-600" />
                     </div>
                   </div>
-                  <div className="font-mono text-2xl font-bold text-slate-900">{mrrData?.summary?.activeCenters ?? 0}</div>
-                  <span className="text-[13px] font-medium text-slate-500">السناتر النشطة</span>
+                  <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{mrrData?.summary?.activeCenters ?? 0}</div>
+                  <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">السناتر النشطة</span>
                 </div>
-                <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
                       <Users size={16} className="text-green-600" />
                     </div>
                   </div>
-                  <div className="font-mono text-2xl font-bold text-slate-900">{mrrData?.summary?.newThisMonth ?? 0}</div>
-                  <span className="text-[13px] font-medium text-slate-500">سناتر جديدة هذا الشهر</span>
+                  <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{mrrData?.summary?.newThisMonth ?? 0}</div>
+                  <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">سناتر جديدة هذا الشهر</span>
                 </div>
-                <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
                       <TrendingDown size={16} className="text-red-600" />
                     </div>
                   </div>
-                  <div className="font-mono text-2xl font-bold text-slate-900">{mrrData?.summary?.churnedThisMonth ?? 0}</div>
-                  <span className="text-[13px] font-medium text-slate-500">سناتر غادرت هذا الشهر</span>
+                  <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{mrrData?.summary?.churnedThisMonth ?? 0}</div>
+                  <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">سناتر غادرت هذا الشهر</span>
                 </div>
               </div>
-              <div className="mt-4 bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
-                <h3 className="text-[13px] font-semibold text-slate-600 mb-4">إيرادات المنصة — آخر 30 يوماً</h3>
+              <div className="mt-4 bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6 shadow-sm">
+                <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-4">إيرادات المنصة — آخر 30 يوماً</h3>
                 {mrrData?.hasData ? (
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={mrrData?.snapshots ?? []}>
@@ -532,14 +532,14 @@ export default function CeoDashboard() {
           ═══════════════════════════════════════════════ */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mt-4">
             {/* Revenue Over Time (60%) */}
-            <div className="lg:col-span-3 bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="lg:col-span-3 bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[13px] font-semibold text-slate-600">Revenue Over Time</h3>
-                <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+                <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)]">Revenue Over Time</h3>
+                <div className="flex rounded-lg border border-[var(--color-border-subtle)] overflow-hidden">
                   {(['monthly', 'weekly', 'daily'] as const).map(t => (
                     <button key={t} onClick={() => setChartTab(t)} className={cn(
                       'px-3 py-1 text-[11px] font-medium transition-colors capitalize',
-                      chartTab === t ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50'
+                      chartTab === t ? 'bg-slate-900 text-white' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-0)]'
                     )}>{t}</button>
                   ))}
                 </div>
@@ -570,8 +570,8 @@ export default function CeoDashboard() {
             </div>
 
             {/* Revenue Streams Donut (40%) */}
-            <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-[13px] font-semibold text-slate-600 mb-4">Revenue Streams</h3>
+            <div className="lg:col-span-2 bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-4">Revenue Streams</h3>
               <div className="flex justify-center">
                 <div className="w-44 h-44 relative">
                   <ResponsiveContainer width="100%" height="100%">
@@ -583,7 +583,7 @@ export default function CeoDashboard() {
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-[10px] text-slate-400">Total</span>
-                    <span className="font-mono text-sm font-bold text-slate-900">{fmtEGP(STREAMS_TOTAL)}</span>
+                    <span className="font-mono text-sm font-bold text-[var(--color-text-primary)]">{fmtEGP(STREAMS_TOTAL)}</span>
                   </div>
                 </div>
               </div>
@@ -592,10 +592,10 @@ export default function CeoDashboard() {
                   <div key={s.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: s.color }} />
-                      <span className="text-xs text-slate-600">{s.name}</span>
+                      <span className="text-xs text-[var(--color-text-secondary)]">{s.name}</span>
                     </div>
                     <div className="text-right">
-                      <span className="font-mono text-xs font-semibold text-slate-900">{fmtEGP(s.value)}</span>
+                      <span className="font-mono text-xs font-semibold text-[var(--color-text-primary)]">{fmtEGP(s.value)}</span>
                       <span className="text-[10px] text-slate-400 ml-2">{((s.value / STREAMS_TOTAL) * 100).toFixed(1)}%</span>
                     </div>
                   </div>
@@ -609,8 +609,8 @@ export default function CeoDashboard() {
           ═══════════════════════════════════════════════ */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
             {/* YoY Comparison */}
-            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-[13px] font-semibold text-slate-600 mb-4">Year on Year Comparison</h3>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-4">Year on Year Comparison</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={YOY_DATA}>
                   <defs>
@@ -630,18 +630,18 @@ export default function CeoDashboard() {
             </div>
 
             {/* Cash Flow */}
-            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-[13px] font-semibold text-slate-600 mb-4">Cash Flow</h3>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-4">Cash Flow</h3>
               <div className="space-y-3 mb-5">
                 {[
                   { label: 'Cash In', value: cashInThisMonth, color: 'text-emerald-700', bg: 'bg-emerald-50', icon: '↑' },
                   { label: 'Expected Next 30 Days', value: expectedNextMonth, color: 'text-blue-700', bg: 'bg-blue-50', icon: '→' },
                   { label: 'At Risk (>30 days overdue)', value: atRiskAmount, color: 'text-red-700', bg: 'bg-red-50', icon: '!' },
                 ].map(row => (
-                  <div key={row.label} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-slate-50/80">
+                  <div key={row.label} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-[var(--color-surface-0)]/80">
                     <div className="flex items-center gap-2.5">
                       <span className={cn('w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold', row.bg, row.color)}>{row.icon}</span>
-                      <span className="text-sm text-slate-600">{row.label}</span>
+                      <span className="text-sm text-[var(--color-text-secondary)]">{row.label}</span>
                     </div>
                     <span className={cn('font-mono text-sm font-bold', row.color)}>{fmtEGP(row.value)}</span>
                   </div>
@@ -650,10 +650,10 @@ export default function CeoDashboard() {
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Next Renewals</p>
               <div className="space-y-0">
                 {UPCOMING_RENEWALS.slice(0, 5).map((r, i) => (
-                  <div key={i} className={cn('flex items-center justify-between py-2 text-xs', i > 0 && 'border-t border-slate-100')}>
-                    <span className="text-slate-700 font-medium" dir="rtl">{r.center}</span>
+                  <div key={i} className={cn('flex items-center justify-between py-2 text-xs', i > 0 && 'border-t border-[var(--color-border-subtle)]')}>
+                    <span className="text-[var(--color-text-primary)] font-medium" dir="rtl">{r.center}</span>
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-slate-600">{fmtEGP(r.amount)}</span>
+                      <span className="font-mono text-[var(--color-text-secondary)]">{fmtEGP(r.amount)}</span>
                       <span className="text-slate-400">{new Date(r.due).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
                       <span className={cn(
                         'rounded-full px-2 py-0.5 text-[10px] font-semibold',
@@ -670,23 +670,23 @@ export default function CeoDashboard() {
               ROW 5 — Center Performance Table
           ═══════════════════════════════════════════════ */}
           <SectionLabel>Top Centers by Revenue</SectionLabel>
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-            <div className="p-4 flex flex-wrap gap-3 items-center border-b border-slate-100">
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            <div className="p-4 flex flex-wrap gap-3 items-center border-b border-[var(--color-border-subtle)]">
               <div className="relative flex-1 min-w-[200px]">
                 <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
                 <input
                   value={centerSearch} onChange={e => setCenterSearch(e.target.value)}
                   placeholder="Search centers..."
-                  className="w-full ps-9 pe-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all"
+                  className="w-full ps-9 pe-4 py-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all"
                 />
               </div>
-              <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-500 hover:bg-slate-50 transition-colors">
+              <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--color-border-subtle)] text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-0)] transition-colors">
                 <Download size={13} /> Export Excel
               </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 sticky top-0 z-[1]">
+                <thead className="bg-[var(--color-surface-0)] sticky top-0 z-[1]">
                   <tr>
                     {[
                       { key: 'rank', label: 'Rank', w: 'w-16' },
@@ -703,7 +703,7 @@ export default function CeoDashboard() {
                       <th key={col.key} onClick={() => col.key !== 'action' && handleSort(col.key)}
                         className={cn(
                           'text-start px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider select-none',
-                          col.key !== 'action' && 'cursor-pointer hover:text-slate-600',
+                          col.key !== 'action' && 'cursor-pointer hover:text-[var(--color-text-secondary)]',
                           col.w
                         )}>
                         {col.label} {sortCol === col.key ? (sortDir === 'asc' ? '↑' : '↓') : ''}
@@ -714,22 +714,22 @@ export default function CeoDashboard() {
                 <tbody>
                   {sortedPerf.map((c, idx) => (
                     <tr key={c.rank} className={cn(
-                      'border-t border-slate-100 hover:bg-slate-50/80 transition-colors',
-                      idx % 2 === 1 && 'bg-slate-50/40'
+                      'border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]/80 transition-colors',
+                      idx % 2 === 1 && 'bg-[var(--color-surface-0)]/40'
                     )}>
-                      <td className="px-4 py-3 font-mono text-sm font-bold text-slate-500">{rankMedal(c.rank)}</td>
-                      <td className="px-4 py-3 font-semibold text-slate-800" dir="rtl">{c.name}</td>
+                      <td className="px-4 py-3 font-mono text-sm font-bold text-[var(--color-text-secondary)]">{rankMedal(c.rank)}</td>
+                      <td className="px-4 py-3 font-semibold text-[var(--color-text-primary)]" dir="rtl">{c.name}</td>
                       <td className="px-4 py-3">
                         <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold border', PLAN_COLORS[c.plan])}>
                           {PLAN_LABELS[c.plan]}
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">{fmtEGP(c.mrr)}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">{fmtEGP(c.setup)}</td>
+                      <td className="px-4 py-3 font-mono text-xs font-semibold text-[var(--color-text-primary)]">{fmtEGP(c.mrr)}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">{fmtEGP(c.setup)}</td>
                       <td className={cn("px-4 py-3 font-mono text-xs font-semibold", c.outstanding > 0 ? 'text-red-600' : 'text-slate-300')}>
                         {c.outstanding > 0 ? fmtEGP(c.outstanding) : '—'}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">{c.students}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">{c.students}</td>
                       <td className="px-4 py-3 text-xs text-slate-400">{new Date(c.lastPayment).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                       <td className="px-4 py-3">
                         <span className={cn(
@@ -757,7 +757,7 @@ export default function CeoDashboard() {
           <SectionLabel>Alerts & Actions</SectionLabel>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Needs Attention */}
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden border-l-4 border-l-red-500">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden border-l-4 border-l-red-500">
               <div className="p-4">
                 <h3 className="text-xs font-bold text-red-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <AlertTriangle size={13} /> Needs Attention
@@ -769,7 +769,7 @@ export default function CeoDashboard() {
                     { text: '3 pending approvals', action: 'Review' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600">{item.text}</span>
+                      <span className="text-[var(--color-text-secondary)]">{item.text}</span>
                       <button className="text-[11px] text-red-600 hover:text-red-800 font-semibold flex items-center gap-0.5">
                         {item.action} <ChevronRight size={11} />
                       </button>
@@ -780,7 +780,7 @@ export default function CeoDashboard() {
             </div>
 
             {/* Watch List */}
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden border-l-4 border-l-amber-400">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden border-l-4 border-l-amber-400">
               <div className="p-4">
                 <h3 className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <Clock size={13} /> Watch List
@@ -791,7 +791,7 @@ export default function CeoDashboard() {
                     { text: '2 no login in >14 days' },
                     { text: '1 downgrade request' },
                   ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-slate-600">
+                    <div key={i} className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                       {item.text}
                     </div>
@@ -801,7 +801,7 @@ export default function CeoDashboard() {
             </div>
 
             {/* Wins */}
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden border-l-4 border-l-emerald-500">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden border-l-4 border-l-emerald-500">
               <div className="p-4">
                 <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <CheckCircle size={13} /> Wins
@@ -812,7 +812,7 @@ export default function CeoDashboard() {
                     { text: '4 payments received today' },
                     { text: '2 plan upgrades this week' },
                   ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-slate-600">
+                    <div key={i} className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                       {item.text}
                     </div>
@@ -832,7 +832,7 @@ export default function CeoDashboard() {
               className="flex items-center gap-2 w-full text-left group"
             >
               <ChevronRight size={14} className={cn('text-slate-400 transition-transform', unitEconOpen && 'rotate-90')} />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 group-hover:text-slate-600 transition-colors">Unit Economics</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 group-hover:text-[var(--color-text-secondary)] transition-colors">Unit Economics</span>
             </button>
             {unitEconOpen && (
               <div className="mt-4">
@@ -843,9 +843,9 @@ export default function CeoDashboard() {
                     { label: 'LTV', value: fmtEGP(LTV), tip: `Lifetime Value = ARPC × ${AVG_LIFETIME_MONTHS} months avg lifetime`, color: 'text-blue-700' },
                     { label: 'LTV:CAC', value: `${LTV_CAC_RATIO}x`, tip: 'Ratio of customer lifetime value to acquisition cost. >10x is excellent.', color: LTV_CAC_RATIO > 10 ? 'text-emerald-700' : LTV_CAC_RATIO > 5 ? 'text-amber-600' : 'text-red-600' },
                   ].map(metric => (
-                    <div key={metric.label} className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div key={metric.label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-1.5 mb-2">
-                        <span className="text-[13px] font-semibold text-slate-500">{metric.label}</span>
+                        <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">{metric.label}</span>
                         <span title={metric.tip} className="cursor-help"><Info size={12} className="text-slate-300" /></span>
                       </div>
                       <div className={cn('font-mono text-2xl font-bold', metric.color)}>{metric.value}</div>

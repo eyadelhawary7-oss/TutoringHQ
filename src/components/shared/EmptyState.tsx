@@ -13,7 +13,7 @@ export default function EmptyState({ icon: Icon, title, description, action }: E
   return (
     <div className="text-center py-16">
       <Icon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-      <p className="text-slate-500 font-medium">{title}</p>
+      <p className="text-[var(--color-text-secondary)] font-medium">{title}</p>
       {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>

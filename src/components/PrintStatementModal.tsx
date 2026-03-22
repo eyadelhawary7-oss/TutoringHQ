@@ -161,23 +161,23 @@ export function PrintStatementModal({
         onClick={onClose}
       >
         <div
-          className="modal-spring-in bg-card rounded-2xl border border-border p-6 max-w-lg mx-4 w-full max-h-[90vh] overflow-y-auto"
+          className="modal-spring-in bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-lg mx-4 w-full max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-foreground">
+            <h3 className="font-bold text-[var(--color-text-primary)]">
               طباعة كشف الحساب — {studentName}
             </h3>
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-muted"
             >
-              <X size={18} className="text-muted-foreground" />
+              <X size={18} className="text-[var(--color-text-secondary)]" />
             </button>
           </div>
 
           <div className="flex flex-wrap gap-4 mb-4">
-            <label className="flex items-center gap-2 text-sm text-foreground">
+            <label className="flex items-center gap-2 text-sm text-[var(--color-text-primary)]">
               من
               <input
                 type="date"
@@ -186,10 +186,10 @@ export function PrintStatementModal({
                   setDateFrom(e.target.value);
                   setStatementData(null);
                 }}
-                className="px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                className="px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
               />
             </label>
-            <label className="flex items-center gap-2 text-sm text-foreground">
+            <label className="flex items-center gap-2 text-sm text-[var(--color-text-primary)]">
               إلى
               <input
                 type="date"
@@ -198,7 +198,7 @@ export function PrintStatementModal({
                   setDateTo(e.target.value);
                   setStatementData(null);
                 }}
-                className="px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                className="px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
               />
             </label>
           </div>

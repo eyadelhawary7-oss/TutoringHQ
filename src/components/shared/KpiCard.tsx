@@ -13,10 +13,10 @@ interface KpiCardProps {
 
 export default function KpiCard({ title, value, subLabel, icon: Icon, iconBg = 'bg-teal-100', iconColor = 'text-teal-600' }: KpiCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start justify-between">
+    <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 flex items-start justify-between">
       <div>
-        <p className="text-sm text-slate-500 mb-1">{title}</p>
-        <p className="text-2xl font-bold text-slate-900 font-mono">{value}</p>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-1">{title}</p>
+        <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
         {subLabel && <p className="text-xs text-slate-400 mt-1">{subLabel}</p>}
       </div>
       <div className={`p-3 rounded-full ${iconBg}`}>

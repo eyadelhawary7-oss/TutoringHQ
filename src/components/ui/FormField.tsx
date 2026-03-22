@@ -13,7 +13,7 @@ export default function FormField({ label, error, children, htmlFor }: FormField
   return (
     <div className="space-y-1.5">
       {label && (
-        <label htmlFor={htmlFor} className="block text-sm font-medium text-foreground">
+        <label htmlFor={htmlFor} className="block text-sm font-medium text-[var(--color-text-primary)]">
           {label}
         </label>
       )}

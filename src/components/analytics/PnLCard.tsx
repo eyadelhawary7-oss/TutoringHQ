@@ -82,7 +82,7 @@ export default function PnLCard({
   };
 
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <div className="rounded-lg border bg-[var(--color-surface-1)] overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b bg-muted/30">
         <h3 className="font-semibold">{t('pnl')}</h3>
         <button
@@ -97,19 +97,19 @@ export default function PnLCard({
       <div className="p-4 space-y-4">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
-            <p className="text-xs text-muted-foreground">{t('income')}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('income')}</p>
             <p className="text-lg font-semibold text-green-600 dark:text-green-400">
               {totalIncome.toLocaleString('en-US')} ج.م
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">{t('expenses')}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('expenses')}</p>
             <p className="text-lg font-semibold text-red-600 dark:text-red-400">
               {totalExpenses.toLocaleString('en-US')} ج.م
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">{t('net')}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('net')}</p>
             <p className={`text-lg font-semibold ${net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {net.toLocaleString('en-US')} ج.م
             </p>

@@ -92,7 +92,7 @@ export default function TopNavbar() {
       : [];
 
   const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : isSuperAdminOnly ? 'roleAdmin' : null;
-  const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-slate-500/15 text-slate-400';
+  const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-[var(--color-surface-0)]0/15 text-slate-400';
   const isLimitedAccess = user?.role === 'assistant';
   const centerName = user?.center?.name || user?.name || user?.phone || 'User';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -113,7 +113,7 @@ export default function TopNavbar() {
         <button
           type="button"
           onClick={() => setMobileMenuOpen(o => !o)}
-          className="md:hidden p-2 rounded-lg text-[var(--text-primary)] hover:bg-white/5"
+          className="md:hidden p-2 rounded-lg text-[var(--text-primary)] hover:bg-[var(--color-surface-1)]/5"
           aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -145,7 +145,7 @@ export default function TopNavbar() {
             <Link
               key={item.key}
               href={item.href}
-              className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${isActive ? 'bg-teal-500/20 text-teal-300 border-b-2 border-teal-400' : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'}`}
+              className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${isActive ? 'bg-teal-500/20 text-teal-300 border-b-2 border-teal-400' : 'text-[var(--text-secondary)] hover:bg-[var(--color-surface-1)]/5 hover:text-[var(--text-primary)]'}`}
             >
               {item.icon}
               {t(item.key)}
@@ -186,7 +186,7 @@ export default function TopNavbar() {
         <button
           type="button"
           onClick={toggleMode}
-          className="p-2 rounded-lg text-[var(--text-primary)] hover:bg-white/5 transition-colors"
+          className="p-2 rounded-lg text-[var(--text-primary)] hover:bg-[var(--color-surface-1)]/5 transition-colors"
           title={t('switchToAppMode')}
           aria-label={t('switchToAppMode')}
         >
@@ -220,7 +220,7 @@ export default function TopNavbar() {
                   key={item.key}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'bg-teal-500/20 text-teal-300' : 'text-[var(--text-primary)] hover:bg-white/5'}`}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'bg-teal-500/20 text-teal-300' : 'text-[var(--text-primary)] hover:bg-[var(--color-surface-1)]/5'}`}
                 >
                   {item.icon}
                   {t(item.key)}
@@ -261,7 +261,7 @@ export default function TopNavbar() {
               <button
                 type="button"
                 onClick={() => { setMobileMenuOpen(false); toggleMode(); }}
-                className="p-2 rounded-lg text-[var(--text-primary)] hover:bg-white/5"
+                className="p-2 rounded-lg text-[var(--text-primary)] hover:bg-[var(--color-surface-1)]/5"
                 title={t('switchToAppMode')}
               >
                 <Smartphone className="w-5 h-5" />

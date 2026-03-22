@@ -83,7 +83,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   // Scanner fullscreen mode (hideShell=true)
   if (!showShell) {
     return (
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-[var(--color-surface-0)]">
         {children}
       </main>
     );
@@ -101,7 +101,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             {!isAdminRoute && (
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="p-2 rounded-lg hover:bg-slate-100 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
                 aria-label="Open menu"
               >
                 <Menu size={20} />
@@ -114,7 +114,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <button
               onClick={handleLocaleToggle}
               disabled={isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] text-slate-700 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
             >
               <Globe size={14} />
               <span>{locale === 'ar' ? 'English' : 'العربية'}</span>

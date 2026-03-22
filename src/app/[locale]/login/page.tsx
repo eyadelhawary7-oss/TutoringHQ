@@ -161,9 +161,9 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t('phone')}</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('phone')}</label>
               <div className="relative">
-                <Phone size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
+                <Phone size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)]" />
                 <input
                   type="tel"
                   inputMode="numeric"
@@ -179,7 +179,7 @@ export default function LoginPage() {
                     setError('');
                   }}
                   placeholder={t('phonePlaceholder')}
-                  className="w-full ps-9 pe-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                  className="w-full ps-9 pe-4 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                   dir="ltr"
                   required
                   autoComplete="tel"
@@ -189,9 +189,9 @@ export default function LoginPage() {
 
             {/* PIN */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t('pin')}</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('pin')}</label>
               <div className={`relative ${shakePin ? 'micro-shake' : ''}`}>
-                <Lock size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
+                <Lock size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)]" />
                 <input
                   type={showPin ? 'text' : 'password'}
                   inputMode="numeric"
@@ -203,7 +203,7 @@ export default function LoginPage() {
                     setError('');
                   }}
                   placeholder={t('pinPlaceholder')}
-                  className="w-full ps-9 pe-10 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow font-mono tracking-widest"
+                  className="w-full ps-9 pe-10 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow font-mono tracking-widest"
                   dir="ltr"
                   required
                   autoComplete="off"
@@ -211,7 +211,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPin((v) => !v)}
-                  className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
+                  className="absolute top-1/2 -translate-y-1/2 end-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 >
                   {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -219,7 +219,7 @@ export default function LoginPage() {
             </div>
 
             {/* Demo hint */}
-            <p className="text-xs text-muted-foreground border border-dashed border-border rounded-lg px-3 py-2">
+            <p className="text-xs text-[var(--color-text-secondary)] border border-dashed border-border rounded-lg px-3 py-2">
               <span className="font-semibold">Demo:</span> 01000000000 / 123456
             </p>
 
@@ -248,7 +248,7 @@ export default function LoginPage() {
             </div>
           </form>
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+          <p className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
             {t('noAccount')}{' '}
             <Link href="/signup" className="font-semibold hover:underline" style={{ color: 'hsl(var(--primary))' }}>
               {t('registerLink')}

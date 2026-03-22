@@ -897,12 +897,12 @@ function SettingsPageContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[var(--color-surface-0)]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
           <div className="h-8 bg-muted rounded-xl w-48 mb-6 animate-pulse" />
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-card rounded-xl animate-pulse" />
+              <div key={i} className="h-24 bg-[var(--color-surface-1)] rounded-xl animate-pulse" />
             ))}
           </div>
         </div>
@@ -911,27 +911,27 @@ function SettingsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <PageHeader title={t('title')} />
 
         {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-xl border border-slate-200 w-fit mb-6 bg-white">
+        <div className="flex gap-1 p-1 rounded-xl border border-[var(--color-border-subtle)] w-fit mb-6 bg-[var(--color-surface-1)]">
           <button
             onClick={() => setActiveTab('general')}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'general' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'general' ? 'bg-teal-600 text-white shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
           >
             {t('general')}
           </button>
           <button
             onClick={() => setActiveTab('billing')}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'billing' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'billing' ? 'bg-teal-600 text-white shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
           >
             {t('billing')}
           </button>
           <button
             onClick={() => setActiveTab('team')}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'team' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'team' ? 'bg-teal-600 text-white shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
           >
             {t('teamMembers')}
           </button>
@@ -947,20 +947,20 @@ function SettingsPageContent() {
         {activeTab === 'general' && (
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
             {/* 1. Center Information */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-teal-100 rounded-xl flex-shrink-0">
                   <Building2 className="w-5 h-5 text-teal-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{t('centerInfo')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{t('centerName')} · {t('centerPhone')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('centerInfo')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('centerName')} · {t('centerPhone')}</p>
                 </div>
               </div>
               <div className="p-6">
                 <div className="flex items-start gap-6 flex-wrap">
                   <div className="relative w-24 h-24 flex-shrink-0">
-                    <div className="w-24 h-24 rounded-full bg-slate-100 border-2 border-slate-200 overflow-hidden flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-full bg-[var(--color-surface-2)] border-2 border-[var(--color-border-subtle)] overflow-hidden flex items-center justify-center">
                       {logoUrl ? (
                         <img
                           src={logoUrl}
@@ -1004,16 +1004,16 @@ function SettingsPageContent() {
                   </div>
                   <div className="flex-1 min-w-[200px] space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('centerName')}</label>
-                      <input type="text" value={centerName} onChange={(e) => setCenterName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" />
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('centerName')}</label>
+                      <input type="text" value={centerName} onChange={(e) => setCenterName(e.target.value)} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('centerPhone')}</label>
-                      <input type="tel" value={centerPhone} onChange={(e) => setCenterPhone(e.target.value)} dir="ltr" placeholder="01xxxxxxxxx" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" />
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('centerPhone')}</label>
+                      <input type="tel" value={centerPhone} onChange={(e) => setCenterPhone(e.target.value)} dir="ltr" placeholder="01xxxxxxxxx" className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('district')}</label>
-                      <select value={centerDistrict} onChange={(e) => setCenterDistrict(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white">
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('district')}</label>
+                      <select value={centerDistrict} onChange={(e) => setCenterDistrict(e.target.value)} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]">
                         <option value="">—</option>
                         <option value="nasr_city">مدينة نصر</option>
                         <option value="maadi">المعادي</option>
@@ -1026,7 +1026,7 @@ function SettingsPageContent() {
                         <option value="mohandiseen">المهندسين</option>
                         <option value="other">أخرى</option>
                       </select>
-                      <p className="text-xs text-slate-500 mt-1">{t('districtHint')}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('districtHint')}</p>
                     </div>
                     <div className="flex justify-end">
                       <button type="button" onClick={() => { handleSaveCenterName(); handleSaveCenterPhone(); handleSaveCenterDistrict(); }} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">{tCommon('save')}</button>
@@ -1037,14 +1037,14 @@ function SettingsPageContent() {
             </div>
 
             {/* 2. Subject Management */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-blue-100 rounded-xl flex-shrink-0">
                   <BookOpen className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{t('subjects')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{t('subjectName')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('subjects')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('subjectName')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -1052,85 +1052,85 @@ function SettingsPageContent() {
                   {subjects.map((subject) => (
                     editingSubject === subject.id ? (
                       <div key={subject.id} className="flex items-center gap-2">
-                        <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white" />
+                        <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="px-3 py-1.5 border border-[var(--color-border-subtle)] rounded-lg text-sm bg-[var(--color-surface-1)]" />
                         <button type="button" onClick={() => handleUpdateSubject(subject.id)} className="text-teal-600 text-sm font-medium hover:underline">{tCommon('save')}</button>
-                        <button type="button" onClick={() => setEditingSubject(null)} className="text-slate-500 text-sm hover:underline">{tCommon('cancel')}</button>
+                        <button type="button" onClick={() => setEditingSubject(null)} className="text-[var(--color-text-secondary)] text-sm hover:underline">{tCommon('cancel')}</button>
                       </div>
                     ) : (
-                      <span key={subject.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
+                      <span key={subject.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-2)] text-[var(--color-text-primary)] rounded-full text-sm font-medium">
                         {subject.name}
-                        <button type="button" onClick={() => { setEditingSubject(subject.id); setEditName(subject.name); }} className="text-slate-500 hover:text-slate-700">{tCommon('edit')}</button>
+                        <button type="button" onClick={() => { setEditingSubject(subject.id); setEditName(subject.name); }} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">{tCommon('edit')}</button>
                         <button type="button" onClick={() => handleDeleteSubject(subject.id)} className="hover:text-red-500 transition-colors"><X className="w-3.5 h-3.5" /></button>
                       </span>
                     )
                   ))}
                 </div>
                 <form onSubmit={handleAddSubject} className="flex gap-2">
-                  <input type="text" value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder={t('subjectName')} className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500" required />
+                  <input type="text" value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder={t('subjectName')} className="flex-1 px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm bg-[var(--color-surface-1)] focus:outline-none focus:ring-2 focus:ring-teal-500" required />
                   <button type="submit" className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">{t('addSubject')}</button>
                 </form>
               </div>
             </div>
 
             {/* 3. Team Members */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-purple-100 rounded-xl flex-shrink-0">
                   <Users className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{t('teamMembers')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{t('manageTeamDesc')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('manageTeamDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
-                <button type="button" onClick={() => setActiveTab('team')} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors w-fit">
+                <button type="button" onClick={() => setActiveTab('team')} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit">
                   <Users className="w-4 h-4" /> {t('manageTeam')} <ChevronRight className="w-4 h-4 ms-1" />
                 </button>
               </div>
             </div>
 
             {/* 4. Scanner Settings */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-amber-100 rounded-xl flex-shrink-0">
                   <QrCode className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{t('scanner')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{t('defaultMode')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('scanner')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('defaultMode')}</p>
                 </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{t('defaultMode')}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{t('defaultMode')}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('defaultMode')}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{t('defaultMode')}</p>
                   </div>
-                  <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-                    <button type="button" onClick={() => handleScannerMode('camera')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${scannerMode === 'camera' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>{t('camera')}</button>
-                    <button type="button" onClick={() => handleScannerMode('bluetooth')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${scannerMode === 'bluetooth' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>{t('bluetooth')}</button>
+                  <div className="flex gap-1 bg-[var(--color-surface-2)] p-1 rounded-lg">
+                    <button type="button" onClick={() => handleScannerMode('camera')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${scannerMode === 'camera' ? 'bg-[var(--color-surface-1)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('camera')}</button>
+                    <button type="button" onClick={() => handleScannerMode('bluetooth')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${scannerMode === 'bluetooth' ? 'bg-[var(--color-surface-1)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('bluetooth')}</button>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* 4b. Daily WhatsApp Summary */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-teal-100 rounded-xl flex-shrink-0">
                   <MessageCircle className="w-5 h-5 text-teal-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{t('dailySummary')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{t('dailySummaryDesc')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('dailySummary')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('dailySummaryDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{t('dailySummaryToggle')}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{t('dailySummaryDesc')}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('dailySummaryToggle')}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{t('dailySummaryDesc')}</p>
                   </div>
                   <button
                     type="button"
@@ -1139,28 +1139,28 @@ function SettingsPageContent() {
                     onClick={() => handleDailySummaryToggle(!dailySummaryEnabled)}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${dailySummaryEnabled ? 'bg-teal-600' : 'bg-slate-200'}`}
                   >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${dailySummaryEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[var(--color-surface-1)] shadow ring-0 transition-transform ${dailySummaryEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* 4c. Summer mode */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-amber-100 rounded-xl flex-shrink-0">
                   <Calendar className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{t('summerMode')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{t('summerModeDesc')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('summerMode')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('summerModeDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{t('summerModeToggle')}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{t('summerModeDesc')}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('summerModeToggle')}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{t('summerModeDesc')}</p>
                   </div>
                   <button
                     type="button"
@@ -1169,32 +1169,32 @@ function SettingsPageContent() {
                     onClick={() => handleSummerModeToggle(!summerModeEnabled)}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${summerModeEnabled ? 'bg-teal-600' : 'bg-slate-200'}`}
                   >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${summerModeEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[var(--color-surface-1)] shadow ring-0 transition-transform ${summerModeEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* 5. Referral Program */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-green-100 rounded-xl flex-shrink-0">
                   <Gift className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{tReferral('title')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{tReferral('shareText')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{tReferral('title')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tReferral('shareText')}</p>
                 </div>
               </div>
               <div className="p-6">
               {referralData && (
                 <>
-                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 mb-4">
+                  <div className="flex items-center gap-3 p-4 bg-[var(--color-surface-0)] rounded-xl border border-[var(--color-border-subtle)] mb-4">
                     <div className="flex-1">
-                      <p className="text-xs text-slate-500 mb-1">{tReferral('yourCode')}</p>
-                      <p className="text-xl font-bold text-slate-900 font-mono tracking-widest">{referralData.referralCode || '—'}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tReferral('yourCode')}</p>
+                      <p className="text-xl font-bold text-[var(--color-text-primary)] font-mono tracking-widest">{referralData.referralCode || '—'}</p>
                     </div>
-                    <button type="button" onClick={async () => { if (referralData.referralCode) { await navigator.clipboard.writeText(referralData.referralCode); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); } }} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-white text-slate-700 text-sm font-semibold rounded-lg transition-colors">
+                    <button type="button" onClick={async () => { if (referralData.referralCode) { await navigator.clipboard.writeText(referralData.referralCode); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); } }} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">
                       <Copy className="w-4 h-4" /> {referralCopied ? tReferral('copied') : tReferral('copyCode')}
                     </button>
                   </div>
@@ -1205,76 +1205,76 @@ function SettingsPageContent() {
                   >
                     {t('manageReferrals')}
                   </button>
-                  <p className="text-sm text-slate-600 mb-2">{tReferral('referralRateDescription')}</p>
-                  <p className="text-xs text-slate-500 mb-2">Total Referrals: {(referralData.rewards?.length ?? 0)} | Earned: EGP {Number(referralData.totalEarned || 0).toLocaleString('ar-EG')}</p>
+                  <p className="text-sm text-[var(--color-text-secondary)] mb-2">{tReferral('referralRateDescription')}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mb-2">Total Referrals: {(referralData.rewards?.length ?? 0)} | Earned: EGP {Number(referralData.totalEarned || 0).toLocaleString('ar-EG')}</p>
                   <div>
-                    <p className="text-sm font-medium text-slate-700 mb-2">{tReferral('rewardsTable')}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)] mb-2">{tReferral('rewardsTable')}</p>
                     {(referralData.rewards?.length ?? 0) > 0 ? (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-border">
-                              <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tReferral('referredCenter')}</th>
-                              <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tReferral('plan')}</th>
-                              <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tReferral('rewardAmount')}</th>
-                              <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tReferral('status')}</th>
-                              <th className="text-start py-2 text-xs font-medium text-muted-foreground">{tReferral('date')}</th>
+                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('referredCenter')}</th>
+                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('plan')}</th>
+                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('rewardAmount')}</th>
+                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('status')}</th>
+                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('date')}</th>
                             </tr>
                           </thead>
                           <tbody>
                             {(referralData.rewards ?? []).map((r) => (
                               <tr key={r.id || r.created_at + r.referred_center_name} className="border-b border-border">
-                                <td className="py-2 text-foreground">{r.referred_center_name}</td>
-                                <td className="py-2 text-muted-foreground">{r.referred_center_plan}</td>
-                                <td className="py-2 font-mono text-foreground">{Number(r.reward_amount).toLocaleString('ar-EG')} EGP</td>
-                                <td className="py-2"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${r.reward_status === 'paid' ? 'badge-confirmed' : r.reward_status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-muted text-muted-foreground'}`}>{r.reward_status}</span></td>
-                                <td className="py-2 text-muted-foreground">{new Date(r.created_at).toLocaleDateString('ar-EG')}</td>
+                                <td className="py-2 text-[var(--color-text-primary)]">{r.referred_center_name}</td>
+                                <td className="py-2 text-[var(--color-text-secondary)]">{r.referred_center_plan}</td>
+                                <td className="py-2 font-mono text-[var(--color-text-primary)]">{Number(r.reward_amount).toLocaleString('ar-EG')} EGP</td>
+                                <td className="py-2"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${r.reward_status === 'paid' ? 'badge-confirmed' : r.reward_status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-muted text-[var(--color-text-secondary)]'}`}>{r.reward_status}</span></td>
+                                <td className="py-2 text-[var(--color-text-secondary)]">{new Date(r.created_at).toLocaleDateString('ar-EG')}</td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground py-4">{tReferral('noRewards')}</p>
+                      <p className="text-sm text-[var(--color-text-secondary)] py-4">{tReferral('noRewards')}</p>
                     )}
                   </div>
                 </>
               )}
-              {!referralData && <p className="text-sm text-slate-500">{tCommon('loading')}</p>}
+              {!referralData && <p className="text-sm text-[var(--color-text-secondary)]">{tCommon('loading')}</p>}
               </div>
             </div>
 
             {/* 6. Billing & Subscriptions */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-indigo-100 rounded-xl flex-shrink-0">
                   <CreditCard className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{t('billing')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{t('billingDesc')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('billing')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('billingDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
-                <button type="button" onClick={() => setActiveTab('billing')} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors w-fit">
+                <button type="button" onClick={() => setActiveTab('billing')} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit">
                   <CreditCard className="w-4 h-4" /> {t('billingLink')} <ChevronRight className="w-4 h-4 ms-1" />
                 </button>
               </div>
             </div>
 
             {/* 7. WhatsApp Support */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-green-100 rounded-xl flex-shrink-0">
                   <MessageCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{tBilling('whatsappSupport')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{tBilling('contactSupportViaWhatsapp')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{tBilling('whatsappSupport')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tBilling('contactSupportViaWhatsapp')}</p>
                 </div>
               </div>
               <div className="p-6">
-                <p className="text-sm text-slate-600 mb-3" dir="ltr">Contact support: support@centerhq.com | WhatsApp: +20 122 060 1410</p>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-3" dir="ltr">Contact support: support@centerhq.com | WhatsApp: +20 122 060 1410</p>
                 <a href={`https://wa.me/${ADMIN_NOTIFICATION_PHONE}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors">
                   <MessageCircle className="w-4 h-4" /> Chat on WhatsApp
                 </a>
@@ -1282,19 +1282,19 @@ function SettingsPageContent() {
             </div>
 
             {/* 8. Account */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2.5 bg-red-100 rounded-xl flex-shrink-0">
                   <Shield className="w-5 h-5 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{t('account')}</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">{tBilling('securityAndSignOut')}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('account')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tBilling('securityAndSignOut')}</p>
                 </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center gap-3">
-                  <Link href="/settings/reset-password" className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors">
+                  <Link href="/settings/reset-password" className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">
                     <KeyRound className="w-4 h-4" /> {t('resetPassword')}
                   </Link>
                   <button type="button" onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
@@ -1339,7 +1339,7 @@ function SettingsPageContent() {
                           type="button"
                           onClick={handlePayNow}
                           disabled={payNowLoading}
-                          className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                          className="px-4 py-2 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
                         >
                           {payNowLoading ? tCommon('loading') : 'ادفع الآن'}
                         </button>
@@ -1358,14 +1358,14 @@ function SettingsPageContent() {
                     const perStudentWeek = plan.is_custom ? null : (PLAN_PER_STUDENT_WEEK[plan.id] ?? (plan.students_per_week_limit > 0 ? (plan.monthly_fee / (plan.students_per_week_limit * 4)).toFixed(2) : null));
                     const planName = PLAN_DISPLAY_NAMES[plan.id] ?? plan.name_en ?? plan.name_ar;
                     return (
-                      <div key={plan.id} className={`bg-white rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-200'}`} style={plan.is_custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.25)' } : {}}>
+                      <div key={plan.id} className={`bg-[var(--color-surface-1)] rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-[var(--color-border-subtle)]'}`} style={plan.is_custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.25)' } : {}}>
                         {isCurrent && (
                           <div className="absolute -top-3 start-1/2 -translate-x-1/2">
                             <span className="px-3 py-1 bg-teal-600 text-white text-xs font-semibold rounded-full shadow">{tBilling('currentPlan')}</span>
                           </div>
                         )}
-                        <h3 className="font-bold text-slate-900 text-lg">{planName}</h3>
-                        <ul className="text-sm text-slate-500 mt-1 space-y-0.5" dir="rtl">
+                        <h3 className="font-bold text-[var(--color-text-primary)] text-lg">{planName}</h3>
+                        <ul className="text-sm text-[var(--color-text-secondary)] mt-1 space-y-0.5" dir="rtl">
                           <li>• حتى {plan.is_custom ? '2,000+' : plan.students_per_week_limit?.toLocaleString('en-US')} طالب/أسبوع</li>
                           {perStudentWeek && (
                             <li>• {perStudentWeek} {tCommon('perStudentPerWeek')}</li>
@@ -1375,24 +1375,24 @@ function SettingsPageContent() {
                           )}
                         </ul>
                         <div className="my-4">
-                          <span className="text-3xl font-bold text-slate-900 font-mono">{plan.is_custom ? tBilling('custom') : Number(plan.monthly_fee).toLocaleString('en-US')}</span>
+                          <span className="text-3xl font-bold text-[var(--color-text-primary)] font-mono">{plan.is_custom ? tBilling('custom') : Number(plan.monthly_fee).toLocaleString('en-US')}</span>
                           {!plan.is_custom && <span className="text-base font-normal text-slate-400">{tCommon('perMonth')}</span>}
                         </div>
                         <p className="text-xs text-slate-400 mb-4">Setup fee: {tBilling('egp')} {plan.is_custom ? '—' : Number(setupFee).toLocaleString('en-US')}</p>
-                        <button type="button" onClick={() => !isCurrent && (setChangePlanSelect(plan.id), setShowPlanRequestModal(true))} className={isCurrent ? 'w-full py-2 rounded-lg text-sm font-semibold bg-teal-50 text-teal-600 border border-teal-200 cursor-default' : 'w-full py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors'} disabled={isCurrent}>{isCurrent ? 'Current Plan' : (getPlanLevel(plan.id) > getPlanLevel(billingData?.plan) ? 'Request Upgrade' : 'Request Downgrade')}</button>
+                        <button type="button" onClick={() => !isCurrent && (setChangePlanSelect(plan.id), setShowPlanRequestModal(true))} className={isCurrent ? 'w-full py-2 rounded-lg text-sm font-semibold bg-teal-50 text-teal-600 border border-teal-200 cursor-default' : 'w-full py-2 rounded-lg text-sm font-semibold border border-slate-300 text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors'} disabled={isCurrent}>{isCurrent ? 'Current Plan' : (getPlanLevel(plan.id) > getPlanLevel(billingData?.plan) ? 'Request Upgrade' : 'Request Downgrade')}</button>
                       </div>
                     );
                   })}
                 </div>
 
                 {/* 3. PAYG Calculator */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
-                  <h3 className="font-semibold text-slate-900 mb-1">{tBilling('paygTitle')}</h3>
-                  <p className="text-sm text-slate-500 mb-4">{tBilling('paygSubtitle')}</p>
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
+                  <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{tBilling('paygTitle')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mb-4">{tBilling('paygSubtitle')}</p>
                   <div className="space-y-4">
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-slate-700">{tBilling('studentsPerWeekSlider', { defaultValue: 'Students per week' })}</label>
+                        <label className="text-sm font-medium text-[var(--color-text-primary)]">{tBilling('studentsPerWeekSlider', { defaultValue: 'Students per week' })}</label>
                         <span className="text-lg font-bold text-teal-600 font-mono">{paygSlider}</span>
                       </div>
                       <input type="range" min={1} max={2000} value={paygSlider} onChange={(e) => setPaygSlider(Number(e.target.value))} className="w-full accent-teal-600" />
@@ -1416,7 +1416,7 @@ function SettingsPageContent() {
                 {/* 4. Want to change your plan? */}
                 {currentUser?.role === 'owner' && (
                   <section className="ch-card">
-                    <h2 className="text-base font-semibold text-foreground mb-4">{tBilling('changeQuestion')}</h2>
+                    <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4">{tBilling('changeQuestion')}</h2>
                     <div className="flex flex-wrap items-center gap-3">
                       <button onClick={() => setShowPlanRequestModal(true)} className="px-4 py-2.5 text-white text-sm font-semibold rounded-lg" style={{ background: 'hsl(var(--primary))' }}>{tBilling('requestPlanChange')}</button>
                       <a href={`https://wa.me/201001963432?text=${encodeURIComponent(`مرحباً، أريد تغيير خطة سنتر ${billingData?.center_name || ''}`)}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 text-sm font-medium">{tBilling('requestViaWhatsapp')}</a>
@@ -1425,19 +1425,19 @@ function SettingsPageContent() {
                 )}
 
                 {/* 4. Invoice History */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-                  <div className="p-6 border-b border-slate-100">
-                    <h3 className="font-semibold text-slate-900">{tBilling('invoiceHistory')}</h3>
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
+                  <div className="p-6 border-b border-[var(--color-border-subtle)]">
+                    <h3 className="font-semibold text-[var(--color-text-primary)]">{tBilling('invoiceHistory')}</h3>
                   </div>
                   {(billingData?.invoices?.length ?? 0) > 0 ? (
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50">
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reference</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Period</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Date</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Reference</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Amount</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Period</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -1446,44 +1446,44 @@ function SettingsPageContent() {
                           const statusClass = status === 'paid' || status === 'approved' ? 'bg-green-100 text-green-700' : status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
                           return (
                             <tr key={inv.id || inv.invoice_number || String(inv.created_at)}>
-                              <td className="py-3 px-4 text-sm text-slate-700">{inv.created_at ? new Date(inv.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
-                              <td className="py-3 px-4 text-sm text-slate-700 font-mono">{inv.payment_reference || inv.invoice_number || '—'}</td>
-                              <td className="py-3 px-4 text-sm font-mono text-slate-700">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString('ar-EG')} {tBilling('egp')}</td>
-                              <td className="py-3 px-4 text-sm text-slate-500">{inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
+                              <td className="py-3 px-4 text-sm text-[var(--color-text-primary)]">{inv.created_at ? new Date(inv.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
+                              <td className="py-3 px-4 text-sm text-[var(--color-text-primary)] font-mono">{inv.payment_reference || inv.invoice_number || '—'}</td>
+                              <td className="py-3 px-4 text-sm font-mono text-[var(--color-text-primary)]">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString('ar-EG')} {tBilling('egp')}</td>
+                              <td className="py-3 px-4 text-sm text-[var(--color-text-secondary)]">{inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
                               <td className="py-3 px-4"><span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusClass}`}>{inv.status}</span></td>
                             </tr>
                           );
                         })}
                       </tbody>
                     </table>
-                  ) : <p className="p-8 text-center text-slate-500">{tBilling('noInvoices')}</p>}
+                  ) : <p className="p-8 text-center text-[var(--color-text-secondary)]">{tBilling('noInvoices')}</p>}
                 </div>
 
                 {/* Plan Change Requests */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-                  <div className="p-6 border-b border-slate-100">
-                    <h3 className="font-semibold text-slate-900">Plan Change Requests</h3>
-                    <p className="text-sm text-slate-500 mt-0.5">History of your plan upgrade/downgrade requests</p>
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
+                  <div className="p-6 border-b border-[var(--color-border-subtle)]">
+                    <h3 className="font-semibold text-[var(--color-text-primary)]">Plan Change Requests</h3>
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">History of your plan upgrade/downgrade requests</p>
                   </div>
                   {planRequests.length === 0 ? (
                     <div className="text-center py-10">
                       <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-500 text-sm">No plan change requests yet</p>
+                      <p className="text-[var(--color-text-secondary)] text-sm">No plan change requests yet</p>
                     </div>
                   ) : (
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50">
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">From</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">To</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Date</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">From</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">To</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {planRequests.map(req => (
-                          <tr key={req.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3.5 px-4 text-sm text-slate-500">
+                          <tr key={req.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                            <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
                               {new Date(req.requested_at || 0).toLocaleDateString()}
                             </td>
                             <td className="py-3.5 px-4">
@@ -1506,9 +1506,9 @@ function SettingsPageContent() {
                 </div>
 
                 {/* 5. Submit Payment Proof */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <h3 className="font-semibold text-slate-900 mb-1">{tBilling('submitProofTitle')}</h3>
-                  <p className="text-sm text-slate-500 mb-4">{tBilling('uploadProof')}</p>
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{tBilling('submitProofTitle')}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mb-4">{tBilling('uploadProof')}</p>
                   <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200 mb-4">
                     <div className="p-2 bg-blue-100 rounded-lg"><CreditCard className="w-5 h-5 text-blue-600" /></div>
                     <div className="flex-1">
@@ -1519,19 +1519,19 @@ function SettingsPageContent() {
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">{tBilling('transferAmountLabel')}</label>
-                      <input type="number" min="0" step="0.01" value={proofAmount} onChange={(e) => setProofAmount(e.target.value)} placeholder={tBilling('transferAmountPlaceholder')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" />
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{tBilling('transferAmountLabel')}</label>
+                      <input type="number" min="0" step="0.01" value={proofAmount} onChange={(e) => setProofAmount(e.target.value)} placeholder={tBilling('transferAmountPlaceholder')} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">{tBilling('instapayRefLabel')}</label>
-                      <input type="text" value={proofReference} onChange={(e) => setProofReference(e.target.value)} placeholder={tBilling('instapayRef')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" />
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{tBilling('instapayRefLabel')}</label>
+                      <input type="text" value={proofReference} onChange={(e) => setProofReference(e.target.value)} placeholder={tBilling('instapayRef')} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">{tBilling('proofLabel')}</label>
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{tBilling('proofLabel')}</label>
                       <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-teal-400 transition-colors cursor-pointer" onClick={() => document.getElementById('proof-file-input')?.click()}>
                         <input id="proof-file-input" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={handleFileChange} className="hidden" />
                         {proofPreview ? <img src={proofPreview} alt="Preview" className="mx-auto mb-2 max-h-24 rounded-lg" /> : <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />}
-                        <p className="text-sm font-medium text-slate-600">{proofFile ? proofFile.name : 'Drop screenshot here or click to upload'}</p>
+                        <p className="text-sm font-medium text-[var(--color-text-secondary)]">{proofFile ? proofFile.name : 'Drop screenshot here or click to upload'}</p>
                         <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
                       </div>
                     </div>
@@ -1547,30 +1547,30 @@ function SettingsPageContent() {
         {activeTab === 'team' && (
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
             {(currentUser?.role === 'assistant' || currentUser?.role === 'teacher') ? (
-              <p className="text-slate-500">{tBilling('onlyOwnersCanManageTeam')}</p>
+              <p className="text-[var(--color-text-secondary)]">{tBilling('onlyOwnersCanManageTeam')}</p>
             ) : (
               <>
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-900">{t('teamMembers')}</h2>
-                    {limits && <p className="text-sm text-slate-500 mt-0.5">{t('teamMembersCount', { current: teamMembers.length, max: limits.maxTeachers })}</p>}
+                    <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('teamMembers')}</h2>
+                    {limits && <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('teamMembersCount', { current: teamMembers.length, max: limits.maxTeachers })}</p>}
                   </div>
                   <button onClick={() => { setInviteRole('assistant'); setInviteTeacherGroupIds([]); setInvitePerms({ can_scan: true, can_view_payments: true, can_view_dashboard: true, can_manage_students: false, can_manage_groups: false, can_view_settings: false }); setShowInviteModal(true); }} disabled={limits ? !limits.canAddTeacher : false} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"><UserPlus className="w-4 h-4" /> {t('inviteMemberPlus')}</button>
                 </div>
 
                 {lastInvitePassword && <div className="p-4 bg-green-100 rounded-xl border border-green-500/30 text-sm text-green-700 mb-4"><p className="font-medium">{t('inviteSuccess')}</p><p className="mt-1">{t('passwordIs', { password: lastInvitePassword })}</p></div>}
 
-                <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                <div className="bg-[var(--color-surface-1)] rounded-xl overflow-hidden border border-[var(--color-border-subtle)] shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50">
-                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('inviteName')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('invitePhone')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('role')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('permissions')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{t('status')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-semibold text-slate-500 uppercase">{tCommon('actions')}</th>
+                        <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('inviteName')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('invitePhone')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('role')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('permissions')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('status')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{tCommon('actions')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -1588,15 +1588,15 @@ function SettingsPageContent() {
                           ];
                           return (
                             <tr key={member.id} className={member.is_active === false ? 'opacity-60' : ''}>
-                              <td className="px-4 py-3 font-medium text-slate-900">{member.name || '—'}{isSelf && <span className="text-xs text-slate-500 ms-1">({t('you')})</span>}</td>
-                              <td className="px-4 py-3 text-slate-600 font-mono" dir="ltr">{member.phone}</td>
+                              <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{member.name || '—'}{isSelf && <span className="text-xs text-[var(--color-text-secondary)] ms-1">({t('you')})</span>}</td>
+                              <td className="px-4 py-3 text-[var(--color-text-secondary)] font-mono" dir="ltr">{member.phone}</td>
                               <td className="px-4 py-3"><RoleBadge role={member.role} /></td>
                               <td className="px-4 py-3">
                                 {editingPermissionsId === member.id ? (
                                   <div className="space-y-2">
                                     <div className="flex flex-wrap gap-x-3 gap-y-1">
                                       {PERMISSION_KEYS.map(({ key, labelKey }) => (
-                                        <label key={key} className={`flex items-center gap-1.5 text-xs select-none ${isPermReadOnly ? 'cursor-default opacity-75' : 'cursor-pointer text-slate-700'}`}>
+                                        <label key={key} className={`flex items-center gap-1.5 text-xs select-none ${isPermReadOnly ? 'cursor-default opacity-75' : 'cursor-pointer text-[var(--color-text-primary)]'}`}>
                                           <input type="checkbox" checked={permChecked(key)} onChange={(e) => !isPermReadOnly && handlePermissionToggle(member.id, key, e.target.checked)} disabled={isPermReadOnly} className="w-3.5 h-3.5 rounded accent-teal-600" />
                                           {t(labelKey)}
                                         </label>
@@ -1607,7 +1607,7 @@ function SettingsPageContent() {
                                 ) : (
                                   <div className="flex flex-wrap gap-1">
                                     {PERM_CHIPS.map(({ key, emoji, title }) => (
-                                      <span key={key} className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'}`} title={title}>{emoji}</span>
+                                      <span key={key} className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-green-100 text-green-700' : 'bg-[var(--color-surface-2)] text-slate-400'}`} title={title}>{emoji}</span>
                                     ))}
                                     {canEditPermissions(member) && <button type="button" onClick={() => setEditingPermissionsId(member.id)} className="text-teal-600 hover:underline text-xs ms-1">{t('editPermissions')}</button>}
                                   </div>
@@ -1621,8 +1621,8 @@ function SettingsPageContent() {
                               <td className="px-4 py-3">
                                 {!isSelf && !isOwner(member) && (
                                   <div className="flex items-center gap-1">
-                                    <button type="button" onClick={() => setEditingPermissionsId(member.id)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-500" title={t('editPermissions')}><Pencil className="w-4 h-4" /></button>
-                                    <button type="button" onClick={() => handleToggleActive(member)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-slate-500 hover:text-red-600" title={member.is_active !== false ? t('deactivate') : t('activate')}><UserX className="w-4 h-4" /></button>
+                                    <button type="button" onClick={() => setEditingPermissionsId(member.id)} className="p-1.5 hover:bg-[var(--color-surface-2)] rounded-lg transition-colors text-[var(--color-text-secondary)]" title={t('editPermissions')}><Pencil className="w-4 h-4" /></button>
+                                    <button type="button" onClick={() => handleToggleActive(member)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-[var(--color-text-secondary)] hover:text-red-600" title={member.is_active !== false ? t('deactivate') : t('activate')}><UserX className="w-4 h-4" /></button>
                                   </div>
                                 )}
                               </td>
@@ -1630,9 +1630,9 @@ function SettingsPageContent() {
                           );
                         })}
                         {pendingInvites.map((inv, idx) => (
-                          <tr key={`pending-${idx}`} className="border-b border-slate-100">
-                            <td className="px-4 py-3 text-slate-500">—</td>
-                            <td className="px-4 py-3 font-mono text-slate-500" dir="ltr">{inv.phone}</td>
+                          <tr key={`pending-${idx}`} className="border-b border-[var(--color-border-subtle)]">
+                            <td className="px-4 py-3 text-[var(--color-text-secondary)]">—</td>
+                            <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]" dir="ltr">{inv.phone}</td>
                             <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                             <td className="px-4 py-3">—</td>
                             <td className="px-4 py-3"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">{t('pendingInvite')}</span></td>
@@ -1641,7 +1641,7 @@ function SettingsPageContent() {
                         ))}
                       </tbody>
                     </table>
-                    {teamMembers.length === 0 && pendingInvites.length === 0 && <p className="p-8 text-center text-slate-500">{t('noTeamMembers')}</p>}
+                    {teamMembers.length === 0 && pendingInvites.length === 0 && <p className="p-8 text-center text-[var(--color-text-secondary)]">{t('noTeamMembers')}</p>}
                   </div>
                 </div>
               </>
@@ -1652,18 +1652,18 @@ function SettingsPageContent() {
         {/* Plan Request Modal */}
         {showPlanRequestModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowPlanRequestModal(false)}>
-            <div className="bg-card rounded-2xl shadow-xl max-w-md w-full p-6 border border-border" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-lg font-semibold text-foreground mb-4">{tBilling('requestPlanChange')}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{tBilling('selectPlan')}</p>
+            <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl max-w-md w-full p-6 border border-border" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{tBilling('requestPlanChange')}</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">{tBilling('selectPlan')}</p>
               <div className="space-y-2 mb-6">
                 {plans.filter(p => p.id !== 'top_centers').map(p => (
-                  <button key={p.id} type="button" onClick={() => setChangePlanSelect(p.id)} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === p.id ? 'border-primary bg-primary/20 text-foreground' : 'border-border bg-card text-foreground hover:bg-muted'}`}>{PLAN_DISPLAY_NAMES[p.id] ?? p.name_en} — {p.monthly_fee > 0 ? `${Number(p.monthly_fee).toLocaleString('en-US')} ${tBilling('egp')}/mo` : tBilling('custom')}</button>
+                  <button key={p.id} type="button" onClick={() => setChangePlanSelect(p.id)} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === p.id ? 'border-primary bg-primary/20 text-[var(--color-text-primary)]' : 'border-border bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-muted'}`}>{PLAN_DISPLAY_NAMES[p.id] ?? p.name_en} — {p.monthly_fee > 0 ? `${Number(p.monthly_fee).toLocaleString('en-US')} ${tBilling('egp')}/mo` : tBilling('custom')}</button>
                 ))}
-                <button type="button" onClick={() => setChangePlanSelect('payg')} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === 'payg' ? 'border-primary bg-primary/20 text-foreground' : 'border-border bg-card text-foreground hover:bg-muted'}`}>Pay-As-You-Go</button>
+                <button type="button" onClick={() => setChangePlanSelect('payg')} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === 'payg' ? 'border-primary bg-primary/20 text-[var(--color-text-primary)]' : 'border-border bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-muted'}`}>Pay-As-You-Go</button>
               </div>
               <div className="flex gap-2">
                 <button onClick={handleRequestPlanChange} disabled={billingSaving || !changePlanSelect} className="flex-1 px-4 py-2.5 disabled:opacity-50 text-white rounded-xl font-semibold" style={{ background: 'hsl(var(--primary))' }}>{billingSaving ? tBilling('saving') : tBilling('submitRequest')}</button>
-                <button onClick={() => { setShowPlanRequestModal(false); setChangePlanSelect(''); }} className="px-4 py-2.5 bg-muted rounded-xl text-foreground">{tCommon('cancel')}</button>
+                <button onClick={() => { setShowPlanRequestModal(false); setChangePlanSelect(''); }} className="px-4 py-2.5 bg-muted rounded-xl text-[var(--color-text-primary)]">{tCommon('cancel')}</button>
               </div>
             </div>
           </div>
@@ -1672,26 +1672,26 @@ function SettingsPageContent() {
         {/* Invite Modal */}
         {showInviteModal && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowInviteModal(false)}>
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between p-6 border-b border-slate-200">
-                <h2 className="text-lg font-bold text-slate-900">{t('inviteMember')}</h2>
-                <button type="button" onClick={() => setShowInviteModal(false)} className="p-2 hover:bg-slate-100 rounded-lg"><X className="w-5 h-5 text-slate-500" /></button>
+            <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
+                <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('inviteMember')}</h2>
+                <button type="button" onClick={() => setShowInviteModal(false)} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg"><X className="w-5 h-5 text-[var(--color-text-secondary)]" /></button>
               </div>
               <form onSubmit={handleInvite} className="p-6 space-y-4">
                 {inviteError && <p className="text-sm text-red-500">{inviteError}</p>}
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('inviteName')}</label><input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder={t('inviteName')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" /></div>
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('invitePhone')}</label><input type="tel" value={invitePhone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setInvitePhone(v); setInviteError(''); }} placeholder="01220601310" dir="ltr" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" required /></div>
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('role')}</label><select value={inviteRole} onChange={(e) => { const v = e.target.value; if (v === 'assistant' || v === 'teacher') setInviteRole(v); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"><option value="assistant">{t('assistant')}</option><option value="teacher">{tNav('roleTeacher')}</option></select></div>
+                <div><label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('inviteName')}</label><input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder={t('inviteName')} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" /></div>
+                <div><label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('invitePhone')}</label><input type="tel" value={invitePhone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setInvitePhone(v); setInviteError(''); }} placeholder="01220601310" dir="ltr" className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" required /></div>
+                <div><label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('role')}</label><select value={inviteRole} onChange={(e) => { const v = e.target.value; if (v === 'assistant' || v === 'teacher') setInviteRole(v); }} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"><option value="assistant">{t('assistant')}</option><option value="teacher">{tNav('roleTeacher')}</option></select></div>
                 {inviteRole === 'teacher' ? (
                   <>
-                    <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3 border border-slate-200">{t('teacherAccessInfo')}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-surface-0)] rounded-lg p-3 border border-[var(--color-border-subtle)]">{t('teacherAccessInfo')}</p>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('assignGroups')}</label>
-                      <div className="mt-1 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1">
-                        {inviteGroups.length === 0 ? <p className="text-sm text-slate-500 py-2">{tCommon('noData')}</p> : inviteGroups.map((g) => (
-                          <label key={g.id} className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-slate-50 rounded px-2">
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('assignGroups')}</label>
+                      <div className="mt-1 max-h-32 overflow-y-auto border border-[var(--color-border-subtle)] rounded-lg p-2 space-y-1">
+                        {inviteGroups.length === 0 ? <p className="text-sm text-[var(--color-text-secondary)] py-2">{tCommon('noData')}</p> : inviteGroups.map((g) => (
+                          <label key={g.id} className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-[var(--color-surface-0)] rounded px-2">
                             <input type="checkbox" checked={inviteTeacherGroupIds.includes(g.id)} onChange={(e) => setInviteTeacherGroupIds(prev => e.target.checked ? [...prev, g.id] : prev.filter(id => id !== g.id))} className="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
-                            <span className="text-sm text-slate-700">{g.name}{g.subject ? ` (${g.subject})` : ''}</span>
+                            <span className="text-sm text-[var(--color-text-primary)]">{g.name}{g.subject ? ` (${g.subject})` : ''}</span>
                           </label>
                         ))}
                       </div>
@@ -1699,22 +1699,22 @@ function SettingsPageContent() {
                   </>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-sm font-semibold text-slate-700">{t('permissions')}</p>
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">{t('permissions')}</p>
                     {[{ key: 'can_scan', labelKey: 'canScan', Icon: Camera }, { key: 'can_view_payments', labelKey: 'canViewPayments', Icon: CreditCard }, { key: 'can_view_dashboard', labelKey: 'canViewDashboard', Icon: LayoutDashboard }, { key: 'can_manage_students', labelKey: 'canManageStudents', Icon: Users }, { key: 'can_manage_groups', labelKey: 'canManageGroups', Icon: BookOpen }, { key: 'can_view_settings', labelKey: 'canViewSettings', Icon: Shield }].map(({ key, labelKey, Icon }) => (
-                      <div key={key} className="flex items-center justify-between py-2 border-b border-slate-100">
+                      <div key={key} className="flex items-center justify-between py-2 border-b border-[var(--color-border-subtle)]">
                         <div className="flex items-center gap-2">
                           <Icon className="w-4 h-4 text-slate-400" />
-                          <span className="text-sm text-slate-700">{t(labelKey)}</span>
+                          <span className="text-sm text-[var(--color-text-primary)]">{t(labelKey)}</span>
                         </div>
                         <button type="button" role="switch" aria-checked={invitePerms[key] ?? false} onClick={() => setInvitePerms(p => ({ ...p, [key]: !(p[key] ?? false) }))} className={`relative w-10 h-5 rounded-full transition-colors ${invitePerms[key] ?? false ? 'bg-teal-600' : 'bg-slate-200'}`}>
-                          <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${invitePerms[key] ?? false ? 'start-5' : 'start-0.5'}`} />
+                          <span className={`absolute top-0.5 w-4 h-4 bg-[var(--color-surface-1)] rounded-full shadow transition-all ${invitePerms[key] ?? false ? 'start-5' : 'start-0.5'}`} />
                         </button>
                       </div>
                     ))}
                   </div>
                 )}
                 <div className="flex justify-end gap-3 pt-4">
-                  <button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg">{tCommon('cancel')}</button>
+                  <button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg">{tCommon('cancel')}</button>
                   <button type="submit" disabled={inviteSubmitting || !invitePhone.trim()} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50">{inviteSubmitting ? tCommon('loading') : t('invite')}</button>
                 </div>
               </form>

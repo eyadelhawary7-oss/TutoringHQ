@@ -139,9 +139,9 @@ export default function SettingsReferralsPage() {
 
   if (user?.role !== 'owner') {
     return (
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-[var(--color-surface-0)] p-4">
         <PageHeader title={t('title')} />
-        <p className="text-muted-foreground">{tRef('ownerOnly')}</p>
+        <p className="text-[var(--color-text-secondary)]">{tRef('ownerOnly')}</p>
       </div>
     );
   }
@@ -166,10 +166,10 @@ export default function SettingsReferralsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-[var(--color-surface-0)] p-4 md:p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <button
         onClick={() => router.push('/settings')}
-        className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4"
+        className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] mb-4"
       >
         <ArrowLeft className="w-4 h-4" />
         {tc('back')}
@@ -184,36 +184,36 @@ export default function SettingsReferralsPage() {
       ) : (
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Summary card */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+            <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <Gift className="w-5 h-5 text-teal-600" />
               {locale === 'ar' ? 'ملخص برنامج الإحالة' : 'Referral Program Summary'}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <p className="text-xs text-slate-500 mb-1">{tRef('yourCode')}</p>
-                <p className="font-mono text-lg font-bold text-slate-900">{referralCode || '—'}</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('yourCode')}</p>
+                <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">{referralCode || '—'}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 mb-1">{locale === 'ar' ? 'عدد السناتر المُحالة' : 'Referred Centers'}</p>
-                <p className="text-xl font-bold text-slate-900">{referrals.length}</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">{locale === 'ar' ? 'عدد السناتر المُحالة' : 'Referred Centers'}</p>
+                <p className="text-xl font-bold text-[var(--color-text-primary)]">{referrals.length}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 mb-1">{tRef('totalEarned')}</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('totalEarned')}</p>
                 <p className="text-xl font-bold text-teal-600 font-mono">{totalEarned.toLocaleString('en-US')} {tc('egp')}</p>
               </div>
             </div>
           </div>
 
           {/* Referrals table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-900">
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-[var(--color-border-subtle)]">
+              <h3 className="font-bold text-[var(--color-text-primary)]">
                 {locale === 'ar' ? 'قائمة الإحالات' : 'Referrals List'}
               </h3>
             </div>
             {referrals.length === 0 ? (
-              <div className="p-12 text-center text-slate-500">
+              <div className="p-12 text-center text-[var(--color-text-secondary)]">
                 <p className="font-medium">
                   {locale === 'ar'
                     ? 'لا توجد إحالات بعد. شارك كودك مع السناتر الأخرى!'
@@ -224,38 +224,38 @@ export default function SettingsReferralsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-start py-3 px-4 font-semibold text-slate-600">
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
                         {locale === 'ar' ? 'اسم السنتر' : 'Center Name'}
                       </th>
-                      <th className="text-start py-3 px-4 font-semibold text-slate-600">
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
                         {locale === 'ar' ? 'تاريخ الانضمام' : 'Join Date'}
                       </th>
-                      <th className="text-start py-3 px-4 font-semibold text-slate-600">
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
                         {locale === 'ar' ? 'الخطة' : 'Plan'}
                       </th>
-                      <th className="text-start py-3 px-4 font-semibold text-slate-600">
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
                         {locale === 'ar' ? 'الحالة' : 'Status'}
                       </th>
-                      <th className="text-end py-3 px-4 font-semibold text-slate-600">
+                      <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
                         {locale === 'ar' ? 'الأرباح المحققة' : 'Earned'}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {referrals.map((r) => (
-                      <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="py-3 px-4 font-medium text-slate-900">
+                      <tr key={r.id} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]">
+                        <td className="py-3 px-4 font-medium text-[var(--color-text-primary)]">
                           {(r.referred_center as { name?: string })?.name ?? '—'}
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{formatDate(r.created_at)}</td>
-                        <td className="py-3 px-4 text-slate-600">
+                        <td className="py-3 px-4 text-[var(--color-text-secondary)]">{formatDate(r.created_at)}</td>
+                        <td className="py-3 px-4 text-[var(--color-text-secondary)]">
                           {planToLabel((r.referred_center as { plan?: string })?.plan, locale)}
                         </td>
                         <td className="py-3 px-4">
                           {getStatusBadge(r.status)}
                         </td>
-                        <td className="py-3 px-4 text-end font-mono font-semibold text-slate-900">
+                        <td className="py-3 px-4 text-end font-mono font-semibold text-[var(--color-text-primary)]">
                           {(r.total_earned_egp ?? 0).toLocaleString('en-US')} {tc('egp')}
                         </td>
                       </tr>

@@ -41,7 +41,7 @@ const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   suspended: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  cancelled: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  cancelled: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] dark:bg-gray-800 dark:text-[var(--color-text-tertiary)]',
 };
 
 function formatDate(dateStr: string | null): string {
@@ -189,26 +189,26 @@ export default function AdminRenewalsPage() {
           {/* Summary cards */}
           {summary && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+              <div className="rounded-xl border border-border bg-[var(--color-surface-1)] p-4">
+                <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                   <Calendar size={16} />
                   {t('renewalsThisWeek')}
                 </div>
-                <div className="text-2xl font-bold text-foreground">{summary.renewalsThisWeek}</div>
+                <div className="text-2xl font-bold text-[var(--color-text-primary)]">{summary.renewalsThisWeek}</div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+              <div className="rounded-xl border border-border bg-[var(--color-surface-1)] p-4">
+                <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                   <AlertTriangle size={16} />
                   {t('overdueCentersCount')}
                 </div>
                 <div className="text-2xl font-bold text-red-600 dark:text-red-400">{summary.overdueCount}</div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+              <div className="rounded-xl border border-border bg-[var(--color-surface-1)] p-4">
+                <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                   <TrendingDown size={16} />
                   {t('mrrAtRisk')}
                 </div>
-                <div className="text-2xl font-bold text-foreground">{formatAmount(summary.mrrAtRisk)} {tCommon('egp')}</div>
+                <div className="text-2xl font-bold text-[var(--color-text-primary)]">{formatAmount(summary.mrrAtRisk)} {tCommon('egp')}</div>
               </div>
             </div>
           )}
@@ -234,12 +234,12 @@ export default function AdminRenewalsPage() {
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <RefreshCw className="animate-spin text-muted-foreground" size={24} />
+              <RefreshCw className="animate-spin text-[var(--color-text-secondary)]" size={24} />
             </div>
           ) : centers.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">{tCommon('noData')}</div>
+            <div className="text-center py-12 text-[var(--color-text-secondary)]">{tCommon('noData')}</div>
           ) : (
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="rounded-xl border border-border bg-[var(--color-surface-1)] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -292,7 +292,7 @@ export default function AdminRenewalsPage() {
 
           <button
             onClick={loadData}
-            className="mt-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            className="mt-4 flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             {t('refresh')}
@@ -304,7 +304,7 @@ export default function AdminRenewalsPage() {
       {/* Record Payment Modal */}
       {recordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-card rounded-xl shadow-xl max-w-md w-full p-6 border border-border">
+          <div className="bg-[var(--color-surface-1)] rounded-xl shadow-xl max-w-md w-full p-6 border border-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lg">{t('recordPayment')} — {recordModal.name}</h3>
               <button onClick={() => setRecordModal(null)} className="p-1 rounded hover:bg-muted">
@@ -318,7 +318,7 @@ export default function AdminRenewalsPage() {
                   type="number"
                   value={recordAmount}
                   onChange={(e) => setRecordAmount(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background"
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)]"
                   placeholder="0"
                 />
               </div>
@@ -327,7 +327,7 @@ export default function AdminRenewalsPage() {
                 <select
                   value={recordMethod}
                   onChange={(e) => setRecordMethod(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background"
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)]"
                 >
                   <option value="bank_transfer">تحويل بنكي</option>
                   <option value="cash">نقدي</option>
@@ -341,7 +341,7 @@ export default function AdminRenewalsPage() {
                   type="text"
                   value={recordNotes}
                   onChange={(e) => setRecordNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background"
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)]"
                   placeholder=""
                 />
               </div>

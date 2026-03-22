@@ -52,7 +52,7 @@ export default function PaymentMethodsDonut({ data = [] }: PaymentMethodsDonutPr
 
   if (pieData.length === 0) {
     return (
-        <div className="flex items-center justify-center h-[180px] text-muted-foreground">
+        <div className="flex items-center justify-center h-[180px] text-[var(--color-text-secondary)]">
         <p className="text-sm">---</p>
       </div>
     );
@@ -82,7 +82,7 @@ export default function PaymentMethodsDonut({ data = [] }: PaymentMethodsDonutPr
         {pieData.map(({ name, value, color }) => (
           <div key={name} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full shrink-0" style={{ background: color }} />
-            <span className="text-sm text-muted-foreground flex-1 truncate">{name}</span>
+            <span className="text-sm text-[var(--color-text-secondary)] flex-1 truncate">{name}</span>
             <span className="text-sm font-bold font-mono">{value}%</span>
           </div>
         ))}

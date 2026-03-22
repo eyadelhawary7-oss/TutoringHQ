@@ -57,10 +57,10 @@ export default function CompletionScreen({ centerId, centerPhone, onGoToDashboar
 
   return (
     <div className="text-center space-y-6 py-8">
-      <h1 className="text-4xl font-black text-foreground" style={{ fontFamily: "'Cairo-Arabic', Georgia, \"Times New Roman\", serif" }}>
+      <h1 className="text-4xl font-black text-[var(--color-text-primary)]" style={{ fontFamily: "'Cairo-Arabic', Georgia, \"Times New Roman\", serif" }}>
         {t('completionTitle')}
       </h1>
-      <p className="text-lg text-slate-500">{t('completionDesc')}</p>
+      <p className="text-lg text-[var(--color-text-secondary)]">{t('completionDesc')}</p>
       <button
         onClick={onGoToDashboard}
         className="px-8 py-4 rounded-xl text-base font-bold text-white bg-teal-600 hover:bg-teal-700 transition-colors"

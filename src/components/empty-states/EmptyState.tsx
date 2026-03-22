@@ -27,10 +27,10 @@ export default function EmptyState({
       <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center mb-4 [&>svg]:w-8 [&>svg]:h-8 [&>svg]:text-teal-600">
         {icon}
       </div>
-      <h3 className="text-base font-bold text-foreground mb-2" style={{ fontFamily: "'Cairo-Arabic', Georgia, \"Times New Roman\", serif" }}>
+      <h3 className="text-base font-bold text-[var(--color-text-primary)] mb-2" style={{ fontFamily: "'Cairo-Arabic', Georgia, \"Times New Roman\", serif" }}>
         {t(titleKey)}
       </h3>
-      <p className="text-sm text-slate-500 max-w-sm mb-6">{t(descriptionKey)}</p>
+      <p className="text-sm text-[var(--color-text-secondary)] max-w-sm mb-6">{t(descriptionKey)}</p>
       {actionLabel && onAction && (
         <button
           onClick={onAction}

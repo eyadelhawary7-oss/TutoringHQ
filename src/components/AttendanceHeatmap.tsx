@@ -75,7 +75,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   function getCellColor(dateStr: string): string {
     const present = cellMap[dateStr];
-    if (present === undefined || present === 0) return 'bg-slate-100';
+    if (present === undefined || present === 0) return 'bg-[var(--color-surface-2)]';
     if (groupSize <= 0) return 'bg-teal-300';
     const pct = present / groupSize;
     if (pct >= 0.8) return 'bg-teal-500';
@@ -108,7 +108,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
               {Array(7)
                 .fill(null)
                 .map((_, j) => (
-                  <div key={j} className="w-4 h-4 rounded-sm bg-slate-100 animate-pulse" />
+                  <div key={j} className="w-4 h-4 rounded-sm bg-[var(--color-surface-2)] animate-pulse" />
                 ))}
             </div>
           ))}
@@ -136,7 +136,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   return (
     <div className="p-2 space-y-2" dir="ltr">
-      <p className="text-xs font-medium text-slate-600 text-right" dir="rtl">
+      <p className="text-xs font-medium text-[var(--color-text-secondary)] text-right" dir="rtl">
         الحضور — آخر {weeks} أسابيع
       </p>
 
@@ -164,7 +164,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
       <div className="flex gap-3 flex-wrap" dir="rtl">
         {[
-          { color: 'bg-slate-100', label: t('legend.none') },
+          { color: 'bg-[var(--color-surface-2)]', label: t('legend.none') },
           { color: 'bg-teal-100', label: t('legend.low') },
           { color: 'bg-teal-300', label: t('legend.medium') },
           { color: 'bg-teal-500', label: t('legend.high') },

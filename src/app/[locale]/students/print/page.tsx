@@ -129,7 +129,7 @@ export default function PrintStudentsPage() {
 
   return (
     <>
-      <div className="bg-[var(--color-surface-0)] min-h-screen p-4 print-page print:min-h-0 print:bg-white print:p-0">
+      <div className="bg-[var(--color-surface-0)] min-h-screen p-4 print-page print:min-h-0 print:bg-[var(--color-surface-1)] print:p-0">
         <div className="print-hide">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
@@ -234,7 +234,7 @@ export default function PrintStudentsPage() {
                 <div key={student.id} className="qr-card">
                   <div className="relative z-[1] flex items-center justify-between">
                     <span className="qr-card-logo truncate max-w-[70%]">{centerName}</span>
-                    <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center shrink-0">
+                    <div className="w-6 h-6 rounded-md bg-[var(--color-surface-1)]/10 flex items-center justify-center shrink-0">
                       <svg
                         width="12"
                         height="12"
@@ -254,7 +254,7 @@ export default function PrintStudentsPage() {
                   </div>
 
                   <div className="relative z-[1] flex justify-center">
-                    <div className="bg-white rounded-lg p-1.5">
+                    <div className="bg-[var(--color-surface-1)] rounded-lg p-1.5">
                       {student.qrDataUrl ? (
                         <img
                           src={student.qrDataUrl}

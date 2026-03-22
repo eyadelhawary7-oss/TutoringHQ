@@ -50,7 +50,7 @@ export default function ReferPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-br from-teal-50 to-slate-50" dir="rtl">
         <Loader2 className="w-10 h-10 animate-spin text-teal-600 mb-4" />
-        <p className="text-slate-600">جاري التحميل...</p>
+        <p className="text-[var(--color-text-secondary)]">جاري التحميل...</p>
       </div>
     );
   }
@@ -59,7 +59,7 @@ export default function ReferPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-br from-teal-50 to-slate-50" dir="rtl">
         <div className="text-center max-w-md">
-          <p className="text-slate-600 mb-4">رابط غير صالح أو منتهي الصلاحية.</p>
+          <p className="text-[var(--color-text-secondary)] mb-4">رابط غير صالح أو منتهي الصلاحية.</p>
           <Link href="/" className="text-teal-600 font-medium hover:underline">
             العودة للرئيسية
           </Link>
@@ -70,12 +70,12 @@ export default function ReferPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-gradient-to-br from-teal-50 to-slate-50" dir="rtl">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl p-8 text-center">
+      <div className="w-full max-w-md rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-xl p-8 text-center">
         <div className="w-16 h-16 rounded-2xl bg-teal-100 flex items-center justify-center mx-auto mb-6">
           <Gift className="w-8 h-8 text-teal-600" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">مرحباً بك!</h1>
-        <p className="text-slate-600 mb-6">
+        <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">مرحباً بك!</h1>
+        <p className="text-[var(--color-text-secondary)] mb-6">
           تمت دعوتك من قبل <span className="font-semibold text-teal-700">{referrerName ?? 'سنتر'}</span> لتجربة CenterHQ
         </p>
         <Link
@@ -84,7 +84,7 @@ export default function ReferPage() {
         >
           احجز عرضك التجريبي
         </Link>
-        <p className="text-xs text-slate-500 mt-6">
+        <p className="text-xs text-[var(--color-text-secondary)] mt-6">
           كود الإحالة <span className="font-mono font-medium">{code}</span> سيُطبّق تلقائياً عند التسجيل
         </p>
       </div>

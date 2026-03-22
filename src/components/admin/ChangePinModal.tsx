@@ -85,8 +85,8 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="modal-spring-in bg-white rounded-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
-        <h2 className="text-lg font-bold text-slate-800">تغيير الرمز السري</h2>
+      <div className="modal-spring-in bg-[var(--color-surface-1)] rounded-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+        <h2 className="text-lg font-bold text-[var(--color-text-primary)]">تغيير الرمز السري</h2>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
@@ -103,14 +103,14 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
           { label: 'تأكيد الرمز الجديد', value: confirmPin, setter: setConfirmPin },
         ].map(({ label, value, setter }) => (
           <div key={label} className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 block">{label}</label>
+            <label className="text-sm font-medium text-[var(--color-text-primary)] block">{label}</label>
             <input
               type="password"
               inputMode="numeric"
               value={value}
               onChange={(e) => setter(e.target.value)}
               disabled={loading || success}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
+              className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
               dir="ltr"
             />
           </div>
@@ -119,7 +119,7 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
         <div className="flex gap-2 pt-2">
           <button
             onClick={handleClose}
-            className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+            className="flex-1 px-4 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)]"
           >
             إلغاء
           </button>

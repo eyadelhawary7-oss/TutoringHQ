@@ -37,7 +37,7 @@ export default function MRRTrend({ data = [] }: MRRTrendProps) {
 
   if (!data?.length) {
     return (
-      <div className="flex items-center justify-center h-[260px] text-muted-foreground">
+      <div className="flex items-center justify-center h-[260px] text-[var(--color-text-secondary)]">
         <p className="text-sm">—</p>
       </div>
     );

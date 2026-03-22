@@ -80,7 +80,7 @@ export default function BenchmarksPage() {
   if (loading && !data) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[300px]" dir={isRTL ? 'rtl' : 'ltr'}>
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--color-text-secondary)]" />
       </div>
     );
   }
@@ -102,8 +102,8 @@ export default function BenchmarksPage() {
     return (
       <div className="p-6" dir={isRTL ? 'rtl' : 'ltr'}>
         <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
-        <div className="rounded-xl border bg-card p-8 text-center max-w-lg mx-auto">
-          <p className="text-lg text-muted-foreground mb-6">
+        <div className="rounded-xl border bg-[var(--color-surface-1)] p-8 text-center max-w-lg mx-auto">
+          <p className="text-lg text-[var(--color-text-secondary)] mb-6">
             {isNoDistrict ? t('noDistrict') : t('insufficientData', { count: centersNeeded })}
           </p>
           {isNoDistrict ? (
@@ -145,13 +145,13 @@ export default function BenchmarksPage() {
           const avgVal = metric.district_avg ?? 0;
           const pct = Math.min(100, Math.max(0, metric.percentile));
           return (
-            <div key={key} className="rounded-xl border bg-card p-6">
-              <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+            <div key={key} className="rounded-xl border bg-[var(--color-surface-1)] p-6">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-2">
                 <Icon className="h-4 w-4" />
                 {t(key)}
               </div>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{format(yourVal)}</p>
-              <p className="text-sm text-slate-500 mb-4">
+              <p className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">{format(yourVal)}</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                 {t('districtAvg')}: {format(avgVal)}
               </p>
               <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
@@ -160,7 +160,7 @@ export default function BenchmarksPage() {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <p className="text-sm text-slate-600">{t(descKey, { percentile: pct.toFixed(0) })}</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t(descKey, { percentile: pct.toFixed(0) })}</p>
             </div>
           );
         })}

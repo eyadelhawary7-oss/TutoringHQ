@@ -119,7 +119,7 @@ export default function AcceptInvitePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white" data-theme="light">
+    <div className="min-h-screen bg-[var(--color-surface-1)]" data-theme="light">
       <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
@@ -132,7 +132,7 @@ export default function AcceptInvitePage() {
             </Link>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-8">
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] shadow-xl p-8">
             {step === 'phone' && (
               <>
                 <h2 className="text-xl font-bold text-text-primary mb-6 text-center">

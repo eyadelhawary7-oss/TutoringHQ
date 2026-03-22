@@ -43,17 +43,17 @@ export default function ParentPortalPage({ params }: { params: Promise<{ token: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4" dir="rtl">
-        <p className="text-slate-500">جاري التحميل...</p>
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center p-4" dir="rtl">
+        <p className="text-[var(--color-text-secondary)]">جاري التحميل...</p>
       </div>
     );
   }
 
   if (expired) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6" dir="rtl">
-        <h1 className="text-xl font-bold text-slate-800 mb-2">انتهت صلاحية الرابط</h1>
-        <p className="text-slate-600 text-center mb-4">رابط البوابة منتهي الصلاحية. تواصل مع السنتر للمزيد.</p>
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex flex-col items-center justify-center p-6" dir="rtl">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">انتهت صلاحية الرابط</h1>
+        <p className="text-[var(--color-text-secondary)] text-center mb-4">رابط البوابة منتهي الصلاحية. تواصل مع السنتر للمزيد.</p>
         {centerPhone && (
           <a href={`https://wa.me/${centerPhone.replace(/^\+/, '').replace(/\D/g, '')}`} className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium">
             تواصل عبر واتساب
@@ -65,8 +65,8 @@ export default function ParentPortalPage({ params }: { params: Promise<{ token: 
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4" dir="rtl">
-        <p className="text-slate-500">لا يوجد بيانات</p>
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center p-4" dir="rtl">
+        <p className="text-[var(--color-text-secondary)]">لا يوجد بيانات</p>
       </div>
     );
   }
@@ -80,13 +80,13 @@ export default function ParentPortalPage({ params }: { params: Promise<{ token: 
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 pb-8" dir="rtl">
+    <div className="min-h-screen bg-[var(--color-surface-0)] p-4 pb-8" dir="rtl">
       <div className="max-w-md mx-auto">
-        <h1 className="text-xl font-bold text-slate-800 mb-1">{data.name}</h1>
-        <p className="text-sm text-slate-500 mb-6">{data.center_name}</p>
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{data.name}</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-6">{data.center_name}</p>
 
-        <section className="bg-white rounded-xl shadow-sm p-4 mb-4">
-          <h2 className="font-semibold text-slate-800 mb-3">الحضور (٣٠ يوم)</h2>
+        <section className="bg-[var(--color-surface-1)] rounded-xl shadow-sm p-4 mb-4">
+          <h2 className="font-semibold text-[var(--color-text-primary)] mb-3">الحضور (٣٠ يوم)</h2>
           <div className="grid grid-cols-10 gap-1">
             {days.map((d) => (
               <div
@@ -96,22 +96,22 @@ export default function ParentPortalPage({ params }: { params: Promise<{ token: 
               />
             ))}
           </div>
-          <p className="text-xs text-slate-500 mt-2">أخضر = حضر</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-2">أخضر = حضر</p>
         </section>
 
-        <section className="bg-white rounded-xl shadow-sm p-4 mb-4">
-          <h2 className="font-semibold text-slate-800 mb-2">المستحق</h2>
-          <p className="text-2xl font-bold text-slate-900">{data.balance_due.toLocaleString('en-US')} ج.م</p>
+        <section className="bg-[var(--color-surface-1)] rounded-xl shadow-sm p-4 mb-4">
+          <h2 className="font-semibold text-[var(--color-text-primary)] mb-2">المستحق</h2>
+          <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.balance_due.toLocaleString('en-US')} ج.م</p>
         </section>
 
         {data.next_sessions.length > 0 && (
-          <section className="bg-white rounded-xl shadow-sm p-4 mb-4">
-            <h2 className="font-semibold text-slate-800 mb-3">الجلسات القادمة</h2>
+          <section className="bg-[var(--color-surface-1)] rounded-xl shadow-sm p-4 mb-4">
+            <h2 className="font-semibold text-[var(--color-text-primary)] mb-3">الجلسات القادمة</h2>
             <ul className="space-y-2">
               {data.next_sessions.map((s, i) => (
                 <li key={i} className="flex justify-between text-sm">
                   <span>{s.day} — {s.time}</span>
-                  <span className="text-slate-600">{s.group}</span>
+                  <span className="text-[var(--color-text-secondary)]">{s.group}</span>
                 </li>
               ))}
             </ul>

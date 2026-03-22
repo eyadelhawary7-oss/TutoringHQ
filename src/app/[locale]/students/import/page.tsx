@@ -176,7 +176,7 @@ export default function ImportStudentsPage() {
         <Link href="/students" className="p-1.5 rounded-lg hover:bg-muted">
           <ArrowLeft size={18} />
         </Link>
-        <h1 className="text-xl font-bold text-foreground">{t('title')}</h1>
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
       </div>
 
       <div className="max-w-2xl mx-auto">
@@ -206,14 +206,14 @@ export default function ImportStudentsPage() {
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
                 className="hidden"
               />
-              <Upload size={40} className="mx-auto mb-4 text-muted-foreground" />
-              <p className="font-semibold text-foreground mb-1">{t('dragDrop')}</p>
-              <p className="text-sm text-muted-foreground">{t('acceptedFormats')}</p>
+              <Upload size={40} className="mx-auto mb-4 text-[var(--color-text-secondary)]" />
+              <p className="font-semibold text-[var(--color-text-primary)] mb-1">{t('dragDrop')}</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('acceptedFormats')}</p>
             </div>
             {fileName && (
               <div className="mt-4 p-3 rounded-lg bg-muted flex items-center justify-between">
-                <span className="text-sm text-foreground font-medium truncate max-w-[70%]">{fileName}</span>
-                <span className="text-xs text-muted-foreground shrink-0">
+                <span className="text-sm text-[var(--color-text-primary)] font-medium truncate max-w-[70%]">{fileName}</span>
+                <span className="text-xs text-[var(--color-text-secondary)] shrink-0">
                   {parsedData ? t('rowsFound', { count: parsedData.rows.length }) : ''}
                 </span>
               </div>
@@ -228,7 +228,7 @@ export default function ImportStudentsPage() {
               </button>
             )}
             {fileName && isLoading && !parsedData && (
-              <p className="text-sm text-muted-foreground text-center mt-4">{t('importing')}</p>
+              <p className="text-sm text-[var(--color-text-secondary)] text-center mt-4">{t('importing')}</p>
             )}
           </div>
         )}
@@ -236,7 +236,7 @@ export default function ImportStudentsPage() {
         {/* Step 2: Map Columns */}
         {step === 'map' && parsedData && (
           <div className="ch-card p-5 space-y-4">
-            <h3 className="font-bold text-foreground">{t('mapColumns')}</h3>
+            <h3 className="font-bold text-[var(--color-text-primary)]">{t('mapColumns')}</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm" dir="auto">
                 <thead style={{ background: 'hsl(var(--muted))' }}>
@@ -246,7 +246,7 @@ export default function ImportStudentsPage() {
                         <select
                           value={columnMap[header] ?? 'skip'}
                           onChange={(e) => setColumnMap((m) => ({ ...m, [header]: e.target.value as ColumnMapValue }))}
-                          className="text-xs px-2 py-1 rounded border border-input bg-background"
+                          className="text-xs px-2 py-1 rounded border border-input bg-[var(--color-surface-0)]"
                         >
                           <option value="name">{t('mapToName')}</option>
                           <option value="phone">{t('mapToPhone')}</option>
@@ -261,7 +261,7 @@ export default function ImportStudentsPage() {
                   {parsedData.rows.slice(0, 3).map((row, i) => (
                     <tr key={i} className="border-t border-border">
                       {parsedData.headers.map((header) => (
-                        <td key={header} className="px-3 py-2 text-foreground">
+                        <td key={header} className="px-3 py-2 text-[var(--color-text-primary)]">
                           {String(row[header] ?? '')}
                         </td>
                       ))}
@@ -289,22 +289,22 @@ export default function ImportStudentsPage() {
         {/* Step 3: Preview & Import */}
         {step === 'preview' && parsedData && (
           <div className="ch-card p-5 space-y-4">
-            <h3 className="font-bold text-foreground">{t('importCount', { count: mappedStudents.length })}</h3>
+            <h3 className="font-bold text-[var(--color-text-primary)]">{t('importCount', { count: mappedStudents.length })}</h3>
             <div className="overflow-x-auto max-h-96 overflow-y-auto">
               <table className="w-full text-sm" dir="auto">
                 <thead style={{ background: 'hsl(var(--muted))' }}>
                   <tr>
-                    <th className="text-start px-3 py-2 font-medium text-muted-foreground">{tCommon('name')}</th>
-                    <th className="text-start px-3 py-2 font-medium text-muted-foreground">{tCommon('phone')}</th>
-                    <th className="text-start px-3 py-2 font-medium text-muted-foreground">{t('studentNumber')}</th>
+                    <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{tCommon('name')}</th>
+                    <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{tCommon('phone')}</th>
+                    <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('studentNumber')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mappedStudents.map((s, i) => (
                     <tr key={i} className="border-t border-border">
-                      <td className="px-3 py-2 text-foreground">{s.name}</td>
-                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground" dir="ltr">{s.phone || ''}</td>
-                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{getPreviewStudentNumber(i)}</td>
+                      <td className="px-3 py-2 text-[var(--color-text-primary)]">{s.name}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{s.phone || ''}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--color-text-secondary)]">{getPreviewStudentNumber(i)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -333,7 +333,7 @@ export default function ImportStudentsPage() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            <p className="text-lg text-foreground">{t('importing')}</p>
+            <p className="text-lg text-[var(--color-text-primary)]">{t('importing')}</p>
           </div>
         )}
 
@@ -343,7 +343,7 @@ export default function ImportStudentsPage() {
             <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: '#16A34A18' }}>
               <Check size={32} className="text-green-600" />
             </div>
-            <h3 className="text-lg font-bold text-foreground mb-2">{t('success', { count: importedCount })}</h3>
+            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">{t('success', { count: importedCount })}</h3>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
               <Link href="/students" className="text-sm font-medium hover:underline" style={{ color: 'hsl(var(--primary))' }}>
                 {t('viewStudents')}

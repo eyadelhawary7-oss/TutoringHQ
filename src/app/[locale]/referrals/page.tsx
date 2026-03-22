@@ -139,16 +139,16 @@ export default function ReferralsPage() {
 
   if (user?.role !== 'owner') {
     return (
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-[var(--color-surface-0)] p-4">
         <PageHeader title={t('title')} />
-        <p className="text-muted-foreground">{t('ownerOnly', { defaultValue: 'Only center owners can view the referrals dashboard.' })}</p>
+        <p className="text-[var(--color-text-secondary)]">{t('ownerOnly', { defaultValue: 'Only center owners can view the referrals dashboard.' })}</p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-surface-0)] p-4 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-teal-500 border-t-transparent rounded-full" />
       </div>
     );
@@ -161,7 +161,7 @@ export default function ReferralsPage() {
   const whatsappShare = `https://wa.me/?text=${encodeURIComponent(`مرحباً! جرّب CenterHQ لإدارة سنترك بسهولة 🎓\nاحجز عرضك التجريبي من هنا:\n${referLink}`)}`;
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6" dir="rtl">
+    <div className="min-h-screen bg-[var(--color-surface-0)] p-4 md:p-6" dir="rtl">
       <PageHeader title={t('title')} />
 
       <div className="max-w-2xl mx-auto space-y-6">
@@ -182,16 +182,16 @@ export default function ReferralsPage() {
             <p className="text-xl font-bold text-amber-800 font-mono">{fmt(data?.pending ?? 0)}</p>
             <p className="text-xs text-amber-600">{tc('egp')}</p>
           </div>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-            <p className="text-xs text-slate-600 font-medium mb-1">{t('totalReferrals', { defaultValue: 'Total Referrals' })}</p>
-            <p className="text-xl font-bold text-slate-800 font-mono">{fmt(data?.totalReferrals ?? 0)}</p>
+          <div className="bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-xl p-4">
+            <p className="text-xs text-[var(--color-text-secondary)] font-medium mb-1">{t('totalReferrals', { defaultValue: 'Total Referrals' })}</p>
+            <p className="text-xl font-bold text-[var(--color-text-primary)] font-mono">{fmt(data?.totalReferrals ?? 0)}</p>
           </div>
         </div>
 
         {/* Section 2 — Active referrals table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100">
-            <h2 className="font-bold text-slate-900 flex items-center gap-2">
+        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-[var(--color-border-subtle)]">
+            <h2 className="font-bold text-[var(--color-text-primary)] flex items-center gap-2">
               <Users className="w-5 h-5 text-teal-600" />
               {t('activeReferrals', { defaultValue: 'Active Referrals' })}
             </h2>
@@ -200,25 +200,25 @@ export default function ReferralsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600">السنتر</th>
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600">الحالة</th>
-                    <th className="text-end py-3 px-4 font-semibold text-slate-600">الشهور</th>
-                    <th className="text-end py-3 px-4 font-semibold text-slate-600">مكافأة/شهر</th>
-                    <th className="text-end py-3 px-4 font-semibold text-slate-600">الإجمالي</th>
+                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">السنتر</th>
+                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الحالة</th>
+                    <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الشهور</th>
+                    <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">مكافأة/شهر</th>
+                    <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الإجمالي</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data?.activeReferrals?.map((r) => (
-                    <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4 text-slate-700 font-mono">{maskCenterName(r.center_name)}</td>
+                    <tr key={r.id} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]">
+                      <td className="py-3 px-4 text-[var(--color-text-primary)] font-mono">{maskCenterName(r.center_name)}</td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === 'converted' || r.status === 'active' ? 'bg-green-100 text-green-700' : r.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === 'converted' || r.status === 'active' ? 'bg-green-100 text-green-700' : r.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'}`}>
                           {r.status === 'converted' ? 'نشط' : r.status === 'active' ? 'نشط' : r.status === 'pending' ? 'معلق' : r.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-end text-slate-700">{fmt(r.months)}</td>
-                      <td className="py-3 px-4 text-end font-mono text-slate-900">{fmt(r.monthly_reward)} {tc('egp')}</td>
+                      <td className="py-3 px-4 text-end text-[var(--color-text-primary)]">{fmt(r.months)}</td>
+                      <td className="py-3 px-4 text-end font-mono text-[var(--color-text-primary)]">{fmt(r.monthly_reward)} {tc('egp')}</td>
                       <td className="py-3 px-4 text-end font-mono text-teal-700">{fmt(r.total)} {tc('egp')}</td>
                     </tr>
                   ))}
@@ -226,14 +226,14 @@ export default function ReferralsPage() {
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-500 text-sm">{t('noReferrals', { defaultValue: 'No referrals yet' })}</div>
+            <div className="p-8 text-center text-[var(--color-text-secondary)] text-sm">{t('noReferrals', { defaultValue: 'No referrals yet' })}</div>
           )}
         </div>
 
         {/* Section 3 — Reward history */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100">
-            <h2 className="font-bold text-slate-900 flex items-center gap-2">
+        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-[var(--color-border-subtle)]">
+            <h2 className="font-bold text-[var(--color-text-primary)] flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-teal-600" />
               {t('rewardHistory', { defaultValue: 'Reward History' })}
             </h2>
@@ -242,11 +242,11 @@ export default function ReferralsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600">الشهر</th>
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600">السنتر</th>
-                    <th className="text-end py-3 px-4 font-semibold text-slate-600">المبلغ</th>
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600">الحالة</th>
+                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الشهر</th>
+                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">السنتر</th>
+                    <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">المبلغ</th>
+                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الحالة</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -265,15 +265,15 @@ export default function ReferralsPage() {
                     } else if (h.status === 'available') {
                       statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">متاح ✅</span>;
                     } else if (h.status === 'paid') {
-                      statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">تم الصرف 💰</span>;
+                      statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface-2)] text-[var(--color-text-primary)]">تم الصرف 💰</span>;
                     } else {
-                      statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">{h.status}</span>;
+                      statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">{h.status}</span>;
                     }
                     return (
-                      <tr key={h.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="py-3 px-4 text-slate-700">{monthLabel}</td>
-                        <td className="py-3 px-4 text-slate-700 font-mono">{maskCenterName(h.referred_center_name)}</td>
-                        <td className="py-3 px-4 text-end font-mono text-slate-900">{fmt(h.reward_amount)} {tc('egp')}</td>
+                      <tr key={h.id} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]">
+                        <td className="py-3 px-4 text-[var(--color-text-primary)]">{monthLabel}</td>
+                        <td className="py-3 px-4 text-[var(--color-text-primary)] font-mono">{maskCenterName(h.referred_center_name)}</td>
+                        <td className="py-3 px-4 text-end font-mono text-[var(--color-text-primary)]">{fmt(h.reward_amount)} {tc('egp')}</td>
                         <td className="py-3 px-4">{statusBadge}</td>
                       </tr>
                     );
@@ -282,23 +282,23 @@ export default function ReferralsPage() {
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-500 text-sm">{t('noCommissions')}</div>
+            <div className="p-8 text-center text-[var(--color-text-secondary)] text-sm">{t('noCommissions')}</div>
           )}
         </div>
 
         {/* Section 4 — Payout request form */}
         {(data?.available ?? 0) > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+            <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <Banknote className="w-5 h-5 text-teal-600" />
               {t('requestWithdrawal')}
             </h2>
-            <p className="text-slate-700 mb-3">
+            <p className="text-[var(--color-text-primary)] mb-3">
               رصيدك المتاح: <span className="font-bold font-mono text-teal-600">{fmt(data?.available ?? 0)} {tc('egp')}</span>
             </p>
             <div className="flex flex-wrap gap-2 items-end">
               <div>
-                <label className="block text-xs text-slate-600 mb-1">المبلغ (ج.م)</label>
+                <label className="block text-xs text-[var(--color-text-secondary)] mb-1">المبلغ (ج.م)</label>
                 <input
                   type="number"
                   min={0}
@@ -318,13 +318,13 @@ export default function ReferralsPage() {
               </button>
             </div>
             {payoutError && <p className="text-red-600 text-sm mt-2">{payoutError}</p>}
-            <p className="text-xs text-slate-500 mt-3">{t('processingTime')}</p>
+            <p className="text-xs text-[var(--color-text-secondary)] mt-3">{t('processingTime')}</p>
           </div>
         )}
 
         {/* Section 5 — Share */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-          <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+          <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
             <Gift className="w-5 h-5 text-teal-600" />
             {t('yourCode')}
           </h2>
@@ -340,7 +340,7 @@ export default function ReferralsPage() {
                   setTimeout(() => setCodeCopied(false), 2000);
                 }
               }}
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50"
+              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-[var(--color-text-primary)] text-sm font-medium hover:bg-[var(--color-surface-0)]"
             >
               <Copy className="w-4 h-4" />
               {codeCopied ? tc('copy') + ' ✓' : t('copyCode')}
@@ -351,7 +351,7 @@ export default function ReferralsPage() {
                 setLinkCopied(true);
                 setTimeout(() => setLinkCopied(false), 2000);
               }}
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50"
+              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-[var(--color-text-primary)] text-sm font-medium hover:bg-[var(--color-surface-0)]"
             >
               <Link2 className="w-4 h-4" />
               {linkCopied ? tc('copy') + ' ✓' : t('shareLink')}
@@ -369,19 +369,19 @@ export default function ReferralsPage() {
         </div>
 
         {/* How It Works */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
           <button
             onClick={() => setHowItWorksOpen(!howItWorksOpen)}
-            className="w-full flex items-center justify-between p-4 text-start hover:bg-slate-50"
+            className="w-full flex items-center justify-between p-4 text-start hover:bg-[var(--color-surface-0)]"
           >
-            <h2 className="font-bold text-slate-900 flex items-center gap-2">
+            <h2 className="font-bold text-[var(--color-text-primary)] flex items-center gap-2">
               <Calendar className="w-5 h-5 text-teal-600" />
               {t('howItWorks')}
             </h2>
-            {howItWorksOpen ? <ChevronUp className="w-5 h-5 text-slate-500" /> : <ChevronDown className="w-5 h-5 text-slate-500" />}
+            {howItWorksOpen ? <ChevronUp className="w-5 h-5 text-[var(--color-text-secondary)]" /> : <ChevronDown className="w-5 h-5 text-[var(--color-text-secondary)]" />}
           </button>
           {howItWorksOpen && (
-            <div className="px-4 pb-4 space-y-3 text-sm text-slate-700">
+            <div className="px-4 pb-4 space-y-3 text-sm text-[var(--color-text-primary)]">
               <p className="flex items-start gap-2"><span className="text-teal-600">1.</span> شارك كودك مع أصحاب السناتر 🔗</p>
               <p className="flex items-start gap-2"><span className="text-teal-600">2.</span> يسجلوا ويدفعوا أول شهر ← تكسب 25% 💰</p>
               <p className="flex items-start gap-2"><span className="text-teal-600">3.</span> كل شهر يدفعوا ← تكسب 10% 📅</p>

@@ -28,7 +28,7 @@ export default function PaymentStatusBadge({ status, confirmed }: PaymentStatusB
     );
   }
   return (
-    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
       {status}
     </span>
   );

@@ -107,7 +107,7 @@ export default function ScanResultScreen({
               }}
             />
           ))}
-          <div className="relative w-28 h-28 bg-white/20 rounded-full flex items-center justify-center">
+          <div className="relative w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center">
             <CheckCircle
               className="w-16 h-16 text-white"
               style={{ animation: 'scanner-green-check 600ms ease-out forwards' }}
@@ -118,7 +118,7 @@ export default function ScanResultScreen({
         <p className="text-green-200 text-lg mb-1">{selectedGroup?.name ?? student.subject}</p>
         <p className="text-4xl font-bold font-mono mt-2 mb-6">{egp(selectedGroup?.fee ?? student.fee ?? 0)}</p>
         {balanceDue > 0 && (
-          <div className="bg-white/20 rounded-xl p-4 mb-6 w-full max-w-sm text-center border border-white/30">
+          <div className="bg-[var(--color-surface-1)]/20 rounded-xl p-4 mb-6 w-full max-w-sm text-center border border-white/30">
             <p className="text-sm text-green-100">{t('balanceDue')}</p>
             <p className="text-2xl font-bold font-mono">{egp(balanceDue)}</p>
           </div>
@@ -133,7 +133,7 @@ export default function ScanResultScreen({
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6" style={{ backgroundColor: YELLOW }}>
         <div
-          className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6"
+          className="w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center mb-6"
           style={{ animation: 'scanner-yellow-glow 800ms ease-in-out 2' }}
         >
           <AlertTriangle className="w-16 h-16 text-white" />
@@ -141,11 +141,11 @@ export default function ScanResultScreen({
         <h2 className="text-3xl font-bold mb-2">{student.name}</h2>
         <p className="text-amber-100 text-lg mb-2">{selectedGroup?.name ?? student.subject}</p>
         <p className="text-amber-100 text-sm mb-4">{t('entryAllowedUnpaid')}</p>
-        <div className="bg-white/20 rounded-xl p-4 w-full max-w-sm text-center border border-white/30">
+        <div className="bg-[var(--color-surface-1)]/20 rounded-xl p-4 w-full max-w-sm text-center border border-white/30">
           <p className="text-sm text-amber-100">{t('amountAddedToBalance', { amount: egp(addedAmount) })}</p>
           <p className="text-3xl font-bold font-mono">{egp(addedAmount)}</p>
         </div>
-        <button onClick={onDismiss} className="mt-6 px-8 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-colors border border-white/30">
+        <button onClick={onDismiss} className="mt-6 px-8 py-3 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-xl font-semibold transition-colors border border-white/30">
           {t('nextStudent')}
         </button>
       </div>
@@ -162,18 +162,18 @@ export default function ScanResultScreen({
         className="fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6"
         style={{ backgroundColor: PURPLE, animation: 'scanner-purple-fade 400ms ease-out forwards' }}
       >
-        <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6" style={{ animation: 'scanner-purple-fade 400ms ease-out forwards' }}>
+        <div className="w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center mb-6" style={{ animation: 'scanner-purple-fade 400ms ease-out forwards' }}>
           <Clock className="w-16 h-16 text-white" />
         </div>
         <h2 className="text-3xl font-bold mb-2" style={{ animation: 'scanner-purple-fade 400ms ease-out 50ms forwards' }}>{student.name}</h2>
         <p className="text-violet-200 text-lg mb-2" style={{ animation: 'scanner-purple-fade 400ms ease-out 100ms forwards' }}>{selectedGroup?.name ?? student.subject}</p>
         <p className="text-violet-200 text-sm mb-4" style={{ animation: 'scanner-purple-fade 400ms ease-out 150ms forwards' }}>{t('paymentPendingConfirmation')}</p>
-        <div className="bg-white/20 rounded-xl p-4 w-full max-w-sm text-center border border-white/30" style={{ animation: 'scanner-purple-fade 400ms ease-out 200ms forwards' }}>
+        <div className="bg-[var(--color-surface-1)]/20 rounded-xl p-4 w-full max-w-sm text-center border border-white/30" style={{ animation: 'scanner-purple-fade 400ms ease-out 200ms forwards' }}>
           <p className="text-sm text-violet-200">{t('pendingPayment')}</p>
           <p className="text-3xl font-bold font-mono">{egp(addedAmount || balanceDue)}</p>
           <p className="text-sm text-violet-300 mt-1 capitalize">via {t(methodLabel as 'cash')}</p>
         </div>
-        <button onClick={onDismiss} className="mt-6 px-8 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-colors border border-white/30" style={{ animation: 'scanner-purple-fade 400ms ease-out 250ms forwards' }}>
+        <button onClick={onDismiss} className="mt-6 px-8 py-3 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-xl font-semibold transition-colors border border-white/30" style={{ animation: 'scanner-purple-fade 400ms ease-out 250ms forwards' }}>
           {t('nextStudent')}
         </button>
       </div>
@@ -187,7 +187,7 @@ export default function ScanResultScreen({
       className="fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6 overflow-y-auto"
       style={{ backgroundColor: RED, animation: 'scanner-red-shake 400ms ease-in-out' }}
     >
-      <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6">
+      <div className="w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center mb-6">
         <XCircle className="w-16 h-16 text-white" />
       </div>
       <h2 className="text-3xl font-bold mb-2">{student.name}</h2>
@@ -205,7 +205,7 @@ export default function ScanResultScreen({
                 selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee
               )
             }
-            className="py-3 px-4 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-colors border border-white/30 text-sm disabled:opacity-50"
+            className="py-3 px-4 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-xl font-semibold transition-colors border border-white/30 text-sm disabled:opacity-50"
           >
             <span className="block mb-1">{icon}</span>
             <span>{t(labelKey as 'cash')}</span>
@@ -216,7 +216,7 @@ export default function ScanResultScreen({
         <button
           disabled={isProcessing}
           onClick={onAllowLateEntry}
-          className="w-full max-w-sm py-3 bg-white/10 hover:bg-white/20 border border-white/30 rounded-xl font-semibold transition-colors text-sm disabled:opacity-50"
+          className="w-full max-w-sm py-3 bg-[var(--color-surface-1)]/10 hover:bg-[var(--color-surface-1)]/20 border border-white/30 rounded-xl font-semibold transition-colors text-sm disabled:opacity-50"
         >
           {t('allowLateEntry')}
         </button>

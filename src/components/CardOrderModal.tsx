@@ -328,18 +328,18 @@ export function CardOrderModal({
       onClick={handleClose}
     >
       <div
-        className="modal-spring-in bg-card rounded-2xl border border-border w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="modal-spring-in bg-[var(--color-surface-1)] rounded-2xl border border-border w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
-          <h2 className="text-lg font-bold text-foreground">
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
             {step === 1 && t('selectStudents')}
             {step === 2 && t('previewCard')}
             {step === 3 && t('orderSummary')}
           </h2>
           <button
             onClick={handleClose}
-            className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
+            className="p-2 rounded-lg hover:bg-muted text-[var(--color-text-secondary)]"
           >
             <X size={20} />
           </button>
@@ -350,8 +350,8 @@ export function CardOrderModal({
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4 text-green-600 dark:text-green-400 text-3xl">
               ✓
             </div>
-            <p className="text-lg font-medium text-foreground mb-2">{t('orderSuccess')}</p>
-            <p className="text-sm text-muted-foreground">{tCommon('loading')}</p>
+            <p className="text-lg font-medium text-[var(--color-text-primary)] mb-2">{t('orderSuccess')}</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{tCommon('loading')}</p>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -359,13 +359,13 @@ export function CardOrderModal({
             {step === 1 && (
               <>
                 <div className="relative">
-                  <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
+                  <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)]" />
                   <input
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={tCommon('search')}
-                    className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-input bg-background text-sm"
+                    className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-input bg-[var(--color-surface-0)] text-sm"
                     dir="auto"
                   />
                 </div>
@@ -382,7 +382,7 @@ export function CardOrderModal({
                   >
                     {t('clear', { defaultValue: 'Clear' })}
                   </button>
-                  <span className="text-sm text-muted-foreground ms-auto">
+                  <span className="text-sm text-[var(--color-text-secondary)] ms-auto">
                     {t('studentsSelected', { count: selectedIds.size, defaultValue: `${selectedIds.size} students selected` })}
                   </span>
                 </div>
@@ -415,7 +415,7 @@ export function CardOrderModal({
                         className="rounded accent-primary"
                       />
                       <span className="text-sm font-medium">{s.name}</span>
-                      <span className="text-xs text-muted-foreground font-mono">{s.student_number || ''}</span>
+                      <span className="text-xs text-[var(--color-text-secondary)] font-mono">{s.student_number || ''}</span>
                     </label>
                   ))}
                 </div>
@@ -439,7 +439,7 @@ export function CardOrderModal({
                     >
                       {/* Front */}
                       <div
-                        className="absolute inset-0 bg-white rounded-xl overflow-hidden"
+                        className="absolute inset-0 bg-[var(--color-surface-1)] rounded-xl overflow-hidden"
                         style={{ backfaceVisibility: 'hidden' }}
                       >
                         <div
@@ -457,7 +457,7 @@ export function CardOrderModal({
                           <span className="text-white text-xs font-medium truncate max-w-[60%]">{centerName}</span>
                         </div>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pt-[15%]">
-                          <div className="w-[40%] aspect-square bg-white rounded-lg flex items-center justify-center shadow-md">
+                          <div className="w-[40%] aspect-square bg-[var(--color-surface-1)] rounded-lg flex items-center justify-center shadow-md">
                             {selectedStudents[0] && (qrDataUrls[selectedStudents[0].id] || selectedStudents[0].qr_code) ? (
                               <img
                                 src={qrDataUrls[selectedStudents[0].id] || selectedStudents[0].qr_code || ''}
@@ -468,7 +468,7 @@ export function CardOrderModal({
                               <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
                             )}
                           </div>
-                          <div className="mt-2 text-center font-bold text-slate-900 text-sm">
+                          <div className="mt-2 text-center font-bold text-[var(--color-text-primary)] text-sm">
                             {selectedStudents[0]?.name ?? '—'}
                           </div>
                           <div className="text-[10px] font-mono text-teal-600">
@@ -478,20 +478,20 @@ export function CardOrderModal({
                       </div>
                       {/* Back - center name + contact info (no external images to avoid screenshot/iframe issues) */}
                       <div
-                        className="absolute inset-0 bg-white rounded-xl overflow-hidden"
+                        className="absolute inset-0 bg-[var(--color-surface-1)] rounded-xl overflow-hidden"
                         style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                       >
                         <div className="flex flex-col items-center justify-center h-full p-4">
                           <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0" style={{ backgroundColor: selectedColor }}>
                             {centerInitials}
                           </div>
-                          <div className="mt-2 font-bold text-slate-900 text-sm text-center leading-tight">{centerName}</div>
+                          <div className="mt-2 font-bold text-[var(--color-text-primary)] text-sm text-center leading-tight">{centerName}</div>
                           {centerPhone && (
                             <div className="mt-1 text-[10px] text-teal-600 font-mono" dir="ltr">
                               {centerPhone}
                             </div>
                           )}
-                          <div className="absolute bottom-2 text-[8px] text-gray-400">{t('poweredBy')}</div>
+                          <div className="absolute bottom-2 text-[8px] text-[var(--color-text-tertiary)]">{t('poweredBy')}</div>
                         </div>
                       </div>
                     </div>
@@ -500,20 +500,20 @@ export function CardOrderModal({
                 <div className="flex justify-center gap-2 mb-4">
                   <button
                     onClick={() => setCardSide('front')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${cardSide === 'front' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${cardSide === 'front' ? 'bg-primary text-white' : 'bg-muted text-[var(--color-text-secondary)]'}`}
                   >
                     {t('frontOfCard')}
                   </button>
                   <button
                     onClick={() => setCardSide('back')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${cardSide === 'back' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${cardSide === 'back' ? 'bg-primary text-white' : 'bg-muted text-[var(--color-text-secondary)]'}`}
                   >
                     {t('backOfCard')}
                   </button>
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
+                    <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                       {t('cardColor', { defaultValue: 'Card Color' })}
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -532,7 +532,7 @@ export function CardOrderModal({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
+                    <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
                       {t('deliveryFee')}
                     </label>
                     <input
@@ -540,7 +540,7 @@ export function CardOrderModal({
                       min={0}
                       value={deliveryFee}
                       onChange={(e) => setDeliveryFee(Number(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm font-mono"
+                      className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono"
                     />
                   </div>
                   <div className="space-y-3 border border-border rounded-xl p-4 bg-muted/20">
@@ -553,22 +553,22 @@ export function CardOrderModal({
                         disabled={!hasSavedAddress}
                         className="rounded accent-primary"
                       />
-                      <label htmlFor="use-saved-addr" className="text-sm font-medium text-foreground">
+                      <label htmlFor="use-saved-addr" className="text-sm font-medium text-[var(--color-text-primary)]">
                         {t('useSavedAddress', { defaultValue: 'Use saved address' })}
                       </label>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">{t('fullName', { defaultValue: 'Full name' })}</label>
-                        <input type="text" value={deliveryForm.full_name} onChange={(e) => setDeliveryForm((f) => ({ ...f, full_name: e.target.value }))} placeholder={t('fullNamePlaceholder', { defaultValue: 'الاسم الكامل' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('fullName', { defaultValue: 'Full name' })}</label>
+                        <input type="text" value={deliveryForm.full_name} onChange={(e) => setDeliveryForm((f) => ({ ...f, full_name: e.target.value }))} placeholder={t('fullNamePlaceholder', { defaultValue: 'الاسم الكامل' })} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" dir="auto" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">{t('phone', { defaultValue: 'Phone' })}</label>
-                        <input type="tel" value={deliveryForm.phone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setDeliveryForm((f) => ({ ...f, phone: v })); }} placeholder="01XXXXXXXXX" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm font-mono" dir="ltr" />
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('phone', { defaultValue: 'Phone' })}</label>
+                        <input type="tel" value={deliveryForm.phone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setDeliveryForm((f) => ({ ...f, phone: v })); }} placeholder="01XXXXXXXXX" className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono" dir="ltr" />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-foreground mb-1">{t('governorate', { defaultValue: 'Governorate' })}</label>
-                        <select value={deliveryForm.governorate} onChange={(e) => setDeliveryForm((f) => ({ ...f, governorate: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('governorate', { defaultValue: 'Governorate' })}</label>
+                        <select value={deliveryForm.governorate} onChange={(e) => setDeliveryForm((f) => ({ ...f, governorate: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm">
                           <option value="">{t('selectGovernorate', { defaultValue: 'اختر المحافظة' })}</option>
                           {EGYPT_GOVERNORATES.map((g) => (
                             <option key={g.value} value={g.value}>{isRTL ? g.labelAr : g.labelEn}</option>
@@ -576,32 +576,32 @@ export function CardOrderModal({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">{t('cityDistrict', { defaultValue: 'City / District' })}</label>
-                        <input type="text" value={deliveryForm.city} onChange={(e) => setDeliveryForm((f) => ({ ...f, city: e.target.value }))} placeholder={t('cityPlaceholder', { defaultValue: 'المدينة / الحي' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('cityDistrict', { defaultValue: 'City / District' })}</label>
+                        <input type="text" value={deliveryForm.city} onChange={(e) => setDeliveryForm((f) => ({ ...f, city: e.target.value }))} placeholder={t('cityPlaceholder', { defaultValue: 'المدينة / الحي' })} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" dir="auto" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">{t('streetAddress', { defaultValue: 'Street address' })}</label>
-                        <input type="text" value={deliveryForm.street} onChange={(e) => setDeliveryForm((f) => ({ ...f, street: e.target.value }))} placeholder={t('streetPlaceholder', { defaultValue: 'الشارع' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('streetAddress', { defaultValue: 'Street address' })}</label>
+                        <input type="text" value={deliveryForm.street} onChange={(e) => setDeliveryForm((f) => ({ ...f, street: e.target.value }))} placeholder={t('streetPlaceholder', { defaultValue: 'الشارع' })} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" dir="auto" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">{t('buildingApartment', { defaultValue: 'Building / Apartment' })}</label>
-                        <input type="text" value={deliveryForm.building} onChange={(e) => setDeliveryForm((f) => ({ ...f, building: e.target.value }))} placeholder={t('buildingPlaceholder', { defaultValue: 'المبنى / الشقة' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('buildingApartment', { defaultValue: 'Building / Apartment' })}</label>
+                        <input type="text" value={deliveryForm.building} onChange={(e) => setDeliveryForm((f) => ({ ...f, building: e.target.value }))} placeholder={t('buildingPlaceholder', { defaultValue: 'المبنى / الشقة' })} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" dir="auto" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">{t('landmarkOptional', { defaultValue: 'Landmark (optional)' })}</label>
-                        <input type="text" value={deliveryForm.landmark} onChange={(e) => setDeliveryForm((f) => ({ ...f, landmark: e.target.value }))} placeholder={t('landmarkPlaceholder', { defaultValue: 'علامة مميزة' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" dir="auto" />
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('landmarkOptional', { defaultValue: 'Landmark (optional)' })}</label>
+                        <input type="text" value={deliveryForm.landmark} onChange={(e) => setDeliveryForm((f) => ({ ...f, landmark: e.target.value }))} placeholder={t('landmarkPlaceholder', { defaultValue: 'علامة مميزة' })} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" dir="auto" />
                       </div>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
                       {t('notesLabel', { defaultValue: 'Notes (optional)' })}
                     </label>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder={t('notesPlaceholder', { defaultValue: 'Any special instructions...' })}
-                      className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm min-h-[60px]"
+                      className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm min-h-[60px]"
                       rows={2}
                     />
                   </div>
@@ -616,7 +616,7 @@ export function CardOrderModal({
                   {selectedStudents.map((s) => (
                     <div key={s.id} className="flex justify-between text-sm py-1 border-b border-border last:border-0">
                       <span className="font-medium">{s.name}</span>
-                      <span className="font-mono text-muted-foreground">{s.student_number || '—'}</span>
+                      <span className="font-mono text-[var(--color-text-secondary)]">{s.student_number || '—'}</span>
                     </div>
                   ))}
                 </div>

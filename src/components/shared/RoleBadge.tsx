@@ -11,7 +11,7 @@ export default function RoleBadge({ role }: { role: string }) {
   const key = role?.toLowerCase() ?? '';
   return (
     <span
-      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[key] ?? 'bg-slate-100 text-slate-700'}`}
+      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[key] ?? 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'}`}
     >
       {role ? role.charAt(0).toUpperCase() + role.slice(1) : role}
     </span>

@@ -122,8 +122,8 @@ export function AtRiskPanel() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium text-slate-900">{s.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="font-medium text-[var(--color-text-primary)]">{s.name}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
                       {t('daysSinceLastScan', { days: s.days_since_last_scan, defaultValue: `${s.days_since_last_scan} يوم منذ آخر مسح` })}
                       {s.at_risk_since && (
                         <span className="ms-2">
@@ -131,7 +131,7 @@ export function AtRiskPanel() {
                         </span>
                       )}
                     </p>
-                    <p className="text-sm font-mono text-slate-600 mt-1">
+                    <p className="text-sm font-mono text-[var(--color-text-secondary)] mt-1">
                       {t('balance', { defaultValue: 'المستحق' })}: {s.balance_due.toLocaleString('ar-EG')} ج.م
                     </p>
                   </div>
@@ -151,7 +151,7 @@ export function AtRiskPanel() {
                       value={s.lifecycle_status}
                       onChange={(e) => handleChangeStatus(s, e.target.value)}
                       disabled={!!changingId}
-                      className="text-xs rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-slate-700 disabled:opacity-50"
+                      className="text-xs rounded-lg border border-slate-300 bg-[var(--color-surface-1)] px-2 py-1.5 text-[var(--color-text-primary)] disabled:opacity-50"
                     >
                       <option value="at_risk">{t('lifecycleAtRisk', { defaultValue: 'معرض للخطر' })}</option>
                       <option value="active">{t('lifecycleActive', { defaultValue: 'نشط' })}</option>

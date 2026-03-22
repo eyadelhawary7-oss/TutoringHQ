@@ -101,8 +101,8 @@ export default function RoomsPage() {
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{rooms.length} {t('title')}</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{rooms.length} {t('title')}</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -122,15 +122,15 @@ export default function RoomsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rooms.map(r => (
-            <div key={r.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div key={r.id} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-5">
               <div className="flex items-start justify-between mb-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <DoorOpen className="w-5 h-5 text-blue-600" />
                 </div>
-                <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400" aria-label="More"><MoreVertical className="w-4 h-4" /></button>
+                <button className="p-1.5 hover:bg-[var(--color-surface-2)] rounded-lg text-slate-400" aria-label="More"><MoreVertical className="w-4 h-4" /></button>
               </div>
-              <h3 className="font-semibold text-slate-900">{r.name}</h3>
-              <p className="text-sm text-slate-500 mt-1">{t('maxCapacity')}: {r.capacity ?? '—'} {tCommon('students')}</p>
+              <h3 className="font-semibold text-[var(--color-text-primary)]">{r.name}</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('maxCapacity')}: {r.capacity ?? '—'} {tCommon('students')}</p>
             </div>
           ))}
         </div>
@@ -139,42 +139,42 @@ export default function RoomsPage() {
       {rooms.length === 0 && !isLoading && (
         <div className="text-center py-16">
           <DoorOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-500 font-medium">{t('noRooms')}</p>
+          <p className="text-[var(--color-text-secondary)] font-medium">{t('noRooms')}</p>
         </div>
       )}
 
       {/* Add Room Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-slate-200">
-              <h2 className="text-lg font-bold text-slate-900">{t('addRoom')}</h2>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('addRoom')}</h2>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg transition-colors"><X className="w-5 h-5 text-[var(--color-text-secondary)]" /></button>
             </div>
             <form onSubmit={handleAddRoom} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('roomName')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('roomName')}</label>
                 <input
                   value={addName}
                   onChange={e => setAddName(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t('capacity')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('capacity')}</label>
                 <input
                   type="number"
                   min={1}
                   value={addCapacity}
                   onChange={e => setAddCapacity(e.target.value)}
                   placeholder="—"
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
               {addError && <p className="text-sm text-red-500">{addError}</p>}
               <div className="flex justify-end gap-3 pt-0">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
                 <button type="submit" disabled={isAdding} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">{tCommon('save')}</button>
               </div>
             </form>

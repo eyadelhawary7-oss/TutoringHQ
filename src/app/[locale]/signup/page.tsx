@@ -112,12 +112,12 @@ export default function SignupPage() {
         <div className="w-full max-w-sm text-center">
           <div className="rounded-2xl border border-white/10 p-8 shadow-xl" style={{ background: 'hsl(var(--card) / 0.95)', backdropFilter: 'blur(20px)' }}>
             <CheckCircle size={56} className="mx-auto mb-4" style={{ color: 'hsl(var(--scanner-green))' }} />
-            <h2 className="text-xl font-bold text-foreground mb-2">{t('requestSubmitted')}</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed mb-4">{t('receivedRequest')}</p>
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">{t('requestSubmitted')}</h2>
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-4">{t('receivedRequest')}</p>
 
             <div className="rounded-lg p-4 mb-4 text-start border border-border" style={{ background: 'hsl(var(--accent) / 0.5)' }}>
-              <h3 className="font-semibold text-foreground mb-3 text-center">{t('nextStepsTitle')}</h3>
-              <ol className="space-y-2 text-muted-foreground text-sm">
+              <h3 className="font-semibold text-[var(--color-text-primary)] mb-3 text-center">{t('nextStepsTitle')}</h3>
+              <ol className="space-y-2 text-[var(--color-text-secondary)] text-sm">
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style={{ background: 'hsl(var(--primary))' }}>1</span>
                   <span>{t('step1')}</span>
@@ -197,65 +197,65 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Center Name */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t('centerName')}</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('centerName')}</label>
               <input
                 type="text"
                 value={formData.centerName}
                 onChange={e => setFormData(f => ({ ...f, centerName: e.target.value }))}
                 placeholder={t('centerNamePlaceholder')}
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 required
               />
             </div>
 
             {/* Owner Name */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t('ownerName')}</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('ownerName')}</label>
               <input
                 type="text"
                 value={formData.ownerName}
                 onChange={e => setFormData(f => ({ ...f, ownerName: e.target.value }))}
                 placeholder={t('ownerNamePlaceholder')}
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 required
               />
             </div>
 
             {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t('phone')}</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('phone')}</label>
               <input
                 type="tel"
                 inputMode="numeric"
                 value={formData.phone}
                 onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))}
                 placeholder="+20 1XXXXXXXXX"
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 dir="ltr"
                 required
               />
-              <p className="text-muted-foreground text-xs mt-1">{t('phoneHelper')}</p>
+              <p className="text-[var(--color-text-secondary)] text-xs mt-1">{t('phoneHelper')}</p>
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t('email')}</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('email')}</label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
             {/* City */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t('city')}</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('city')}</label>
               <select
                 value={formData.city}
                 onChange={e => setFormData(f => ({ ...f, city: e.target.value }))}
                 required
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">{t('selectCity')}</option>
                 <option value="Cairo">القاهرة - Cairo</option>
@@ -271,14 +271,14 @@ export default function SignupPage() {
 
             {/* Billing Period */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">دورة الفاتورة</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">دورة الفاتورة</label>
               <div className="flex flex-wrap gap-2">
                 {BILLING_PERIODS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => setBillingPeriod(opt.value)}
-                    className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${billingPeriod === opt.value ? 'text-white' : 'bg-slate-100 text-slate-600'}`}
+                    className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${billingPeriod === opt.value ? 'text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
                     style={billingPeriod === opt.value ? { backgroundColor: '#0D9488' } : {}}
                   >
                     {opt.label}
@@ -294,7 +294,7 @@ export default function SignupPage() {
 
             {/* Plan */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">{t('selectPlan')}</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">{t('selectPlan')}</label>
               <div className="grid grid-cols-1 gap-2">
                 {PLANS.map(plan => (
                   <label
@@ -326,23 +326,23 @@ export default function SignupPage() {
                     </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold text-sm text-foreground">{locale === 'ar' ? plan.nameAr : plan.nameEn}</span>
+                          <span className="font-semibold text-sm text-[var(--color-text-primary)]">{locale === 'ar' ? plan.nameAr : plan.nameEn}</span>
                           {plan.custom ? (
-                            <span className="text-sm font-bold text-muted-foreground font-mono">{tl('custom')}</span>
+                            <span className="text-sm font-bold text-[var(--color-text-secondary)] font-mono">{tl('custom')}</span>
                           ) : (
                             <>
-                              <span className="text-sm font-bold text-foreground font-mono">{getEffectiveMonthlyRate(plan.fee, billingPeriod).toLocaleString('en-US')} {tc('egp')}</span>
+                              <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{getEffectiveMonthlyRate(plan.fee, billingPeriod).toLocaleString('en-US')} {tc('egp')}</span>
                               <span className="text-base font-normal text-slate-400">{tc('perMonth')}</span>
                             </>
                           )}
                         </div>
                         {!plan.custom && (
                           <>
-                            <p className="text-xs text-slate-500 mt-0.5">{getBillingLabel(plan.fee)}</p>
+                            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{getBillingLabel(plan.fee)}</p>
                             {billingPeriod === 'yearly' && (
                               <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">شهرين مجاناً</span>
                             )}
-                            <p className="text-xs text-muted-foreground mt-0.5">حتى {plan.limit.toLocaleString('en-US')} طالب/أسبوع</p>
+                            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">حتى {plan.limit.toLocaleString('en-US')} طالب/أسبوع</p>
                           </>
                         )}
                         {plan.perStudentWeek && (
@@ -359,7 +359,7 @@ export default function SignupPage() {
 
             {/* Referral */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{locale === 'ar' ? 'كود الإحالة (اختياري)' : 'Referral Code (optional)'}</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{locale === 'ar' ? 'كود الإحالة (اختياري)' : 'Referral Code (optional)'}</label>
               <div className="relative">
                 <input
                   type="text"
@@ -388,7 +388,7 @@ export default function SignupPage() {
                     }
                   }}
                   placeholder={locale === 'ar' ? 'مثال: NASR-7X4K' : 'e.g. NASR-7X4K'}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring uppercase"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring uppercase"
                   dir="ltr"
                 />
                 {referralValidation === 'valid' && (
@@ -409,7 +409,7 @@ export default function SignupPage() {
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">
                 {t('notes')} ({t('optional')})
               </label>
               <textarea
@@ -417,7 +417,7 @@ export default function SignupPage() {
                 onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))}
                 placeholder={t('notesPlaceholder')}
                 rows={2}
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
@@ -430,7 +430,7 @@ export default function SignupPage() {
               >
                 {formData.terms && <svg viewBox="0 0 10 8" className="w-3 h-3 fill-white"><path d="M9 1L3.5 7 1 4.5" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
               </div>
-              <span className="text-sm text-muted-foreground leading-relaxed">{t('terms')}</span>
+              <span className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{t('terms')}</span>
             </label>
 
             <button
@@ -442,7 +442,7 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+          <p className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
             {t('alreadyHaveAccount')}{' '}
             <Link href="/login" className="font-semibold hover:underline" style={{ color: 'hsl(var(--primary))' }}>
               {t('login')}

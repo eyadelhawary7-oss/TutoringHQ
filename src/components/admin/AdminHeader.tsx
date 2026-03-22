@@ -67,13 +67,13 @@ export function AdminHeader() {
 
   return (
     <>
-      <header className="fixed top-0 start-0 end-0 h-14 z-30 flex items-center justify-between px-4 md:px-6 border-b border-slate-200 bg-white">
-        <span className="font-bold text-slate-900 text-lg">CenterHQ</span>
+      <header className="fixed top-0 start-0 end-0 h-14 z-30 flex items-center justify-between px-4 md:px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
+        <span className="font-bold text-[var(--color-text-primary)] text-lg">CenterHQ</span>
         <div className="flex items-center gap-3">
           <button
             onClick={handleLocaleToggle}
             disabled={isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
           >
             <Globe size={14} />
             <span>{locale === 'ar' ? 'English' : 'العربية'}</span>
@@ -86,17 +86,17 @@ export function AdminHeader() {
               {(userName || userPhone || 'U').charAt(0).toUpperCase()}
             </button>
             {isUserMenuOpen && (
-              <div className="absolute top-12 end-0 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50 min-w-[200px]">
-                <div className="px-4 py-3 border-b border-slate-100">
-                  <p className="text-sm font-semibold text-slate-800">{userName || '—'}</p>
-                  <p className="text-xs text-slate-500" dir="ltr">{userPhone || '—'}</p>
+              <div className="absolute top-12 end-0 bg-[var(--color-surface-1)] rounded-xl shadow-lg border border-[var(--color-border-subtle)] py-1 z-50 min-w-[200px]">
+                <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{userName || '—'}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]" dir="ltr">{userPhone || '—'}</p>
                 </div>
                 <button
                   onClick={() => {
                     setIsPinModalOpen(true);
                     setIsUserMenuOpen(false);
                   }}
-                  className="w-full text-start px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="w-full text-start px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
                 >
                   تغيير الرمز السري
                 </button>

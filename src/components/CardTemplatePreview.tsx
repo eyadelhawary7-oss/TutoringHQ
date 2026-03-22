@@ -23,7 +23,7 @@ export default function CardTemplatePreview({
   const initials = centerName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   return (
     <div
-      className={cn('relative w-48 aspect-[85.6/54] rounded-xl overflow-hidden shadow-lg border border-border bg-white', className)}
+      className={cn('relative w-48 aspect-[85.6/54] rounded-xl overflow-hidden shadow-lg border border-border bg-[var(--color-surface-1)]', className)}
       style={{ '--card-color': color } as React.CSSProperties}
     >
       <div
@@ -44,10 +44,10 @@ export default function CardTemplatePreview({
         <span className="text-white text-[10px] font-medium truncate">{centerName}</span>
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center pt-[12%]">
-        <div className="w-16 h-16 bg-white rounded flex items-center justify-center border-2 border-slate-200">
-          <span className="text-[10px] font-mono text-slate-500">QR</span>
+        <div className="w-16 h-16 bg-[var(--color-surface-1)] rounded flex items-center justify-center border-2 border-[var(--color-border-subtle)]">
+          <span className="text-[10px] font-mono text-[var(--color-text-secondary)]">QR</span>
         </div>
-        <div className="mt-1 text-xs font-bold text-slate-900 truncate max-w-full px-1">{studentName}</div>
+        <div className="mt-1 text-xs font-bold text-[var(--color-text-primary)] truncate max-w-full px-1">{studentName}</div>
         <div className="text-[9px] font-mono truncate max-w-full px-1" style={{ color }}>{studentNumber}</div>
       </div>
     </div>

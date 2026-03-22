@@ -78,7 +78,7 @@ export default function CeoDashboardPage() {
 
   if (loading && !data) {
     return (
-      <div className="flex min-h-screen bg-slate-50" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="flex min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
         <AdminSidebar activeTab="ceoDashboard" activeRoute="/ceo-dashboard" />
         <main className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
@@ -113,15 +113,15 @@ export default function CeoDashboardPage() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminSidebar activeTab="ceoDashboard" activeRoute="/ceo-dashboard" />
       <main className="flex-1 overflow-auto p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
           <button
             onClick={fetchData}
             disabled={loading}
-            className="p-2 rounded-lg hover:bg-slate-200 text-slate-600"
+            className="p-2 rounded-lg hover:bg-slate-200 text-[var(--color-text-secondary)]"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -135,19 +135,19 @@ export default function CeoDashboardPage() {
 
         <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
           {metrics.map(({ label, value, icon: Icon }) => (
-            <div key={label} className="bg-white rounded-xl border border-slate-200 p-4">
-              <div className="flex items-center gap-2 text-slate-500 text-sm mb-1">
+            <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-4">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                 <Icon className="h-4 w-4" />
                 {label}
               </div>
-              <p className="text-xl font-bold text-slate-900 font-mono">{value}</p>
+              <p className="text-xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
             </div>
           ))}
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('healthDistribution')}</h2>
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6">
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('healthDistribution')}</h2>
             {d.healthDistribution.length > 0 ? (
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
@@ -171,13 +171,13 @@ export default function CeoDashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-slate-500 text-center py-8">{t('noHealthData')}</p>
+              <p className="text-[var(--color-text-secondary)] text-center py-8">{t('noHealthData')}</p>
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('briefingPreview')}</h2>
-            <div className="space-y-2 text-sm text-slate-600">
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6">
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('briefingPreview')}</h2>
+            <div className="space-y-2 text-sm text-[var(--color-text-secondary)]">
               <p>{t('activeCenters')}: {d.totalActiveCenters}</p>
               <p>{t('mrr')}: EGP {fmt(d.mrr)}</p>
               <p>{t('newYesterday')}: {d.newYesterday}</p>
@@ -190,17 +190,17 @@ export default function CeoDashboardPage() {
           </div>
         </section>
 
-        <section className="bg-white rounded-xl border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('cohortTable')}</h2>
+        <section className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('cohortTable')}</h2>
           {d.cohortTable.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-start py-2 font-medium text-slate-700">{t('signupMonth')}</th>
-                    <th className="text-start py-2 font-medium text-slate-700">{t('total')}</th>
+                  <tr className="border-b border-[var(--color-border-subtle)]">
+                    <th className="text-start py-2 font-medium text-[var(--color-text-primary)]">{t('signupMonth')}</th>
+                    <th className="text-start py-2 font-medium text-[var(--color-text-primary)]">{t('total')}</th>
                     {[0, 1, 2, 3, 4, 5, 6].map((m) => (
-                      <th key={m} className="text-center py-2 font-medium text-slate-700">
+                      <th key={m} className="text-center py-2 font-medium text-[var(--color-text-primary)]">
                         M{m}
                       </th>
                     ))}
@@ -208,7 +208,7 @@ export default function CeoDashboardPage() {
                 </thead>
                 <tbody>
                   {d.cohortTable.slice(0, 12).map((row) => (
-                    <tr key={row.month} className="border-b border-slate-100">
+                    <tr key={row.month} className="border-b border-[var(--color-border-subtle)]">
                       <td className="py-2">{row.month}</td>
                       <td className="py-2">{row.total}</td>
                       {[0, 1, 2, 3, 4, 5, 6].map((m) => (
@@ -222,7 +222,7 @@ export default function CeoDashboardPage() {
               </table>
             </div>
           ) : (
-            <p className="text-slate-500 text-center py-8">{t('noCohortData')}</p>
+            <p className="text-[var(--color-text-secondary)] text-center py-8">{t('noCohortData')}</p>
           )}
         </section>
       </main>

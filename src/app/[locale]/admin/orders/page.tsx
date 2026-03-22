@@ -160,8 +160,8 @@ export default function AdminOrders() {
 
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-foreground">{tIdCards('adminTitle')}</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{tIdCards('adminSubtitle')}</p>
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{tIdCards('adminTitle')}</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tIdCards('adminSubtitle')}</p>
       </div>
 
       {/* KPIs */}
@@ -171,8 +171,8 @@ export default function AdminOrders() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: `${color}18`, color }}>
               <Icon size={16} />
             </div>
-            <div className="text-xl font-black font-mono text-foreground">{value}</div>
-            <div className="text-xs text-muted-foreground">{label}</div>
+            <div className="text-xl font-black font-mono text-[var(--color-text-primary)]">{value}</div>
+            <div className="text-xs text-[var(--color-text-secondary)]">{label}</div>
           </div>
         ))}
       </div>
@@ -181,7 +181,7 @@ export default function AdminOrders() {
       <div className="flex gap-1 flex-wrap">
         <button
           onClick={() => setFilter('all')}
-          className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-colors', filter === 'all' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+          className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-colors', filter === 'all' ? 'bg-primary/10 text-primary' : 'text-[var(--color-text-secondary)] hover:bg-muted')}
         >
           {tCommon('all')}
         </button>
@@ -191,7 +191,7 @@ export default function AdminOrders() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-colors', filter === f ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+              className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-colors', filter === f ? 'bg-primary/10 text-primary' : 'text-[var(--color-text-secondary)] hover:bg-muted')}
             >
               {tIdCards(cfg.label)}
             </button>
@@ -205,13 +205,13 @@ export default function AdminOrders() {
           <table className="w-full text-sm">
             <thead style={{ background: 'hsl(var(--muted))' }}>
               <tr>
-                <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tIdCards('orderNumber')}</th>
-                <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('center')}</th>
-                <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tIdCards('cards')}</th>
-                <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tIdCards('total')}</th>
-                <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('date')}</th>
-                <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tIdCards('orderNumber')}</th>
+                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('center')}</th>
+                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tIdCards('cards')}</th>
+                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tIdCards('total')}</th>
+                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('status')}</th>
+                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('date')}</th>
+                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -220,16 +220,16 @@ export default function AdminOrders() {
                 const StatusIcon = cfg.icon;
                 return (
                   <tr key={order.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-foreground">{order.orderNumber}</td>
-                    <td className="px-4 py-3 font-medium text-foreground">{order.centerName}</td>
-                    <td className="px-4 py-3 font-mono text-muted-foreground">{order.students.length}</td>
-                    <td className="px-4 py-3 font-mono font-bold text-foreground">{order.total} {tCommon('egp')}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-primary)]">{order.orderNumber}</td>
+                    <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{order.centerName}</td>
+                    <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">{order.students.length}</td>
+                    <td className="px-4 py-3 font-mono font-bold text-[var(--color-text-primary)]">{order.total} {tCommon('egp')}</td>
                     <td className="px-4 py-3">
                       <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold', cfg.bg, cfg.color)}>
                         <StatusIcon size={10} /> {tIdCards(cfg.label)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">
                       {new Date(order.createdAt).toLocaleDateString('en-GB')}
                     </td>
                     <td className="px-4 py-3">
@@ -249,7 +249,7 @@ export default function AdminOrders() {
 
         {/* Empty state */}
         {filteredOrders.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
+          <div className="text-center py-16 text-[var(--color-text-secondary)]">
             {/* CSS art placeholder */}
             <div className="mx-auto mb-4 w-20 h-20 relative">
               <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-muted-foreground/20" />
@@ -268,14 +268,14 @@ export default function AdminOrders() {
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setSlideOverId(null)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-md bg-card border-s border-border h-full overflow-y-auto animate-fade-in"
+            className="relative w-full max-w-md bg-[var(--color-surface-1)] border-s border-border h-full overflow-y-auto animate-fade-in"
             onClick={e => e.stopPropagation()}
             style={{ animation: 'slideInRight 0.3s ease' }}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-card border-b border-border px-5 py-4 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-[var(--color-surface-1)] border-b border-border px-5 py-4 flex items-center justify-between z-10">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-sm font-bold text-foreground">{slideOrder.orderNumber}</span>
+                <span className="font-mono text-sm font-bold text-[var(--color-text-primary)]">{slideOrder.orderNumber}</span>
                 {(() => {
                   const cfg = STATUS_CONFIG[slideOrder.status];
                   const Icon = cfg.icon;
@@ -287,14 +287,14 @@ export default function AdminOrders() {
                 })()}
               </div>
               <button onClick={() => setSlideOverId(null)} className="p-1.5 rounded-lg hover:bg-muted">
-                <X size={18} className="text-muted-foreground" />
+                <X size={18} className="text-[var(--color-text-secondary)]" />
               </button>
             </div>
 
             <div className="p-5 space-y-5">
               {/* Card preview */}
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-3">{tIdCards('cardPreview')}</h4>
+                <h4 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase mb-3">{tIdCards('cardPreview')}</h4>
                 <div className="flex justify-center">
                   <CardTemplatePreview
                     centerName={slideOrder.centerName}
@@ -309,12 +309,12 @@ export default function AdminOrders() {
 
               {/* Students */}
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{tCommon('students')} ({slideOrder.students.length})</h4>
+                <h4 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase mb-2">{tCommon('students')} ({slideOrder.students.length})</h4>
                 <div className="ch-card p-3 max-h-[200px] overflow-y-auto space-y-1">
                   {slideOrder.students.map((s, i) => (
                     <div key={i} className="flex items-center gap-2 py-1">
-                      <span className="text-sm text-foreground">{s.name}</span>
-                      <span className="font-mono text-[10px] text-muted-foreground ms-auto">{s.number}</span>
+                      <span className="text-sm text-[var(--color-text-primary)]">{s.name}</span>
+                      <span className="font-mono text-[10px] text-[var(--color-text-secondary)] ms-auto">{s.number}</span>
                     </div>
                   ))}
                 </div>
@@ -322,39 +322,39 @@ export default function AdminOrders() {
 
               {/* Delivery info */}
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-1">{tIdCards('deliveryAddress')}</h4>
-                <p className="text-sm text-foreground">{slideOrder.deliveryAddress}</p>
+                <h4 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase mb-1">{tIdCards('deliveryAddress')}</h4>
+                <p className="text-sm text-[var(--color-text-primary)]">{slideOrder.deliveryAddress}</p>
               </div>
               {slideOrder.notes && (
                 <div>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-1">{tIdCards('notes')}</h4>
-                  <p className="text-sm text-foreground">{slideOrder.notes}</p>
+                  <h4 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase mb-1">{tIdCards('notes')}</h4>
+                  <p className="text-sm text-[var(--color-text-primary)]">{slideOrder.notes}</p>
                 </div>
               )}
 
               {/* Price breakdown */}
               <div className="ch-card p-4">
-                <div className="flex justify-between text-sm text-foreground mb-2">
+                <div className="flex justify-between text-sm text-[var(--color-text-primary)] mb-2">
                   <span>{slideOrder.students.length} {tIdCards('cards')} × 3 {tCommon('egp')}</span>
                   <span className="font-mono font-bold">{slideOrder.students.length * 3} {tCommon('egp')}</span>
                 </div>
-                <div className="flex justify-between text-sm text-foreground mb-3">
+                <div className="flex justify-between text-sm text-[var(--color-text-primary)] mb-3">
                   <span>{tIdCards('delivery')}</span>
                   <span className="font-mono font-bold">{slideOrder.deliveryFee} {tCommon('egp')}</span>
                 </div>
                 <div className="border-t border-border pt-3 flex justify-between">
-                  <span className="font-bold text-foreground">{tIdCards('total')}</span>
+                  <span className="font-bold text-[var(--color-text-primary)]">{tIdCards('total')}</span>
                   <span className="font-mono font-black text-lg" style={{ color: slideOrder.cardColor }}>{slideOrder.total} {tCommon('egp')}</span>
                 </div>
               </div>
 
               {/* Status update */}
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">{tIdCards('updateStatus')}</h4>
+                <h4 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase mb-1.5">{tIdCards('updateStatus')}</h4>
                 <select
                   value={slideOrder.status}
                   onChange={e => updateStatus(slideOrder.id, e.target.value as CardOrder['status'])}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
                 >
                   {FILTERS.map(s => (
                     <option key={s} value={s}>{tIdCards(STATUS_CONFIG[s].label)}</option>

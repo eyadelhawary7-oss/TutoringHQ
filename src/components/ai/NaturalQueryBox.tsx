@@ -76,7 +76,7 @@ export default function NaturalQueryBox() {
     : [];
 
   return (
-    <div className="rounded-lg border bg-card overflow-hidden" dir="rtl">
+    <div className="rounded-lg border bg-[var(--color-surface-1)] overflow-hidden" dir="rtl">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
@@ -99,7 +99,7 @@ export default function NaturalQueryBox() {
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="اسأل عن سنترك... مثال: كام طالب حضر الأسبوع ده؟"
-              className="flex-1 rounded-lg border bg-background px-4 py-2.5 font-cairo text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="flex-1 rounded-lg border bg-[var(--color-surface-0)] px-4 py-2.5 font-cairo text-base placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-primary"
               disabled={loading}
             />
             <button
@@ -130,7 +130,7 @@ export default function NaturalQueryBox() {
           </div>
 
           {loading && (
-            <p className="font-cairo text-muted-foreground animate-pulse">
+            <p className="font-cairo text-[var(--color-text-secondary)] animate-pulse">
               <span className="inline-block animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
               <span className="inline-block animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
               <span className="inline-block animate-bounce" style={{ animationDelay: '300ms' }}>.</span>

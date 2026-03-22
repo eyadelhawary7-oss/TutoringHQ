@@ -1098,14 +1098,14 @@ export default function ScanPage() {
           : scannedStudent.groups;
         return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] flex flex-col">
+          <div className="bg-[var(--color-surface-1)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] flex flex-col">
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-12 h-1 rounded-full bg-slate-300" aria-hidden />
             </div>
-            <div className="p-4 pb-2 border-b border-slate-200 shrink-0">
-              <h2 className="text-lg font-bold text-slate-900">{t('selectGroupTitle')}</h2>
-              <p className="text-sm text-slate-500 mt-1">{t('selectGroupDesc')}</p>
+            <div className="p-4 pb-2 border-b border-[var(--color-border-subtle)] shrink-0">
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('selectGroupTitle')}</h2>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('selectGroupDesc')}</p>
               {/* Search */}
               <div className="relative mt-3">
                 <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
@@ -1114,7 +1114,7 @@ export default function ScanPage() {
                   placeholder={tCommon('search')}
                   value={groupSearchQuery}
                   onChange={(e) => setGroupSearchQuery(e.target.value)}
-                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 />
               </div>
             </div>
@@ -1123,15 +1123,15 @@ export default function ScanPage() {
                 <button
                   key={g.id}
                   onClick={() => handleGroupSelect(g)}
-                  className="w-full flex items-center gap-3 min-h-[56px] py-4 px-4 rounded-xl hover:bg-slate-50 transition-all text-start first:pt-0"
+                  className="w-full flex items-center gap-3 min-h-[56px] py-4 px-4 rounded-xl hover:bg-[var(--color-surface-0)] transition-all text-start first:pt-0"
                 >
                   <div className="p-2 bg-teal-100 rounded-lg flex-shrink-0">
                     <BookOpen className="w-4 h-4 text-teal-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 text-sm">{g.name}</p>
+                    <p className="font-semibold text-[var(--color-text-primary)] text-sm">{g.name}</p>
                     {(g as { subject?: string | null }).subject && (
-                      <p className="text-xs text-slate-500 mt-0.5">{(g as { subject?: string | null }).subject}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{(g as { subject?: string | null }).subject}</p>
                     )}
                     <p className="text-xs font-medium text-teal-600 mt-1">{t('perLesson')} · {tCommon('egp')} {g.fee}</p>
                   </div>

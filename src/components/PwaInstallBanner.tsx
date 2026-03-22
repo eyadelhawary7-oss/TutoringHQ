@@ -74,14 +74,14 @@ export default function PwaInstallBanner() {
       className="fixed bottom-0 start-0 end-0 z-50 p-4 pb-8 md:pb-4"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
     >
-      <div className={`bg-white rounded-t-xl border-t border-slate-200 shadow-lg p-4 flex items-center justify-between gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <div className={`bg-[var(--color-surface-1)] rounded-t-xl border-t border-[var(--color-border-subtle)] shadow-lg p-4 flex items-center justify-between gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className="w-12 h-12 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
             <span className="text-white font-bold text-lg">CH</span>
           </div>
           <div className={isRTL ? 'text-right' : 'text-left'}>
-            <p className="font-bold text-slate-900 text-sm">{title}</p>
-            <p className="text-xs text-slate-500">{subtitle}</p>
+            <p className="font-bold text-[var(--color-text-primary)] text-sm">{title}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">{subtitle}</p>
           </div>
         </div>
         <div className={`flex items-center gap-2 shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -93,7 +93,7 @@ export default function PwaInstallBanner() {
           </button>
           <button
             onClick={handleDismiss}
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-[var(--color-text-secondary)] rounded-lg transition-colors"
             aria-label="إغلاق"
           >
             ×

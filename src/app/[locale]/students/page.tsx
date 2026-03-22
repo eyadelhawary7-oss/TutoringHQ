@@ -1045,24 +1045,24 @@ export default function StudentsPage() {
       {/* Add Student Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddModal(false)}>
-          <div className="bg-card rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-foreground">{ts('addStudent')}</h3>
-              <button onClick={() => setShowAddModal(false)}><X size={18} className="text-muted-foreground" /></button>
+              <h3 className="font-bold text-[var(--color-text-primary)]">{ts('addStudent')}</h3>
+              <button onClick={() => setShowAddModal(false)}><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             <form onSubmit={handleAddStudent} className="space-y-3">
               {addError && <p className="text-sm text-destructive">{addError}</p>}
-              <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" required />
-              <input value={addForm.phone} onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
-              <input value={addForm.parentPhone} onChange={(e) => setAddForm((f) => ({ ...f, parentPhone: e.target.value }))} placeholder={ts('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+              <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" required />
+              <input value={addForm.phone} onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
+              <input value={addForm.parentPhone} onChange={(e) => setAddForm((f) => ({ ...f, parentPhone: e.target.value }))} placeholder={ts('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{ts('groupRequired')}</label>
-                <select value={addForm.groupId} onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" required>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{ts('groupRequired')}</label>
+                <select value={addForm.groupId} onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" required>
                   <option value="">{tCommon('select')}</option>
                   {groups.map((g) => (<option key={g.id} value={g.id}>{g.name} {g.fee != null ? `(EGP ${g.fee})` : ''}</option>))}
                 </select>
               </div>
-              <p className="text-xs text-muted-foreground">{ts('autoGenerateNumber')}</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">{ts('autoGenerateNumber')}</p>
               <div className="flex gap-2 justify-end mt-4">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
                 <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{isAdding ? tCommon('loading') : tCommon('save')}</button>
@@ -1075,15 +1075,15 @@ export default function StudentsPage() {
       {/* Edit Student Modal */}
       {editStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditStudent(null)}>
-          <div className="bg-card rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-foreground">{tCommon('edit')}</h3>
-              <button onClick={() => setEditStudent(null)}><X size={18} className="text-muted-foreground" /></button>
+              <h3 className="font-bold text-[var(--color-text-primary)]">{tCommon('edit')}</h3>
+              <button onClick={() => setEditStudent(null)}><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             <div className="space-y-3">
-              <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
-              <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
-              <input value={editParentPhone} onChange={(e) => setEditParentPhone(e.target.value)} placeholder={ts('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+              <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
+              <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
+              <input value={editParentPhone} onChange={(e) => setEditParentPhone(e.target.value)} placeholder={ts('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
               {editStudent.parent_consent_given && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
                   {ts('parentConsented', { defaultValue: 'موافقة ولي الأمر ✓' })}
@@ -1096,13 +1096,13 @@ export default function StudentsPage() {
                 onFamilyChange={setEditSiblingFamilyId}
               />
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{ts('assignGroups')}</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{ts('assignGroups')}</label>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {groups.map((g) => (
                     <label key={g.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted cursor-pointer">
                       <input type="checkbox" checked={editGroups.includes(g.id)} onChange={(e) => setEditGroups((prev) => e.target.checked ? [...prev, g.id] : prev.filter((x) => x !== g.id))} className="rounded accent-primary" />
-                      <span className="text-sm text-foreground">{g.name}</span>
-                      <span className="text-xs text-muted-foreground ms-auto">{g.subject}</span>
+                      <span className="text-sm text-[var(--color-text-primary)]">{g.name}</span>
+                      <span className="text-xs text-[var(--color-text-secondary)] ms-auto">{g.subject}</span>
                     </label>
                   ))}
                 </div>
@@ -1119,10 +1119,10 @@ export default function StudentsPage() {
       {/* Delete Confirmation Dialog */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteTarget(null)}>
-          <div className="bg-card rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-foreground text-lg mb-2">{ts('deleteStudent')}</h3>
-            <p className="text-sm text-muted-foreground mb-3">{ts('deleteStudentConfirm')}</p>
-            <p className="font-medium text-foreground mb-5">{deleteTarget.name}</p>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-[var(--color-text-primary)] text-lg mb-2">{ts('deleteStudent')}</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-3">{ts('deleteStudentConfirm')}</p>
+            <p className="font-medium text-[var(--color-text-primary)] mb-5">{deleteTarget.name}</p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
               <button onClick={() => { if (deleteTarget) { handleDeleteStudent(deleteTarget); setDeleteTarget(null); } }} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-destructive hover:bg-destructive/90">{tCommon('delete')}</button>
@@ -1134,10 +1134,10 @@ export default function StudentsPage() {
       {/* View QR Modal -- Professional ID Card */}
       {qrModalStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }}>
-          <div className="bg-card rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-foreground">{ts('viewQR')}</h3>
-              <button onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} className="text-muted-foreground" /></button>
+              <h3 className="font-bold text-[var(--color-text-primary)]">{ts('viewQR')}</h3>
+              <button onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             {/* Professional ID card */}
             <div className="flex justify-center mb-5">
@@ -1153,8 +1153,8 @@ export default function StudentsPage() {
             </div>
             {/* Student details below card */}
             <div className="text-center mb-4">
-              <div className="font-bold text-foreground">{qrModalStudent.name}</div>
-              <div className="font-mono text-sm text-muted-foreground">{qrModalStudent.student_number || ''}</div>
+              <div className="font-bold text-[var(--color-text-primary)]">{qrModalStudent.name}</div>
+              <div className="font-mono text-sm text-[var(--color-text-secondary)]">{qrModalStudent.student_number || ''}</div>
               {(balanceByStudent[qrModalStudent.id] ?? 0) > 0 && (
                 <div className="mt-2 text-sm font-bold text-red-600">
                   {ts('balance')}: {locale === 'ar' ? toAr(Math.round(balanceByStudent[qrModalStudent.id]!)) : Math.round(balanceByStudent[qrModalStudent.id]!).toLocaleString('en-US')} {tCommon('egp')}

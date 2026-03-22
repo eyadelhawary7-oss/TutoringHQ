@@ -330,25 +330,25 @@ export default function AttendancePage() {
   };
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-4 md:p-6 space-y-5 animate-fade-in min-h-screen bg-background">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-4 md:p-6 space-y-5 animate-fade-in min-h-screen bg-[var(--color-surface-0)]">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-        <p className="text-sm text-slate-500 mt-0.5">{t('subtitle')}</p>
+        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('subtitle')}</p>
       </div>
 
       {/* Filter bar */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
+      <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
         <input
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
-          className="px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-900"
+          className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
         />
         <input
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
-          className="px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-900"
+          className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
         />
         <div className="relative flex-1 min-w-[160px]">
           <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
@@ -356,7 +356,7 @@ export default function AttendancePage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={activeTab === 'student' ? t('searchStudent') : t('searchGroup')}
-            className="w-full ps-9 pe-4 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400"
+            className="w-full ps-9 pe-4 py-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
           />
         </div>
         <button
@@ -368,16 +368,16 @@ export default function AttendancePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+      <div className="flex gap-1 bg-[var(--color-surface-2)] p-1 rounded-xl">
         <button
           onClick={() => setActiveTab('student')}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'student' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'student' ? 'bg-[var(--color-surface-1)] text-teal-600 shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
         >
           <ClipboardList size={18} /> {t('byStudent')}
         </button>
         <button
           onClick={() => setActiveTab('group')}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'group' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'group' ? 'bg-[var(--color-surface-1)] text-teal-600 shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
         >
           <BookOpen size={18} /> {t('byGroup')}
         </button>
@@ -389,7 +389,7 @@ export default function AttendancePage() {
         </div>
       ) : activeTab === 'student' ? (
         /* Tab 1: By Student */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
           {groups.length === 0 && byStudent.length === 0 ? (
             <EmptyState
               icon={<ClipboardList />}
@@ -412,24 +412,24 @@ export default function AttendancePage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{t('student')}</th>
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{t('totalAttendance')}</th>
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{t('lastSeen')}</th>
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{t('attendanceRate')}</th>
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{tCommon('actions')}</th>
+                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('student')}</th>
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('totalAttendance')}</th>
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('lastSeen')}</th>
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('attendanceRate')}</th>
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {byStudent.map((r) => (
                     <React.Fragment key={r.student.id}>
-                      <tr className="hover:bg-slate-50 transition-colors">
+                      <tr className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-end">
-                          <div className="font-medium text-slate-900">{r.student.name}</div>
-                          <div className="text-xs text-slate-500 font-mono" dir="ltr">{r.student.phone || r.student.student_number || '—'}</div>
+                          <div className="font-medium text-[var(--color-text-primary)]">{r.student.name}</div>
+                          <div className="text-xs text-[var(--color-text-secondary)] font-mono" dir="ltr">{r.student.phone || r.student.student_number || '—'}</div>
                         </td>
-                        <td className="py-3.5 px-4 text-sm font-mono font-bold text-slate-900 text-end">{r.totalScans}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600 text-end">{formatRelativeTime(r.lastScan, locale)}</td>
+                        <td className="py-3.5 px-4 text-sm font-mono font-bold text-[var(--color-text-primary)] text-end">{r.totalScans}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] text-end">{formatRelativeTime(r.lastScan, locale)}</td>
                         <td className="py-3.5 px-4 text-end">
                           {r.expected > 0 ? (
                             <div className="flex items-center gap-2 justify-end">
@@ -456,22 +456,22 @@ export default function AttendancePage() {
                       </tr>
                       {expandedStudent === r.student.id && (
                         <tr>
-                          <td colSpan={5} className="bg-slate-50 p-4">
-                            <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-                              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-                                <h4 className="font-semibold text-slate-900">{r.student.name} — {t('scanLog')}</h4>
-                                <button onClick={() => setExpandedStudent(null)} className="p-1 hover:bg-slate-100 rounded">
+                          <td colSpan={5} className="bg-[var(--color-surface-0)] p-4">
+                            <div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden">
+                              <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-subtle)]">
+                                <h4 className="font-semibold text-[var(--color-text-primary)]">{r.student.name} — {t('scanLog')}</h4>
+                                <button onClick={() => setExpandedStudent(null)} className="p-1 hover:bg-[var(--color-surface-2)] rounded">
                                   <X size={18} />
                                 </button>
                               </div>
                               <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                   <thead>
-                                    <tr className="border-b border-slate-200 bg-slate-50">
-                                      <th className="text-end py-2 px-4 text-xs font-semibold text-slate-500">{t('dateTime')}</th>
-                                      <th className="text-end py-2 px-4 text-xs font-semibold text-slate-500">{t('group')}</th>
-                                      <th className="text-end py-2 px-4 text-xs font-semibold text-slate-500">{t('result')}</th>
-                                      <th className="text-end py-2 px-4 text-xs font-semibold text-slate-500">{t('note')}</th>
+                                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                                      <th className="text-end py-2 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{t('dateTime')}</th>
+                                      <th className="text-end py-2 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{t('group')}</th>
+                                      <th className="text-end py-2 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{t('result')}</th>
+                                      <th className="text-end py-2 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{t('note')}</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -479,15 +479,15 @@ export default function AttendancePage() {
                                       const badge = deriveResultBadge(sc, t);
                                       const grp = sc.group_id ? groupNameMap[sc.group_id] : null;
                                       return (
-                                        <tr key={sc.id} className="border-b border-slate-100">
-                                          <td className="py-2 px-4 text-slate-600 text-end" dir="ltr">
+                                        <tr key={sc.id} className="border-b border-[var(--color-border-subtle)]">
+                                          <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end" dir="ltr">
                                             {sc.scanned_at ? new Date(sc.scanned_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
                                           </td>
-                                          <td className="py-2 px-4 text-slate-600 text-end">{grp?.name ?? '—'}</td>
+                                          <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end">{grp?.name ?? '—'}</td>
                                           <td className="py-2 px-4 text-end">
                                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>{badge.label}</span>
                                           </td>
-                                          <td className="py-2 px-4 text-slate-500 text-end">—</td>
+                                          <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end">—</td>
                                         </tr>
                                       );
                                     })}
@@ -507,7 +507,7 @@ export default function AttendancePage() {
         </div>
       ) : (
         /* Tab 2: By Group */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
           {groups.length === 0 ? (
             <EmptyState
               icon={<BookOpen />}
@@ -530,27 +530,27 @@ export default function AttendancePage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{t('group')}</th>
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{t('sessions')}</th>
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{t('avgAttendance')}</th>
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{t('lastSession')}</th>
-                    <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase">{tCommon('actions')}</th>
+                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('group')}</th>
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('sessions')}</th>
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('avgAttendance')}</th>
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('lastSession')}</th>
+                    <th className="text-end py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {byGroup.map((r) => (
                     <React.Fragment key={r.group.id}>
-                      <tr className="hover:bg-slate-50 transition-colors">
+                      <tr className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-end">
-                          <div className="font-medium text-slate-900">{r.group.name}</div>
+                          <div className="font-medium text-[var(--color-text-primary)]">{r.group.name}</div>
                           {r.group.subject && (
-                            <span className="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600">{r.group.subject}</span>
+                            <span className="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">{r.group.subject}</span>
                           )}
                         </td>
-                        <td className="py-3.5 px-4 text-sm font-mono font-bold text-slate-900 text-end">{r.sessionsCount}</td>
-                        <td className="py-3.5 px-4 text-sm font-mono text-slate-900 text-end">{r.avgAttendance}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600 text-end" dir="ltr">
+                        <td className="py-3.5 px-4 text-sm font-mono font-bold text-[var(--color-text-primary)] text-end">{r.sessionsCount}</td>
+                        <td className="py-3.5 px-4 text-sm font-mono text-[var(--color-text-primary)] text-end">{r.avgAttendance}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] text-end" dir="ltr">
                           {r.lastSession ? new Date(r.lastSession).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : '—'}
                         </td>
                         <td className="py-3.5 px-4 text-end">
@@ -564,15 +564,15 @@ export default function AttendancePage() {
                       </tr>
                       {expandedGroup === r.group.id && (
                         <tr>
-                          <td colSpan={5} className="bg-slate-50 p-4">
-                            <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-                              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-                                <h4 className="font-semibold text-slate-900">{r.group.name} — {t('sessionBreakdown')}</h4>
-                                <button onClick={() => setExpandedGroup(null)} className="p-1 hover:bg-slate-100 rounded">
+                          <td colSpan={5} className="bg-[var(--color-surface-0)] p-4">
+                            <div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden">
+                              <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-subtle)]">
+                                <h4 className="font-semibold text-[var(--color-text-primary)]">{r.group.name} — {t('sessionBreakdown')}</h4>
+                                <button onClick={() => setExpandedGroup(null)} className="p-1 hover:bg-[var(--color-surface-2)] rounded">
                                   <X size={18} />
                                 </button>
                               </div>
-                              <div className="px-4 py-3 border-b border-slate-200">
+                              <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
                                 <AttendanceHeatmap
                                   groupId={r.group.id}
                                   groupSize={groupMemberCount[r.group.id] ?? 0}
@@ -582,19 +582,19 @@ export default function AttendancePage() {
                               <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                   <thead>
-                                    <tr className="border-b border-slate-200 bg-slate-50">
-                                      <th className="text-end py-2 px-4 text-xs font-semibold text-slate-500">{t('date')}</th>
-                                      <th className="text-end py-2 px-4 text-xs font-semibold text-slate-500">{t('studentsPresent')}</th>
-                                      <th className="text-end py-2 px-4 text-xs font-semibold text-slate-500">{t('attendanceRate')}</th>
+                                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                                      <th className="text-end py-2 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{t('date')}</th>
+                                      <th className="text-end py-2 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{t('studentsPresent')}</th>
+                                      <th className="text-end py-2 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{t('attendanceRate')}</th>
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {r.sessionBreakdown.map((sb) => (
-                                      <tr key={sb.date} className="border-b border-slate-100">
-                                        <td className="py-2 px-4 text-slate-600 text-end" dir="ltr">
+                                      <tr key={sb.date} className="border-b border-[var(--color-border-subtle)]">
+                                        <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end" dir="ltr">
                                           {new Date(sb.date).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB')}
                                         </td>
-                                        <td className="py-2 px-4 text-slate-900 font-mono text-end">{sb.present}</td>
+                                        <td className="py-2 px-4 text-[var(--color-text-primary)] font-mono text-end">{sb.present}</td>
                                         <td className="py-2 px-4 text-end">
                                           {r.avgAttendance > 0 ? `${Math.round((sb.present / r.avgAttendance) * 100)}%` : '—'}
                                         </td>

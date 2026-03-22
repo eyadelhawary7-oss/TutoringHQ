@@ -54,7 +54,7 @@ export default function PasswordConfirmModal({
       onClick={handleClose}
     >
       <div
-        className="modal-spring-in rounded-xl shadow-xl max-w-sm w-full p-6 bg-white"
+        className="modal-spring-in rounded-xl shadow-xl max-w-sm w-full p-6 bg-[var(--color-surface-1)]"
         style={{ opacity: 1 }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -71,7 +71,7 @@ export default function PasswordConfirmModal({
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             placeholder={t('pinPlaceholder', { defaultValue: 'Enter your PIN' })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-[var(--text-primary)] mb-4"
+            className="w-full px-3 py-2 border border-[var(--color-border-default)] rounded-lg bg-[var(--color-surface-1)] text-[var(--text-primary)] mb-4"
             autoComplete="current-password"
             autoFocus
             disabled={loading}
@@ -90,7 +90,7 @@ export default function PasswordConfirmModal({
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+              className="px-4 py-2 bg-[var(--color-surface-1)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
             >
               {t('cancel')}
             </button>

@@ -215,7 +215,7 @@ function CardOrderPreview({
   const initials = centerName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   return (
     <div className="flex items-center gap-4">
-      <div className="relative w-48 aspect-[85.6/54] rounded-xl overflow-hidden shadow-lg border border-border bg-white">
+      <div className="relative w-48 aspect-[85.6/54] rounded-xl overflow-hidden shadow-lg border border-border bg-[var(--color-surface-1)]">
         {side === 'front' ? (
           <>
             <div className="absolute top-0 left-0 right-0 h-[20%] bg-gradient-to-br from-teal-600 to-teal-700" />
@@ -224,18 +224,18 @@ function CardOrderPreview({
               <span className="text-white text-[10px] font-medium truncate">{centerName}</span>
             </div>
             <div className="absolute inset-0 flex flex-col items-center justify-center pt-[12%]">
-              <div className="w-16 h-16 bg-white rounded flex items-center justify-center">
+              <div className="w-16 h-16 bg-[var(--color-surface-1)] rounded flex items-center justify-center">
                 {first?.qr_code ? <img src={first.qr_code} alt="" className="w-14 h-14" /> : <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />}
               </div>
-              <div className="mt-1 text-xs font-bold text-slate-900 truncate max-w-full px-1">{first?.name ?? '—'}</div>
+              <div className="mt-1 text-xs font-bold text-[var(--color-text-primary)] truncate max-w-full px-1">{first?.name ?? '—'}</div>
               <div className="text-[9px] font-mono text-teal-600">{first?.student_number ?? '—'}</div>
             </div>
           </>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-surface-1)]">
             {centerLogo ? <img src={centerLogo} alt="" className="w-16 h-16 object-contain" /> : <div className="w-12 h-12 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-bold">{initials}</div>}
-            <div className="mt-1 font-bold text-slate-900 text-xs">{centerName}</div>
-            <div className="absolute bottom-1 text-[6px] text-gray-400">Powered by CenterHQ</div>
+            <div className="mt-1 font-bold text-[var(--color-text-primary)] text-xs">{centerName}</div>
+            <div className="absolute bottom-1 text-[6px] text-[var(--color-text-tertiary)]">Powered by CenterHQ</div>
           </div>
         )}
       </div>
@@ -858,7 +858,7 @@ export default function AdminPage() {
 
   if (isLoading && !overview && !loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
@@ -866,7 +866,7 @@ export default function AdminPage() {
 
   if (loadError && !overview) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-surface-0)]">
         <div className="text-center">
           <p className="text-red-600 font-medium mb-2">{loadError}</p>
           <div className="flex gap-3 justify-center">
@@ -883,15 +883,15 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex flex-col min-h-screen bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminHeader />
       <div className="flex flex-col md:flex-row flex-1 pt-14">
         <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname ?? undefined} />
 
       {/* Toast for new card order */}
       {toast && (
-        <div className="fixed bottom-4 start-4 end-4 md:start-auto md:end-4 md:max-w-sm z-50 p-4 rounded-xl bg-card border border-border shadow-lg animate-fade-in">
-          <p className="text-sm font-medium text-foreground">{toast.msg}</p>
+        <div className="fixed bottom-4 start-4 end-4 md:start-auto md:end-4 md:max-w-sm z-50 p-4 rounded-xl bg-[var(--color-surface-1)] border border-border shadow-lg animate-fade-in">
+          <p className="text-sm font-medium text-[var(--color-text-primary)]">{toast.msg}</p>
         </div>
       )}
 
@@ -902,7 +902,7 @@ export default function AdminPage() {
           <>
             {/* Section: PLATFORM HEALTH */}
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">PLATFORM HEALTH</span>
+              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">PLATFORM HEALTH</span>
               <div className="flex-1 h-px bg-slate-200" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
@@ -913,11 +913,11 @@ export default function AdminPage() {
                 { label: tAdmin('suspendedCenters', { defaultValue: 'Suspended Centers' }), value: String(overview.suspendedCenters ?? 0), iconBg: 'bg-red-100', iconColor: 'text-red-600', Icon: AlertTriangle },
                 { label: tAdmin('totalStudents'), value: String(overview.totalStudents ?? 0), iconBg: 'bg-blue-100', iconColor: 'text-blue-600', Icon: Users },
               ].map(({ label, value, iconBg, iconColor, Icon }) => (
-                <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm text-slate-500 mb-1">{label}</p>
-                      <p className="text-2xl font-bold text-slate-900 font-mono">{value}</p>
+                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">{label}</p>
+                      <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
                     </div>
                     <div className={`p-3 rounded-full ${iconBg}`}>
                       <Icon className={`w-5 h-5 ${iconColor}`} />
@@ -929,48 +929,48 @@ export default function AdminPage() {
 
             {/* Section: REVENUE */}
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">REVENUE</span>
+              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">REVENUE</span>
               <div className="flex-1 h-px bg-slate-200" />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">{tAdmin('mrr')}</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('en-US')} {tCommon('egp')}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('mrr')}</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('en-US')} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-green-100">
                     <TrendingUp className="w-5 h-5 text-green-600" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Outstanding Invoices</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingRevenue?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Outstanding Invoices</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.pendingRevenue?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-red-100">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Collected This Month</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.revenueThisMonth?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Collected This Month</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.revenueThisMonth?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-teal-100">
                     <CreditCard className="w-5 h-5 text-teal-600" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Collection Rate</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.totalRevenueCollected != null && overview.pendingRevenue != null && overview.totalRevenueCollected + overview.pendingRevenue > 0 ? Math.round(overview.totalRevenueCollected / (overview.totalRevenueCollected + overview.pendingRevenue) * 100) : '—'}%</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Collection Rate</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.totalRevenueCollected != null && overview.pendingRevenue != null && overview.totalRevenueCollected + overview.pendingRevenue > 0 ? Math.round(overview.totalRevenueCollected / (overview.totalRevenueCollected + overview.pendingRevenue) * 100) : '—'}%</p>
                   </div>
                   <div className="p-3 rounded-full bg-blue-100">
                     <BarChart3 className="w-5 h-5 text-blue-600" />
@@ -981,53 +981,53 @@ export default function AdminPage() {
 
             {/* Section: SECURITY & ALERTS */}
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">SECURITY & ALERTS</span>
+              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">SECURITY & ALERTS</span>
               <div className="flex-1 h-px bg-slate-200" />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Failed Logins 24h</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">0</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Failed Logins 24h</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">0</p>
                   </div>
                   <div className="p-3 rounded-full bg-orange-100">
                     <Shield className="w-5 h-5 text-orange-600" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">New Signups 7d</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">{overview.pendingSignups ?? 0}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">New Signups 7d</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.pendingSignups ?? 0}</p>
                   </div>
                   <div className="p-3 rounded-full bg-purple-100">
                     <Users className="w-5 h-5 text-purple-600" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Flagged Activity</p>
-                    <p className="text-2xl font-bold text-slate-900 font-mono">0</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Flagged Activity</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">0</p>
                   </div>
                   <div className="p-3 rounded-full bg-red-100">
                     <ShieldAlert className="w-5 h-5 text-red-600" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">System Status</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">System Status</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
                       </span>
-                      <span className="text-sm font-semibold text-slate-900">All systems operational</span>
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)]">All systems operational</span>
                     </div>
                   </div>
                   <div className="p-3 rounded-full bg-green-100">
@@ -1039,8 +1039,8 @@ export default function AdminPage() {
 
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               {(signupsWeekly.length > 0 || (overview.signupsChart?.length ?? 0) > 0) && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <h3 className="font-bold text-foreground mb-4">{tAdmin('newCentersPerWeek', { defaultValue: 'New Centers per Week' })}</h3>
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('newCentersPerWeek', { defaultValue: 'New Centers per Week' })}</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={signupsWeekly.length > 0 ? signupsWeekly : overview.signupsChart!}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -1053,8 +1053,8 @@ export default function AdminPage() {
                 </div>
               )}
               {(overview.monthlyRevenue?.length ?? 0) > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <h3 className="font-bold text-foreground mb-4">{tAdmin('monthlyRevenueChart', { defaultValue: 'Monthly Revenue' })}</h3>
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('monthlyRevenueChart', { defaultValue: 'Monthly Revenue' })}</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={overview.monthlyRevenue}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -1069,18 +1069,18 @@ export default function AdminPage() {
             </div>
 
             {(overview.recentActivity?.length ?? 0) > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h3 className="font-bold text-foreground mb-3">{tAdmin('recentActivity')}</h3>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-bold text-[var(--color-text-primary)] mb-3">{tAdmin('recentActivity')}</h3>
                 <div className="space-y-3">
                   {overview.recentActivity!.slice(0, 5).map((a, i) => (
                     <div key={a.id || i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                      <span className="text-sm text-foreground">
+                      <span className="text-sm text-[var(--color-text-primary)]">
                         {formatActivitySummary(a.action || '', a.details)}
                         {a.details && typeof (a.details as { center_name?: string }).center_name === 'string' ? (
                           <> — {(a.details as { center_name: string }).center_name}</>
                         ) : null}
                       </span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap ms-3">
+                      <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap ms-3">
                         {a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}
                       </span>
                     </div>
@@ -1098,7 +1098,7 @@ export default function AdminPage() {
               <select
                 value={filterPlan}
                 onChange={(e) => setFilterPlan(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-1)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">كل الخطط</option>
                 <option value="nano">ناشئ</option>
@@ -1111,7 +1111,7 @@ export default function AdminPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-1)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="newest">الأحدث أولاً</option>
                 <option value="oldest">الأقدم أولاً</option>
@@ -1121,12 +1121,12 @@ export default function AdminPage() {
             </div>
             <div className="flex flex-wrap gap-3 items-center mb-4">
               <div className="relative flex-1 min-w-[200px]">
-                <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
+                <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)]" />
                 <input
                   value={centerSearch}
                   onChange={(e) => setCenterSearch(e.target.value)}
                   placeholder={tAdmin('search', { defaultValue: 'Search centers...' })}
-                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-border bg-muted text-foreground text-sm"
+                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-border bg-muted text-[var(--color-text-primary)] text-sm"
                 />
               </div>
               <div className="flex gap-1 flex-wrap">
@@ -1134,7 +1134,7 @@ export default function AdminPage() {
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary/20 text-primary' : 'text-[var(--color-text-secondary)] hover:bg-muted'}`}
                   >
                     {s === 'all' ? tCommon('all') : s === 'at_risk' ? (tAdmin('atRisk') ?? 'At Risk') : s === 'active' ? tCommon('active') : s === 'pending' ? tAdmin('pending') : tAdmin('suspended')}
                   </button>
@@ -1142,44 +1142,44 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Owner</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tCommon('phone')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('studentsCount')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('lastActive') ?? 'Last Active'}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('usage') ?? 'Usage'}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('createdAt')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tCommon('phone')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('studentsCount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('lastActive') ?? 'Last Active'}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('usage') ?? 'Usage'}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {displayedCenters.map((c) => (
-                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{c.name}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
-                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
+                      <tr key={c.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{c.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
                         <td className="py-3.5 px-4"><PlanBadge plan={c.plan} /></td>
                         <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[c.status || 'active'] || STATUS_STYLES.active}`}>
                             {c.status || 'active'}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600 font-mono hidden md:table-cell">{c.students_count ?? 0}</td>
-                        <td className={`py-3.5 px-4 text-xs hidden lg:table-cell ${(c.last_active?.includes('days') || c.last_active === 'Never') ? 'text-red-600 font-semibold' : 'text-slate-600'}`}>{c.last_active ?? '—'}</td>
-                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden lg:table-cell">{c.usage_scans ?? 0}</td>
-                        <td className="py-3.5 px-4 text-xs text-slate-600 hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] font-mono hidden md:table-cell">{c.students_count ?? 0}</td>
+                        <td className={`py-3.5 px-4 text-xs hidden lg:table-cell ${(c.last_active?.includes('days') || c.last_active === 'Never') ? 'text-red-600 font-semibold' : 'text-[var(--color-text-secondary)]'}`}>{c.last_active ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.usage_scans ?? 0}</td>
+                        <td className="py-3.5 px-4 text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
                         <td className="py-3.5 px-4">
                           <div className="relative">
                             <button
                               onClick={() => setOpenActionsId(openActionsId === c.id ? null : c.id)}
-                              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"
+                              className="p-1.5 rounded-lg hover:bg-muted text-[var(--color-text-secondary)]"
                               title={tCommon('actions')}
                             >
                               <MoreVertical size={16} />
@@ -1187,21 +1187,21 @@ export default function AdminPage() {
                             {openActionsId === c.id && (
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setOpenActionsId(null)} aria-hidden="true" />
-                                <div className="absolute top-full end-0 mt-1 z-50 min-w-[180px] py-1 rounded-lg border border-border shadow-lg bg-card">
-                                  <button onClick={() => { setDetailCenter(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
+                                <div className="absolute top-full end-0 mt-1 z-50 min-w-[180px] py-1 rounded-lg border border-border shadow-lg bg-[var(--color-surface-1)]">
+                                  <button onClick={() => { setDetailCenter(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start">
                                     <ExternalLink size={14} />{tAdmin('viewDetails')}
                                   </button>
                                   {c.status === 'active' && (
-                                    <button onClick={() => { setShowSuspendConfirm(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
+                                    <button onClick={() => { setShowSuspendConfirm(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start">
                                       <AlertTriangle size={14} />{tAdmin('suspend')}
                                     </button>
                                   )}
                                   {c.status === 'suspended' && (
-                                    <button onClick={() => { handleCenterAction(c.id, 'reactivate'); setOpenActionsId(null); }} disabled={actionLoading} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start disabled:opacity-50">
+                                    <button onClick={() => { handleCenterAction(c.id, 'reactivate'); setOpenActionsId(null); }} disabled={actionLoading} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start disabled:opacity-50">
                                       <Check size={14} />{tAdmin('reactivate')}
                                     </button>
                                   )}
-                                  <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-start">
+                                  <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start">
                                     <CreditCard size={14} />{tAdmin('changePlan')}
                                   </button>
                                   <button onClick={() => { setDeleteConfirm(c.id); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start">
@@ -1224,19 +1224,19 @@ export default function AdminPage() {
         {/* Billing */}
         {tab === 'billing' && (
           <>
-            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('billing')}</h2>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('billing')}</h2>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('amount')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('nextDue')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('amount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('nextDue')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1245,12 +1245,12 @@ export default function AdminPage() {
                       const nextDueStr = b.nextDue ?? b.next_payment_due ?? '';
                       const billingStatus = b.billing_status ?? b.status ?? 'active';
                       return (
-                        <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{b.name}</td>
+                        <tr key={b.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{b.name}</td>
                           <td className="py-3.5 px-4"><PlanBadge plan={b.plan} /></td>
-                          <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{b.billing_period ?? '—'}</td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(b.amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
-                          <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{nextDueStr || '—'}</td>
+                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{b.billing_period ?? '—'}</td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{(b.amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
+                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{nextDueStr || '—'}</td>
                           <td className="py-3.5 px-4">
                             <BillingStatusBadge status={isPaid ? 'paid' : (billingStatus === 'overdue' ? 'overdue' : 'active')} nextDue={nextDueStr || new Date().toISOString()} />
                           </td>
@@ -1269,7 +1269,7 @@ export default function AdminPage() {
                               <button
                                 onClick={() => sendWhatsAppReminder(b.phone ?? '', b.name ?? '', b.amount ?? 0, nextDueStr || '')}
                                 disabled={actionLoading}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-slate-700 text-sm font-semibold rounded-lg whitespace-nowrap transition-all disabled:opacity-50"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] hover:border-slate-400 text-[var(--color-text-primary)] text-sm font-semibold rounded-lg whitespace-nowrap transition-all disabled:opacity-50"
                               >
                                 <Bell className="w-4 h-4" />
                                 {tAdmin('sendReminder')}
@@ -1286,22 +1286,22 @@ export default function AdminPage() {
 
             {pendingInvoices.length > 0 && (
               <>
-                <h3 className="font-bold text-foreground mt-6 mb-3">{tAdmin('pendingInvoices')}</h3>
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+                <h3 className="font-bold text-[var(--color-text-primary)] mt-6 mb-3">{tAdmin('pendingInvoices')}</h3>
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50">
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('amount')}</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
+                        <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('amount')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {pendingInvoices.map((inv) => (
-                          <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{inv.centerName}</td>
-                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{(inv.payment_amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
+                          <tr key={inv.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                            <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{inv.centerName}</td>
+                            <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{(inv.payment_amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-2 flex-nowrap">
                                 {inv.payment_proof_url ? (
@@ -1347,27 +1347,27 @@ export default function AdminPage() {
               </>
             )}
 
-            <h3 className="font-bold text-foreground mt-6 mb-3">{tAdmin('paymentHistory')}</h3>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <h3 className="font-bold text-[var(--color-text-primary)] mt-6 mb-3">{tAdmin('paymentHistory')}</h3>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('amount')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">{tAdmin('recordedBy')}</th>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('amount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('recordedBy')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {paymentHistory.map((p, i) => (
-                      <tr key={i} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-slate-600">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{p.centerName}</td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{p.amount.toLocaleString('en-US')} {tCommon('egp')}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{p.billing_period ?? '—'}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
+                      <tr key={i} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.centerName}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{p.amount.toLocaleString('en-US')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{p.billing_period ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1380,32 +1380,32 @@ export default function AdminPage() {
         {/* Plan Requests */}
         {tab === 'planRequests' && (
           <>
-            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('planRequests')}</h2>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('planRequests')}</h2>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Current → Requested</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Current → Requested</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {planRequests.map((pr) => (
-                      <tr key={pr.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{pr.centerName}</td>
+                      <tr key={pr.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{pr.centerName}</td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
                             <PlanBadge plan={pr.current_plan} />
-                            <span className="text-slate-500">→</span>
+                            <span className="text-[var(--color-text-secondary)]">→</span>
                             <PlanBadge plan={pr.requested_plan} />
-                            {pr.priceDiffFormatted && <span className="text-xs text-slate-500">{pr.priceDiffFormatted}</span>}
+                            {pr.priceDiffFormatted && <span className="text-xs text-[var(--color-text-secondary)]">{pr.priceDiffFormatted}</span>}
                           </div>
                         </td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600">{pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : '—'}</td>
                         <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pr.status === 'pending' ? STATUS_STYLES.pending : pr.status === 'approved' ? STATUS_STYLES.active : STATUS_STYLES.rejected}`}>
                             {pr.status === 'pending' ? tAdmin('pending') : pr.status === 'approved' ? tAdmin('approved') : tAdmin('rejected')}
@@ -1437,32 +1437,32 @@ export default function AdminPage() {
         {/* Pending Signups */}
         {tab === 'pendingSignups' && (
           <>
-            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('pendingSignups')}</h2>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('pendingSignups')}</h2>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Center</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Owner</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('phone')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Email</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">{tAdmin('referredBy')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('createdAt')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Center</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('phone')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">Email</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('referredBy')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {pendingSignups.map((ps) => (
-                      <tr key={ps.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{ps.name}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600">{ps.owner_name ?? '—'}</td>
-                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600" dir="ltr">{ps.phone ?? '—'}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600 hidden md:table-cell">{ps.email ?? '—'}</td>
+                      <tr key={ps.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{ps.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{ps.owner_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{ps.phone ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{ps.email ?? '—'}</td>
                         <td className="py-3.5 px-4"><PlanBadge plan={ps.plan} /></td>
-                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600 hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2 flex-nowrap">
                             <button
@@ -1486,7 +1486,7 @@ export default function AdminPage() {
                       </tr>
                     ))}
                     {pendingSignups.length === 0 && (
-                      <tr><td colSpan={8} className="py-8 px-4 text-center text-slate-500">{tAdmin('noPending')}</td></tr>
+                      <tr><td colSpan={8} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">{tAdmin('noPending')}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1498,60 +1498,60 @@ export default function AdminPage() {
         {/* Referrals */}
         {tab === 'referrals' && (
           <>
-            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('referrals', { defaultValue: 'الإحالات' })}</h2>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('referrals', { defaultValue: 'الإحالات' })}</h2>
 
-            <h3 className="font-semibold text-foreground mb-3">{tAdmin('allReferrals', { defaultValue: 'جميع الإحالات' })}</h3>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+            <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">{tAdmin('allReferrals', { defaultValue: 'جميع الإحالات' })}</h3>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('referrer', { defaultValue: 'المُحيل' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('referredCenter', { defaultValue: 'السنتر المُحال' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('date', { defaultValue: 'التاريخ' })}</th>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('referrer', { defaultValue: 'المُحيل' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('referredCenter', { defaultValue: 'السنتر المُحال' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('date', { defaultValue: 'التاريخ' })}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {adminReferrals.map((r) => (
-                      <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{r.referrer_name}</td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600">{r.referred_name}</td>
-                        <td className="py-3.5 px-4 font-mono text-sm text-slate-700">{r.referral_code}</td>
+                      <tr key={r.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{r.referrer_name}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{r.referred_name}</td>
+                        <td className="py-3.5 px-4 font-mono text-sm text-[var(--color-text-primary)]">{r.referral_code}</td>
                         <td className="py-3.5 px-4">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${r.status === 'active' ? STATUS_STYLES.active : r.status === 'pending' ? STATUS_STYLES.pending : 'bg-slate-100 text-slate-700'}`}>
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${r.status === 'active' ? STATUS_STYLES.active : r.status === 'pending' ? STATUS_STYLES.pending : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'}`}>
                             {r.status}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-sm text-slate-600">{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
                       </tr>
                     ))}
                     {adminReferrals.length === 0 && (
-                      <tr><td colSpan={5} className="py-8 px-4 text-center text-slate-500">{tAdmin('noReferrals', { defaultValue: 'لا توجد إحالات' })}</td></tr>
+                      <tr><td colSpan={5} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">{tAdmin('noReferrals', { defaultValue: 'لا توجد إحالات' })}</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            <h3 className="font-semibold text-foreground mb-3">{tAdmin('pendingPayouts', { defaultValue: 'المدفوعات المعلقة' })}</h3>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">{tAdmin('pendingPayouts', { defaultValue: 'المدفوعات المعلقة' })}</h3>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('centerName', { defaultValue: 'السنتر' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('amountAvailable', { defaultValue: 'المبلغ المتاح' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('centerName', { defaultValue: 'السنتر' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('amountAvailable', { defaultValue: 'المبلغ المتاح' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {adminPendingPayouts.map((p) => (
-                      <tr key={p.center_id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{p.center_name}</td>
-                        <td className="py-3.5 px-4 font-mono text-sm text-slate-700">{p.code}</td>
+                      <tr key={p.center_id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.center_name}</td>
+                        <td className="py-3.5 px-4 font-mono text-sm text-[var(--color-text-primary)]">{p.code}</td>
                         <td className="py-3.5 px-4 font-mono font-bold text-teal-600">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
                         <td className="py-3.5 px-4">
                           <button
@@ -1583,7 +1583,7 @@ export default function AdminPage() {
                       </tr>
                     ))}
                     {adminPendingPayouts.length === 0 && (
-                      <tr><td colSpan={4} className="py-8 px-4 text-center text-slate-500">{tAdmin('noPendingPayouts', { defaultValue: 'لا توجد مدفوعات معلقة' })}</td></tr>
+                      <tr><td colSpan={4} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">{tAdmin('noPendingPayouts', { defaultValue: 'لا توجد مدفوعات معلقة' })}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1595,19 +1595,19 @@ export default function AdminPage() {
         {/* Card Orders */}
         {tab === 'cardOrders' && (
           <>
-            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('cardOrders')}</h2>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('cardOrders')}</h2>
             <div className="glass overflow-hidden rounded-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-muted">
                     <tr>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('orderId', { defaultValue: 'Order ID' })}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('centerName', { defaultValue: 'Center' })}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('studentsCount')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('amount')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('status')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tAdmin('createdAt')}</th>
-                      <th className="text-start px-4 py-3 font-medium text-muted-foreground">{tCommon('actions')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('orderId', { defaultValue: 'Order ID' })}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('centerName', { defaultValue: 'Center' })}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('studentsCount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('amount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('status')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('createdAt')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1628,8 +1628,8 @@ export default function AdminPage() {
                             className="border-t border-border hover:bg-muted/30 cursor-pointer"
                             onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
                           >
-                            <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{order.id.slice(0, 8)}…</td>
-                            <td className="px-4 py-3 font-medium text-foreground">{order.center_name}</td>
+                            <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">{order.id.slice(0, 8)}…</td>
+                            <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{order.center_name}</td>
                             <td className="px-4 py-3 font-mono">{order.quantity}</td>
                             <td className="px-4 py-3 font-mono font-bold">{order.total_amount.toLocaleString('en-US')} {tCommon('egp')}</td>
                             <td className="px-4 py-3">
@@ -1637,7 +1637,7 @@ export default function AdminPage() {
                                 {order.status}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-xs text-muted-foreground">{order.created_at ? new Date(order.created_at).toLocaleDateString() : '—'}</td>
+                            <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">{order.created_at ? new Date(order.created_at).toLocaleDateString() : '—'}</td>
                             <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                               <span className="inline-flex">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
                             </td>
@@ -1647,34 +1647,34 @@ export default function AdminPage() {
                               <td colSpan={7} className="px-4 py-4">
                                 <div className="space-y-4">
                                   <div>
-                                    <p className="text-xs font-medium text-muted-foreground mb-2">{tAdmin('studentsInOrder', { defaultValue: 'Students' })}</p>
+                                    <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">{tAdmin('studentsInOrder', { defaultValue: 'Students' })}</p>
                                     <div className="flex flex-wrap gap-2">
                                       {order.students.map((s) => (
-                                        <span key={s.id} className="px-2 py-1 rounded-lg bg-background border border-border text-sm">
-                                          {s.name} <span className="font-mono text-muted-foreground">{s.student_number || ''}</span>
+                                        <span key={s.id} className="px-2 py-1 rounded-lg bg-[var(--color-surface-0)] border border-border text-sm">
+                                          {s.name} <span className="font-mono text-[var(--color-text-secondary)]">{s.student_number || ''}</span>
                                         </span>
                                       ))}
                                     </div>
                                   </div>
                                   <div className="flex flex-wrap gap-4 items-start">
                                     <div className="flex-1 min-w-[200px]">
-                                      <p className="text-xs font-medium text-muted-foreground mb-1">{tAdmin('deliveryAddress', { defaultValue: 'Delivery Address' })}</p>
+                                      <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tAdmin('deliveryAddress', { defaultValue: 'Delivery Address' })}</p>
                                       <p className="text-sm">{order.delivery_address || '—'}</p>
                                       {order.notes && (
                                         <>
-                                          <p className="text-xs font-medium text-muted-foreground mt-2 mb-1">{tAdmin('notes', { defaultValue: 'Notes' })}</p>
+                                          <p className="text-xs font-medium text-[var(--color-text-secondary)] mt-2 mb-1">{tAdmin('notes', { defaultValue: 'Notes' })}</p>
                                           <p className="text-sm">{order.notes}</p>
                                         </>
                                       )}
                                     </div>
                                     <div className="flex flex-col gap-2">
                                       <div>
-                                        <label className="block text-xs font-medium text-muted-foreground mb-1">{tCommon('status')}</label>
+                                        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tCommon('status')}</label>
                                         <select
                                           value={order.status}
                                           onChange={(e) => handleCardOrderStatusUpdate(order.id, e.target.value)}
                                           disabled={actionLoading}
-                                          className="px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                                          className="px-3 py-2 rounded-lg border border-border bg-[var(--color-surface-0)] text-sm"
                                         >
                                           <option value="pending">pending</option>
                                           <option value="confirmed">confirmed</option>
@@ -1696,7 +1696,7 @@ export default function AdminPage() {
                                     </div>
                                   </div>
                                   <div className="pt-2">
-                                    <p className="text-xs font-medium text-muted-foreground mb-2">{tAdmin('cardPreview', { defaultValue: 'Card Preview' })}</p>
+                                    <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">{tAdmin('cardPreview', { defaultValue: 'Card Preview' })}</p>
                                     <CardOrderPreview
                                       students={order.students}
                                       centerName={order.center_name}
@@ -1711,7 +1711,7 @@ export default function AdminPage() {
                       );
                     })}
                     {cardOrders.length === 0 && (
-                      <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">{tAdmin('noCardOrders', { defaultValue: 'No card orders yet' })}</td></tr>
+                      <tr><td colSpan={7} className="px-4 py-8 text-center text-[var(--color-text-secondary)]">{tAdmin('noCardOrders', { defaultValue: 'No card orders yet' })}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1724,29 +1724,29 @@ export default function AdminPage() {
         {tab === 'internalTeam' && (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-foreground">{tAdmin('internalTeam')}</h2>
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tAdmin('internalTeam')}</h2>
               <button onClick={() => setShowAddAdmin(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90">
                 + {tAdmin('addAdmin', { defaultValue: 'Add Admin' })}
               </button>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('name')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('phone')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tAdmin('joinedDate')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
+                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('phone')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Role</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('joinedDate')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {internalTeam.map((m) => (
-                    <tr key={m.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3.5 px-4 text-sm text-slate-900 font-medium">{m.name}</td>
-                      <td className="py-3.5 px-4 font-mono text-xs text-slate-600" dir="ltr">{m.phone ?? m.email ?? '—'}</td>
+                    <tr key={m.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                      <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{m.name}</td>
+                      <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{m.phone ?? m.email ?? '—'}</td>
                       <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">{m.role}</span></td>
-                      <td className="py-3.5 px-4 text-sm text-slate-600">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
+                      <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
                       <td className="py-3.5 px-4">
                         {!['super_admin', 'admin'].includes(m.role) && (
                           <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50">
@@ -1766,7 +1766,7 @@ export default function AdminPage() {
         {tab === 'salesPipeline' && (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-foreground">{tAdmin('salesPipeline') ?? 'Sales Pipeline'}</h2>
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tAdmin('salesPipeline') ?? 'Sales Pipeline'}</h2>
               <button onClick={() => setShowAddLead(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary">
                 <Plus size={16} />{tAdmin('addLead') ?? 'Add Lead'}
               </button>
@@ -1779,9 +1779,9 @@ export default function AdminPage() {
                 { label: 'Converted', value: leads.filter(l => l.stage === 'converted').length },
                 { label: 'Conversion Rate', value: leads.length > 0 ? `${Math.round((leads.filter(l => l.stage === 'converted').length / leads.length) * 100)}%` : '0%' },
               ].map(({ label, value }) => (
-                <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <div className="text-2xl font-bold font-mono text-slate-900">{value}</div>
-                  <div className="text-sm text-slate-500">{label}</div>
+                <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">{label}</div>
                 </div>
               ))}
             </div>
@@ -1789,18 +1789,18 @@ export default function AdminPage() {
               {(['prospect', 'contacted', 'demo_scheduled', 'converted'] as const).map((stage) => (
                 <div key={stage} className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-sm text-foreground">{stage.replace('_', ' ')}</h3>
-                    <span className="text-xs font-mono text-muted-foreground">{leads.filter(l => l.stage === stage).length}</span>
+                    <h3 className="font-semibold text-sm text-[var(--color-text-primary)]">{stage.replace('_', ' ')}</h3>
+                    <span className="text-xs font-mono text-[var(--color-text-secondary)]">{leads.filter(l => l.stage === stage).length}</span>
                   </div>
                   <div className="space-y-2">
                     {leads.filter(l => l.stage === stage).map((lead) => (
-                      <div key={lead.id} onClick={() => setSelectedLead(lead)} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow">
-                        <p className="font-semibold text-sm text-foreground">{lead.name}</p>
-                        <p className="text-xs text-muted-foreground">{lead.contact_person}</p>
-                        <p className="text-xs font-mono text-muted-foreground mt-1" dir="ltr">{lead.phone}</p>
+                      <div key={lead.id} onClick={() => setSelectedLead(lead)} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow">
+                        <p className="font-semibold text-sm text-[var(--color-text-primary)]">{lead.name}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{lead.contact_person}</p>
+                        <p className="text-xs font-mono text-[var(--color-text-secondary)] mt-1" dir="ltr">{lead.phone}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-muted-foreground">{lead.area}</span>
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{lead.source}</span>
+                          <span className="text-xs text-[var(--color-text-secondary)]">{lead.area}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-[var(--color-text-secondary)]">{lead.source}</span>
                         </div>
                       </div>
                     ))}
@@ -1814,10 +1814,10 @@ export default function AdminPage() {
         {/* Analytics */}
         {tab === 'analytics' && (
           <>
-            <h2 className="text-lg font-bold text-foreground mb-4">{tAdmin('analytics') ?? 'Analytics'}</h2>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('analytics') ?? 'Analytics'}</h2>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Centers by Plan</h3>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Centers by Plan</h3>
                 <div className="flex items-center gap-6">
                   <ResponsiveContainer width={160} height={160}>
                     <PieChart>
@@ -1857,16 +1857,16 @@ export default function AdminPage() {
                       return (
                         <div key={name} className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
-                          <span className="text-sm text-muted-foreground flex-1">{name}</span>
-                          <span className="text-sm font-bold font-mono text-foreground">{val}</span>
+                          <span className="text-sm text-[var(--color-text-secondary)] flex-1">{name}</span>
+                          <span className="text-sm font-bold font-mono text-[var(--color-text-primary)]">{val}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Centers by Status</h3>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Centers by Status</h3>
                 <div className="flex items-center gap-6">
                   <ResponsiveContainer width={160} height={160}>
                     <PieChart>
@@ -1900,8 +1900,8 @@ export default function AdminPage() {
                       return (
                         <div key={name} className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
-                          <span className="text-sm text-muted-foreground flex-1">{name}</span>
-                          <span className="text-sm font-bold font-mono text-foreground">{val}</span>
+                          <span className="text-sm text-[var(--color-text-secondary)] flex-1">{name}</span>
+                          <span className="text-sm font-bold font-mono text-[var(--color-text-primary)]">{val}</span>
                         </div>
                       );
                     })}
@@ -1910,8 +1910,8 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Top 5 Centers by Students</h3>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Top 5 Centers by Students</h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={[...centers].sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -1922,8 +1922,8 @@ export default function AdminPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Top 5 Centers by Revenue</h3>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Top 5 Centers by Revenue</h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={[...centers].filter(c => (c.status ?? 'active') === 'active').sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -1942,9 +1942,9 @@ export default function AdminPage() {
                 { label: 'Centers with 0 Students', value: centers.filter(c => (c.students_count ?? 0) === 0).length },
                 { label: 'Centers at Risk', value: centers.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
               ].map(({ label, value }) => (
-                <div key={label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <div className="text-2xl font-bold font-mono text-slate-900">{value}</div>
-                  <div className="text-sm text-slate-500">{label}</div>
+                <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">{label}</div>
                 </div>
               ))}
             </div>
@@ -1956,9 +1956,9 @@ export default function AdminPage() {
       {detailCenter && (
         <div className="fixed inset-0 z-50" onClick={() => setDetailCenter(null)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-card" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-border flex items-center justify-between">
-              <h2 className="font-bold text-foreground text-lg">{detailCenter.name}</h2>
+              <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{detailCenter.name}</h2>
               <button onClick={() => setDetailCenter(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
@@ -1977,8 +1977,8 @@ export default function AdminPage() {
                 { label: tAdmin('createdAt'), value: detailCenter.created_at ? new Date(detailCenter.created_at).toLocaleDateString() : '—', isPlan: false },
               ].map(({ label, value, isPlan }) => (
                 <div key={label}>
-                  <p className="text-xs text-slate-500 mb-0.5">{label}</p>
-                  {isPlan ? <PlanBadge plan={value} /> : <p className="font-medium text-slate-900">{value}</p>}
+                  <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{label}</p>
+                  {isPlan ? <PlanBadge plan={value} /> : <p className="font-medium text-[var(--color-text-primary)]">{value}</p>}
                 </div>
               ))}
             </div>
@@ -1989,9 +1989,9 @@ export default function AdminPage() {
       {/* Suspend Confirm */}
       {showSuspendConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSuspendConfirm(null)}>
-          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-card" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-foreground mb-2">{tAdmin('confirmSuspend')}</h3>
-            <p className="text-sm text-muted-foreground mb-4">Are you sure you want to suspend {showSuspendConfirm.name}?</p>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-2">{tAdmin('confirmSuspend')}</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">Are you sure you want to suspend {showSuspendConfirm.name}?</p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setShowSuspendConfirm(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
               <button
@@ -2012,7 +2012,7 @@ export default function AdminPage() {
           onClick={() => setDeleteConfirm(null)}
         >
           <div
-            style={{ background: 'white', borderRadius: 12, padding: 24, width: 360, maxWidth: '90vw' }}
+            style={{ background: 'var(--color-surface-1)', borderRadius: 12, padding: 24, width: 360, maxWidth: '90vw' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{tAdmin('deleteCenters')}</h3>
@@ -2022,7 +2022,7 @@ export default function AdminPage() {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: 14 }}
+                style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--color-border-default)', background: 'var(--color-surface-2)', cursor: 'pointer', fontSize: 14 }}
               >
                 {tCommon('cancel')}
               </button>
@@ -2040,15 +2040,15 @@ export default function AdminPage() {
       {/* Add Admin Modal */}
       {showAddAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddAdmin(false)}>
-          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full max-h-[90vh] overflow-y-auto bg-card" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-foreground mb-4">{tAdmin('inviteTeamMember', { defaultValue: 'Add Admin' })}</h3>
-            <p className="text-xs text-muted-foreground mb-3">{tAdmin('noTeamMembers', { defaultValue: 'User must have signed up at CenterHQ first.' })}</p>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full max-h-[90vh] overflow-y-auto bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('inviteTeamMember', { defaultValue: 'Add Admin' })}</h3>
+            <p className="text-xs text-[var(--color-text-secondary)] mb-3">{tAdmin('noTeamMembers', { defaultValue: 'User must have signed up at CenterHQ first.' })}</p>
             <div className="space-y-3">
               <input
                 value={addAdminForm.name}
                 onChange={(e) => setAddAdminForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder={tCommon('name')}
-                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
               />
               <input
                 value={addAdminForm.phone}
@@ -2056,21 +2056,21 @@ export default function AdminPage() {
                 placeholder={tCommon('phone')}
                 type="tel"
                 dir="ltr"
-                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
               />
               <input
                 value={addAdminForm.email}
                 onChange={(e) => setAddAdminForm((f) => ({ ...f, email: e.target.value }))}
                 placeholder={tCommon('email')}
                 type="email"
-                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
               />
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">الدور / Role</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">الدور / Role</label>
                 <select
                   value={selectedRole}
                   onChange={(e) => { setSelectedRole(e.target.value); setCustomPerms([]); }}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="internal_viewer">مشاهد / Viewer</option>
                   <option value="internal_admin">مدير داخلي / Internal Admin</option>
@@ -2081,8 +2081,8 @@ export default function AdminPage() {
                 </select>
               </div>
               {selectedRole === 'custom' && (
-                <div className="border border-slate-200 rounded-lg p-3 space-y-2">
-                  <p className="text-sm font-medium text-slate-700">الصلاحيات المسموح بها:</p>
+                <div className="border border-[var(--color-border-subtle)] rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">الصلاحيات المسموح بها:</p>
                   {ALL_ADMIN_PERMISSIONS.map((p) => (
                     <label key={p.key} className="flex items-center gap-2 text-sm cursor-pointer">
                       <input
@@ -2114,9 +2114,9 @@ export default function AdminPage() {
       {/* Reject Reason Modal */}
       {showRejectReason && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowRejectReason(null)}>
-          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-card" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-foreground mb-3">Rejection Reason</h3>
-            <textarea placeholder="Optional reason..." className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm h-24 resize-none mb-4" />
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-3">Rejection Reason</h3>
+            <textarea placeholder="Optional reason..." className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm h-24 resize-none mb-4" />
             <div className="flex gap-2 justify-end">
               <button onClick={() => setShowRejectReason(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
               <button
@@ -2133,38 +2133,38 @@ export default function AdminPage() {
       {/* Add Lead Modal */}
       {showAddLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddLead(false)}>
-          <div className="rounded-2xl border border-border p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto bg-card text-start" dir="rtl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-foreground mb-4">إضافة عميل جديد</h3>
+          <div className="rounded-2xl border border-border p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto bg-[var(--color-surface-1)] text-start" dir="rtl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-4">إضافة عميل جديد</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">اسم السنتر</label>
-                <input placeholder="اسم السنتر التعليمي" value={addLeadForm.name} onChange={(e) => setAddLeadForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">اسم السنتر</label>
+                <input placeholder="اسم السنتر التعليمي" value={addLeadForm.name} onChange={(e) => setAddLeadForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">اسم مسؤول التواصل</label>
-                <input placeholder="الاسم الكامل للمسؤول" value={addLeadForm.contactPerson} onChange={(e) => setAddLeadForm(f => ({ ...f, contactPerson: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">اسم مسؤول التواصل</label>
+                <input placeholder="الاسم الكامل للمسؤول" value={addLeadForm.contactPerson} onChange={(e) => setAddLeadForm(f => ({ ...f, contactPerson: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">رقم الهاتف</label>
-                <input placeholder="01x xxxx xxxx" type="tel" dir="ltr" value={addLeadForm.phone} onChange={(e) => setAddLeadForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm" />
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">رقم الهاتف</label>
+                <input placeholder="01x xxxx xxxx" type="tel" dir="ltr" value={addLeadForm.phone} onChange={(e) => setAddLeadForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">المنطقة</label>
-                <select value={addLeadForm.area} onChange={(e) => setAddLeadForm(f => ({ ...f, area: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">المنطقة</label>
+                <select value={addLeadForm.area} onChange={(e) => setAddLeadForm(f => ({ ...f, area: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm">
                   <option value="">المنطقة</option>
                   {AREAS.map((a) => <option key={a} value={a}>{AREA_LABELS[a] ?? a}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">المصدر</label>
-                <select value={addLeadForm.source} onChange={(e) => setAddLeadForm(f => ({ ...f, source: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">المصدر</label>
+                <select value={addLeadForm.source} onChange={(e) => setAddLeadForm(f => ({ ...f, source: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm">
                   <option value="">المصدر</option>
                   {SOURCES.map((s) => <option key={s} value={s}>{SOURCE_LABELS[s] ?? s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">مرحلة المسار</label>
-                <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">مرحلة المسار</label>
+                <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm">
                   <option value="prospect">عميل محتمل</option>
                   <option value="contacted">تم التواصل</option>
                   <option value="demo_scheduled">تم العرض</option>
@@ -2172,8 +2172,8 @@ export default function AdminPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">ملاحظات</label>
-                <textarea placeholder="أي ملاحظات إضافية..." value={addLeadForm.notes} onChange={(e) => setAddLeadForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-foreground text-sm h-20 resize-none" />
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">ملاحظات</label>
+                <textarea placeholder="أي ملاحظات إضافية..." value={addLeadForm.notes} onChange={(e) => setAddLeadForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm h-20 resize-none" />
               </div>
             </div>
             <div className="flex gap-2 justify-end mt-4">
@@ -2208,19 +2208,19 @@ export default function AdminPage() {
       {selectedLead && (
         <div className="fixed inset-0 z-50" onClick={() => setSelectedLead(null)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-card" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-border flex items-center justify-between">
-              <h2 className="font-bold text-foreground text-lg">{selectedLead.name}</h2>
+              <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{selectedLead.name}</h2>
               <button onClick={() => setSelectedLead(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
-              <div><p className="text-xs text-muted-foreground mb-0.5">Contact Person</p><p className="font-medium text-foreground">{selectedLead.contact_person}</p></div>
-              <div><p className="text-xs text-muted-foreground mb-0.5">{tCommon('phone')}</p><p className="font-medium text-foreground" dir="ltr">{selectedLead.phone}</p></div>
-              <div><p className="text-xs text-muted-foreground mb-0.5">Area</p><p className="font-medium text-foreground">{selectedLead.area}</p></div>
-              <div><p className="text-xs text-muted-foreground mb-0.5">Source</p><p className="font-medium text-foreground">{selectedLead.source}</p></div>
-              <div><p className="text-xs text-muted-foreground mb-0.5">Notes</p><p className="font-medium text-foreground">{selectedLead.notes}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Contact Person</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.contact_person}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{tCommon('phone')}</p><p className="font-medium text-[var(--color-text-primary)]" dir="ltr">{selectedLead.phone}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Area</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.area}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Source</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.source}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Notes</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.notes}</p></div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Change Stage</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">Change Stage</p>
                 <select
                   value={selectedLead.stage}
                   onChange={(e) => {
@@ -2228,7 +2228,7 @@ export default function AdminPage() {
                     setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, stage: newStage } : l));
                     setSelectedLead({ ...selectedLead, stage: newStage });
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-muted text-foreground text-sm"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
                 >
                   <option value="prospect">Prospect</option>
                   <option value="contacted">Contacted</option>
@@ -2247,26 +2247,26 @@ export default function AdminPage() {
       {/* Change Plan Modal */}
       {changePlanModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+          <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Change Plan</h2>
-                <p className="text-sm text-slate-500 mt-0.5">{changePlanModal.centerName}</p>
+                <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Change Plan</h2>
+                <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{changePlanModal.centerName}</p>
               </div>
-              <button onClick={() => { setChangePlanModal(null); setNewPlan(''); }} className="p-2 hover:bg-slate-100 rounded-lg">
+              <button onClick={() => { setChangePlanModal(null); setNewPlan(''); }} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <p className="text-sm text-slate-500 mb-3">
-                  Current plan: <span className="font-semibold text-slate-900 capitalize">{changePlanModal.currentPlan}</span>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+                  Current plan: <span className="font-semibold text-[var(--color-text-primary)] capitalize">{changePlanModal.currentPlan}</span>
                 </p>
-                <label className="text-sm font-medium text-slate-700 block mb-2">New Plan</label>
+                <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-2">New Plan</label>
                 <select
                   value={newPlan}
                   onChange={(e) => setNewPlan(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
                 >
                   <option value="">Select a plan...</option>
                   <option value="nano">Nano — ≤75 students — EGP 1,200/mo</option>
@@ -2281,7 +2281,7 @@ export default function AdminPage() {
             <div className="flex justify-end gap-3 p-6 pt-0">
               <button
                 onClick={() => { setChangePlanModal(null); setNewPlan(''); }}
-                className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -2319,11 +2319,11 @@ export default function AdminPage() {
                   href={viewingProof}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 text-white text-xs font-semibold rounded-lg transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> Open Original
                 </a>
-                <button onClick={() => setViewingProof(null)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                <button onClick={() => setViewingProof(null)} className="p-2 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-lg transition-colors">
                   <X className="w-4 h-4 text-white" />
                 </button>
               </div>
@@ -2331,7 +2331,7 @@ export default function AdminPage() {
             <img
               src={viewingProof}
               alt="Payment proof"
-              className="w-full rounded-xl shadow-2xl max-h-[80vh] object-contain bg-white"
+              className="w-full rounded-xl shadow-2xl max-h-[80vh] object-contain bg-[var(--color-surface-1)]"
             />
           </div>
         </div>

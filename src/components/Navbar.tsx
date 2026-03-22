@@ -77,7 +77,7 @@ export default function Navbar() {
       : [];
 
   const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : isSuperAdminOnly ? 'roleAdmin' : null;
-  const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-gray-100 text-gray-800';
+  const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]';
   const isLimitedAccess = user?.role === 'assistant';
   const centerName = user?.center?.name || user?.name || user?.phone || 'User';
 
@@ -94,7 +94,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-bg-primary border-b border-gray-200">
+    <nav className="bg-bg-primary border-b border-[var(--color-border-subtle)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left: Logo + Brand */}
@@ -193,8 +193,8 @@ export default function Navbar() {
             aria-hidden="true"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="fixed inset-x-0 top-0 z-50 md:hidden bg-bg-primary border-b border-gray-200 shadow-lg max-h-screen overflow-y-auto">
-            <div className="flex justify-between items-center h-14 px-4 border-b border-gray-200">
+          <div className="fixed inset-x-0 top-0 z-50 md:hidden bg-bg-primary border-b border-[var(--color-border-subtle)] shadow-lg max-h-screen overflow-y-auto">
+            <div className="flex justify-between items-center h-14 px-4 border-b border-[var(--color-border-subtle)]">
               <span className="text-lg font-bold text-text-primary">CenterHQ</span>
               <button
                 type="button"
@@ -218,7 +218,7 @@ export default function Navbar() {
                   {t('admin')}
                 </Link>
               )}
-              <hr className="my-4 border-gray-200" />
+              <hr className="my-4 border-[var(--color-border-subtle)]" />
               <div className="px-4 py-2">
                 <p className="text-sm font-medium text-text-primary truncate">{centerName}</p>
                 {roleLabelKey && (

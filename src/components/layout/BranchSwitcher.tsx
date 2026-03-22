@@ -54,7 +54,7 @@ export function BranchSwitcher() {
   if (!user || loading || branches.length === 0) {
     return (
       <div className="px-4 py-3 border-b border-slate-800">
-        <p className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">{t('centerName')}</p>
+        <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">{t('centerName')}</p>
         <p className="text-sm font-semibold text-slate-300 truncate">{user?.center?.name ?? '—'}</p>
       </div>
     );
@@ -63,7 +63,7 @@ export function BranchSwitcher() {
   if (!isMultiBranch) {
     return (
       <div className="px-4 py-3 border-b border-slate-800">
-        <p className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">{t('centerName')}</p>
+        <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">{t('centerName')}</p>
         <p className="text-sm font-semibold text-slate-300 truncate">{activeBranch?.name ?? user?.center?.name ?? '—'}</p>
       </div>
     );
@@ -71,7 +71,7 @@ export function BranchSwitcher() {
 
   return (
     <div className="px-4 py-3 border-b border-slate-800 relative">
-      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('centerName')}</p>
+      <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t('centerName')}</p>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -91,7 +91,7 @@ export function BranchSwitcher() {
         <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-600/20 text-teal-400 font-medium shrink-0">
           {branches.length} branches
         </span>
-        <ChevronDown size={14} className={`text-slate-500 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-[var(--color-text-secondary)] shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (

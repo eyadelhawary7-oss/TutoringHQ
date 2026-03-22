@@ -39,7 +39,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
     .reduce((sum, p) => sum + p.amount, 0);
 
   return (
-    <div dir="rtl" className="text-sm text-slate-900 bg-white p-6">
+    <div dir="rtl" className="text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-1)] p-6">
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="font-bold text-lg">{centerName}</div>
@@ -52,17 +52,17 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
 
       {/* Student Info */}
       <div className="grid grid-cols-2 gap-2 mb-4 text-right">
-        <span className="text-slate-500">الاسم</span>
+        <span className="text-[var(--color-text-secondary)]">الاسم</span>
         <span>{student.name}</span>
-        <span className="text-slate-500">رقم الطالب</span>
+        <span className="text-[var(--color-text-secondary)]">رقم الطالب</span>
         <span className="font-mono">{student.student_number}</span>
-        <span className="text-slate-500">التليفون</span>
+        <span className="text-[var(--color-text-secondary)]">التليفون</span>
         <span>{student.phone}</span>
-        <span className="text-slate-500">المجموعات</span>
+        <span className="text-[var(--color-text-secondary)]">المجموعات</span>
         <span>
           {student.groups.length > 0 ? student.groups.join(' • ') : 'غير محدد'}
         </span>
-        <span className="text-slate-500">الفترة</span>
+        <span className="text-[var(--color-text-secondary)]">الفترة</span>
         <span>
           {dateFrom} إلى {dateTo}
         </span>
@@ -83,7 +83,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
         <tbody>
           {payments.length === 0 ? (
             <tr>
-              <td colSpan={5} className="text-center py-4 text-gray-400">
+              <td colSpan={5} className="text-center py-4 text-[var(--color-text-tertiary)]">
                 لا توجد مدفوعات في هذه الفترة
               </td>
             </tr>
@@ -91,7 +91,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
             payments.map((p, i) => (
               <tr
                 key={i}
-                className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                className={i % 2 === 0 ? 'bg-[var(--color-surface-1)]' : 'bg-[var(--color-surface-0)]'}
               >
                 <td className="py-1">
                   {new Date(p.paid_at).toLocaleDateString('ar-EG', {
@@ -122,7 +122,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
       </div>
 
       {/* Footer */}
-      <div className="mt-8 text-center text-xs text-gray-400">
+      <div className="mt-8 text-center text-xs text-[var(--color-text-tertiary)]">
         <div>CenterHQ — centerhq.com</div>
         <div>
           تاريخ الإصدار:{' '}

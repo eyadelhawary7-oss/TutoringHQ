@@ -135,7 +135,7 @@ export default function BranchesPage() {
   if (loading && branches.length === 0) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[300px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--color-text-secondary)]" />
       </div>
     );
   }
@@ -144,17 +144,17 @@ export default function BranchesPage() {
     return (
       <div className="p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
         <PageHeader title={t('title')} subtitle={tNav('branches')} />
-        <div className="rounded-xl border bg-card p-8 max-w-lg">
+        <div className="rounded-xl border bg-[var(--color-surface-1)] p-8 max-w-lg">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-14 h-14 rounded-xl bg-teal-100 flex items-center justify-center">
               <Building2 className="h-7 w-7 text-teal-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900">{t('upgradeTitle')}</h2>
-              <p className="text-slate-600 text-sm">{t('upgradeDescription')}</p>
+              <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('upgradeTitle')}</h2>
+              <p className="text-[var(--color-text-secondary)] text-sm">{t('upgradeDescription')}</p>
             </div>
           </div>
-          <p className="text-slate-600 mb-6">{t('upgradeBenefits')}</p>
+          <p className="text-[var(--color-text-secondary)] mb-6">{t('upgradeBenefits')}</p>
           <Link
             href="/settings"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors"
@@ -184,7 +184,7 @@ export default function BranchesPage() {
       {isOwner && (
         <div className="mb-6 flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('branchName')}</label>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('branchName')}</label>
             <input
               type="text"
               value={newName}
@@ -204,25 +204,25 @@ export default function BranchesPage() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border bg-card mb-8">
+      <div className="overflow-x-auto rounded-lg border bg-[var(--color-surface-1)] mb-8">
         <table className="w-full">
           <thead>
-            <tr className="border-b bg-slate-50">
-              <th className="text-left px-4 py-3 text-sm font-semibold text-slate-700">{t('branchName')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-slate-700">{t('students')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-slate-700">{t('monthlyRevenue')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-slate-700">{t('outstanding')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-slate-700">{t('staffCount')}</th>
+            <tr className="border-b bg-[var(--color-surface-0)]">
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('branchName')}</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('students')}</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('monthlyRevenue')}</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('outstanding')}</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('staffCount')}</th>
             </tr>
           </thead>
           <tbody>
             {branches.map((b) => (
-              <tr key={b.id} className="border-b last:border-0 hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-900">{b.name}</td>
-                <td className="px-4 py-3 text-slate-600">{b.students.toLocaleString('en-US')}</td>
-                <td className="px-4 py-3 text-slate-600">{b.mrr.toLocaleString('en-US')} {tCommon('egp')}</td>
-                <td className="px-4 py-3 text-slate-600">{b.outstanding.toLocaleString('en-US')} {tCommon('egp')}</td>
-                <td className="px-4 py-3 text-slate-600">{b.staff_count}</td>
+              <tr key={b.id} className="border-b last:border-0 hover:bg-[var(--color-surface-0)]/50">
+                <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{b.name}</td>
+                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{b.students.toLocaleString('en-US')}</td>
+                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{b.mrr.toLocaleString('en-US')} {tCommon('egp')}</td>
+                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{b.outstanding.toLocaleString('en-US')} {tCommon('egp')}</td>
+                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{b.staff_count}</td>
               </tr>
             ))}
           </tbody>
@@ -231,8 +231,8 @@ export default function BranchesPage() {
 
       {branches.length >= 2 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="rounded-lg border bg-card p-4">
-            <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
+            <h3 className="font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <Users size={18} />
               {t('studentsByBranch')}
             </h3>
@@ -246,8 +246,8 @@ export default function BranchesPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="rounded-lg border bg-card p-4">
-            <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
+            <h3 className="font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <DollarSign size={18} />
               {t('revenueByBranch')}
             </h3>
@@ -266,26 +266,26 @@ export default function BranchesPage() {
 
       {consolidated && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-lg border bg-card p-4">
-            <div className="flex items-center gap-2 text-slate-600 text-sm mb-1">
+          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
               <TrendingUp size={16} />
               {t('totalMrr')}
             </div>
-            <p className="text-2xl font-bold text-slate-900">{consolidated.total_mrr.toLocaleString('en-US')} {tCommon('egp')}</p>
+            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{consolidated.total_mrr.toLocaleString('en-US')} {tCommon('egp')}</p>
           </div>
-          <div className="rounded-lg border bg-card p-4">
-            <div className="flex items-center gap-2 text-slate-600 text-sm mb-1">
+          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
               <Users size={16} />
               {t('totalStudents')}
             </div>
-            <p className="text-2xl font-bold text-slate-900">{consolidated.total_students.toLocaleString('en-US')}</p>
+            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{consolidated.total_students.toLocaleString('en-US')}</p>
           </div>
-          <div className="rounded-lg border bg-card p-4">
-            <div className="flex items-center gap-2 text-slate-600 text-sm mb-1">
+          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
               <DollarSign size={16} />
               {t('totalOutstanding')}
             </div>
-            <p className="text-2xl font-bold text-slate-900">{consolidated.total_outstanding.toLocaleString('en-US')} {tCommon('egp')}</p>
+            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{consolidated.total_outstanding.toLocaleString('en-US')} {tCommon('egp')}</p>
           </div>
         </div>
       )}

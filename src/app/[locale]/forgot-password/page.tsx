@@ -149,8 +149,8 @@ export default function ForgotPasswordPage() {
             </Link>
           </div>
 
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl p-8">
-            <h2 className="text-xl font-bold text-foreground mb-6 text-center">
+          <div className="bg-[var(--color-surface-1)]/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl p-8">
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-6 text-center">
               {t('title')}
             </h2>
 
@@ -193,7 +193,7 @@ export default function ForgotPasswordPage() {
                   </svg>
                   {t('backToLogin')}
                 </button>
-                <p className="text-muted-foreground text-center mb-6 text-sm">
+                <p className="text-[var(--color-text-secondary)] text-center mb-6 text-sm">
                   {t('enterOTP')}
                 </p>
                 <OTPInput
@@ -208,12 +208,12 @@ export default function ForgotPasswordPage() {
 
             {step === 'new-password' && (
               <form onSubmit={handleResetPassword} className="space-y-4">
-                <p className="text-muted-foreground text-sm mb-6">
+                <p className="text-[var(--color-text-secondary)] text-sm mb-6">
                   {t('createNewPassword')}
                 </p>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                     {t('newPasswordLabel')}
                   </label>
                   <input
@@ -223,9 +223,9 @@ export default function ForgotPasswordPage() {
                     placeholder="••••••••"
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 bg-slate-50 text-foreground border border-border rounded-lg focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/30"
+                    className="w-full px-4 py-3 bg-[var(--color-surface-0)] text-[var(--color-text-primary)] border border-border rounded-lg focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/30"
                   />
-                  <p className="text-muted-foreground text-sm mt-1">
+                  <p className="text-[var(--color-text-secondary)] text-sm mt-1">
                     {t('passwordRequirements')}
                   </p>
                 </div>

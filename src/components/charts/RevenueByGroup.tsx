@@ -15,7 +15,7 @@ export default function RevenueByGroup({ data = [] }: RevenueByGroupProps) {
 
   if (!data?.length) {
     return (
-      <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+      <div className="flex items-center justify-center h-[200px] text-[var(--color-text-secondary)]">
         <p className="text-sm">—</p>
       </div>
     );

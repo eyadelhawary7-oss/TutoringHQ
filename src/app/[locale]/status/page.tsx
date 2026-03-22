@@ -74,7 +74,7 @@ export default function StatusPage() {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center" dir={isRTL ? 'rtl' : 'ltr'}>
         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
       </div>
     );
@@ -90,20 +90,20 @@ export default function StatusPage() {
   const dayKeys = Object.keys(d.uptime_90d ?? {}).sort();
 
   return (
-    <div className="min-h-screen bg-slate-50" dir={isRTL ? 'rtl' : 'ltr'}>
-      <header className="bg-white border-b border-slate-200 px-6 py-4">
-        <h1 className="text-xl font-bold text-slate-900">
+    <div className="min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
+      <header className="bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] px-6 py-4">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
           CenterHQ — {t('حالة المنصة', 'Platform Status')}
         </h1>
         <div className="flex items-center gap-3 mt-2">
           <StatusIcon status={d.overall as Status} />
-          <span className="text-slate-600">
+          <span className="text-[var(--color-text-secondary)]">
             {StatusLabel({ status: d.overall as Status, locale })}
           </span>
           <button
             onClick={fetchStatus}
             disabled={loading}
-            className="p-1.5 rounded hover:bg-slate-100 text-slate-500"
+            className="p-1.5 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
             aria-label="Refresh"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -119,7 +119,7 @@ export default function StatusPage() {
         )}
 
         <section>
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
             {t('خدمات النظام', 'System Services')}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -129,14 +129,14 @@ export default function StatusPage() {
               return (
                 <div
                   key={key}
-                  className="bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between"
+                  className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] p-4 flex items-center justify-between"
                 >
-                  <span className="font-medium text-slate-700">
+                  <span className="font-medium text-[var(--color-text-primary)]">
                     {locale === 'ar' ? labelAr : labelEn}
                   </span>
                   <div className="flex items-center gap-2">
                     <StatusIcon status={status} />
-                    <span className="text-sm text-slate-600">
+                    <span className="text-sm text-[var(--color-text-secondary)]">
                       {StatusLabel({ status, locale })}
                     </span>
                     {svc?.response_time_ms != null && (
@@ -152,10 +152,10 @@ export default function StatusPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
             {t('سجل الرفعية ٩٠ يوم', '90-Day Uptime History')}
           </h2>
-          <div className="bg-white rounded-lg border border-slate-200 p-4 overflow-x-auto">
+          <div className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] p-4 overflow-x-auto">
             <div className="flex gap-0.5 min-w-max">
               {dayKeys.map((day) => (
                 <div key={day} className="flex flex-col gap-0.5" title={day}>
@@ -179,7 +179,7 @@ export default function StatusPage() {
                 </div>
               ))}
             </div>
-            <div className="flex gap-4 mt-3 text-xs text-slate-500">
+            <div className="flex gap-4 mt-3 text-xs text-[var(--color-text-secondary)]">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-sm bg-green-500" />
                 {t('يعمل', 'Operational')}
@@ -197,27 +197,27 @@ export default function StatusPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
             {t('آخر ٥ حوادث', 'Last 5 Incidents')}
           </h2>
-          <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100">
+          <div className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] divide-y divide-slate-100">
             {d.incidents.length === 0 ? (
-              <p className="p-6 text-slate-500 text-center">
+              <p className="p-6 text-[var(--color-text-secondary)] text-center">
                 {t('لا توجد حوادث مسجلة', 'No incidents recorded')}
               </p>
             ) : (
               d.incidents.map((inc) => (
                 <div key={inc.id} className="p-4 flex justify-between items-start">
                   <div>
-                    <p className="font-medium text-slate-900">{inc.title}</p>
-                    <p className="text-sm text-slate-500">
+                    <p className="font-medium text-[var(--color-text-primary)]">{inc.title}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       {new Date(inc.started_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')}
                       {inc.resolved_at && (
                         <> — {t('تم الحل', 'Resolved')} {new Date(inc.resolved_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')}</>
                       )}
                     </p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-red-100 text-red-700' : inc.severity === 'major' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-red-100 text-red-700' : inc.severity === 'major' ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}>
                     {inc.severity}
                   </span>
                 </div>

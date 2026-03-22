@@ -1,8 +1,8 @@
 'use client';
 
 const styles: Record<string, string> = {
-  nano: 'bg-slate-100 text-slate-700 border border-slate-300',
-  starter: 'bg-slate-100 text-slate-700 border border-slate-300',
+  nano: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-slate-300',
+  starter: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-slate-300',
   pro: 'bg-blue-100 text-blue-700 border border-blue-300',
   business: 'bg-teal-100 text-teal-700 border border-teal-300',
   enterprise: 'bg-purple-100 text-purple-700 border border-purple-300',

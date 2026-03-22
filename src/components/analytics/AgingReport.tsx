@@ -80,14 +80,14 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
 
   if (!data?.length) {
     return (
-      <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+      <div className="rounded-lg border bg-[var(--color-surface-1)] p-6 text-center text-[var(--color-text-secondary)]">
         <p className="text-sm">{t('noAgingItems')}</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <div className="rounded-lg border bg-[var(--color-surface-1)] overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b bg-muted/30">
         <h3 className="font-semibold">{t('agingReport')}</h3>
         <button
@@ -127,9 +127,9 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
                     title={t('sendReminder')}
                   >
                     {sendingId === row.student_id ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <Loader2 className="h-4 w-4 animate-spin text-[var(--color-text-secondary)]" />
                     ) : (
-                      <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                      <MessageCircle className="h-4 w-4 text-[var(--color-text-secondary)]" />
                     )}
                   </button>
                 </td>
