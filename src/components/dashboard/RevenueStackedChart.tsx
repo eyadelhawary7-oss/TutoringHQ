@@ -36,7 +36,7 @@ export default function RevenueStackedChart({ data = [] }: RevenueStackedChartPr
         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
         <XAxis dataKey="day" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
         <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-        <Tooltip formatter={(v: number | undefined) => `${Math.round((v ?? 0)).toLocaleString()} ج.م`} />
+        <Tooltip formatter={(v: number | undefined) => `${Math.round((v ?? 0)).toLocaleString('en-US')} ج.م`} />
         <Legend />
         <Bar dataKey="cash" fill={COLORS.cash} stackId="a" name={t('methodCash')} />
         <Bar dataKey="instapay" fill={COLORS.instapay} stackId="a" name={t('methodInstapay')} />

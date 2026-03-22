@@ -29,8 +29,6 @@ export async function fireOnboardingWebhook(payload: OnboardingPayload): Promise
 
     if (!response.ok) {
       console.error('[Respond.io] Webhook failed:', response.status, await response.text());
-    } else {
-      console.log('[Respond.io] Onboarding webhook fired for:', payload.phone);
     }
   } catch (err) {
     console.error('[Respond.io] Webhook error:', err);

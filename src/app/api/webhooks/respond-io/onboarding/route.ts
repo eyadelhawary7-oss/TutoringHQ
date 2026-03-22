@@ -5,7 +5,6 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({}));
-  console.log('[Respond.io inbound]', JSON.stringify(body));
+  await request.json().catch(() => ({}));
   return NextResponse.json({ received: true });
 }

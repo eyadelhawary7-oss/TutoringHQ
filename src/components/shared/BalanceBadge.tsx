@@ -9,7 +9,7 @@ export default function BalanceBadge({ amount, currency = 'EGP' }: BalanceBadgeP
   if (amount > 0) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-        {currency} {amount.toLocaleString()}
+        {currency} {amount.toLocaleString('en-US')}
       </span>
     );
   }

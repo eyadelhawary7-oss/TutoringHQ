@@ -126,6 +126,5 @@ export async function GET(request: NextRequest) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
-  console.log(`[Renewal Reminders] Sent: ${sent}, Failed: ${failed}, Total: ${centers.length}`);
   return NextResponse.json({ sent, failed, total: centers.length });
 }

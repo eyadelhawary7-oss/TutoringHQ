@@ -15,10 +15,6 @@ const PLAN_MRR: Record<string, number> = {
 };
 
 export async function GET(request: Request) {
-  console.log('==========================================');
-  console.log('[admin/overview] 🔍 Route called');
-  console.log('==========================================');
-
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -58,12 +54,7 @@ export async function GET(request: Request) {
           },
         },
       });
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('[admin/overview] 🔐 Session check (cookies):', {
-        hasSession: !!session,
-        userId: session?.user?.id,
-        error: sessionError?.message,
-      });
+      const { data: { session } } = await supabase.auth.getSession();
       if (session && supabaseServiceKey) {
         const userId = session.user.id;
         const adminClient = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -72,7 +63,6 @@ export async function GET(request: Request) {
         const userPhone = session.user.phone ?? userRecord?.phone ?? null;
         const superAdminPhones = (process.env.SUPER_ADMIN_PHONES || '').split(',').map((p) => p.trim());
         const isPhoneAdmin = !!userPhone && superAdminPhones.includes(String(userPhone).trim());
-        console.log('[admin/overview] 🔐 Admin check:', { hasAdminUser: !!adminUser, isPhoneAdmin, userPhone: userPhone ? '***' : null });
         if (adminUser || isPhoneAdmin) {
           supabaseAdmin = adminClient;
           internalRole = isPhoneAdmin || adminUser?.role === 'super_admin' || adminUser?.role === 'admin' ? 'super_admin' : (adminUser?.role === 'internal_admin' ? 'internal_admin' : 'internal_viewer');
@@ -82,7 +72,6 @@ export async function GET(request: Request) {
 
     // Fallback: Authorization header (Bearer token) via getAdminContext
     if (!supabaseAdmin) {
-      console.log('[admin/overview] 🔐 Trying Authorization header...');
       const ctx = await getAdminContext(request);
       if (ctx) {
         supabaseAdmin = ctx.supabaseAdmin;
@@ -94,9 +83,7 @@ export async function GET(request: Request) {
       console.error('[admin/overview] ❌ Unauthorized: no valid session or admin access');
       return NextResponse.json({ error: 'Unauthorized - admin access required' }, { status: 401 });
     }
-    console.log('[admin/overview] ✅ Admin authorized, role:', internalRole);
 
-    console.log('[admin/overview] 📡 Querying centers...');
     let centers: unknown[] = [];
     const { data: centersData, error: centersError } = await supabaseAdmin
       .from('centers')
@@ -113,8 +100,6 @@ export async function GET(request: Request) {
     }
     centers = centersData || [];
 
-    console.log('[admin/overview] 📊 Centers count:', centers.length);
-
     let totalStudents = 0;
     try {
       const { count: studentsCount, error: studentsError } = await supabaseAdmin
@@ -124,7 +109,6 @@ export async function GET(request: Request) {
     } catch (e) {
       console.warn('[admin/overview] Students count failed:', e);
     }
-    console.log('[admin/overview] 📊 Students count:', totalStudents);
 
     const allCenters = centers as Array<{ id: string; name: string; plan?: string; status?: string; billing_type?: string; is_early_adopter?: boolean; early_adopter_price?: number; created_at?: string }>;
     const activeCenters = allCenters.filter((c: { status?: string }) => c.status === 'active');
@@ -361,9 +345,6 @@ export async function GET(request: Request) {
         { status: 500 }
       );
     }
-
-    console.log('[admin/overview] ✅ Success - returning overview');
-    console.log('==========================================');
 
     return NextResponse.json({
       totalCenters: counts.total,

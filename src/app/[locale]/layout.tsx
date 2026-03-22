@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Viewport } from 'next';
+import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { routing } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
@@ -33,6 +33,14 @@ import { SwUpdateBanner } from '@/components/ui/SwUpdateBanner';
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
+
+export const metadata: Metadata = {
+  title: {
+    template: '%s | CenterHQ',
+    default: 'CenterHQ',
+  },
+  description: 'إدارة السناتر التعليمية — حضور QR، مدفوعات، تقارير',
+};
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -75,6 +83,7 @@ export default async function LocaleLayout({
         <link rel="icon" href="/logo-icon-64.png" type="image/png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="preload" href="/fonts/Cairo-Bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <meta name="theme-color" content="#0D9488" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

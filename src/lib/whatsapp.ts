@@ -36,7 +36,6 @@ export async function sendWhatsAppMessage(
       return false;
     }
 
-    console.log('[WhatsApp] Sent to', toPhone, '— message ID:', data.messages?.[0]?.id);
     return true;
   } catch (err) {
     console.error('[WhatsApp] Error:', err);

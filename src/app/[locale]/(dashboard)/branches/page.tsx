@@ -219,9 +219,9 @@ export default function BranchesPage() {
             {branches.map((b) => (
               <tr key={b.id} className="border-b last:border-0 hover:bg-slate-50/50">
                 <td className="px-4 py-3 font-medium text-slate-900">{b.name}</td>
-                <td className="px-4 py-3 text-slate-600">{b.students.toLocaleString()}</td>
-                <td className="px-4 py-3 text-slate-600">{b.mrr.toLocaleString()} {tCommon('egp')}</td>
-                <td className="px-4 py-3 text-slate-600">{b.outstanding.toLocaleString()} {tCommon('egp')}</td>
+                <td className="px-4 py-3 text-slate-600">{b.students.toLocaleString('en-US')}</td>
+                <td className="px-4 py-3 text-slate-600">{b.mrr.toLocaleString('en-US')} {tCommon('egp')}</td>
+                <td className="px-4 py-3 text-slate-600">{b.outstanding.toLocaleString('en-US')} {tCommon('egp')}</td>
                 <td className="px-4 py-3 text-slate-600">{b.staff_count}</td>
               </tr>
             ))}
@@ -256,7 +256,7 @@ export default function BranchesPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" />
                 <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v: number | undefined) => `${(v ?? 0).toLocaleString()} ${tCommon('egp')}`} />
+                <Tooltip formatter={(v: number | undefined) => `${(v ?? 0).toLocaleString('en-US')} ${tCommon('egp')}`} />
                 <Bar dataKey="mrr" fill="#0d9488" name={t('monthlyRevenue')} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -271,21 +271,21 @@ export default function BranchesPage() {
               <TrendingUp size={16} />
               {t('totalMrr')}
             </div>
-            <p className="text-2xl font-bold text-slate-900">{consolidated.total_mrr.toLocaleString()} {tCommon('egp')}</p>
+            <p className="text-2xl font-bold text-slate-900">{consolidated.total_mrr.toLocaleString('en-US')} {tCommon('egp')}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 text-slate-600 text-sm mb-1">
               <Users size={16} />
               {t('totalStudents')}
             </div>
-            <p className="text-2xl font-bold text-slate-900">{consolidated.total_students.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-slate-900">{consolidated.total_students.toLocaleString('en-US')}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 text-slate-600 text-sm mb-1">
               <DollarSign size={16} />
               {t('totalOutstanding')}
             </div>
-            <p className="text-2xl font-bold text-slate-900">{consolidated.total_outstanding.toLocaleString()} {tCommon('egp')}</p>
+            <p className="text-2xl font-bold text-slate-900">{consolidated.total_outstanding.toLocaleString('en-US')} {tCommon('egp')}</p>
           </div>
         </div>
       )}

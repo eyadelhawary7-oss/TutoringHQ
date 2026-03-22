@@ -1194,7 +1194,7 @@ export default function StudentsPage() {
               <div className="font-mono text-sm text-muted-foreground">{qrModalStudent.student_number || ''}</div>
               {(balanceByStudent[qrModalStudent.id] ?? 0) > 0 && (
                 <div className="mt-2 text-sm font-bold text-red-600">
-                  {ts('balance')}: {locale === 'ar' ? toAr(Math.round(balanceByStudent[qrModalStudent.id]!)) : Math.round(balanceByStudent[qrModalStudent.id]!).toLocaleString()} {tCommon('egp')}
+                  {ts('balance')}: {locale === 'ar' ? toAr(Math.round(balanceByStudent[qrModalStudent.id]!)) : Math.round(balanceByStudent[qrModalStudent.id]!).toLocaleString('en-US')} {tCommon('egp')}
                 </div>
               )}
             </div>

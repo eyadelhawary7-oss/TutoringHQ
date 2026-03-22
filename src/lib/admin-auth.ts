@@ -18,14 +18,12 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-    console.log('[admin-auth] Missing env vars');
     return null;
   }
 
   const authHeader = request.headers.get('Authorization');
   const accessToken = authHeader?.replace('Bearer ', '');
   if (!accessToken) {
-    console.log('[admin-auth] No access token');
     return null;
   }
 
@@ -35,7 +33,6 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
   });
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
   if (authError || !user) {
-    console.log('[admin-auth] Auth failed:', authError?.message ?? 'No user');
     return null;
   }
 
@@ -58,7 +55,6 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     .single();
   const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
   if (!adminRow && !adminByPhone) {
-    console.log('[admin-auth] Not admin: no admin_users row, adminByPhone=', adminByPhone);
     return null;
   }
 

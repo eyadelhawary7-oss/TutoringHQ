@@ -111,9 +111,9 @@ export async function POST(request: Request) {
 - Plan: ${normalizedPlan}
 
 💰 *Payment Required:*
-- Monthly: EGP ${pricing.monthly.toLocaleString()}
-- Setup Fee: EGP ${pricing.setup.toLocaleString()}
-- *First Payment: EGP ${firstPayment.toLocaleString()}*
+- Monthly: EGP ${pricing.monthly.toLocaleString('en-US')}
+- Setup Fee: EGP ${pricing.setup.toLocaleString('en-US')}
+- *First Payment: EGP ${firstPayment.toLocaleString('en-US')}*
 
 📝 Notes: ${notes || 'None'}
 

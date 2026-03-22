@@ -7,7 +7,6 @@ function isSuperAdmin(phone: string | null): boolean {
 }
 
 export async function GET(request: Request) {
-  console.log('🔐 [admin/check] Route called');
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -18,7 +17,6 @@ export async function GET(request: Request) {
     const authHeader = request.headers.get('Authorization');
     const accessToken = authHeader?.replace('Bearer ', '');
     if (!accessToken) {
-      console.log('❌ [admin/check] No access token');
       return NextResponse.json({ isAdmin: false });
     }
 
@@ -28,10 +26,8 @@ export async function GET(request: Request) {
     });
     const { data: { user }, error } = await supabaseAuth.auth.getUser();
     if (error || !user) {
-      console.log('❌ [admin/check] Auth failed:', error?.message ?? 'No user');
       return NextResponse.json({ isAdmin: false });
     }
-    console.log('🔐 [admin/check] User ID:', user.id);
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -51,11 +47,8 @@ export async function GET(request: Request) {
       .single();
 
     const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
-    console.log('🔐 [admin/check] admin_users row:', adminUser ? `role=${adminUser.role}` : 'none');
-    console.log('🔐 [admin/check] adminByPhone:', adminByPhone);
 
     if (!adminUser && !adminByPhone) {
-      console.log('❌ [admin/check] Not admin');
       return NextResponse.json({ isAdmin: false });
     }
 
@@ -63,7 +56,6 @@ export async function GET(request: Request) {
     if (adminByPhone) role = 'super_admin';
     const customPermissions = (adminUser?.custom_permissions as string[] | null) ?? [];
 
-    console.log('✅ [admin/check] Admin verified, role:', role);
     return NextResponse.json({
       isAdmin: true,
       role,

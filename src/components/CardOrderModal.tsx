@@ -626,19 +626,19 @@ export function CardOrderModal({
                   <div className="flex justify-between text-sm">
                     <span>{t('pricePerCard')}:</span>
                     <span className="font-mono">
-                      {quantity} × EGP {PRICE_PER_CARD} = EGP {locale === 'ar' ? toAr(subtotal) : subtotal.toLocaleString()}
+                      {quantity} × EGP {PRICE_PER_CARD} = EGP {locale === 'ar' ? toAr(subtotal) : subtotal.toLocaleString('en-US')}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>{t('deliveryFee')}:</span>
                     <span className="font-mono">
-                      EGP {locale === 'ar' ? toAr(deliveryFee) : deliveryFee.toLocaleString()}
+                      EGP {locale === 'ar' ? toAr(deliveryFee) : deliveryFee.toLocaleString('en-US')}
                     </span>
                   </div>
                   <div className="flex justify-between font-bold text-teal-600 pt-2 border-t border-border">
                     <span>{t('totalAmount')}:</span>
                     <span className="font-mono">
-                      EGP {locale === 'ar' ? toAr(totalAmount) : totalAmount.toLocaleString()}
+                      EGP {locale === 'ar' ? toAr(totalAmount) : totalAmount.toLocaleString('en-US')}
                     </span>
                   </div>
                 </div>

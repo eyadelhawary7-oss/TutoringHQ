@@ -46,10 +46,6 @@ async function dbRequest(body: Record<string, unknown>) {
   }
   const requestBody = JSON.stringify(body);
 
-  if (DEBUG_DB_PROXY) {
-    console.log('[db-proxy] Request:', { url, method: 'POST', headers: { ...headers, Authorization: '[REDACTED]' }, body: requestBody });
-  }
-
   let res: Response;
   try {
     res = await fetch(url, { method: 'POST', headers, body: requestBody });
@@ -59,10 +55,6 @@ async function dbRequest(body: Record<string, unknown>) {
       console.error('[db-proxy] Full stack:', (fetchErr as Error)?.stack);
     }
     throw fetchErr;
-  }
-
-  if (DEBUG_DB_PROXY) {
-    console.log('[db-proxy] Response:', { status: res.status, statusText: res.statusText, headers: Object.fromEntries(res.headers.entries()) });
   }
 
   let result: { data?: unknown; error?: string | { message?: string }; count?: number };
@@ -75,10 +67,6 @@ async function dbRequest(body: Record<string, unknown>) {
       console.error('[db-proxy] Response body:', text);
     }
     throw new Error(`Invalid JSON response: ${text.slice(0, 200)}`);
-  }
-
-  if (DEBUG_DB_PROXY) {
-    console.log('[db-proxy] Parsed result:', { hasData: !!result?.data, error: result?.error, count: result?.count });
   }
 
   if (result.error) {
