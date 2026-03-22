@@ -7,6 +7,8 @@ const PRECACHE_URLS = [
   '/en/scan',
   '/ar/scanner',
   '/en/scanner',
+  '/ar/offline',
+  '/en/offline',
   '/manifest.json',
   '/icons/icon.svg',
 ];
@@ -137,6 +139,10 @@ self.addEventListener('fetch', (event) => {
         } catch {
           try {
             const cache = await caches.open(CACHE_NAME);
+            const path = new URL(event.request.url).pathname;
+            const localePrefix = path.startsWith('/en') ? '/en' : '/ar';
+            const offlinePage = await cache.match(`${localePrefix}/offline`);
+            if (offlinePage) return offlinePage;
             const arScan = await cache.match('/ar/scan');
             if (arScan) return arScan;
             const enScan = await cache.match('/en/scan');
