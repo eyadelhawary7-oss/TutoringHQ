@@ -240,8 +240,8 @@ function CardOrderPreview({
         )}
       </div>
       <div className="flex gap-1">
-        <button onClick={() => setSide('front')} className={`px-2 py-1 rounded text-xs ${side === 'front' ? 'bg-primary text-white' : 'bg-muted'}`}>Front</button>
-        <button onClick={() => setSide('back')} className={`px-2 py-1 rounded text-xs ${side === 'back' ? 'bg-primary text-white' : 'bg-muted'}`}>Back</button>
+        <button onClick={() => setSide('front')} className={`px-2 py-1 rounded text-xs ${side === 'front' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'}`}>Front</button>
+        <button onClick={() => setSide('back')} className={`px-2 py-1 rounded text-xs ${side === 'back' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'}`}>Back</button>
       </div>
     </div>
   );
@@ -903,7 +903,7 @@ export default function AdminPage() {
             {/* Section: PLATFORM HEALTH */}
             <div className="flex items-center gap-3 mb-4">
               <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">PLATFORM HEALTH</span>
-              <div className="flex-1 h-px bg-slate-200" />
+              <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
               {[
@@ -930,7 +930,7 @@ export default function AdminPage() {
             {/* Section: REVENUE */}
             <div className="flex items-center gap-3 mb-4">
               <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">REVENUE</span>
-              <div className="flex-1 h-px bg-slate-200" />
+              <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
@@ -982,7 +982,7 @@ export default function AdminPage() {
             {/* Section: SECURITY & ALERTS */}
             <div className="flex items-center gap-3 mb-4">
               <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">SECURITY & ALERTS</span>
-              <div className="flex-1 h-px bg-slate-200" />
+              <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
@@ -1126,7 +1126,7 @@ export default function AdminPage() {
                   value={centerSearch}
                   onChange={(e) => setCenterSearch(e.target.value)}
                   placeholder={tAdmin('search', { defaultValue: 'Search centers...' })}
-                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
                 />
               </div>
               <div className="flex gap-1 flex-wrap">
@@ -1134,7 +1134,7 @@ export default function AdminPage() {
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary/20 text-primary' : 'text-[var(--color-text-secondary)] hover:bg-muted'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary/20 text-primary' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'}`}
                   >
                     {s === 'all' ? tCommon('all') : s === 'at_risk' ? (tAdmin('atRisk') ?? 'At Risk') : s === 'active' ? tCommon('active') : s === 'pending' ? tAdmin('pending') : tAdmin('suspended')}
                   </button>
@@ -1159,7 +1159,7 @@ export default function AdminPage() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {displayedCenters.map((c) => (
                       <tr key={c.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{c.name}</td>
@@ -1179,7 +1179,7 @@ export default function AdminPage() {
                           <div className="relative">
                             <button
                               onClick={() => setOpenActionsId(openActionsId === c.id ? null : c.id)}
-                              className="p-1.5 rounded-lg hover:bg-muted text-[var(--color-text-secondary)]"
+                              className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
                               title={tCommon('actions')}
                             >
                               <MoreVertical size={16} />
@@ -1188,20 +1188,20 @@ export default function AdminPage() {
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setOpenActionsId(null)} aria-hidden="true" />
                                 <div className="absolute top-full end-0 mt-1 z-50 min-w-[180px] py-1 rounded-lg border border-border shadow-lg bg-[var(--color-surface-1)]">
-                                  <button onClick={() => { setDetailCenter(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start">
+                                  <button onClick={() => { setDetailCenter(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start">
                                     <ExternalLink size={14} />{tAdmin('viewDetails')}
                                   </button>
                                   {c.status === 'active' && (
-                                    <button onClick={() => { setShowSuspendConfirm(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start">
+                                    <button onClick={() => { setShowSuspendConfirm(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start">
                                       <AlertTriangle size={14} />{tAdmin('suspend')}
                                     </button>
                                   )}
                                   {c.status === 'suspended' && (
-                                    <button onClick={() => { handleCenterAction(c.id, 'reactivate'); setOpenActionsId(null); }} disabled={actionLoading} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start disabled:opacity-50">
+                                    <button onClick={() => { handleCenterAction(c.id, 'reactivate'); setOpenActionsId(null); }} disabled={actionLoading} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start disabled:opacity-50">
                                       <Check size={14} />{tAdmin('reactivate')}
                                     </button>
                                   )}
-                                  <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start">
+                                  <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start">
                                     <CreditCard size={14} />{tAdmin('changePlan')}
                                   </button>
                                   <button onClick={() => { setDeleteConfirm(c.id); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start">
@@ -1239,7 +1239,7 @@ export default function AdminPage() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {billingData.map((b) => {
                       const isPaid = b.billing_status === 'paid';
                       const nextDueStr = b.nextDue ?? b.next_payment_due ?? '';
@@ -1269,7 +1269,7 @@ export default function AdminPage() {
                               <button
                                 onClick={() => sendWhatsAppReminder(b.phone ?? '', b.name ?? '', b.amount ?? 0, nextDueStr || '')}
                                 disabled={actionLoading}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] hover:border-slate-400 text-[var(--color-text-primary)] text-sm font-semibold rounded-lg whitespace-nowrap transition-all disabled:opacity-50"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] hover:border-[var(--color-border-strong)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg whitespace-nowrap transition-all disabled:opacity-50"
                               >
                                 <Bell className="w-4 h-4" />
                                 {tAdmin('sendReminder')}
@@ -1297,7 +1297,7 @@ export default function AdminPage() {
                           <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-[var(--color-border-subtle)]">
                         {pendingInvoices.map((inv) => (
                           <tr key={inv.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                             <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{inv.centerName}</td>
@@ -1312,7 +1312,7 @@ export default function AdminPage() {
                                     <Eye className="w-3.5 h-3.5" /> View Proof
                                   </button>
                                 ) : (
-                                  <span className="text-xs text-slate-400 px-3">No image</span>
+                                  <span className="text-xs text-[var(--color-text-tertiary)] px-3">No image</span>
                                 )}
                                 <button
                                   onClick={() => {
@@ -1360,7 +1360,7 @@ export default function AdminPage() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('recordedBy')}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {paymentHistory.map((p, i) => (
                       <tr key={i} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
@@ -1393,7 +1393,7 @@ export default function AdminPage() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {planRequests.map((pr) => (
                       <tr key={pr.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{pr.centerName}</td>
@@ -1453,7 +1453,7 @@ export default function AdminPage() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {pendingSignups.map((ps) => (
                       <tr key={ps.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{ps.name}</td>
@@ -1513,7 +1513,7 @@ export default function AdminPage() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('date', { defaultValue: 'التاريخ' })}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {adminReferrals.map((r) => (
                       <tr key={r.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{r.referrer_name}</td>
@@ -1547,7 +1547,7 @@ export default function AdminPage() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {adminPendingPayouts.map((p) => (
                       <tr key={p.center_id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.center_name}</td>
@@ -1599,7 +1599,7 @@ export default function AdminPage() {
             <div className="glass overflow-hidden rounded-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted">
+                  <thead className="bg-[var(--color-surface-2)]">
                     <tr>
                       <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('orderId', { defaultValue: 'Order ID' })}</th>
                       <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('centerName', { defaultValue: 'Center' })}</th>
@@ -1625,7 +1625,7 @@ export default function AdminPage() {
                         <>
                           <tr
                             key={order.id}
-                            className="border-t border-border hover:bg-muted/30 cursor-pointer"
+                            className="border-t border-border hover:bg-[var(--color-surface-0)] cursor-pointer"
                             onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
                           >
                             <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">{order.id.slice(0, 8)}…</td>
@@ -1643,7 +1643,7 @@ export default function AdminPage() {
                             </td>
                           </tr>
                           {isExpanded && (
-                            <tr key={`${order.id}-exp`} className="border-t border-border bg-muted/20">
+                            <tr key={`${order.id}-exp`} className="border-t border-border bg-[var(--color-surface-0)]">
                               <td colSpan={7} className="px-4 py-4">
                                 <div className="space-y-4">
                                   <div>
@@ -1740,7 +1740,7 @@ export default function AdminPage() {
                     <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-[var(--color-border-subtle)]">
                   {internalTeam.map((m) => (
                     <tr key={m.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{m.name}</td>
@@ -1800,7 +1800,7 @@ export default function AdminPage() {
                         <p className="text-xs font-mono text-[var(--color-text-secondary)] mt-1" dir="ltr">{lead.phone}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs text-[var(--color-text-secondary)]">{lead.area}</span>
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-[var(--color-text-secondary)]">{lead.source}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">{lead.source}</span>
                         </div>
                       </div>
                     ))}
@@ -1959,7 +1959,7 @@ export default function AdminPage() {
           <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-border flex items-center justify-between">
               <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{detailCenter.name}</h2>
-              <button onClick={() => setDetailCenter(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
+              <button onClick={() => setDetailCenter(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
               {[
@@ -2048,7 +2048,7 @@ export default function AdminPage() {
                 value={addAdminForm.name}
                 onChange={(e) => setAddAdminForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder={tCommon('name')}
-                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
               />
               <input
                 value={addAdminForm.phone}
@@ -2056,14 +2056,14 @@ export default function AdminPage() {
                 placeholder={tCommon('phone')}
                 type="tel"
                 dir="ltr"
-                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
               />
               <input
                 value={addAdminForm.email}
                 onChange={(e) => setAddAdminForm((f) => ({ ...f, email: e.target.value }))}
                 placeholder={tCommon('email')}
                 type="email"
-                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
               />
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">الدور / Role</label>
@@ -2093,7 +2093,7 @@ export default function AdminPage() {
                             e.target.checked ? [...prev, p.key] : prev.filter((k) => k !== p.key)
                           )
                         }
-                        className="rounded border-slate-300 text-teal-600"
+                        className="rounded border-[var(--color-border-default)] text-teal-600"
                       />
                       <span>{p.labelAr}</span>
                     </label>
@@ -2116,7 +2116,7 @@ export default function AdminPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowRejectReason(null)}>
           <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold text-[var(--color-text-primary)] mb-3">Rejection Reason</h3>
-            <textarea placeholder="Optional reason..." className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm h-24 resize-none mb-4" />
+            <textarea placeholder="Optional reason..." className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm h-24 resize-none mb-4" />
             <div className="flex gap-2 justify-end">
               <button onClick={() => setShowRejectReason(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
               <button
@@ -2138,33 +2138,33 @@ export default function AdminPage() {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">اسم السنتر</label>
-                <input placeholder="اسم السنتر التعليمي" value={addLeadForm.name} onChange={(e) => setAddLeadForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm" />
+                <input placeholder="اسم السنتر التعليمي" value={addLeadForm.name} onChange={(e) => setAddLeadForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">اسم مسؤول التواصل</label>
-                <input placeholder="الاسم الكامل للمسؤول" value={addLeadForm.contactPerson} onChange={(e) => setAddLeadForm(f => ({ ...f, contactPerson: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm" />
+                <input placeholder="الاسم الكامل للمسؤول" value={addLeadForm.contactPerson} onChange={(e) => setAddLeadForm(f => ({ ...f, contactPerson: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">رقم الهاتف</label>
-                <input placeholder="01x xxxx xxxx" type="tel" dir="ltr" value={addLeadForm.phone} onChange={(e) => setAddLeadForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm" />
+                <input placeholder="01x xxxx xxxx" type="tel" dir="ltr" value={addLeadForm.phone} onChange={(e) => setAddLeadForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">المنطقة</label>
-                <select value={addLeadForm.area} onChange={(e) => setAddLeadForm(f => ({ ...f, area: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm">
+                <select value={addLeadForm.area} onChange={(e) => setAddLeadForm(f => ({ ...f, area: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm">
                   <option value="">المنطقة</option>
                   {AREAS.map((a) => <option key={a} value={a}>{AREA_LABELS[a] ?? a}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">المصدر</label>
-                <select value={addLeadForm.source} onChange={(e) => setAddLeadForm(f => ({ ...f, source: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm">
+                <select value={addLeadForm.source} onChange={(e) => setAddLeadForm(f => ({ ...f, source: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm">
                   <option value="">المصدر</option>
                   {SOURCES.map((s) => <option key={s} value={s}>{SOURCE_LABELS[s] ?? s}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">مرحلة المسار</label>
-                <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm">
+                <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm">
                   <option value="prospect">عميل محتمل</option>
                   <option value="contacted">تم التواصل</option>
                   <option value="demo_scheduled">تم العرض</option>
@@ -2173,7 +2173,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">ملاحظات</label>
-                <textarea placeholder="أي ملاحظات إضافية..." value={addLeadForm.notes} onChange={(e) => setAddLeadForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm h-20 resize-none" />
+                <textarea placeholder="أي ملاحظات إضافية..." value={addLeadForm.notes} onChange={(e) => setAddLeadForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm h-20 resize-none" />
               </div>
             </div>
             <div className="flex gap-2 justify-end mt-4">
@@ -2211,7 +2211,7 @@ export default function AdminPage() {
           <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-border flex items-center justify-between">
               <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{selectedLead.name}</h2>
-              <button onClick={() => setSelectedLead(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
+              <button onClick={() => setSelectedLead(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
               <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Contact Person</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.contact_person}</p></div>
@@ -2228,7 +2228,7 @@ export default function AdminPage() {
                     setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, stage: newStage } : l));
                     setSelectedLead({ ...selectedLead, stage: newStage });
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
                 >
                   <option value="prospect">Prospect</option>
                   <option value="contacted">Contacted</option>
@@ -2281,7 +2281,7 @@ export default function AdminPage() {
             <div className="flex justify-end gap-3 p-6 pt-0">
               <button
                 onClick={() => { setChangePlanModal(null); setNewPlan(''); }}
-                className="px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors"
               >
                 Cancel
               </button>
