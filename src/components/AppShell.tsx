@@ -51,6 +51,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   const cleanPath = stripLocale(pathname);
   const isPublic = PUBLIC_PATHS.some((p) => cleanPath === p || cleanPath.startsWith(p + '/'));
+  const isAdminRoute = cleanPath === '/admin' || cleanPath.startsWith('/admin/');
   const showShell = !isPublic && !hideShell;
 
   const pageTitleKey = PAGE_TITLE_MAP[cleanPath] || 'nav.dashboard';
@@ -91,19 +92,21 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider closeMainSidebar={closeMainSidebar}>
     <div className="flex min-h-screen w-full bg-[var(--color-surface-0)]">
-      <Sidebar open={sidebarOpen} onClose={closeMainSidebar} />
+      {!isAdminRoute && <Sidebar open={sidebarOpen} onClose={closeMainSidebar} />}
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden md:ms-64">
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute ? '' : 'md:ms-64'}`}>
         {/* Desktop topbar */}
         <header className="hidden md:flex items-center justify-between h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-slate-100 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-              aria-label="Open menu"
-            >
-              <Menu size={20} />
-            </button>
+            {!isAdminRoute && (
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 rounded-lg hover:bg-slate-100 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu size={20} />
+              </button>
+            )}
             <span className="font-bold text-[var(--color-text-primary)] text-lg">CenterHQ</span>
           </div>
           <div className="flex items-center gap-3">
@@ -126,8 +129,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Mobile TopBar - includes hamburger */}
-        <MobileTopBar onMenuClick={() => setSidebarOpen(true)} />
+        {/* Mobile TopBar - includes hamburger (hidden on admin — AdminHeader + AdminSidebar handle nav) */}
+        {!isAdminRoute && <MobileTopBar onMenuClick={() => setSidebarOpen(true)} />}
 
         {/* Page content — scroll + safe-area padding on inner wrapper (MobileWrapper) */}
         <main className="flex-1 flex flex-col min-h-0">
@@ -135,7 +138,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      <BottomTabBar />
+      {!isAdminRoute && <BottomTabBar />}
     </div>
     </SidebarProvider>
   );
