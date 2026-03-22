@@ -165,14 +165,19 @@ export default function AdminOrders() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {kpis.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="ch-card p-4">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: `${color}18`, color }}>
-              <Icon size={16} />
+          <div key={label} className="card p-4 flex flex-col gap-2 bg-[var(--color-surface-1)]">
+            <div className="flex items-center justify-between">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: `${color}18`, color }}
+              >
+                <Icon size={16} />
+              </div>
             </div>
-            <div className="text-xl font-black font-mono text-[var(--color-text-primary)]">{value}</div>
-            <div className="text-xs text-[var(--color-text-secondary)]">{label}</div>
+            <span className="text-2xl font-bold text-[var(--color-text-primary)]">{value}</span>
+            <span className="text-xs text-[var(--color-text-secondary)]">{label}</span>
           </div>
         ))}
       </div>
