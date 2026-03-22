@@ -179,7 +179,7 @@ export default function AddStudentModal({
   if (createdStudent) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" dir="rtl">
-        <div className="bg-bg-primary rounded-xl shadow-xl max-w-sm w-full p-6">
+        <div className="modal-spring-in bg-bg-primary rounded-xl shadow-xl max-w-sm w-full p-6">
           <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -212,7 +212,7 @@ export default function AddStudentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" dir="rtl">
-      <div className="bg-bg-primary rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="modal-spring-in bg-bg-primary rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <h2 className="text-xl font-bold text-text-primary mb-4">
             {t('addStudent')}

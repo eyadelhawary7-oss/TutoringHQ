@@ -85,7 +85,7 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+      <div className="modal-spring-in bg-white rounded-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
         <h2 className="text-lg font-bold text-slate-800">تغيير الرمز السري</h2>
 
         {error && (

@@ -54,7 +54,7 @@ export default function PasswordConfirmModal({
       onClick={handleClose}
     >
       <div
-        className="rounded-xl shadow-xl max-w-sm w-full p-6 bg-white"
+        className="modal-spring-in rounded-xl shadow-xl max-w-sm w-full p-6 bg-white"
         style={{ opacity: 1 }}
         onClick={(e) => e.stopPropagation()}
       >

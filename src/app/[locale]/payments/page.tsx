@@ -10,6 +10,9 @@ import { Download, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
+import type { MicroState } from '@/hooks/useMicroInteraction';
+import { LoadingButton } from '@/components/ui/LoadingButton';
+import { SuccessCheckmark } from '@/components/ui/SuccessCheckmark';
 
 interface PaymentRecord {
   id: string;
@@ -120,6 +123,7 @@ export default function PaymentsPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmedId, setConfirmedId] = useState<string | null>(null);
+  const [confirmSuccessId, setConfirmSuccessId] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<{
     studentName: string;
     amount: number;
@@ -295,6 +299,8 @@ export default function PaymentsPage() {
           paidAt: snapshot.paid_at ?? new Date().toISOString(),
         });
         setTimeout(() => setConfirmedId(null), 2000);
+        setConfirmSuccessId(snapshot.id);
+        setTimeout(() => setConfirmSuccessId(null), 1500);
       }
       setSuccessMessage(tp('confirmed', { count: 1 }));
       setTimeout(() => setSuccessMessage(''), 4000);
@@ -533,13 +539,20 @@ export default function PaymentsPage() {
 
                   {isPaymentPendingAction(payment) && canViewPayments && (
                     <div className="mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
-                      <button
-                        type="button"
+                      <LoadingButton
+                        state={
+                          (confirmingId === payment.id
+                            ? 'loading'
+                            : confirmSuccessId === payment.id
+                              ? 'success'
+                              : 'idle') satisfies MicroState
+                        }
                         onClick={() => setConfirmModal(payment)}
-                        className="btn btn-primary w-full py-2 text-sm"
+                        className="btn-primary w-full py-2 text-sm"
+                        successIcon={<SuccessCheckmark size={20} />}
                       >
                         {tp('confirm_action')}
-                      </button>
+                      </LoadingButton>
                     </div>
                   )}
                 </div>
@@ -554,7 +567,10 @@ export default function PaymentsPage() {
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => setConfirmModal(null)}
         >
-          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-md p-6 modal-spring-in"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tp('confirmPayment')}</h3>
             <p className="text-sm text-[var(--color-text-secondary)] mb-6">
               {Number(confirmModal.amount).toLocaleString('en-US')} {tp('egp')} · {tp(methodTpKey(confirmModal.method))} · {confirmModal.student_name}
@@ -567,14 +583,15 @@ export default function PaymentsPage() {
               >
                 {tCommon('cancel')}
               </button>
-              <button
+              <LoadingButton
                 type="button"
+                state={confirmingId === confirmModal.id ? 'loading' : 'idle'}
                 onClick={() => handleConfirm(confirmModal.id)}
-                disabled={confirmingId === confirmModal.id}
-                className="px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+                className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold"
+                loadingText={tCommon('loading')}
               >
-                {confirmingId === confirmModal.id ? tCommon('loading') : tCommon('confirm')}
-              </button>
+                {tCommon('confirm')}
+              </LoadingButton>
             </div>
           </div>
         </div>

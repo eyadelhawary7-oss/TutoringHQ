@@ -161,7 +161,7 @@ export function PrintStatementModal({
         onClick={onClose}
       >
         <div
-          className="bg-card rounded-2xl border border-border p-6 max-w-lg mx-4 w-full max-h-[90vh] overflow-y-auto"
+          className="modal-spring-in bg-card rounded-2xl border border-border p-6 max-w-lg mx-4 w-full max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-4">

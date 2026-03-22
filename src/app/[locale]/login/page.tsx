@@ -19,6 +19,12 @@ export default function LoginPage() {
   const [showPin, setShowPin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [shakePin, setShakePin] = useState(false);
+
+  const shakePinField = () => {
+    setShakePin(true);
+    setTimeout(() => setShakePin(false), 500);
+  };
 
   const handleLocaleToggle = () => {
     const next = locale === 'ar' ? 'en' : 'ar';
@@ -31,6 +37,7 @@ export default function LoginPage() {
 
     if (!phone || !pin) {
       setError(t('invalidCredentials'));
+      shakePinField();
       return;
     }
 
@@ -45,6 +52,7 @@ export default function LoginPage() {
 
       if (!lookupRes.ok || !lookupData.email) {
         setError(lookupData.error || t('phoneNotFound'));
+        shakePinField();
         setIsLoading(false);
         return;
       }
@@ -56,6 +64,7 @@ export default function LoginPage() {
 
       if (loginError) {
         setError(t('invalidCredentials'));
+        shakePinField();
         setIsLoading(false);
         return;
       }
@@ -97,6 +106,7 @@ export default function LoginPage() {
           router.push(`/${targetLocale}${targetPath}`);
         } else if (result.contactSales) {
           setError(t('contactSales'));
+          shakePinField();
         } else {
           let targetLocale = 'ar';
           try {
@@ -116,6 +126,7 @@ export default function LoginPage() {
       }
     } catch {
       setError(t('invalidCredentials'));
+      shakePinField();
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +190,7 @@ export default function LoginPage() {
             {/* PIN */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">{t('pin')}</label>
-              <div className="relative">
+              <div className={`relative ${shakePin ? 'micro-shake' : ''}`}>
                 <Lock size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
                 <input
                   type={showPin ? 'text' : 'password'}

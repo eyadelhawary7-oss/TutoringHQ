@@ -842,9 +842,6 @@ samp {
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  .btn:active {
-    transform: scale(0.97);
-  }
   .btn-primary {
     background-color: var(--color-brand-500);
     color: #fff;
@@ -1186,4 +1183,121 @@ html.light .text-white\/70 {
   border-radius: var(--radius-badge);
   font-size: 0.625rem;
   font-weight: 600;
+}
+
+/* ── S9 Micro-interaction System ────────────────────────────
+   Global interaction states applied via CSS classes.
+   All classes are additive — safe to add to any element.
+──────────────────────────────────────────────────────────── */
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%       { transform: translateX(-6px); }
+  30%       { transform: translateX(6px); }
+  45%       { transform: translateX(-4px); }
+  60%       { transform: translateX(4px); }
+  75%       { transform: translateX(-2px); }
+  90%       { transform: translateX(2px); }
+}
+
+@keyframes micro-success-pop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes modal-spring-in {
+  from { transform: scale(0.94) translateY(8px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);   opacity: 1; }
+}
+
+@keyframes modal-spring-out {
+  from { transform: scale(1)    translateY(0);   opacity: 1; }
+  to   { transform: scale(0.94) translateY(8px); opacity: 0; }
+}
+
+@keyframes btn-success-in {
+  0%   { transform: scale(0.9); }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@layer components {
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+    transition: transform var(--duration-instant) var(--ease-out);
+  }
+
+  .btn.is-loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  .btn.is-loading::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: 1rem;
+    height: 1rem;
+    margin-block-start: -0.5rem;
+    margin-inline-start: -0.5rem;
+    border: 2px solid currentColor;
+    border-inline-end-color: transparent;
+    border-radius: var(--radius-full);
+    animation: spin var(--duration-slower) linear infinite;
+    color: white;
+  }
+
+  .btn.is-success {
+    background-color: var(--color-success) !important;
+    pointer-events: none;
+    animation: btn-success-in var(--duration-normal) var(--ease-spring);
+  }
+
+  .btn.is-error {
+    background-color: var(--color-danger) !important;
+    pointer-events: none;
+  }
+}
+
+.micro-shake {
+  animation: shake var(--duration-slow) var(--ease-out);
+}
+
+.modal-spring-in {
+  animation: modal-spring-in var(--duration-normal) var(--ease-spring) both;
+}
+
+.modal-spring-out {
+  animation: modal-spring-out var(--duration-fast) var(--ease-out) both;
+}
+
+.micro-input-focus {
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.micro-input-focus:focus {
+  border-color: var(--color-brand-500) !important;
+  box-shadow: var(--shadow-focus) !important;
+  outline: none;
+}
+
+.micro-success-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  animation: micro-success-pop var(--duration-normal) var(--ease-spring);
 }
