@@ -1131,3 +1131,59 @@ html.light .text-white\/70 {
   background: var(--color-danger);
   transition: width var(--duration-slow) var(--ease-out);
 }
+
+/* ── S8 Payments ─────────────────────────────────────────── */
+@keyframes payment-confirm-flash {
+  0%   { background-color: transparent; }
+  30%  { background-color: rgba(16, 185, 129, 0.15); }
+  100% { background-color: transparent; }
+}
+
+@keyframes receipt-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes payment-row-enter {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.payment-row-enter {
+  animation: payment-row-enter var(--duration-fast) var(--ease-out) both;
+}
+
+.payment-confirmed-flash {
+  animation: payment-confirm-flash 1.2s var(--ease-out) forwards;
+}
+
+.receipt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(8, 15, 26, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.receipt-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface-1);
+  border-start-start-radius: var(--radius-modal);
+  border-start-end-radius: var(--radius-modal);
+  padding: 1.5rem;
+  animation: receipt-slide-up var(--duration-normal) var(--ease-spring);
+}
+
+.method-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-badge);
+  font-size: 0.625rem;
+  font-weight: 600;
+}

@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, type Filter } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { Download, Search, Check, Clock, CreditCard, Receipt, X } from 'lucide-react';
+import { Download, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import EmptyState from '@/components/empty-states/EmptyState';
+import { ReceiptModal } from '@/components/payments/ReceiptModal';
 
 interface PaymentRecord {
   id: string;
@@ -25,34 +26,27 @@ interface PaymentRecord {
   recorded_by_name?: string | null;
 }
 
-const METHOD_OPTIONS: { value: string; labelAr: string; labelEn: string }[] = [
-  { value: 'all', labelAr: 'الكل', labelEn: 'All' },
-  { value: 'cash', labelAr: 'نقدي', labelEn: 'Cash' },
-  { value: 'instapay', labelAr: 'إنستاباي', labelEn: 'InstaPay' },
-  { value: 'vodacash', labelAr: 'فودافون كاش', labelEn: 'Vodafone Cash' },
-  { value: 'vodafone_cash', labelAr: 'فودافون كاش', labelEn: 'Vodafone Cash' },
-  { value: 'orange', labelAr: 'أورانج كاش', labelEn: 'Orange Cash' },
-  { value: 'orange_cash', labelAr: 'أورانج كاش', labelEn: 'Orange Cash' },
-  { value: 'fawry', labelAr: 'فوري', labelEn: 'Fawry' },
-  { value: 'bank', labelAr: 'تحويل بنكي', labelEn: 'Bank Transfer' },
-  { value: 'bank_transfer', labelAr: 'تحويل بنكي', labelEn: 'Bank Transfer' },
-];
+type ListStatusFilter = 'all' | 'pending' | 'confirmed' | 'today' | 'month';
 
-const METHOD_BADGE_CLASS: Record<string, string> = {
-  cash: 'bg-green-100 text-green-700',
-  instapay: 'bg-blue-100 text-blue-700',
-  vodafone_cash: 'bg-red-100 text-red-700',
-  vodacash: 'bg-red-100 text-red-700',
-  orange: 'bg-orange-100 text-orange-700',
-  orange_cash: 'bg-orange-100 text-orange-700',
-  fawry: 'bg-purple-100 text-purple-700',
-  bank: 'bg-slate-100 text-slate-700',
-  bank_transfer: 'bg-slate-100 text-slate-700',
+type FilterPillKey = 'filter_all' | 'filter_pending' | 'filter_confirmed' | 'filter_today' | 'filter_month';
+
+const STATUS_FILTER_KEYS: Record<ListStatusFilter, FilterPillKey> = {
+  all: 'filter_all',
+  pending: 'filter_pending',
+  confirmed: 'filter_confirmed',
+  today: 'filter_today',
+  month: 'filter_month',
 };
 
-const METHOD_LABEL_AR: Record<string, string> = {
-  cash: 'نقدي', instapay: 'إنستاباي', vodacash: 'فودافون كاش', vodafone_cash: 'فودافون كاش',
-  orange: 'أورانج كاش', orange_cash: 'أورانج كاش', fawry: 'فوري', bank: 'تحويل بنكي', bank_transfer: 'تحويل بنكي',
+type MethodPillFilter = 'all' | 'cash' | 'instapay' | 'vodafone_cash' | 'orange_cash' | 'fawry' | 'bank_transfer';
+
+const METHOD_CONFIG: Record<string, { color: string; bg: string }> = {
+  cash: { color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+  instapay: { color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+  vodafone_cash: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+  orange_cash: { color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+  fawry: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+  bank_transfer: { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
 };
 
 function getTodayISO() {
@@ -60,28 +54,80 @@ function getTodayISO() {
   return d.toISOString().slice(0, 10);
 }
 
+function methodConfigKey(method: string): keyof typeof METHOD_CONFIG | null {
+  const m = (method ?? '').toLowerCase();
+  if (m === 'vodacash' || m === 'vodafone_cash') return 'vodafone_cash';
+  if (m === 'orange' || m === 'orange_cash') return 'orange_cash';
+  if (m === 'bank' || m === 'bank_transfer') return 'bank_transfer';
+  if (m === 'cash' || m === 'نقدي' || m === 'كاش') return 'cash';
+  if (m === 'instapay') return 'instapay';
+  if (m === 'fawry') return 'fawry';
+  return null;
+}
+
+type PaymentsMethodKey =
+  | 'method_cash'
+  | 'method_instapay'
+  | 'method_vodafone_cash'
+  | 'method_orange_cash'
+  | 'method_fawry'
+  | 'method_bank_transfer';
+
+function methodTpKey(method: string): PaymentsMethodKey {
+  const m = (method ?? '').toLowerCase();
+  if (m === 'vodacash' || m === 'vodafone_cash') return 'method_vodafone_cash';
+  if (m === 'orange' || m === 'orange_cash') return 'method_orange_cash';
+  if (m === 'bank' || m === 'bank_transfer') return 'method_bank_transfer';
+  if (m === 'instapay') return 'method_instapay';
+  if (m === 'fawry') return 'method_fawry';
+  return 'method_cash';
+}
+
+function paymentMatchesMethodFilter(pMethod: string, filter: MethodPillFilter): boolean {
+  if (filter === 'all') return true;
+  const pm = (pMethod ?? '').toLowerCase();
+  if (filter === 'vodafone_cash') return pm === 'vodacash' || pm === 'vodafone_cash';
+  if (filter === 'orange_cash') return pm === 'orange' || pm === 'orange_cash';
+  if (filter === 'bank_transfer') return pm === 'bank' || pm === 'bank_transfer';
+  return pm === filter;
+}
+
+function isPaymentConfirmed(p: PaymentRecord): boolean {
+  return p.confirmed === true || p.status === 'confirmed';
+}
+
+function isPaymentPendingAction(p: PaymentRecord): boolean {
+  return !isPaymentConfirmed(p) && (p.confirmed === false || p.status === 'pending');
+}
+
 export default function PaymentsPage() {
-  const t = useTranslations('payments');
+  const tp = useTranslations('payments');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
   const { user, hasPermission } = useUser();
-  const isRTL = locale === 'ar';
   const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
 
   const [records, setRecords] = useState<PaymentRecord[]>([]);
-  const [stats, setStats] = useState<{ totalToday: number; totalMonth: number; pendingCount: number; pendingAmount: number; balanceDue: number }>({ totalToday: 0, totalMonth: 0, pendingCount: 0, pendingAmount: 0, balanceDue: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [centerId, setCenterId] = useState<string | null>(null);
-  const [methodFilter, setMethodFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'pending'>('all');
-  const [dateFrom, setDateFrom] = useState(getTodayISO());
-  const [dateTo, setDateTo] = useState(getTodayISO());
+  const [methodFilter, setMethodFilter] = useState<MethodPillFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<ListStatusFilter>('all');
+  const [dateFrom, setDateFrom] = useState(getTodayISO);
+  const [dateTo, setDateTo] = useState(getTodayISO);
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<PaymentRecord | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [confirmedId, setConfirmedId] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<{
+    studentName: string;
+    amount: number;
+    method: string;
+    methodLabel: string;
+    paidAt: string;
+  } | null>(null);
+  const [filterKey, setFilterKey] = useState(0);
 
   const loadData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -90,7 +136,6 @@ export default function PaymentsPage() {
     const meRes = await fetch('/api/me', { headers: { Authorization: `Bearer ${session.access_token}` } });
     const meData = await meRes.json();
     if (!meData?.user?.center_id) return;
-    setCenterId(meData.user.center_id);
     const cid = meData.user.center_id;
 
     setLoadError(null);
@@ -100,20 +145,6 @@ export default function PaymentsPage() {
       const filters: Filter[] = [{ column: 'center_id', op: 'eq', value: cid }];
       filters.push({ column: 'paid_at', op: 'gte', value: `${dateFrom}T00:00:00.000Z` });
       filters.push({ column: 'paid_at', op: 'lte', value: `${dateTo}T23:59:59.999Z` });
-      if (methodFilter !== 'all') {
-        if (methodFilter === 'bank') {
-          filters.push({ column: 'method', op: 'in', value: ['bank', 'bank_transfer'] });
-        } else if (methodFilter === 'vodacash') {
-          filters.push({ column: 'method', op: 'in', value: ['vodacash', 'vodafone_cash'] });
-        } else if (methodFilter === 'orange') {
-          filters.push({ column: 'method', op: 'in', value: ['orange', 'orange_cash'] });
-        } else {
-          filters.push({ column: 'method', op: 'eq', value: methodFilter });
-        }
-      }
-      if (statusFilter !== 'all') {
-        filters.push({ column: 'status', op: 'eq', value: statusFilter });
-      }
 
       const { data: paymentsData, error: payErr } = await dbSelect({
         table: 'payments',
@@ -127,8 +158,8 @@ export default function PaymentsPage() {
       type PaymentRow = PaymentRecord & { students?: { name?: string; student_number?: string } | null };
       const payments = (paymentsData || []) as PaymentRow[];
 
-      const studentIds = [...new Set(payments.map(p => p.student_id))];
-      const userIds = [...new Set(payments.map(p => p.recorded_by).filter(Boolean))] as string[];
+      const studentIds = [...new Set(payments.map((p) => p.student_id))];
+      const userIds = [...new Set(payments.map((p) => p.recorded_by).filter(Boolean))] as string[];
 
       let studentMap: Record<string, { name: string; student_number: string }> = {};
       let userMap: Record<string, string> = {};
@@ -140,21 +171,11 @@ export default function PaymentsPage() {
       });
       const allStudents = (allStudentsData || []) as { id: string; name: string; student_number?: string; balance_due?: number }[];
 
-      const statsRes = await fetch('/api/payments/stats', { headers: { Authorization: `Bearer ${session.access_token}` } });
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        setStats({
-          totalToday: statsData.totalToday ?? 0,
-          totalMonth: statsData.totalMonth ?? 0,
-          pendingCount: statsData.pendingCount ?? 0,
-          pendingAmount: statsData.pendingAmount ?? 0,
-          balanceDue: statsData.balanceDue ?? 0,
-        });
-      }
-
       if (studentIds.length > 0) {
         studentMap = Object.fromEntries(
-          allStudents.filter(s => studentIds.includes(s.id)).map(s => [s.id, { name: s.name || '—', student_number: s.student_number || '—' }])
+          allStudents
+            .filter((s) => studentIds.includes(s.id))
+            .map((s) => [s.id, { name: s.name || '—', student_number: s.student_number || '—' }])
         );
       }
 
@@ -165,39 +186,87 @@ export default function PaymentsPage() {
           filters: [{ column: 'id', op: 'in', value: userIds }],
         });
         const users = (usersData || []) as { id: string; name: string | null }[];
-        userMap = Object.fromEntries(users.map(u => [u.id, u.name || '—']));
+        userMap = Object.fromEntries(users.map((u) => [u.id, u.name || '—']));
       }
 
-      setRecords(payments.map(p => ({
-        ...p,
-        student_name: p.students?.name ?? studentMap[p.student_id]?.name ?? allStudents.find(s => s.id === p.student_id)?.name ?? '—',
-        student_number: p.students?.student_number ?? studentMap[p.student_id]?.student_number ?? allStudents.find(s => s.id === p.student_id)?.student_number ?? '—',
-        recorded_by_name: p.recorded_by ? (userMap[p.recorded_by] ?? '—') : null,
-      })));
+      setRecords(
+        payments.map((p) => ({
+          ...p,
+          student_name:
+            p.students?.name ??
+            studentMap[p.student_id]?.name ??
+            allStudents.find((s) => s.id === p.student_id)?.name ??
+            '—',
+          student_number:
+            p.students?.student_number ??
+            studentMap[p.student_id]?.student_number ??
+            allStudents.find((s) => s.id === p.student_id)?.student_number ??
+            '—',
+          recorded_by_name: p.recorded_by ? (userMap[p.recorded_by] ?? '—') : null,
+        }))
+      );
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
-  }, [dateFrom, dateTo, methodFilter, statusFilter]);
+  }, [dateFrom, dateTo]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  const filtered = useMemo(() => {
-    return records.filter(r => {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const { totalToday, totalPending, totalMonth } = useMemo(() => {
+    const tt = records
+      .filter((p) => p.confirmed === true && (p.paid_at ?? '').startsWith(todayStr))
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+    const tpending = records.filter((p) => p.confirmed === false).reduce((sum, p) => sum + Number(p.amount), 0);
+    const tm = records
+      .filter(
+        (p) =>
+          p.confirmed === true &&
+          new Date(p.paid_at ?? '').getMonth() === today.getMonth() &&
+          new Date(p.paid_at ?? '').getFullYear() === today.getFullYear()
+      )
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+    return { totalToday: tt, totalPending: tpending, totalMonth: tm };
+  }, [records, todayStr, today]);
+
+  const filteredPayments = useMemo(() => {
+    return records.filter((p) => {
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
-        const name = (r.student_name ?? '').toLowerCase();
-        const num = (r.student_number ?? '').toLowerCase();
+        const name = (p.student_name ?? '').toLowerCase();
+        const num = (p.student_number ?? '').toLowerCase();
         if (!name.includes(q) && !num.includes(q)) return false;
       }
-      return true;
-    });
-  }, [records, searchQuery]);
 
+      const matchStatus =
+        statusFilter === 'all'
+          ? true
+          : statusFilter === 'pending'
+            ? p.confirmed === false
+            : statusFilter === 'confirmed'
+              ? p.confirmed === true
+              : statusFilter === 'today'
+                ? (p.paid_at ?? '').startsWith(todayStr)
+                : statusFilter === 'month'
+                  ? new Date(p.paid_at ?? '').getMonth() === today.getMonth() &&
+                    new Date(p.paid_at ?? '').getFullYear() === today.getFullYear()
+                  : true;
+
+      const matchMethod = paymentMatchesMethodFilter(p.method, methodFilter);
+      return matchStatus && matchMethod;
+    });
+  }, [records, searchQuery, statusFilter, methodFilter, todayStr, today]);
 
   const handleConfirm = async (paymentId: string) => {
     if (!canViewPayments) return;
+    const snapshot =
+      confirmModal?.id === paymentId ? confirmModal : records.find((r) => r.id === paymentId) ?? null;
     setConfirmingId(paymentId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -216,7 +285,18 @@ export default function PaymentsPage() {
       if (!res.ok) throw new Error(data?.error || 'Failed');
       setConfirmModal(null);
       await loadData();
-      setSuccessMessage(t('confirmed', { count: 1 }));
+      if (snapshot) {
+        setConfirmedId(snapshot.id);
+        setReceipt({
+          studentName: snapshot.student_name ?? '—',
+          amount: Number(snapshot.amount),
+          method: snapshot.method,
+          methodLabel: tp(methodTpKey(snapshot.method)),
+          paidAt: snapshot.paid_at ?? new Date().toISOString(),
+        });
+        setTimeout(() => setConfirmedId(null), 2000);
+      }
+      setSuccessMessage(tp('confirmed', { count: 1 }));
       setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed');
@@ -227,27 +307,16 @@ export default function PaymentsPage() {
 
   const handleExportCSV = () => {
     const cols = ['Date', 'Student Name', 'Amount (EGP)', 'Method', 'Status', 'Recorded By'];
-    const methodLabels: Record<string, string> = {
-      cash: 'نقدي',
-      instapay: 'InstaPay',
-      vodacash: 'Vodafone Cash',
-      vodafone_cash: 'Vodafone Cash',
-      orange: 'Orange Cash',
-      orange_cash: 'Orange Cash',
-      fawry: 'Fawry',
-      bank: 'تحويل بنكي',
-      bank_transfer: 'تحويل بنكي',
-    };
-    const statusLabels: Record<string, string> = { confirmed: 'مؤكد', pending: 'معلق' };
-    const rows = filtered.map(r => [
-      r.paid_at ? new Date(r.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB') : '',
+    const rows = filteredPayments.map((r) => [
+      r.paid_at ? new Date(r.paid_at).toLocaleString('en-US') : '',
       r.student_name ?? '',
       String(r.amount ?? 0),
-      methodLabels[r.method] ?? r.method,
-      statusLabels[r.status] ?? r.status,
+      tp(methodTpKey(r.method)),
+      isPaymentConfirmed(r) ? tp('status_confirmed') : tp('status_pending'),
       r.recorded_by_name ?? '',
     ]);
-    const csvContent = '\uFEFF' + [cols.join(','), ...rows.map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const csvContent =
+      '\uFEFF' + [cols.join(','), ...rows.map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -257,235 +326,252 @@ export default function PaymentsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const formatMethod = (method: string) => {
-    const key = method?.toLowerCase() ?? 'cash';
-    const cls = METHOD_BADGE_CLASS[key] ?? 'bg-slate-100 text-slate-700';
-    const labels: Record<string, string> = {
-      cash: 'نقدي',
-      instapay: 'InstaPay',
-      vodacash: 'Vodafone Cash',
-      vodafone_cash: 'Vodafone Cash',
-      orange: 'Orange Cash',
-      orange_cash: 'Orange Cash',
-      fawry: 'Fawry',
-      bank: 'تحويل بنكي',
-      bank_transfer: 'تحويل بنكي',
-    };
-    return <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls}`}>{labels[key] ?? method ?? '—'}</span>;
-  };
-
-  const formatStatus = (r: PaymentRecord) => {
-    if (r.confirmed === true || r.status === 'confirmed') {
-      return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">{t('confirmedStatus')}</span>;
-    }
-    return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">{t('filterPending')}</span>;
-  };
-
-  const methodOptionsForFilter = [
-    { value: 'all', labelAr: 'الكل', labelEn: 'All' },
-    { value: 'cash', labelAr: 'نقدي', labelEn: 'Cash' },
-    { value: 'instapay', labelAr: 'إنستاباي', labelEn: 'InstaPay' },
-    { value: 'vodacash', labelAr: 'فودافون كاش', labelEn: 'Vodafone Cash' },
-    { value: 'orange', labelAr: 'أورانج كاش', labelEn: 'Orange Cash' },
-    { value: 'fawry', labelAr: 'فوري', labelEn: 'Fawry' },
-    { value: 'bank', labelAr: 'تحويل بنكي', labelEn: 'Bank Transfer' },
-  ];
-
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-4 md:p-6 space-y-5 animate-fade-in min-h-screen bg-background">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{t('transactionLog')}</p>
+    <>
+      <div
+        className="bg-[var(--color-surface-0)] min-h-screen animate-fade-in
+          pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0"
+      >
+        <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{tp('title')}</h1>
+          <p className="text-xs text-[var(--color-text-secondary)]">{tp('subtitle')}</p>
         </div>
-      </div>
 
-      {successMessage && (
-        <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm text-center">
-          {successMessage}
-        </div>
-      )}
-
-      {loadError && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
-          <p className="font-medium">{loadError}</p>
-          <button onClick={() => loadData()} className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg">
-            {t('retry')}
-          </button>
-        </div>
-      )}
-
-      {/* Stats Row - 4 cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3">
-          <div className="p-3 rounded-full shrink-0 bg-green-100"><CreditCard size={18} className="text-green-600" /></div>
-          <div className="min-w-0">
-            <div className="font-black text-lg md:text-xl font-mono text-slate-900">{stats.totalToday.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</div>
-            <div className="text-xs text-slate-500">{t('collectedToday')}</div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3">
-          <div className="p-3 rounded-full shrink-0 bg-amber-100"><Clock size={18} className="text-amber-600" /></div>
-          <div className="min-w-0">
-            <div className="font-black text-lg md:text-xl font-mono text-slate-900">{stats.pendingCount} — {stats.pendingAmount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</div>
-            <div className="text-xs text-slate-500">{t('pendingDigital')}</div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3">
-          <div className="p-3 rounded-full shrink-0 bg-red-100"><Receipt size={18} className="text-red-600" /></div>
-          <div className="min-w-0">
-            <div className="font-black text-lg md:text-xl font-mono text-slate-900">{stats.balanceDue.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</div>
-            <div className="text-xs text-slate-500">{t('totalBalanceDue')}</div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-3">
-          <div className="p-3 rounded-full shrink-0 bg-teal-100"><Check size={18} className="text-teal-600" /></div>
-          <div className="min-w-0">
-            <div className="font-black text-lg md:text-xl font-mono text-slate-900">{stats.totalMonth.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</div>
-            <div className="text-xs text-slate-500">{t('collectedThisMonth')}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Bar - full width, RTL */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
-        <select
-          value={methodFilter}
-          onChange={e => setMethodFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-900 min-w-[140px]"
-        >
-          {methodOptionsForFilter.map(m => (
-            <option key={m.value} value={m.value}>{isRTL ? m.labelAr : m.labelEn}</option>
-          ))}
-        </select>
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-          className="px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-900 min-w-[120px]"
-        >
-          <option value="all">{tCommon('all')}</option>
-          <option value="confirmed">{t('confirmedStatus')}</option>
-          <option value="pending">{t('filterPending')}</option>
-        </select>
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={e => setDateFrom(e.target.value)}
-          className="px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-900"
-        />
-        <input
-          type="date"
-          value={dateTo}
-          onChange={e => setDateTo(e.target.value)}
-          className="px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-900"
-        />
-        <div className="relative flex-1 min-w-[160px]">
-          <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
-          <input
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder={t('searchStudent')}
-            className="w-full ps-9 pe-4 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400"
-          />
-        </div>
-        <button
-          onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
-        >
-          <Download size={14} /> {t('exportCSV')}
-        </button>
-      </div>
-
-      {/* Payments Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="flex justify-center py-16">
-            <div className="animate-spin h-8 w-8 border-2 border-teal-500 border-t-transparent rounded-full" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={<Receipt />}
-            titleKey="payments.title"
-            descriptionKey="payments.description"
-            namespace="emptyStates"
-            actionLabel="payments.action"
-            onAction={() => router.push(`/${locale}/scan`)}
-          />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('date')}</th>
-                  <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('student')}</th>
-                  <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('amount')}</th>
-                  <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('paymentMethod')}</th>
-                  <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('status')}</th>
-                  <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('recordedBy')}</th>
-                  <th className="text-end py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{tCommon('actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3.5 px-4 text-sm text-slate-600 text-end" dir="ltr">
-                      {p.paid_at ? new Date(p.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
-                    </td>
-                    <td className="py-3.5 px-4 text-sm text-slate-900 text-end">
-                      <div className="font-medium">{p.student_name}</div>
-                      <div className="text-xs text-slate-500 font-mono" dir="ltr">{p.student_number}</div>
-                    </td>
-                    <td className="py-3.5 px-4 text-sm font-bold font-mono text-slate-900 text-end">{p.amount} {tCommon('egp')}</td>
-                    <td className="py-3.5 px-4 text-sm text-end">{formatMethod(p.method)}</td>
-                    <td className="py-3.5 px-4 text-sm text-end">{formatStatus(p)}</td>
-                    <td className="py-3.5 px-4 text-sm text-slate-500 text-end">{p.recorded_by_name ?? '—'}</td>
-                    <td className="py-3.5 px-4 text-sm text-end">
-                      {(p.confirmed === true || p.status === 'confirmed') ? (
-                        <Check size={18} className="text-green-600 inline" />
-                      ) : (p.confirmed === false || p.status === 'pending') && canViewPayments ? (
-                        <button
-                          onClick={() => setConfirmModal(p)}
-                          className="px-3 py-1.5 border border-teal-500 text-teal-600 hover:bg-teal-50 text-xs font-semibold rounded-lg transition-colors"
-                        >
-                          {t('confirmReceipt', { defaultValue: 'تأكيد الاستلام' })}
-                        </button>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {successMessage && (
+          <div className="px-4 max-w-3xl mx-auto w-full mb-3">
+            <div className="p-3 rounded-xl border border-[var(--color-success)] bg-[rgba(16,185,129,0.08)] text-[var(--color-success)] text-sm text-center">
+              {successMessage}
+            </div>
           </div>
         )}
-      </div>
 
-      {/* Confirm Payment Modal */}
-      {confirmModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setConfirmModal(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-900">{t('confirmPayment')}</h3>
-              <button onClick={() => setConfirmModal(null)} className="p-2 hover:bg-slate-100 rounded-lg">
-                <X size={18} />
+        {loadError && (
+          <div className="px-4 max-w-3xl mx-auto w-full mb-3">
+            <div className="p-4 rounded-xl border border-[var(--color-danger)] bg-[rgba(239,68,68,0.08)] text-[var(--color-danger)] text-sm">
+              <p className="font-medium">{loadError}</p>
+              <button
+                type="button"
+                onClick={() => loadData()}
+                className="mt-2 px-4 py-2 bg-[var(--color-danger)] text-white text-sm font-medium rounded-lg"
+              >
+                {tp('retry')}
               </button>
             </div>
-            <p className="text-sm text-slate-600 mb-6">
-              {locale === 'ar'
-                ? `تأكيد استلام ${confirmModal.amount} جنيه بـ ${METHOD_LABEL_AR[confirmModal.method] ?? confirmModal.method} من ${confirmModal.student_name}؟`
-                : `Confirm receipt of ${confirmModal.amount} EGP via ${confirmModal.method} from ${confirmModal.student_name}?`}
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-3 px-4 mb-4 max-w-3xl mx-auto w-full">
+          <div className="card p-3 flex flex-col gap-1">
+            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_today')}</span>
+            <span className="text-base font-bold text-[var(--color-success)]">{totalToday.toLocaleString('en-US')}</span>
+            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
+          </div>
+          <div className="card p-3 flex flex-col gap-1">
+            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_pending')}</span>
+            <span className="text-base font-bold text-[var(--color-warning)]">{totalPending.toLocaleString('en-US')}</span>
+            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
+          </div>
+          <div className="card p-3 flex flex-col gap-1">
+            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_month')}</span>
+            <span className="text-base font-bold text-[var(--color-text-primary)]">{totalMonth.toLocaleString('en-US')}</span>
+            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto px-4 pb-2 max-w-3xl mx-auto w-full">
+          {(['all', 'pending', 'confirmed', 'today', 'month'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => {
+                setStatusFilter(f);
+                setFilterKey((k) => k + 1);
+              }}
+              className={`shrink-0 px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${
+                statusFilter === f
+                  ? 'bg-[var(--color-brand-500)] text-white'
+                  : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
+              }`}
+            >
+              {tp(STATUS_FILTER_KEYS[f])}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto px-4 pb-3 max-w-3xl mx-auto w-full">
+          {(['all', 'cash', 'instapay', 'vodafone_cash', 'orange_cash', 'fawry', 'bank_transfer'] as const).map((m) => {
+            const cfg = METHOD_CONFIG[m];
+            const isActive = methodFilter === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  setMethodFilter(m);
+                  setFilterKey((k) => k + 1);
+                }}
+                className="shrink-0 method-pill transition-all duration-fast ease-out"
+                style={
+                  isActive
+                    ? cfg
+                      ? {
+                          background: cfg.bg,
+                          color: cfg.color,
+                          outline: `1.5px solid ${cfg.color}`,
+                        }
+                      : {
+                          background: 'var(--color-brand-500)',
+                          color: '#ffffff',
+                        }
+                    : {
+                        background: 'var(--color-surface-2)',
+                        color: 'var(--color-text-secondary)',
+                      }
+                }
+              >
+                {m === 'all' ? tp('filter_all') : tp(`method_${m}` as PaymentsMethodKey)}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="px-4 max-w-3xl mx-auto w-full space-y-3 mb-4">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
+            />
+            <div className="relative flex-1 min-w-[160px]">
+              <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-tertiary)]" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={tp('searchStudent')}
+                className="w-full ps-9 pe-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-brand-500 hover:opacity-90 text-white text-sm font-semibold rounded-lg shrink-0"
+            >
+              <Download size={14} /> {tp('exportCSV')}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 px-4 max-w-3xl mx-auto w-full pb-8" key={filterKey}>
+          {isLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="animate-spin h-8 w-8 border-2 border-brand-500 border-t-transparent rounded-full" />
+            </div>
+          ) : filteredPayments.length === 0 ? (
+            <div className="card p-10 flex flex-col items-center gap-3 mt-2">
+              <svg
+                width="40"
+                height="40"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                className="text-[var(--color-text-tertiary)]"
+              >
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+              <p className="text-sm font-medium text-[var(--color-text-secondary)]">{tp('empty_title')}</p>
+              <p className="text-xs text-[var(--color-text-tertiary)]">{tp('empty_subtitle')}</p>
+            </div>
+          ) : (
+            filteredPayments.map((payment, index) => {
+              const cfgKey = methodConfigKey(payment.method);
+              const cfg = cfgKey ? METHOD_CONFIG[cfgKey] : { color: '#64748b', bg: 'rgba(100,116,139,0.12)' };
+              const isJustConfirmed = confirmedId === payment.id;
+
+              return (
+                <div
+                  key={payment.id}
+                  className={`card p-4 payment-row-enter ${isJustConfirmed ? 'payment-confirmed-flash' : ''}`}
+                  style={{ animationDelay: `${Math.min(index * 20, 120)}ms` }}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="method-pill" style={{ background: cfg.bg, color: cfg.color }}>
+                      {tp(methodTpKey(payment.method))}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-bold text-[var(--color-text-primary)]">
+                        {Number(payment.amount).toLocaleString('en-US')}
+                        <span className="text-xs font-normal text-[var(--color-text-tertiary)] ms-1">{tp('egp')}</span>
+                      </span>
+                      {isPaymentConfirmed(payment) ? (
+                        <span className="badge badge-success text-xs">{tp('status_confirmed')}</span>
+                      ) : (
+                        <span className="badge badge-gold text-xs">{tp('status_pending')}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm text-[var(--color-text-secondary)] truncate">{payment.student_name}</p>
+                    <p className="text-xs text-[var(--color-text-tertiary)] shrink-0" dir="ltr">
+                      {new Date(payment.paid_at ?? '').toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+
+                  {isPaymentPendingAction(payment) && canViewPayments && (
+                    <div className="mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmModal(payment)}
+                        className="btn btn-primary w-full py-2 text-sm"
+                      >
+                        {tp('confirm_action')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {confirmModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setConfirmModal(null)}
+        >
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tp('confirmPayment')}</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+              {Number(confirmModal.amount).toLocaleString('en-US')} {tp('egp')} · {tp(methodTpKey(confirmModal.method))} · {confirmModal.student_name}
             </p>
             <div className="flex gap-3 justify-end">
               <button
+                type="button"
                 onClick={() => setConfirmModal(null)}
-                className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg"
+                className="px-4 py-2 border border-[var(--color-border-default)] rounded-lg text-sm text-[var(--color-text-primary)]"
               >
                 {tCommon('cancel')}
               </button>
               <button
+                type="button"
                 onClick={() => handleConfirm(confirmModal.id)}
                 disabled={confirmingId === confirmModal.id}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg"
+                className="px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
               >
                 {confirmingId === confirmModal.id ? tCommon('loading') : tCommon('confirm')}
               </button>
@@ -493,6 +579,16 @@ export default function PaymentsPage() {
           </div>
         </div>
       )}
-    </div>
+
+      <ReceiptModal
+        isOpen={receipt !== null}
+        onClose={() => setReceipt(null)}
+        studentName={receipt?.studentName ?? ''}
+        amount={receipt?.amount ?? 0}
+        method={receipt?.method ?? ''}
+        methodLabel={receipt?.methodLabel ?? ''}
+        paidAt={receipt?.paidAt ?? ''}
+      />
+    </>
   );
 }
