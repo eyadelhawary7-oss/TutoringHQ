@@ -1566,3 +1566,13 @@ html.light .text-white\/70 {
   color: rgba(255,255,255,0.9);
   letter-spacing: 0.05em;
 }
+
+/* ── FINAL TEXT COLOR ENFORCEMENT ───────────────────────── */
+/* Beats Tailwind preflight + any component-level overrides  */
+html:not(.light) {
+  color: #f8fafc !important;
+}
+
+html.light {
+  color: #0f172a !important;
+}
