@@ -136,7 +136,7 @@ export default function AdminOrders() {
   return (
     <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen">
       <AdminSidebar activeRoute={pathname} />
-      <div className="flex-1 p-4 md:p-6 space-y-5 overflow-auto mt-12 md:mt-0 animate-fade-in">
+      <div className="w-full flex-1 p-6 space-y-5 overflow-auto mt-12 md:mt-0 animate-fade-in min-w-0">
       {/* New order notification banner */}
       {showNewBanner && (
         <div className="relative overflow-hidden rounded-xl border border-amber-400/30 bg-amber-500/10 p-4 flex items-center gap-3 animate-fade-in">
@@ -210,18 +210,18 @@ export default function AdminOrders() {
       </div>
 
       {/* Orders table */}
-      <div className="ch-card overflow-hidden">
+      <div className="rounded-xl border border-[var(--color-border-subtle)] overflow-hidden bg-[var(--color-surface-1)]">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead style={{ background: 'hsl(var(--muted))' }}>
+          <table className="w-full">
+            <thead className="bg-[var(--color-surface-2)]">
               <tr>
-                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tIdCards('orderNumber')}</th>
-                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('center')}</th>
-                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tIdCards('cards')}</th>
-                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tIdCards('total')}</th>
-                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('status')}</th>
-                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('date')}</th>
-                <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('actions')}</th>
+                <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">{tIdCards('orderNumber')}</th>
+                <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('center')}</th>
+                <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">{tIdCards('cards')}</th>
+                <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">{tIdCards('total')}</th>
+                <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
+                <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('date')}</th>
+                <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -229,21 +229,22 @@ export default function AdminOrders() {
                 const cfg = STATUS_CONFIG[order.status];
                 const StatusIcon = cfg.icon;
                 return (
-                  <tr key={order.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-primary)]">{order.orderNumber}</td>
-                    <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{order.centerName}</td>
-                    <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">{order.students.length}</td>
-                    <td className="px-4 py-3 font-mono font-bold text-[var(--color-text-primary)]">{order.total} {tCommon('egp')}</td>
-                    <td className="px-4 py-3">
+                  <tr key={order.id} className="border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)] transition-colors">
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono">{order.orderNumber}</td>
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-medium">{order.centerName}</td>
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono">{order.students.length}</td>
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono font-bold">{order.total} {tCommon('egp')}</td>
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                       <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold', cfg.bg, cfg.color)}>
                         <StatusIcon size={10} /> {tIdCards(cfg.label)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                       {new Date(order.createdAt).toLocaleDateString('en-GB')}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                       <button
+                        type="button"
                         onClick={() => setSlideOverId(order.id)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
                       >
@@ -256,18 +257,15 @@ export default function AdminOrders() {
             </tbody>
           </table>
         </div>
-
-        {/* Empty state */}
         {filteredOrders.length === 0 && (
-          <div className="text-center py-16 text-[var(--color-text-secondary)]">
-            {/* CSS art placeholder */}
+          <div className="text-center py-16 text-[var(--color-text-secondary)] border-t border-[var(--color-border-subtle)]">
             <div className="mx-auto mb-4 w-20 h-20 relative">
-              <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-muted-foreground/20" />
-              <div className="absolute top-3 left-3 right-3 h-3 rounded bg-muted-foreground/10" />
-              <div className="absolute top-8 left-3 right-6 h-2 rounded bg-muted-foreground/8" />
-              <div className="absolute top-12 left-3 right-8 h-2 rounded bg-muted-foreground/6" />
+              <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-[var(--color-border-default)]/40" />
+              <div className="absolute top-3 start-3 end-3 h-3 rounded bg-[var(--color-text-tertiary)]/10" />
+              <div className="absolute top-8 start-3 end-6 h-2 rounded bg-[var(--color-text-tertiary)]/8" />
+              <div className="absolute top-12 start-3 end-8 h-2 rounded bg-[var(--color-text-tertiary)]/6" />
             </div>
-            <p className="font-medium">{tIdCards('noOrders')}</p>
+            <p className="font-medium text-[var(--color-text-primary)]">{tIdCards('noOrders')}</p>
             <p className="text-sm mt-1">{tIdCards('noOrdersDesc')}</p>
           </div>
         )}

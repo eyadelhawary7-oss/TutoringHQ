@@ -5,12 +5,20 @@ import { PullToRefresh } from './PullToRefresh';
 
 type MobileWrapperProps = {
   children: ReactNode;
+  /** Admin console: full width next to sidebar (no max-w-7xl / mx-auto) */
+  fullWidth?: boolean;
 };
 
-export function MobileWrapper({ children }: MobileWrapperProps) {
+export function MobileWrapper({ children, fullWidth }: MobileWrapperProps) {
   return (
     <PullToRefresh>
-      <div className="p-6 max-w-7xl mx-auto pt-14 md:pt-6 pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-8 min-h-full">
+      <div
+        className={
+          fullWidth
+            ? 'w-full flex-1 flex flex-col min-h-0'
+            : 'p-6 max-w-7xl mx-auto pt-14 md:pt-6 pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-8 min-h-full'
+        }
+      >
         {children}
       </div>
     </PullToRefresh>

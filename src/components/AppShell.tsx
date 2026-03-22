@@ -134,7 +134,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
         {/* Page content — scroll + safe-area padding on inner wrapper (MobileWrapper) */}
         <main className="flex-1 flex flex-col min-h-0">
-          <MobileWrapper>{children}</MobileWrapper>
+          <MobileWrapper fullWidth={isAdminRoute}>{children}</MobileWrapper>
         </main>
       </div>
 
