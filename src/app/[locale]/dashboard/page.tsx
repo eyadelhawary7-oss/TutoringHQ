@@ -638,16 +638,12 @@ export default function DashboardPage() {
 
   if (user?.role === 'assistant' && !isLoading) {
     return (
-      <div
-        className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 animate-fade-in
-          pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6"
-      >
+      <div className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6">
         <h1 className="text-2xl font-bold text-white mb-6">{t('title')}</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link
             href="/scan"
-            className="card p-8 text-center transition-all duration-fast ease-out
-              hover:shadow-brand-sm hover:border-[var(--color-border-brand)] active:scale-[0.99]"
+            className="card p-8 text-center transition-all duration-fast ease-out hover:shadow-brand-sm hover:border-[var(--color-border-brand)] active:scale-[0.99]"
           >
             <QrCode className="w-16 h-16 mx-auto text-brand-400 mb-4" strokeWidth={1.5} />
             <h2 className="text-xl font-bold text-white">{t('action_scan')}</h2>
@@ -655,8 +651,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             href="/payments"
-            className="card p-6 transition-all duration-fast ease-out
-              hover:shadow-brand-sm hover:border-[var(--color-border-brand)]"
+            className="card p-6 transition-all duration-fast ease-out hover:shadow-brand-sm hover:border-[var(--color-border-brand)]"
           >
             <p className="text-sm text-[var(--color-text-secondary)]">{t('unpaidCount')}</p>
             <p className="text-3xl font-bold text-white mt-1">
@@ -684,18 +679,14 @@ export default function DashboardPage() {
 
     if (diffDays > 0 && diffDays <= 5) {
       return (
-        <div
-          className="mb-4 p-4 rounded-xl border border-[var(--color-warning)]/40
-            bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4"
-        >
+        <div className="mb-4 p-4 rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4">
           <span className="text-[var(--color-warning)] font-medium text-sm">
             {t('paymentDue', { days: diffDays, defaultValue: `Payment due in ${diffDays} days` })}
           </span>
           <button
             type="button"
             onClick={() => router.push('/settings/billing')}
-            className="px-4 py-2 rounded-lg font-medium text-white
-              bg-[var(--color-warning)] hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-warning)] hover:opacity-90 transition-opacity"
           >
             {t('payNow', { defaultValue: 'Pay Now' })}
           </button>
@@ -714,18 +705,14 @@ export default function DashboardPage() {
 
       if (hoursRemaining <= 0) {
         return (
-          <div
-            className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40
-              bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4"
-          >
+          <div className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4">
             <span className="text-[var(--color-danger)] font-medium text-sm">
               {t('accountSuspended', { defaultValue: 'Account suspended due to overdue payment.' })}
             </span>
             <button
               type="button"
               onClick={() => router.push('/settings/billing')}
-              className="px-4 py-2 rounded-lg font-medium text-white
-                bg-[var(--color-danger)] hover:opacity-90 transition-opacity"
+              className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-danger)] hover:opacity-90 transition-opacity"
             >
               {t('payNow', { defaultValue: 'Pay Now' })}
             </button>
@@ -734,10 +721,7 @@ export default function DashboardPage() {
       }
 
       return (
-        <div
-          className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40
-            bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4"
-        >
+        <div className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4">
           <span className="text-[var(--color-danger)] font-medium text-sm">
             {t('paymentOverdue', {
               hours: hoursRemaining,
@@ -747,8 +731,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => router.push('/settings/billing')}
-            className="px-4 py-2 rounded-lg font-medium text-white
-              bg-[var(--color-danger)] hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-danger)] hover:opacity-90 transition-opacity"
           >
             {t('payNow', { defaultValue: 'Pay Now' })}
           </button>
@@ -790,10 +773,7 @@ export default function DashboardPage() {
   const egpSuffix = tCommon('egp');
 
   return (
-    <div
-      className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 animate-fade-in
-        pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6"
-    >
+    <div className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6">
       {showSurgeAlert && statsData?.surge_message && (
         <div
           className="card mb-4 p-4 border-[var(--color-border-brand)] flex items-center justify-between gap-4"
@@ -817,20 +797,13 @@ export default function DashboardPage() {
           <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('subtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div
-            className="flex items-center gap-1 p-1 rounded-xl border border-[var(--color-border-subtle)]
-              bg-[var(--color-surface-2)]"
-          >
+          <div className="flex items-center gap-1 p-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
             {(['7', '30'] as const).map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setTimeRange(r)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  timeRange === r
-                    ? 'bg-[var(--color-surface-3)] text-white shadow-sm'
-                    : 'text-[var(--color-text-secondary)]'
-                }`}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${timeRange === r ? 'bg-[var(--color-surface-3)] text-white shadow-sm' : 'text-[var(--color-text-secondary)]'}`}
               >
                 {r === '7' ? t('last7Days') : t('last30Days')}
               </button>
@@ -840,9 +813,7 @@ export default function DashboardPage() {
             type="button"
             onClick={handleExport}
             disabled={isExporting || isLoading}
-            className="px-4 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm font-semibold
-              text-white bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)]
-              transition-colors disabled:opacity-50"
+            className="px-4 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm font-semibold text-white bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] transition-colors disabled:opacity-50"
           >
             {isExporting ? t('exporting') : t('exportData')}
           </button>
@@ -976,56 +947,36 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/scan"
-                className="card p-4 flex flex-col items-center gap-2 text-center
-                  hover:shadow-brand-sm hover:border-[var(--color-border-brand)]
-                  transition-all duration-fast ease-out active:scale-[0.97]"
+                className="card p-4 flex flex-col items-center gap-2 text-center hover:shadow-brand-sm hover:border-[var(--color-border-brand)] transition-all duration-fast ease-out active:scale-[0.97]"
               >
-                <span
-                  className="w-10 h-10 rounded-lg flex items-center justify-center
-                    bg-[rgba(13,148,136,0.12)] text-brand-400"
-                >
+                <span className="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(13,148,136,0.12)] text-brand-400">
                   <QrCode className="w-5 h-5" strokeWidth={2} />
                 </span>
                 <span className="text-xs font-medium text-white">{t('action_scan')}</span>
               </Link>
               <Link
                 href="/students"
-                className="card p-4 flex flex-col items-center gap-2 text-center
-                  hover:shadow-brand-sm hover:border-[var(--color-border-brand)]
-                  transition-all duration-fast ease-out active:scale-[0.97]"
+                className="card p-4 flex flex-col items-center gap-2 text-center hover:shadow-brand-sm hover:border-[var(--color-border-brand)] transition-all duration-fast ease-out active:scale-[0.97]"
               >
-                <span
-                  className="w-10 h-10 rounded-lg flex items-center justify-center
-                    bg-[rgba(59,130,246,0.12)] text-[var(--color-info)]"
-                >
+                <span className="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(59,130,246,0.12)] text-[var(--color-info)]">
                   <UserPlus className="w-5 h-5" strokeWidth={2} />
                 </span>
                 <span className="text-xs font-medium text-white">{t('action_add_student')}</span>
               </Link>
               <Link
                 href="/payments"
-                className="card p-4 flex flex-col items-center gap-2 text-center
-                  hover:shadow-brand-sm hover:border-[var(--color-border-brand)]
-                  transition-all duration-fast ease-out active:scale-[0.97]"
+                className="card p-4 flex flex-col items-center gap-2 text-center hover:shadow-brand-sm hover:border-[var(--color-border-brand)] transition-all duration-fast ease-out active:scale-[0.97]"
               >
-                <span
-                  className="w-10 h-10 rounded-lg flex items-center justify-center
-                    bg-[rgba(245,158,11,0.12)] text-[var(--color-warning)]"
-                >
+                <span className="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(245,158,11,0.12)] text-[var(--color-warning)]">
                   <CreditCard className="w-5 h-5" strokeWidth={2} />
                 </span>
                 <span className="text-xs font-medium text-white">{t('action_payments')}</span>
               </Link>
               <Link
                 href="/students/print"
-                className="card p-4 flex flex-col items-center gap-2 text-center
-                  hover:shadow-brand-sm hover:border-[var(--color-border-brand)]
-                  transition-all duration-fast ease-out active:scale-[0.97]"
+                className="card p-4 flex flex-col items-center gap-2 text-center hover:shadow-brand-sm hover:border-[var(--color-border-brand)] transition-all duration-fast ease-out active:scale-[0.97]"
               >
-                <span
-                  className="w-10 h-10 rounded-lg flex items-center justify-center
-                    bg-[rgba(16,185,129,0.12)] text-[var(--color-success)]"
-                >
+                <span className="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(16,185,129,0.12)] text-[var(--color-success)]">
                   <Printer className="w-5 h-5" strokeWidth={2} />
                 </span>
                 <span className="text-xs font-medium text-white">{t('action_print')}</span>
@@ -1105,10 +1056,7 @@ export default function DashboardPage() {
                     key={student.id}
                     className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
                   >
-                    <div
-                      className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center
-                        bg-[rgba(239,68,68,0.12)] text-[var(--color-danger)] font-semibold text-sm"
-                    >
+                    <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center bg-[rgba(239,68,68,0.12)] text-[var(--color-danger)] font-semibold text-sm">
                       {student.name?.charAt(0) ?? '?'}
                     </div>
                     <div className="flex-1 min-w-0">

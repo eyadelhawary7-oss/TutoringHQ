@@ -56,10 +56,7 @@ function ToastItem({
       role="alert"
       aria-live="polite"
       onClick={() => onDismiss(t.id)}
-      className={`relative overflow-hidden rounded-[var(--radius-card)] shadow-lg px-4 py-3
-                  min-w-[260px] max-w-[360px] cursor-pointer select-none
-                  ${VARIANT_STYLES[t.variant]}
-                  ${t.exiting ? 'toast-exit' : enterClass}`}
+      className={`relative overflow-hidden rounded-[var(--radius-card)] shadow-lg px-4 py-3 min-w-[260px] max-w-[360px] cursor-pointer select-none ${VARIANT_STYLES[t.variant]} ${t.exiting ? 'toast-exit' : enterClass}`}
     >
       <p className="text-sm font-medium pe-4">{t.message}</p>
       <div
@@ -120,11 +117,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toasts, toast, dismiss }}>
       {children}
 
-      <div
-        className="fixed bottom-[calc(56px_+_env(safe-area-inset-bottom,0px)_+_8px)]
-                    inset-x-0 flex flex-col-reverse items-center gap-2 px-4
-                    z-[9998] md:hidden pointer-events-none"
-      >
+      <div className="fixed bottom-[calc(56px_+_env(safe-area-inset-bottom,0px)_+_8px)] inset-x-0 flex flex-col-reverse items-center gap-2 px-4 z-[9998] md:hidden pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto w-full max-w-sm">
             <ToastItem toast={t} onDismiss={dismiss} enterClass="toast-enter-bottom" />

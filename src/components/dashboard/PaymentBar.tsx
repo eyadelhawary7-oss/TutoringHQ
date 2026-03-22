@@ -25,13 +25,11 @@ export function PaymentBar({
         {total > 0 && (
           <>
             <div
-              className="h-full bg-[var(--color-success)]
-                         transition-all duration-slow ease-out"
+              className="h-full bg-[var(--color-success)] transition-all duration-slow ease-out"
               style={{ width: `${confirmedPct}%` }}
             />
             <div
-              className="h-full bg-[var(--color-warning)]
-                         transition-all duration-slow ease-out"
+              className="h-full bg-[var(--color-warning)] transition-all duration-slow ease-out"
               style={{ width: `${pendingPct}%` }}
             />
           </>

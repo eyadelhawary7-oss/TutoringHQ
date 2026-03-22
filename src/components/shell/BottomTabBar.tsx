@@ -72,8 +72,7 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-50 print:hidden
-        bg-surface-1 border-t border-[var(--color-border-subtle)] shadow-md"
+      className="md:hidden fixed bottom-0 inset-x-0 z-50 print:hidden bg-surface-1 border-t border-[var(--color-border-subtle)] shadow-md"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label={tm('tab_bar_label')}
     >
@@ -84,30 +83,14 @@ export function BottomTabBar() {
             <Link
               key={path}
               href={path}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-1 py-1 min-w-0
-                transition-colors duration-fast ease-out ${
-                  active ? 'text-brand-500' : 'text-[var(--color-text-tertiary)]'
-                }`}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-1 py-1 min-w-0 transition-colors duration-fast ease-out ${active ? 'text-brand-500' : 'text-[var(--color-text-tertiary)]'}`}
             >
-              <span
-                className={`flex flex-col items-center gap-1 transition-transform duration-fast ease-spring ${
-                  active ? 'scale-110' : ''
-                }`}
-              >
+              <span className={`flex flex-col items-center gap-1 transition-transform duration-fast ease-spring ${active ? 'scale-110' : ''}`}>
                 <Icon size={22} strokeWidth={active ? 2.25 : 1.75} className="shrink-0" />
-                <span
-                  className={`text-[0.625rem] font-semibold leading-none truncate max-w-full ${
-                    active ? 'text-brand-500' : 'text-[var(--color-text-tertiary)]'
-                  }`}
-                >
+                <span className={`text-[0.625rem] font-semibold leading-none truncate max-w-full ${active ? 'text-brand-500' : 'text-[var(--color-text-tertiary)]'}`}>
                   {t(navKey)}
                 </span>
-                <span
-                  className={`h-1 w-1 rounded-full shrink-0 transition-opacity duration-fast ${
-                    active ? 'bg-brand-500 opacity-100' : 'opacity-0'
-                  }`}
-                  aria-hidden
-                />
+                <span className={`h-1 w-1 rounded-full shrink-0 transition-opacity duration-fast ${active ? 'bg-brand-500 opacity-100' : 'opacity-0'}`} aria-hidden />
               </span>
             </Link>
           );

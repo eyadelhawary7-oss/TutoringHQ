@@ -53,8 +53,7 @@ export function SkeletonStat() {
 export function SkeletonRow() {
   return (
     <div
-      className="flex items-center gap-4 px-4 py-3
-                 border-b border-[var(--color-border-subtle)]"
+      className="flex items-center gap-4 px-4 py-3 border-b border-[var(--color-border-subtle)]"
       aria-hidden="true"
     >
       <SkeletonCircle className="w-9 h-9 flex-shrink-0" />

@@ -843,15 +843,9 @@ export default function ScanPage() {
 
   return (
     <>
-      <div
-        className="bg-[var(--color-surface-0)] min-h-screen flex flex-col animate-fade-in
-          pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0"
-      >
+      <div className="bg-[var(--color-surface-0)] min-h-screen flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         {!isOnline && (
-          <div
-            className="bg-[var(--color-warning)] text-white text-xs font-medium px-4 py-2
-              flex items-center gap-2 justify-center"
-          >
+          <div className="bg-[var(--color-warning)] text-white text-xs font-medium px-4 py-2 flex items-center gap-2 justify-center">
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="1" y1="1" x2="23" y2="23" />
               <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" />
@@ -874,10 +868,7 @@ export default function ScanPage() {
                 localStorage.setItem('chq-scanner-sound', String(next));
               }}
               aria-label={soundEnabled ? ts('sound_on') : ts('sound_off')}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-badge
-                border border-[var(--color-border-default)] text-[var(--color-text-secondary)]
-                hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)]
-                transition-colors duration-fast ease-out"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-badge border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] transition-colors duration-fast ease-out"
             >
               {soundEnabled ? (
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -900,18 +891,14 @@ export default function ScanPage() {
             )}
             {isSyncing ? (
               <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-surface-1)]
-                  border border-[var(--color-border-subtle)] shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] shadow-sm"
                 title={tSync('syncing')}
               >
                 <span className="w-2 h-2 rounded-full bg-[var(--color-warning)] animate-pulse" />
                 <span className="text-xs font-medium text-[var(--color-text-secondary)]">{tSync('syncing')}</span>
               </div>
             ) : (
-              <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-surface-1)]
-                  border border-[var(--color-border-subtle)] shadow-sm"
-              >
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] shadow-sm">
                 <span
                   className={`w-2 h-2 rounded-full ${isOnline ? 'bg-[var(--color-success)] animate-pulse' : 'bg-[var(--color-danger)]'}`}
                 />
@@ -951,11 +938,7 @@ export default function ScanPage() {
                     }, 100);
                   }
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm transition-all ${
-                  mode === key
-                    ? 'bg-[var(--color-surface-1)] shadow-sm font-semibold text-[var(--color-text-primary)]'
-                    : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm transition-all ${mode === key ? 'bg-[var(--color-surface-1)] shadow-sm font-semibold text-[var(--color-text-primary)]' : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
               >
                 <Icon className={mode === key && key === 'camera' ? 'w-4 h-4 text-brand-400' : 'w-4 h-4'} />
                 <span className="truncate">{label}</span>
@@ -964,19 +947,14 @@ export default function ScanPage() {
           </div>
 
           {error && (
-            <div
-              className="p-3 rounded-lg text-center text-sm border border-[var(--color-danger)]
-                bg-[rgba(239,68,68,0.08)] text-[var(--color-danger)]"
-            >
+            <div className="p-3 rounded-lg text-center text-sm border border-[var(--color-danger)] bg-[rgba(239,68,68,0.08)] text-[var(--color-danger)]">
               {error}
             </div>
           )}
 
           <div className="flex flex-col items-center gap-4 flex-1">
             <div
-              className={`scanner-frame w-full max-w-sm aspect-square bg-[var(--color-surface-2)] ${scannerFrameTone} ${
-                mode !== 'camera' ? 'hidden' : ''
-              }`}
+              className={`scanner-frame w-full max-w-sm aspect-square bg-[var(--color-surface-2)] ${scannerFrameTone} ${mode !== 'camera' ? 'hidden' : ''}`}
               aria-hidden={mode !== 'camera'}
             >
               <div className="absolute inset-0 z-0 min-h-0">
@@ -995,10 +973,7 @@ export default function ScanPage() {
                 <div className="scan-line z-20 pointer-events-none" />
               )}
               {scanFrameState === 'success' && (
-                <div
-                  className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3
-                    bg-[rgba(16,185,129,0.08)] scan-result"
-                >
+                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[rgba(16,185,129,0.08)] scan-result">
                   <div
                     className="w-16 h-16 rounded-full bg-[var(--color-success)] flex items-center justify-center"
                   >
@@ -1013,10 +988,7 @@ export default function ScanPage() {
                 </div>
               )}
               {scanFrameState === 'error' && (
-                <div
-                  className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3
-                    bg-[rgba(239,68,68,0.08)] scan-result"
-                >
+                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[rgba(239,68,68,0.08)] scan-result">
                   <div
                     className="w-16 h-16 rounded-full bg-[var(--color-danger)] flex items-center justify-center"
                   >
@@ -1049,9 +1021,7 @@ export default function ScanPage() {
                   value={manualIdInput}
                   onChange={(e) => setManualIdInput(e.target.value)}
                   placeholder={t('manualIdPlaceholder')}
-                  className="w-full px-4 py-3 border border-[var(--color-border-default)] rounded-xl text-sm
-                    focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-[var(--color-surface-1)]
-                    font-mono text-center text-lg tracking-widest text-[var(--color-text-primary)]"
+                  className="w-full px-4 py-3 border border-[var(--color-border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-[var(--color-surface-1)] font-mono text-center text-lg tracking-widest text-[var(--color-text-primary)]"
                   dir="ltr"
                   autoFocus
                   onKeyDown={(e) => {
@@ -1069,8 +1039,7 @@ export default function ScanPage() {
                     handleScan(trimmed);
                   }}
                   disabled={!manualIdInput.trim()}
-                  className="w-full py-3 bg-brand-500 hover:opacity-90 text-white font-semibold rounded-xl
-                    transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-brand-500 hover:opacity-90 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('checkIn')}
                 </button>
@@ -1090,15 +1059,10 @@ export default function ScanPage() {
                   {scanHistory.map((scan) => (
                     <div
                       key={scan.id}
-                      className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border-subtle)]
-                        last:border-b-0"
+                      className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border-subtle)] last:border-b-0"
                     >
                       <div
-                        className={`w-2 h-2 rounded-full shrink-0 ${
-                          scan.status === 'success' || scan.status === 'duplicate'
-                            ? 'bg-[var(--color-success)]'
-                            : 'bg-[var(--color-danger)]'
-                        }`}
+                        className={`w-2 h-2 rounded-full shrink-0 ${scan.status === 'success' || scan.status === 'duplicate' ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'}`}
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
@@ -1111,11 +1075,7 @@ export default function ScanPage() {
                           })}
                         </p>
                       </div>
-                      <span
-                        className={`badge text-xs shrink-0 ${
-                          scan.status === 'success' || scan.status === 'duplicate' ? 'badge-success' : 'badge-danger'
-                        }`}
-                      >
+                      <span className={`badge text-xs shrink-0 ${scan.status === 'success' || scan.status === 'duplicate' ? 'badge-success' : 'badge-danger'}`}>
                         {scan.status === 'error' ? '✗' : '✓'}
                       </span>
                     </div>

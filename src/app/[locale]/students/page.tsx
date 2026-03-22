@@ -662,10 +662,7 @@ export default function StudentsPage() {
 
   return (
     <>
-      <div
-        className="bg-[var(--color-surface-0)] min-h-screen animate-fade-in
-          pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0"
-      >
+      <div className="bg-[var(--color-surface-0)] min-h-screen animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
             <div>
@@ -675,26 +672,20 @@ export default function StudentsPage() {
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <Link
                 href="/students/import"
-                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)]
-                  text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]
-                  hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
               >
                 <Upload size={14} /> {ts('import')}
               </Link>
               <Link
                 href="/students/print"
-                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)]
-                  text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]
-                  hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
               >
                 <Printer size={14} /> {ts('print_cards')}
               </Link>
               <button
                 type="button"
                 onClick={() => setShowCardOrderModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)]
-                  text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]
-                  hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
               >
                 <CreditCard size={14} /> {ts('order_cards')}
               </button>
@@ -734,8 +725,7 @@ export default function StudentsPage() {
                   setFilterKey((k) => k + 1);
                 }}
                 placeholder={ts('search_placeholder')}
-                className="w-full bg-transparent ps-9 pe-4 py-3 text-sm text-[var(--color-text-primary)]
-                  placeholder:text-[var(--color-text-tertiary)] outline-none border-none"
+                className="w-full bg-transparent ps-9 pe-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] outline-none border-none"
                 dir="auto"
               />
             </div>
@@ -749,11 +739,7 @@ export default function StudentsPage() {
                   setSubjectFilter(null);
                   setFilterKey((k) => k + 1);
                 }}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  subjectFilter === null
-                    ? 'bg-[var(--color-surface-1)] text-[var(--color-text-primary)] shadow-sm'
-                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                }`}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${subjectFilter === null ? 'bg-[var(--color-surface-1)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
               >
                 {tCommon('all', { defaultValue: 'All' })}
               </button>
@@ -765,11 +751,7 @@ export default function StudentsPage() {
                     setSubjectFilter(subjectFilter === sub ? null : sub);
                     setFilterKey((k) => k + 1);
                   }}
-                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    subjectFilter === sub
-                      ? 'bg-[var(--color-surface-1)] text-[var(--color-text-primary)] shadow-sm'
-                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                  }`}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${subjectFilter === sub ? 'bg-[var(--color-surface-1)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
                 >
                   {sub}
                 </button>
@@ -785,11 +767,7 @@ export default function StudentsPage() {
                     setLifecycleFilter(f);
                     setFilterKey((k) => k + 1);
                   }}
-                  className={`shrink-0 px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${
-                    lifecycleFilter === f
-                      ? 'bg-[var(--color-brand-500)] text-white'
-                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
-                  }`}
+                  className={`shrink-0 px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${lifecycleFilter === f ? 'bg-[var(--color-brand-500)] text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
                 >
                   {ts(lifecycleFilterLabelKey(f))}
                 </button>
@@ -804,11 +782,7 @@ export default function StudentsPage() {
                   setSortBy('name');
                   setFilterKey((k) => k + 1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  sortBy === 'name'
-                    ? 'bg-[var(--color-brand-500)] text-white'
-                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sortBy === 'name' ? 'bg-[var(--color-brand-500)] text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
               >
                 {ts('sortName')}
               </button>
@@ -818,11 +792,7 @@ export default function StudentsPage() {
                   setSortBy('balance');
                   setFilterKey((k) => k + 1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  sortBy === 'balance'
-                    ? 'bg-[var(--color-brand-500)] text-white'
-                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sortBy === 'balance' ? 'bg-[var(--color-brand-500)] text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
               >
                 {ts('sortBalance')}
               </button>
@@ -832,10 +802,7 @@ export default function StudentsPage() {
 
         <div className="px-4 max-w-3xl mx-auto w-full space-y-4 pb-6">
           {addSuccess && (
-            <div
-              className="p-4 rounded-xl border border-[var(--color-success)] bg-[rgba(16,185,129,0.08)]
-                text-[var(--color-success)] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-            >
+            <div className="p-4 rounded-xl border border-[var(--color-success)] bg-[rgba(16,185,129,0.08)] text-[var(--color-success)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <p className="font-medium text-sm">
                 {ts('addStudentSuccess', { name: addSuccess.name, studentNumber: addSuccess.studentNumber })}
               </p>
@@ -951,10 +918,7 @@ export default function StudentsPage() {
                         tabIndex={0}
                       >
                         <div className="flex items-center gap-3 mb-2">
-                          <div
-                            className="w-9 h-9 rounded-full shrink-0 bg-[rgba(13,148,136,0.12)] text-brand-400 font-semibold text-sm
-                              flex items-center justify-center"
-                          >
+                          <div className="w-9 h-9 rounded-full shrink-0 bg-[rgba(13,148,136,0.12)] text-brand-400 font-semibold text-sm flex items-center justify-center">
                             {(s.name ?? '?').charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -979,8 +943,7 @@ export default function StudentsPage() {
                                 {(studentGroupsMap[s.id]?.names ?? []).slice(0, 3).map((n, gi) => (
                                   <span
                                     key={gi}
-                                    className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-[var(--color-border-subtle)]
-                                      text-[var(--color-text-secondary)]"
+                                    className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]"
                                   >
                                     {n}
                                   </span>

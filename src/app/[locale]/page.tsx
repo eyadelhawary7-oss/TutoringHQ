@@ -159,11 +159,7 @@ export default function LocaleHomePage() {
 
   return (
     <main className="bg-surface-0 min-h-screen">
-      <nav
-        className="fixed top-0 inset-x-0 z-50 h-16 md:h-18
-                bg-surface-1/90 backdrop-blur-md
-                border-b border-[var(--color-border-subtle)]"
-      >
+      <nav className="fixed top-0 inset-x-0 z-50 h-16 md:h-18 bg-surface-1/90 backdrop-blur-md border-b border-[var(--color-border-subtle)]">
         <div className="container mx-auto px-4 md:px-8 h-full flex items-center justify-between">
           <span className="font-bold text-xl text-white tracking-tight">
             Center<span className="text-brand-500">HQ</span>
@@ -194,27 +190,16 @@ export default function LocaleHomePage() {
       >
         <div className="container mx-auto px-4 md:px-8 flex flex-col lg:flex-row items-center gap-12 py-16 lg:py-24">
           <div className="flex-1 flex flex-col items-start">
-            <span
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-badge
-                       bg-[rgba(13,148,136,0.12)] border border-[var(--color-border-brand)]
-                       text-brand-400 text-xs font-semibold mb-6 animate-fade-in"
-            >
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-badge bg-[rgba(13,148,136,0.12)] border border-[var(--color-border-brand)] text-brand-400 text-xs font-semibold mb-6 animate-fade-in">
               {t('hero.badge')}
             </span>
 
-            <h1
-              className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6
-                     animate-fade-in [animation-delay:80ms]"
-            >
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 animate-fade-in [animation-delay:80ms]">
               <span className="block text-white">{t('hero.headline_1')}</span>
               <span className="block text-brand-400 text-glow-brand">{t('hero.headline_2')}</span>
             </h1>
 
-            <p
-              className="text-base md:text-lg text-[var(--color-text-secondary)]
-                    max-w-xl mb-8 leading-relaxed
-                    animate-fade-in [animation-delay:160ms]"
-            >
+            <p className="text-base md:text-lg text-[var(--color-text-secondary)] max-w-xl mb-8 leading-relaxed animate-fade-in [animation-delay:160ms]">
               {t('hero.subheadline')}
             </p>
 
@@ -229,22 +214,9 @@ export default function LocaleHomePage() {
           </div>
 
           <div className="flex-shrink-0 w-56 md:w-64 animate-fade-in [animation-delay:120ms]">
-            <div
-              className="relative mx-auto
-                      bg-surface-2 rounded-[2rem] p-2
-                      border border-[var(--color-border-default)]
-                      shadow-brand-sm"
-            >
-              <div
-                className="bg-surface-0 rounded-[1.6rem] overflow-hidden
-                        aspect-[9/16] relative
-                        flex flex-col items-center justify-center gap-4 p-6"
-              >
-                <div
-                  className="absolute top-0 inset-x-0 h-10 bg-surface-1
-                          flex items-center justify-center
-                          border-b border-[var(--color-border-subtle)]"
-                >
+            <div className="relative mx-auto bg-surface-2 rounded-[2rem] p-2 border border-[var(--color-border-default)] shadow-brand-sm">
+              <div className="bg-surface-0 rounded-[1.6rem] overflow-hidden aspect-[9/16] relative flex flex-col items-center justify-center gap-4 p-6">
+                <div className="absolute top-0 inset-x-0 h-10 bg-surface-1 flex items-center justify-center border-b border-[var(--color-border-subtle)]">
                   <span className="text-brand-400 text-xs font-semibold">CenterHQ</span>
                 </div>
 
@@ -260,29 +232,17 @@ export default function LocaleHomePage() {
                   <div className="qr-scan-line" />
                 </div>
 
-                <div
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-badge
-                          bg-[rgba(16,185,129,0.15)] border border-[rgba(16,185,129,0.30)]"
-                >
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-badge bg-[rgba(16,185,129,0.15)] border border-[rgba(16,185,129,0.30)]">
                   <span className="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse" />
                   <span className="text-[var(--color-success)] text-xs font-medium">
                     {t('hero.demo_attendance')}
                   </span>
                 </div>
 
-                <div
-                  className="absolute bottom-0 inset-x-0 h-12 bg-surface-1
-                          border-t border-[var(--color-border-subtle)]
-                          flex items-center justify-center"
-                >
+                <div className="absolute bottom-0 inset-x-0 h-12 bg-surface-1 border-t border-[var(--color-border-subtle)] flex items-center justify-center">
                   <div className="flex gap-3">
                     {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          i === 0 ? 'bg-brand-500' : 'bg-[var(--color-surface-4)]'
-                        }`}
-                      />
+                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-brand-500' : 'bg-[var(--color-surface-4)]'}`} />
                     ))}
                   </div>
                 </div>
@@ -316,17 +276,9 @@ export default function LocaleHomePage() {
             {featureItems.map(({ key, icon }) => (
               <div
                 key={key}
-                className="card p-6 flex flex-col gap-4
-                     transition-all duration-normal ease-out
-                     hover:shadow-brand-sm hover:border-[var(--color-border-brand)]
-                     group cursor-default"
+                className="card p-6 flex flex-col gap-4 transition-all duration-normal ease-out hover:shadow-brand-sm hover:border-[var(--color-border-brand)] group cursor-default"
               >
-                <div
-                  className="w-11 h-11 rounded-lg flex items-center justify-center
-                          bg-[rgba(13,148,136,0.12)] text-brand-400
-                          group-hover:bg-[rgba(13,148,136,0.18)]
-                          transition-colors duration-fast"
-                >
+                <div className="w-11 h-11 rounded-lg flex items-center justify-center bg-[rgba(13,148,136,0.12)] text-brand-400 group-hover:bg-[rgba(13,148,136,0.18)] transition-colors duration-fast">
                   {icon}
                 </div>
                 <h3 className="text-lg font-semibold text-white">{t(`features.items.${key}.title`)}</h3>
@@ -361,10 +313,7 @@ export default function LocaleHomePage() {
                 ].join(' ')}
               >
                 {plan.popular && (
-                  <span
-                    className="absolute -top-3 left-1/2 -translate-x-1/2
-                             badge badge-brand text-xs whitespace-nowrap"
-                  >
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 badge badge-brand text-xs whitespace-nowrap">
                     {t('pricing.popular')}
                   </span>
                 )}
@@ -414,11 +363,7 @@ export default function LocaleHomePage() {
                 <div className="divider" />
 
                 {plan.isTopCenters ? (
-                  <Link
-                    href="/signup"
-                    className="btn btn-ghost w-full py-2.5 mt-auto
-                         border-[var(--color-gold-500)] text-gold-400"
-                  >
+                  <Link href="/signup" className="btn btn-ghost w-full py-2.5 mt-auto border-[var(--color-gold-500)] text-gold-400">
                     {t('pricing.enterprise_cta')}
                   </Link>
                 ) : (

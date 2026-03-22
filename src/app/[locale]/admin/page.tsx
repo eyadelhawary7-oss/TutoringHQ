@@ -1098,8 +1098,7 @@ export default function AdminPage() {
               <select
                 value={filterPlan}
                 onChange={(e) => setFilterPlan(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white
-                           text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">كل الخطط</option>
                 <option value="nano">ناشئ</option>
@@ -1112,8 +1111,7 @@ export default function AdminPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white
-                           text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="newest">الأحدث أولاً</option>
                 <option value="oldest">الأقدم أولاً</option>
@@ -1136,9 +1134,7 @@ export default function AdminPage() {
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      statusFilter === s ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'}`}
                   >
                     {s === 'all' ? tCommon('all') : s === 'at_risk' ? (tAdmin('atRisk') ?? 'At Risk') : s === 'active' ? tCommon('active') : s === 'pending' ? tAdmin('pending') : tAdmin('suspended')}
                   </button>
@@ -2074,8 +2070,7 @@ export default function AdminPage() {
                 <select
                   value={selectedRole}
                   onChange={(e) => { setSelectedRole(e.target.value); setCustomPerms([]); }}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm
-                             focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="internal_viewer">مشاهد / Viewer</option>
                   <option value="internal_admin">مدير داخلي / Internal Admin</option>

@@ -334,10 +334,7 @@ export default function PaymentsPage() {
 
   return (
     <>
-      <div
-        className="bg-[var(--color-surface-0)] min-h-screen animate-fade-in
-          pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0"
-      >
+      <div className="bg-[var(--color-surface-0)] min-h-screen animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{tp('title')}</h1>
           <p className="text-xs text-[var(--color-text-secondary)]">{tp('subtitle')}</p>
@@ -393,11 +390,7 @@ export default function PaymentsPage() {
                 setStatusFilter(f);
                 setFilterKey((k) => k + 1);
               }}
-              className={`shrink-0 px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${
-                statusFilter === f
-                  ? 'bg-[var(--color-brand-500)] text-white'
-                  : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
-              }`}
+              className={`shrink-0 px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${statusFilter === f ? 'bg-[var(--color-brand-500)] text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
             >
               {tp(STATUS_FILTER_KEYS[f])}
             </button>

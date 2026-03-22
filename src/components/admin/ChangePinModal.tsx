@@ -110,9 +110,7 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
               value={value}
               onChange={(e) => setter(e.target.value)}
               disabled={loading || success}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg
-                         focus:outline-none focus:ring-2 focus:ring-teal-500
-                         disabled:opacity-50"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
               dir="ltr"
             />
           </div>
@@ -121,16 +119,14 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
         <div className="flex gap-2 pt-2">
           <button
             onClick={handleClose}
-            className="flex-1 px-4 py-2 border border-slate-200 rounded-lg
-                       text-sm text-slate-700 hover:bg-slate-50"
+            className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
           >
             إلغاء
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading || success}
-            className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg
-                       text-sm hover:bg-teal-700 disabled:opacity-50"
+            className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700 disabled:opacity-50"
           >
             {loading ? '...' : 'تحديث الرمز'}
           </button>

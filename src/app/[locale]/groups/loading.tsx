@@ -6,9 +6,7 @@ import {
 
 export default function GroupsLoading() {
   return (
-    <div className="bg-[var(--color-surface-0)] min-h-screen
-                    p-4 md:p-6
-                    pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6">
+    <div className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6">
       <SkeletonPageHeader />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

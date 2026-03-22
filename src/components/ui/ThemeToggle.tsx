@@ -43,11 +43,7 @@ export function ThemeToggle() {
       onClick={toggle}
       suppressHydrationWarning
       aria-label={isDark ? t('switchToLightTheme') : t('switchToDarkTheme')}
-      className="flex items-center justify-center w-9 h-9 rounded-lg
-                 text-[var(--color-text-secondary)]
-                 hover:text-[var(--color-text-primary)]
-                 hover:bg-[var(--color-surface-2)]
-                 transition-colors duration-fast ease-out"
+      className="flex items-center justify-center w-9 h-9 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors duration-fast ease-out"
     >
       {isDark ? (
         <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
