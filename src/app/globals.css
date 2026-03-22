@@ -1,39 +1,1578 @@
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
+@plugin "tailwindcss-animate";
+
+@theme {
+  --font-sans: Georgia, "Times New Roman", serif;
+  --font-mono: Georgia, "Times New Roman", serif;
+  --color-background: hsl(210 20% 97%);
+  --color-foreground: hsl(215 28% 12%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(215 28% 12%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(215 28% 12%);
+  --color-primary: hsl(174 72% 30%);
+  --color-primary-light: hsl(174 72% 42%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(210 20% 93%);
+  --color-secondary-foreground: hsl(215 28% 17%);
+  --color-muted: hsl(210 20% 94%);
+  --color-muted-foreground: hsl(215 16% 47%);
+  --color-accent: hsl(174 72% 95%);
+  --color-accent-foreground: hsl(174 72% 25%);
+  --color-destructive: hsl(0 72% 51%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-border: hsl(214 32% 88%);
+  --color-input: hsl(214 32% 88%);
+  --color-ring: hsl(174 72% 30%);
+  --color-sidebar: hsl(215 28% 17%);
+  --color-sidebar-foreground: hsl(210 40% 90%);
+  --color-sidebar-primary: hsl(174 72% 40%);
+  --color-sidebar-primary-foreground: hsl(0 0% 100%);
+  --color-sidebar-accent: hsl(215 25% 24%);
+  --color-sidebar-accent-foreground: hsl(210 40% 95%);
+  --color-sidebar-border: hsl(215 25% 24%);
+  --color-navy: hsl(215 28% 17%);
+  --color-navy-light: hsl(215 25% 22%);
+  --color-navy-foreground: hsl(210 40% 95%);
+  --color-amber: hsl(38 95% 53%);
+  --color-amber-foreground: hsl(215 28% 17%);
+  --color-scanner-green: hsl(142 71% 35%);
+  --color-scanner-red: hsl(0 72% 51%);
+  --color-scanner-yellow: hsl(48 97% 42%);
+  --color-scanner-purple: hsl(263 70% 50%);
+  --radius-sm: calc(0.75rem - 4px);
+  --radius-md: calc(0.75rem - 2px);
+  --radius-lg: 0.75rem;
+  --radius-xl: calc(0.75rem + 4px);
+  --radius-2xl: calc(0.75rem + 8px);
+
+  /* ── Brand (Teal) ───────────────────────────────────── */
+  --color-brand-50:  #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #0D9488;
+  --color-brand-600: #0f766e;
+  --color-brand-700: #115e59;
+  --color-brand-800: #134e4a;
+  --color-brand-900: #042f2e;
+
+  /* ── Navy ───────────────────────────────────────────── */
+  --color-navy-50:  #f8fafc;
+  --color-navy-100: #f1f5f9;
+  --color-navy-200: #e2e8f0;
+  --color-navy-300: #cbd5e1;
+  --color-navy-400: #94a3b8;
+  --color-navy-500: #64748b;
+  --color-navy-600: #475569;
+  --color-navy-700: #334155;
+  --color-navy-800: #1e293b;
+  --color-navy-900: #0f172a;
+  --color-navy-950: #080f1a;
+
+  /* ── Gold (Amber #F59E0B) ───────────────────────────── */
+  --color-gold-50:  #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #fcd34d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #F59E0B;
+  --color-gold-600: #d97706;
+  --color-gold-700: #b45309;
+  --color-gold-800: #92400e;
+  --color-gold-900: #78350f;
+
+  /* ── Surface Layers ─────────────────────────────────── */
+  --color-surface-0: #080f1a;
+  --color-surface-1: #0f172a;
+  --color-surface-2: #1e293b;
+  --color-surface-3: #334155;
+  --color-surface-4: #475569;
+
+  /* ── Semantic States ────────────────────────────────── */
+  --color-success:       #10b981;
+  --color-success-muted: #064e3b;
+  --color-warning:       #F59E0B;
+  --color-warning-muted: #451a03;
+  --color-danger:        #ef4444;
+  --color-danger-muted:  #450a0a;
+  --color-info:          #3b82f6;
+  --color-info-muted:    #1e3a5f;
+
+  /* ── Shadows (dark-UI optimised — intentionally override Tailwind defaults) ── */
+  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.40);
+  --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.50), 0 1px 2px -1px rgba(0,0,0,0.40);
+  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.55), 0 2px 4px -2px rgba(0,0,0,0.45);
+  --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.60), 0 4px 6px -4px rgba(0,0,0,0.50);
+  --shadow-xl:  0 20px 25px -5px rgba(0,0,0,0.65), 0 8px 10px -6px rgba(0,0,0,0.55);
+  --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.80);
+
+  /* Teal glow */
+  --shadow-brand-sm: 0 0 0 1px rgba(13,148,136,0.30), 0 4px 12px -2px rgba(13,148,136,0.25);
+  --shadow-brand-md: 0 0 0 1px rgba(13,148,136,0.35), 0 8px 24px -4px rgba(13,148,136,0.35);
+  --shadow-brand-lg: 0 0 0 1px rgba(13,148,136,0.40), 0 16px 40px -6px rgba(13,148,136,0.45);
+
+  /* Gold glow */
+  --shadow-gold-sm: 0 0 0 1px rgba(245,158,11,0.30), 0 4px 12px -2px rgba(245,158,11,0.20);
+
+  /* Input focus ring */
+  --shadow-focus: 0 0 0 2px rgba(13,148,136,0.50);
+
+  /* ── Radius (intentionally override Tailwind defaults for dark-UI consistency) ── */
+  --radius-xs:     2px;
+  --radius-sm:     4px;
+  --radius-md:     8px;
+  --radius-lg:     12px;
+  --radius-xl:     16px;
+  --radius-2xl:    20px;
+  --radius-3xl:    24px;
+  --radius-full:   9999px;
+
+  /* Semantic aliases */
+  --radius-card:   16px;
+  --radius-panel:  12px;
+  --radius-badge:  9999px;
+  --radius-button: 8px;
+  --radius-input:  8px;
+  --radius-modal:  20px;
+
+  /* ── Durations ──────────────────────────────────────── */
+  --duration-instant: 80ms;
+  --duration-fast:    150ms;
+  --duration-normal:  220ms;
+  --duration-slow:    350ms;
+  --duration-slower:  500ms;
+  --duration-lazy:    700ms;
+
+  /* ── Easings ─────────────────────────────────────────── */
+  /* --ease-out intentionally overrides Tailwind default with a snappier decelerate curve */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-linear: linear;
+
+  /* ── Animate-* (Tailwind v4: --animate-* in @theme generates animate-* classes) ── */
+  --animate-fade-in:         fade-in 220ms cubic-bezier(0.16,1,0.3,1) both;
+  --animate-fade-in-up:      fade-in-up 350ms cubic-bezier(0.16,1,0.3,1) both;
+  --animate-scale-in:        scale-in 200ms cubic-bezier(0.34,1.56,0.64,1) both;
+  --animate-slide-in-right:  slide-in-right 220ms cubic-bezier(0.16,1,0.3,1) both;
+  --animate-slide-in-bottom: slide-in-bottom 220ms cubic-bezier(0.16,1,0.3,1) both;
+  --animate-pulse-ring:      pulse-ring 2s cubic-bezier(0.4,0,0.6,1) infinite;
+  --animate-skeleton:        skeleton-sweep 700ms linear infinite;
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── Semantic text colors (var() only) ──────────── */
+  --color-text-primary:   #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary:  #64748b;
+  --color-text-disabled:  #475569;
+  --color-text-inverse:   #0f172a;
+  --color-text-brand:     #0D9488;
+  --color-text-amber:     #F59E0B;
+
+  /* shadcn / Tailwind: colors use hsl(var(--name)) — space-separated HSL only (not hex). */
+  --foreground: 210 40% 98%;
+  --card-foreground: 210 40% 98%;
+  --muted-foreground: 215 16% 64%;
+
+  /* ── Semantic border colors (var() only) ─────────── */
+  --color-border-subtle:  rgba(148, 163, 184, 0.08);
+  --color-border-default: rgba(148, 163, 184, 0.14);
+  --color-border-strong:  rgba(148, 163, 184, 0.24);
+  --color-border-brand:   rgba(13, 148, 136, 0.40);
+
+  /* ── Overlay (var() only) ─────────────────────────── */
+  --overlay-light: rgba(248, 250, 252, 0.05);
+  --overlay-mid:   rgba(248, 250, 252, 0.10);
+  --overlay-heavy: rgba(8, 15, 26, 0.75);
+
+  /* ── Backdrop blur amounts (bare px values — NO blur() wrapper) ── */
+  /* Usage: backdrop-filter: blur(var(--blur-sm))                     */
+  --blur-sm:  4px;
+  --blur-md:  8px;
+  --blur-lg:  16px;
+  --blur-xl:  24px;
+
+  /* ── Semantic spacing (var() only) ───────────────── */
+  --space-page-x:        1rem;
+  --space-page-x-md:     1.5rem;
+  --space-card-padding:  1.25rem;
+  --space-section-gap:   1.5rem;
+  --space-stack-sm:      0.5rem;
+  --space-stack-md:      0.75rem;
+  --space-stack-lg:      1rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-cairo: var(--font-cairo);
-  --font-inter: var(--font-inter);
+/* ── Global theme enforcement ───────────────────────────────
+   Forces ALL pages to respect dark/light tokens regardless of
+   hardcoded Tailwind classes on pages not yet redesigned.
+──────────────────────────────────────────────────────────── */
+
+/* Dark mode: browser scrollbars + system UI use dark styling */
+:root {
+  color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
+/* Override hardcoded light backgrounds in dark mode */
+html:not(.light) .bg-white,
+html:not(.light) .bg-gray-50,
+html:not(.light) .bg-gray-100,
+html:not(.light) .bg-slate-50,
+html:not(.light) .bg-slate-100,
+html:not(.light) .bg-background,
+html:not(.light) [class*="bg-white"] {
+  background-color: var(--color-surface-1) !important;
+}
+
+/* Override hardcoded dark text in dark mode */
+html:not(.light) .text-gray-900,
+html:not(.light) .text-slate-900,
+html:not(.light) .text-gray-800,
+html:not(.light) .text-slate-800,
+html:not(.light) .text-black {
+  color: var(--color-text-primary) !important;
+}
+
+html:not(.light) .text-gray-600,
+html:not(.light) .text-slate-600,
+html:not(.light) .text-gray-500,
+html:not(.light) .text-slate-500 {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Override hardcoded light borders in dark mode */
+html:not(.light) .border-gray-200,
+html:not(.light) .border-slate-200,
+html:not(.light) .border-gray-100,
+html:not(.light) .border-slate-100 {
+  border-color: var(--color-border-subtle) !important;
+}
+
+html:not(.light) .bg-gray-50,
+html:not(.light) .bg-gray-100,
+html:not(.light) .bg-gray-200 {
+  background-color: var(--color-surface-1) !important;
+}
+
+html:not(.light) .bg-zinc-50,
+html:not(.light) .bg-zinc-100,
+html:not(.light) .bg-neutral-50,
+html:not(.light) .bg-neutral-100 {
+  background-color: var(--color-surface-1) !important;
+}
+
+html:not(.light) .text-gray-900,
+html:not(.light) .text-gray-800 {
+  color: var(--color-text-primary) !important;
+}
+
+html:not(.light) .text-gray-500,
+html:not(.light) .text-gray-600 {
+  color: var(--color-text-secondary) !important;
+}
+
+html:not(.light) .border-gray-100,
+html:not(.light) .border-gray-200,
+html:not(.light) .border-zinc-100,
+html:not(.light) .border-zinc-200 {
+  border-color: var(--color-border-subtle) !important;
+}
+
+/* Override hardcoded light input/select/textarea backgrounds in dark mode */
+html:not(.light) input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+html:not(.light) select,
+html:not(.light) textarea {
+  background-color: var(--color-surface-2) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+/* Light mode: surface-0 tokens flip to light values (already handled
+   by html.light vars above, but ensure S5 dashboard bg classes flip) */
+html.light .bg-\[var\(--color-surface-0\)\] {
+  background-color: #f8fafc !important;
+}
+
+/* Light mode: input/select/textarea */
+html.light input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.18) !important;
+}
+
+/* ── Light theme overrides ──────────────────────────────────
+   Applied when <html class="light"> is set by ThemeToggle.
+   Overrides the dark defaults from :root.
+──────────────────────────────────────────────────────────── */
+html.light {
+  color-scheme: light;
+
+  /* Surfaces — white to light grey */
+  --color-surface-0: #f8fafc;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f1f5f9;
+  --color-surface-3: #e2e8f0;
+  --color-surface-4: #cbd5e1;
+
+  /* Text — dark on light */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748b;
+  --color-text-disabled: #94a3b8;
+  --color-text-inverse: #f8fafc;
+  --color-text-brand: #0d9488;
+
+  /* Borders — visible on light backgrounds */
+  --color-border-subtle: rgba(15, 23, 42, 0.08);
+  --color-border-default: rgba(15, 23, 42, 0.14);
+  --color-border-strong: rgba(15, 23, 42, 0.24);
+
+  /* Shadows — lighter for light theme */
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08),
+               0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.10),
+               0 2px 4px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.12),
+               0 4px 10px rgba(15, 23, 42, 0.08);
+
+  /* Keep brand, success, warning, danger, info unchanged */
+  /* They look correct on both dark and light backgrounds */
+}
+
+/* Light theme — component overrides */
+html.light .card {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.10);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+html.light .card-elevated {
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
+}
+
+html.light .tab-bar {
+  background: #ffffff;
+  border-top-color: rgba(15, 23, 42, 0.10);
+}
+
+html.light .top-bar {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom-color: rgba(15, 23, 42, 0.10);
+}
+
+html.light .pull-indicator {
+  background: #f1f5f9;
+  border-bottom-color: rgba(15, 23, 42, 0.10);
+}
+
+html.light .input-base {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+}
+
+html.light .btn-ghost {
+  color: #475569;
+}
+
+html.light .btn-ghost:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+html.light .page-bg {
+  background: #f8fafc;
+}
+
+html.light .skeleton {
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f1f5f9 50%,
+    #e2e8f0 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sweep 700ms linear infinite;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-bottom {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.95); opacity: 0.8; }
+  50%  { transform: scale(1.05); opacity: 0.4; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+@keyframes skeleton-sweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* ─── Brand ─── */
+    --primary: 174 72% 30%;
+    --primary-light: 174 72% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    /* ─── Navy (sidebar / dark surfaces) ─── */
+    --navy: 215 28% 17%;
+    --navy-light: 215 25% 22%;
+    --navy-foreground: 210 40% 95%;
+
+    /* ─── Amber accent ─── */
+    --amber: 38 95% 53%;
+    --amber-foreground: 215 28% 17%;
+
+    /* ─── Scanner result screens ─── */
+    --scanner-green: 142 71% 35%;
+    --scanner-red: 0 72% 51%;
+    --scanner-yellow: 48 97% 42%;
+    --scanner-purple: 263 70% 50%;
+
+    /* ─── Semantic tokens (shadcn) — default dark UI (<html> has no .dark class) ─── */
+    --background: 222 47% 3%;
+    --foreground: 210 40% 98%;
+    --card: 217 33% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 217 33% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 174 72% 42%;
+    --primary-foreground: 215 28% 10%;
+    --secondary: 215 25% 15%;
+    --secondary-foreground: 210 40% 95%;
+    --muted: 215 25% 13%;
+    --muted-foreground: 215 16% 64%;
+    --accent: 174 72% 15%;
+    --accent-foreground: 174 72% 60%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 25% 18%;
+    --input: 215 25% 18%;
+    --ring: 174 72% 42%;
+
+    --radius: 0.75rem;
+
+    /* ─── Sidebar ─── */
+    --sidebar-background: 215 28% 17%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 174 72% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 24%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 215 25% 24%;
+    --sidebar-ring: 174 72% 40%;
+
+    /* ─── Shadows (dark UI) ─── */
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.25);
+    --shadow-md: 0 4px 12px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.35);
+    --shadow-lg: 0 10px 24px -3px hsl(0 0% 0% / 0.5), 0 4px 8px -4px hsl(0 0% 0% / 0.4);
+    --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.2), 0 0 0 1px hsl(215 25% 18% / 0.8);
+
+    /* ─── Gradients ─── */
+    --gradient-primary: linear-gradient(135deg, hsl(174 72% 42%), hsl(174 72% 28%));
+    --gradient-navy: linear-gradient(180deg, hsl(215 28% 12%), hsl(215 28% 8%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 28% 8%) 0%, hsl(215 28% 14%) 50%, hsl(174 40% 16%) 100%);
+  }
+
+  /* Light theme: restore shadcn HSL tokens (Tailwind text-foreground, bg-background, cards) */
+  html.light {
+    --background: 210 20% 97%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 174 72% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 93%;
+    --secondary-foreground: 215 28% 17%;
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 25% 35%;
+    --accent: 174 72% 95%;
+    --accent-foreground: 174 72% 25%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 174 72% 30%;
+
+    --shadow-sm: 0 1px 3px 0 hsl(215 28% 17% / 0.08), 0 1px 2px -1px hsl(215 28% 17% / 0.08);
+    --shadow-md: 0 4px 12px -1px hsl(215 28% 17% / 0.1), 0 2px 4px -2px hsl(215 28% 17% / 0.06);
+    --shadow-lg: 0 10px 24px -3px hsl(215 28% 17% / 0.12), 0 4px 8px -4px hsl(215 28% 17% / 0.08);
+    --shadow-card: 0 2px 8px 0 hsl(215 28% 17% / 0.06), 0 0 0 1px hsl(214 32% 88% / 0.6);
+
+    --gradient-primary: linear-gradient(135deg, hsl(174 72% 30%), hsl(174 72% 20%));
+    --gradient-navy: linear-gradient(180deg, hsl(215 28% 17%), hsl(215 28% 12%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 28% 12%) 0%, hsl(215 28% 17%) 50%, hsl(174 40% 18%) 100%);
+  }
+
+  .dark {
+    --background: 222 47% 3%;
+    --foreground: 210 40% 98%;
+    --card: 217 33% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 217 33% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 174 72% 42%;
+    --primary-foreground: 215 28% 10%;
+    --secondary: 215 25% 15%;
+    --secondary-foreground: 210 40% 95%;
+    --muted: 215 25% 13%;
+    --muted-foreground: 215 16% 64%;
+    --accent: 174 72% 15%;
+    --accent-foreground: 174 72% 60%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 25% 18%;
+    --input: 215 25% 18%;
+    --ring: 174 72% 42%;
+
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 12px -1px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 10px 24px -3px hsl(0 0% 0% / 0.5);
+    --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.2), 0 0 0 1px hsl(215 25% 18% / 0.8);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'tnum';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-numbers {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
-/* 
-  RTL Support with Logical Properties
-  Tailwind CSS 4 natively supports logical properties.
-  Use these classes for RTL-aware layouts:
-  - ms-* instead of ml-* (margin-inline-start)
-  - me-* instead of mr-* (margin-inline-end)
-  - ps-* instead of pl-* (padding-inline-start)
-  - pe-* instead of pr-* (padding-inline-end)
-  - start-* instead of left-* (inset-inline-start)
-  - end-* instead of right-* (inset-inline-end)
-  - text-start instead of text-left
-  - text-end instead of text-right
-*/
+@layer components {
+  .ch-card {
+    @apply bg-card rounded-xl border border-border/60;
+    box-shadow: var(--shadow-card);
+  }
+
+  .btn-primary {
+    @apply text-white font-semibold;
+    background-color: hsl(var(--primary));
+  }
+  .btn-primary:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .scanner-green { background-color: hsl(var(--scanner-green)); }
+  .scanner-red { background-color: hsl(var(--scanner-red)); }
+  .scanner-yellow { background-color: hsl(var(--scanner-yellow)); }
+  .scanner-purple { background-color: hsl(var(--scanner-purple)); }
+
+  .nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200;
+    color: hsl(var(--sidebar-foreground) / 0.7);
+  }
+  .nav-item:hover {
+    background-color: hsl(var(--sidebar-accent));
+    color: hsl(var(--sidebar-foreground));
+  }
+  .nav-item.active {
+    background-color: hsl(var(--primary) / 0.15);
+    color: hsl(var(--sidebar-primary));
+    border-inline-start: 3px solid hsl(var(--sidebar-primary));
+    padding-inline-start: calc(0.75rem - 3px);
+  }
+
+  .kpi-card {
+    @apply bg-card rounded-xl border border-border/60 p-5 flex flex-col gap-2;
+    box-shadow: var(--shadow-card);
+  }
+
+  .badge-confirmed {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    background-color: hsl(142 71% 35% / 0.12);
+    color: hsl(142 71% 28%);
+  }
+  .dark .badge-confirmed {
+    background-color: hsl(142 71% 45% / 0.1);
+    color: hsl(142 71% 55%);
+  }
+  .badge-pending {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    background-color: hsl(38 95% 53% / 0.12);
+    color: hsl(38 80% 35%);
+  }
+  .dark .badge-pending {
+    background-color: hsl(38 95% 53% / 0.1);
+    color: hsl(38 80% 55%);
+  }
+  .badge-late {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    background-color: hsl(263 70% 50% / 0.12);
+    color: hsl(263 70% 40%);
+  }
+  .dark .badge-late {
+    background-color: hsl(263 70% 50% / 0.1);
+    color: hsl(263 70% 60%);
+  }
+
+  .pay-btn {
+    @apply flex flex-col items-center justify-center gap-2 rounded-xl p-4 text-sm font-semibold transition-all active:scale-95;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(4px);
+  }
+  .pay-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .skeleton-pulse {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ─── Scanner result animations ─── */
+@keyframes scanner-green-pulse {
+  0% { transform: scale(0.5); opacity: 0.5; }
+  100% { transform: scale(2); opacity: 0; }
+}
+@keyframes scanner-green-check {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+@keyframes scanner-red-shake {
+  0%, 100% { transform: translateX(0); }
+  10% { transform: translateX(-6px); }
+  20% { transform: translateX(6px); }
+  30% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  50% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+  70%, 80%, 90% { transform: translateX(0); }
+}
+@keyframes scanner-yellow-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(234, 179, 8, 0); }
+  50% { box-shadow: 0 0 20px rgba(234, 179, 8, 0.4); }
+}
+@keyframes scanner-purple-fade {
+  0% { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Toast slide-in (RTL-aware: from start edge) */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--toast-offset, -12px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+[dir="rtl"] .toast-slide-in {
+  --toast-offset: 12px;
+}
+.toast-slide-in {
+  animation: toast-slide-in 300ms ease-out forwards;
+}
+
+/* ─── Print styles ─── */
+@media print {
+  .print-area { display: block !important; }
+  nav, header, footer, aside, .sidebar, .bottom-nav, .top-bar,
+  .no-print, button, [role="navigation"], .selection-controls,
+  .md\:flex.flex-col.w-56, .md\:hidden.fixed {
+    display: none !important;
+  }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    width: 210mm;
+  }
+  .flex.min-h-screen, .flex-1.flex.flex-col, main {
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: white !important;
+  }
+  .print-area {
+    display: block !important;
+    padding: 8mm !important;
+  }
+  .print-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4mm !important;
+    page-break-inside: auto !important;
+  }
+  .qr-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  .qr-card:nth-child(8n) {
+    page-break-after: always !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BILINGUAL TYPOGRAPHY SYSTEM
+   Cairo-Arabic: Arabic script characters only (unicode-range restricted)
+   Georgia: Latin characters (A-Z a-z) and numbers (0-9)
+   Both activate simultaneously on the same element via unicode-range.
+   Cairo's built-in Latin glyphs are excluded — Georgia handles all Latin.
+───────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Cairo-Arabic';
+  src: url('/fonts/Cairo-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-U+06FF, U+0750-U+077F, U+08A0-U+08FF,
+                 U+FB50-U+FDFF, U+FE70-U+FEFF,
+                 U+200C-U+200F, U+2010-U+2011, U+204F, U+2E41;
+}
+
+@font-face {
+  font-family: 'Cairo-Arabic';
+  src: url('/fonts/Cairo-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-U+06FF, U+0750-U+077F, U+08A0-U+08FF,
+                 U+FB50-U+FDFF, U+FE70-U+FEFF,
+                 U+200C-U+200F, U+2010-U+2011, U+204F, U+2E41;
+}
+
+@font-face {
+  font-family: 'Cairo-Arabic';
+  src: url('/fonts/Cairo-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-U+06FF, U+0750-U+077F, U+08A0-U+08FF,
+                 U+FB50-U+FDFF, U+FE70-U+FEFF,
+                 U+200C-U+200F, U+2010-U+2011, U+204F, U+2E41;
+}
+
+@font-face {
+  font-family: 'Cairo-Arabic';
+  src: url('/fonts/Cairo-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-U+06FF, U+0750-U+077F, U+08A0-U+08FF,
+                 U+FB50-U+FDFF, U+FE70-U+FEFF,
+                 U+200C-U+200F, U+2010-U+2011, U+204F, U+2E41;
+}
+
+/* Single authoritative base font stack.
+   Cairo-Arabic handles Arabic characters via unicode-range.
+   Georgia handles all Latin characters and numbers. */
+html,
+body {
+  font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif;
+  color: var(--color-text-primary);
+}
+
+/* Belt-and-suspenders for number and code elements.
+   Ensures Georgia even inside Arabic-heavy components. */
+.font-mono,
+.tabular-nums,
+code,
+pre,
+kbd,
+samp {
+  font-family: Georgia, "Times New Roman", serif !important;
+}
+
+/* Tailwind v4 only: override font-cairo utility output.
+   In v4, the font-cairo utility generates font-family: var(--font-cairo).
+   next/font sets --font-cairo via a class selector with higher specificity
+   than :root or @theme, making those overrides ineffective at runtime.
+   This class-level !important rule is the correct and only reliable fix. */
+.font-cairo {
+  font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif !important;
+}
+
+@layer components {
+
+  /* ── Cards ───────────────────────────────────────── */
+  .card {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-md);
+  }
+  .card-elevated {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-lg);
+  }
+  .card-brand {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-brand);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-brand-sm);
+  }
+
+  /* ── Inputs ──────────────────────────────────────── */
+  .input-base {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-input);
+    color: var(--color-text-primary);
+    transition: border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+  }
+  .input-base:focus {
+    outline: none;
+    border-color: var(--color-brand-500);
+    box-shadow: var(--shadow-focus);
+  }
+
+  /* ── Buttons ─────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-button);
+    font-weight: 600;
+    transition: transform var(--duration-instant) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-primary {
+    background-color: var(--color-brand-500);
+    color: #fff;
+    box-shadow: var(--shadow-brand-sm);
+  }
+  .btn-primary:hover {
+    background-color: var(--color-brand-600);
+    box-shadow: var(--shadow-brand-md);
+  }
+  .btn-ghost {
+    background-color: transparent;
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-secondary);
+  }
+  .btn-ghost:hover {
+    background-color: var(--overlay-light);
+    border-color: var(--color-border-strong);
+    color: var(--color-text-primary);
+  }
+
+  /* ── Badges / Pills ──────────────────────────────── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1875rem 0.625rem;
+    border-radius: var(--radius-badge);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .badge-brand   { background: rgba(13,148,136,0.15);  color: var(--color-brand-400); }
+  .badge-gold    { background: rgba(245,158,11,0.15);   color: var(--color-gold-400); }
+  .badge-success { background: rgba(16,185,129,0.15);   color: #34d399; }
+  .badge-danger  { background: rgba(239,68,68,0.15);    color: #f87171; }
+  .badge-neutral { background: var(--color-surface-3);  color: var(--color-text-secondary); }
+
+  /* ── Divider ─────────────────────────────────────── */
+  .divider {
+    height: 1px;
+    background: var(--color-border-subtle);
+    margin: 0;
+  }
+
+  /* ── Glow text ───────────────────────────────────── */
+  .text-glow-brand {
+    color: var(--color-brand-400);
+    text-shadow: 0 0 20px rgba(13,148,136,0.50);
+  }
+  .text-glow-gold {
+    color: var(--color-gold-400);
+    text-shadow: 0 0 20px rgba(245,158,11,0.50);
+  }
+
+  /* ── Skeleton loading pulse ──────────────────────── */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-2) 25%,
+      var(--color-surface-3) 50%,
+      var(--color-surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-skeleton);
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── Page background ─────────────────────────────── */
+  .page-bg {
+    background: var(--color-surface-0);
+    min-height: 100dvh;
+  }
+
+  /* ── Focus ring (keyboard nav) ───────────────────── */
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── QR scanner demo classes ─────────────────────── */
+  .qr-scan-line {
+    position: absolute;
+    inset-inline: 0;
+    height: 2px;
+    background: linear-gradient(
+      to left,
+      transparent,
+      var(--color-brand-400),
+      var(--color-brand-500),
+      var(--color-brand-400),
+      transparent
+    );
+    border-radius: var(--radius-full);
+    animation: qr-scan 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    box-shadow: 0 0 8px var(--color-brand-500), 0 0 16px rgba(13,148,136,0.40);
+  }
+  .qr-success-flash {
+    animation: qr-flash 0.4s var(--ease-out) both;
+  }
+
+} /* end @layer components */
+
+@keyframes qr-scan {
+  0%   { top: 8%;  opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 88%; opacity: 0; }
+}
+@keyframes qr-flash {
+  0%   { opacity: 0; transform: scale(0.8); }
+  60%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--color-surface-4); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-brand-600); }
+
+/* ── Selection ───────────────────────────────────────── */
+::selection {
+  background: rgba(13,148,136,0.30);
+  color: var(--color-text-primary);
+}
+
+/* ── Light mode — white text readability fix ────────────────
+   S5 dashboard uses text-white hardcoded on headings and numbers.
+   In light mode these become invisible. Override to dark text.
+──────────────────────────────────────────────────────────── */
+html.light .text-white {
+  color: var(--color-text-primary) !important;
+}
+
+html.light .text-white\/90,
+html.light .text-white\/80,
+html.light .text-white\/70 {
+  color: var(--color-text-secondary) !important;
+}
+
+/* ── S6 Scanner ──────────────────────────────────────────── */
+@keyframes scan-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }
+  50%       { opacity: 0.85; box-shadow: 0 0 0 8px rgba(13, 148, 136, 0); }
+}
+
+@keyframes scan-line-sweep {
+  0%   { transform: translateY(0%); opacity: 0.8; }
+  50%  { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0.8; }
+}
+
+@keyframes result-slide-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.scanner-frame {
+  position: relative;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.scanner-frame.scanning {
+  animation: scan-pulse 2s ease-in-out infinite;
+}
+
+.scanner-frame.success {
+  box-shadow: 0 0 0 3px var(--color-success), 0 0 24px rgba(16,185,129,0.3);
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.scanner-frame.error {
+  box-shadow: 0 0 0 3px var(--color-danger), 0 0 24px rgba(239,68,68,0.3);
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.scan-line {
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-brand-500),
+    transparent
+  );
+  animation: scan-line-sweep 2s linear infinite;
+}
+
+.scan-result {
+  animation: result-slide-in var(--duration-normal) var(--ease-out);
+}
+
+.scan-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--color-brand-500);
+  border-style: solid;
+}
+
+.scan-corner-tl {
+  top: 12px;
+  inset-inline-start: 12px;
+  border-width: 3px 0 0 3px;
+  border-start-start-radius: 4px;
+}
+
+.scan-corner-tr {
+  top: 12px;
+  inset-inline-end: 12px;
+  border-width: 3px 3px 0 0;
+  border-start-end-radius: 4px;
+}
+
+.scan-corner-bl {
+  bottom: 12px;
+  inset-inline-start: 12px;
+  border-width: 0 0 3px 3px;
+  border-end-start-radius: 4px;
+}
+
+.scan-corner-br {
+  bottom: 12px;
+  inset-inline-end: 12px;
+  border-width: 0 3px 3px 0;
+  border-end-end-radius: 4px;
+}
+
+/* ── S7 Students ─────────────────────────────────────────── */
+@keyframes student-filter-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.student-card-enter {
+  animation: student-filter-in var(--duration-fast) var(--ease-out) both;
+}
+
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.swipe-row-content {
+  transition: transform var(--duration-fast) var(--ease-out);
+  will-change: transform;
+}
+
+.swipe-row-actions {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-end: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.attendance-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.attendance-dot-present { background: var(--color-brand-500); }
+.attendance-dot-absent  { background: var(--color-surface-3); }
+.attendance-dot-unknown { background: var(--color-surface-3); }
+
+.balance-bar {
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  overflow: hidden;
+}
+
+.balance-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-danger);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+/* ── S8 Payments ─────────────────────────────────────────── */
+@keyframes payment-confirm-flash {
+  0%   { background-color: transparent; }
+  30%  { background-color: rgba(16, 185, 129, 0.15); }
+  100% { background-color: transparent; }
+}
+
+@keyframes receipt-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes payment-row-enter {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.payment-row-enter {
+  animation: payment-row-enter var(--duration-fast) var(--ease-out) both;
+}
+
+.payment-confirmed-flash {
+  animation: payment-confirm-flash 1.2s var(--ease-out) forwards;
+}
+
+.receipt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(8, 15, 26, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.receipt-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface-1);
+  border-start-start-radius: var(--radius-modal);
+  border-start-end-radius: var(--radius-modal);
+  padding: 1.5rem;
+  animation: receipt-slide-up var(--duration-normal) var(--ease-spring);
+}
+
+.method-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-badge);
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+/* ── S9 Micro-interaction System ────────────────────────────
+   Global interaction states applied via CSS classes.
+   All classes are additive — safe to add to any element.
+──────────────────────────────────────────────────────────── */
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%       { transform: translateX(-6px); }
+  30%       { transform: translateX(6px); }
+  45%       { transform: translateX(-4px); }
+  60%       { transform: translateX(4px); }
+  75%       { transform: translateX(-2px); }
+  90%       { transform: translateX(2px); }
+}
+
+@keyframes micro-success-pop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes modal-spring-in {
+  from { transform: scale(0.94) translateY(8px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);   opacity: 1; }
+}
+
+@keyframes modal-spring-out {
+  from { transform: scale(1)    translateY(0);   opacity: 1; }
+  to   { transform: scale(0.94) translateY(8px); opacity: 0; }
+}
+
+@keyframes btn-success-in {
+  0%   { transform: scale(0.9); }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@layer components {
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+    transition: transform var(--duration-instant) var(--ease-out);
+  }
+
+  .btn.is-loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  .btn.is-loading::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: 1rem;
+    height: 1rem;
+    margin-block-start: -0.5rem;
+    margin-inline-start: -0.5rem;
+    border: 2px solid currentColor;
+    border-inline-end-color: transparent;
+    border-radius: var(--radius-full);
+    animation: spin var(--duration-slower) linear infinite;
+    color: white;
+  }
+
+  .btn.is-success {
+    background-color: var(--color-success) !important;
+    pointer-events: none;
+    animation: btn-success-in var(--duration-normal) var(--ease-spring);
+  }
+
+  .btn.is-error {
+    background-color: var(--color-danger) !important;
+    pointer-events: none;
+  }
+}
+
+.micro-shake {
+  animation: shake var(--duration-slow) var(--ease-out);
+}
+
+.modal-spring-in {
+  animation: modal-spring-in var(--duration-normal) var(--ease-spring) both;
+}
+
+.modal-spring-out {
+  animation: modal-spring-out var(--duration-fast) var(--ease-out) both;
+}
+
+.micro-input-focus {
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.micro-input-focus:focus {
+  border-color: var(--color-brand-500) !important;
+  box-shadow: var(--shadow-focus) !important;
+  outline: none;
+}
+
+.micro-success-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  animation: micro-success-pop var(--duration-normal) var(--ease-spring);
+}
+
+/* ── S10 Onboarding ──────────────────────────────────────── */
+@keyframes confetti-fall {
+  0%   { transform: translateY(-10px) rotate(0deg);   opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes onboarding-slide-in-forward {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes onboarding-slide-in-backward {
+  from { transform: translateX(-40px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+@keyframes counter-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes whatsapp-tick {
+  from { stroke-dashoffset: 30; opacity: 0; }
+  to   { stroke-dashoffset: 0;  opacity: 1; }
+}
+
+.onboarding-step-forward {
+  animation: onboarding-slide-in-forward var(--duration-normal)
+             var(--ease-spring) both;
+}
+
+.onboarding-step-backward {
+  animation: onboarding-slide-in-backward var(--duration-normal)
+             var(--ease-spring) both;
+}
+
+.onboarding-progress-bar {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  overflow: hidden;
+}
+
+.onboarding-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    to right,
+    var(--color-brand-500),
+    var(--color-brand-400, #14b8a6)
+  );
+  transition: width var(--duration-slow) var(--ease-spring);
+}
+
+.confetti-piece {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: confetti-fall 2.5s ease-in forwards;
+}
+
+.counter-pop {
+  animation: counter-pop var(--duration-normal) var(--ease-spring);
+}
+
+.whatsapp-tick {
+  stroke-dasharray: 30;
+  animation: whatsapp-tick 0.6s var(--ease-spring) 0.3s both;
+}
+
+/* ── S11 Toast System ────────────────────────────────────── */
+@keyframes toast-in-top {
+  from { transform: translateY(-12px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+@keyframes toast-in-bottom {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.95); }
+}
+@keyframes toast-progress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+.toast-enter-top    { animation: toast-in-top    var(--duration-normal) var(--ease-spring) both; }
+.toast-enter-bottom { animation: toast-in-bottom var(--duration-normal) var(--ease-spring) both; }
+.toast-exit         { animation: toast-out var(--duration-fast) var(--ease-out) both; }
+
+.toast-progress-bar {
+  position: absolute;
+  bottom: 0;
+  inset-inline-start: 0;
+  height: 3px;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  animation: toast-progress linear forwards;
+}
+
+/* ── S12 Analytics ───────────────────────────────────────── */
+@keyframes chart-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.chart-animate         { animation: chart-fade-in var(--duration-slow) var(--ease-out) both; }
+.chart-animate-delay-1 { animation-delay: 100ms; }
+.chart-animate-delay-2 { animation-delay: 200ms; }
+.chart-animate-delay-3 { animation-delay: 300ms; }
+
+.heatmap-cell {
+  border-radius: var(--radius-sm);
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.heatmap-cell:hover { opacity: 0.7; }
+
+@media print {
+  .no-print { display: none !important; }
+  body  { background: white !important; color: black !important; }
+  .card { border: 1px solid #e2e8f0 !important; background: white !important; }
+}
+
+/* ── S14 QR Card Print ───────────────────────────────────── */
+@media print {
+  .print-hide { display: none !important; }
+
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  .qr-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8mm !important;
+  }
+
+  .qr-card { break-inside: avoid; page-break-inside: avoid; }
+
+  .qr-cards-grid .qr-card:nth-child(6n):not(:last-child) {
+    page-break-after: always;
+  }
+
+  .qr-card {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+.qr-card {
+  background: linear-gradient(135deg, #0f172a 0%, #0D9488 100%);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 85.6 / 53.98;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.qr-card::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  inset-inline-end: -10%;
+  width: 60%;
+  height: 160%;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+}
+
+.qr-card-name {
+  font-family: 'Cairo-Arabic', Georgia, serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.qr-card-number {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+  font-family: Georgia, serif;
+}
+
+.qr-card-logo {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.05em;
+}
+
+/* ── FINAL TEXT COLOR ENFORCEMENT ───────────────────────── */
+/* Beats Tailwind preflight + any component-level overrides  */
+html:not(.light) {
+  color: #f8fafc !important;
+}
+
+html.light {
+  color: #0f172a !important;
+}

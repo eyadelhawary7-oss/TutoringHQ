@@ -1,0 +1,272 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/routing';
+import { useLocale } from 'next-intl';
+import { useUser } from '@/contexts/UserContext';
+import { supabase } from '@/lib/supabase';
+import { ArrowLeft, Gift } from 'lucide-react';
+import { PageHeader } from '@/components/shared';
+
+const PLAN_LABELS_AR: Record<string, string> = {
+  nano: 'ناشئ',
+  starter: 'سنتر صغير',
+  pro: 'سنتر متوسط',
+  business: 'سنتر كبير',
+  enterprise: 'سنتر ضخم',
+  top_centers: 'ميجا سنتر',
+};
+
+function planToLabel(plan: string | undefined, locale: string): string {
+  if (!plan) return '—';
+  return locale === 'ar' ? (PLAN_LABELS_AR[plan] ?? plan) : plan;
+}
+
+interface ReferralRow {
+  id: string;
+  referred_center_id: string;
+  referral_code: string;
+  status: string;
+  created_at: string;
+  total_earned_egp?: number;
+  referred_center?: {
+    id: string;
+    name: string;
+    plan: string;
+    status?: string;
+  } | null;
+}
+
+export default function SettingsReferralsPage() {
+  const t = useTranslations('referral');
+  const tRef = useTranslations('referrals');
+  const tc = useTranslations('common');
+  const router = useRouter();
+  const locale = useLocale();
+  const { user } = useUser();
+  const [referrals, setReferrals] = useState<ReferralRow[]>([]);
+  const [referralCode, setReferralCode] = useState('');
+  const [totalEarned, setTotalEarned] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const centerId = user?.center_id;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !centerId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/referral', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setReferralCode(json.referralCode ?? '');
+          setTotalEarned(json.totalEarned ?? 0);
+        }
+      } catch {
+        // ignore
+      }
+
+      try {
+        const { data: refs, error } = await supabase
+          .from('referrals')
+          .select(`
+            id,
+            referred_center_id,
+            referral_code,
+            status,
+            created_at,
+            total_earned_egp,
+            referred_center:centers!referred_center_id(id, name, plan, status)
+          `)
+          .eq('referrer_center_id', centerId)
+          .order('created_at', { ascending: false });
+
+        if (!error && refs) {
+          const normalized = (refs as any[]).map((r) => ({
+            ...r,
+            referral_code: r.referral_code ?? '',
+            referred_center: Array.isArray(r.referred_center) ? r.referred_center[0] : r.referred_center,
+          })) as ReferralRow[];
+          setReferrals(normalized);
+        }
+      } catch {
+        // Fallback: use API commissions as referral list
+        try {
+          const res = await fetch('/api/referral', {
+            headers: { Authorization: `Bearer ${session!.access_token}` },
+          });
+          if (res.ok) {
+            const json = await res.json();
+            const commissions = json.commissions ?? [];
+            const byCenter = new Map<string, { name: string; plan: string; total: number; created_at: string; status: string }>();
+            for (const c of commissions) {
+              const key = c.referred_center_id || c.id;
+              const existing = byCenter.get(key);
+              const total = (existing?.total ?? 0) + Number(c.commission_amount || 0);
+              byCenter.set(key, {
+                name: c.referred_center_name ?? '—',
+                plan: c.referred_center_plan ?? '—',
+                total,
+                created_at: c.period_month ? `${c.period_month}-01` : new Date().toISOString(),
+                status: c.status === 'paid' || c.status === 'withdrawable' ? 'active' : c.status === 'hold' ? 'hold' : 'inactive',
+              });
+            }
+            setReferrals(Array.from(byCenter.entries()).map(([id, v]) => ({
+              id,
+              referred_center_id: id,
+              referral_code: '',
+              status: v.status,
+              created_at: v.created_at,
+              total_earned_egp: v.total,
+              referred_center: { id, name: v.name, plan: v.plan, status: v.status },
+            })));
+          }
+        } catch {
+          setReferrals([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [centerId]);
+
+  if (user?.role !== 'owner') {
+    return (
+      <div className="min-h-screen bg-[var(--color-surface-0)] p-4">
+        <PageHeader title={t('title')} />
+        <p className="text-[var(--color-text-secondary)]">{tRef('ownerOnly')}</p>
+      </div>
+    );
+  }
+
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).replace(/\//g, '/');
+  };
+
+  const getStatusBadge = (status: string) => {
+    if (status === 'active') {
+      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">{locale === 'ar' ? 'نشط' : 'Active'}</span>;
+    }
+    if (status === 'pending') {
+      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{locale === 'ar' ? 'قيد الانتظار' : 'Pending'}</span>;
+    }
+    return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">{locale === 'ar' ? 'غير نشط' : 'Inactive'}</span>;
+  };
+
+  return (
+    <div className="min-h-screen bg-[var(--color-surface-0)] p-4 md:p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <button
+        onClick={() => router.push('/settings')}
+        className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] mb-4"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        {tc('back')}
+      </button>
+
+      <PageHeader title={t('title')} />
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin h-8 w-8 border-2 border-teal-500 border-t-transparent rounded-full" />
+        </div>
+      ) : (
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Summary card */}
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+            <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+              <Gift className="w-5 h-5 text-teal-600" />
+              {locale === 'ar' ? 'ملخص برنامج الإحالة' : 'Referral Program Summary'}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('yourCode')}</p>
+                <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">{referralCode || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">{locale === 'ar' ? 'عدد السناتر المُحالة' : 'Referred Centers'}</p>
+                <p className="text-xl font-bold text-[var(--color-text-primary)]">{referrals.length}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('totalEarned')}</p>
+                <p className="text-xl font-bold text-teal-600 font-mono">{totalEarned.toLocaleString('en-US')} {tc('egp')}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Referrals table */}
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-[var(--color-border-subtle)]">
+              <h3 className="font-bold text-[var(--color-text-primary)]">
+                {locale === 'ar' ? 'قائمة الإحالات' : 'Referrals List'}
+              </h3>
+            </div>
+            {referrals.length === 0 ? (
+              <div className="p-12 text-center text-[var(--color-text-secondary)]">
+                <p className="font-medium">
+                  {locale === 'ar'
+                    ? 'لا توجد إحالات بعد. شارك كودك مع السناتر الأخرى!'
+                    : 'No referrals yet. Share your code with other centers!'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
+                        {locale === 'ar' ? 'اسم السنتر' : 'Center Name'}
+                      </th>
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
+                        {locale === 'ar' ? 'تاريخ الانضمام' : 'Join Date'}
+                      </th>
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
+                        {locale === 'ar' ? 'الخطة' : 'Plan'}
+                      </th>
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
+                        {locale === 'ar' ? 'الحالة' : 'Status'}
+                      </th>
+                      <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
+                        {locale === 'ar' ? 'الأرباح المحققة' : 'Earned'}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {referrals.map((r) => (
+                      <tr key={r.id} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]">
+                        <td className="py-3 px-4 font-medium text-[var(--color-text-primary)]">
+                          {(r.referred_center as { name?: string })?.name ?? '—'}
+                        </td>
+                        <td className="py-3 px-4 text-[var(--color-text-secondary)]">{formatDate(r.created_at)}</td>
+                        <td className="py-3 px-4 text-[var(--color-text-secondary)]">
+                          {planToLabel((r.referred_center as { plan?: string })?.plan, locale)}
+                        </td>
+                        <td className="py-3 px-4">
+                          {getStatusBadge(r.status)}
+                        </td>
+                        <td className="py-3 px-4 text-end font-mono font-semibold text-[var(--color-text-primary)]">
+                          {(r.total_earned_egp ?? 0).toLocaleString('en-US')} {tc('egp')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,2363 @@
+'use client';
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { useLayout } from '@/contexts/LayoutContext';
+import { Link } from '@/i18n/routing';
+import {
+  LayoutDashboard,
+  Building2,
+  CreditCard,
+  FileText,
+  Clock,
+  Users,
+  Search,
+  X,
+  Check,
+  AlertTriangle,
+  ExternalLink,
+  Trash2,
+  MoreVertical,
+  Target,
+  BarChart3,
+  Plus,
+  Shield,
+  ShieldAlert,
+  Activity,
+  TrendingUp,
+  Eye,
+  Menu,
+  ArrowLeft,
+  CheckCircle,
+  XCircle,
+  BadgeCheck,
+  Bell,
+  MessageCircle,
+  ChevronDown,
+  IdCard,
+  ChevronUp,
+} from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+import PasswordConfirmModal from '@/components/PasswordConfirmModal';
+import { AdminSidebar } from '@/components/AdminSidebar';
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { ALL_ADMIN_PERMISSIONS } from '@/lib/admin-roles';
+import { PlanBadge, BillingStatusBadge } from '@/components/shared';
+import { getCsrfHeaders } from '@/lib/csrf-client';
+
+const STATUS_STYLES: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  suspended: 'bg-red-100 text-red-700',
+  pending: 'bg-amber-100 text-amber-700',
+  trial: 'bg-blue-100 text-blue-700',
+  rejected: 'bg-red-100 text-red-700',
+};
+
+type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'referrals' | 'internalTeam' | 'salesPipeline' | 'analytics' | 'ceoDashboard' | 'cardOrders';
+
+interface OverviewData {
+  totalCenters: number;
+  activeCenters: number;
+  pendingSignups: number;
+  suspendedCenters?: number;
+  totalStudents: number;
+  totalMRR?: number;
+  mrr?: number;
+  signupsChart?: { date: string; count: number }[];
+  monthlyRevenue?: { month: string; revenue: number }[];
+  recentActivity?: Array<{ id?: string; action?: string; details?: unknown; created_at?: string }>;
+  totalRevenueCollected?: number;
+  revenueThisMonth?: number;
+  pendingRevenue?: number;
+}
+
+interface CenterRow {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string | null;
+  plan?: string;
+  status?: string;
+  created_at: string;
+  students_count?: number;
+  owner?: { name?: string; phone?: string } | null;
+  last_payment?: string | null;
+  next_due?: string | null;
+  billing_period?: string;
+  billing_status?: string;
+  owner_name?: string | null;
+  referral_code?: string | null;
+  referral_code_used?: string | null;
+  referring_center_name?: string | null;
+  last_active?: string;
+  usage_scans?: number;
+}
+
+interface SalesLead {
+  id: string;
+  name: string;
+  contact_person: string;
+  phone: string;
+  area: string;
+  source: string;
+  stage: 'prospect' | 'contacted' | 'demo_scheduled' | 'converted';
+  notes: string;
+}
+
+const AREAS = ['Nasr City', 'Heliopolis', 'Maadi', '6th October', 'Sheikh Zayed', 'Dokki', 'Mohandeseen', 'Other'];
+const SOURCES = ['Referral', 'Walk-in', 'WhatsApp', 'Social Media', 'Cold Call', 'Other'];
+const AREA_LABELS: Record<string, string> = {
+  'Nasr City': 'القاهرة - مدينة نصر',
+  Heliopolis: 'القاهرة - مصر الجديدة',
+  Maadi: 'القاهرة - المعادي',
+  '6th October': 'الجيزة - أكتوبر',
+  'Sheikh Zayed': 'الجيزة - الشيخ زايد',
+  Dokki: 'القاهرة - الدقي',
+  Mohandeseen: 'القاهرة - المهندسين',
+  Other: 'غيره',
+};
+const SOURCE_LABELS: Record<string, string> = {
+  Referral: 'إحالة',
+  'Walk-in': 'زيارة ميدانية',
+  WhatsApp: 'واتساب',
+  'Social Media': 'تواصل اجتماعي',
+  'Cold Call': 'توصية',
+  Other: 'غيره',
+};
+
+interface BillingRow {
+  id: string;
+  name: string;
+  phone?: string;
+  plan?: string;
+  amount?: number;
+  billing_period?: string;
+  nextDue?: string;
+  next_payment_due?: string;
+  billing_status?: string;
+  status?: string;
+}
+
+interface PendingSignup {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string | null;
+  plan?: string;
+  owner_name?: string | null;
+  created_at?: string;
+  referral_code_used?: string | null;
+  referring_center_name?: string | null;
+}
+
+interface PlanRequest {
+  id: string;
+  center_id: string;
+  centerName: string;
+  current_plan?: string;
+  requested_plan: string;
+  status: string;
+  requested_at?: string;
+  priceDiffFormatted?: string;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  role: string;
+  custom_permissions?: string[];
+  created_at?: string;
+}
+
+interface CardOrder {
+  id: string;
+  center_id: string;
+  center_name: string;
+  center_phone?: string | null;
+  students: Array<{ id: string; name: string; student_number?: string; qr_code?: string }>;
+  quantity: number;
+  total_amount: number;
+  status: string;
+  delivery_address?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+function CardOrderPreview({
+  students,
+  centerName,
+  centerLogo,
+}: {
+  students: Array<{ id: string; name: string; student_number?: string; qr_code?: string }>;
+  centerName: string;
+  centerLogo: string | null;
+}) {
+  const [side, setSide] = useState<'front' | 'back'>('front');
+  const first = students[0];
+  const initials = centerName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative w-48 aspect-[85.6/54] rounded-xl overflow-hidden shadow-lg border border-border bg-[var(--color-surface-1)]">
+        {side === 'front' ? (
+          <>
+            <div className="absolute top-0 left-0 right-0 h-[20%] bg-gradient-to-br from-teal-600 to-teal-700" />
+            <div className="absolute top-0 left-0 right-0 h-[20%] flex items-center justify-between px-2 py-1">
+              {centerLogo ? <img src={centerLogo} alt="" className="h-5 w-5 object-contain" /> : <div className="h-5 w-5 rounded-full bg-teal-600 flex items-center justify-center text-white text-[8px] font-bold">{initials}</div>}
+              <span className="text-white text-[10px] font-medium truncate">{centerName}</span>
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pt-[12%]">
+              <div className="w-16 h-16 bg-[var(--color-surface-1)] rounded flex items-center justify-center">
+                {first?.qr_code ? <img src={first.qr_code} alt="" className="w-14 h-14" /> : <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />}
+              </div>
+              <div className="mt-1 text-xs font-bold text-[var(--color-text-primary)] truncate max-w-full px-1">{first?.name ?? '—'}</div>
+              <div className="text-[9px] font-mono text-teal-600">{first?.student_number ?? '—'}</div>
+            </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-surface-1)]">
+            {centerLogo ? <img src={centerLogo} alt="" className="w-16 h-16 object-contain" /> : <div className="w-12 h-12 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-bold">{initials}</div>}
+            <div className="mt-1 font-bold text-[var(--color-text-primary)] text-xs">{centerName}</div>
+            <div className="absolute bottom-1 text-[6px] text-[var(--color-text-tertiary)]">Powered by CenterHQ</div>
+          </div>
+        )}
+      </div>
+      <div className="flex gap-1">
+        <button onClick={() => setSide('front')} className={`px-2 py-1 rounded text-xs ${side === 'front' ? 'bg-primary text-white' : 'bg-muted'}`}>Front</button>
+        <button onClick={() => setSide('back')} className={`px-2 py-1 rounded text-xs ${side === 'back' ? 'bg-primary text-white' : 'bg-muted'}`}>Back</button>
+      </div>
+    </div>
+  );
+}
+
+function formatActivitySummary(action: string, details?: unknown): string {
+  const d = details as Record<string, unknown> | undefined;
+  if (action === 'center_create') return 'New signup';
+  if (action === 'admin_invoice_approved') return 'Payment proof approved';
+  if (action === 'admin_invoice_rejected') return 'Payment proof rejected';
+  if (action === 'payment_on_scan' && d?.method) return `Payment (${d.method})`;
+  if (action === 'admin_payment_recorded') return 'Admin payment recorded';
+  if (action === 'approve_signup') return 'Signup approved';
+  if (action === 'reject_signup') return 'Signup rejected';
+  if (action === 'suspend_center') return 'Center suspended';
+  if (action === 'reactivate_center') return 'Center reactivated';
+  return action?.replace(/_/g, ' ') ?? '';
+}
+
+export default function AdminPage() {
+  const tAdmin = useTranslations('admin');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
+  const isRTL = locale === 'ar';
+  const router = useRouter();
+  const pathname = usePathname();
+  const { setHideShell } = useLayout();
+
+  const [tab, setTab] = useState<AdminTab>('overview');
+  const [viewingProof, setViewingProof] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [centerSearch, setCenterSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [filterPlan, setFilterPlan] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('newest');
+
+  const [overview, setOverview] = useState<OverviewData | null>(null);
+  const [centers, setCenters] = useState<CenterRow[]>([]);
+  const [billingData, setBillingData] = useState<BillingRow[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<Array<{ centerName: string; amount: number; paid_at?: string; billing_period?: string; recorded_by?: string }>>([]);
+  const [pendingInvoices, setPendingInvoices] = useState<Array<{ id: string; centerName: string; payment_amount?: number; center_id: string; payment_proof_url?: string | null }>>([]);
+  const [pendingSignups, setPendingSignups] = useState<PendingSignup[]>([]);
+  const [planRequests, setPlanRequests] = useState<PlanRequest[]>([]);
+  const [internalTeam, setInternalTeam] = useState<TeamMember[]>([]);
+
+  const [detailCenter, setDetailCenter] = useState<CenterRow | null>(null);
+  const [showSuspendConfirm, setShowSuspendConfirm] = useState<CenterRow | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
+  const [showRejectReason, setShowRejectReason] = useState<PendingSignup | null>(null);
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
+  const [passwordConfirm, setPasswordConfirm] = useState<
+    | { type: 'suspend'; center: CenterRow }
+    | { type: 'approve_invoice'; inv: { id: string; centerName: string; payment_amount: number } }
+    | null
+  >(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [changePlanModal, setChangePlanModal] = useState<{ centerId: string; centerName: string; currentPlan: string } | null>(null);
+  const [newPlan, setNewPlan] = useState('');
+  const [changingPlan, setChangingPlan] = useState(false);
+  const [addAdminForm, setAddAdminForm] = useState({ name: '', phone: '', email: '' });
+  const [selectedRole, setSelectedRole] = useState<string>('internal_viewer');
+  const [customPerms, setCustomPerms] = useState<string[]>([]);
+  const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
+  const [cardOrdersUnread, setCardOrdersUnread] = useState(0);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string } | null>(null);
+  const [leads, setLeads] = useState<SalesLead[]>([]);
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
+  const [addLeadForm, setAddLeadForm] = useState<{ name: string; contactPerson: string; phone: string; area: string; source: string; stage: SalesLead['stage']; notes: string }>({ name: '', contactPerson: '', phone: '', area: '', source: '', stage: 'prospect', notes: '' });
+  const [adminReferrals, setAdminReferrals] = useState<Array<{ id: string; referrer_name: string; referred_name: string; referral_code: string; status: string; created_at: string }>>([]);
+  const [adminPendingPayouts, setAdminPendingPayouts] = useState<Array<{ center_id: string; center_name: string; code: string; amount: number }>>([]);
+
+  useEffect(() => {
+    setHideShell(true);
+    return () => setHideShell(false);
+  }, [setHideShell]);
+
+  const getSession = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+  }, []);
+
+  const getAuthHeaders = useCallback(async (includeCsrf = true) => {
+    const session = await getSession();
+    if (!session) return null;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    };
+    if (includeCsrf) {
+      const csrf = await getCsrfHeaders(session.access_token);
+      Object.assign(headers, csrf);
+    }
+    return headers;
+  }, [getSession]);
+
+  const loadOverview = useCallback(async () => {
+    const session = await getSession();
+    if (!session) {
+      router.replace('/login');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/overview', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.status === 403) {
+        router.replace('/dashboard');
+        return;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setLoadError(err?.error || 'Failed to load');
+        return;
+      }
+      const data = await res.json();
+      setOverview(data);
+      setLoadError(null);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Network error');
+    }
+  }, [getSession, router]);
+
+  const loadCenters = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    const params = new URLSearchParams();
+    if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (centerSearch.trim()) params.set('search', centerSearch.trim());
+    try {
+      const res = await fetch(`/api/admin/centers?${params}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setCenters(data.centers || data);
+    } catch {
+      // ignore
+    }
+  }, [getSession, statusFilter, centerSearch]);
+
+  const loadBilling = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/billing', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setBillingData(data.centers || []);
+      setPaymentHistory(data.paymentHistory || []);
+      setPendingInvoices(data.pendingInvoices || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
+  const loadPendingSignups = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/pending-signups', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setPendingSignups(data.signups || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
+  const loadPlanRequests = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/plan-requests', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setPlanRequests(data.requests || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
+  const loadInternalTeam = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/team', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setInternalTeam(data.team || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
+  const loadCardOrders = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/card-orders', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setCardOrders(data.orders || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
+  const loadAdminReferrals = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    try {
+      const res = await fetch('/api/admin/referrals', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setAdminReferrals(data.referrals || []);
+      setAdminPendingPayouts(data.pendingPayouts || []);
+    } catch {
+      // ignore
+    }
+  }, [getSession]);
+
+  const playNewOrderChime = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+      const freqs = [523, 659, 784];
+      let t = 0;
+      freqs.forEach((freq) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+        osc.start(t);
+        osc.stop(t + 0.15);
+        t += 0.15;
+      });
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    setIsLoading(true);
+    loadOverview()
+      .then(() => setIsLoading(false))
+      .catch(() => setIsLoading(false));
+  }, [loadOverview]);
+
+  useEffect(() => {
+    if (tab === 'centers' || tab === 'analytics') loadCenters();
+  }, [tab, loadCenters]);
+  useEffect(() => {
+    if (tab === 'billing') loadBilling();
+  }, [tab, loadBilling]);
+  useEffect(() => {
+    if (tab === 'pendingSignups') loadPendingSignups();
+  }, [tab, loadPendingSignups]);
+  useEffect(() => {
+    if (tab === 'planRequests') loadPlanRequests();
+  }, [tab, loadPlanRequests]);
+  useEffect(() => {
+    if (tab === 'internalTeam') loadInternalTeam();
+  }, [tab, loadInternalTeam]);
+  useEffect(() => {
+    if (tab === 'referrals') loadAdminReferrals();
+  }, [tab, loadAdminReferrals]);
+  useEffect(() => {
+    if (tab === 'cardOrders') {
+      loadCardOrders();
+      setCardOrdersUnread(0);
+    }
+  }, [tab, loadCardOrders]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('card_orders_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'card_orders' },
+        async (payload) => {
+          const newRow = payload.new as Record<string, unknown>;
+          const centerId = newRow?.center_id as string;
+          let centerName = 'Unknown';
+          if (centerId) {
+            try {
+              const { data: center } = await supabase.from('centers').select('name').eq('id', centerId).single();
+              centerName = (center as { name?: string })?.name ?? centerName;
+            } catch {
+              // ignore
+            }
+          }
+          setCardOrdersUnread((c) => c + 1);
+          playNewOrderChime();
+          setToast({ msg: `🪪 ${tAdmin('cardOrdersNewOrder', { defaultValue: 'New card order from' })} ${centerName}!` });
+          setTimeout(() => setToast(null), 5000);
+          loadCardOrders();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadCardOrders, playNewOrderChime, tAdmin]);
+
+  const PLAN_SORT_ORDER: Record<string, number> = {
+    nano: 1, starter: 2, pro: 3, business: 4, enterprise: 5, top_centers: 6,
+  };
+
+  const displayedCenters = useMemo(() => {
+    let result = centers.filter((c) => {
+      const matchSearch = !centerSearch.trim() ||
+        c.name?.toLowerCase().includes(centerSearch.toLowerCase()) ||
+        c.phone?.includes(centerSearch) ||
+        (c.owner?.name ?? c.owner_name ?? '').toLowerCase().includes(centerSearch.toLowerCase());
+      const isAtRisk = (c.last_active?.includes('days') || c.last_active === 'Never') ?? false;
+      const matchStatus = statusFilter === 'all'
+        ? true
+        : statusFilter === 'at_risk'
+          ? isAtRisk
+          : (c.status ?? 'active') === statusFilter;
+      return matchSearch && matchStatus;
+    });
+
+    if (filterPlan !== 'all') {
+      result = result.filter((c) => (c.plan ?? '') === filterPlan);
+    }
+
+    if (sortBy === 'newest') {
+      result = [...result].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    } else if (sortBy === 'oldest') {
+      result = [...result].sort((a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    } else if (sortBy === 'plan_high') {
+      result = [...result].sort((a, b) =>
+        (PLAN_SORT_ORDER[b.plan ?? ''] ?? 0) - (PLAN_SORT_ORDER[a.plan ?? ''] ?? 0)
+      );
+    } else if (sortBy === 'plan_low') {
+      result = [...result].sort((a, b) =>
+        (PLAN_SORT_ORDER[a.plan ?? ''] ?? 0) - (PLAN_SORT_ORDER[b.plan ?? ''] ?? 0)
+      );
+    }
+
+    return result;
+  }, [centers, centerSearch, statusFilter, filterPlan, sortBy]);
+
+  // Aggregate signupsChart (daily) to weekly for "New Centers per Week"
+  const signupsWeekly = useMemo(() => {
+    const chart = overview?.signupsChart ?? [];
+    if (chart.length === 0) return [];
+    const byWeek: Record<number, number> = {};
+    for (const { date, count } of chart) {
+      if (!date) continue;
+      const d = new Date(date);
+      const weekStart = new Date(d);
+      weekStart.setHours(0, 0, 0, 0);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      const ts = weekStart.getTime();
+      byWeek[ts] = (byWeek[ts] ?? 0) + count;
+    }
+    return Object.entries(byWeek)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([, count], i) => ({ date: `W${i + 1}`, count }));
+  }, [overview?.signupsChart]);
+
+  const handleDeleteCenter = async (centerId: string) => {
+    setDeleteConfirm(null);
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/centers?id=${centerId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      setCenters((prev) => prev.filter((c) => c.id !== centerId));
+      loadOverview();
+      setToast({ msg: tAdmin('centerDeleted', { defaultValue: 'Center deleted successfully' }) });
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Failed to delete center: ' + (err as Error).message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCenterAction = async (
+    centerId: string,
+    action: 'suspend' | 'reactivate' | 'change_plan' | 'approve' | 'reject',
+    extra?: { newPlan?: string; password?: string }
+  ) => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const body: Record<string, unknown> = { centerId, action, ...extra };
+      const res = await fetch('/api/admin/centers', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed');
+      if (action === 'approve' && data.credentialsMessage) {
+        const waUrl = data.whatsappUrl;
+        if (waUrl) window.open(waUrl, '_blank');
+      }
+      setShowSuspendConfirm(null);
+      setDeleteConfirm(null);
+      setShowRejectReason(null);
+      setDetailCenter(null);
+      loadCenters();
+      if (tab === 'pendingSignups') loadPendingSignups();
+      loadOverview();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePlanRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/plan-requests', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ requestId, action }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      loadPlanRequests();
+      loadOverview();
+      loadCenters();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const sendWhatsAppReminder = (
+    centerPhone: string,
+    centerName: string,
+    amount: number,
+    nextDue: string
+  ) => {
+    // Normalize phone — strip everything except digits
+    let phone = centerPhone.replace(/\D/g, '');
+    // Ensure Egyptian country code
+    if (phone.startsWith('0')) phone = '2' + phone; // 01x -> 201x
+    if (!phone.startsWith('20')) phone = '20' + phone;
+    const formattedAmount = amount.toLocaleString('en-US');
+    const formattedDue = new Date(nextDue).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const message = encodeURIComponent(
+      `السلام عليكم ${centerName} 👋\n\n` +
+      `نود تذكيركم بأن دفعة اشتراككم في CenterHQ بقيمة *${formattedAmount} ج.م* مستحقة بتاريخ *${formattedDue}*.\n\n` +
+      `يمكنكم تسوية الدفع ورفع إثبات الدفع من خلال:\n` +
+      `🔗 https://center-hq.vercel.app/settings/billing\n\n` +
+      `شكراً لثقتكم بـ CenterHQ 🙏`
+    );
+    const waUrl = `https://wa.me/${phone}?text=${message}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const contactViaWhatsApp = (phone: string, centerName: string) => {
+    let normalized = phone.replace(/\D/g, '');
+    if (normalized.startsWith('0')) normalized = '2' + normalized;
+    if (!normalized.startsWith('20')) normalized = '20' + normalized;
+    const message = encodeURIComponent(
+      `السلام عليكم 👋\n\n` +
+      `شكراً لتسجيلكم في CenterHQ!\n\n` +
+      `نود التواصل معكم لإتمام إعداد حساب "${centerName}" والتعرف على احتياجاتكم.\n\n` +
+      `متى يناسبكم التحدث؟ 🙏`
+    );
+    window.open(`https://wa.me/${normalized}?text=${message}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleMarkPaid = async (centerId: string, amount: number, billingPeriod: string) => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/billing', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ center_id: centerId, amount, billing_period: billingPeriod }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      loadBilling();
+      loadOverview();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleInvoiceAction = async (invoiceId: string, action: 'approve' | 'reject', password?: string) => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/billing', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ invoiceId, action, password }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      setPasswordConfirm(null);
+      loadBilling();
+      loadOverview();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAddAdmin = async () => {
+    const headers = await getAuthHeaders();
+    if (!headers || !addAdminForm.name.trim() || !addAdminForm.phone.trim()) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/team', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: addAdminForm.name.trim(),
+          phone: addAdminForm.phone.replace(/\D/g, ''),
+          email: addAdminForm.email.trim() || undefined,
+          role: selectedRole,
+          custom_permissions: selectedRole === 'custom' ? customPerms : [],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed');
+      setShowAddAdmin(false);
+      setAddAdminForm({ name: '', phone: '', email: '' });
+      setSelectedRole('internal_viewer');
+      setCustomPerms([]);
+      loadInternalTeam();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCardOrderStatusUpdate = async (orderId: string, status: string) => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/card-orders', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ orderId, status }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      loadCardOrders();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemoveTeamMember = async (memberId: string) => {
+    const headers = await getAuthHeaders();
+    if (!headers || !confirm(tAdmin('confirmRemoveTeamMember'))) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/team', {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ memberId }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      loadInternalTeam();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (isLoading && !overview && !loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
+        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (loadError && !overview) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-surface-0)]">
+        <div className="text-center">
+          <p className="text-red-600 font-medium mb-2">{loadError}</p>
+          <div className="flex gap-3 justify-center">
+            <button onClick={loadOverview} className="px-4 py-2 bg-primary text-white rounded-lg">
+              {tAdmin('retry')}
+            </button>
+            <Link href="/dashboard" className="px-4 py-2 border rounded-lg">
+              {tAdmin('backToMyCenter')}
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+      <AdminHeader />
+      <div className="flex flex-col md:flex-row flex-1 pt-14">
+        <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname ?? undefined} />
+
+      {/* Toast for new card order */}
+      {toast && (
+        <div className="fixed bottom-4 start-4 end-4 md:start-auto md:end-4 md:max-w-sm z-50 p-4 rounded-xl bg-[var(--color-surface-1)] border border-border shadow-lg animate-fade-in">
+          <p className="text-sm font-medium text-[var(--color-text-primary)]">{toast.msg}</p>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="flex-1 p-4 md:p-6 overflow-auto mt-12 md:mt-0">
+        {/* Overview */}
+        {tab === 'overview' && overview && (
+          <>
+            {/* Section: PLATFORM HEALTH */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">PLATFORM HEALTH</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+              {[
+                { label: tAdmin('totalCenters'), value: String(overview.totalCenters ?? 0), iconBg: 'bg-teal-100', iconColor: 'text-teal-600', Icon: Building2 },
+                { label: tAdmin('activeCenters'), value: String(overview.activeCenters ?? 0), iconBg: 'bg-green-100', iconColor: 'text-green-600', Icon: LayoutDashboard },
+                { label: tAdmin('pendingSignups'), value: String(overview.pendingSignups ?? 0), iconBg: 'bg-amber-100', iconColor: 'text-amber-600', Icon: Clock },
+                { label: tAdmin('suspendedCenters', { defaultValue: 'Suspended Centers' }), value: String(overview.suspendedCenters ?? 0), iconBg: 'bg-red-100', iconColor: 'text-red-600', Icon: AlertTriangle },
+                { label: tAdmin('totalStudents'), value: String(overview.totalStudents ?? 0), iconBg: 'bg-blue-100', iconColor: 'text-blue-600', Icon: Users },
+              ].map(({ label, value, iconBg, iconColor, Icon }) => (
+                <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">{label}</p>
+                      <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
+                    </div>
+                    <div className={`p-3 rounded-full ${iconBg}`}>
+                      <Icon className={`w-5 h-5 ${iconColor}`} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Section: REVENUE */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">REVENUE</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('mrr')}</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('en-US')} {tCommon('egp')}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-green-100">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Outstanding Invoices</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.pendingRevenue?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-red-100">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Collected This Month</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.revenueThisMonth?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-teal-100">
+                    <CreditCard className="w-5 h-5 text-teal-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Collection Rate</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.totalRevenueCollected != null && overview.pendingRevenue != null && overview.totalRevenueCollected + overview.pendingRevenue > 0 ? Math.round(overview.totalRevenueCollected / (overview.totalRevenueCollected + overview.pendingRevenue) * 100) : '—'}%</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-blue-100">
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section: SECURITY & ALERTS */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">SECURITY & ALERTS</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Failed Logins 24h</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">0</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-orange-100">
+                    <Shield className="w-5 h-5 text-orange-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">New Signups 7d</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.pendingSignups ?? 0}</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-purple-100">
+                    <Users className="w-5 h-5 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Flagged Activity</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">0</p>
+                  </div>
+                  <div className="p-3 rounded-full bg-red-100">
+                    <ShieldAlert className="w-5 h-5 text-red-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">System Status</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                      </span>
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)]">All systems operational</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-full bg-green-100">
+                    <Activity className="w-5 h-5 text-green-600" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              {(signupsWeekly.length > 0 || (overview.signupsChart?.length ?? 0) > 0) && (
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('newCentersPerWeek', { defaultValue: 'New Centers per Week' })}</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={signupsWeekly.length > 0 ? signupsWeekly : overview.signupsChart!}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="count" stroke="#0D9488" strokeWidth={2} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+              {(overview.monthlyRevenue?.length ?? 0) > 0 && (
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('monthlyRevenueChart', { defaultValue: 'Monthly Revenue' })}</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={overview.monthlyRevenue}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Bar dataKey="revenue" fill="#0D9488" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+
+            {(overview.recentActivity?.length ?? 0) > 0 && (
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-bold text-[var(--color-text-primary)] mb-3">{tAdmin('recentActivity')}</h3>
+                <div className="space-y-3">
+                  {overview.recentActivity!.slice(0, 5).map((a, i) => (
+                    <div key={a.id || i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                      <span className="text-sm text-[var(--color-text-primary)]">
+                        {formatActivitySummary(a.action || '', a.details)}
+                        {a.details && typeof (a.details as { center_name?: string }).center_name === 'string' ? (
+                          <> — {(a.details as { center_name: string }).center_name}</>
+                        ) : null}
+                      </span>
+                      <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap ms-3">
+                        {a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Centers */}
+        {tab === 'centers' && (
+          <>
+            <div className="flex gap-3 flex-wrap mb-3">
+              <select
+                value={filterPlan}
+                onChange={(e) => setFilterPlan(e.target.value)}
+                className="px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-1)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="all">كل الخطط</option>
+                <option value="nano">ناشئ</option>
+                <option value="starter">سنتر صغير</option>
+                <option value="pro">سنتر متوسط</option>
+                <option value="business">سنتر كبير</option>
+                <option value="enterprise">سنتر ضخم</option>
+                <option value="top_centers">ميجا سنتر</option>
+              </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-1)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="newest">الأحدث أولاً</option>
+                <option value="oldest">الأقدم أولاً</option>
+                <option value="plan_high">الخطة: الأعلى أولاً</option>
+                <option value="plan_low">الخطة: الأدنى أولاً</option>
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-3 items-center mb-4">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)]" />
+                <input
+                  value={centerSearch}
+                  onChange={(e) => setCenterSearch(e.target.value)}
+                  placeholder={tAdmin('search', { defaultValue: 'Search centers...' })}
+                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+                />
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                {['all', 'active', 'pending', 'suspended', 'at_risk'].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary/20 text-primary' : 'text-[var(--color-text-secondary)] hover:bg-muted'}`}
+                  >
+                    {s === 'all' ? tCommon('all') : s === 'at_risk' ? (tAdmin('atRisk') ?? 'At Risk') : s === 'active' ? tCommon('active') : s === 'pending' ? tAdmin('pending') : tAdmin('suspended')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tCommon('phone')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('studentsCount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('lastActive') ?? 'Last Active'}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('usage') ?? 'Usage'}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {displayedCenters.map((c) => (
+                      <tr key={c.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{c.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
+                        <td className="py-3.5 px-4"><PlanBadge plan={c.plan} /></td>
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[c.status || 'active'] || STATUS_STYLES.active}`}>
+                            {c.status || 'active'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] font-mono hidden md:table-cell">{c.students_count ?? 0}</td>
+                        <td className={`py-3.5 px-4 text-xs hidden lg:table-cell ${(c.last_active?.includes('days') || c.last_active === 'Never') ? 'text-red-600 font-semibold' : 'text-[var(--color-text-secondary)]'}`}>{c.last_active ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.usage_scans ?? 0}</td>
+                        <td className="py-3.5 px-4 text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4">
+                          <div className="relative">
+                            <button
+                              onClick={() => setOpenActionsId(openActionsId === c.id ? null : c.id)}
+                              className="p-1.5 rounded-lg hover:bg-muted text-[var(--color-text-secondary)]"
+                              title={tCommon('actions')}
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+                            {openActionsId === c.id && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setOpenActionsId(null)} aria-hidden="true" />
+                                <div className="absolute top-full end-0 mt-1 z-50 min-w-[180px] py-1 rounded-lg border border-border shadow-lg bg-[var(--color-surface-1)]">
+                                  <button onClick={() => { setDetailCenter(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start">
+                                    <ExternalLink size={14} />{tAdmin('viewDetails')}
+                                  </button>
+                                  {c.status === 'active' && (
+                                    <button onClick={() => { setShowSuspendConfirm(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start">
+                                      <AlertTriangle size={14} />{tAdmin('suspend')}
+                                    </button>
+                                  )}
+                                  {c.status === 'suspended' && (
+                                    <button onClick={() => { handleCenterAction(c.id, 'reactivate'); setOpenActionsId(null); }} disabled={actionLoading} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start disabled:opacity-50">
+                                      <Check size={14} />{tAdmin('reactivate')}
+                                    </button>
+                                  )}
+                                  <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-muted text-start">
+                                    <CreditCard size={14} />{tAdmin('changePlan')}
+                                  </button>
+                                  <button onClick={() => { setDeleteConfirm(c.id); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start">
+                                    <Trash2 size={14} />{tCommon('delete')}
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Billing */}
+        {tab === 'billing' && (
+          <>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('billing')}</h2>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('amount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('nextDue')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {billingData.map((b) => {
+                      const isPaid = b.billing_status === 'paid';
+                      const nextDueStr = b.nextDue ?? b.next_payment_due ?? '';
+                      const billingStatus = b.billing_status ?? b.status ?? 'active';
+                      return (
+                        <tr key={b.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{b.name}</td>
+                          <td className="py-3.5 px-4"><PlanBadge plan={b.plan} /></td>
+                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{b.billing_period ?? '—'}</td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{(b.amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
+                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{nextDueStr || '—'}</td>
+                          <td className="py-3.5 px-4">
+                            <BillingStatusBadge status={isPaid ? 'paid' : (billingStatus === 'overdue' ? 'overdue' : 'active')} nextDue={nextDueStr || new Date().toISOString()} />
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-2 flex-nowrap">
+                              {!isPaid && (
+                                <button
+                                  onClick={() => handleMarkPaid(b.id, b.amount ?? 0, b.billing_period ?? 'monthly')}
+                                  disabled={actionLoading}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50"
+                                >
+                                  <BadgeCheck className="w-4 h-4" />
+                                  {tAdmin('markAsPaid')}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => sendWhatsAppReminder(b.phone ?? '', b.name ?? '', b.amount ?? 0, nextDueStr || '')}
+                                disabled={actionLoading}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] hover:border-slate-400 text-[var(--color-text-primary)] text-sm font-semibold rounded-lg whitespace-nowrap transition-all disabled:opacity-50"
+                              >
+                                <Bell className="w-4 h-4" />
+                                {tAdmin('sendReminder')}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {pendingInvoices.length > 0 && (
+              <>
+                <h3 className="font-bold text-[var(--color-text-primary)] mt-6 mb-3">{tAdmin('pendingInvoices')}</h3>
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('amount')}</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {pendingInvoices.map((inv) => (
+                          <tr key={inv.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                            <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{inv.centerName}</td>
+                            <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{(inv.payment_amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-2 flex-nowrap">
+                                {inv.payment_proof_url ? (
+                                  <button
+                                    onClick={() => setViewingProof(inv.payment_proof_url || null)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors border border-blue-200"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" /> View Proof
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-slate-400 px-3">No image</span>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    if ((inv.payment_amount ?? 0) > 50000) {
+                                      setPasswordConfirm({ type: 'approve_invoice', inv: { id: inv.id, centerName: inv.centerName, payment_amount: inv.payment_amount ?? 0 } });
+                                    } else {
+                                      handleInvoiceAction(inv.id, 'approve');
+                                    }
+                                  }}
+                                  disabled={actionLoading}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  {tAdmin('approvePay')}
+                                </button>
+                                <button
+                                  onClick={() => handleInvoiceAction(inv.id, 'reject')}
+                                  disabled={actionLoading}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  {tAdmin('rejectPayment')}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <h3 className="font-bold text-[var(--color-text-primary)] mt-6 mb-3">{tAdmin('paymentHistory')}</h3>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('amount')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('recordedBy')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {paymentHistory.map((p, i) => (
+                      <tr key={i} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.centerName}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{p.amount.toLocaleString('en-US')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{p.billing_period ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Plan Requests */}
+        {tab === 'planRequests' && (
+          <>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('planRequests')}</h2>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Current → Requested</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {planRequests.map((pr) => (
+                      <tr key={pr.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{pr.centerName}</td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2">
+                            <PlanBadge plan={pr.current_plan} />
+                            <span className="text-[var(--color-text-secondary)]">→</span>
+                            <PlanBadge plan={pr.requested_plan} />
+                            {pr.priceDiffFormatted && <span className="text-xs text-[var(--color-text-secondary)]">{pr.priceDiffFormatted}</span>}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pr.status === 'pending' ? STATUS_STYLES.pending : pr.status === 'approved' ? STATUS_STYLES.active : STATUS_STYLES.rejected}`}>
+                            {pr.status === 'pending' ? tAdmin('pending') : pr.status === 'approved' ? tAdmin('approved') : tAdmin('rejected')}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {pr.status === 'pending' && (
+                            <div className="flex items-center gap-2 flex-nowrap">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50">
+                                <CheckCircle className="w-4 h-4" />
+                                {tAdmin('approve')}
+                              </button>
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50">
+                                <XCircle className="w-4 h-4" />
+                                {tAdmin('reject')}
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Pending Signups */}
+        {tab === 'pendingSignups' && (
+          <>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('pendingSignups')}</h2>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Center</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('phone')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">Email</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('referredBy')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('createdAt')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pendingSignups.map((ps) => (
+                      <tr key={ps.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{ps.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{ps.owner_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{ps.phone ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{ps.email ?? '—'}</td>
+                        <td className="py-3.5 px-4"><PlanBadge plan={ps.plan} /></td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2 flex-nowrap">
+                            <button
+                              onClick={() => contactViaWhatsApp(ps.phone ?? '', ps.name ?? '')}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm"
+                              title="Contact on WhatsApp"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">WhatsApp</span>
+                            </button>
+                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              {tAdmin('approve')}
+                            </button>
+                            <button onClick={() => setShowRejectReason(ps)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm">
+                              <XCircle className="w-3.5 h-3.5" />
+                              {tAdmin('reject')}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {pendingSignups.length === 0 && (
+                      <tr><td colSpan={8} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">{tAdmin('noPending')}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Referrals */}
+        {tab === 'referrals' && (
+          <>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('referrals', { defaultValue: 'الإحالات' })}</h2>
+
+            <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">{tAdmin('allReferrals', { defaultValue: 'جميع الإحالات' })}</h3>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('referrer', { defaultValue: 'المُحيل' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('referredCenter', { defaultValue: 'السنتر المُحال' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('date', { defaultValue: 'التاريخ' })}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {adminReferrals.map((r) => (
+                      <tr key={r.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{r.referrer_name}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{r.referred_name}</td>
+                        <td className="py-3.5 px-4 font-mono text-sm text-[var(--color-text-primary)]">{r.referral_code}</td>
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${r.status === 'active' ? STATUS_STYLES.active : r.status === 'pending' ? STATUS_STYLES.pending : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'}`}>
+                            {r.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
+                      </tr>
+                    ))}
+                    {adminReferrals.length === 0 && (
+                      <tr><td colSpan={5} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">{tAdmin('noReferrals', { defaultValue: 'لا توجد إحالات' })}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">{tAdmin('pendingPayouts', { defaultValue: 'المدفوعات المعلقة' })}</h3>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('centerName', { defaultValue: 'السنتر' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('amountAvailable', { defaultValue: 'المبلغ المتاح' })}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {adminPendingPayouts.map((p) => (
+                      <tr key={p.center_id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.center_name}</td>
+                        <td className="py-3.5 px-4 font-mono text-sm text-[var(--color-text-primary)]">{p.code}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-teal-600">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4">
+                          <button
+                            onClick={async () => {
+                              const headers = await getAuthHeaders();
+                              if (!headers) return;
+                              setActionLoading(true);
+                              try {
+                                const res = await fetch('/api/admin/referrals', {
+                                  method: 'POST',
+                                  headers,
+                                  body: JSON.stringify({ action: 'mark_paid', referrer_center_id: p.center_id }),
+                                });
+                                if (res.ok) loadAdminReferrals();
+                                else alert((await res.json())?.error || 'Failed');
+                              } catch (e) {
+                                alert(e instanceof Error ? e.message : 'Failed');
+                              } finally {
+                                setActionLoading(false);
+                              }
+                            }}
+                            disabled={actionLoading}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            {tAdmin('markAsPaid')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {adminPendingPayouts.length === 0 && (
+                      <tr><td colSpan={4} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">{tAdmin('noPendingPayouts', { defaultValue: 'لا توجد مدفوعات معلقة' })}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Card Orders */}
+        {tab === 'cardOrders' && (
+          <>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('cardOrders')}</h2>
+            <div className="glass overflow-hidden rounded-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('orderId', { defaultValue: 'Order ID' })}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('centerName', { defaultValue: 'Center' })}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('studentsCount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('amount')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('status')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('createdAt')}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cardOrders.map((order) => {
+                      const statusColors: Record<string, string> = {
+                        pending: 'bg-amber-100 text-amber-700',
+                        confirmed: 'bg-blue-100 text-blue-700',
+                        printing: 'bg-purple-100 text-purple-700',
+                        shipped: 'bg-teal-100 text-teal-700',
+                        delivered: 'bg-green-100 text-green-700',
+                      };
+                      const sc = statusColors[order.status] || statusColors.pending;
+                      const isExpanded = expandedOrderId === order.id;
+                      return (
+                        <>
+                          <tr
+                            key={order.id}
+                            className="border-t border-border hover:bg-muted/30 cursor-pointer"
+                            onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                          >
+                            <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">{order.id.slice(0, 8)}…</td>
+                            <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{order.center_name}</td>
+                            <td className="px-4 py-3 font-mono">{order.quantity}</td>
+                            <td className="px-4 py-3 font-mono font-bold">{order.total_amount.toLocaleString('en-US')} {tCommon('egp')}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${sc}`}>
+                                {order.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">{order.created_at ? new Date(order.created_at).toLocaleDateString() : '—'}</td>
+                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                              <span className="inline-flex">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr key={`${order.id}-exp`} className="border-t border-border bg-muted/20">
+                              <td colSpan={7} className="px-4 py-4">
+                                <div className="space-y-4">
+                                  <div>
+                                    <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">{tAdmin('studentsInOrder', { defaultValue: 'Students' })}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {order.students.map((s) => (
+                                        <span key={s.id} className="px-2 py-1 rounded-lg bg-[var(--color-surface-0)] border border-border text-sm">
+                                          {s.name} <span className="font-mono text-[var(--color-text-secondary)]">{s.student_number || ''}</span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap gap-4 items-start">
+                                    <div className="flex-1 min-w-[200px]">
+                                      <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tAdmin('deliveryAddress', { defaultValue: 'Delivery Address' })}</p>
+                                      <p className="text-sm">{order.delivery_address || '—'}</p>
+                                      {order.notes && (
+                                        <>
+                                          <p className="text-xs font-medium text-[var(--color-text-secondary)] mt-2 mb-1">{tAdmin('notes', { defaultValue: 'Notes' })}</p>
+                                          <p className="text-sm">{order.notes}</p>
+                                        </>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                      <div>
+                                        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tCommon('status')}</label>
+                                        <select
+                                          value={order.status}
+                                          onChange={(e) => handleCardOrderStatusUpdate(order.id, e.target.value)}
+                                          disabled={actionLoading}
+                                          className="px-3 py-2 rounded-lg border border-border bg-[var(--color-surface-0)] text-sm"
+                                        >
+                                          <option value="pending">pending</option>
+                                          <option value="confirmed">confirmed</option>
+                                          <option value="printing">printing</option>
+                                          <option value="shipped">shipped</option>
+                                          <option value="delivered">delivered</option>
+                                        </select>
+                                      </div>
+                                      {order.center_phone && (
+                                        <a
+                                          href={`https://wa.me/20${order.center_phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(`مرحباً، بخصوص طلب البطاقات رقم ${order.id.slice(0, 8)}...`)}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700"
+                                        >
+                                          <MessageCircle size={14} /> {tAdmin('contactWhatsApp', { defaultValue: 'Contact on WhatsApp' })}
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="pt-2">
+                                    <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">{tAdmin('cardPreview', { defaultValue: 'Card Preview' })}</p>
+                                    <CardOrderPreview
+                                      students={order.students}
+                                      centerName={order.center_name}
+                                      centerLogo={null}
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })}
+                    {cardOrders.length === 0 && (
+                      <tr><td colSpan={7} className="px-4 py-8 text-center text-[var(--color-text-secondary)]">{tAdmin('noCardOrders', { defaultValue: 'No card orders yet' })}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Internal Team */}
+        {tab === 'internalTeam' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tAdmin('internalTeam')}</h2>
+              <button onClick={() => setShowAddAdmin(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90">
+                + {tAdmin('addAdmin', { defaultValue: 'Add Admin' })}
+              </button>
+            </div>
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('phone')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Role</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('joinedDate')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {internalTeam.map((m) => (
+                    <tr key={m.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                      <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{m.name}</td>
+                      <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{m.phone ?? m.email ?? '—'}</td>
+                      <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">{m.role}</span></td>
+                      <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
+                      <td className="py-3.5 px-4">
+                        {!['super_admin', 'admin'].includes(m.role) && (
+                          <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50">
+                            {tAdmin('remove')}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* Sales Pipeline */}
+        {tab === 'salesPipeline' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tAdmin('salesPipeline') ?? 'Sales Pipeline'}</h2>
+              <button onClick={() => setShowAddLead(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary">
+                <Plus size={16} />{tAdmin('addLead') ?? 'Add Lead'}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+              {[
+                { label: 'Total Leads', value: leads.length },
+                { label: 'Contacted', value: leads.filter(l => l.stage === 'contacted').length },
+                { label: 'Demo Scheduled', value: leads.filter(l => l.stage === 'demo_scheduled').length },
+                { label: 'Converted', value: leads.filter(l => l.stage === 'converted').length },
+                { label: 'Conversion Rate', value: leads.length > 0 ? `${Math.round((leads.filter(l => l.stage === 'converted').length / leads.length) * 100)}%` : '0%' },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">{label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {(['prospect', 'contacted', 'demo_scheduled', 'converted'] as const).map((stage) => (
+                <div key={stage} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-sm text-[var(--color-text-primary)]">{stage.replace('_', ' ')}</h3>
+                    <span className="text-xs font-mono text-[var(--color-text-secondary)]">{leads.filter(l => l.stage === stage).length}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {leads.filter(l => l.stage === stage).map((lead) => (
+                      <div key={lead.id} onClick={() => setSelectedLead(lead)} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow">
+                        <p className="font-semibold text-sm text-[var(--color-text-primary)]">{lead.name}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{lead.contact_person}</p>
+                        <p className="text-xs font-mono text-[var(--color-text-secondary)] mt-1" dir="ltr">{lead.phone}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-[var(--color-text-secondary)]">{lead.area}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-[var(--color-text-secondary)]">{lead.source}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Analytics */}
+        {tab === 'analytics' && (
+          <>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('analytics') ?? 'Analytics'}</h2>
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Centers by Plan</h3>
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Nano', value: centers.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
+                          { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
+                          { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
+                          { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
+                          { name: 'Enterprise', value: centers.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
+                          { name: 'Top Centers', value: centers.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={70}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Nano', value: centers.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
+                          { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
+                          { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
+                          { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
+                          { name: 'Enterprise', value: centers.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
+                          { name: 'Top Centers', value: centers.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
+                        ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 flex-1">
+                    {['Nano', 'Starter', 'Pro', 'Business', 'Enterprise', 'Top Centers'].map((name, i) => {
+                      const planKey = name === 'Top Centers' ? 'top_centers' : name.toLowerCase();
+                      const val = centers.filter(c => c.plan === planKey).length;
+                      const colors = ['#94A3B8', '#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'];
+                      return (
+                        <div key={name} className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
+                          <span className="text-sm text-[var(--color-text-secondary)] flex-1">{name}</span>
+                          <span className="text-sm font-bold font-mono text-[var(--color-text-primary)]">{val}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Centers by Status</h3>
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Active', value: centers.filter(c => (c.status ?? 'active') === 'active').length, color: '#16A34A' },
+                          { name: 'Pending', value: centers.filter(c => c.status === 'pending').length, color: '#F59E0B' },
+                          { name: 'Suspended', value: centers.filter(c => c.status === 'suspended').length, color: '#DC2626' },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={70}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {[
+                          { color: '#16A34A' },
+                          { color: '#F59E0B' },
+                          { color: '#DC2626' },
+                        ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 flex-1">
+                    {['Active', 'Pending', 'Suspended'].map((name, i) => {
+                      const statusKey = name.toLowerCase();
+                      const val = centers.filter(c => (c.status ?? 'active') === statusKey).length;
+                      const colors = ['#16A34A', '#F59E0B', '#DC2626'];
+                      return (
+                        <div key={name} className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
+                          <span className="text-sm text-[var(--color-text-secondary)] flex-1">{name}</span>
+                          <span className="text-sm font-bold font-mono text-[var(--color-text-primary)]">{val}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Top 5 Centers by Students</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={[...centers].sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
+                    <Tooltip />
+                    <Bar dataKey="students_count" fill="#0D9488" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Top 5 Centers by Revenue</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={[...centers].filter(c => (c.status ?? 'active') === 'active').sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
+                    <Tooltip />
+                    <Bar dataKey="students_count" fill="#3B82F6" radius={[0, 4, 4, 0]} name="Est. revenue proxy" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { label: 'Avg Students/Center', value: centers.length > 0 ? Math.round(centers.reduce((s, c) => s + (c.students_count ?? 0), 0) / centers.length) : 0 },
+                { label: 'Avg Revenue/Center', value: centers.filter(c => (c.status ?? 'active') === 'active').length > 0 ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, centers.filter(c => (c.status ?? 'active') === 'active').length)).toLocaleString('ar-EG')} ${tCommon('egp')}` : '—' },
+                { label: 'Centers with 0 Students', value: centers.filter(c => (c.students_count ?? 0) === 0).length },
+                { label: 'Centers at Risk', value: centers.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+                  <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">{label}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Center Detail Slide-over */}
+      {detailCenter && (
+        <div className="fixed inset-0 z-50" onClick={() => setDetailCenter(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{detailCenter.name}</h2>
+              <button onClick={() => setDetailCenter(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              {[
+                { label: 'Owner', value: detailCenter.owner?.name ?? detailCenter.owner_name ?? '—', isPlan: false },
+                { label: tCommon('phone'), value: detailCenter.phone ?? '—', isPlan: false },
+                { label: tCommon('email'), value: detailCenter.email ?? '—', isPlan: false },
+                { label: 'Plan', value: detailCenter.plan, isPlan: true },
+                { label: tAdmin('billingPeriod'), value: detailCenter.billing_period ?? '—', isPlan: false },
+                { label: tAdmin('studentsCount'), value: String(detailCenter.students_count ?? 0), isPlan: false },
+                { label: tCommon('status'), value: detailCenter.status ?? '—', isPlan: false },
+                { label: tAdmin('nextDue'), value: detailCenter.next_due ?? '—', isPlan: false },
+                { label: tAdmin('referralCode'), value: detailCenter.referral_code ?? '—', isPlan: false },
+                { label: tAdmin('lastActive'), value: detailCenter.last_active ?? '—', isPlan: false },
+                { label: tAdmin('usage'), value: String(detailCenter.usage_scans ?? 0), isPlan: false },
+                { label: tAdmin('createdAt'), value: detailCenter.created_at ? new Date(detailCenter.created_at).toLocaleDateString() : '—', isPlan: false },
+              ].map(({ label, value, isPlan }) => (
+                <div key={label}>
+                  <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{label}</p>
+                  {isPlan ? <PlanBadge plan={value} /> : <p className="font-medium text-[var(--color-text-primary)]">{value}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Suspend Confirm */}
+      {showSuspendConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSuspendConfirm(null)}>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-2">{tAdmin('confirmSuspend')}</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">Are you sure you want to suspend {showSuspendConfirm.name}?</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowSuspendConfirm(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button
+                onClick={() => setPasswordConfirm({ type: 'suspend', center: showSuspendConfirm })}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
+              >
+                {tCommon('confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Center Confirm */}
+      {deleteConfirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            style={{ background: 'var(--color-surface-1)', borderRadius: 12, padding: 24, width: 360, maxWidth: '90vw' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{tAdmin('deleteCenters')}</h3>
+            <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
+              {tAdmin('deleteCenterPermanent', { defaultValue: 'This action cannot be undone. The center and all its data will be permanently deleted.' })}
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--color-border-default)', background: 'var(--color-surface-2)', cursor: 'pointer', fontSize: 14 }}
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                onClick={() => handleDeleteCenter(deleteConfirm)}
+                style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}
+              >
+                {tCommon('delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Admin Modal */}
+      {showAddAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddAdmin(false)}>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full max-h-[90vh] overflow-y-auto bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('inviteTeamMember', { defaultValue: 'Add Admin' })}</h3>
+            <p className="text-xs text-[var(--color-text-secondary)] mb-3">{tAdmin('noTeamMembers', { defaultValue: 'User must have signed up at CenterHQ first.' })}</p>
+            <div className="space-y-3">
+              <input
+                value={addAdminForm.name}
+                onChange={(e) => setAddAdminForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder={tCommon('name')}
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+              />
+              <input
+                value={addAdminForm.phone}
+                onChange={(e) => setAddAdminForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder={tCommon('phone')}
+                type="tel"
+                dir="ltr"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+              />
+              <input
+                value={addAdminForm.email}
+                onChange={(e) => setAddAdminForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder={tCommon('email')}
+                type="email"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+              />
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">الدور / Role</label>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => { setSelectedRole(e.target.value); setCustomPerms([]); }}
+                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="internal_viewer">مشاهد / Viewer</option>
+                  <option value="internal_admin">مدير داخلي / Internal Admin</option>
+                  <option value="sales_rep">مندوب مبيعات / Sales Rep</option>
+                  <option value="support_agent">موظف دعم / Support Agent</option>
+                  <option value="accountant">محاسب / Accountant</option>
+                  <option value="custom">مخصص / Custom</option>
+                </select>
+              </div>
+              {selectedRole === 'custom' && (
+                <div className="border border-[var(--color-border-subtle)] rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">الصلاحيات المسموح بها:</p>
+                  {ALL_ADMIN_PERMISSIONS.map((p) => (
+                    <label key={p.key} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={customPerms.includes(p.key)}
+                        onChange={(e) =>
+                          setCustomPerms((prev) =>
+                            e.target.checked ? [...prev, p.key] : prev.filter((k) => k !== p.key)
+                          )
+                        }
+                        className="rounded border-slate-300 text-teal-600"
+                      />
+                      <span>{p.labelAr}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => setShowAddAdmin(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button onClick={handleAddAdmin} disabled={actionLoading || !addAdminForm.name.trim() || !addAdminForm.phone.trim()} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">
+                {tAdmin('invite')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Reason Modal */}
+      {showRejectReason && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowRejectReason(null)}>
+          <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-3">Rejection Reason</h3>
+            <textarea placeholder="Optional reason..." className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm h-24 resize-none mb-4" />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowRejectReason(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button
+                onClick={() => { handleCenterAction(showRejectReason.id, 'reject'); setShowRejectReason(null); }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
+              >
+                {tAdmin('reject')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Lead Modal */}
+      {showAddLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddLead(false)}>
+          <div className="rounded-2xl border border-border p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto bg-[var(--color-surface-1)] text-start" dir="rtl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-4">إضافة عميل جديد</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">اسم السنتر</label>
+                <input placeholder="اسم السنتر التعليمي" value={addLeadForm.name} onChange={(e) => setAddLeadForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">اسم مسؤول التواصل</label>
+                <input placeholder="الاسم الكامل للمسؤول" value={addLeadForm.contactPerson} onChange={(e) => setAddLeadForm(f => ({ ...f, contactPerson: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">رقم الهاتف</label>
+                <input placeholder="01x xxxx xxxx" type="tel" dir="ltr" value={addLeadForm.phone} onChange={(e) => setAddLeadForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">المنطقة</label>
+                <select value={addLeadForm.area} onChange={(e) => setAddLeadForm(f => ({ ...f, area: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm">
+                  <option value="">المنطقة</option>
+                  {AREAS.map((a) => <option key={a} value={a}>{AREA_LABELS[a] ?? a}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">المصدر</label>
+                <select value={addLeadForm.source} onChange={(e) => setAddLeadForm(f => ({ ...f, source: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm">
+                  <option value="">المصدر</option>
+                  {SOURCES.map((s) => <option key={s} value={s}>{SOURCE_LABELS[s] ?? s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">مرحلة المسار</label>
+                <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm">
+                  <option value="prospect">عميل محتمل</option>
+                  <option value="contacted">تم التواصل</option>
+                  <option value="demo_scheduled">تم العرض</option>
+                  <option value="converted">تم الإغلاق</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">ملاحظات</label>
+                <textarea placeholder="أي ملاحظات إضافية..." value={addLeadForm.notes} onChange={(e) => setAddLeadForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm h-20 resize-none" />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => setShowAddLead(false)} className="px-4 py-2 rounded-lg text-sm border border-border">إلغاء</button>
+              <button
+                onClick={() => {
+                  if (addLeadForm.name.trim()) {
+                    setLeads(prev => [...prev, {
+                      id: `sl-${Date.now()}`,
+                      name: addLeadForm.name.trim(),
+                      contact_person: addLeadForm.contactPerson,
+                      phone: addLeadForm.phone,
+                      area: addLeadForm.area,
+                      source: addLeadForm.source,
+                      stage: addLeadForm.stage,
+                      notes: addLeadForm.notes,
+                    }]);
+                    setAddLeadForm({ name: '', contactPerson: '', phone: '', area: '', source: '', stage: 'prospect', notes: '' });
+                    setShowAddLead(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary"
+              >
+                حفظ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lead Detail Slide-over */}
+      {selectedLead && (
+        <div className="fixed inset-0 z-50" onClick={() => setSelectedLead(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{selectedLead.name}</h2>
+              <button onClick={() => setSelectedLead(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Contact Person</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.contact_person}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{tCommon('phone')}</p><p className="font-medium text-[var(--color-text-primary)]" dir="ltr">{selectedLead.phone}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Area</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.area}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Source</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.source}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Notes</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.notes}</p></div>
+              <div>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">Change Stage</p>
+                <select
+                  value={selectedLead.stage}
+                  onChange={(e) => {
+                    const newStage = e.target.value as SalesLead['stage'];
+                    setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, stage: newStage } : l));
+                    setSelectedLead({ ...selectedLead, stage: newStage });
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-muted text-[var(--color-text-primary)] text-sm"
+                >
+                  <option value="prospect">Prospect</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="demo_scheduled">Demo Scheduled</option>
+                  <option value="converted">Converted</option>
+                </select>
+              </div>
+              <button onClick={() => { setLeads(prev => prev.filter(l => l.id !== selectedLead.id)); setSelectedLead(null); }} className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-destructive border border-destructive/30 hover:bg-destructive/10">
+                {tCommon('delete')} Lead
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Plan Modal */}
+      {changePlanModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
+              <div>
+                <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Change Plan</h2>
+                <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{changePlanModal.centerName}</p>
+              </div>
+              <button onClick={() => { setChangePlanModal(null); setNewPlan(''); }} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+                  Current plan: <span className="font-semibold text-[var(--color-text-primary)] capitalize">{changePlanModal.currentPlan}</span>
+                </p>
+                <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-2">New Plan</label>
+                <select
+                  value={newPlan}
+                  onChange={(e) => setNewPlan(e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
+                >
+                  <option value="">Select a plan...</option>
+                  <option value="nano">Nano — ≤75 students — EGP 1,200/mo</option>
+                  <option value="starter">Starter — ≤150 students — EGP 2,000/mo</option>
+                  <option value="pro">Pro — ≤500 students — EGP 4,500/mo</option>
+                  <option value="business">Business — ≤1,000 students — EGP 6,500/mo</option>
+                  <option value="enterprise">Enterprise — ≤2,000 students — EGP 9,000/mo</option>
+                  <option value="top_centers">Top Centers — Custom</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 pt-0">
+              <button
+                onClick={() => { setChangePlanModal(null); setNewPlan(''); }}
+                className="px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!newPlan || newPlan === changePlanModal.currentPlan || changingPlan}
+                onClick={async () => {
+                  if (!newPlan) return;
+                  setChangingPlan(true);
+                  try {
+                    await handleCenterAction(changePlanModal.centerId, 'change_plan', { newPlan });
+                    setChangePlanModal(null);
+                    setNewPlan('');
+                    loadCenters();
+                  } finally {
+                    setChangingPlan(false);
+                  }
+                }}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                {changingPlan ? 'Saving...' : 'Change Plan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Proof Image Modal */}
+      {viewingProof && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingProof(null)}>
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-white font-semibold">Payment Proof</span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewingProof}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 text-white text-xs font-semibold rounded-lg transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Open Original
+                </a>
+                <button onClick={() => setViewingProof(null)} className="p-2 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-lg transition-colors">
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+            <img
+              src={viewingProof}
+              alt="Payment proof"
+              className="w-full rounded-xl shadow-2xl max-h-[80vh] object-contain bg-[var(--color-surface-1)]"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Password Confirm Modal (suspend, approve invoice) */}
+      {passwordConfirm && (
+        <PasswordConfirmModal
+          isOpen={!!passwordConfirm}
+          onClose={() => setPasswordConfirm(null)}
+          title={
+            passwordConfirm.type === 'suspend'
+              ? tAdmin('confirmSuspend')
+              : tAdmin('confirmApprovePayment')
+          }
+          onConfirm={async (password) => {
+            if (passwordConfirm.type === 'suspend') {
+              await handleCenterAction(passwordConfirm.center.id, 'suspend', { password });
+            } else {
+              await handleInvoiceAction(passwordConfirm.inv.id, 'approve', password);
+            }
+            setPasswordConfirm(null);
+          }}
+        />
+      )}
+      </div>
+    </div>
+  );
+}

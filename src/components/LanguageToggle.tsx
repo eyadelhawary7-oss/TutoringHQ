@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale } from 'next-intl';
-import { useRouter, usePathname } from '@/i18n/routing';
+import { useRouter, usePathname } from 'next/navigation';
 import { useTransition, useEffect, useState } from 'react';
 
 export default function LanguageToggle() {
@@ -12,33 +12,36 @@ export default function LanguageToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    // Load saved locale from localStorage on mount
-    const savedLocale = localStorage.getItem('preferred-locale');
-    if (savedLocale && savedLocale !== locale) {
-      startTransition(() => {
-        router.replace(pathname, { locale: savedLocale as 'ar' | 'en' });
-      });
-    }
+    const id = setTimeout(() => {
+      setMounted(true);
+      const savedLocale = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('NEXT_LOCALE='))
+        ?.split('=')[1] as 'ar' | 'en' | undefined;
+      if (savedLocale && savedLocale !== locale && (savedLocale === 'ar' || savedLocale === 'en')) {
+        const basePath = pathname ?? `/${locale}`;
+        const newPath = basePath.replace(`/${locale}`, `/${savedLocale}`);
+        if (newPath !== basePath) {
+          startTransition(() => router.push(newPath));
+        }
+      }
+    }, 0);
+    return () => clearTimeout(id);
   }, []);
 
   const handleLocaleChange = (newLocale: 'ar' | 'en') => {
-    // Save to localStorage
-    localStorage.setItem('preferred-locale', newLocale);
-    
-    // Navigate to the new locale
-    startTransition(() => {
-      router.replace(pathname, { locale: newLocale });
-    });
+    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
+    const basePath = pathname ?? `/${locale}`;
+    const newPath = basePath.replace(`/${locale}`, `/${newLocale}`);
+    startTransition(() => router.push(newPath));
   };
 
-  // Prevent hydration mismatch
   if (!mounted) {
     return (
       <div className="relative inline-block">
         <select
           disabled
-          className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 pe-8 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+          className="appearance-none glass-input rounded-lg px-3 py-2 pe-8 text-sm font-medium text-[var(--text-primary)] bg-[var(--glass-bg)] border border-[var(--glass-border)] cursor-pointer disabled:opacity-50"
         >
           <option>AR</option>
         </select>
@@ -52,7 +55,7 @@ export default function LanguageToggle() {
         value={locale}
         onChange={(e) => handleLocaleChange(e.target.value as 'ar' | 'en')}
         disabled={isPending}
-        className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 pe-8 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+        className="appearance-none glass-input rounded-lg px-3 py-2 pe-8 text-sm font-medium text-[var(--text-primary)] bg-[var(--glass-bg)] border border-[var(--glass-border)] cursor-pointer disabled:opacity-50"
         aria-label="Select language"
       >
         <option value="ar">AR</option>
@@ -60,7 +63,7 @@ export default function LanguageToggle() {
       </select>
       <div className="pointer-events-none absolute inset-y-0 end-0 flex items-center pe-2">
         <svg
-          className="h-4 w-4 text-gray-400"
+          className="h-4 w-4 text-[var(--text-secondary)]"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
