@@ -624,12 +624,13 @@
     "active_students": "Active Students",
     "order_cards": "Order Cards",
     "add_student": "Add Student",
-    "print_cards": "Print Cards"
+    "print_cards": "Print Cards",
+    "print_card_count": "{count} cards"
   },
   "print": {
     "title": "Print Student Cards",
     "printButton": "Print",
-    "cardsPerPage": "8 cards per A4 page",
+    "cardsPerPage": "6 cards per A4 page",
     "selectSubject": "Select Subject",
     "allSubjects": "All Subjects",
     "noCards": "No cards to print",

@@ -621,12 +621,13 @@
     "active_students": "الطلاب النشطون",
     "order_cards": "طلب بطاقات",
     "add_student": "إضافة طالب",
-    "print_cards": "طباعة بطاقات"
+    "print_cards": "طباعة بطاقات",
+    "print_card_count": "{count} بطاقة"
   },
   "print": {
     "title": "طباعة بطاقات الطلاب",
     "printButton": "طباعة",
-    "cardsPerPage": "8 بطاقات/صفحة A4",
+    "cardsPerPage": "٦ بطاقات/صفحة A4",
     "selectSubject": "اختر المادة",
     "allSubjects": "جميع المواد",
     "noCards": "لا توجد بطاقات للطباعة",
