@@ -125,9 +125,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       )}
 
       {/* Desktop: persistent 256px sidebar (always visible). Mobile: drawer overlay when open */}
-      <aside
-        className={`flex flex-col fixed top-0 bottom-0 h-screen z-50 print:hidden w-64 bg-slate-900 transition-transform duration-300 ${isRTL ? 'right-0 md:left-auto md:right-0' : 'left-0 md:left-0'} ${open ? 'translate-x-0' : isRTL ? 'translate-x-full md:translate-x-0' : '-translate-x-full md:translate-x-0'}`}
-      >
+      <aside className={`flex flex-col fixed top-0 bottom-0 h-screen z-50 print:hidden w-64 bg-slate-900 transition-transform duration-300 ${isRTL ? 'right-0 md:left-auto md:right-0' : 'left-0 md:left-0'} ${open ? 'translate-x-0' : isRTL ? 'translate-x-full md:translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       {/* Logo + Close */}
       <div className="flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800">
         <Link

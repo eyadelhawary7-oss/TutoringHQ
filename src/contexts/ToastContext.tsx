@@ -29,9 +29,9 @@ type ToastContextValue = {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const VARIANT_STYLES: Record<ToastVariant, string> = {
-  success: 'bg-[var(--color-success)]   text-white',
-  error: 'bg-[var(--color-danger)]    text-white',
-  warning: 'bg-[var(--color-warning)]   text-white',
+  success: 'bg-[var(--color-success)] text-white',
+  error: 'bg-[var(--color-danger)] text-white',
+  warning: 'bg-[var(--color-warning)] text-white',
   info: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-[var(--color-border-default)]',
 };
 
@@ -52,12 +52,7 @@ function ToastItem({
   enterClass: 'toast-enter-top' | 'toast-enter-bottom';
 }) {
   return (
-    <div
-      role="alert"
-      aria-live="polite"
-      onClick={() => onDismiss(t.id)}
-      className={`relative overflow-hidden rounded-[var(--radius-card)] shadow-lg px-4 py-3 min-w-[260px] max-w-[360px] cursor-pointer select-none ${VARIANT_STYLES[t.variant]} ${t.exiting ? 'toast-exit' : enterClass}`}
-    >
+    <div role="alert" aria-live="polite" onClick={() => onDismiss(t.id)} className={`relative overflow-hidden rounded-[var(--radius-card)] shadow-lg px-4 py-3 min-w-[260px] max-w-[360px] cursor-pointer select-none ${VARIANT_STYLES[t.variant]} ${t.exiting ? 'toast-exit' : enterClass}`}>
       <p className="text-sm font-medium pe-4">{t.message}</p>
       <div
         className="toast-progress-bar"
