@@ -5,7 +5,7 @@ import { useRouter, Link } from '@/i18n/routing';
 import {
   LayoutDashboard, Building2, CreditCard, FileText, Clock, Users, Target, BarChart3, IdCard, Gift, CalendarCheck,
 } from 'lucide-react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { getAdminPermissions } from '@/lib/admin-roles';
@@ -34,7 +34,6 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSidebarProps) {
   const t = useTranslations('admin');
-  const locale = useLocale();
   const router = useRouter();
   const { closeMainSidebar } = useSidebar() ?? {};
   const pendingCount = 5; // TODO: replace with real count
@@ -97,7 +96,7 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
                 onClick={() => {
                   closeMainSidebar?.();
                   if (key === 'ceoDashboard') {
-                    router.push(`/${locale}/ceo-dashboard`);
+                    router.push('/ceo-dashboard');
                     return;
                   }
                   if (isCeo || isOrders) router.push('/admin');
@@ -163,7 +162,7 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
               onClick={() => {
                 closeMainSidebar?.();
                 if (key === 'ceoDashboard') {
-                  router.push(`/${locale}/ceo-dashboard`);
+                  router.push('/ceo-dashboard');
                   return;
                 }
                 if (isCeo || isOrders) router.push('/admin');
