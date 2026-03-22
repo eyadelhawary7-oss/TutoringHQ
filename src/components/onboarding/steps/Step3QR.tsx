@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { QrCode } from 'lucide-react';
 
@@ -29,12 +28,12 @@ export default function Step3QR({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center">
-          <QrCode className="w-6 h-6 text-teal-600" />
+        <div className="w-12 h-12 rounded-xl bg-[rgba(13,148,136,0.12)] flex items-center justify-center">
+          <QrCode className="w-6 h-6 text-[var(--color-brand-500)]" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground">{t('step3Title')}</h2>
-          <p className="text-sm text-slate-500">{t('step3Desc')}</p>
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('step3Title')}</h2>
+          <p className="text-sm text-[var(--color-text-secondary)]">{t('step3Desc')}</p>
         </div>
       </div>
 
@@ -47,11 +46,11 @@ export default function Step3QR({
         }}
       >
         <div className="h-full flex flex-col items-center justify-center p-3">
-          <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center mb-2">
+          <div className="w-16 h-16 bg-[var(--color-surface-1)] rounded-lg flex items-center justify-center mb-2">
             {qrDataUrl ? (
               <img src={qrDataUrl} alt="QR" className="w-12 h-12" />
             ) : (
-              <QrCode className="w-8 h-8 text-slate-400" />
+              <QrCode className="w-8 h-8 text-[var(--color-text-secondary)]" />
             )}
           </div>
           <div className="text-sm font-bold text-center truncate w-full">{studentName || '—'}</div>
@@ -62,7 +61,7 @@ export default function Step3QR({
 
       <button
         onClick={onPrint}
-        className="w-full py-3 rounded-xl text-sm font-semibold text-teal-600 border-2 border-teal-500 hover:bg-teal-50 transition-colors"
+        className="w-full py-3 rounded-xl text-sm font-semibold text-[var(--color-brand-500)] border-2 border-[var(--color-brand-500)] hover:bg-[var(--color-surface-2)] transition-colors"
       >
         {t('step3Print')}
       </button>
@@ -72,9 +71,9 @@ export default function Step3QR({
           type="checkbox"
           checked={checked}
           onChange={(e) => onCheckedChange(e.target.checked)}
-          className="w-5 h-5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+          className="w-5 h-5 rounded border-[var(--color-border-default)] text-[var(--color-brand-500)] focus:ring-[var(--color-brand-500)]"
         />
-        <span className="text-sm font-medium text-foreground">{t('step3Checkbox')}</span>
+        <span className="text-sm font-medium text-[var(--color-text-primary)]">{t('step3Checkbox')}</span>
       </label>
     </div>
   );

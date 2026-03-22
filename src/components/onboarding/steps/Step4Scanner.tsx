@@ -22,11 +22,11 @@ export default function Step4Scanner({ isActive, onScanSuccess }: Step4ScannerPr
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-foreground">{t('step4Title')}</h2>
-        <p className="text-sm text-slate-500 mt-1">{t('step4Desc')}</p>
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('step4Title')}</h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('step4Desc')}</p>
       </div>
 
-      <div className="relative aspect-square max-w-[280px] mx-auto rounded-xl overflow-hidden bg-slate-900 border-2 border-slate-700">
+      <div className="relative aspect-square max-w-[280px] mx-auto rounded-xl overflow-hidden bg-[var(--color-surface-0)] border-2 border-[var(--color-border-default)]">
         {isActive && (
           <CameraScanner
             onScan={handleScan}

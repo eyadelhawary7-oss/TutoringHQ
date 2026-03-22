@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useRouter } from '@/i18n/routing';
-import { useTranslations } from 'next-intl';
+import { Link, useRouter, usePathname } from '@/i18n/routing';
+import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
@@ -42,7 +42,13 @@ interface Group {
 export default function OnboardingPage() {
   const to = useTranslations('onboarding');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const toggleLocale = () => {
+    router.replace(pathname, { locale: locale === 'ar' ? 'en' : 'ar' });
+  };
 
   const [loading, setLoading] = useState(true);
   const [advancing, setAdvancing] = useState(false);
@@ -331,16 +337,16 @@ export default function OnboardingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-2 border-teal-500 border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center">
+        <div className="animate-spin h-12 w-12 border-2 border-[var(--color-brand-500)] border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!centerId) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <p className="text-slate-500">{tCommon('error')}</p>
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center p-4">
+        <p className="text-[var(--color-text-secondary)]">{tCommon('error')}</p>
       </div>
     );
   }
@@ -361,38 +367,55 @@ export default function OnboardingPage() {
       ) : null}
 
       {!completed && (
-        <div className="px-4 pt-4 pb-2">
-          <div className="max-w-lg mx-auto w-full">
-            <span className="sr-only">{to('progress_label')}</span>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-[var(--color-text-secondary)]">
-                {to('step_of', { current: step, total: TOTAL_STEPS })}
-              </span>
-              <span className="text-xs font-medium text-[var(--color-brand-500)]">{progressPct}%</span>
-            </div>
-
-            <div className="onboarding-progress-bar" role="progressbar" aria-valuenow={progressPct} aria-valuemin={0} aria-valuemax={100}>
-              <div className="onboarding-progress-fill" style={{ width: `${progressPct}%` }} />
-            </div>
-
-            <div className="flex items-center justify-center gap-2 mt-3" aria-hidden="true">
-              {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-                <div
-                  key={STEP_LABELS[i]}
-                  className={`rounded-full transition-all duration-normal ease-spring ${i < currentStepIndex ? 'w-6 h-2 bg-[var(--color-brand-500)]' : i === currentStepIndex ? 'w-4 h-2 bg-[var(--color-brand-500)]' : 'w-2 h-2 bg-[var(--color-surface-3)]'}`}
-                />
-              ))}
-            </div>
-
-            <div className="flex justify-between gap-1 mt-2 text-[10px] sm:text-xs text-[var(--color-text-secondary)]">
-              {STEP_LABELS.map((key, i) => (
-                <span key={key} className={i <= currentStepIndex ? 'text-[var(--color-brand-500)] font-medium' : ''}>
-                  {to(key)}
+        <>
+          <div className="px-4 pt-3 flex justify-end max-w-lg mx-auto w-full">
+            <button
+              type="button"
+              onClick={toggleLocale}
+              className="text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-fast px-3 py-1.5 rounded-badge bg-[var(--color-surface-2)] border border-[var(--color-border-default)]"
+            >
+              {locale === 'ar' ? 'English' : 'العربية'}
+            </button>
+          </div>
+          <div className="px-4 pt-4 pb-2">
+            <div className="max-w-lg mx-auto w-full">
+              <span className="sr-only">{to('progress_label')}</span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  {to('step_of', { current: step, total: TOTAL_STEPS })}
                 </span>
-              ))}
+                <span className="text-xs font-medium text-[var(--color-brand-500)]">{progressPct}%</span>
+              </div>
+
+              <div
+                className="onboarding-progress-bar"
+                role="progressbar"
+                aria-valuenow={progressPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div className="onboarding-progress-fill" style={{ width: `${progressPct}%` }} />
+              </div>
+
+              <div className="flex items-center justify-center gap-2 mt-3" aria-hidden="true">
+                {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                  <div
+                    key={STEP_LABELS[i]}
+                    className={`rounded-full transition-all duration-normal ease-spring ${i < currentStepIndex ? 'w-6 h-2 bg-[var(--color-brand-500)]' : i === currentStepIndex ? 'w-4 h-2 bg-[var(--color-brand-500)]' : 'w-2 h-2 bg-[var(--color-surface-3)]'}`}
+                  />
+                ))}
+              </div>
+
+              <div className="flex justify-between gap-1 mt-2 text-[10px] sm:text-xs text-[var(--color-text-secondary)]">
+                {STEP_LABELS.map((key, i) => (
+                  <span key={key} className={i <= currentStepIndex ? 'text-[var(--color-brand-500)] font-medium' : ''}>
+                    {to(key)}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       <div
