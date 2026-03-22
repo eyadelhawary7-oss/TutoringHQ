@@ -31,11 +31,7 @@ export default function InactiveList({ students, period, onPeriodChange }: Inact
             key={p}
             type="button"
             onClick={() => onPeriodChange(p)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors border-2 ${
-              period === p
-                ? 'bg-indigo-500/20 text-[var(--text-primary)] border-indigo-500'
-                : 'border-transparent text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
-            }`}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors border-2 ${period === p ? 'bg-indigo-500/20 text-[var(--text-primary)] border-indigo-500' : 'border-transparent text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'}`}
           >
             {t(`filter${p}` as 'filter7d')}
           </button>

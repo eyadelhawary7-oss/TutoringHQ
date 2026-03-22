@@ -919,25 +919,19 @@ function SettingsPageContent() {
         <div className="flex gap-1 p-1 rounded-xl border border-slate-200 w-fit mb-6 bg-white">
           <button
             onClick={() => setActiveTab('general')}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === 'general' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'general' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             {t('general')}
           </button>
           <button
             onClick={() => setActiveTab('billing')}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === 'billing' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'billing' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             {t('billing')}
           </button>
           <button
             onClick={() => setActiveTab('team')}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === 'team' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'team' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             {t('teamMembers')}
           </button>
@@ -1499,11 +1493,7 @@ function SettingsPageContent() {
                               <PlanBadge plan={req.requested_plan} />
                             </td>
                             <td className="py-3.5 px-4">
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                req.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                req.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                'bg-amber-100 text-amber-700'
-                              }`}>
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${req.status === 'approved' ? 'bg-green-100 text-green-700' : req.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                                 {req.status === 'approved' ? '✓ Approved' :
                                  req.status === 'rejected' ? '✗ Rejected' : '⏳ Pending'}
                               </span>

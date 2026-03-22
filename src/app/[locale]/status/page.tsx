@@ -217,15 +217,7 @@ export default function StatusPage() {
                       )}
                     </p>
                   </div>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded ${
-                      inc.severity === 'critical'
-                        ? 'bg-red-100 text-red-700'
-                        : inc.severity === 'major'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
+                  <span className={`text-xs px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-red-100 text-red-700' : inc.severity === 'major' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
                     {inc.severity}
                   </span>
                 </div>

@@ -219,9 +219,7 @@ export default function AdminRenewalsPage() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  filter === f ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === f ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
               >
                 {f === 'all' ? t('filterAll') : f === 'this_week' ? t('filterThisWeek') : f === 'this_month' ? t('filterThisMonth') : t('filterOverdue')}
               </button>

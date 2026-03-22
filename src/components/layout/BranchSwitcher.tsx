@@ -109,9 +109,7 @@ export function BranchSwitcher() {
                     setActiveCenterId(b.id);
                     setOpen(false);
                   }}
-                  className={`flex items-center gap-2 w-full px-3 py-2 text-left text-sm transition-colors ${
-                    b.id === activeCenterId ? 'bg-teal-600/20 text-teal-400' : 'text-slate-300 hover:bg-slate-700'
-                  }`}
+                  className={`flex items-center gap-2 w-full px-3 py-2 text-left text-sm transition-colors ${b.id === activeCenterId ? 'bg-teal-600/20 text-teal-400' : 'text-slate-300 hover:bg-slate-700'}`}
                 >
                   {b.logo_url ? (
                     <img src={b.logo_url} alt="" className="w-5 h-5 rounded object-contain shrink-0" />

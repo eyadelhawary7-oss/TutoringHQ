@@ -379,13 +379,7 @@ export default function OnboardingPage() {
               {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
                 <div
                   key={STEP_LABELS[i]}
-                  className={`rounded-full transition-all duration-normal ease-spring ${
-                    i < currentStepIndex
-                      ? 'w-6 h-2 bg-[var(--color-brand-500)]'
-                      : i === currentStepIndex
-                        ? 'w-4 h-2 bg-[var(--color-brand-500)]'
-                        : 'w-2 h-2 bg-[var(--color-surface-3)]'
-                  }`}
+                  className={`rounded-full transition-all duration-normal ease-spring ${i < currentStepIndex ? 'w-6 h-2 bg-[var(--color-brand-500)]' : i === currentStepIndex ? 'w-4 h-2 bg-[var(--color-brand-500)]' : 'w-2 h-2 bg-[var(--color-surface-3)]'}`}
                 />
               ))}
             </div>
@@ -403,9 +397,7 @@ export default function OnboardingPage() {
 
       <div
         key={stepKey}
-        className={`flex-1 px-4 py-4 max-w-lg mx-auto w-full flex flex-col ${
-          direction === 'forward' ? 'onboarding-step-forward' : 'onboarding-step-backward'
-        }`}
+        className={`flex-1 px-4 py-4 max-w-lg mx-auto w-full flex flex-col ${direction === 'forward' ? 'onboarding-step-forward' : 'onboarding-step-backward'}`}
       >
         {completed ? (
           <div className="flex flex-col items-center gap-6 py-8">

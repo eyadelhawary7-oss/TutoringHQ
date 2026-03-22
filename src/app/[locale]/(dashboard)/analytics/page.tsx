@@ -184,11 +184,7 @@ export default function AnalyticsPage() {
             <span className="text-xs text-[var(--color-text-tertiary)] ms-1">EGP</span>
           </span>
           {mrrDelta !== undefined && (
-            <span
-              className={`text-xs font-medium ${
-                mrrDelta >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'
-              }`}
-            >
+            <span className={`text-xs font-medium ${mrrDelta >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
               {mrrDelta >= 0 ? '+' : ''}
               {Number(mrrDelta).toLocaleString('en-US')}% {ta('mrr_delta')}
             </span>

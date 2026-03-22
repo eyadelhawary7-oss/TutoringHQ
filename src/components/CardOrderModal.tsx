@@ -522,9 +522,7 @@ export function CardOrderModal({
                           key={value}
                           type="button"
                           onClick={() => setSelectedColor(value)}
-                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-transform shrink-0 ${
-                            selectedColor === value ? 'scale-110 border-foreground' : 'border-border hover:border-muted-foreground'
-                          }`}
+                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-transform shrink-0 ${selectedColor === value ? 'scale-110 border-foreground' : 'border-border hover:border-muted-foreground'}`}
                           style={{ backgroundColor: value }}
                           aria-label={value}
                         >

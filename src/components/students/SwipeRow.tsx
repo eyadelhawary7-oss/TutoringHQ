@@ -73,11 +73,7 @@ export function SwipeRow({ children, actions }: Props) {
               action.onClick();
               close();
             }}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 text-xs font-medium px-3 min-w-[60px] transition-opacity duration-fast ${
-              action.variant === 'danger'
-                ? 'bg-[var(--color-danger)] text-white'
-                : 'bg-[var(--color-surface-3)] text-[var(--color-text-primary)]'
-            }`}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 text-xs font-medium px-3 min-w-[60px] transition-opacity duration-fast ${action.variant === 'danger' ? 'bg-[var(--color-danger)] text-white' : 'bg-[var(--color-surface-3)] text-[var(--color-text-primary)]'}`}
           >
             {action.icon}
             {action.label}

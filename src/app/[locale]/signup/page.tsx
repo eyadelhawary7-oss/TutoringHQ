@@ -278,9 +278,7 @@ export default function SignupPage() {
                     key={opt.value}
                     type="button"
                     onClick={() => setBillingPeriod(opt.value)}
-                    className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                      billingPeriod === opt.value ? 'text-white' : 'bg-slate-100 text-slate-600'
-                    }`}
+                    className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${billingPeriod === opt.value ? 'text-white' : 'bg-slate-100 text-slate-600'}`}
                     style={billingPeriod === opt.value ? { backgroundColor: '#0D9488' } : {}}
                   >
                     {opt.label}
@@ -301,11 +299,7 @@ export default function SignupPage() {
                 {PLANS.map(plan => (
                   <label
                     key={plan.value}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                      formData.plan === plan.value
-                        ? 'border-primary/60 bg-primary/5'
-                        : 'border-border hover:border-primary/30'
-                    }`}
+                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${formData.plan === plan.value ? 'border-primary/60 bg-primary/5' : 'border-border hover:border-primary/30'}`}
                     style={plan.custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.25)' } : {}}
                     onClick={(e) => {
                       if (plan.custom) {

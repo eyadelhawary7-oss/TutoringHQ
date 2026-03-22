@@ -133,11 +133,7 @@ export default function TopNavbar() {
         {isSuperAdminOnly && (
           <Link
             href="/admin"
-            className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${
-              pathname?.startsWith('/admin')
-                ? 'bg-red-500/20 text-red-400 border-b-2 border-red-400'
-                : 'text-red-400 hover:bg-red-500/10'
-            }`}
+            className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${pathname?.startsWith('/admin') ? 'bg-red-500/20 text-red-400 border-b-2 border-red-400' : 'text-red-400 hover:bg-red-500/10'}`}
           >
             <Shield className="w-4 h-4 shrink-0" />
             {t('admin')}
@@ -149,11 +145,7 @@ export default function TopNavbar() {
             <Link
               key={item.key}
               href={item.href}
-              className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${
-                isActive
-                  ? 'bg-teal-500/20 text-teal-300 border-b-2 border-teal-400'
-                  : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
-              }`}
+              className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${isActive ? 'bg-teal-500/20 text-teal-300 border-b-2 border-teal-400' : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'}`}
             >
               {item.icon}
               {t(item.key)}
@@ -163,11 +155,7 @@ export default function TopNavbar() {
         {isAdmin && !isSuperAdminOnly && (
           <Link
             href="/admin"
-            className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${
-              pathname?.startsWith('/admin')
-                ? 'bg-red-500/20 text-red-400 border-b-2 border-red-400'
-                : 'text-red-400 hover:bg-red-500/10'
-            }`}
+            className={`inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap shrink-0 ${pathname?.startsWith('/admin') ? 'bg-red-500/20 text-red-400 border-b-2 border-red-400' : 'text-red-400 hover:bg-red-500/10'}`}
           >
             <Shield className="w-4 h-4 shrink-0" />
             {t('admin')}
@@ -232,9 +220,7 @@ export default function TopNavbar() {
                   key={item.key}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${
-                    isActive ? 'bg-teal-500/20 text-teal-300' : 'text-[var(--text-primary)] hover:bg-white/5'
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'bg-teal-500/20 text-teal-300' : 'text-[var(--text-primary)] hover:bg-white/5'}`}
                 >
                   {item.icon}
                   {t(item.key)}
@@ -245,9 +231,7 @@ export default function TopNavbar() {
               <Link
                 href="/admin"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${
-                  pathname?.startsWith('/admin') ? 'bg-red-500/20 text-red-400' : 'text-red-400 hover:bg-red-500/10'
-                }`}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${pathname?.startsWith('/admin') ? 'bg-red-500/20 text-red-400' : 'text-red-400 hover:bg-red-500/10'}`}
               >
                 <Shield className="w-4 h-4" />
                 {t('admin')}

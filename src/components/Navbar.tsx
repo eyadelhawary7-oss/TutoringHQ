@@ -115,11 +115,7 @@ export default function Navbar() {
             {isSuperAdminOnly && (
               <Link
                 href="/admin"
-                className={`inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md border-2 transition-colors whitespace-nowrap flex-shrink-0 ${
-                  pathname?.startsWith('/admin')
-                    ? 'border-red-500 bg-red-50 text-red-700'
-                    : 'border-red-500 text-red-600 hover:bg-red-50'
-                }`}
+                className={`inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md border-2 transition-colors whitespace-nowrap flex-shrink-0 ${pathname?.startsWith('/admin') ? 'border-red-500 bg-red-50 text-red-700' : 'border-red-500 text-red-600 hover:bg-red-50'}`}
               >
                 {t('admin')}
               </Link>
@@ -131,11 +127,7 @@ export default function Navbar() {
               {isAdmin && !isSuperAdminOnly && (
                 <Link
                   href="/admin"
-                  className={`inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md border-2 transition-colors whitespace-nowrap flex-shrink-0 ${
-                    pathname?.startsWith('/admin')
-                      ? 'border-red-500 bg-red-50 text-red-700'
-                      : 'border-red-500 text-red-600 hover:bg-red-50'
-                  }`}
+                  className={`inline-flex items-center px-2 py-2 text-xs lg:text-sm font-medium rounded-md border-2 transition-colors whitespace-nowrap flex-shrink-0 ${pathname?.startsWith('/admin') ? 'border-red-500 bg-red-50 text-red-700' : 'border-red-500 text-red-600 hover:bg-red-50'}`}
                 >
                   {t('admin')}
                 </Link>
@@ -220,11 +212,7 @@ export default function Navbar() {
               {(isAdmin || isSuperAdminOnly) && (
                 <Link
                   href="/admin"
-                  className={`block w-full text-start px-4 py-3 text-base font-medium rounded-lg border-2 transition-colors ${
-                    pathname?.startsWith('/admin')
-                      ? 'border-red-500 bg-red-50 text-red-700'
-                      : 'border-red-500 text-red-600 hover:bg-red-50'
-                  }`}
+                  className={`block w-full text-start px-4 py-3 text-base font-medium rounded-lg border-2 transition-colors ${pathname?.startsWith('/admin') ? 'border-red-500 bg-red-50 text-red-700' : 'border-red-500 text-red-600 hover:bg-red-50'}`}
                   onClick={() => setMenuOpen(false)}
                 >
                   {t('admin')}

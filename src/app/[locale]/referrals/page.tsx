@@ -213,10 +213,7 @@ export default function ReferralsPage() {
                     <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-3 px-4 text-slate-700 font-mono">{maskCenterName(r.center_name)}</td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          r.status === 'converted' || r.status === 'active' ? 'bg-green-100 text-green-700' :
-                          r.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
-                        }`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === 'converted' || r.status === 'active' ? 'bg-green-100 text-green-700' : r.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
                           {r.status === 'converted' ? 'نشط' : r.status === 'active' ? 'نشط' : r.status === 'pending' ? 'معلق' : r.status}
                         </span>
                       </td>

@@ -307,11 +307,7 @@ export default function SchedulePage() {
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
-                className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  selectedDay === day
-                    ? 'bg-teal-600 text-white font-semibold'
-                    : 'text-slate-500 hover:bg-slate-50'
-                }`}
+                className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedDay === day ? 'bg-teal-600 text-white font-semibold' : 'text-slate-500 hover:bg-slate-50'}`}
               >
                 {t(DAY_KEYS[day])}
               </button>
@@ -341,11 +337,7 @@ export default function SchedulePage() {
                         return (
                           <div
                             key={slot.id}
-                            className={`relative rounded-lg p-2 cursor-pointer transition-colors group ${
-                              isConflict
-                                ? 'bg-red-50 border border-red-300 text-red-800'
-                                : 'bg-teal-50 border border-teal-200 hover:bg-teal-100'
-                            }`}
+                            className={`relative rounded-lg p-2 cursor-pointer transition-colors group ${isConflict ? 'bg-red-50 border border-red-300 text-red-800' : 'bg-teal-50 border border-teal-200 hover:bg-teal-100'}`}
                           >
                             {isConflict && <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />}
                             <p className={`text-xs font-semibold truncate pe-5 ${isConflict ? 'text-red-800' : 'text-teal-800'}`}>{slot.group_name || '—'}</p>

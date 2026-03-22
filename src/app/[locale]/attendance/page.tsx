@@ -371,17 +371,13 @@ export default function AttendancePage() {
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
         <button
           onClick={() => setActiveTab('student')}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'student' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'student' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
         >
           <ClipboardList size={18} /> {t('byStudent')}
         </button>
         <button
           onClick={() => setActiveTab('group')}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'group' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'group' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
         >
           <BookOpen size={18} /> {t('byGroup')}
         </button>
