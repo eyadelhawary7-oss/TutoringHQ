@@ -23,7 +23,9 @@ export default function SuspendedPage() {
     if (isCenterSuspended || isPaymentOverdue) return;
 
     const loadSubscription = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) return;
 
       const meRes = await fetch('/api/me', {
@@ -61,25 +63,19 @@ export default function SuspendedPage() {
   const waHref = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(waMessage)}`;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--gradient-hero)' }}>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[var(--color-surface-0)]">
       <div className="absolute top-4 end-4 z-10">
         <LanguageToggle />
       </div>
 
       <div className="text-center max-w-sm">
         <div className="text-6xl mb-6">&#x1F512;</div>
-        <h1 className="text-2xl font-black text-white mb-3">
-          {t('title')}
-        </h1>
-        <p className="text-white/60 mb-8">
-          {t('message')}
-        </p>
+        <h1 className="text-2xl font-black text-[var(--color-text-primary)] mb-3">{t('title')}</h1>
+        <p className="text-[var(--color-text-secondary)] mb-8">{t('message')}</p>
 
         {fawryCode && !isPaymentOverdue && !isCenterSuspended && (
-          <div className="mb-6 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-            <p className="text-sm text-amber-400 font-medium">
-              {t('fawryCode', { code: fawryCode })}
-            </p>
+          <div className="mb-6 p-3 rounded-lg bg-[rgba(245,158,11,0.1)] border border-[var(--color-warning)]/30">
+            <p className="text-sm text-[var(--color-warning)] font-medium">{t('fawryCode', { code: fawryCode })}</p>
           </div>
         )}
 
@@ -95,15 +91,16 @@ export default function SuspendedPage() {
           </a>
           <Link
             href="/settings/billing"
-            className="px-6 py-3 rounded-xl font-bold text-sm border border-white/30 text-white hover:bg-white/10 transition-colors"
+            className="px-6 py-3 rounded-xl font-bold text-sm border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--overlay-light)] transition-colors"
           >
             {t('goToBilling')}
           </Link>
         </div>
 
         <button
+          type="button"
           onClick={handleLogout}
-          className="mt-8 text-sm text-white/40 hover:text-white/60 transition-colors"
+          className="mt-8 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
         >
           {t('logout')}
         </button>
