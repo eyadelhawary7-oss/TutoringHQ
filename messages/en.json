@@ -875,7 +875,19 @@
     "other": "Other",
     "total": "Total",
     "exportCsv": "Export CSV",
-    "noAccess": "You don't have permission to view this page"
+    "noAccess": "You don't have permission to view this page",
+    "subtitle": "Comprehensive view of your center's performance",
+    "revenue_chart": "Monthly Revenue",
+    "payment_methods": "Payment Methods",
+    "attendance_heatmap": "Attendance Heatmap",
+    "mrr_delta": "vs last month",
+    "collection_rate": "Collection Rate",
+    "avg_per_student": "Avg. Revenue / Student",
+    "total_revenue": "Total Revenue",
+    "export_pdf": "Export PDF",
+    "no_data": "Not enough data yet",
+    "week_days": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
   },
   "ceoDashboard": {
     "title": "CEO Dashboard",

@@ -286,6 +286,36 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const heatmapWeeks = 12;
+    const heatmapStart = new Date(now);
+    heatmapStart.setDate(heatmapStart.getDate() - heatmapWeeks * 7);
+    const { data: heatmapScans } = await supabaseAdmin
+      .from('attendance_scans')
+      .select('scanned_at')
+      .eq('center_id', centerId)
+      .gte('scanned_at', heatmapStart.toISOString());
+
+    const heatmapBucket = new Map<string, number>();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    for (const row of (heatmapScans || []) as { scanned_at: string }[]) {
+      const d = new Date(row.scanned_at);
+      const day = d.getDay();
+      const ms = d.getTime() - heatmapStart.getTime();
+      const week = Math.min(heatmapWeeks - 1, Math.max(0, Math.floor(ms / weekMs)));
+      const key = `${week}-${day}`;
+      heatmapBucket.set(key, (heatmapBucket.get(key) ?? 0) + 1);
+    }
+    const attendance_heatmap: { day: number; week: number; count: number }[] = [];
+    for (let w = 0; w < heatmapWeeks; w++) {
+      for (let day = 0; day < 7; day++) {
+        attendance_heatmap.push({
+          week: w,
+          day,
+          count: heatmapBucket.get(`${w}-${day}`) ?? 0,
+        });
+      }
+    }
+
     return NextResponse.json({
       mrr,
       outstanding_total,
@@ -294,6 +324,7 @@ export async function GET(request: NextRequest) {
       revenue_by_group: revenueByGroup,
       mrr_trend,
       payment_method_distribution,
+      attendance_heatmap,
       aging_report,
       expenses_by_month: Object.fromEntries(expensesByMonth),
       income_by_month: Object.fromEntries(incomeByMonth),
