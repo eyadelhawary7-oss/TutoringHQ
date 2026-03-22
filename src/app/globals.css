@@ -1376,3 +1376,34 @@ html.light .text-white\/70 {
   stroke-dasharray: 30;
   animation: whatsapp-tick 0.6s var(--ease-spring) 0.3s both;
 }
+
+/* ── S11 Toast System ────────────────────────────────────── */
+@keyframes toast-in-top {
+  from { transform: translateY(-12px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+@keyframes toast-in-bottom {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.95); }
+}
+@keyframes toast-progress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+.toast-enter-top    { animation: toast-in-top    var(--duration-normal) var(--ease-spring) both; }
+.toast-enter-bottom { animation: toast-in-bottom var(--duration-normal) var(--ease-spring) both; }
+.toast-exit         { animation: toast-out var(--duration-fast) var(--ease-out) both; }
+
+.toast-progress-bar {
+  position: absolute;
+  bottom: 0;
+  inset-inline-start: 0;
+  height: 3px;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  animation: toast-progress linear forwards;
+}

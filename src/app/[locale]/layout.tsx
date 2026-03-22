@@ -28,7 +28,6 @@ import AppShell from '@/components/AppShell';
 import ServiceWorkerRegistrarWrapper from '@/components/ServiceWorkerRegistrarWrapper';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
 import { ToastProvider } from '@/contexts/ToastContext';
-import ToastContainer from '@/components/ui/Toast';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -94,7 +93,6 @@ export default async function LocaleLayout({
                 </AppShell>
               </LayoutProvider>
             </UserProvider>
-            <ToastContainer />
           </ToastProvider>
           <PwaInstallBanner />
         </NextIntlClientProvider>
