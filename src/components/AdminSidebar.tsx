@@ -82,10 +82,15 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 border-e border-border bg-card">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-bold text-foreground">{t('title')}</h2>
-          <Link href="/dashboard" className="text-xs text-muted-foreground hover:text-foreground mt-1 block">{t('backToMyCenter')}</Link>
+      <aside className="hidden md:flex flex-col w-56 shrink-0 bg-[var(--color-surface-1)] border-e border-[var(--color-border-default)]">
+        <div className="p-4 border-b border-[var(--color-border-default)] bg-[var(--color-surface-2)]">
+          <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
+          <Link
+            href="/dashboard"
+            className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] mt-1 block"
+          >
+            {t('backToMyCenter')}
+          </Link>
         </div>
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {ADMIN_NAV.filter(({ permissionKey }) => canSee(permissionKey)).map(({ key, icon: Icon, labelKey }) => {
@@ -104,7 +109,9 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
                 }}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
-                  isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+                  isActive
+                    ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
                 )}
               >
                 <Icon size={18} />
@@ -119,7 +126,9 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
                     onClick={() => { closeMainSidebar?.(); router.push('/admin/renewals'); }}
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
-                      isRenewals ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+                      isRenewals
+                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
                     )}
                   >
                     <CalendarCheck size={18} />
@@ -134,7 +143,9 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
                     onClick={() => { closeMainSidebar?.(); router.push('/admin/orders'); }}
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
-                      isOrders ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+                      isOrders
+                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
                     )}
                   >
                     <IdCard size={18} />
@@ -154,7 +165,7 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
       </aside>
 
       {/* Mobile tab selector */}
-      <div className="md:hidden fixed top-14 start-0 end-0 z-20 bg-card border-b border-border overflow-x-auto scrollbar-hide">
+      <div className="md:hidden fixed top-14 start-0 end-0 z-20 bg-[var(--color-surface-1)] border-b border-[var(--color-border-default)] overflow-x-auto scrollbar-hide">
         <div className="flex px-2 py-1.5 gap-1">
           {ADMIN_NAV.filter(({ permissionKey }) => canSee(permissionKey)).map(({ key, icon: Icon, labelKey }) => (
             <button
@@ -170,7 +181,9 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
               }}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
-                (key === 'ceoDashboard' ? isCeo : activeTab === key) ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                (key === 'ceoDashboard' ? isCeo : activeTab === key)
+                  ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                  : 'text-[var(--color-text-secondary)]'
               )}
             >
               <Icon size={14} />
@@ -182,7 +195,9 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
               onClick={() => { closeMainSidebar?.(); router.push('/admin/renewals'); }}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
-                isRenewals ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                isRenewals
+                  ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                  : 'text-[var(--color-text-secondary)]'
               )}
             >
               <CalendarCheck size={14} />
@@ -194,7 +209,9 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
               onClick={() => { closeMainSidebar?.(); router.push('/admin/orders'); }}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
-                isOrders ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                isOrders
+                  ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                  : 'text-[var(--color-text-secondary)]'
               )}
             >
               <IdCard size={14} />

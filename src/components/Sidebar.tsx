@@ -118,16 +118,18 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       {/* Backdrop - mobile only when overlay (desktop: sidebar is persistent, no backdrop) */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden print:hidden"
+          className="fixed inset-0 bg-black/50 z-[90] md:hidden print:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       {/* Desktop: persistent 256px sidebar (always visible). Mobile: drawer overlay when open */}
-      <aside className={`flex flex-col fixed top-0 bottom-0 h-screen z-50 print:hidden w-64 bg-slate-900 transition-transform duration-300 ${isRTL ? 'right-0 md:left-auto md:right-0' : 'left-0 md:left-0'} ${open ? 'translate-x-0' : isRTL ? 'translate-x-full md:translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside
+        className={`flex flex-col fixed top-0 bottom-0 h-screen z-[100] print:hidden w-64 bg-slate-900 transition-transform duration-300 isolate ${isRTL ? 'right-0 md:left-auto md:right-0' : 'left-0 md:left-0'} ${open ? 'translate-x-0' : isRTL ? 'translate-x-full md:translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      >
       {/* Logo + Close */}
-      <div className="flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800">
+      <div className="relative z-10 flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800 pointer-events-auto">
         <Link
           href={isSuperAdminOnly ? '/admin' : '/dashboard'}
           className="flex items-center gap-3 shrink-0"
@@ -141,7 +143,16 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
           )}
           <span className="font-bold text-white text-lg tracking-tight">CenterHQ</span>
         </Link>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" aria-label="Close menu">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose?.();
+          }}
+          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors pointer-events-auto shrink-0"
+          aria-label="Close menu"
+        >
           <X size={20} />
         </button>
       </div>

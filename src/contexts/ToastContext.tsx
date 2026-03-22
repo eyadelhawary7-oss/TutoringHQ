@@ -112,6 +112,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toasts, toast, dismiss }}>
       {children}
 
+      {/* Outer wrappers must stay pointer-events-none so fixed layers do not steal clicks from sidebar / nav (toasts use pointer-events-auto on items only). */}
       <div className="fixed bottom-[calc(56px_+_env(safe-area-inset-bottom,0px)_+_8px)] inset-x-0 flex flex-col-reverse items-center gap-2 px-4 z-[9998] md:hidden pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto w-full max-w-sm">
