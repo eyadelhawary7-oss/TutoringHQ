@@ -427,7 +427,22 @@
     "qrReady": "QR Cards Ready!",
     "qrMessage": "Print them and distribute to your students.",
     "printQrCards": "Print QR Cards",
-    "finishSetup": "Finish Setup"
+    "finishSetup": "Finish Setup",
+    "step_of": "Step {current} of {total}",
+    "progress_label": "Your progress",
+    "back": "Back",
+    "complete": "Finish Setup",
+    "completing": "Finishing...",
+    "whatsapp_title": "WhatsApp Welcome Message",
+    "whatsapp_subtitle": "A welcome message has been sent to your phone",
+    "whatsapp_sent": "Sent",
+    "whatsapp_pending": "Pending confirmation",
+    "whatsapp_preview_label": "Message preview",
+    "completion_title": "Welcome to CenterHQ!",
+    "completion_subtitle": "Your center has been set up successfully",
+    "completion_students": "students enrolled",
+    "go_to_dashboard": "Go to Dashboard",
+    "confetti_alt": "Congratulations"
   },
   "referrals": {
     "title": "Referrals",

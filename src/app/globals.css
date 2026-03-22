@@ -1301,3 +1301,78 @@ html.light .text-white\/70 {
   background: var(--color-success);
   animation: micro-success-pop var(--duration-normal) var(--ease-spring);
 }
+
+/* ── S10 Onboarding ──────────────────────────────────────── */
+@keyframes confetti-fall {
+  0%   { transform: translateY(-10px) rotate(0deg);   opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes onboarding-slide-in-forward {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes onboarding-slide-in-backward {
+  from { transform: translateX(-40px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+@keyframes counter-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes whatsapp-tick {
+  from { stroke-dashoffset: 30; opacity: 0; }
+  to   { stroke-dashoffset: 0;  opacity: 1; }
+}
+
+.onboarding-step-forward {
+  animation: onboarding-slide-in-forward var(--duration-normal)
+             var(--ease-spring) both;
+}
+
+.onboarding-step-backward {
+  animation: onboarding-slide-in-backward var(--duration-normal)
+             var(--ease-spring) both;
+}
+
+.onboarding-progress-bar {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  overflow: hidden;
+}
+
+.onboarding-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    to right,
+    var(--color-brand-500),
+    var(--color-brand-400, #14b8a6)
+  );
+  transition: width var(--duration-slow) var(--ease-spring);
+}
+
+.confetti-piece {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: confetti-fall 2.5s ease-in forwards;
+}
+
+.counter-pop {
+  animation: counter-pop var(--duration-normal) var(--ease-spring);
+}
+
+.whatsapp-tick {
+  stroke-dasharray: 30;
+  animation: whatsapp-tick 0.6s var(--ease-spring) 0.3s both;
+}

@@ -424,7 +424,22 @@
     "qrReady": "كروت QR جاهزة!",
     "qrMessage": "اطبعها ووزعها على طلابك.",
     "printQrCards": "طباعة بطاقات QR",
-    "finishSetup": "إنهاء الإعداد"
+    "finishSetup": "إنهاء الإعداد",
+    "step_of": "الخطوة {current} من {total}",
+    "progress_label": "تقدمك",
+    "back": "رجوع",
+    "complete": "إنهاء الإعداد",
+    "completing": "جاري الإنهاء...",
+    "whatsapp_title": "رسالة ترحيب WhatsApp",
+    "whatsapp_subtitle": "تم إرسال رسالة ترحيب إلى رقم هاتفك",
+    "whatsapp_sent": "تم الإرسال",
+    "whatsapp_pending": "في انتظار التأكيد",
+    "whatsapp_preview_label": "معاينة الرسالة",
+    "completion_title": "مرحباً بك في CenterHQ!",
+    "completion_subtitle": "تم إعداد مركزك بنجاح",
+    "completion_students": "طالب مسجل",
+    "go_to_dashboard": "الذهاب إلى لوحة التحكم",
+    "confetti_alt": "تهانينا"
   },
   "referrals": {
     "title": "الإحالة",
