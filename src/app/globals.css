@@ -248,6 +248,36 @@ html:not(.light) .border-slate-100 {
   border-color: var(--color-border-subtle) !important;
 }
 
+html:not(.light) .bg-gray-50,
+html:not(.light) .bg-gray-100,
+html:not(.light) .bg-gray-200 {
+  background-color: var(--color-surface-1) !important;
+}
+
+html:not(.light) .bg-zinc-50,
+html:not(.light) .bg-zinc-100,
+html:not(.light) .bg-neutral-50,
+html:not(.light) .bg-neutral-100 {
+  background-color: var(--color-surface-1) !important;
+}
+
+html:not(.light) .text-gray-900,
+html:not(.light) .text-gray-800 {
+  color: var(--color-text-primary) !important;
+}
+
+html:not(.light) .text-gray-500,
+html:not(.light) .text-gray-600 {
+  color: var(--color-text-secondary) !important;
+}
+
+html:not(.light) .border-gray-100,
+html:not(.light) .border-gray-200,
+html:not(.light) .border-zinc-100,
+html:not(.light) .border-zinc-200 {
+  border-color: var(--color-border-subtle) !important;
+}
+
 /* Override hardcoded light input/select/textarea backgrounds in dark mode */
 html:not(.light) input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
 html:not(.light) select,
