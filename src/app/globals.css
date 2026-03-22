@@ -175,6 +175,11 @@
   --color-text-brand:     #0D9488;
   --color-text-amber:     #F59E0B;
 
+  /* shadcn / Tailwind: colors use hsl(var(--name)) — space-separated HSL only (not hex). */
+  --foreground: 210 40% 98%;
+  --card-foreground: 210 40% 98%;
+  --muted-foreground: 215 16% 64%;
+
   /* ── Semantic border colors (var() only) ─────────── */
   --color-border-subtle:  rgba(148, 163, 184, 0.08);
   --color-border-default: rgba(148, 163, 184, 0.14);
@@ -319,10 +324,12 @@ html.light {
   /* Text — dark on light */
   --color-text-primary: #0f172a;
   --color-text-secondary: #475569;
-  --color-text-tertiary: #94a3b8;
-  --color-text-inverse: #ffffff;
+  --color-text-tertiary: #64748b;
+  --color-text-disabled: #94a3b8;
+  --color-text-inverse: #f8fafc;
+  --color-text-brand: #0d9488;
 
-  /* Borders */
+  /* Borders — visible on light backgrounds */
   --color-border-subtle: rgba(15, 23, 42, 0.08);
   --color-border-default: rgba(15, 23, 42, 0.14);
   --color-border-strong: rgba(15, 23, 42, 0.24);
@@ -447,31 +454,26 @@ html.light .skeleton {
     --scanner-yellow: 48 97% 42%;
     --scanner-purple: 263 70% 50%;
 
-    /* ─── Semantic tokens (shadcn compatible) ─── */
-    --background: 210 20% 97%;
-    --foreground: 215 28% 12%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 215 28% 12%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 12%;
-
-    --secondary: 210 20% 93%;
-    --secondary-foreground: 215 28% 17%;
-
-    --muted: 210 20% 94%;
-    --muted-foreground: 215 16% 47%;
-
-    --accent: 174 72% 95%;
-    --accent-foreground: 174 72% 25%;
-
-    --destructive: 0 72% 51%;
+    /* ─── Semantic tokens (shadcn) — default dark UI (<html> has no .dark class) ─── */
+    --background: 222 47% 3%;
+    --foreground: 210 40% 98%;
+    --card: 217 33% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 217 33% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 174 72% 42%;
+    --primary-foreground: 215 28% 10%;
+    --secondary: 215 25% 15%;
+    --secondary-foreground: 210 40% 95%;
+    --muted: 215 25% 13%;
+    --muted-foreground: 215 16% 64%;
+    --accent: 174 72% 15%;
+    --accent-foreground: 174 72% 60%;
+    --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 214 32% 88%;
-    --input: 214 32% 88%;
-    --ring: 174 72% 30%;
+    --border: 215 25% 18%;
+    --input: 215 25% 18%;
+    --ring: 174 72% 42%;
 
     --radius: 0.75rem;
 
@@ -485,13 +487,45 @@ html.light .skeleton {
     --sidebar-border: 215 25% 24%;
     --sidebar-ring: 174 72% 40%;
 
-    /* ─── Shadows ─── */
+    /* ─── Shadows (dark UI) ─── */
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.25);
+    --shadow-md: 0 4px 12px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.35);
+    --shadow-lg: 0 10px 24px -3px hsl(0 0% 0% / 0.5), 0 4px 8px -4px hsl(0 0% 0% / 0.4);
+    --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.2), 0 0 0 1px hsl(215 25% 18% / 0.8);
+
+    /* ─── Gradients ─── */
+    --gradient-primary: linear-gradient(135deg, hsl(174 72% 42%), hsl(174 72% 28%));
+    --gradient-navy: linear-gradient(180deg, hsl(215 28% 12%), hsl(215 28% 8%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 28% 8%) 0%, hsl(215 28% 14%) 50%, hsl(174 40% 16%) 100%);
+  }
+
+  /* Light theme: restore shadcn HSL tokens (Tailwind text-foreground, bg-background, cards) */
+  html.light {
+    --background: 210 20% 97%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 174 72% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 93%;
+    --secondary-foreground: 215 28% 17%;
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 25% 35%;
+    --accent: 174 72% 95%;
+    --accent-foreground: 174 72% 25%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 174 72% 30%;
+
     --shadow-sm: 0 1px 3px 0 hsl(215 28% 17% / 0.08), 0 1px 2px -1px hsl(215 28% 17% / 0.08);
     --shadow-md: 0 4px 12px -1px hsl(215 28% 17% / 0.1), 0 2px 4px -2px hsl(215 28% 17% / 0.06);
     --shadow-lg: 0 10px 24px -3px hsl(215 28% 17% / 0.12), 0 4px 8px -4px hsl(215 28% 17% / 0.08);
     --shadow-card: 0 2px 8px 0 hsl(215 28% 17% / 0.06), 0 0 0 1px hsl(214 32% 88% / 0.6);
 
-    /* ─── Gradients ─── */
     --gradient-primary: linear-gradient(135deg, hsl(174 72% 30%), hsl(174 72% 20%));
     --gradient-navy: linear-gradient(180deg, hsl(215 28% 17%), hsl(215 28% 12%));
     --gradient-hero: linear-gradient(135deg, hsl(215 28% 12%) 0%, hsl(215 28% 17%) 50%, hsl(174 40% 18%) 100%);
@@ -499,17 +533,17 @@ html.light .skeleton {
 
   .dark {
     --background: 222 47% 3%;
-    --foreground: 210 40% 95%;
+    --foreground: 210 40% 98%;
     --card: 217 33% 10%;
-    --card-foreground: 210 40% 95%;
+    --card-foreground: 210 40% 98%;
     --popover: 217 33% 10%;
-    --popover-foreground: 210 40% 95%;
+    --popover-foreground: 210 40% 98%;
     --primary: 174 72% 42%;
     --primary-foreground: 215 28% 10%;
     --secondary: 215 25% 15%;
     --secondary-foreground: 210 40% 95%;
     --muted: 215 25% 13%;
-    --muted-foreground: 215 16% 55%;
+    --muted-foreground: 215 16% 64%;
     --accent: 174 72% 15%;
     --accent-foreground: 174 72% 60%;
     --destructive: 0 62% 40%;
@@ -797,6 +831,7 @@ html.light .skeleton {
 html,
 body {
   font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif;
+  color: var(--color-text-primary);
 }
 
 /* Belt-and-suspenders for number and code elements.
