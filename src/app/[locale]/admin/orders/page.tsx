@@ -164,20 +164,25 @@ export default function AdminOrders() {
         <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tIdCards('adminSubtitle')}</p>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {/* KPIs — grid + card shell match admin overview (REVENUE stat row) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         {kpis.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="card p-4 flex flex-col gap-2 bg-[var(--color-surface-1)]">
-            <div className="flex items-center justify-between">
+          <div
+            key={label}
+            className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-1">{label}</p>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
+              </div>
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: `${color}18`, color }}
+                className="p-3 rounded-full shrink-0 flex items-center justify-center"
+                style={{ background: `${color}22` }}
               >
-                <Icon size={16} />
+                <Icon className="w-5 h-5" style={{ color }} aria-hidden />
               </div>
             </div>
-            <span className="text-2xl font-bold text-[var(--color-text-primary)]">{value}</span>
-            <span className="text-xs text-[var(--color-text-secondary)]">{label}</span>
           </div>
         ))}
       </div>
