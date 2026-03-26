@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
 export type InternalRole = 'super_admin' | 'internal_admin' | 'internal_viewer';
 
@@ -69,4 +70,20 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
   }
 
   return { userId: user.id, internalRole, supabaseAdmin };
+}
+
+export type RequireSuperAdminResult =
+  | { ok: true; supabaseAdmin: SupabaseClient }
+  | { ok: false; response: NextResponse };
+
+/** Bearer JWT + admin context; only `super_admin` internal role (same rules as getAdminContext). */
+export async function requireSuperAdminApi(request: Request): Promise<RequireSuperAdminResult> {
+  const ctx = await getAdminContext(request);
+  if (!ctx) {
+    return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+  if (ctx.internalRole !== 'super_admin') {
+    return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+  }
+  return { ok: true, supabaseAdmin: ctx.supabaseAdmin };
 }

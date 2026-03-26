@@ -1,4 +1,5 @@
 import { getAdminContext } from '@/lib/admin-auth';
+import { getActionQueue, getPipelineSummary } from '@/lib/ceo';
 import { NextRequest, NextResponse } from 'next/server';
 import { getImpliedMonthlyMrr, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 
@@ -24,6 +25,8 @@ export async function GET(request: NextRequest) {
     referralsRes,
     cohortRes,
     healthRes,
+    pipeline,
+    action_queue,
   ] = await Promise.all([
     supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active'),
     supabase.from('mrr_snapshots').select('mrr, active_centers').order('date', { ascending: false }).limit(1).maybeSingle(),
@@ -33,6 +36,8 @@ export async function GET(request: NextRequest) {
     supabase.from('referrals').select('id').not('referrer_center_id', 'is', null),
     supabase.from('centers').select('id, created_at, subscription_status').eq('status', 'active'),
     supabase.from('centers').select('health_score_band').eq('status', 'active').not('health_score_band', 'is', null),
+    getPipelineSummary(supabase),
+    getActionQueue(supabase, 10),
   ]);
 
   const centers = (activeCentersRes.data ?? []) as { id: string; subscription_monthly_fee: number | null; early_adopter_price: number | null; billing_amount: number | null; billing_period?: string | null; all_in_price?: number | null; plan: string | null }[];
@@ -128,5 +133,7 @@ export async function GET(request: NextRequest) {
       { name: 'Critical', value: bandCounts.Critical, color: '#ef4444' },
     ].filter((d) => d.value > 0),
     cohortTable,
+    pipeline,
+    action_queue,
   });
 }
