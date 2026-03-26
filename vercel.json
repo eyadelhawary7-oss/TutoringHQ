@@ -1,12 +1,10 @@
 {
-  "crons": [
-    { "path": "/api/cron/status-ping", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/daily-summary", "schedule": "55 5 * * *" },
-    { "path": "/api/cron/detect-churn", "schedule": "0 2 * * *" },
-    { "path": "/api/cron/process-renewals", "schedule": "0 7 * * *" },
-    { "path": "/api/cron/renewal-reminders", "schedule": "0 7 * * *" },
-    { "path": "/api/cron/recompute-health-scores", "schedule": "0 2 * * *" },
-    { "path": "/api/cron/ceo-briefing", "schedule": "0 7 * * *" },
-    { "path": "/api/cron/compute-benchmarks", "schedule": "0 1 * * *" }
-  ]
+  "functions": {
+    "src/app/api/login/route.ts": { "maxDuration": 30 },
+    "src/app/api/signup/route.ts": { "maxDuration": 30 },
+    "src/app/api/whatsapp/webhook/route.ts": { "maxDuration": 30 },
+    "src/app/api/parent-pack/toggle/route.ts": { "maxDuration": 30 },
+    "src/app/api/parent-pack/student/[id]/route.ts": { "maxDuration": 30 },
+    "src/app/api/db/route.ts": { "maxDuration": 30 }
+  }
 }
