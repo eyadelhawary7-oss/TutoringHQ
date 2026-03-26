@@ -2016,6 +2016,143 @@
       "rights": "© 2026 CenterHQ — EHG Intelligence. All rights reserved."
     }
   },
+  "ceo": {
+    "brandTitle": "CenterHQ",
+    "title": "Founder dashboard",
+    "lastSync": "Last updated",
+    "lastSyncMinutes": "{minutes} min ago",
+    "sections": {
+      "a": "KPIs",
+      "b": "Actions",
+      "c": "Sales",
+      "d": "Activation",
+      "e": "Health",
+      "f": "Cash",
+      "g": "Operations",
+      "h": "Control"
+    },
+    "healthDotOk": "Platform healthy",
+    "healthDotIssue": "Needs attention",
+    "hero": {
+      "activeCenters": "Active centers",
+      "cashMtd": "Cash collected (MTD)",
+      "liveTrials": "Live trials",
+      "atRisk": "At-risk centers",
+      "openAlerts": "Open alerts"
+    },
+    "pipeline": {
+      "title": "Sales pipeline",
+      "planNano": "Nano",
+      "planStarter": "Starter",
+      "planPro": "Pro",
+      "planBusiness": "Business",
+      "planEnterprise": "Enterprise",
+      "addLead": "+ Add lead",
+      "overdueFollowups": "Overdue",
+      "viewDetails": "View details",
+      "fieldDistrict": "District",
+      "fieldPlan": "Plan",
+      "fieldStage": "Stage",
+      "fieldSource": "Source",
+      "fieldNextFollowup": "Next follow-up",
+      "submitLead": "Save",
+      "stages": {
+        "lead": "Lead",
+        "demo": "Demo",
+        "trial": "Trial",
+        "closed": "Closed",
+        "lost": "Lost"
+      }
+    },
+    "activation": {
+      "title": "Onboarding & activation",
+      "colCenter": "Center",
+      "colPlan": "Plan",
+      "colStep": "Step",
+      "colScan": "Scan (all-time)",
+      "colPayment": "Payment (all-time)",
+      "colCreated": "Created",
+      "steps": {
+        "0": "Not started",
+        "1": "Profile",
+        "2": "Students",
+        "3": "QR",
+        "4": "Scanner",
+        "5": "Complete"
+      }
+    },
+    "health": {
+      "title": "Center health",
+      "colCenter": "Center",
+      "colPlan": "Plan",
+      "colStatus": "Status",
+      "colScore": "Score",
+      "colScansToday": "Scans today",
+      "colRenewal": "Renewal",
+      "colDistrict": "District",
+      "colActions": "Actions",
+      "excellent": "Excellent",
+      "good": "Good",
+      "average": "Average",
+      "critical": "Critical",
+      "notCalculated": "Not calculated",
+      "expired": "Expired",
+      "days": "days",
+      "suspendConfirm": "Suspend {name}? Are you sure?"
+    },
+    "cash": {
+      "title": "Cash & billing",
+      "quarter": "Collected this quarter",
+      "overdue": "Overdue",
+      "dueSoon": "Due within 14 days",
+      "packRevenue": "Pack revenue (MTD)",
+      "totalCentersHint": "Total centers"
+    },
+    "ops": {
+      "title": "Operations",
+      "waPending": "WhatsApp pending",
+      "waFailed": "WhatsApp failed",
+      "platformConfig": "Platform settings",
+      "announcementLabel": "Announcement banner",
+      "confirmToggleTitle": "Confirm change",
+      "confirmToggleBody": "Continue with this change?",
+      "configKeys": {
+        "maintenance_mode": "Maintenance mode",
+        "wa_sending_enabled": "WhatsApp sending",
+        "read_only_mode": "Read-only mode",
+        "cron_paused": "Pause cron jobs",
+        "announcement_banner": "Announcement banner"
+      },
+      "statusService": "Service",
+      "statusState": "Status",
+      "statusChecked": "Last check"
+    },
+    "control": {
+      "title": "Emergency control",
+      "warning": "Warning — these actions affect all centers immediately",
+      "unlock": "Unlock control panel",
+      "passwordPlaceholder": "Password",
+      "wrongPassword": "Incorrect password",
+      "maintenance": "Enable maintenance mode",
+      "disableWa": "Disable WhatsApp",
+      "pauseCron": "Pause cron jobs",
+      "readOnly": "Read-only mode",
+      "confirmDangerTitle": "Confirm dangerous action",
+      "confirmDangerBody": "Are you sure? This is hard to undo."
+    },
+    "actions": {
+      "view": "View",
+      "whatsapp": "WhatsApp",
+      "suspend": "Suspend",
+      "snooze": "Snooze 24h",
+      "resolve": "Resolve",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "revenueAtRisk": "at risk",
+      "noActions": "No pending actions",
+      "alertsSummary": "Priority summary"
+    }
+  },
   "mobileShell": {
     "tab_bar_label": "Primary navigation",
     "pull_hint": "Pull to refresh",

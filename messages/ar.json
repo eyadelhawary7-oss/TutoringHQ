@@ -2005,6 +2005,143 @@
       "rights": "© 2026 CenterHQ — EHG Intelligence. جميع الحقوق محفوظة."
     }
   },
+  "ceo": {
+    "brandTitle": "CenterHQ",
+    "title": "لوحة تحكم المؤسس",
+    "lastSync": "آخر تحديث",
+    "lastSyncMinutes": "منذ {minutes} دقيقة",
+    "sections": {
+      "a": "المؤشرات",
+      "b": "الإجراءات",
+      "c": "المبيعات",
+      "d": "التفعيل",
+      "e": "الصحة",
+      "f": "المالية",
+      "g": "العمليات",
+      "h": "التحكم"
+    },
+    "healthDotOk": "المنصة سليمة",
+    "healthDotIssue": "يتطلب انتباهاً",
+    "hero": {
+      "activeCenters": "المراكز النشطة",
+      "cashMtd": "المحصل هذا الشهر",
+      "liveTrials": "التجارب الحالية",
+      "atRisk": "مراكز في خطر",
+      "openAlerts": "تنبيهات مفتوحة"
+    },
+    "pipeline": {
+      "title": "خط المبيعات",
+      "planNano": "نانو",
+      "planStarter": "أساسي",
+      "planPro": "محترف",
+      "planBusiness": "أعمال",
+      "planEnterprise": "مؤسسات",
+      "addLead": "+ إضافة عميل",
+      "overdueFollowups": "متأخرة",
+      "viewDetails": "عرض التفاصيل",
+      "fieldDistrict": "المنطقة",
+      "fieldPlan": "الخطة",
+      "fieldStage": "المرحلة",
+      "fieldSource": "المصدر",
+      "fieldNextFollowup": "متابعة تالية",
+      "submitLead": "حفظ",
+      "stages": {
+        "lead": "عميل محتمل",
+        "demo": "عرض تجريبي",
+        "trial": "تجربة",
+        "closed": "مغلق",
+        "lost": "خسارة"
+      }
+    },
+    "activation": {
+      "title": "التفعيل والإعداد",
+      "colCenter": "السنتر",
+      "colPlan": "الخطة",
+      "colStep": "الخطوة",
+      "colScan": "المسح (كل الوقت)",
+      "colPayment": "الدفع (كل الوقت)",
+      "colCreated": "تاريخ الإنشاء",
+      "steps": {
+        "0": "لم يبدأ",
+        "1": "الملف الشخصي",
+        "2": "الطلاب",
+        "3": "QR",
+        "4": "الماسح",
+        "5": "مكتمل"
+      }
+    },
+    "health": {
+      "title": "صحة المراكز",
+      "colCenter": "السنتر",
+      "colPlan": "الخطة",
+      "colStatus": "الحالة",
+      "colScore": "النقاط",
+      "colScansToday": "المسح اليوم",
+      "colRenewal": "التجديد",
+      "colDistrict": "المنطقة",
+      "colActions": "الإجراءات",
+      "excellent": "ممتاز",
+      "good": "جيد",
+      "average": "متوسط",
+      "critical": "حرج",
+      "notCalculated": "غير محسوب",
+      "expired": "منتهية",
+      "days": "يوم",
+      "suspendConfirm": "هل أنت متأكد من تعليق {name}؟"
+    },
+    "cash": {
+      "title": "النقدية والفواتير",
+      "quarter": "المحصل هذا الربع",
+      "overdue": "متأخرة",
+      "dueSoon": "مستحقة خلال 14 يوم",
+      "packRevenue": "إيرادات الباقة",
+      "totalCentersHint": "إجمالي المراكز"
+    },
+    "ops": {
+      "title": "العمليات",
+      "waPending": "WhatsApp معلق",
+      "waFailed": "WhatsApp فشل",
+      "platformConfig": "إعدادات المنصة",
+      "announcementLabel": "شريط الإعلان",
+      "confirmToggleTitle": "تأكيد التغيير",
+      "confirmToggleBody": "هل تريد المتابعة؟",
+      "configKeys": {
+        "maintenance_mode": "وضع الصيانة",
+        "wa_sending_enabled": "إرسال واتساب",
+        "read_only_mode": "وضع القراءة فقط",
+        "cron_paused": "إيقاف المهام المجدولة",
+        "announcement_banner": "شريط الإعلان"
+      },
+      "statusService": "الخدمة",
+      "statusState": "الحالة",
+      "statusChecked": "آخر فحص"
+    },
+    "control": {
+      "title": "لوحة التحكم الطارئة",
+      "warning": "تحذير — هذه الإجراءات تؤثر على جميع المراكز فوراً",
+      "unlock": "فتح لوحة التحكم",
+      "passwordPlaceholder": "كلمة المرور",
+      "wrongPassword": "كلمة المرور غير صحيحة",
+      "maintenance": "تفعيل وضع الصيانة",
+      "disableWa": "إيقاف WhatsApp",
+      "pauseCron": "إيقاف Cron Jobs",
+      "readOnly": "وضع القراءة فقط",
+      "confirmDangerTitle": "تأكيد إجراء خطر",
+      "confirmDangerBody": "هل أنت متأكد؟ لا يمكن التراجع بسهولة."
+    },
+    "actions": {
+      "view": "عرض",
+      "whatsapp": "واتساب",
+      "suspend": "تعليق",
+      "snooze": "تأجيل 24 ساعة",
+      "resolve": "حل",
+      "confirm": "تأكيد",
+      "cancel": "إلغاء",
+      "revenueAtRisk": "في خطر",
+      "noActions": "لا توجد إجراءات معلقة",
+      "alertsSummary": "ملخص الأولويات"
+    }
+  },
   "mobileShell": {
     "tab_bar_label": "التنقل الرئيسي",
     "pull_hint": "اسحب للتحديث",

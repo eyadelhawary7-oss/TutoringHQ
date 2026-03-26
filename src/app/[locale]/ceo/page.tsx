@@ -1,864 +1,931 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import {
-  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
-  Users, Building2, AlertTriangle, CheckCircle, Clock, Search,
-  Download, RefreshCw, CreditCard, ChevronDown, ChevronRight,
-  Info, AlertCircle, ExternalLink,
-} from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
-import { cn } from '@/lib/utils';
-import {
-  LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-} from 'recharts';
-import { adminCenters } from '@/data/adminMockData';
-import type { Plan } from '@/data/adminMockData';
+import { MobileWrapper } from '@/components/shell/MobileWrapper';
+import type { CeoDashboardData, LeadStage } from '@/types/ceo';
+import { ChevronDown } from 'lucide-react';
 
-// ─── CONSTANTS ───
-const PLAN_PRICES: Record<Plan, number> = {
-  starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 12000,
+const SECTION_IDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
+
+const BOOL_CONFIG_ORDER = [
+  'maintenance_mode',
+  'wa_sending_enabled',
+  'read_only_mode',
+  'cron_paused',
+] as const;
+
+const PIPELINE_STAGES: LeadStage[] = ['lead', 'demo', 'trial', 'closed', 'lost'];
+
+const PLAN_VALUES = ['nano', 'starter', 'pro', 'business', 'enterprise'] as const;
+
+const PLAN_LABEL_KEYS: Record<(typeof PLAN_VALUES)[number], 'pipeline.planNano' | 'pipeline.planStarter' | 'pipeline.planPro' | 'pipeline.planBusiness' | 'pipeline.planEnterprise'> = {
+  nano: 'pipeline.planNano',
+  starter: 'pipeline.planStarter',
+  pro: 'pipeline.planPro',
+  business: 'pipeline.planBusiness',
+  enterprise: 'pipeline.planEnterprise',
 };
-const PLAN_COLORS: Record<Plan, string> = {
-  starter: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]',
-  pro: 'bg-blue-50 text-blue-700 border-blue-200',
-  business: 'bg-teal-50 text-teal-700 border-teal-200',
-  enterprise: 'bg-purple-50 text-purple-700 border-purple-200',
-  top_centers: 'bg-amber-50 text-amber-700 border-amber-200',
-};
-const PLAN_LABELS: Record<Plan, string> = {
-  starter: 'Starter', pro: 'Pro', business: 'Business', enterprise: 'Enterprise', top_centers: 'Top Centers',
-};
 
-// ─── MOCK DATA ───
-const activeCenters = adminCenters.filter(c => c.subscription_status === 'active');
-const MRR = activeCenters.reduce((sum, c) => sum + PLAN_PRICES[c.plan], 0);
-const ARR = MRR * 12;
-const LAST_MONTH_MRR = MRR * 0.92;
-const MRR_CHANGE = ((MRR - LAST_MONTH_MRR) / LAST_MONTH_MRR) * 100;
-
-const TOTAL_REVENUE = 161250;
-const TOTAL_REV_PREV = 134375;
-const REV_CHANGE = ((TOTAL_REVENUE - TOTAL_REV_PREV) / TOTAL_REV_PREV) * 100;
-
-const NRR = 108;
-const CHURN_RATE = 1.8;
-const COLLECTION_RATE = 82;
-const NEW_CENTERS_MONTH = 3;
-const PENDING_PIPELINE = 5;
-
-// Sparkline data for total revenue (30 days)
-const REVENUE_SPARKLINE = Array.from({ length: 30 }, (_, i) => ({
-  d: i + 1,
-  v: 3500 + Math.round(Math.sin(i / 4) * 800 + i * 60 + Math.random() * 400),
-}));
-
-// MRR bar sparkline (12 months)
-const MRR_BARS = [
-  { m: 'Mar', v: 8000 }, { m: 'Apr', v: 14500 }, { m: 'May', v: 22000 },
-  { m: 'Jun', v: 28000 }, { m: 'Jul', v: 30000 }, { m: 'Aug', v: 32000 },
-  { m: 'Sep', v: 34500 }, { m: 'Oct', v: 36000 }, { m: 'Nov', v: 38500 },
-  { m: 'Dec', v: 40000 }, { m: 'Jan', v: 42000 }, { m: 'Feb', v: MRR },
-];
-
-// Revenue over time (monthly)
-const REVENUE_TIMELINE = [
-  { period: 'Sep', total: 28000, subscriptions: 8000, cards: 0 },
-  { period: 'Oct', total: 24500, subscriptions: 14500, cards: 0 },
-  { period: 'Nov', total: 35200, subscriptions: 30000, cards: 200 },
-  { period: 'Dec', total: 135800, subscriptions: 120000, cards: 800 },
-  { period: 'Jan', total: 146100, subscriptions: 135000, cards: 1100 },
-  { period: 'Feb', total: 162510, subscriptions: 146250, cards: 1260 },
-];
-
-// Revenue streams donut
-const STREAMS = [
-  { name: 'Subscriptions', value: 146250, color: '#0D9488' },
-  { name: 'Setup Fees', value: 15000, color: '#F59E0B' },
-  { name: 'Card Orders', value: 1260, color: '#7C3AED' },
-];
-const STREAMS_TOTAL = STREAMS.reduce((s, d) => s + d.value, 0);
-
-// YoY
-const YOY_DATA = [
-  { month: 'Jan', current: 146100, previous: 0 },
-  { month: 'Feb', current: 162510, previous: 0 },
-  { month: 'Mar', current: 0, previous: 0 },
-  { month: 'Apr', current: 0, previous: 0 },
-  { month: 'May', current: 0, previous: 0 },
-  { month: 'Jun', current: 0, previous: 0 },
-  { month: 'Jul', current: 0, previous: 8000 },
-  { month: 'Aug', current: 0, previous: 14500 },
-  { month: 'Sep', current: 0, previous: 28000 },
-  { month: 'Oct', current: 0, previous: 45500 },
-  { month: 'Nov', current: 0, previous: 65000 },
-  { month: 'Dec', current: 0, previous: 135800 },
-];
-
-const CENTER_PERFORMANCE = [
-  { rank: 1, name: 'سنتر الأوائل', plan: 'top_centers' as Plan, mrr: 12000, setup: 10000, outstanding: 0, students: 500, lastPayment: '2026-02-20', status: 'active' },
-  { rank: 2, name: 'سنتر الريادة', plan: 'enterprise' as Plan, mrr: 9000, setup: 8000, outstanding: 0, students: 400, lastPayment: '2026-01-20', status: 'active' },
-  { rank: 3, name: 'سنتر التفوق', plan: 'enterprise' as Plan, mrr: 9000, setup: 8000, outstanding: 0, students: 350, lastPayment: '2026-02-10', status: 'active' },
-  { rank: 4, name: 'سنتر المستقبل', plan: 'business' as Plan, mrr: 6500, setup: 5000, outstanding: 0, students: 200, lastPayment: '2026-02-08', status: 'active' },
-  { rank: 5, name: 'سنتر النور', plan: 'pro' as Plan, mrr: 4500, setup: 3000, outstanding: 0, students: 120, lastPayment: '2026-02-01', status: 'active' },
-  { rank: 6, name: 'سنتر الإبداع', plan: 'pro' as Plan, mrr: 4500, setup: 3000, outstanding: 13500, students: 95, lastPayment: '2026-01-28', status: 'active' },
-  { rank: 7, name: 'سنتر الأمل', plan: 'starter' as Plan, mrr: 2000, setup: 1500, outstanding: 6000, students: 80, lastPayment: '2026-01-15', status: 'active' },
-  { rank: 8, name: 'سنتر النجاح', plan: 'pro' as Plan, mrr: 4500, setup: 3000, outstanding: 0, students: 45, lastPayment: '2026-02-15', status: 'active' },
-  { rank: 9, name: 'سنتر التميز', plan: 'starter' as Plan, mrr: 2000, setup: 1500, outstanding: 2150, students: 60, lastPayment: '2026-01-10', status: 'active' },
-  { rank: 10, name: 'سنتر العلم', plan: 'starter' as Plan, mrr: 2000, setup: 1500, outstanding: 13500, students: 30, lastPayment: '2025-12-15', status: 'suspended' },
-];
-
-const UPCOMING_RENEWALS = [
-  { center: 'سنتر العلم', amount: 2150, due: '2026-03-01', status: 'overdue' },
-  { center: 'سنتر التميز', amount: 2150, due: '2026-03-05', status: 'pending' },
-  { center: 'سنتر القمة', amount: 19500, due: '2026-03-15', status: 'pending' },
-  { center: 'سنتر النجاح', amount: 13500, due: '2026-04-01', status: 'pending' },
-  { center: 'سنتر الأمل', amount: 6000, due: '2026-04-15', status: 'pending' },
-];
-
-const ARPC = Math.round(MRR / activeCenters.length);
-const CAC = 2200;
-const AVG_LIFETIME_MONTHS = 18;
-const LTV = ARPC * AVG_LIFETIME_MONTHS;
-const LTV_CAC_RATIO = Math.round((LTV / CAC) * 10) / 10;
-
-const cashInThisMonth = TOTAL_REVENUE;
-const expectedNextMonth = activeCenters.reduce((s, c) => s + PLAN_PRICES[c.plan], 0);
-const atRiskAmount = CENTER_PERFORMANCE.filter(c => c.outstanding > 0).reduce((s, c) => s + c.outstanding, 0);
-
-// ─── HELPERS ───
-function fmtEGP(n: number) {
-  return 'EGP ' + n.toLocaleString('en-EG');
+function scrollToSection(id: string) {
+  document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: 'smooth' });
 }
 
-function TrendPill({ value, suffix = '%' }: { value: number; suffix?: string }) {
-  const positive = value >= 0;
-  return (
-    <span className={cn(
-      'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold',
-      positive ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-    )}>
-      {positive ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
-      {positive ? '+' : ''}{value.toFixed(1)}{suffix}
-    </span>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 mt-10 mb-4">{children}</h2>
-  );
-}
-
-type DateRange = '7d' | '30d' | '90d' | 'year' | 'custom';
-
-// Custom tooltip for charts
-function ChartTooltipContent({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 shadow-lg">
-      <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-1">{label}</p>
-      {payload.map((entry: any, i: number) => (
-        <div key={i} className="flex items-center gap-2 text-xs">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          <span className="text-[var(--color-text-secondary)]">{entry.name}:</span>
-          <span className="font-mono font-semibold text-[var(--color-text-primary)]">{fmtEGP(entry.value)}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default function CeoDashboard() {
+export default function CeoDashboardPage() {
   const pathname = usePathname();
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [dateRange, setDateRange] = useState<DateRange>('30d');
-  const [showDateDropdown, setShowDateDropdown] = useState(false);
-  const [centerSearch, setCenterSearch] = useState('');
-  const [sortCol, setSortCol] = useState<string>('rank');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [chartTab, setChartTab] = useState<'monthly' | 'weekly' | 'daily'>('monthly');
-  const [unitEconOpen, setUnitEconOpen] = useState(false);
+  const locale = useLocale();
+  const t = useTranslations('ceo');
+  const tCommon = useTranslations('common');
 
-  const [mrrData, setMrrData] = useState<{
-    snapshots: Array<{ date: string; mrr?: number; active_centers?: number; new_centers?: number; churned_centers?: number }>;
-    summary: { currentMrr: number; activeCenters: number; newThisMonth: number; churnedThisMonth: number };
-    hasData: boolean;
-  } | null>(null);
-  const [mrrLoading, setMrrLoading] = useState(true);
+  const [data, setData] = useState<CeoDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [isHUnlocked, setIsHUnlocked] = useState(false);
+  const [sectionHPassword, setSectionHPassword] = useState('');
+  const [sectionHError, setSectionHError] = useState('');
+  const [confirmConfigKey, setConfirmConfigKey] = useState<string | null>(null);
+  const [confirmDangerAction, setConfirmDangerAction] = useState<string | null>(null);
+  const [suspendConfirmId, setSuspendConfirmId] = useState<string | null>(null);
+  const [leadFormOpen, setLeadFormOpen] = useState(false);
+  const [opsOpen, setOpsOpen] = useState(false);
+  const [controlOpen, setControlOpen] = useState(false);
+  const [bannerDraft, setBannerDraft] = useState('');
 
-  useEffect(() => {
-    const fetchMrr = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setMrrLoading(false);
+  const [leadName, setLeadName] = useState('');
+  const [leadPhone, setLeadPhone] = useState('');
+  const [leadDistrict, setLeadDistrict] = useState('');
+  const [leadPlan, setLeadPlan] = useState<string>('starter');
+  const [leadStage, setLeadStage] = useState<LeadStage>('lead');
+  const [leadSource, setLeadSource] = useState('');
+  const [leadNextFollowup, setLeadNextFollowup] = useState('');
+
+  const announcementRef = useRef<string>('');
+
+  const fetchDashboard = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/ceo/dashboard', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) {
+        setLoading(false);
         return;
       }
-      try {
-        const res = await fetch('/api/ceo/mrr', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          setMrrData(json);
-        }
-      } catch {
-        setMrrData(null);
-      } finally {
-        setMrrLoading(false);
-      }
-    };
-    fetchMrr();
+      const json = (await res.json()) as CeoDashboardData;
+      setData(json);
+      setLastSync(new Date());
+    } catch {
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => setLastUpdated(new Date()), 5 * 60 * 1000);
+    void fetchDashboard();
+  }, [fetchDashboard]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void fetchDashboard();
+    }, 30_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchDashboard]);
 
-  const minutesAgo = Math.round((Date.now() - lastUpdated.getTime()) / 60000);
+  useEffect(() => {
+    if (data) {
+      const v = String(data.ops.platform_config.announcement_banner ?? '');
+      announcementRef.current = v;
+      setBannerDraft(v);
+    }
+  }, [data]);
 
-  const dateRangeLabels: Record<DateRange, string> = {
-    '7d': 'Last 7 Days', '30d': 'Last 30 Days', '90d': 'Last 90 Days',
-    'year': 'This Year', 'custom': 'Custom Range',
-  };
+  function activationStepLabel(step: number): string {
+    switch (Math.min(5, Math.max(0, step))) {
+      case 0:
+        return t('activation.steps.0');
+      case 1:
+        return t('activation.steps.1');
+      case 2:
+        return t('activation.steps.2');
+      case 3:
+        return t('activation.steps.3');
+      case 4:
+        return t('activation.steps.4');
+      default:
+        return t('activation.steps.5');
+    }
+  }
 
-  // Table sorting
-  const filteredPerf = CENTER_PERFORMANCE.filter(c =>
-    c.name.includes(centerSearch) || PLAN_LABELS[c.plan].toLowerCase().includes(centerSearch.toLowerCase())
-  );
-  const sortedPerf = [...filteredPerf].sort((a, b) => {
-    const key = sortCol as keyof typeof a;
-    const av = a[key] ?? 0;
-    const bv = b[key] ?? 0;
-    if (typeof av === 'number' && typeof bv === 'number') return sortDir === 'asc' ? av - bv : bv - av;
-    return sortDir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
-  });
-  const handleSort = (col: string) => {
-    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortCol(col); setSortDir('asc'); }
-  };
+  const minutesSinceSync = lastSync
+    ? Math.floor((Date.now() - lastSync.getTime()) / 60_000)
+    : null;
 
-  const rankMedal = (r: number) => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : String(r);
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
-  return (
-    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen">
-      <AdminSidebar activeRoute={pathname} />
-
-      <div className="flex-1 overflow-auto mt-12 md:mt-0 bg-[#F8FAFC]">
-        {/* ─── TOP BAR ─── */}
-        <div className="sticky top-0 z-10 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">CEO Dashboard</h1>
-              <div className="flex items-center gap-2 mt-0.5">
-                <RefreshCw size={11} className="text-slate-400" />
-                <span className="text-[11px] text-slate-400">
-                  Updated {minutesAgo === 0 ? 'just now' : `${minutesAgo}m ago`}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Date Range */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowDateDropdown(!showDateDropdown)}
-                  className="flex items-center gap-1.5 rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] shadow-sm hover:shadow transition-shadow"
-                >
-                  {dateRangeLabels[dateRange]}
-                  <ChevronDown size={14} className="text-slate-400" />
-                </button>
-                {showDateDropdown && (
-                  <div className="absolute right-0 mt-1 w-48 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] py-1 shadow-lg z-50">
-                    {(Object.entries(dateRangeLabels) as [DateRange, string][]).map(([k, label]) => (
-                      <button key={k} onClick={() => { setDateRange(k); setShowDateDropdown(false); }}
-                        className={cn('w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface-0)] transition-colors',
-                          dateRange === k ? 'text-teal-700 bg-teal-50 font-medium' : 'text-[var(--color-text-secondary)]'
-                        )}>{label}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {/* Compare */}
-              <button className="flex items-center gap-1.5 rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-2 text-sm text-[var(--color-text-secondary)] shadow-sm hover:shadow transition-shadow">
-                Compare to: Previous period
-                <ChevronDown size={14} className="text-slate-400" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 max-w-[1400px] mx-auto space-y-0">
-
-          {/* ═══════════════════════════════════════════════
-              ROW 1 — 3 Large KPI Cards
-          ═══════════════════════════════════════════════ */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-            {/* Total Revenue */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">Total Revenue</span>
-                <TrendPill value={REV_CHANGE} />
-              </div>
-              <div className="font-mono text-[32px] font-bold text-[var(--color-text-primary)] leading-tight">{fmtEGP(TOTAL_REVENUE)}</div>
-              <div className="h-16 mt-3 -mx-1">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={REVENUE_SPARKLINE}>
-                    <defs>
-                      <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#0D9488" stopOpacity={0.15} />
-                        <stop offset="100%" stopColor="#0D9488" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <Area type="monotone" dataKey="v" stroke="#0D9488" strokeWidth={1.5} fill="url(#revFill)" dot={false} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-1">Subscriptions + Setup Fees + Card Orders</p>
-            </div>
-
-            {/* MRR */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">MRR</span>
-                <TrendPill value={MRR_CHANGE} />
-              </div>
-              <div className="font-mono text-[32px] font-bold text-[var(--color-text-primary)] leading-tight">{fmtEGP(MRR)}</div>
-              <div className="h-16 mt-3 -mx-1">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={MRR_BARS} barSize={8}>
-                    <Bar dataKey="v" fill="#0D9488" radius={[2, 2, 0, 0]} opacity={0.7} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-1">Monthly Recurring Revenue · ARR: <span className="font-mono font-semibold">{fmtEGP(ARR)}</span></p>
-            </div>
-
-            {/* NRR */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">Net Revenue Retention</span>
-                <span className={cn(
-                  'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                  NRR > 100 ? 'bg-emerald-50 text-emerald-700' : NRR >= 90 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
-                )}>{NRR > 100 ? 'Expanding' : 'Contracting'}</span>
-              </div>
-              <div className={cn(
-                'font-mono text-[32px] font-bold leading-tight',
-                NRR > 100 ? 'text-emerald-700' : NRR >= 90 ? 'text-amber-600' : 'text-red-600'
-              )}>{NRR}%</div>
-              <div className="flex items-center justify-center mt-3 h-16">
-                <div className="w-20 h-20 relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={[{ v: NRR }, { v: Math.max(0, 120 - NRR) }]} dataKey="v" cx="50%" cy="50%" innerRadius={26} outerRadius={36} startAngle={90} endAngle={-270} strokeWidth={0}>
-                        <Cell fill="#0D9488" />
-                        <Cell fill="#E2E8F0" />
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-mono text-[11px] font-bold text-[var(--color-text-primary)]">{NRR}%</span>
-                  </div>
-                </div>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-1 text-center">Expansion revenue included</p>
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════
-              ROW 2 — 4 Smaller Metric Cards
-          ═══════════════════════════════════════════════ */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-            {/* Active Centers */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <Building2 size={16} className="text-blue-600" />
-                </div>
-              </div>
-              <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{activeCenters.length}</div>
-              <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">Active Centers</span>
-              <p className="text-[11px] text-slate-400 mt-1">+{NEW_CENTERS_MONTH} new, -1 churned vs last month</p>
-            </div>
-
-            {/* New This Month */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                  <Users size={16} className="text-teal-600" />
-                </div>
-              </div>
-              <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{NEW_CENTERS_MONTH}</div>
-              <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">New This Month</span>
-              <p className="text-[11px] text-slate-400 mt-1">{PENDING_PIPELINE} in pipeline</p>
-            </div>
-
-            {/* Churn Rate */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center',
-                  CHURN_RATE < 2 ? 'bg-emerald-50' : CHURN_RATE < 5 ? 'bg-amber-50' : 'bg-red-50'
-                )}>
-                  <TrendingDown size={16} className={CHURN_RATE < 2 ? 'text-emerald-600' : CHURN_RATE < 5 ? 'text-amber-600' : 'text-red-600'} />
-                </div>
-              </div>
-              <div className={cn('font-mono text-2xl font-bold',
-                CHURN_RATE < 2 ? 'text-emerald-700' : CHURN_RATE < 5 ? 'text-amber-600' : 'text-red-600'
-              )}>{CHURN_RATE}%</div>
-              <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">Churn Rate</span>
-              <p className="text-[11px] text-slate-400 mt-1">&lt;2% target</p>
-            </div>
-
-            {/* Collection Rate */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center',
-                  COLLECTION_RATE > 90 ? 'bg-emerald-50' : COLLECTION_RATE > 75 ? 'bg-amber-50' : 'bg-red-50'
-                )}>
-                  <CreditCard size={16} className={COLLECTION_RATE > 90 ? 'text-emerald-600' : COLLECTION_RATE > 75 ? 'text-amber-600' : 'text-red-600'} />
-                </div>
-              </div>
-              <div className={cn('font-mono text-2xl font-bold',
-                COLLECTION_RATE > 90 ? 'text-emerald-700' : COLLECTION_RATE > 75 ? 'text-amber-600' : 'text-red-600'
-              )}>{COLLECTION_RATE}%</div>
-              <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">Collection Rate</span>
-              <p className="text-[11px] text-slate-400 mt-1">{COLLECTION_RATE > 90 ? 'On track' : COLLECTION_RATE > 75 ? 'Needs attention' : 'Critical'}</p>
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════
-              إيرادات المنصة — MRR Snapshots (from mrr_snapshots)
-          ═══════════════════════════════════════════════ */}
-          <SectionLabel>إيرادات المنصة</SectionLabel>
-          {mrrLoading ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm h-[120px] animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                      <TrendingUp size={16} className="text-teal-600" />
-                    </div>
-                  </div>
-                  <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">
-                    EGP {(mrrData?.summary?.currentMrr ?? 0).toLocaleString('ar-EG')}
-                  </div>
-                  <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">MRR الآن</span>
-                </div>
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                      <Building2 size={16} className="text-blue-600" />
-                    </div>
-                  </div>
-                  <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{mrrData?.summary?.activeCenters ?? 0}</div>
-                  <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">السناتر النشطة</span>
-                </div>
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                      <Users size={16} className="text-green-600" />
-                    </div>
-                  </div>
-                  <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{mrrData?.summary?.newThisMonth ?? 0}</div>
-                  <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">سناتر جديدة هذا الشهر</span>
-                </div>
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                      <TrendingDown size={16} className="text-red-600" />
-                    </div>
-                  </div>
-                  <div className="font-mono text-2xl font-bold text-[var(--color-text-primary)]">{mrrData?.summary?.churnedThisMonth ?? 0}</div>
-                  <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">سناتر غادرت هذا الشهر</span>
-                </div>
-              </div>
-              <div className="mt-4 bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6 shadow-sm">
-                <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-4">إيرادات المنصة — آخر 30 يوماً</h3>
-                {mrrData?.hasData ? (
-                  <ResponsiveContainer width="100%" height={260}>
-                    <LineChart data={mrrData?.snapshots ?? []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 11, fill: '#94A3B8' }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(dateStr: string) => {
-                          const d = new Date(dateStr + 'T12:00:00Z');
-                          return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-                        }}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11, fill: '#94A3B8' }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(val: number) => val.toLocaleString('ar-EG') + ' ج'}
-                      />
-                      <Tooltip
-                        labelFormatter={(label: unknown) =>
-                          new Date(String(label ?? '') + 'T12:00:00Z').toLocaleDateString('ar-EG', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                          })
-                        }
-                        formatter={(val: unknown) => [`EGP ${Number(val).toLocaleString('ar-EG')}`, 'MRR']}
-                      />
-                      <Line type="monotone" dataKey="mrr" stroke="#0D9488" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center py-12 text-slate-400">
-                    <p className="font-medium">لا توجد بيانات بعد</p>
-                    <p className="text-sm mt-1">ستظهر البيانات تلقائياً بعد منتصف الليل</p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* ═══════════════════════════════════════════════
-              ROW 3 — Revenue Over Time + Revenue Streams
-          ═══════════════════════════════════════════════ */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mt-4">
-            {/* Revenue Over Time (60%) */}
-            <div className="lg:col-span-3 bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)]">Revenue Over Time</h3>
-                <div className="flex rounded-lg border border-[var(--color-border-subtle)] overflow-hidden">
-                  {(['monthly', 'weekly', 'daily'] as const).map(t => (
-                    <button key={t} onClick={() => setChartTab(t)} className={cn(
-                      'px-3 py-1 text-[11px] font-medium transition-colors capitalize',
-                      chartTab === t ? 'bg-slate-900 text-white' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-0)]'
-                    )}>{t}</button>
-                  ))}
-                </div>
-              </div>
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={REVENUE_TIMELINE}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                  <XAxis dataKey="period" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip content={<ChartTooltipContent />} />
-                  <Line type="monotone" dataKey="total" name="Total Revenue" stroke="#0D9488" strokeWidth={2} dot={{ r: 3, fill: '#0D9488' }} />
-                  <Line type="monotone" dataKey="subscriptions" name="Subscriptions" stroke="#3B82F6" strokeWidth={1.5} strokeDasharray="6 3" dot={false} />
-                  <Line type="monotone" dataKey="cards" name="Card Orders" stroke="#7C3AED" strokeWidth={1.5} strokeDasharray="6 3" dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-              <div className="flex items-center gap-5 mt-2 px-2">
-                {[
-                  { label: 'Total Revenue', color: '#0D9488', dash: false },
-                  { label: 'Subscriptions', color: '#3B82F6', dash: true },
-                  { label: 'Card Orders', color: '#7C3AED', dash: true },
-                ].map(l => (
-                  <div key={l.label} className="flex items-center gap-1.5">
-                    <div className="w-4 h-0.5 rounded" style={{ backgroundColor: l.color, ...(l.dash ? { backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 2px, white 2px, white 4px)' } : {}) }} />
-                    <span className="text-[10px] text-slate-400">{l.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Revenue Streams Donut (40%) */}
-            <div className="lg:col-span-2 bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-4">Revenue Streams</h3>
-              <div className="flex justify-center">
-                <div className="w-44 h-44 relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={STREAMS} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={70} strokeWidth={2} stroke="#fff">
-                        {STREAMS.map((s, i) => <Cell key={i} fill={s.color} />)}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[10px] text-slate-400">Total</span>
-                    <span className="font-mono text-sm font-bold text-[var(--color-text-primary)]">{fmtEGP(STREAMS_TOTAL)}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 space-y-3">
-                {STREAMS.map(s => (
-                  <div key={s.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: s.color }} />
-                      <span className="text-xs text-[var(--color-text-secondary)]">{s.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono text-xs font-semibold text-[var(--color-text-primary)]">{fmtEGP(s.value)}</span>
-                      <span className="text-[10px] text-slate-400 ml-2">{((s.value / STREAMS_TOTAL) * 100).toFixed(1)}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════
-              ROW 4 — YoY + Cash Flow
-          ═══════════════════════════════════════════════ */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-            {/* YoY Comparison */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-4">Year on Year Comparison</h3>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={YOY_DATA}>
-                  <defs>
-                    <linearGradient id="yoyCurrent" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#0D9488" stopOpacity={0.1} />
-                      <stop offset="100%" stopColor="#0D9488" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip content={<ChartTooltipContent />} />
-                  <Area type="monotone" dataKey="current" name="2026" stroke="#0D9488" strokeWidth={2} fill="url(#yoyCurrent)" dot={{ r: 3, fill: '#0D9488' }} />
-                  <Line type="monotone" dataKey="previous" name="2025" stroke="#CBD5E1" strokeWidth={1.5} strokeDasharray="6 3" dot={{ r: 2, fill: '#CBD5E1' }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Cash Flow */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-4">Cash Flow</h3>
-              <div className="space-y-3 mb-5">
-                {[
-                  { label: 'Cash In', value: cashInThisMonth, color: 'text-emerald-700', bg: 'bg-emerald-50', icon: '↑' },
-                  { label: 'Expected Next 30 Days', value: expectedNextMonth, color: 'text-blue-700', bg: 'bg-blue-50', icon: '→' },
-                  { label: 'At Risk (>30 days overdue)', value: atRiskAmount, color: 'text-red-700', bg: 'bg-red-50', icon: '!' },
-                ].map(row => (
-                  <div key={row.label} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-[var(--color-surface-0)]/80">
-                    <div className="flex items-center gap-2.5">
-                      <span className={cn('w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold', row.bg, row.color)}>{row.icon}</span>
-                      <span className="text-sm text-[var(--color-text-secondary)]">{row.label}</span>
-                    </div>
-                    <span className={cn('font-mono text-sm font-bold', row.color)}>{fmtEGP(row.value)}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Next Renewals</p>
-              <div className="space-y-0">
-                {UPCOMING_RENEWALS.slice(0, 5).map((r, i) => (
-                  <div key={i} className={cn('flex items-center justify-between py-2 text-xs', i > 0 && 'border-t border-[var(--color-border-subtle)]')}>
-                    <span className="text-[var(--color-text-primary)] font-medium" dir="rtl">{r.center}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-[var(--color-text-secondary)]">{fmtEGP(r.amount)}</span>
-                      <span className="text-slate-400">{new Date(r.due).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
-                      <span className={cn(
-                        'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                        r.status === 'overdue' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
-                      )}>{r.status}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════
-              ROW 5 — Center Performance Table
-          ═══════════════════════════════════════════════ */}
-          <SectionLabel>Top Centers by Revenue</SectionLabel>
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-            <div className="p-4 flex flex-wrap gap-3 items-center border-b border-[var(--color-border-subtle)]">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
-                <input
-                  value={centerSearch} onChange={e => setCenterSearch(e.target.value)}
-                  placeholder="Search centers..."
-                  className="w-full ps-9 pe-4 py-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all"
-                />
-              </div>
-              <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--color-border-subtle)] text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-0)] transition-colors">
-                <Download size={13} /> Export Excel
-              </button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[var(--color-surface-0)] sticky top-0 z-[1]">
-                  <tr>
-                    {[
-                      { key: 'rank', label: 'Rank', w: 'w-16' },
-                      { key: 'name', label: 'Center' },
-                      { key: 'plan', label: 'Plan' },
-                      { key: 'mrr', label: 'Monthly Revenue' },
-                      { key: 'setup', label: 'Setup Fee' },
-                      { key: 'outstanding', label: 'Outstanding' },
-                      { key: 'students', label: 'Students' },
-                      { key: 'lastPayment', label: 'Last Payment' },
-                      { key: 'status', label: 'Status' },
-                      { key: 'action', label: '' },
-                    ].map(col => (
-                      <th key={col.key} onClick={() => col.key !== 'action' && handleSort(col.key)}
-                        className={cn(
-                          'text-start px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider select-none',
-                          col.key !== 'action' && 'cursor-pointer hover:text-[var(--color-text-secondary)]',
-                          col.w
-                        )}>
-                        {col.label} {sortCol === col.key ? (sortDir === 'asc' ? '↑' : '↓') : ''}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedPerf.map((c, idx) => (
-                    <tr key={c.rank} className={cn(
-                      'border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]/80 transition-colors',
-                      idx % 2 === 1 && 'bg-[var(--color-surface-0)]/40'
-                    )}>
-                      <td className="px-4 py-3 font-mono text-sm font-bold text-[var(--color-text-secondary)]">{rankMedal(c.rank)}</td>
-                      <td className="px-4 py-3 font-semibold text-[var(--color-text-primary)]" dir="rtl">{c.name}</td>
-                      <td className="px-4 py-3">
-                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold border', PLAN_COLORS[c.plan])}>
-                          {PLAN_LABELS[c.plan]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-[var(--color-text-primary)]">{fmtEGP(c.mrr)}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">{fmtEGP(c.setup)}</td>
-                      <td className={cn("px-4 py-3 font-mono text-xs font-semibold", c.outstanding > 0 ? 'text-red-600' : 'text-slate-300')}>
-                        {c.outstanding > 0 ? fmtEGP(c.outstanding) : '—'}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">{c.students}</td>
-                      <td className="px-4 py-3 text-xs text-slate-400">{new Date(c.lastPayment).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                      <td className="px-4 py-3">
-                        <span className={cn(
-                          'inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold',
-                          c.status === 'active' ? 'bg-emerald-50 text-emerald-700' :
-                          c.status === 'suspended' ? 'bg-red-50 text-red-600' :
-                          'bg-amber-50 text-amber-600'
-                        )}>{c.status}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button className="text-xs text-teal-600 hover:text-teal-800 font-medium flex items-center gap-0.5">
-                          View <ExternalLink size={10} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════
-              ROW 6 — Alerts
-          ═══════════════════════════════════════════════ */}
-          <SectionLabel>Alerts & Actions</SectionLabel>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Needs Attention */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden border-l-4 border-l-red-500">
-              <div className="p-4">
-                <h3 className="text-xs font-bold text-red-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <AlertTriangle size={13} /> Needs Attention
-                </h3>
-                <div className="space-y-2.5">
-                  {[
-                    { text: '2 overdue payments (>30 days)', action: 'Resolve' },
-                    { text: '1 suspended center', action: 'Resolve' },
-                    { text: '3 pending approvals', action: 'Review' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-[var(--color-text-secondary)]">{item.text}</span>
-                      <button className="text-[11px] text-red-600 hover:text-red-800 font-semibold flex items-center gap-0.5">
-                        {item.action} <ChevronRight size={11} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Watch List */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden border-l-4 border-l-amber-400">
-              <div className="p-4">
-                <h3 className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <Clock size={13} /> Watch List
-                </h3>
-                <div className="space-y-2.5">
-                  {[
-                    { text: '3 outstanding >50% of fee' },
-                    { text: '2 no login in >14 days' },
-                    { text: '1 downgrade request' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                      {item.text}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Wins */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden border-l-4 border-l-emerald-500">
-              <div className="p-4">
-                <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <CheckCircle size={13} /> Wins
-                </h3>
-                <div className="space-y-2.5">
-                  {[
-                    { text: '3 new signups today' },
-                    { text: '4 payments received today' },
-                    { text: '2 plan upgrades this week' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      {item.text}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════
-              UNIT ECONOMICS (Collapsible)
-          ═══════════════════════════════════════════════ */}
-          <div className="mt-8">
-            <button
-              type="button"
-              onClick={() => setUnitEconOpen(!unitEconOpen)}
-              className="flex items-center gap-2 w-full text-left group"
-            >
-              <ChevronRight size={14} className={cn('text-slate-400 transition-transform', unitEconOpen && 'rotate-90')} />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 group-hover:text-[var(--color-text-secondary)] transition-colors">Unit Economics</span>
-            </button>
-            {unitEconOpen && (
-              <div className="mt-4">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { label: 'ARPC', value: fmtEGP(ARPC), tip: 'Average Revenue Per Center = Total MRR ÷ Active Centers', color: 'text-teal-700' },
-                    { label: 'CAC', value: fmtEGP(CAC), tip: 'Customer Acquisition Cost — average spend to acquire one center', color: 'text-amber-600' },
-                    { label: 'LTV', value: fmtEGP(LTV), tip: `Lifetime Value = ARPC × ${AVG_LIFETIME_MONTHS} months avg lifetime`, color: 'text-blue-700' },
-                    { label: 'LTV:CAC', value: `${LTV_CAC_RATIO}x`, tip: 'Ratio of customer lifetime value to acquisition cost. >10x is excellent.', color: LTV_CAC_RATIO > 10 ? 'text-emerald-700' : LTV_CAC_RATIO > 5 ? 'text-amber-600' : 'text-red-600' },
-                  ].map(metric => (
-                    <div key={metric.label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-5 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">{metric.label}</span>
-                        <span title={metric.tip} className="cursor-help"><Info size={12} className="text-slate-300" /></span>
-                      </div>
-                      <div className={cn('font-mono text-2xl font-bold', metric.color)}>{metric.value}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="h-10" />
+  if (loading || !data) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[var(--color-surface-0)]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 rounded-full border-2 border-[var(--color-border-default)] border-t-[var(--color-brand-500)] animate-spin" aria-hidden />
+          <p className="text-[var(--color-text-secondary)] text-sm">{tCommon('loading')}</p>
         </div>
       </div>
+    );
+  }
+
+  const isHealthy =
+    data.ops.platform_config.maintenance_mode !== true &&
+    data.ops.platform_config.wa_sending_enabled !== false;
+
+  async function getAuthJsonHeaders(): Promise<Record<string, string>> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+    return headers;
+  }
+
+  async function submitLead(e: React.FormEvent) {
+    e.preventDefault();
+    const headers = await getAuthJsonHeaders();
+    const nextFollowupIso = leadNextFollowup
+      ? new Date(leadNextFollowup).toISOString()
+      : undefined;
+    const res = await fetch('/api/ceo/leads', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        name: leadName,
+        phone: leadPhone,
+        district: leadDistrict || null,
+        governorate: 'cairo',
+        plan_interest: leadPlan,
+        stage: leadStage,
+        source: leadSource || null,
+        notes: null,
+        next_followup: nextFollowupIso,
+      }),
+    });
+    if (res.ok) {
+      setLeadFormOpen(false);
+      setLeadName('');
+      setLeadPhone('');
+      setLeadDistrict('');
+      setLeadPlan('starter');
+      setLeadStage('lead');
+      setLeadSource('');
+      setLeadNextFollowup('');
+      void fetchDashboard();
+    }
+  }
+
+  async function snoozeAction(id: string) {
+    const snoozedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const headers = await getAuthJsonHeaders();
+    await fetch(`/api/ceo/actions/${id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ snoozed_until: snoozedUntil }),
+    });
+    void fetchDashboard();
+  }
+
+  async function patchPlatformConfig(key: string, value: unknown) {
+    const headers = await getAuthJsonHeaders();
+    await fetch('/api/ceo/platform-config', {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ key, value }),
+    });
+    void fetchDashboard();
+  }
+
+  async function suspendCenter(id: string) {
+    const headers = await getAuthJsonHeaders();
+    await fetch(`/api/admin/centers/${id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ status: 'suspended' }),
+    });
+    setSuspendConfirmId(null);
+    void fetchDashboard();
+  }
+
+  function healthScoreStyle(score: number | null): { className: string; label: string } {
+    if (score == null) {
+      return {
+        className: 'bg-[var(--color-surface-3)] text-[var(--color-text-secondary)]',
+        label: t('health.notCalculated'),
+      };
+    }
+    if (score >= 80) {
+      return { className: 'bg-green-400/10 text-green-400', label: t('health.excellent') };
+    }
+    if (score >= 60) {
+      return { className: 'bg-teal-500/10 text-[#0D9488]', label: t('health.good') };
+    }
+    if (score >= 40) {
+      return { className: 'bg-amber-400/10 text-amber-400', label: t('health.average') };
+    }
+    return { className: 'bg-red-400/10 text-red-400', label: t('health.critical') };
+  }
+
+  function renewalPill(days: number | null): { className: string; text: string } {
+    if (days == null) {
+      return { className: 'text-[var(--color-text-tertiary)]', text: '—' };
+    }
+    if (days === 0) {
+      return { className: 'inline-flex rounded-full px-2 py-0.5 text-xs bg-red-400/10 text-red-400', text: t('health.expired') };
+    }
+    const body = `${days} ${t('health.days')}`;
+    if (days <= 7) {
+      return { className: 'inline-flex rounded-full px-2 py-0.5 text-xs bg-red-400/10 text-red-400', text: body };
+    }
+    if (days <= 14) {
+      return { className: 'inline-flex rounded-full px-2 py-0.5 text-xs bg-amber-400/10 text-amber-400', text: body };
+    }
+    return {
+      className: 'inline-flex rounded-full px-2 py-0.5 text-xs bg-[var(--color-surface-3)] text-[var(--color-text-secondary)]',
+      text: body,
+    };
+  }
+
+  const actionsByPriority = {
+    red: data.action_queue.actions.filter((a) => a.priority === 'red'),
+    amber: data.action_queue.actions.filter((a) => a.priority === 'amber'),
+    green: data.action_queue.actions.filter((a) => a.priority === 'green'),
+  };
+
+  return (
+    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen bg-[var(--color-surface-0)]">
+      <AdminSidebar activeRoute={pathname} />
+      <div className="flex-1 overflow-auto mt-12 md:mt-0 flex flex-col min-w-0">
+        <MobileWrapper fullWidth>
+          <div className="sticky top-0 z-20 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]/95 backdrop-blur-sm px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-bold text-[var(--color-text-primary)]">{t('brandTitle')}</span>
+              <div className="flex flex-wrap gap-1">
+                {SECTION_IDS.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => scrollToSection(id)}
+                    className="rounded-full px-2.5 py-1 text-xs font-medium border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
+                  >
+                    {id.toUpperCase()} · {t(`sections.${id}`)}
+                  </button>
+                ))}
+              </div>
+              <span
+                className="inline-block size-2 rounded-full shrink-0"
+                style={{ background: isHealthy ? '#22c55e' : '#ef4444' }}
+                title={isHealthy ? t('healthDotOk') : t('healthDotIssue')}
+              />
+              <span className="text-xs text-[var(--color-text-secondary)] ms-auto">
+                {t('lastSync')}: {minutesSinceSync != null ? t('lastSyncMinutes', { minutes: minutesSinceSync }) : '—'}
+              </span>
+            </div>
+          </div>
+
+          <div className="px-4 py-6 space-y-10">
+
+            <section id="section-a">
+              <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{t('sections.a')}</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-[var(--color-brand-500)]">
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.activeCenters')}</p>
+                  <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                    {data.hero.active_centers.toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-amber-400">
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.cashMtd')}</p>
+                  <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                    EGP {data.hero.cash_collected_mtd.toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4">
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.liveTrials')}</p>
+                  <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                    {data.hero.live_trials.toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div
+                  className={`rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 ${
+                    data.hero.at_risk_centers > 0 ? 'border-s-red-400' : 'border-s-[var(--color-border-default)]'
+                  }`}
+                >
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.atRisk')}</p>
+                  <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                    {data.hero.at_risk_centers.toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div
+                  className={`rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 sm:col-span-1 col-span-2 ${
+                    data.hero.open_alerts > 0 ? 'border-s-red-400' : 'border-s-[var(--color-border-default)]'
+                  }`}
+                >
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.openAlerts')}</p>
+                  <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                    {data.hero.open_alerts.toLocaleString('en-US')}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section id="section-b">
+              <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{t('sections.b')}</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 space-y-3">
+                  {data.action_queue.actions.length === 0 ? (
+                    <p className="text-green-400 text-sm">✓ {t('actions.noActions')}</p>
+                  ) : (
+                    data.action_queue.actions.map((action) => (
+                      <div
+                        key={action.id}
+                        className="flex gap-3 items-start border-b border-[var(--color-border-subtle)] pb-3 last:border-0 last:pb-0"
+                      >
+                        <span
+                          className={`mt-1 size-2 rounded-full shrink-0 ${
+                            action.priority === 'red'
+                              ? 'bg-red-400'
+                              : action.priority === 'amber'
+                                ? 'bg-amber-400'
+                                : 'bg-green-400'
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-[var(--color-text-primary)]">{action.title}</p>
+                          {action.subtitle && (
+                            <p className="text-sm text-[var(--color-text-secondary)]">{action.subtitle}</p>
+                          )}
+                          {action.revenue_at_risk > 0 && (
+                            <span className="inline-block mt-1 bg-amber-400/10 text-amber-400 text-xs px-2 py-0.5 rounded-full">
+                              EGP {Number(action.revenue_at_risk).toLocaleString('en-US')} {t('actions.revenueAtRisk')}
+                            </span>
+                          )}
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {action.action_url ? (
+                              <a
+                                href={action.action_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs font-medium text-[var(--color-brand-500)] underline"
+                              >
+                                {action.action_label ?? t('actions.view')}
+                              </a>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => void snoozeAction(action.id)}
+                              className="text-xs font-medium text-[var(--color-text-secondary)] underline"
+                            >
+                              {t('actions.snooze')}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4">
+                  <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-3">{t('actions.alertsSummary')}</p>
+                  <div className="flex gap-2 mb-4">
+                    <span className="rounded-full bg-red-400/15 text-red-400 text-xs px-2 py-0.5">
+                      {data.action_queue.red}
+                    </span>
+                    <span className="rounded-full bg-amber-400/15 text-amber-400 text-xs px-2 py-0.5">
+                      {data.action_queue.amber}
+                    </span>
+                    <span className="rounded-full bg-green-400/15 text-green-400 text-xs px-2 py-0.5">
+                      {data.action_queue.green}
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    {(['red', 'amber', 'green'] as const).map((pri) => (
+                      <div key={pri}>
+                        {actionsByPriority[pri].map((action) => (
+                          <div
+                            key={action.id}
+                            className={`mb-2 rounded-lg px-3 py-2 text-sm ${
+                              pri === 'red'
+                                ? 'bg-[var(--color-surface-2)] border-s-2 border-s-red-400'
+                                : 'bg-[var(--color-surface-2)]'
+                            }`}
+                          >
+                            <p className="font-medium text-[var(--color-text-primary)]">{action.title}</p>
+                            {action.subtitle && (
+                              <p className="text-[var(--color-text-tertiary)] text-xs">{action.subtitle}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section id="section-c">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('pipeline.title')}</h2>
+                {data.pipeline.overdue_followups > 0 && (
+                  <span className="rounded-full bg-red-400/15 text-red-400 text-xs px-2 py-0.5">
+                    {t('pipeline.overdueFollowups')}: {data.pipeline.overdue_followups.toLocaleString('en-US')}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+                {PIPELINE_STAGES.map((st) => (
+                  <div
+                    key={st}
+                    className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-center"
+                  >
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t(`pipeline.stages.${st}`)}</p>
+                    <p className="font-mono font-bold text-[var(--color-text-primary)]">
+                      {data.pipeline[st].toLocaleString('en-US')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setLeadFormOpen((o) => !o)}
+                className="text-sm font-medium text-[var(--color-brand-500)] mb-2"
+              >
+                {t('pipeline.addLead')}
+              </button>
+              <button
+                type="button"
+                className="block text-xs text-[var(--color-text-tertiary)] mb-2 text-start hover:underline"
+              >
+                {t('pipeline.viewDetails')}
+              </button>
+              {leadFormOpen && (
+                <form
+                  onSubmit={(e) => void submitLead(e)}
+                  className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 grid gap-3 max-w-md"
+                >
+                  <input
+                    required
+                    value={leadName}
+                    onChange={(e) => setLeadName(e.target.value)}
+                    placeholder={tCommon('name')}
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  />
+                  <input
+                    required
+                    value={leadPhone}
+                    onChange={(e) => setLeadPhone(e.target.value)}
+                    placeholder={tCommon('phone')}
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  />
+                  <input
+                    value={leadDistrict}
+                    onChange={(e) => setLeadDistrict(e.target.value)}
+                    placeholder={t('pipeline.fieldDistrict')}
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  />
+                  <select
+                    value={leadPlan}
+                    onChange={(e) => setLeadPlan(e.target.value)}
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    {PLAN_VALUES.map((pk) => (
+                      <option key={pk} value={pk}>
+                        {t(PLAN_LABEL_KEYS[pk])}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={leadStage}
+                    onChange={(e) => setLeadStage(e.target.value as LeadStage)}
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    {PIPELINE_STAGES.map((st) => (
+                      <option key={st} value={st}>
+                        {t(`pipeline.stages.${st}`)}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={leadSource}
+                    onChange={(e) => setLeadSource(e.target.value)}
+                    placeholder={t('pipeline.fieldSource')}
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  />
+                  <input
+                    type="datetime-local"
+                    value={leadNextFollowup}
+                    onChange={(e) => setLeadNextFollowup(e.target.value)}
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-[var(--color-brand-500)] text-white py-2 text-sm font-medium"
+                  >
+                    {t('pipeline.submitLead')}
+                  </button>
+                </form>
+              )}
+            </section>
+
+            <section id="section-d">
+              <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{t('activation.title')}</h2>
+              <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)]">
+                <table className="w-full text-sm text-start">
+                  <thead className="bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">{t('activation.colCenter')}</th>
+                      <th className="px-3 py-2 font-medium">{t('activation.colPlan')}</th>
+                      <th className="px-3 py-2 font-medium">{t('activation.colStep')}</th>
+                      <th className="px-3 py-2 font-medium">{t('activation.colScan')}</th>
+                      <th className="px-3 py-2 font-medium">{t('activation.colPayment')}</th>
+                      <th className="px-3 py-2 font-medium">{t('activation.colCreated')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.activation.centers.map((row) => {
+                      const stuck = row.onboarding_step < 2 && row.created_at < threeDaysAgo;
+                      return (
+                        <tr
+                          key={row.id}
+                          className={`border-t border-[var(--color-border-subtle)] ${
+                            stuck ? 'bg-[var(--color-surface-2)] border-s-2 border-s-red-400' : ''
+                          }`}
+                        >
+                          <td className="px-3 py-2 text-[var(--color-text-primary)]">{row.name}</td>
+                          <td className="px-3 py-2">{row.plan}</td>
+                          <td className="px-3 py-2 min-w-[120px]">
+                            <div className="h-1.5 rounded-full bg-[var(--color-surface-3)] overflow-hidden">
+                              <div
+                                className="h-full bg-[var(--color-brand-500)]"
+                                style={{ width: `${(row.onboarding_step / 5) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-[var(--color-text-secondary)] mt-1 block">
+                              {activationStepLabel(row.onboarding_step)}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className={row.has_scanned ? 'text-[var(--color-brand-500)]' : 'text-[var(--color-text-tertiary)]'}>
+                              {row.has_scanned ? '✓' : '✗'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className={row.has_payment ? 'text-[var(--color-brand-500)]' : 'text-[var(--color-text-tertiary)]'}>
+                              {row.has_payment ? '✓' : '✗'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-[var(--color-text-secondary)] font-mono text-xs">
+                            {new Date(row.created_at).toLocaleString('en-US')}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section id="section-e">
+              <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{t('health.title')}</h2>
+              <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)]">
+                <table className="w-full text-sm text-start">
+                  <thead className="bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">{t('health.colCenter')}</th>
+                      <th className="px-3 py-2 font-medium">{t('health.colPlan')}</th>
+                      <th className="px-3 py-2 font-medium">{t('health.colStatus')}</th>
+                      <th className="px-3 py-2 font-medium">{t('health.colScore')}</th>
+                      <th className="px-3 py-2 font-medium">{t('health.colScansToday')}</th>
+                      <th className="px-3 py-2 font-medium">{t('health.colRenewal')}</th>
+                      <th className="px-3 py-2 font-medium">{t('health.colDistrict')}</th>
+                      <th className="px-3 py-2 font-medium">{t('health.colActions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.centers_health.map((row) => {
+                      const hp = healthScoreStyle(row.health_score);
+                      const rp = renewalPill(row.days_to_renewal);
+                      const digits = (row.phone ?? '').replace(/\D/g, '');
+                      return (
+                        <tr key={row.id} className="border-t border-[var(--color-border-subtle)]">
+                          <td className="px-3 py-2 text-[var(--color-text-primary)] font-medium">{row.name}</td>
+                          <td className="px-3 py-2">{row.plan}</td>
+                          <td className="px-3 py-2">{row.status}</td>
+                          <td className="px-3 py-2">
+                            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${hp.className}`}>{hp.label}</span>
+                          </td>
+                          <td className="px-3 py-2 font-mono">{row.scans_today.toLocaleString('en-US')}</td>
+                          <td className="px-3 py-2">
+                            <span className={rp.className}>{rp.text}</span>
+                          </td>
+                          <td className="px-3 py-2 text-[var(--color-text-secondary)]">{row.district ?? '—'}</td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-1">
+                              <a
+                                href={`/${locale}/admin?center=${row.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                title={t('actions.view')}
+                                className="p-1.5 rounded-md hover:bg-[var(--color-surface-2)]"
+                              >
+                                👁
+                              </a>
+                              {digits.length > 0 ? (
+                                <a
+                                  href={`https://wa.me/${digits}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title={t('actions.whatsapp')}
+                                  className="p-1.5 rounded-md hover:bg-[var(--color-surface-2)]"
+                                >
+                                  💬
+                                </a>
+                              ) : null}
+                              <button
+                                type="button"
+                                title={t('actions.suspend')}
+                                onClick={() => setSuspendConfirmId(row.id)}
+                                className="p-1.5 rounded-md hover:bg-[var(--color-surface-2)]"
+                              >
+                                ⏸
+                              </button>
+                            </div>
+                            {suspendConfirmId === row.id && (
+                              <div className="mt-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] p-2 text-xs">
+                                <p className="text-[var(--color-text-primary)] mb-2">{t('health.suspendConfirm', { name: row.name })}</p>
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => void suspendCenter(row.id)}
+                                    className="rounded-md bg-red-400/20 text-red-400 px-2 py-1"
+                                  >
+                                    {t('actions.confirm')}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSuspendConfirmId(null)}
+                                    className="rounded-md border border-[var(--color-border-default)] px-2 py-1"
+                                  >
+                                    {t('actions.cancel')}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section id="section-f">
+              <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{t('cash.title')}</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-teal-500">
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.quarter')}</p>
+                  <p className="text-lg font-mono font-bold text-[#0D9488] mt-1">
+                    EGP {data.cash.collected_this_quarter.toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div
+                  className={`rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 ${
+                    data.cash.overdue_count > 0 ? 'border-s-red-400' : 'border-s-[var(--color-border-default)]'
+                  }`}
+                >
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.overdue')}</p>
+                  <p className={`text-lg font-mono font-bold mt-1 ${data.cash.overdue_count > 0 ? 'text-red-400' : 'text-[var(--color-text-primary)]'}`}>
+                    {data.cash.overdue_count.toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div
+                  className={`rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 ${
+                    data.cash.due_soon_count > 0 ? 'border-s-amber-400' : 'border-s-[var(--color-border-default)]'
+                  }`}
+                >
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.dueSoon')}</p>
+                  <p className={`text-lg font-mono font-bold mt-1 ${data.cash.due_soon_count > 0 ? 'text-amber-400' : 'text-[var(--color-text-primary)]'}`}>
+                    {data.cash.due_soon_count.toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4">
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.packRevenue')}</p>
+                  <p className="text-lg font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                    EGP {data.cash.pack_revenue_mtd.toLocaleString('en-US')}
+                  </p>
+                  <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+                    {t('cash.totalCentersHint')}: {data.cash.total_centers.toLocaleString('en-US')}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section id="section-g">
+              <button
+                type="button"
+                onClick={() => setOpsOpen((o) => !o)}
+                className="flex items-center gap-2 w-full text-start mb-3"
+              >
+                <ChevronDown size={18} className={`text-[var(--color-text-secondary)] transition-transform ${opsOpen ? 'rotate-180' : ''}`} />
+                <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('ops.title')}</h2>
+              </button>
+              {opsOpen && (
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 space-y-4">
+                  <div>
+                    <p className={`text-sm ${data.ops.wa_queue_pending > 0 ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}>
+                      {t('ops.waPending')}: {data.ops.wa_queue_pending.toLocaleString('en-US')}
+                    </p>
+                    <p className={`text-sm ${data.ops.wa_queue_failed > 0 ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}>
+                      {t('ops.waFailed')}: {data.ops.wa_queue_failed.toLocaleString('en-US')}
+                    </p>
+                  </div>
+                  {data.ops.last_status_check && (
+                    <div className="text-xs text-[var(--color-text-secondary)] space-y-1">
+                      <p>{t('ops.statusService')}: {data.ops.last_status_check.service}</p>
+                      <p>{t('ops.statusState')}: {data.ops.last_status_check.status}</p>
+                      <p>{t('ops.statusChecked')}: {data.ops.last_status_check.checked_at}</p>
+                    </div>
+                  )}
+                  <p className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('ops.platformConfig')}</p>
+                  <div className="space-y-3">
+                    {BOOL_CONFIG_ORDER.map((key) => {
+                      const currentBool = data.ops.platform_config[key] === true;
+                      return (
+                        <label key={key} className="flex items-center justify-between gap-2 text-sm">
+                          <span className="text-[var(--color-text-primary)]">{t(`ops.configKeys.${key}`)}</span>
+                          <input
+                            type="checkbox"
+                            checked={currentBool}
+                            onChange={() => {
+                              if (key === 'maintenance_mode' || key === 'wa_sending_enabled') {
+                                setConfirmConfigKey(key);
+                              } else {
+                                void patchPlatformConfig(key, !currentBool);
+                              }
+                            }}
+                          />
+                        </label>
+                      );
+                    })}
+                    <label className="block text-sm">
+                      <span className="text-[var(--color-text-primary)] block mb-1">{t('ops.announcementLabel')}</span>
+                      <input
+                        value={bannerDraft}
+                        onChange={(e) => setBannerDraft(e.target.value)}
+                        onBlur={() => {
+                          if (bannerDraft !== announcementRef.current) {
+                            announcementRef.current = bannerDraft;
+                            void patchPlatformConfig('announcement_banner', bannerDraft);
+                          }
+                        }}
+                        className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section id="section-h">
+              <button
+                type="button"
+                onClick={() => setControlOpen((o) => !o)}
+                className="flex items-center gap-2 w-full text-start mb-3"
+              >
+                <ChevronDown size={18} className={`text-[var(--color-text-secondary)] transition-transform ${controlOpen ? 'rotate-180' : ''}`} />
+                <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('control.title')}</h2>
+              </button>
+              {controlOpen && (
+                <div>
+                  <div className="bg-red-400/10 border border-red-400/20 text-red-400 rounded-lg p-4 mb-4 text-sm">
+                    {t('control.warning')}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <input
+                      type="password"
+                      value={sectionHPassword}
+                      onChange={(e) => setSectionHPassword(e.target.value)}
+                      placeholder={t('control.passwordPlaceholder')}
+                      className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)] min-w-[200px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (sectionHPassword === 'CENTERHQ-ADMIN') {
+                          setIsHUnlocked(true);
+                          setSectionHError('');
+                        } else {
+                          setSectionHError(t('control.wrongPassword'));
+                        }
+                      }}
+                      className="rounded-lg border border-[var(--color-border-default)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)]"
+                    >
+                      {t('control.unlock')}
+                    </button>
+                  </div>
+                  {sectionHError && <p className="text-red-400 text-sm mb-4">{sectionHError}</p>}
+                  {isHUnlocked && (
+                    <div className="grid gap-2 max-w-md">
+                      {(
+                        [
+                          ['maintenance_mode', 'control.maintenance'],
+                          ['wa_sending_enabled', 'control.disableWa'],
+                          ['cron_paused', 'control.pauseCron'],
+                          ['read_only_mode', 'control.readOnly'],
+                        ] as const
+                      ).map(([k, labelKey]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => setConfirmDangerAction(k)}
+                          className="bg-red-400/10 border border-red-400/20 text-red-400 w-full rounded-lg py-2 text-sm"
+                        >
+                          {t(labelKey)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
+        </MobileWrapper>
+      </div>
+
+      {confirmConfigKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 max-w-sm w-full">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-1">{t('ops.confirmToggleTitle')}</p>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t('ops.confirmToggleBody')}</p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmConfigKey(null)}
+                className="rounded-lg border border-[var(--color-border-default)] px-3 py-1.5 text-sm"
+              >
+                {t('actions.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const val = data.ops.platform_config[confirmConfigKey] === true;
+                  void patchPlatformConfig(confirmConfigKey, !val);
+                  setConfirmConfigKey(null);
+                }}
+                className="rounded-lg bg-[var(--color-brand-500)] text-white px-3 py-1.5 text-sm"
+              >
+                {t('actions.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDangerAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 max-w-sm w-full">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-1">{t('control.confirmDangerTitle')}</p>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t('control.confirmDangerBody')}</p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmDangerAction(null)}
+                className="rounded-lg border border-[var(--color-border-default)] px-3 py-1.5 text-sm"
+              >
+                {t('actions.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const keyValueMap: Record<string, unknown> = {
+                    maintenance_mode: true,
+                    wa_sending_enabled: false,
+                    cron_paused: true,
+                    read_only_mode: true,
+                  };
+                  void patchPlatformConfig(confirmDangerAction, keyValueMap[confirmDangerAction]);
+                  setConfirmDangerAction(null);
+                }}
+                className="rounded-lg bg-red-400 text-white px-3 py-1.5 text-sm"
+              >
+                {t('actions.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

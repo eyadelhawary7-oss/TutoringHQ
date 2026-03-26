@@ -90,3 +90,68 @@ export interface ActionQueueSummary {
   total: number
   actions: CeoAction[]
 }
+
+export interface CeoHero {
+  active_centers: number
+  cash_collected_mtd: number
+  live_trials: number
+  at_risk_centers: number
+  open_alerts: number
+}
+
+export interface CeoActivationCenter {
+  id: string
+  name: string
+  plan: string
+  onboarding_step: number
+  onboarding_completed: boolean
+  has_scanned: boolean      // TRUE if ANY attendance_scans row exists for this center (all-time)
+  has_payment: boolean      // TRUE if ANY payments row exists for this center (all-time)
+  created_at: string
+}
+
+export interface CeoCenterHealth {
+  id: string
+  name: string
+  phone: string | null      // included for WhatsApp button — always select from DB
+  plan: string
+  status: string
+  health_score: number | null
+  health_score_band: string | null
+  scans_today: number       // COUNT attendance_scans WHERE session_date = today
+  renewal_date: string | null
+  days_to_renewal: number | null  // null = no date; 0 = expired (clamped, never negative)
+  district: string | null
+  all_in_price: number | null
+}
+
+export interface CeoCash {
+  collected_this_quarter: number
+  cash_collected_mtd: number
+  overdue_count: number
+  due_soon_count: number
+  pack_revenue_mtd: number
+  total_centers: number
+}
+
+export interface CeoOps {
+  wa_queue_pending: number
+  wa_queue_failed: number
+  platform_config: Record<string, unknown>
+  last_status_check: {
+    service: string
+    status: string
+    checked_at: string
+  } | null
+}
+
+// ActionQueueSummary and PipelineSummary already exist in this file — reference directly
+export interface CeoDashboardData {
+  hero: CeoHero
+  action_queue: ActionQueueSummary
+  pipeline: PipelineSummary
+  activation: { centers: CeoActivationCenter[] }
+  centers_health: CeoCenterHealth[]
+  cash: CeoCash
+  ops: CeoOps
+}
