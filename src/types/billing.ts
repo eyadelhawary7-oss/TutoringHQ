@@ -8,4 +8,6 @@ export interface CenterBillingFields {
   whatsapp_opted_in?: boolean | null
   billing_period?: BillingPeriod | string | null
   plan?: PlanKey | string | null
+  parent_pack_enabled?: boolean | null
+  parent_pack_active_parents?: number | null
 }

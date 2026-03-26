@@ -13,7 +13,13 @@ interface UserProfile {
   role: UserRole;
   name: string | null;
   phone: string | null;
-  center?: { logo_url?: string; name?: string; plan?: string } | null;
+  center?: {
+    logo_url?: string;
+    name?: string;
+    plan?: string;
+    parent_pack_enabled?: boolean;
+    parent_pack_active_parents?: number;
+  } | null;
   can_scan?: boolean;
   can_view_payments?: boolean;
   can_record_payments?: boolean;

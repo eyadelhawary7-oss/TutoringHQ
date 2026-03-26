@@ -24,6 +24,7 @@ interface Student {
   phone: string;
   parent_phone?: string | null;
   parent_consent_given?: boolean;
+  parent_pack_opted_in?: boolean;
   subject: string;
   fee: number;
   payment_status: string;

@@ -91,11 +91,25 @@ export async function GET(request: Request) {
     }
 
     // Fetch center logo/name and billing when user has center
-    let center: { logo_url?: string; name?: string; phone?: string; payment_due_date?: string; auto_suspend_at?: string; billing_status?: string; plan?: string; delivery_address?: Record<string, unknown>; card_color?: string } | null = null;
+    let center: {
+      logo_url?: string;
+      name?: string;
+      phone?: string;
+      payment_due_date?: string;
+      auto_suspend_at?: string;
+      billing_status?: string;
+      plan?: string;
+      delivery_address?: Record<string, unknown>;
+      card_color?: string;
+      parent_pack_enabled?: boolean;
+      parent_pack_active_parents?: number;
+    } | null = null;
     if (userRecord.center_id) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
-        .select('logo_url, name, phone, payment_due_date, auto_suspend_at, billing_status, plan, delivery_address, card_color')
+        .select(
+          'logo_url, name, phone, payment_due_date, auto_suspend_at, billing_status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents',
+        )
         .eq('id', userRecord.center_id)
         .single();
       if (centerRow) {
@@ -109,6 +123,11 @@ export async function GET(request: Request) {
           plan: centerRow.plan ?? undefined,
           delivery_address: centerRow.delivery_address ?? undefined,
           card_color: centerRow.card_color ?? undefined,
+          parent_pack_enabled: centerRow.parent_pack_enabled ?? undefined,
+          parent_pack_active_parents:
+            centerRow.parent_pack_active_parents != null
+              ? Number(centerRow.parent_pack_active_parents)
+              : undefined,
         };
       }
     }
