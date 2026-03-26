@@ -1,86 +1,26 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
+import {
+  PLANS,
+  getPlanPrice,
+  getAnnualMonthlyEquivalent,
+  getPerStudentWeeklyCost,
+  formatPrice,
+  type BillingPeriod,
+  type PlanKey,
+} from '@/lib/pricing';
 
-type Plan = {
-  key: string
-  priceMonth: string | null
-  pricePer: string | null
-  earlyPrice: string | null
-  students: string
-  hasEarly: boolean
-  popular: boolean
-  isTopCenters: boolean
-}
+const LANDING_PLAN_ORDER: PlanKey[] = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'];
 
 export default function LocaleHomePage() {
   const t = useTranslations('landing');
+  const tBilling = useTranslations('billing');
   const locale = useLocale();
-
-  const plans: Plan[] = [
-    {
-      key: 'nano',
-      priceMonth: '1,200',
-      pricePer: '4.00',
-      earlyPrice: '720',
-      students: '75',
-      hasEarly: true,
-      popular: false,
-      isTopCenters: false,
-    },
-    {
-      key: 'starter',
-      priceMonth: '2,000',
-      pricePer: '3.33',
-      earlyPrice: '1,200',
-      students: '150',
-      hasEarly: true,
-      popular: false,
-      isTopCenters: false,
-    },
-    {
-      key: 'pro',
-      priceMonth: '4,500',
-      pricePer: '2.25',
-      earlyPrice: '2,700',
-      students: '500',
-      hasEarly: true,
-      popular: true,
-      isTopCenters: false,
-    },
-    {
-      key: 'business',
-      priceMonth: '6,500',
-      pricePer: '1.63',
-      earlyPrice: null,
-      students: '1,000',
-      hasEarly: false,
-      popular: false,
-      isTopCenters: false,
-    },
-    {
-      key: 'enterprise',
-      priceMonth: '9,000',
-      pricePer: '1.13',
-      earlyPrice: null,
-      students: '2,000',
-      hasEarly: false,
-      popular: false,
-      isTopCenters: false,
-    },
-    {
-      key: 'top_centers',
-      priceMonth: null,
-      pricePer: null,
-      earlyPrice: null,
-      students: '2,000+',
-      hasEarly: false,
-      popular: false,
-      isTopCenters: true,
-    },
-  ];
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('quarterly');
 
   const featureItems: { key: string; icon: ReactNode }[] = [
     {
@@ -293,86 +233,120 @@ export default function LocaleHomePage() {
 
       <section className="bg-surface-1 py-20 md:py-28">
         <div className="container mx-auto px-4 md:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('pricing.title')}</h2>
             <p className="text-[var(--color-text-secondary)] text-lg">{t('pricing.subtitle')}</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <div
-                key={plan.key}
-                className={[
-                  'card p-6 flex flex-col gap-5 relative',
-                  'transition-all duration-normal ease-out',
-                  plan.popular
-                    ? 'border-[var(--color-brand-500)] shadow-brand-md ring-1 ring-[var(--color-brand-500)]'
-                    : plan.isTopCenters
-                      ? 'border-[var(--color-gold-500)] shadow-gold-sm ring-1 ring-[var(--color-gold-500)]'
-                      : '',
-                ].join(' ')}
+          <div className="flex flex-wrap justify-center gap-2 mb-12">
+            {(['monthly', 'quarterly', 'annual'] as const).map((period) => (
+              <button
+                key={period}
+                type="button"
+                onClick={() => setBillingPeriod(period)}
+                className={`relative rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  billingPeriod === period
+                    ? 'bg-[var(--color-brand-500)] text-white'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-brand)] border border-transparent'
+                }`}
               >
-                {plan.popular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 badge badge-brand text-xs whitespace-nowrap">
-                    {t('pricing.popular')}
+                {tBilling(`period.${period}`)}
+                {period === 'quarterly' && (
+                  <span className="absolute -top-2 start-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400 text-teal-950 whitespace-nowrap">
+                    {tBilling('period.recommended')}
                   </span>
                 )}
-
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-bold text-white">{t(`pricing.plans.${plan.key}.name`)}</span>
-                  <span className="badge badge-neutral text-xs">
-                    {plan.isTopCenters ? t('pricing.students_more') : t('pricing.students_up_to')}{' '}
-                    {plan.students} {t('pricing.students_unit')}
+                {period === 'monthly' && (
+                  <span className="absolute -top-2 end-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-surface-3)] text-[var(--color-text-primary)] whitespace-nowrap">
+                    {tBilling('period.monthlyPremium')}
                   </span>
-                </div>
-
-                {plan.isTopCenters ? (
-                  <span className="text-2xl font-bold text-gold-400">
-                    {t('pricing.plans.top_centers.price_month')}
+                )}
+                {period === 'annual' && (
+                  <span className="absolute -top-2 end-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400 text-teal-950 whitespace-nowrap">
+                    {tBilling('period.twoMonthsFree')}
                   </span>
-                ) : (
-                  <div className="flex flex-col gap-1">
-                    {plan.hasEarly && (
-                      <span className="badge badge-brand text-xs self-start">{t('pricing.early_badge')}</span>
-                    )}
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-white">{plan.pricePer ?? ''}</span>
-                      <span className="text-sm text-[var(--color-text-secondary)]">
-                        {t('pricing.per_student')}
-                      </span>
-                    </div>
-                    {plan.hasEarly ? (
-                      <div className="flex items-center gap-2 text-sm flex-wrap">
-                        <span className="line-through text-[var(--color-text-disabled)]">
-                          {plan.priceMonth ?? ''}
-                        </span>
-                        <span className="text-[var(--color-success)] font-semibold">
-                          {plan.earlyPrice ?? ''}
-                        </span>
-                        <span className="text-[var(--color-text-tertiary)]">{t('pricing.per_month')}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 text-sm">
-                        <span className="text-white font-medium">{plan.priceMonth ?? ''}</span>
-                        <span className="text-[var(--color-text-tertiary)]">{t('pricing.per_month')}</span>
-                      </div>
-                    )}
-                  </div>
                 )}
-
-                <div className="divider" />
-
-                {plan.isTopCenters ? (
-                  <Link href="/signup" className="btn btn-ghost w-full py-2.5 mt-auto border-[var(--color-gold-500)] text-gold-400">
-                    {t('pricing.enterprise_cta')}
-                  </Link>
-                ) : (
-                  <Link href="/signup" className="btn btn-primary w-full py-2.5 mt-auto">
-                    {t('pricing.cta')}
-                  </Link>
-                )}
-              </div>
+              </button>
             ))}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {LANDING_PLAN_ORDER.map((planKey) => {
+              const plan = PLANS[planKey];
+              const isTop = planKey === 'top_centers';
+              const isEnterprise = planKey === 'enterprise';
+              const isPro = planKey === 'pro';
+              const displayName = locale === 'ar' ? plan.arabicName : plan.englishName;
+              const perWeek = getPerStudentWeeklyCost(planKey);
+              const price = !isTop ? getPlanPrice(planKey, billingPeriod) : 0;
+              const annualEq = !isTop ? getAnnualMonthlyEquivalent(planKey) : 0;
+              return (
+                <div
+                  key={planKey}
+                  className={[
+                    'card p-6 flex flex-col gap-5 relative',
+                    'transition-all duration-normal ease-out',
+                    isPro ? 'border-[var(--color-brand-500)] shadow-brand-md ring-1 ring-[var(--color-brand-500)]' : '',
+                    isEnterprise || isTop ? 'border-[var(--color-gold-500)] shadow-gold-sm ring-1 ring-[var(--color-gold-500)]' : '',
+                  ].join(' ')}
+                >
+                  {isPro && (
+                    <span className="absolute -top-3 start-1/2 -translate-x-1/2 badge badge-brand text-xs whitespace-nowrap">
+                      {t('pricingRecommendedBadge')}
+                    </span>
+                  )}
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span
+                      className={`text-xl font-bold text-white ${locale === 'ar' ? "font-['Cairo',sans-serif]" : ''}`}
+                    >
+                      {displayName}
+                    </span>
+                    <span className="badge badge-neutral text-xs self-start sm:self-auto">
+                      {isTop
+                        ? t('topCentersLimit')
+                        : t('studentsLimit', { count: formatPrice(plan.weeklyStudentLimit ?? 0) })}
+                    </span>
+                  </div>
+
+                  {isTop ? (
+                    <span className="text-2xl font-bold text-gold-400">{t('pricing.plans.top_centers.price_month')}</span>
+                  ) : (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-3xl font-bold text-white font-mono">
+                        {billingPeriod === 'annual'
+                          ? t('pricingAnnualBreakdown', {
+                              total: formatPrice(price),
+                              perMonth: formatPrice(annualEq),
+                            })
+                          : t('pricingPerPeriod', { amount: formatPrice(price) })}
+                      </span>
+                      <span className="text-xs text-[var(--color-text-tertiary)]">{t('allInclusiveBadge')}</span>
+                      {perWeek != null && (
+                        <span className="text-sm text-[var(--color-text-secondary)]">
+                          {tBilling('perStudentWeekly', { price: formatPrice(perWeek) })}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="divider" />
+
+                  {isTop ? (
+                    <Link
+                      href="/signup"
+                      className="btn btn-ghost w-full py-2.5 mt-auto border-[var(--color-gold-500)] text-gold-400"
+                    >
+                      {t('pricing.enterprise_cta')}
+                    </Link>
+                  ) : (
+                    <Link href="/signup" className="btn btn-primary w-full py-2.5 mt-auto">
+                      {t('pricing.cta')}
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

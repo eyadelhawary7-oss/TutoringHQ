@@ -6,24 +6,44 @@ import {
   verifyPasswordForSensitiveAction,
   SENSITIVE_PAYMENT_THRESHOLD,
 } from '@/lib/verify-password';
+import {
+  getChargeFromQuarterlyAllIn,
+  getImpliedMonthlyMrr,
+  normalizeBillingPeriod,
+  PLANS,
+  type BillingPeriod,
+  type PlanKey,
+} from '@/lib/pricing';
 
-const PLAN_MONTHLY: Record<string, number> = {
-  starter: 2000,
-  pro: 4500,
-  business: 6500,
-  enterprise: 9000,
-  payg: 0,
-  top_centers: 0,
-};
+function planKeyOrStarter(plan: string | null | undefined): PlanKey {
+  const k = String(plan || 'starter').toLowerCase();
+  if (k in PLANS && k !== 'top_centers') return k as PlanKey;
+  return 'starter';
+}
 
-function calcAmount(plan: string, period: string, monthlyOverride?: number): number {
-  const monthly = monthlyOverride ?? PLAN_MONTHLY[plan] ?? 4000;
-  switch (period) {
-    case 'quarterly': return monthly * 3;
-    case 'semi_annual': return Math.round(monthly * 6 * 0.95);
-    case 'annual': return Math.round(monthly * 12 * 0.90);
-    default: return monthly;
+function quarterlyAllInForCenter(row: {
+  plan?: string | null;
+  is_early_adopter?: boolean;
+  early_adopter_price?: number | null;
+  all_in_price?: number | null;
+}): number {
+  const pk = planKeyOrStarter(row.plan);
+  if (pk === 'top_centers') return 0;
+  if (row.is_early_adopter && typeof row.early_adopter_price === 'number') {
+    return row.early_adopter_price;
   }
+  if (row.all_in_price != null && Number(row.all_in_price) > 0) {
+    return Number(row.all_in_price);
+  }
+  return PLANS[pk].quarterlyAllIn;
+}
+
+function adminCycleAmount(periodRaw: string, baseQ: number): number {
+  const p = normalizeBillingPeriod(periodRaw);
+  if (periodRaw === 'semi_annual' || periodRaw === 'half_yearly') {
+    return Math.round(baseQ * 2);
+  }
+  return getChargeFromQuarterlyAllIn(baseQ, p);
 }
 
 function addMonths(date: Date, months: number): Date {
@@ -43,7 +63,7 @@ export async function GET(request: Request) {
 
     const { data: centers, error: centersError } = await supabaseAdmin
       .from('centers')
-      .select('id, name, plan, phone, billing_period, next_payment_due, next_billing_date, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type')
+      .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, next_billing_date, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type')
       .in('status', ['active', 'suspended']);
 
     if (centersError) {
@@ -67,31 +87,35 @@ export async function GET(request: Request) {
     const mrrByPlan: Record<string, number> = {};
 
     for (const row of billingRows) {
-      const bp = (row as { billing_period?: string }).billing_period || 'monthly';
+      const bp = (row as { billing_period?: string }).billing_period || 'quarterly';
       const nextDue = (row as { next_payment_due?: string }).next_payment_due
         || (row as { next_billing_date?: string }).next_billing_date;
-      const isEarlyAdopter = !!(row as { is_early_adopter?: boolean }).is_early_adopter;
-      const earlyAdopterPrice = (row as { early_adopter_price?: number }).early_adopter_price;
       const billingType = (row as { billing_type?: string }).billing_type || 'fixed';
 
-      let monthly: number;
       if (billingType === 'payg') {
-        monthly = 0; // PAYG MRR calculated separately from payg_weekly_charges
         (row as Record<string, unknown>).amount = 0;
         (row as Record<string, unknown>).monthlyEquivalent = 0;
       } else {
-        monthly = isEarlyAdopter && typeof earlyAdopterPrice === 'number'
-          ? earlyAdopterPrice
-          : PLAN_MONTHLY[row.plan as string] ?? 4000;
-        const amount = calcAmount(row.plan as string || 'starter', bp === 'half_yearly' ? 'semi_annual' : bp === 'yearly' ? 'annual' : bp, monthly);
+        const baseQ = quarterlyAllInForCenter(row as Parameters<typeof quarterlyAllInForCenter>[0]);
+        const amount = adminCycleAmount(bp, baseQ);
         (row as Record<string, unknown>).amount = amount;
-        const monthlyEquiv = bp === 'quarterly' ? monthly : bp === 'semi_annual' || bp === 'half_yearly' ? monthly * 0.95 : bp === 'annual' || bp === 'yearly' ? monthly * 0.9 : monthly;
+        const mrrPeriod: BillingPeriod =
+          bp === 'semi_annual' || bp === 'half_yearly' ? 'quarterly' : normalizeBillingPeriod(bp);
+        const monthlyEquiv = getImpliedMonthlyMrr(baseQ, mrrPeriod);
         (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
         fixedMRR += monthlyEquiv;
         const planKey = (row.plan as string) || 'starter';
         mrrByPlan[planKey] = (mrrByPlan[planKey] ?? 0) + monthlyEquiv;
       }
-      const discount = bp === 'semi_annual' || bp === 'half_yearly' ? 5 : bp === 'annual' || bp === 'yearly' ? 10 : bp === 'quarterly' ? 0 : 0;
+      const canon = normalizeBillingPeriod(bp);
+      const discount =
+        bp === 'semi_annual' || bp === 'half_yearly'
+          ? 5
+          : canon === 'annual' || bp === 'yearly'
+            ? 15
+            : canon === 'monthly'
+              ? -15
+              : 0;
       (row as Record<string, unknown>).discount = discount;
       (row as Record<string, unknown>).nextDue = nextDue;
       (row as Record<string, unknown>).referralCredits = creditsByCenter[(row as { id: string }).id] ?? 0;

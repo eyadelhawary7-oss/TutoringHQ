@@ -3,6 +3,8 @@
  * 30-50% premium over fixed plans.
  */
 
+import { getPlanPrice, type PlanKey } from '@/lib/pricing';
+
 const MONTHLY_WEEKS = 4.333;
 
 export const PAYG_RATES: { min: number; max: number; rate: number }[] = [
@@ -34,19 +36,12 @@ export function calculatePaygCharge(studentsPerWeek: number): {
 }
 
 /** Compare PAYG cost to fixed plan - return best fixed plan if cheaper */
-export const FIXED_PLAN_PRICES: Record<string, number> = {
-  starter: 2000,
-  pro: 4500,
-  business: 6500,
-  enterprise: 9000,
-};
-
 export function getRecommendedFixedPlan(monthlyPaygCost: number): { plan: string; price: number; savings: number } | null {
   if (monthlyPaygCost <= 0) return null;
-  const plans = ['starter', 'pro', 'business', 'enterprise'] as const;
+  const plans: PlanKey[] = ['nano', 'starter', 'pro', 'business', 'enterprise'];
   for (const plan of plans) {
-    const price = FIXED_PLAN_PRICES[plan];
-    if (price < monthlyPaygCost) {
+    const price = getPlanPrice(plan, 'monthly');
+    if (price > 0 && price < monthlyPaygCost) {
       return { plan, price, savings: monthlyPaygCost - price };
     }
   }

@@ -8,15 +8,9 @@ import {
   buildPaymobIframeUrl,
 } from '@/lib/paymob';
 
+import { getChargeFromQuarterlyAllIn, normalizeBillingPeriod, PLANS, type BillingPeriod, type PlanKey } from '@/lib/pricing';
+
 const MONTHLY_MULTIPLIER = 4.333;
-const PLAN_MONTHLY_FEES: Record<string, number> = {
-  nano: 1200,
-  starter: 2000,
-  pro: 4500,
-  business: 6500,
-  enterprise: 9000,
-  top_centers: 0,
-};
 
 function getBracketRate(students: number): number {
   if (students <= 150) return 4;
@@ -77,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     const { data: center, error: centerError } = await ctx.supabaseAdmin
       .from('centers')
-      .select('id, name, plan, pricing_type, weekly_student_limit, is_early_adopter, early_adopter_price')
+      .select('id, name, plan, pricing_type, weekly_student_limit, billing_period, all_in_price, is_early_adopter, early_adopter_price')
       .eq('id', ctx.user.center_id)
       .single();
 
@@ -96,10 +90,15 @@ export async function POST(request: NextRequest) {
       const weeklyLimit = (center as { weekly_student_limit?: number }).weekly_student_limit ?? 200;
       billingAmountEgp = calculatePaygMonthly(weeklyLimit);
     } else {
-      billingAmountEgp =
+      const planKey = (plan in PLANS ? plan : 'starter') as PlanKey;
+      const period = normalizeBillingPeriod((center as { billing_period?: string | null }).billing_period);
+      const qBase =
         isEarlyAdopter && typeof earlyAdopterPrice === 'number'
           ? earlyAdopterPrice
-          : PLAN_MONTHLY_FEES[plan] ?? 2000;
+          : (center as { all_in_price?: number | null }).all_in_price != null
+            ? Number((center as { all_in_price?: number | null }).all_in_price)
+            : PLANS[planKey].quarterlyAllIn;
+      billingAmountEgp = getChargeFromQuarterlyAllIn(qBase, period as BillingPeriod);
     }
 
     if (billingAmountEgp <= 0) {

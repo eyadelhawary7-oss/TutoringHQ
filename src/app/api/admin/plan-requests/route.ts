@@ -2,10 +2,20 @@ import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
 import { adminPlanRequestsSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { PLANS, getPlanPrice, isPlanKey, type PlanKey } from '@/lib/pricing';
 
-const PLAN_MONTHLY: Record<string, number> = {
-  starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 0, payg: 0,
-};
+function planPriceMonthly(plan: string | undefined, isEarly: boolean, earlyPrice: number | undefined): number {
+  if (isEarly && typeof earlyPrice === 'number') return getChargeApproxFromEarlyBase(earlyPrice);
+  const k = (plan || 'starter').toLowerCase();
+  if (k === 'payg') return 0;
+  if (!isPlanKey(k) || k === 'top_centers') return 0;
+  return getPlanPrice(k, 'monthly');
+}
+
+/** Legacy early_adopter_price treated as quarterly all-in → monthly all-in display. */
+function getChargeApproxFromEarlyBase(quarterlyBase: number): number {
+  return Math.round(quarterlyBase * 1.15);
+}
 
 export async function GET(request: Request) {
   try {
@@ -36,10 +46,10 @@ export async function GET(request: Request) {
 
     const rows = (requests || []).map((r: { center_id: string; current_plan?: string; requested_plan?: string; [k: string]: unknown }) => {
       const center = centerMap.get(r.center_id);
-      const currentPrice = center?.is_early_adopter && typeof center?.early_adopter_price === 'number'
-        ? center.early_adopter_price
-        : PLAN_MONTHLY[(r.current_plan as string) || 'starter'] ?? 0;
-      const requestedPrice = PLAN_MONTHLY[(r.requested_plan as string) || ''] ?? 0;
+      const ea = !!(center?.is_early_adopter && typeof center?.early_adopter_price === 'number');
+      const ep = center?.early_adopter_price;
+      const currentPrice = planPriceMonthly(r.current_plan as string, ea, ep);
+      const requestedPrice = planPriceMonthly(r.requested_plan as string, false, undefined);
       const priceDiff = requestedPrice - currentPrice;
       return {
         ...r,
@@ -48,7 +58,7 @@ export async function GET(request: Request) {
         currentPrice,
         requestedPrice,
         priceDiff,
-        priceDiffFormatted: priceDiff > 0 ? `+${priceDiff.toLocaleString('ar-EG')} EGP/mo` : priceDiff < 0 ? `${priceDiff.toLocaleString('ar-EG')} EGP/mo` : '—',
+        priceDiffFormatted: priceDiff > 0 ? `+${priceDiff.toLocaleString('en-US')} EGP/mo` : priceDiff < 0 ? `${priceDiff.toLocaleString('en-US')} EGP/mo` : '—',
       };
     });
 
@@ -111,14 +121,19 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: true, action: 'rejected' });
     }
 
-    await supabaseAdmin
-      .from('centers')
-      .update({
-        plan: pr.requested_plan,
-        pending_plan_change: null,
-        pending_billing_type: pr.requested_plan === 'payg' ? 'payg' : 'fixed',
-      })
-      .eq('id', pr.center_id);
+    const centerPlanUpdates: Record<string, unknown> = {
+      plan: pr.requested_plan,
+      pending_plan_change: null,
+      pending_billing_type: pr.requested_plan === 'payg' ? 'payg' : 'fixed',
+    };
+    if (isPlanKey(pr.requested_plan)) {
+      const pk = pr.requested_plan as PlanKey;
+      if (pk !== 'top_centers') {
+        centerPlanUpdates.all_in_price = PLANS[pk].quarterlyAllIn;
+      }
+    }
+
+    await supabaseAdmin.from('centers').update(centerPlanUpdates).eq('id', pr.center_id);
 
     await supabaseAdmin
       .from('plan_requests')
@@ -146,9 +161,11 @@ export async function PUT(request: Request) {
       .eq('id', pr.center_id)
       .single();
     const requestedLabel = PLAN_LABELS[(pr.requested_plan as string) || ''] || pr.requested_plan;
-    const reqPrice = PLAN_MONTHLY[(pr.requested_plan as string) || ''] ?? 0;
+    const rp = (pr.requested_plan as string) || '';
+    const reqPrice =
+      isPlanKey(rp) && rp !== 'top_centers' ? getPlanPrice(rp as PlanKey, 'monthly') : 0;
     const waMessage = reqPrice > 0
-      ? `مرحباً، تم الموافقة على ترقية خطتك إلى ${requestedLabel}. السعر الجديد: ${reqPrice.toLocaleString('ar-EG')} EGP/شهر. شكراً لثقتك!`
+      ? `مرحباً، تم الموافقة على ترقية خطتك إلى ${requestedLabel}. السعر الجديد: ${reqPrice.toLocaleString('en-US')} EGP/شهر. شكراً لثقتك!`
       : `مرحباً، تم الموافقة على تغيير خطتك إلى ${requestedLabel}. شكراً لثقتك!`;
     const phone = (center?.phone as string || '').trim();
     const waLink = phone ? `https://wa.me/${phone.startsWith('+') ? phone.slice(1).replace(/\D/g, '') : '20' + phone.replace(/^0/, '').replace(/\D/g, '')}?text=${encodeURIComponent(waMessage)}` : null;

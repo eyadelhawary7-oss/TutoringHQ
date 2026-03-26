@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { PLANS, isPlanKey, type PlanKey } from '@/lib/pricing';
 
 async function getAuthContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -71,19 +72,35 @@ export async function POST(request: NextRequest) {
     // Get first center in org for plan/billing defaults
     const { data: firstCenter } = await supabaseAdmin
       .from('centers')
-      .select('plan, billing_type, billing_period, billing_amount, phone, owner_name')
+      .select('plan, billing_type, billing_period, billing_amount, all_in_price, phone, owner_name')
       .eq('organization_id', organizationId)
       .limit(1)
       .maybeSingle();
 
-    const fc = firstCenter as { plan?: string; billing_type?: string; billing_period?: string; billing_amount?: number; phone?: string; owner_name?: string } | null;
+    const fc = firstCenter as {
+      plan?: string;
+      billing_type?: string;
+      billing_period?: string;
+      billing_amount?: number;
+      all_in_price?: number;
+      phone?: string;
+      owner_name?: string;
+    } | null;
+    const pk: PlanKey = isPlanKey(fc?.plan) ? (fc!.plan as PlanKey) : 'starter';
+    const parentQuarterly =
+      fc?.all_in_price != null && Number(fc.all_in_price) > 0
+        ? Number(fc.all_in_price)
+        : pk === 'top_centers'
+          ? 0
+          : PLANS[pk].quarterlyAllIn;
     const insert: Record<string, unknown> = {
       name,
       organization_id: organizationId,
       plan: fc?.plan ?? 'starter',
       billing_type: fc?.billing_type ?? 'fixed',
       billing_period: fc?.billing_period ?? 'quarterly',
-      billing_amount: fc?.billing_amount ?? 2000,
+      billing_amount: fc?.billing_amount ?? parentQuarterly,
+      all_in_price: fc?.all_in_price ?? parentQuarterly,
       status: 'active',
       owner_name: fc?.owner_name ?? '',
       phone: fc?.phone ?? null,

@@ -9,6 +9,7 @@ import { generateReferralCode } from '@/lib/referral';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { PLANS, type PlanKey } from '@/lib/pricing';
 
 function isSuperAdmin(phone: string | null): boolean {
   const admins = process.env.SUPER_ADMIN_PHONES || '';
@@ -760,18 +761,18 @@ export async function PUT(request: Request) {
     const suspendAt = new Date(now);
     suspendAt.setDate(suspendAt.getDate() + 1);
 
-    // Early Adopter: first 10 approved centers get 40% discount locked in
+    // Early Adopter: first 10 approved centers get 40% discount locked in (quarterly all-in base)
     const plan = (center.plan as string) || 'starter';
-    const EARLY_ADOPTER_PRICES: Record<string, number> = {
-      starter: 1200, pro: 2700, business: 3900, enterprise: 5400,
-    };
+    const planKey = (plan in PLANS ? plan : 'starter') as PlanKey;
+    const listQuarterlyAllIn = PLANS[planKey]?.quarterlyAllIn ?? PLANS.starter.quarterlyAllIn;
+    const earlyAdopterEligiblePlans = new Set(['nano', 'starter', 'pro', 'business', 'enterprise']);
     const { count: earlyAdopterCount } = await supabaseAdmin
       .from('centers')
       .select('*', { count: 'exact', head: true })
       .eq('is_early_adopter', true);
-    const canBeEarlyAdopter = (earlyAdopterCount ?? 0) < 10 && plan in EARLY_ADOPTER_PRICES;
+    const canBeEarlyAdopter = (earlyAdopterCount ?? 0) < 10 && earlyAdopterEligiblePlans.has(plan);
     const earlyAdopterNumber = canBeEarlyAdopter ? (earlyAdopterCount ?? 0) + 1 : null;
-    const earlyAdopterPrice = canBeEarlyAdopter ? EARLY_ADOPTER_PRICES[plan] : null;
+    const earlyAdopterPrice = canBeEarlyAdopter ? Math.round(listQuarterlyAllIn * 0.6) : null;
 
     const centerUpdates: Record<string, unknown> = {
       status: 'active',
@@ -781,6 +782,7 @@ export async function PUT(request: Request) {
       payment_due_date: dueDate,
       auto_suspend_at: suspendAt.toISOString(),
       billing_start_date: dueDate,
+      all_in_price: listQuarterlyAllIn,
     };
     if (canBeEarlyAdopter) {
       centerUpdates.is_early_adopter = true;

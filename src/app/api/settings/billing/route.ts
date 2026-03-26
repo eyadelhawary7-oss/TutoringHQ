@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { getPlanPrice, normalizeBillingPeriod, type BillingPeriod, type PlanKey } from '@/lib/pricing';
 
 const MONTHLY_MULTIPLIER = 4.333;
 
@@ -76,7 +77,8 @@ export async function GET(request: NextRequest) {
       .from('centers')
       .select(`
         id, name, plan, pricing_type, weekly_student_limit,
-        billing_type, pending_plan_change, pending_billing_type,
+        billing_type, billing_period, all_in_price,
+        pending_plan_change, pending_billing_type,
         current_period_start, current_period_end, last_payment_date,
         is_early_adopter, early_adopter_price
       `)
@@ -151,9 +153,10 @@ export async function GET(request: NextRequest) {
 
     const fixedPlanComparison = { plan: '', price: 0, savings: 0 };
     if (thisWeekPayg.monthly > 0) {
-      const FIXED: Record<string, number> = { nano: 1200, starter: 2000, pro: 4500, business: 6500, enterprise: 9000 };
-      for (const [p, price] of Object.entries(FIXED)) {
-        if (price < thisWeekPayg.monthly) {
+      const order: PlanKey[] = ['nano', 'starter', 'pro', 'business', 'enterprise'];
+      for (const p of order) {
+        const price = getPlanPrice(p, 'monthly' as BillingPeriod);
+        if (price > 0 && price < thisWeekPayg.monthly) {
           fixedPlanComparison.plan = p;
           fixedPlanComparison.price = price;
           fixedPlanComparison.savings = thisWeekPayg.monthly - price;
@@ -178,10 +181,18 @@ export async function GET(request: NextRequest) {
     const isEarlyAdopter = !!(center as { is_early_adopter?: boolean }).is_early_adopter;
     const earlyAdopterPrice = (center as { early_adopter_price?: number }).early_adopter_price;
 
+    const billing_period = normalizeBillingPeriod((center as { billing_period?: string | null }).billing_period);
+    const all_in_price =
+      (center as { all_in_price?: number | string | null }).all_in_price != null
+        ? Number((center as { all_in_price?: number | string | null }).all_in_price)
+        : null;
+
     return NextResponse.json({
       plan,
       billing_type: billingType,
       pricing_type: billingType,
+      billing_period,
+      all_in_price,
       is_early_adopter: isEarlyAdopter,
       early_adopter_price: earlyAdopterPrice,
       weekly_student_limit: center.weekly_student_limit ?? 200,

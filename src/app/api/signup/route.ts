@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/utils/phone';
+import { PLANS, getPlanPrice, normalizeBillingPeriod, type BillingPeriod, type PlanKey } from '@/lib/pricing';
 
 export async function POST(request: Request) {
   try {
@@ -24,16 +25,22 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const planPricing: Record<string, { monthly: number; setup: number }> = {
-      NANO: { monthly: 1200, setup: 500 },
-      STARTER: { monthly: 2000, setup: 1000 },
-      PRO: { monthly: 4500, setup: 2000 },
-      BUSINESS: { monthly: 6500, setup: 3000 },
-      ENTERPRISE: { monthly: 9000, setup: 5000 },
+    const setupFees: Record<string, number> = {
+      NANO: 500,
+      STARTER: 1000,
+      PRO: 2000,
+      BUSINESS: 3000,
+      ENTERPRISE: 5000,
     };
-    const pricing = planPricing[normalizedPlan] || planPricing.STARTER;
+    const setup = setupFees[normalizedPlan] ?? 1000;
 
-    const planLower = normalizedPlan.toLowerCase();
+    const planLower = normalizedPlan.toLowerCase() as PlanKey;
+    const planKey: PlanKey = planLower in PLANS ? planLower : 'starter';
+    const quarterlyAllIn = PLANS[planKey].quarterlyAllIn;
+    const periodResolved: BillingPeriod = normalizeBillingPeriod(
+      ['monthly', 'quarterly', 'annual'].includes(String(billing_period)) ? String(billing_period) : 'quarterly',
+    );
+    const periodAmount = getPlanPrice(planKey, periodResolved);
 
     // Resolve referral code to referrer center_id (if provided)
     let referrerCenterId: string | null = null;
@@ -66,8 +73,9 @@ export async function POST(request: Request) {
       status: 'pending',
       subscription_status: 'pending',
       billing_type: 'fixed',
-      billing_period: ['monthly', 'quarterly', 'biannual', 'yearly'].includes(billing_period) ? billing_period : 'quarterly',
-      billing_amount: pricing.monthly,
+      billing_period: periodResolved,
+      billing_amount: quarterlyAllIn,
+      all_in_price: quarterlyAllIn,
       requested_at: new Date().toISOString(),
     };
     if (referrerCenterId) {
@@ -100,7 +108,7 @@ export async function POST(request: Request) {
       if (refErr) console.error('[signup] Referral link insert failed:', refErr);
     }
 
-    const firstPayment = pricing.monthly + pricing.setup;
+    const firstPayment = periodAmount + setup;
     const whatsappMessage = `🆕 *NEW SIGNUP REQUEST*
 
 📋 *Center Details:*
@@ -109,10 +117,11 @@ export async function POST(request: Request) {
 - Phone: ${formattedPhone}
 - City: ${city || '—'}
 - Plan: ${normalizedPlan}
+- Billing period: ${periodResolved}
 
-💰 *Payment Required:*
-- Monthly: EGP ${pricing.monthly.toLocaleString('en-US')}
-- Setup Fee: EGP ${pricing.setup.toLocaleString('en-US')}
+💰 *Payment Required (all-inclusive):*
+- Selected period total: EGP ${periodAmount.toLocaleString('en-US')}
+- Setup Fee: EGP ${setup.toLocaleString('en-US')}
 - *First Payment: EGP ${firstPayment.toLocaleString('en-US')}*
 
 📝 Notes: ${notes || 'None'}

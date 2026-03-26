@@ -14,6 +14,19 @@ import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard, Loader2, FileText, Calendar } from 'lucide-react';
 import { getPlanLevel } from '@/lib/plans';
 import { FEATURES } from '@/lib/features';
+import {
+  PLANS,
+  getPlanPrice,
+  getQuarterlyCharge,
+  getAnnualMonthlyEquivalent,
+  getPerStudentWeeklyCost,
+  getChargeFromQuarterlyAllIn,
+  formatPrice,
+  normalizeBillingPeriod,
+  isPlanKey,
+  type BillingPeriod,
+  type PlanKey,
+} from '@/lib/pricing';
 
 type TabType = 'general' | 'billing' | 'team';
 
@@ -80,17 +93,35 @@ interface PaygRate {
 }
 
 // ========== Constants ==========
-const PLAN_DISPLAY_NAMES: Record<string, string> = { nano: 'ناشئ', starter: 'سنتر صغير', pro: 'سنتر متوسط', business: 'سنتر كبير', enterprise: 'سنتر ضخم', top_centers: 'ميجا سنتر' };
-const PLAN_PER_STUDENT_WEEK: Record<string, string> = { nano: '3.69', starter: '3.33', pro: '2.25', business: '1.63', enterprise: '1.13', top_centers: '' };
+const PLAN_DISPLAY_NAMES: Record<string, string> = {
+  nano: PLANS.nano.arabicName,
+  starter: PLANS.starter.arabicName,
+  pro: PLANS.pro.arabicName,
+  business: PLANS.business.arabicName,
+  enterprise: PLANS.enterprise.arabicName,
+  top_centers: PLANS.top_centers.arabicName,
+};
 
-const FALLBACK_PLANS: PricingPlan[] = [
-  { id: 'nano', name_en: 'Nano', name_ar: 'ناشئ', students_per_week_limit: 75, monthly_fee: 1200, per_student_at_capacity_egp: 3.69, setup_fee_egp: 500, is_custom: false },
-  { id: 'starter', name_en: 'سنتر صغير', name_ar: 'سنتر صغير', students_per_week_limit: 150, monthly_fee: 2000, per_student_at_capacity_egp: 13.33, setup_fee_egp: 1000, is_custom: false },
-  { id: 'pro', name_en: 'سنتر متوسط', name_ar: 'سنتر متوسط', students_per_week_limit: 500, monthly_fee: 4500, per_student_at_capacity_egp: 9, setup_fee_egp: 2000, is_custom: false },
-  { id: 'business', name_en: 'سنتر كبير', name_ar: 'سنتر كبير', students_per_week_limit: 1000, monthly_fee: 6500, per_student_at_capacity_egp: 6.5, setup_fee_egp: 3000, is_custom: false },
-  { id: 'enterprise', name_en: 'سنتر ضخم', name_ar: 'سنتر ضخم', students_per_week_limit: 2000, monthly_fee: 9000, per_student_at_capacity_egp: 4.5, setup_fee_egp: 5000, is_custom: false },
-  { id: 'top_centers', name_en: 'ميجا سنتر', name_ar: 'ميجا سنتر', students_per_week_limit: 999999, monthly_fee: 0, per_student_at_capacity_egp: 0, setup_fee_egp: 0, is_custom: true },
-];
+const SETUP_FEE_BY_PLAN: Record<string, number> = {
+  nano: 500, starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0,
+};
+
+const FALLBACK_PLAN_KEYS: PlanKey[] = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'];
+
+const FALLBACK_PLANS: PricingPlan[] = FALLBACK_PLAN_KEYS.map((id) => {
+  const p = PLANS[id];
+  const w = getPerStudentWeeklyCost(id);
+  return {
+    id,
+    name_en: p.englishName,
+    name_ar: p.arabicName,
+    students_per_week_limit: p.weeklyStudentLimit ?? 999999,
+    monthly_fee: p.quarterlyAllIn,
+    per_student_at_capacity_egp: w ?? 0,
+    setup_fee_egp: SETUP_FEE_BY_PLAN[id] ?? 0,
+    is_custom: id === 'top_centers',
+  };
+});
 
 const FALLBACK_PAYG: PaygRate[] = [
   { min_students_per_week: 0, max_students_per_week: 150, rate_per_student_egp: 4 },
@@ -139,19 +170,13 @@ function calculatePaygCost(_rates: PaygRate[], students: number) {
   return { weekly: weeklyCost, monthly, effectiveRate: rate, breakdown };
 }
 
-function getFixedPlanComparison(plans: PricingPlan[], students: number) {
-  const nanoPlan = plans.find(p => p.id === 'nano');
-  const starter = plans.find(p => p.id === 'starter');
-  const pro = plans.find(p => p.id === 'pro');
-  const business = plans.find(p => p.id === 'business');
-  const enterprise = plans.find(p => p.id === 'enterprise');
-  const top = plans.find(p => p.id === 'top_centers');
-  if (students <= 75) return { planName: nanoPlan?.name_en ?? 'Nano', planNameAr: nanoPlan?.name_ar ?? 'ناشئ', planFee: nanoPlan?.monthly_fee ?? 1200, isCustom: false };
-  if (students <= 150) return { planName: starter?.name_en ?? 'Starter', planNameAr: starter?.name_ar ?? 'أساسي', planFee: starter?.monthly_fee ?? 2000, isCustom: false };
-  if (students <= 500) return { planName: pro?.name_en ?? 'Pro', planNameAr: pro?.name_ar ?? 'محترف', planFee: pro?.monthly_fee ?? 4500, isCustom: false };
-  if (students <= 1000) return { planName: business?.name_en ?? 'Business', planNameAr: business?.name_ar ?? 'أعمال', planFee: business?.monthly_fee ?? 6500, isCustom: false };
-  if (students <= 2000) return { planName: enterprise?.name_en ?? 'Enterprise', planNameAr: enterprise?.name_ar ?? 'مؤسسات', planFee: enterprise?.monthly_fee ?? 9000, isCustom: false };
-  return { planName: top?.name_en ?? 'Top Centers', planNameAr: top?.name_ar ?? 'كبار السناتر', planFee: 0, isCustom: true };
+function getFixedPlanComparison(students: number) {
+  if (students <= 75) return { planName: PLANS.nano.englishName, planNameAr: PLANS.nano.arabicName, planFee: getPlanPrice('nano', 'monthly'), isCustom: false };
+  if (students <= 150) return { planName: PLANS.starter.englishName, planNameAr: PLANS.starter.arabicName, planFee: getPlanPrice('starter', 'monthly'), isCustom: false };
+  if (students <= 500) return { planName: PLANS.pro.englishName, planNameAr: PLANS.pro.arabicName, planFee: getPlanPrice('pro', 'monthly'), isCustom: false };
+  if (students <= 1000) return { planName: PLANS.business.englishName, planNameAr: PLANS.business.arabicName, planFee: getPlanPrice('business', 'monthly'), isCustom: false };
+  if (students <= 2000) return { planName: PLANS.enterprise.englishName, planNameAr: PLANS.enterprise.arabicName, planFee: getPlanPrice('enterprise', 'monthly'), isCustom: false };
+  return { planName: PLANS.top_centers.englishName, planNameAr: PLANS.top_centers.arabicName, planFee: 0, isCustom: true };
 }
 
 // Filter out pro_plus and nascent (legacy)
@@ -217,6 +242,8 @@ function SettingsPageContent() {
     plan: string;
     pricing_type: string;
     billing_type?: string;
+    billing_period?: BillingPeriod;
+    all_in_price?: number | null;
     weekly_student_limit: number;
     plans: PricingPlan[];
     payg_rates: PaygRate[];
@@ -237,6 +264,7 @@ function SettingsPageContent() {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [proofUploading, setProofUploading] = useState(false);
   const [billingSaving, setBillingSaving] = useState(false);
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<BillingPeriod>('quarterly');
   const [planRequests, setPlanRequests] = useState<Array<{ id: string; current_plan: string; requested_plan: string; status: string; requested_at?: string }>>([]);
   const [payNowLoading, setPayNowLoading] = useState(false);
 
@@ -365,6 +393,8 @@ function SettingsPageContent() {
           plan: json.plan || 'starter',
           pricing_type: json.pricing_type || json.billing_type || 'fixed',
           billing_type: json.billing_type || json.pricing_type,
+          billing_period: normalizeBillingPeriod(json.billing_period),
+          all_in_price: json.all_in_price != null ? Number(json.all_in_price) : null,
           weekly_student_limit: json.weekly_student_limit ?? 200,
           plans,
           payg_rates: paygRates,
@@ -374,6 +404,7 @@ function SettingsPageContent() {
           center_name: json.center_name,
           invoices: json.invoices || [],
         });
+        setSelectedBillingPeriod(normalizeBillingPeriod(json.billing_period));
         setPaygSlider(json.weekly_student_limit ?? 200);
       }
       // Fetch plan requests for this center
@@ -888,8 +919,29 @@ function SettingsPageContent() {
   const plans = filterPlans(billingData?.plans ?? FALLBACK_PLANS);
   const paygRates = billingData?.payg_rates ?? FALLBACK_PAYG;
   const currentPlanDetails = billingData?.current_plan_details ?? plans.find(p => p.id === billingData?.plan);
+  const currentPlanKey: PlanKey = isPlanKey(billingData?.plan) ? (billingData!.plan as PlanKey) : 'starter';
+  const quarterlyBaseForCurrentCenter = useMemo(() => {
+    if (!billingData || currentPlanKey === 'top_centers') return 0;
+    if (billingData.is_early_adopter && typeof billingData.early_adopter_price === 'number') {
+      return billingData.early_adopter_price;
+    }
+    if (billingData.all_in_price != null && billingData.all_in_price > 0) return billingData.all_in_price;
+    return PLANS[currentPlanKey].quarterlyAllIn;
+  }, [billingData, currentPlanKey]);
+  const currentDisplayPrice = useMemo(() => {
+    if (!billingData || currentPlanKey === 'top_centers') return 0;
+    const q = quarterlyBaseForCurrentCenter;
+    if (q <= 0) return 0;
+    if (selectedBillingPeriod === 'quarterly') return q;
+    if (selectedBillingPeriod === 'monthly') return Math.round(q * 1.15);
+    return Math.round(q * 12 * 0.85);
+  }, [billingData, currentPlanKey, quarterlyBaseForCurrentCenter, selectedBillingPeriod]);
+  const currentCycleCharge = useMemo(() => {
+    if (!billingData || currentPlanKey === 'top_centers') return 0;
+    return getChargeFromQuarterlyAllIn(quarterlyBaseForCurrentCenter, selectedBillingPeriod);
+  }, [billingData, currentPlanKey, quarterlyBaseForCurrentCenter, selectedBillingPeriod]);
   const paygResult = useMemo(() => calculatePaygCost(paygRates, paygSlider), [paygRates, paygSlider]);
-  const fixedComparison = useMemo(() => getFixedPlanComparison(plans, paygSlider), [plans, paygSlider]);
+  const fixedComparison = useMemo(() => getFixedPlanComparison(paygSlider), [paygSlider]);
   const fixedSavesMoney = !fixedComparison.isCustom && fixedComparison.planFee < paygResult.monthly;
   const savingsAmount = fixedSavesMoney ? paygResult.monthly - fixedComparison.planFee : 0;
 
@@ -1315,24 +1367,81 @@ function SettingsPageContent() {
               <>
                 {/* 1. Current Plan hero */}
                 <div className="bg-gradient-to-br from-teal-600 to-slate-800 rounded-2xl p-6 text-white mb-6 shadow-lg">
-                  <div className="flex items-start justify-between">
+                  <p className="text-teal-200 text-sm font-medium uppercase tracking-wider mb-3">{tBilling('currentPlan')}</p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {(['monthly', 'quarterly', 'annual'] as const).map((period) => (
+                      <button
+                        key={period}
+                        type="button"
+                        onClick={() => setSelectedBillingPeriod(period)}
+                        className={`relative rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                          selectedBillingPeriod === period
+                            ? 'bg-[var(--color-surface-1)] text-teal-800'
+                            : 'bg-[var(--color-surface-1)]/15 text-teal-100 hover:bg-[var(--color-surface-1)]/25'
+                        }`}
+                      >
+                        {tBilling(`period.${period}`)}
+                        {period === 'quarterly' && (
+                          <span className="absolute -top-2 start-2 bg-amber-400/90 text-teal-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                            {tBilling('period.recommended')}
+                          </span>
+                        )}
+                        {period === 'monthly' && (
+                          <span className="absolute -top-2 end-0 bg-[var(--color-surface-1)]/30 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                            {tBilling('period.monthlyPremium')}
+                          </span>
+                        )}
+                        {period === 'annual' && (
+                          <span className="absolute -top-2 end-0 bg-amber-400/90 text-teal-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                            {tBilling('period.twoMonthsFree')}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div>
-                      <p className="text-teal-200 text-sm font-medium uppercase tracking-wider">{tBilling('currentPlan')}</p>
-                      <p className="text-4xl font-bold mt-1">{PLAN_DISPLAY_NAMES[billingData?.plan ?? 'starter'] ?? currentPlanDetails?.name_en ?? billingData?.plan ?? 'سنتر نانو'}</p>
-                      <p className="text-teal-200 text-sm mt-2">حتى {currentPlanDetails?.is_custom ? '2,000+' : (currentPlanDetails?.students_per_week_limit?.toLocaleString('en-US') ?? 0)} طالب/أسبوع</p>
+                      <p className="text-4xl font-bold mt-1">
+                        {currentPlanDetails?.is_custom
+                          ? (tBilling(`planNames.${currentPlanKey}`) || currentPlanDetails?.name_ar || currentPlanDetails?.name_en)
+                          : (tBilling(`planNames.${currentPlanKey}`) || (PLAN_DISPLAY_NAMES[billingData?.plan ?? 'starter'] ?? currentPlanDetails?.name_en))}
+                      </p>
+                      {currentPlanKey !== 'top_centers' && getPerStudentWeeklyCost(currentPlanKey) != null && (
+                        <p className="text-teal-100 text-sm mt-2">
+                          {tBilling('perStudentWeekly', { price: formatPrice(getPerStudentWeeklyCost(currentPlanKey)!) })}
+                        </p>
+                      )}
+                      <p className="text-teal-200 text-sm mt-2">
+                        {currentPlanDetails?.is_custom
+                          ? tBilling('unlimitedStudents')
+                          : tBilling('studentsLimit', { limit: formatPrice(currentPlanDetails?.students_per_week_limit ?? 0) })}
+                      </p>
                     </div>
-                    <div className="text-end">
-                      <p className="text-3xl font-bold font-mono">{currentPlanDetails?.is_custom ? tBilling('custom') : (() => {
-                        const fee = billingData?.is_early_adopter && typeof billingData?.early_adopter_price === 'number' ? billingData.early_adopter_price : currentPlanDetails?.monthly_fee ?? 0;
-                        const limit = currentPlanDetails?.students_per_week_limit ?? 150;
-                        const perWeek = limit > 0 ? (fee / 4 / limit).toFixed(2) : '—';
-                        return perWeek;
-                      })()} {tBilling('egp')}</p>
-                      <p className="text-teal-300 text-sm">تكلفة/طالب/أسبوع</p>
+                    <div className="text-start sm:text-end">
+                      {!currentPlanDetails?.is_custom && currentPlanKey !== 'top_centers' ? (
+                        <>
+                          <p className="text-3xl font-bold font-mono">
+                            {formatPrice(currentDisplayPrice)} {tBilling('egp')}
+                          </p>
+                          {selectedBillingPeriod === 'annual' && (
+                            <p className="text-teal-200 text-sm mt-1">
+                              {tBilling('monthlyEquivShort', { amount: formatPrice(Math.round(quarterlyBaseForCurrentCenter * 0.85)) })}
+                            </p>
+                          )}
+                          <p className="text-teal-300 text-xs mt-2 max-w-xs sm:ms-auto">{tBilling('priceLabel')}</p>
+                          <p className="text-teal-100 text-sm font-mono mt-1">
+                            {tBilling('quarterlyChargeLine', { amount: formatPrice(currentCycleCharge) })}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-2xl font-bold">{tBilling('custom')}</p>
+                      )}
                     </div>
                   </div>
                   <div className="mt-4 pt-4 border-t border-teal-500/40 flex items-center justify-between flex-wrap gap-2">
-                    <p className="text-teal-200 text-sm">Next payment due: <span className="text-white font-semibold">—</span></p>
+                    <p className="text-teal-200 text-sm">
+                      {tBilling('nextBilling')}: <span className="text-white font-semibold">—</span>
+                    </p>
                     <div className="flex items-center gap-2">
                       {FEATURES.PAYMOB_ENABLED && (
                         <button
@@ -1341,7 +1450,7 @@ function SettingsPageContent() {
                           disabled={payNowLoading}
                           className="px-4 py-2 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
                         >
-                          {payNowLoading ? tCommon('loading') : 'ادفع الآن'}
+                          {payNowLoading ? tCommon('loading') : tBilling('payNow')}
                         </button>
                       )}
                       <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full border border-green-500/30">{tBilling('active')}</span>
@@ -1353,33 +1462,80 @@ function SettingsPageContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   {plans.map((plan) => {
                     const isCurrent = billingData?.plan === plan.id && billingData?.pricing_type === 'fixed';
-                    const setupFees: Record<string, number> = { nano: 500, starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0 };
-                    const setupFee = plan.setup_fee_egp ?? setupFees[plan.id] ?? 0;
-                    const perStudentWeek = plan.is_custom ? null : (PLAN_PER_STUDENT_WEEK[plan.id] ?? (plan.students_per_week_limit > 0 ? (plan.monthly_fee / (plan.students_per_week_limit * 4)).toFixed(2) : null));
-                    const planName = PLAN_DISPLAY_NAMES[plan.id] ?? plan.name_en ?? plan.name_ar;
+                    const setupFee = plan.setup_fee_egp ?? SETUP_FEE_BY_PLAN[plan.id] ?? 0;
+                    const pkCard = isPlanKey(plan.id) ? (plan.id as PlanKey) : 'starter';
+                    const perStudentWeek = plan.is_custom ? null : getPerStudentWeeklyCost(pkCard);
+                    const planName = tBilling(`planNames.${plan.id}`) || PLAN_DISPLAY_NAMES[plan.id] || plan.name_en || plan.name_ar;
+                    const cardPrice = !plan.is_custom && isPlanKey(plan.id) ? getPlanPrice(plan.id as PlanKey, selectedBillingPeriod) : 0;
+                    const goldBorder = plan.id === 'enterprise' || plan.is_custom;
+                    const proRecommended = plan.id === 'pro';
                     return (
-                      <div key={plan.id} className={`bg-[var(--color-surface-1)] rounded-xl border shadow-sm p-5 relative ${isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-[var(--color-border-subtle)]'}`} style={plan.is_custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.25)' } : {}}>
+                      <div
+                        key={plan.id}
+                        className={[
+                          'bg-[var(--color-surface-1)] rounded-xl border shadow-sm p-5 relative',
+                          isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-[var(--color-border-subtle)]',
+                          !isCurrent && goldBorder ? 'border-[var(--color-gold-500)] ring-1 ring-[var(--color-gold-500)]' : '',
+                        ].join(' ')}
+                      >
+                        {proRecommended && (
+                          <span className="absolute -top-3 start-1/2 -translate-x-1/2 badge badge-brand text-xs whitespace-nowrap px-3 py-1">
+                            {tBilling('period.recommended')}
+                          </span>
+                        )}
                         {isCurrent && (
-                          <div className="absolute -top-3 start-1/2 -translate-x-1/2">
+                          <div className={`absolute ${proRecommended ? '-top-8' : '-top-3'} start-1/2 -translate-x-1/2`}>
                             <span className="px-3 py-1 bg-teal-600 text-white text-xs font-semibold rounded-full shadow">{tBilling('currentPlan')}</span>
                           </div>
                         )}
-                        <h3 className="font-bold text-[var(--color-text-primary)] text-lg">{planName}</h3>
-                        <ul className="text-sm text-[var(--color-text-secondary)] mt-1 space-y-0.5" dir="rtl">
-                          <li>• حتى {plan.is_custom ? '2,000+' : plan.students_per_week_limit?.toLocaleString('en-US')} طالب/أسبوع</li>
-                          {perStudentWeek && (
-                            <li>• {perStudentWeek} {tCommon('perStudentPerWeek')}</li>
+                        <h3 className="font-bold text-[var(--color-text-primary)] text-lg mt-2">{planName}</h3>
+                        <ul className="text-sm text-[var(--color-text-secondary)] mt-1 space-y-0.5" dir={isRTL ? 'rtl' : 'ltr'}>
+                          <li>
+                            •{' '}
+                            {plan.is_custom
+                              ? tBilling('unlimitedStudents')
+                              : tBilling('studentsLimit', { limit: formatPrice(plan.students_per_week_limit ?? 0) })}
+                          </li>
+                          {perStudentWeek != null && (
+                            <li>• {tBilling('perStudentWeekly', { price: formatPrice(perStudentWeek) })}</li>
                           )}
-                          {plan.is_custom && (
-                            <li>• تسعير مخصص حسب الاحتياج</li>
-                          )}
+                          {plan.is_custom && <li>• {tBilling('customPricingNote')}</li>}
                         </ul>
+                        <p className="text-xs text-[var(--color-text-tertiary)] mt-2">{tBilling('priceLabel')}</p>
                         <div className="my-4">
-                          <span className="text-3xl font-bold text-[var(--color-text-primary)] font-mono">{plan.is_custom ? tBilling('custom') : Number(plan.monthly_fee).toLocaleString('en-US')}</span>
-                          {!plan.is_custom && <span className="text-base font-normal text-slate-400">{tCommon('perMonth')}</span>}
+                          <span className="text-3xl font-bold text-[var(--color-text-primary)] font-mono">
+                            {plan.is_custom ? tBilling('custom') : formatPrice(cardPrice)}
+                          </span>
+                          {!plan.is_custom && (
+                            <span className="text-base font-normal text-[var(--color-text-tertiary)] ms-1">
+                              {selectedBillingPeriod === 'monthly'
+                                ? `(${tBilling('period.monthly')})`
+                                : selectedBillingPeriod === 'annual'
+                                  ? `(${tBilling('annualTotalShort')})`
+                                  : `(${tBilling('period.quarterly')})`}
+                            </span>
+                          )}
                         </div>
-                        <p className="text-xs text-slate-400 mb-4">Setup fee: {tBilling('egp')} {plan.is_custom ? '—' : Number(setupFee).toLocaleString('en-US')}</p>
-                        <button type="button" onClick={() => !isCurrent && (setChangePlanSelect(plan.id), setShowPlanRequestModal(true))} className={isCurrent ? 'w-full py-2 rounded-lg text-sm font-semibold bg-teal-50 text-teal-600 border border-teal-200 cursor-default' : 'w-full py-2 rounded-lg text-sm font-semibold border border-slate-300 text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors'} disabled={isCurrent}>{isCurrent ? 'Current Plan' : (getPlanLevel(plan.id) > getPlanLevel(billingData?.plan) ? 'Request Upgrade' : 'Request Downgrade')}</button>
+                        <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
+                          {tBilling('setup')}: {tBilling('egp')}{' '}
+                          {plan.is_custom ? '—' : formatPrice(setupFee)}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => !isCurrent && (setChangePlanSelect(plan.id), setShowPlanRequestModal(true))}
+                          className={
+                            isCurrent
+                              ? 'w-full py-2 rounded-lg text-sm font-semibold bg-[var(--color-surface-2)] text-teal-700 border border-[var(--color-border-subtle)] cursor-default'
+                              : 'w-full py-2 rounded-lg text-sm font-semibold border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors'
+                          }
+                          disabled={isCurrent}
+                        >
+                          {isCurrent
+                            ? tBilling('currentPlan')
+                            : getPlanLevel(plan.id) > getPlanLevel(billingData?.plan)
+                              ? tBilling('requestUpgrade')
+                              : tBilling('requestDowngrade')}
+                        </button>
                       </div>
                     );
                   })}
@@ -1448,7 +1604,7 @@ function SettingsPageContent() {
                             <tr key={inv.id || inv.invoice_number || String(inv.created_at)}>
                               <td className="py-3 px-4 text-sm text-[var(--color-text-primary)]">{inv.created_at ? new Date(inv.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
                               <td className="py-3 px-4 text-sm text-[var(--color-text-primary)] font-mono">{inv.payment_reference || inv.invoice_number || '—'}</td>
-                              <td className="py-3 px-4 text-sm font-mono text-[var(--color-text-primary)]">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString('ar-EG')} {tBilling('egp')}</td>
+                              <td className="py-3 px-4 text-sm font-mono text-[var(--color-text-primary)]">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString('en-US')} {tBilling('egp')}</td>
                               <td className="py-3 px-4 text-sm text-[var(--color-text-secondary)]">{inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
                               <td className="py-3 px-4"><span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusClass}`}>{inv.status}</span></td>
                             </tr>
@@ -1657,7 +1813,7 @@ function SettingsPageContent() {
               <p className="text-sm text-[var(--color-text-secondary)] mb-4">{tBilling('selectPlan')}</p>
               <div className="space-y-2 mb-6">
                 {plans.filter(p => p.id !== 'top_centers').map(p => (
-                  <button key={p.id} type="button" onClick={() => setChangePlanSelect(p.id)} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === p.id ? 'border-primary bg-primary/20 text-[var(--color-text-primary)]' : 'border-border bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-muted'}`}>{PLAN_DISPLAY_NAMES[p.id] ?? p.name_en} — {p.monthly_fee > 0 ? `${Number(p.monthly_fee).toLocaleString('en-US')} ${tBilling('egp')}/mo` : tBilling('custom')}</button>
+                  <button key={p.id} type="button" onClick={() => setChangePlanSelect(p.id)} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === p.id ? 'border-primary bg-primary/20 text-[var(--color-text-primary)]' : 'border-border bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-muted'}`}>{PLAN_DISPLAY_NAMES[p.id] ?? p.name_en} — {p.monthly_fee > 0 && isPlanKey(p.id) ? `${formatPrice(getPlanPrice(p.id as PlanKey, selectedBillingPeriod))} ${tBilling('egp')} (${tBilling(`period.${selectedBillingPeriod}`)})` : tBilling('custom')}</button>
                 ))}
                 <button type="button" onClick={() => setChangePlanSelect('payg')} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === 'payg' ? 'border-primary bg-primary/20 text-[var(--color-text-primary)]' : 'border-border bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-muted'}`}>Pay-As-You-Go</button>
               </div>

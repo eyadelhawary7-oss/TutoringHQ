@@ -5,40 +5,39 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { Globe, CheckCircle, Check, X } from 'lucide-react';
-import { PLAN_TIERS, getEffectiveMonthlyRate, getTotalForPeriod, getPerStudentPerWeek } from '@/lib/plan-tiers';
-import type { BillingPeriod } from '@/lib/plan-tiers';
+import {
+  PLANS,
+  getPlanPrice,
+  getPerStudentWeeklyCost,
+  formatPrice,
+  type BillingPeriod,
+  type PlanKey,
+} from '@/lib/pricing';
 
 const WHATSAPP_ADMIN = 'https://wa.me/201220601410';
 const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=I%20am%20interested%20in%20the%20TOP%20CENTERS%20plan';
 
-const PLANS = PLAN_TIERS.map((p) => ({
-  value: p.id,
-  nameAr: p.nameAr,
-  nameEn: p.nameEn,
-  fee: p.monthlyFee,
-  limit: p.maxStudentsPerWeek,
-  setupFee: p.setupFee,
-  perStudentWeek: p.isCustom ? null : getPerStudentPerWeek(p),
-  custom: p.isCustom ?? false,
-}));
+const SIGNUP_PLAN_ORDER: PlanKey[] = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'];
 
-type BillingPeriodOption = {
-  value: BillingPeriod
-  label: string
-  badge?: string
-}
+const SIGNUP_PLANS = SIGNUP_PLAN_ORDER.map((value) => {
+  const p = PLANS[value];
+  return {
+    value,
+    nameAr: p.arabicName,
+    nameEn: p.englishName,
+    limit: p.weeklyStudentLimit ?? 0,
+    perStudentWeek: value === 'top_centers' ? null : getPerStudentWeeklyCost(value),
+    custom: value === 'top_centers',
+  };
+});
 
-const BILLING_PERIODS: BillingPeriodOption[] = [
-  { value: 'monthly', label: 'شهري' },
-  { value: 'quarterly', label: 'ربع سنوي' },
-  { value: 'biannual', label: 'نصف سنوي' },
-  { value: 'yearly', label: 'سنوي', badge: 'شهرين مجاناً' },
-];
+const BILLING_PERIODS: BillingPeriod[] = ['monthly', 'quarterly', 'annual'];
 
 export default function SignupPage() {
   const t = useTranslations('signup');
   const tl = useTranslations('landing');
   const tc = useTranslations('common');
+  const tb = useTranslations('billing');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -156,14 +155,12 @@ export default function SignupPage() {
     );
   }
 
-  const getBillingLabel = (planFee: number) => {
-    const period = billingPeriod as BillingPeriod;
-    const total = getTotalForPeriod(planFee, period);
-    if (period === 'monthly') return `يُدفع شهرياً: ${total.toLocaleString('en-US')} جنيه`;
-    if (period === 'quarterly') return `يُدفع كل 3 شهور: ${total.toLocaleString('en-US')} جنيه`;
-    if (period === 'biannual') return `يُدفع كل 6 شهور: ${total.toLocaleString('en-US')} جنيه`;
-    if (period === 'yearly') return `يُدفع سنوياً: ${total.toLocaleString('en-US')} جنيه`;
-    return '';
+  const getBillingLabel = (planKey: PlanKey) => {
+    const total = getPlanPrice(planKey, billingPeriod);
+    const amount = formatPrice(total);
+    if (billingPeriod === 'monthly') return tb('billedMonthlyLine', { amount });
+    if (billingPeriod === 'quarterly') return tb('billedQuarterlyLine', { amount });
+    return tb('billedAnnualLine', { amount });
   };
 
   return (
@@ -271,20 +268,30 @@ export default function SignupPage() {
 
             {/* Billing Period */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">دورة الفاتورة</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">{tb('changePeriod')}</label>
               <div className="flex flex-wrap gap-2">
-                {BILLING_PERIODS.map((opt) => (
+                {BILLING_PERIODS.map((period) => (
                   <button
-                    key={opt.value}
+                    key={period}
                     type="button"
-                    onClick={() => setBillingPeriod(opt.value)}
-                    className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${billingPeriod === opt.value ? 'text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
-                    style={billingPeriod === opt.value ? { backgroundColor: '#0D9488' } : {}}
+                    onClick={() => setBillingPeriod(period)}
+                    className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${billingPeriod === period ? 'text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
+                    style={billingPeriod === period ? { backgroundColor: '#0D9488' } : {}}
                   >
-                    {opt.label}
-                    {opt.badge && (
-                      <span className="absolute -top-1.5 -start-1 bg-amber-100 text-amber-700 text-xs rounded-full px-2 py-0.5 whitespace-nowrap">
-                        {opt.badge}
+                    {tb(`period.${period}`)}
+                    {period === 'quarterly' && (
+                      <span className="absolute -top-1.5 start-0 bg-amber-100 text-amber-800 text-[10px] rounded-full px-2 py-0.5 whitespace-nowrap">
+                        {tb('period.recommended')}
+                      </span>
+                    )}
+                    {period === 'monthly' && (
+                      <span className="absolute -top-1.5 end-0 bg-[var(--color-surface-3)] text-[var(--color-text-primary)] text-[10px] rounded-full px-2 py-0.5 whitespace-nowrap">
+                        {tb('period.monthlyPremium')}
+                      </span>
+                    )}
+                    {period === 'annual' && (
+                      <span className="absolute -top-1.5 end-0 bg-amber-100 text-amber-800 text-[10px] rounded-full px-2 py-0.5 whitespace-nowrap">
+                        {tb('period.twoMonthsFree')}
                       </span>
                     )}
                   </button>
@@ -296,7 +303,7 @@ export default function SignupPage() {
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">{t('selectPlan')}</label>
               <div className="grid grid-cols-1 gap-2">
-                {PLANS.map(plan => (
+                {SIGNUP_PLANS.map(plan => (
                   <label
                     key={plan.value}
                     className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${formData.plan === plan.value ? 'border-primary/60 bg-primary/5' : 'border-border hover:border-primary/30'}`}
@@ -331,22 +338,18 @@ export default function SignupPage() {
                             <span className="text-sm font-bold text-[var(--color-text-secondary)] font-mono">{tl('custom')}</span>
                           ) : (
                             <>
-                              <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{getEffectiveMonthlyRate(plan.fee, billingPeriod).toLocaleString('en-US')} {tc('egp')}</span>
-                              <span className="text-base font-normal text-slate-400">{tc('perMonth')}</span>
+                              <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{formatPrice(getPlanPrice(plan.value, billingPeriod))} {tc('egp')}</span>
                             </>
                           )}
                         </div>
                         {!plan.custom && (
                           <>
-                            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{getBillingLabel(plan.fee)}</p>
-                            {billingPeriod === 'yearly' && (
-                              <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">شهرين مجاناً</span>
-                            )}
-                            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">حتى {plan.limit.toLocaleString('en-US')} طالب/أسبوع</p>
+                            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{getBillingLabel(plan.value)}</p>
+                            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{tb('studentsLimit', { limit: formatPrice(plan.limit) })}</p>
                           </>
                         )}
-                        {plan.perStudentWeek && (
-                          <p className="text-xs font-medium mt-0.5" style={{ color: '#16A34A' }}>• {plan.perStudentWeek} {tc('perStudentPerWeek')}</p>
+                        {plan.perStudentWeek != null && (
+                          <p className="text-xs font-medium mt-0.5 text-[var(--color-success)]">• {tb('perStudentWeekly', { price: formatPrice(plan.perStudentWeek) })}</p>
                         )}
                         {plan.custom && (
                           <p className="text-xs text-green-600 mt-0.5 font-medium">{t('contactWhatsApp')}</p>

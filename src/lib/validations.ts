@@ -133,7 +133,7 @@ export const whatsappSettingsSchema = z.object({
 });
 
 export const billingPeriodSchema = z.object({
-  billing_period: z.enum(['monthly', 'quarterly', 'half_yearly', 'yearly']),
+  billing_period: z.enum(['monthly', 'quarterly', 'annual']),
 });
 
 /** Demo request (public, no auth) */
@@ -180,9 +180,9 @@ export const adminBillingRecordSchema = z.object({
   center_id: z.string().uuid('Invalid center ID'),
   amount: z.number().positive().max(1000000),
   billing_period: z
-    .enum(['monthly', 'quarterly', 'semi_annual', 'annual', 'half_yearly', 'yearly'])
+    .enum(['monthly', 'quarterly', 'annual', 'semi_annual'])
     .optional()
-    .default('monthly'),
+    .default('quarterly'),
   period_start: z.string().optional(),
   period_end: z.string().optional(),
   notes: z.string().max(500).optional().nullable(),

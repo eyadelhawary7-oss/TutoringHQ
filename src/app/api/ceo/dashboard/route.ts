@@ -1,5 +1,6 @@
 import { getAdminContext } from '@/lib/admin-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { getImpliedMonthlyMrr, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 
 export async function GET(request: NextRequest) {
   const ctx = await getAdminContext(request);
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     cohortRes,
     healthRes,
   ] = await Promise.all([
-    supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active'),
+    supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active'),
     supabase.from('mrr_snapshots').select('mrr, active_centers').order('date', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('centers').select('id').eq('status', 'active').gte('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()).lt('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()),
     supabase.from('centers').select('id').in('subscription_status', ['suspended', 'cancelled']).gte('updated_at', monthStart),
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     supabase.from('centers').select('health_score_band').eq('status', 'active').not('health_score_band', 'is', null),
   ]);
 
-  const centers = (activeCentersRes.data ?? []) as { id: string; subscription_monthly_fee: number | null; early_adopter_price: number | null; billing_amount: number | null; plan: string | null }[];
+  const centers = (activeCentersRes.data ?? []) as { id: string; subscription_monthly_fee: number | null; early_adopter_price: number | null; billing_amount: number | null; billing_period?: string | null; all_in_price?: number | null; plan: string | null }[];
   const mrrSnapshot = mrrSnapshotRes.data as { mrr?: number; active_centers?: number } | null;
   const newYesterday = (newYesterdayRes.data ?? []).length;
   const churned = (churnedRes.data ?? []).length;
@@ -43,12 +44,20 @@ export async function GET(request: NextRequest) {
   const allCenters = (cohortRes.data ?? []) as { id: string; created_at: string; subscription_status: string }[];
   const healthBands = (healthRes.data ?? []) as { health_score_band: string | null }[];
 
-  const planPrices: Record<string, number> = {
-    nano: 1200, starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 12000,
-  };
-
   const mrr = mrrSnapshot?.mrr ?? centers.reduce((s, c) => {
-    const fee = c.subscription_monthly_fee ?? c.early_adopter_price ?? (c.billing_amount != null ? c.billing_amount / 3 : (planPrices[c.plan ?? 'starter'] ?? 2000));
+    const pk: PlanKey = isPlanKey(c.plan) ? (c.plan as PlanKey) : 'starter';
+    const baseQ =
+      c.all_in_price != null && Number(c.all_in_price) > 0
+        ? Number(c.all_in_price)
+        : typeof c.early_adopter_price === 'number' && c.early_adopter_price > 0
+          ? c.early_adopter_price
+          : typeof c.subscription_monthly_fee === 'number' && c.subscription_monthly_fee > 0
+            ? c.subscription_monthly_fee
+            : c.billing_amount != null
+              ? Number(c.billing_amount)
+              : PLANS[pk].quarterlyAllIn;
+    const period = normalizeBillingPeriod(c.billing_period);
+    const fee = getImpliedMonthlyMrr(baseQ, period);
     return s + Number(fee);
   }, 0);
   const arr = mrr * 12;

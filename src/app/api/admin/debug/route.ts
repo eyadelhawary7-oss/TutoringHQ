@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getImpliedMonthlyMrr, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 
 export async function GET() {
   try {
@@ -26,7 +27,7 @@ export async function GET() {
     // Query centers
     const { data: centers, error: centersError } = await supabase
       .from('centers')
-      .select('id, name, phone, plan, status, billing_type, is_early_adopter, early_adopter_price, created_at')
+      .select('id, name, phone, plan, status, billing_type, billing_period, all_in_price, is_early_adopter, early_adopter_price, created_at')
       .order('created_at', { ascending: false });
 
     if (centersError) {
@@ -49,26 +50,22 @@ export async function GET() {
       pending: centers?.filter((c) => c.status === 'pending').length || 0,
     };
 
-    // Calculate MRR
-    const planPricing: Record<string, number> = {
-      starter: 2000,
-      pro: 4500,
-      business: 6500,
-      enterprise: 9000,
-      STARTER: 2000,
-      PRO: 4500,
-      BUSINESS: 6500,
-      ENTERPRISE: 9000,
-    };
-
     const activeCenters =
       centers?.filter((c) => c.status === 'active' && (c.billing_type || 'fixed') === 'fixed') || [];
 
     const totalMRR = activeCenters.reduce((sum, center) => {
-      const price = center.is_early_adopter
-        ? (center.early_adopter_price || 0)
-        : planPricing[center.plan || 'starter'] ?? 2000;
-      return sum + price;
+      const plan = String(center.plan || 'starter').toLowerCase() as PlanKey;
+      const pk = plan in PLANS ? plan : 'starter';
+      const baseQ =
+        center.is_early_adopter && typeof center.early_adopter_price === 'number'
+          ? center.early_adopter_price
+          : center.all_in_price != null && Number(center.all_in_price) > 0
+            ? Number(center.all_in_price)
+            : PLANS[pk].quarterlyAllIn;
+      const period = normalizeBillingPeriod(
+        (center as { billing_period?: string | null }).billing_period,
+      );
+      return sum + getImpliedMonthlyMrr(baseQ, period);
     }, 0);
 
     const response = {

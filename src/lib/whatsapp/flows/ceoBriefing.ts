@@ -6,6 +6,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { sendTemplateMessage } from '../client';
+import { getImpliedMonthlyMrr, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 
 const TEMPLATE = 'chq_ceo_briefing';
 
@@ -97,21 +98,41 @@ export async function fetchCeoBriefingData(): Promise<CeoBriefingData> {
     supabase.from('mrr_snapshots').select('mrr').order('date', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
-  const planPrices: Partial<Record<string, number>> = {
-    nano: 1200, starter: 2000, pro: 4500, business: 6500, enterprise: 9000, top_centers: 12000,
-  };
-
   let mrr = (mrrRes.data as { mrr?: number } | null)?.mrr ?? 0;
   if (mrr === 0) {
     const { data: centers } = await supabase
       .from('centers')
-      .select('subscription_monthly_fee, early_adopter_price, billing_amount, plan')
+      .select('subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan')
       .in('subscription_status', ['active', 'overdue'])
       .eq('status', 'active');
-    mrr = (centers ?? []).reduce((s: number, c: { subscription_monthly_fee?: number; early_adopter_price?: number; billing_amount?: number; plan?: string }) => {
-      const fee = c.subscription_monthly_fee ?? c.early_adopter_price ?? (c.billing_amount != null ? c.billing_amount / 3 : undefined) ?? planPrices[c.plan ?? 'starter'] ?? 2000;
-      return s + Number(fee);
-    }, 0);
+    mrr = (centers ?? []).reduce(
+      (
+        s: number,
+        c: {
+          subscription_monthly_fee?: number;
+          early_adopter_price?: number;
+          billing_amount?: number;
+          billing_period?: string | null;
+          all_in_price?: number | null;
+          plan?: string;
+        },
+      ) => {
+        const pk = (String(c.plan || 'starter').toLowerCase() in PLANS ? String(c.plan || 'starter').toLowerCase() : 'starter') as PlanKey;
+        const baseQ =
+          c.all_in_price != null && Number(c.all_in_price) > 0
+            ? Number(c.all_in_price)
+            : typeof c.early_adopter_price === 'number' && c.early_adopter_price > 0
+              ? c.early_adopter_price
+              : typeof c.subscription_monthly_fee === 'number' && c.subscription_monthly_fee > 0
+                ? c.subscription_monthly_fee
+                : c.billing_amount != null
+                  ? Number(c.billing_amount)
+                  : PLANS[pk].quarterlyAllIn;
+        const fee = getImpliedMonthlyMrr(baseQ, normalizeBillingPeriod(c.billing_period));
+        return s + Number(fee);
+      },
+      0,
+    );
   }
 
   return {
