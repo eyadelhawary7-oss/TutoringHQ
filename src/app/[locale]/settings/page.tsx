@@ -11,7 +11,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import { PageHeader, RoleBadge, PlanBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
-import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard, Loader2, FileText, Calendar } from 'lucide-react';
+import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard, Loader2, FileText, Calendar, Smartphone } from 'lucide-react';
 import { getPlanLevel } from '@/lib/plans';
 import { FEATURES } from '@/lib/features';
 import {
@@ -27,6 +27,8 @@ import {
   type BillingPeriod,
   type PlanKey,
 } from '@/lib/pricing';
+import { calculatePackCharge } from '@/lib/parent-pack';
+import { PARENT_PACK, type PackStatusResponse } from '@/types/parent-pack';
 
 type TabType = 'general' | 'billing' | 'team';
 
@@ -47,6 +49,7 @@ interface CenterInfo {
   max_teachers?: number;
   daily_summary_enabled?: boolean;
   summer_mode?: boolean;
+  status?: string | null;
 }
 
 interface TeamMember {
@@ -290,6 +293,10 @@ function SettingsPageContent() {
   const [inviteTeacherGroupIds, setInviteTeacherGroupIds] = useState<string[]>([]);
   const [inviteGroups, setInviteGroups] = useState<{ id: string; name: string; subject?: string }[]>([]);
 
+  const [packStatus, setPackStatus] = useState<PackStatusResponse | null>(null);
+  const [packLoading, setPackLoading] = useState(false);
+  const [packConfirmOpen, setPackConfirmOpen] = useState(false);
+
   // Redirect assistants/teachers without can_view_settings
   useEffect(() => {
     if (currentUser && (currentUser.role === 'assistant' || currentUser.role === 'teacher') && !hasPermission('can_view_settings')) {
@@ -486,6 +493,30 @@ function SettingsPageContent() {
   useEffect(() => {
     if (activeTab === 'team' && centerId) loadTeamData();
   }, [activeTab, centerId, loadTeamData]);
+
+  const refreshPackStatus = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      setPackStatus(null);
+      return;
+    }
+    try {
+      const res = await fetch('/api/parent-pack/status', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        setPackStatus((await res.json()) as PackStatusResponse);
+      } else {
+        setPackStatus(null);
+      }
+    } catch {
+      setPackStatus(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPackStatus();
+  }, [refreshPackStatus]);
 
   const showSaved = () => {
     setSavedMessage(t('saved'));
@@ -947,6 +978,11 @@ function SettingsPageContent() {
 
   const instapayNumber = '01001963432';
 
+  const canEnablePack = (center?.status ?? '') === 'active';
+  const isPackEnabled = packStatus?.pack_enabled ?? false;
+  const activeParentsCount = packStatus?.active_parents ?? 0;
+  const monthlyPackCharge = calculatePackCharge(isPackEnabled, activeParentsCount);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[var(--color-surface-0)]">
@@ -1355,6 +1391,159 @@ function SettingsPageContent() {
                 </div>
               </div>
             </div>
+
+            {/* 9. Parent WA Pack */}
+            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+                <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
+                  <div className="p-2.5 bg-teal-100 rounded-xl flex-shrink-0">
+                    <Smartphone className="w-5 h-5 text-teal-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[var(--color-text-primary)]">{t('parentPack.sectionTitle')}</h3>
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('parentPack.enableDescription')}</p>
+                  </div>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('parentPack.enableTitle')}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{t('parentPack.enableDescription')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isPackEnabled}
+                      disabled={!canEnablePack || packLoading}
+                      onClick={() => setPackConfirmOpen(true)}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${isPackEnabled ? 'bg-teal-600' : 'bg-slate-200'}`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[var(--color-surface-1)] shadow ring-0 transition-transform ${isPackEnabled ? 'translate-x-5' : 'translate-x-1'}`}
+                      />
+                    </button>
+                  </div>
+                  {!canEnablePack && (
+                    <p className="text-sm text-amber-600">{t('parentPack.notActive')}</p>
+                  )}
+                  {isPackEnabled && (
+                    <>
+                      <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-4 space-y-2 text-sm">
+                        <div className="flex justify-between gap-2">
+                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.pricePerParent')}</span>
+                          <span className="font-mono text-[var(--color-text-primary)]" dir="ltr">
+                            EGP {PARENT_PACK.ALL_IN_PRICE.toLocaleString('en-US')} / {tCommon('perMonth')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.suggestedPrice')}</span>
+                          <span className="font-mono text-[var(--color-text-primary)]" dir="ltr">
+                            EGP {PARENT_PACK.CENTER_CHARGE_TO_PARENT.toLocaleString('en-US')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.yourProfit')}</span>
+                          <span className="font-mono text-[var(--color-text-primary)]" dir="ltr">
+                            EGP {PARENT_PACK.CENTER_PROFIT_PER_PARENT.toLocaleString('en-US')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.activeParents')}</span>
+                          <span className="font-mono text-[var(--color-text-primary)]">
+                            {activeParentsCount.toLocaleString('en-US')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.monthlyCharge')}</span>
+                          <span className="font-mono text-[var(--color-text-primary)]" dir="ltr">
+                            EGP {monthlyPackCharge.toLocaleString('en-US')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-4">
+                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">{t('parentPack.messagesTitle')}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)] mt-1 mb-3">{t('parentPack.messagesSubtitle')}</p>
+                        <ul className="space-y-2 text-sm text-[var(--color-text-primary)]">
+                          <li>
+                            <span className="font-medium">{t('parentPack.messages.absence_alert')}</span>
+                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.absence_alert_timing')}</span>
+                          </li>
+                          <li>
+                            <span className="font-medium">{t('parentPack.messages.balance_statement')}</span>
+                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.balance_statement_timing')}</span>
+                          </li>
+                          <li>
+                            <span className="font-medium">{t('parentPack.messages.payment_confirmation')}</span>
+                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.payment_confirmation_timing')}</span>
+                          </li>
+                          <li>
+                            <span className="font-medium">{t('parentPack.messages.term_report')}</span>
+                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.term_report_timing')}</span>
+                          </li>
+                          <li>
+                            <span className="font-medium">{t('parentPack.messages.announcement')}</span>
+                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.announcement_timing')}</span>
+                          </li>
+                        </ul>
+                        <p className="text-xs text-[var(--color-text-tertiary)] mt-4">{t('parentPack.platformControls')}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {packConfirmOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 max-w-sm w-full shadow-lg">
+                  <p className="text-sm text-[var(--color-text-primary)] mb-4">
+                    {isPackEnabled ? t('parentPack.confirmDisable') : t('parentPack.confirmEnable')}
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setPackConfirmOpen(false)}
+                      className="rounded-lg border border-[var(--color-border-default)] px-3 py-1.5 text-sm text-[var(--color-text-primary)]"
+                    >
+                      {tCommon('cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setPackLoading(true);
+                        setPackConfirmOpen(false);
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session?.access_token) return;
+                          const res = await fetch('/api/parent-pack/toggle', {
+                            method: 'PATCH',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${session.access_token}`,
+                            },
+                            body: JSON.stringify({ enabled: !isPackEnabled }),
+                          });
+                          if (!res.ok) {
+                            alert(t('parentPack.toggleError'));
+                            return;
+                          }
+                          await refreshPackStatus();
+                          await refreshUser();
+                          showSaved();
+                        } catch {
+                          alert(t('parentPack.toggleError'));
+                        } finally {
+                          setPackLoading(false);
+                        }
+                      }}
+                      className="rounded-lg bg-teal-600 text-white px-3 py-1.5 text-sm font-medium"
+                    >
+                      {tCommon('confirm')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

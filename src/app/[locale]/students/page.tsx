@@ -111,7 +111,7 @@ export default function StudentsPage() {
   const router = useRouter();
   const tCommon = useTranslations('common');
   const locale = useLocale();
-  const { user, hasPermission } = useUser();
+  const { user, hasPermission, refreshUser } = useUser();
   const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
 
   const [students, setStudents] = useState<Student[]>([]);
@@ -154,6 +154,15 @@ export default function StudentsPage() {
   const [centerId, setCenterId] = useState<string | null>(null);
   const [centerInfo, setCenterInfo] = useState<{ name?: string; logo_url?: string; phone?: string; delivery_address?: Record<string, unknown>; card_color?: string } | null>(null);
   const [showCardOrderModal, setShowCardOrderModal] = useState(false);
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+
+  const addToggling = (id: string) => setTogglingIds((prev) => new Set(prev).add(id));
+  const removeToggling = (id: string) =>
+    setTogglingIds((prev) => {
+      const s = new Set(prev);
+      s.delete(id);
+      return s;
+    });
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -171,7 +180,8 @@ export default function StudentsPage() {
 
       const { data } = await dbSelect({
         table: 'students',
-        select: '*',
+        select:
+          'id, name, phone, parent_phone, parent_consent_given, parent_pack_opted_in, subject, fee, payment_status, student_number, qr_code, is_active, lifecycle_status, sibling_family_id, center_id',
         filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
         order: { column: 'name' },
       });
@@ -329,6 +339,43 @@ export default function StudentsPage() {
     () => Math.max(1, ...students.map((s) => balanceByStudent[s.id] ?? 0)),
     [students, balanceByStudent]
   );
+
+  const handlePackToggle = async (student: Student) => {
+    if (togglingIds.has(student.id)) return;
+    const newValue = !student.parent_pack_opted_in;
+    const prevOpted = student.parent_pack_opted_in ?? false;
+    setStudents((prev) =>
+      prev.map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: newValue } : s)),
+    );
+    addToggling(student.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setStudents((prev) =>
+          prev.map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: prevOpted } : s)),
+        );
+        return;
+      }
+      const res = await fetch(`/api/parent-pack/student/${student.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ opted_in: newValue }),
+      });
+      if (!res.ok) {
+        setStudents((prev) =>
+          prev.map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: prevOpted } : s)),
+        );
+        alert(ts('packOptInError'));
+        return;
+      }
+      await refreshUser();
+    } finally {
+      removeToggling(student.id);
+    }
+  };
 
   const openQRModal = async (student: Student) => {
     setQrModalStudent(student);
@@ -983,6 +1030,47 @@ export default function StudentsPage() {
                           </div>
                         ) : (
                           <p className="text-xs text-[var(--color-text-tertiary)]">{ts('no_balance')}</p>
+                        )}
+
+                        {user?.center?.parent_pack_enabled === true && (
+                          <div
+                            className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-[var(--color-border-subtle)]"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            role="presentation"
+                          >
+                            <span className="text-xs text-[var(--color-text-secondary)]">{ts('parentPackOptIn')}</span>
+                            {(() => {
+                              const canOptIn =
+                                s.is_active === true &&
+                                s.parent_phone != null &&
+                                String(s.parent_phone).trim() !== '';
+                              const toggleDisabled = !canOptIn || togglingIds.has(s.id);
+                              const tip = !s.is_active
+                                ? ts('packDisabledInactive')
+                                : !s.parent_phone || String(s.parent_phone).trim() === ''
+                                  ? ts('packDisabledNoPhone')
+                                  : undefined;
+                              return (
+                                <button
+                                  type="button"
+                                  role="switch"
+                                  aria-checked={!!s.parent_pack_opted_in}
+                                  disabled={toggleDisabled}
+                                  title={tip}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (canOptIn) void handlePackToggle(s);
+                                  }}
+                                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${s.parent_pack_opted_in ? 'bg-teal-600' : 'bg-slate-200'}`}
+                                >
+                                  <span
+                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-[var(--color-surface-1)] shadow transition-transform ${s.parent_pack_opted_in ? 'translate-x-4' : 'translate-x-0.5'}`}
+                                  />
+                                </button>
+                              );
+                            })()}
+                          </div>
                         )}
 
                         <div className="hidden md:flex flex-wrap items-center justify-end gap-1 pt-3 mt-2 border-t border-[var(--color-border-subtle)]">

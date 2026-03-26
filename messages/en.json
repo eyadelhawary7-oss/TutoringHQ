@@ -629,7 +629,12 @@
     "order_cards": "Order Cards",
     "add_student": "Add Student",
     "print_cards": "Print Cards",
-    "print_card_count": "{count} cards"
+    "print_card_count": "{count} cards",
+    "parentPackOptIn": "Parent pack",
+    "packDisabledInactive": "Student is inactive",
+    "packDisabledNoPhone": "No parent phone on file",
+    "packOptInSuccess": "Parent subscription updated",
+    "packOptInError": "Something went wrong — please try again"
   },
   "print": {
     "title": "Print Student Cards",
@@ -1209,7 +1214,36 @@
     "account": "Account",
     "logout": "Logout",
     "resetPassword": "Change PIN",
-    "resetPasswordDesc": "Change your account PIN"
+    "resetPasswordDesc": "Change your account PIN",
+    "parentPack": {
+      "sectionTitle": "Parent WhatsApp pack",
+      "enableTitle": "Enable pack",
+      "enableDescription": "EGP 10 per active parent per month — taxes and fees included",
+      "notActive": "Your center account must be active first",
+      "confirmEnable": "The pack will be enabled. EGP 10 per month will be charged for each subscribed parent.",
+      "confirmDisable": "The pack will be disabled. No messages will be sent to parents until you enable it again.",
+      "pricePerParent": "Price per parent",
+      "suggestedPrice": "Suggested price to parents",
+      "yourProfit": "Your profit per parent",
+      "activeParents": "Subscribed parents",
+      "monthlyCharge": "Estimated monthly charge",
+      "messagesTitle": "Automated messages",
+      "messagesSubtitle": "Sent automatically — the platform controls all message content",
+      "platformControls": "Centers cannot send extra messages outside the list above",
+      "toggleError": "Could not update the pack. Please try again.",
+      "messages": {
+        "absence_alert": "Absence alert",
+        "absence_alert_timing": "When a student is absent",
+        "balance_statement": "Balance statement",
+        "balance_statement_timing": "Start of each month",
+        "payment_confirmation": "Payment confirmation",
+        "payment_confirmation_timing": "When a payment is recorded",
+        "term_report": "End-of-term report",
+        "term_report_timing": "At the end of the academic term",
+        "announcement": "Center announcements",
+        "announcement_timing": "Up to 2 announcements per month"
+      }
+    }
   },
   "groups": {
     "title": "Groups",

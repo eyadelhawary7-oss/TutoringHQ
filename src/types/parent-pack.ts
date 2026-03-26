@@ -46,3 +46,26 @@ export type PackMessageType =
   | 'payment_confirmation'
   | 'term_report'
   | 'announcement'
+
+// Response shape from GET /api/parent-pack/status
+export interface PackStatusResponse {
+  pack_enabled: boolean
+  active_parents: number
+  monthly_charge: number
+  price_per_parent: number            // always PARENT_PACK.ALL_IN_PRICE
+  center_profit_per_parent: number    // always PARENT_PACK.CENTER_PROFIT_PER_PARENT
+  suggested_center_price: number      // always PARENT_PACK.CENTER_CHARGE_TO_PARENT
+  max_announcements_per_month: number
+}
+
+// Student row shape with pack-relevant fields
+export interface StudentPackRow {
+  id: string
+  name: string
+  parent_phone: string | null
+  parent_pack_opted_in: boolean
+  is_active: boolean
+  // Note: can_opt_in is derived client-side as:
+  // is_active === true && parent_phone !== null
+  // Do NOT add can_opt_in as a DB column
+}

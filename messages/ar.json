@@ -626,7 +626,12 @@
     "order_cards": "طلب بطاقات",
     "add_student": "إضافة طالب",
     "print_cards": "طباعة بطاقات",
-    "print_card_count": "{count} بطاقة"
+    "print_card_count": "{count} بطاقة",
+    "parentPackOptIn": "باقة الأولياء",
+    "packDisabledInactive": "الطالب غير نشط",
+    "packDisabledNoPhone": "لا يوجد رقم ولي الأمر",
+    "packOptInSuccess": "تم تحديث اشتراك ولي الأمر",
+    "packOptInError": "حدث خطأ — حاول مرة أخرى"
   },
   "print": {
     "title": "طباعة بطاقات الطلاب",
@@ -1206,7 +1211,36 @@
     "account": "الحساب",
     "logout": "تسجيل الخروج",
     "resetPassword": "تغيير رمز PIN",
-    "resetPasswordDesc": "تغيير رمز PIN حسابك"
+    "resetPasswordDesc": "تغيير رمز PIN حسابك",
+    "parentPack": {
+      "sectionTitle": "باقة التواصل مع الأولياء",
+      "enableTitle": "تفعيل الباقة",
+      "enableDescription": "EGP 10 لكل ولي أمر نشط شهرياً — شاملة الضرائب والرسوم",
+      "notActive": "يجب تفعيل الحساب أولاً",
+      "confirmEnable": "سيتم تفعيل الباقة. سيُحسب EGP 10 شهرياً لكل ولي أمر مشترك.",
+      "confirmDisable": "سيتم إيقاف الباقة. لن تُرسل رسائل للأولياء حتى إعادة التفعيل.",
+      "pricePerParent": "السعر لكل ولي أمر",
+      "suggestedPrice": "السعر المقترح للأولياء",
+      "yourProfit": "ربحك لكل ولي أمر",
+      "activeParents": "الأولياء المشتركون",
+      "monthlyCharge": "التكلفة الشهرية المتوقعة",
+      "messagesTitle": "الرسائل التلقائية",
+      "messagesSubtitle": "يتم الإرسال تلقائياً — المنصة تتحكم في جميع الرسائل",
+      "platformControls": "لا يمكن للسنتر إرسال رسائل إضافية خارج القائمة أعلاه",
+      "toggleError": "تعذر تحديث الباقة. حاول مرة أخرى.",
+      "messages": {
+        "absence_alert": "تنبيه الغياب",
+        "absence_alert_timing": "عند غياب الطالب تلقائياً",
+        "balance_statement": "كشف الرصيد",
+        "balance_statement_timing": "أول كل شهر",
+        "payment_confirmation": "تأكيد الدفع",
+        "payment_confirmation_timing": "عند تسجيل دفعة",
+        "term_report": "تقرير نهاية الفصل",
+        "term_report_timing": "عند نهاية الفصل الدراسي",
+        "announcement": "إعلانات السنتر",
+        "announcement_timing": "حتى 2 إعلانات شهرياً"
+      }
+    }
   },
   "groups": {
     "title": "مجموعات الطلاب",
