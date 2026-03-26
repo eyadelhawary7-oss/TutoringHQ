@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { dbInsertSchemas } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { scanRatelimit, rateLimitedResponse } from '@/lib/ratelimit';
 
 const ALLOWED_TABLES = [
   'payments', 'students', 'student_groups', 'attendance_scans',
@@ -139,6 +140,26 @@ export async function POST(request: Request) {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    // Rate limiting — scanner posts attendance via insert; keyed by center_id
+    if (
+      scanRatelimit &&
+      isStateChange &&
+      operation === 'insert' &&
+      table === 'attendance_scans'
+    ) {
+      const { data: userRow } = await supabaseAdmin
+        .from('users')
+        .select('center_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      const centerId = userRow?.center_id ?? user.id;
+      const { success, reset } = await scanRatelimit.limit(centerId);
+      if (!success) {
+        const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+        return rateLimitedResponse(retryAfter);
+      }
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder has complex chaining types
     let query: any;

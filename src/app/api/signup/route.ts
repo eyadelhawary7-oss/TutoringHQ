@@ -1,10 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { signupRatelimit, getClientIp, rateLimitedResponse } from '@/lib/ratelimit';
 import { normalizePhone } from '@/lib/utils/phone';
 import { PLANS, getPlanPrice, normalizeBillingPeriod, type BillingPeriod, type PlanKey } from '@/lib/pricing';
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting — check before any DB operations
+    if (signupRatelimit) {
+      const ip = getClientIp(request);
+      const { success, reset } = await signupRatelimit.limit(ip);
+      if (!success) {
+        const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+        return rateLimitedResponse(retryAfter);
+      }
+    }
     const body = await request.json();
     const { centerName, ownerName, phone, city, plan, notes, billing_period, referralCode } = body;
 

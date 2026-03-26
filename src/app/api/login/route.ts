@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { loginRatelimit, getClientIp, rateLimitedResponse } from '@/lib/ratelimit';
 import { normalizePhone } from '@/lib/utils/phone';
 
 /**
@@ -8,6 +9,15 @@ import { normalizePhone } from '@/lib/utils/phone';
  */
 export async function POST(request: Request) {
   try {
+    // Rate limiting — check before any DB operations
+    if (loginRatelimit) {
+      const ip = getClientIp(request);
+      const { success, reset } = await loginRatelimit.limit(ip);
+      if (!success) {
+        const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+        return rateLimitedResponse(retryAfter);
+      }
+    }
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
