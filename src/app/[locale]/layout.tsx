@@ -29,6 +29,7 @@ import ServiceWorkerRegistrarWrapper from '@/components/ServiceWorkerRegistrarWr
 import PwaInstallBanner from '@/components/PwaInstallBanner';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { SwUpdateBanner } from '@/components/ui/SwUpdateBanner';
+import { PostHogProvider } from '@/components/PostHogProvider';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -94,6 +95,7 @@ export default async function LocaleLayout({
         className="antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] font-cairo"
         suppressHydrationWarning
       >
+        <PostHogProvider>
         <NextIntlClientProvider messages={messages}>
           <ToastProvider>
             <UserProvider>
@@ -111,6 +113,7 @@ export default async function LocaleLayout({
         <WebVitalsReporter />
         <Analytics />
         <SpeedInsights />
+        </PostHogProvider>
       </body>
     </html>
   );
