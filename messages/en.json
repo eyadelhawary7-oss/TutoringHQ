@@ -1932,6 +1932,11 @@
     "studentsSelected": "{count} students selected"
   },
   "landing": {
+    "allInclusiveBadge": "Includes taxes and fees",
+    "pricingPerPeriod": "{amount} EGP",
+    "pricingRecommendedBadge": "Recommended",
+    "studentsLimit": "Up to {count} students/week",
+    "topCentersLimit": "2,000+ students/week",
     "nav": {
       "login": "Login",
       "signup": "Get Started Free"

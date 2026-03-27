@@ -1921,6 +1921,11 @@
     "studentsSelected": "{count} طالب محدد"
   },
   "landing": {
+    "allInclusiveBadge": "شامل الضرائب والرسوم",
+    "pricingPerPeriod": "{amount} ج.م",
+    "pricingRecommendedBadge": "موصى به",
+    "studentsLimit": "حتى {count} طالب/أسبوع",
+    "topCentersLimit": "2,000+ طالب/أسبوع",
     "nav": {
       "login": "تسجيل الدخول",
       "signup": "ابدأ مجاناً"

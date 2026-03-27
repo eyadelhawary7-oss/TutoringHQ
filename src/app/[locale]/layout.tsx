@@ -46,7 +46,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: 'cover',
 };
 
@@ -71,6 +70,20 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir} className={`${cairo.variable}`} suppressHydrationWarning>
       <head>
+        <link
+          rel="preload"
+          href="/fonts/Cairo-Regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/Cairo-Medium.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -84,7 +97,6 @@ export default async function LocaleLayout({
         <link rel="icon" href="/logo-icon-64.png" type="image/png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="preload" href="/fonts/Cairo-Bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <meta name="theme-color" content="#0D9488" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

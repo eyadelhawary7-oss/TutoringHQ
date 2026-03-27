@@ -991,6 +991,7 @@ samp {
   .qr-scan-line {
     position: absolute;
     inset-inline: 0;
+    top: 8%;
     height: 2px;
     background: linear-gradient(
       to left,
@@ -1001,8 +1002,15 @@ samp {
       transparent
     );
     border-radius: var(--radius-full);
-    animation: qr-scan 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    transform: translateY(0);
+    animation: qr-scan-sm 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     box-shadow: 0 0 8px var(--color-brand-500), 0 0 16px rgba(13,148,136,0.40);
+  }
+
+  @media (min-width: 768px) {
+    .qr-scan-line {
+      animation-name: qr-scan-md;
+    }
   }
   .qr-success-flash {
     animation: qr-flash 0.4s var(--ease-out) both;
@@ -1010,11 +1018,18 @@ samp {
 
 } /* end @layer components */
 
-@keyframes qr-scan {
-  0%   { top: 8%;  opacity: 0; }
+@keyframes qr-scan-sm {
+  0%   { transform: translateY(0); opacity: 0; }
   10%  { opacity: 1; }
   90%  { opacity: 1; }
-  100% { top: 88%; opacity: 0; }
+  100% { transform: translateY(7.2rem); opacity: 0; }
+}
+
+@keyframes qr-scan-md {
+  0%   { transform: translateY(0); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(8rem); opacity: 0; }
 }
 @keyframes qr-flash {
   0%   { opacity: 0; transform: scale(0.8); }
