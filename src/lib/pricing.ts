@@ -123,11 +123,19 @@ export function getQuarterlyCharge(planKey: PlanKey, period: BillingPeriod): num
   return chargePerBillingCycleFromQuarterlyAllIn(plan.quarterlyAllIn, period)
 }
 
-/** Per-student weekly cost (based on quarterly price) */
+/** Average weeks per month (for spreading monthly fee to a weekly per-student rate). */
+const WEEKS_PER_MONTH = 52 / 12
+
+/**
+ * Per-student weekly cost at capacity: implied monthly from quarterly all-in, spread per student per week.
+ * monthly_fee = quarterlyAllIn / 3; perStudentWeekly = monthly_fee / (capacity × weeksPerMonth)
+ */
 export function getPerStudentWeeklyCost(planKey: PlanKey): number | null {
   const plan = PLANS[planKey]
   if (!plan || !plan.weeklyStudentLimit) return null
-  return Math.round((plan.quarterlyAllIn / plan.weeklyStudentLimit) * 100) / 100
+  const monthlyFee = plan.quarterlyAllIn / 3
+  const raw = monthlyFee / (plan.weeklyStudentLimit * WEEKS_PER_MONTH)
+  return Math.round(raw * 100) / 100
 }
 
 /** Format price for display — always en-US */
