@@ -313,14 +313,21 @@ export default function LocaleHomePage() {
                     <span className="text-2xl font-bold text-gold-400">{t('pricing.plans.top_centers.price_month')}</span>
                   ) : (
                     <div className="flex flex-col gap-1">
-                      <span className="text-3xl font-bold text-white font-mono">
-                        {billingPeriod === 'annual'
-                          ? t('pricingAnnualBreakdown', {
-                              total: formatPrice(price),
-                              perMonth: formatPrice(annualEq),
-                            })
-                          : t('pricingPerPeriod', { amount: formatPrice(price) })}
-                      </span>
+                      {billingPeriod === 'annual' ? (
+                        <>
+                          <span className="line-through font-mono text-base text-[var(--color-text-tertiary)]" dir="ltr">
+                            {t('annualPriceMo', { amount: formatPrice(plan.quarterlyAllIn) })}
+                          </span>
+                          <span className="text-3xl font-bold text-white font-mono" dir="ltr">
+                            {t('annualPriceMo', { amount: formatPrice(annualEq) })}
+                          </span>
+                          <span className="text-xs text-[var(--color-text-tertiary)]">{t('billedAnnually')}</span>
+                        </>
+                      ) : (
+                        <span className="text-3xl font-bold text-white font-mono" dir="ltr">
+                          {t('pricingPerPeriod', { amount: formatPrice(price) })}
+                        </span>
+                      )}
                       <span className="text-xs text-[var(--color-text-tertiary)]">{t('allInclusiveBadge')}</span>
                       {perWeek != null && (
                         <span className="text-sm text-[var(--color-text-secondary)]">

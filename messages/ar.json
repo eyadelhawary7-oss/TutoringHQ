@@ -1923,6 +1923,9 @@
   "landing": {
     "allInclusiveBadge": "شامل الضرائب والرسوم",
     "pricingPerPeriod": "{amount} ج.م",
+    "pricingAnnualBreakdown": "{total} ج.م سنوياً ({perMonth} ج.م/شهر)",
+    "annualPriceMo": "{amount} ج.م/شهر",
+    "billedAnnually": "يُدفع سنوياً",
     "pricingRecommendedBadge": "موصى به",
     "studentsLimit": "حتى {count} طالب/أسبوع",
     "topCentersLimit": "2,000+ طالب/أسبوع",
