@@ -644,7 +644,13 @@
     "cardOrderCart": "Card order cart",
     "cardOrderCartTitle": "Card Order",
     "cardOrderCartEmpty": "No students in cart yet",
-    "cardOrderCartClearAll": "Clear all"
+    "cardOrderCartClearAll": "Clear all",
+    "linkToFamily": "Link to family",
+    "noFamily": "No family",
+    "createNewFamily": "Create new family",
+    "familyNamePlaceholder": "Family name (e.g. Al-Hassan)",
+    "parentNamePlaceholder": "Parent name",
+    "createFamily": "Create family"
   },
   "print": {
     "title": "Print Student Cards",
@@ -1939,7 +1945,13 @@
     "newOrder": "New card order from",
     "selectAll": "Select All",
     "clear": "Clear",
-    "studentsSelected": "{count} students selected"
+    "studentsSelected": "{count} students selected",
+    "deliveryFree": "Free",
+    "deliveryFeeNote": "Determined by your governorate",
+    "paymentTitle": "Payment",
+    "paymentComingSoon": "Online payment coming soon",
+    "payViaPaymob": "Pay via Paymob",
+    "paymentNote": "You will be contacted for payment after your order is confirmed"
   },
   "landing": {
     "allInclusiveBadge": "Includes taxes and fees",

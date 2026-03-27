@@ -95,6 +95,7 @@ export async function GET(request: Request) {
       logo_url?: string;
       name?: string;
       phone?: string;
+      governorate?: string;
       payment_due_date?: string;
       auto_suspend_at?: string;
       billing_status?: string;
@@ -108,7 +109,7 @@ export async function GET(request: Request) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
         .select(
-          'logo_url, name, phone, payment_due_date, auto_suspend_at, billing_status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents',
+          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents',
         )
         .eq('id', userRecord.center_id)
         .single();
@@ -117,6 +118,7 @@ export async function GET(request: Request) {
           logo_url: centerRow.logo_url ?? undefined,
           name: centerRow.name ?? undefined,
           phone: centerRow.phone ?? undefined,
+          governorate: centerRow.governorate ?? undefined,
           payment_due_date: centerRow.payment_due_date ?? undefined,
           auto_suspend_at: centerRow.auto_suspend_at ?? undefined,
           billing_status: centerRow.billing_status ?? undefined,

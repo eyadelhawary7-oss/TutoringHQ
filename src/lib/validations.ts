@@ -299,7 +299,7 @@ export const dbInsertSchemas: Record<string, z.ZodType> = {
     created_by: z.string().uuid(),
     students: z.array(cardOrderStudentSchema),
     quantity: z.number().int().min(0),
-    price_per_card: z.number().min(0).optional().default(3),
+    price_per_card: z.number().min(0).optional().default(55),
     delivery_fee: z.number().min(0).optional().default(0),
     total_amount: z.number().min(0),
     status: z.enum(['pending', 'confirmed', 'printing', 'shipped', 'delivered']).optional().default('pending'),

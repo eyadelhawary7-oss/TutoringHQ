@@ -641,7 +641,13 @@
     "cardOrderCart": "سلة طلب البطاقات",
     "cardOrderCartTitle": "طلب البطاقات",
     "cardOrderCartEmpty": "لا يوجد طلاب في السلة بعد",
-    "cardOrderCartClearAll": "مسح الكل"
+    "cardOrderCartClearAll": "مسح الكل",
+    "linkToFamily": "ربط بعائلة",
+    "noFamily": "بدون عائلة",
+    "createNewFamily": "إنشاء عائلة جديدة",
+    "familyNamePlaceholder": "اسم العائلة (مثال: الحسن)",
+    "parentNamePlaceholder": "اسم ولي الأمر",
+    "createFamily": "إنشاء عائلة"
   },
   "print": {
     "title": "طباعة بطاقات الطلاب",
@@ -1928,7 +1934,13 @@
     "newOrder": "طلب بطاقة جديد من",
     "selectAll": "تحديد الكل",
     "clear": "إلغاء التحديد",
-    "studentsSelected": "{count} طالب محدد"
+    "studentsSelected": "{count} طالب محدد",
+    "deliveryFree": "مجاناً",
+    "deliveryFeeNote": "محدد حسب محافظتك",
+    "paymentTitle": "الدفع",
+    "paymentComingSoon": "الدفع الإلكتروني قريباً",
+    "payViaPaymob": "الدفع عبر Paymob",
+    "paymentNote": "سيتم التواصل معك للدفع بعد تأكيد طلبك"
   },
   "landing": {
     "allInclusiveBadge": "شامل الضرائب والرسوم",

@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
-import { X, Search, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { X, Search, ChevronRight, ChevronLeft, Check, CreditCard } from 'lucide-react';
 import QRCode from 'qrcode';
 import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
@@ -52,6 +52,7 @@ interface CenterInfo {
   name?: string;
   logo_url?: string;
   phone?: string;
+  governorate?: string;
   delivery_address?: DeliveryAddress;
   card_color?: string;
 }
@@ -75,7 +76,7 @@ interface CardOrderModalProps {
   onSuccess?: () => void;
 }
 
-const PRICE_PER_CARD = 3;
+const PRICE_PER_CARD = 55;
 
 const CARD_COLORS = [
   { value: '#0D9488', label: 'Teal' },
@@ -142,6 +143,20 @@ export function CardOrderModal({
       setSelectedColor('#0D9488');
     }
   }, [isOpen, centerInfo?.card_color]);
+
+  useEffect(() => {
+    if (!isOpen || !centerInfo?.governorate) return;
+    const gov = centerInfo.governorate;
+    const fetchDeliveryFee = async () => {
+      const { data } = await supabase
+        .from('delivery_fees')
+        .select('fee')
+        .eq('governorate', gov)
+        .maybeSingle();
+      setDeliveryFee(Number(data?.fee ?? 0));
+    };
+    void fetchDeliveryFee();
+  }, [isOpen, centerInfo?.governorate]);
 
   useEffect(() => {
     if (!isOpen || typeof window === 'undefined') return;
@@ -292,7 +307,7 @@ export function CardOrderModal({
           created_by: session.user.id,
           students: studentsPayload,
           quantity,
-          price_per_card: PRICE_PER_CARD,
+          price_per_card: 55,
           delivery_fee: deliveryFee,
           total_amount: totalAmount,
           status: 'pending',
@@ -551,18 +566,6 @@ export function CardOrderModal({
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                      {t('deliveryFee')}
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={deliveryFee}
-                      onChange={(e) => setDeliveryFee(Number(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono"
-                    />
-                  </div>
                   <div className="space-y-3 border border-border rounded-xl p-4 bg-muted/20">
                     <div className="flex items-center gap-2">
                       <input
@@ -649,16 +652,34 @@ export function CardOrderModal({
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>{t('deliveryFee')}:</span>
-                    <span className="font-mono">
-                      EGP {locale === 'ar' ? toAr(deliveryFee) : deliveryFee.toLocaleString('en-US')}
+                    <span className="font-mono text-end">
+                      {deliveryFee === 0 ? t('deliveryFree') : `${deliveryFee.toLocaleString('en-US')} EGP`}
                     </span>
                   </div>
+                  <p className="text-xs text-[var(--color-text-tertiary)] -mt-1">{t('deliveryFeeNote')}</p>
                   <div className="flex justify-between font-bold text-teal-600 pt-2 border-t border-border">
                     <span>{t('totalAmount')}:</span>
                     <span className="font-mono">
                       EGP {locale === 'ar' ? toAr(totalAmount) : totalAmount.toLocaleString('en-US')}
                     </span>
                   </div>
+                </div>
+                <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/10">
+                  <div className="flex items-start gap-3">
+                    <CreditCard className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" aria-hidden />
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('paymentTitle')}</h3>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('paymentComingSoon')}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 cursor-not-allowed opacity-60"
+                  >
+                    {t('payViaPaymob')}
+                  </button>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">{t('paymentNote')}</p>
                 </div>
               </>
             )}
