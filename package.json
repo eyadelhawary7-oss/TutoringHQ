@@ -2,6 +2,16 @@
  "name": "centerhq",
  "version": "0.1.0",
  "private": true,
+ "browserslist": [
+  "> 0.5%",
+  "last 2 versions",
+  "not dead",
+  "not ie 11",
+  "Chrome >= 92",
+  "Firefox >= 90",
+  "Safari >= 15",
+  "Edge >= 92"
+ ],
  "scripts": {
   "dev": "next dev",
   "build": "npm run setup-fonts && next build",
