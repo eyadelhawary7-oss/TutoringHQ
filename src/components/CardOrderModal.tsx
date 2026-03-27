@@ -9,6 +9,8 @@ import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
 import { toAr } from '@/lib/number-utils';
 
+const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
+
 const EGYPT_GOVERNORATES = [
   { value: 'cairo', labelAr: 'القاهرة', labelEn: 'Cairo' },
   { value: 'giza', labelAr: 'الجيزة', labelEn: 'Giza' },
@@ -140,6 +142,24 @@ export function CardOrderModal({
       setSelectedColor('#0D9488');
     }
   }, [isOpen, centerInfo?.card_color]);
+
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(CARD_ORDER_PENDING_KEY);
+      if (raw == null || raw === '') return;
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        localStorage.removeItem(CARD_ORDER_PENDING_KEY);
+        return;
+      }
+      const ids = parsed.filter((x): x is string => typeof x === 'string' && x.length > 0);
+      if (ids.length > 0) setSelectedIds(new Set(ids));
+      localStorage.removeItem(CARD_ORDER_PENDING_KEY);
+    } catch {
+      localStorage.removeItem(CARD_ORDER_PENDING_KEY);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;

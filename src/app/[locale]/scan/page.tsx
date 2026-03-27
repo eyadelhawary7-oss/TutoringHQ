@@ -1098,7 +1098,7 @@ export default function ScanPage() {
           : scannedStudent.groups;
         return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-[var(--color-surface-1)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] flex flex-col">
+          <div className="bg-[var(--color-surface-1)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] min-h-[58vh] flex flex-col">
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-12 h-1 rounded-full bg-slate-300" aria-hidden />

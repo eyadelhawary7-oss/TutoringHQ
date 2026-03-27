@@ -483,6 +483,7 @@ export default function OnboardingPage() {
                 groups={groups}
                 onAdd={handleStep2Add}
                 canProceed={students.length >= 1}
+                onSkip={() => void handleStep2Next()}
               />
             )}
 

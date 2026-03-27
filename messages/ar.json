@@ -430,6 +430,9 @@
     "printQrCards": "طباعة بطاقات QR",
     "finishSetup": "إنهاء الإعداد",
     "step_of": "الخطوة {current} من {total}",
+    "importCSV": "استيراد من جدول البيانات",
+    "importCSVSub": "أضف مئات الطلاب دفعة واحدة باستخدام ملف CSV",
+    "skipStudents": "تخطي الآن",
     "progress_label": "تقدمك",
     "back": "رجوع",
     "complete": "إنهاء الإعداد",
@@ -631,7 +634,14 @@
     "packDisabledInactive": "الطالب غير نشط",
     "packDisabledNoPhone": "لا يوجد رقم ولي الأمر",
     "packOptInSuccess": "تم تحديث اشتراك ولي الأمر",
-    "packOptInError": "حدث خطأ — حاول مرة أخرى"
+    "packOptInError": "حدث خطأ — حاول مرة أخرى",
+    "addToCardOrder": "إضافة لطلب البطاقات",
+    "addedToOrder": "تمت الإضافة للطلب",
+    "alreadyInOrder": "موجود في الطلب بالفعل",
+    "cardOrderCart": "سلة طلب البطاقات",
+    "cardOrderCartTitle": "طلب البطاقات",
+    "cardOrderCartEmpty": "لا يوجد طلاب في السلة بعد",
+    "cardOrderCartClearAll": "مسح الكل"
   },
   "print": {
     "title": "طباعة بطاقات الطلاب",

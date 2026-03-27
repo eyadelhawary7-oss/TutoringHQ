@@ -433,6 +433,9 @@
     "printQrCards": "Print QR Cards",
     "finishSetup": "Finish Setup",
     "step_of": "Step {current} of {total}",
+    "importCSV": "Import from spreadsheet",
+    "importCSVSub": "Add hundreds of students at once with a CSV file",
+    "skipStudents": "Skip for now",
     "progress_label": "Your progress",
     "back": "Back",
     "complete": "Finish Setup",
@@ -634,7 +637,14 @@
     "packDisabledInactive": "Student is inactive",
     "packDisabledNoPhone": "No parent phone on file",
     "packOptInSuccess": "Parent subscription updated",
-    "packOptInError": "Something went wrong — please try again"
+    "packOptInError": "Something went wrong — please try again",
+    "addToCardOrder": "Add to card order",
+    "addedToOrder": "Added to order",
+    "alreadyInOrder": "Already in order",
+    "cardOrderCart": "Card order cart",
+    "cardOrderCartTitle": "Card Order",
+    "cardOrderCartEmpty": "No students in cart yet",
+    "cardOrderCartClearAll": "Clear all"
   },
   "print": {
     "title": "Print Student Cards",

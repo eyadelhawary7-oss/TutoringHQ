@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
 import { toAr } from '@/lib/number-utils';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer } from 'lucide-react';
+import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer, ShoppingCart } from 'lucide-react';
 import { CardOrderModal } from '@/components/CardOrderModal';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
@@ -17,6 +17,10 @@ import { LifecycleBadge } from '@/components/students/LifecycleBadge';
 import { SwipeRow } from '@/components/students/SwipeRow';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
 import { useUser } from '@/contexts/UserContext';
+import { useCardOrderCart } from '@/hooks/useCardOrderCart';
+import { useToast } from '@/hooks/useToast';
+
+const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 
 interface Student {
   id: string;
@@ -113,6 +117,8 @@ export default function StudentsPage() {
   const locale = useLocale();
   const { user, hasPermission, refreshUser } = useUser();
   const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
+  const { cart, addToCart, removeFromCart, clearCart, isInCart, cartCount } = useCardOrderCart();
+  const toast = useToast();
 
   const [students, setStudents] = useState<Student[]>([]);
   const [printStudent, setPrintStudent] = useState<{ id: string; name: string } | null>(null);
@@ -154,6 +160,7 @@ export default function StudentsPage() {
   const [centerId, setCenterId] = useState<string | null>(null);
   const [centerInfo, setCenterInfo] = useState<{ name?: string; logo_url?: string; phone?: string; delivery_address?: Record<string, unknown>; card_color?: string } | null>(null);
   const [showCardOrderModal, setShowCardOrderModal] = useState(false);
+  const [showCardCartModal, setShowCardCartModal] = useState(false);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
 
   const addToggling = (id: string) => setTogglingIds((prev) => new Set(prev).add(id));
@@ -724,12 +731,19 @@ export default function StudentsPage() {
               >
                 <Upload size={14} /> {ts('import')}
               </Link>
-              <Link
-                href="/students/print"
-                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+              <button
+                type="button"
+                onClick={() => setShowCardCartModal(true)}
+                className="relative flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+                aria-label={ts('cardOrderCart')}
               >
-                <Printer size={14} /> {ts('print_cards')}
-              </Link>
+                <ShoppingCart size={14} />
+                {cartCount > 0 ? (
+                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                ) : null}
+              </button>
               <button
                 type="button"
                 onClick={() => setShowCardOrderModal(true)}
@@ -922,6 +936,23 @@ export default function StudentsPage() {
                       key={s.id}
                       actions={[
                         {
+                          label: ts('addToCardOrder'),
+                          variant: 'default',
+                          icon: (
+                            <ShoppingCart
+                              size={16}
+                              className={isInCart(s.id) ? 'text-teal-500 fill-teal-500' : 'text-slate-400'}
+                            />
+                          ),
+                          onClick: () => {
+                            if (isInCart(s.id)) toast.info(ts('alreadyInOrder'));
+                            else {
+                              addToCart(s.id);
+                              toast.success(ts('addedToOrder'));
+                            }
+                          },
+                        },
+                        {
                           label: ts('swipe_edit'),
                           variant: 'default',
                           icon: (
@@ -1074,6 +1105,22 @@ export default function StudentsPage() {
                         )}
 
                         <div className="hidden md:flex flex-wrap items-center justify-end gap-1 pt-3 mt-2 border-t border-[var(--color-border-subtle)]">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isInCart(s.id)) toast.info(ts('alreadyInOrder'));
+                              else {
+                                addToCart(s.id);
+                                toast.success(ts('addedToOrder'));
+                              }
+                            }}
+                            className={`p-2 rounded-lg hover:bg-[var(--color-surface-2)] active:scale-95 transition-transform ${isInCart(s.id) ? 'text-teal-500' : 'text-slate-400'}`}
+                            aria-label={ts('addToCardOrder')}
+                            title={ts('addToCardOrder')}
+                          >
+                            <ShoppingCart size={14} className={isInCart(s.id) ? 'fill-teal-500' : ''} />
+                          </button>
                           {canViewPayments && (
                             <button
                               type="button"
@@ -1259,6 +1306,89 @@ export default function StudentsPage() {
               </button>
             </div>
             {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-500 hover:underline">{ts('regenerateQR')}</button>}
+          </div>
+        </div>
+      )}
+
+      {/* Card order cart */}
+      {showCardCartModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowCardCartModal(false)}
+          role="presentation"
+        >
+          <div
+            className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full max-h-[85vh] overflow-hidden flex flex-col shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <h3 className="font-bold text-[var(--color-text-primary)]">{ts('cardOrderCartTitle')}</h3>
+              <button type="button" onClick={() => setShowCardCartModal(false)} aria-label={tCommon('cancel')}>
+                <X size={18} className="text-[var(--color-text-secondary)]" />
+              </button>
+            </div>
+            {cartCount === 0 ? (
+              <p className="text-sm text-[var(--color-text-secondary)] py-4">{ts('cardOrderCartEmpty')}</p>
+            ) : (
+              <ul className="space-y-2 overflow-y-auto flex-1 min-h-0 mb-4">
+                {cart.map((id) => {
+                  const st = students.find((x) => x.id === id);
+                  return (
+                    <li
+                      key={id}
+                      className="flex items-center gap-2 justify-between py-2 border-b border-[var(--color-border-subtle)] last:border-0"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{st?.name ?? '—'}</p>
+                        <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
+                          {st?.student_number ?? ''}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(id)}
+                        className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] shrink-0"
+                        aria-label={tCommon('delete')}
+                      >
+                        <X size={16} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <div className="flex flex-col gap-2 shrink-0">
+              {cartCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearCart();
+                    setShowCardCartModal(false);
+                  }}
+                  className="w-full py-2.5 rounded-xl text-sm font-medium border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
+                >
+                  {ts('cardOrderCartClearAll')}
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={cartCount === 0}
+                onClick={() => {
+                  if (cart.length === 0) return;
+                  try {
+                    localStorage.setItem(CARD_ORDER_PENDING_KEY, JSON.stringify(cart));
+                  } catch {
+                    /* ignore */
+                  }
+                  clearCart();
+                  setShowCardCartModal(false);
+                  setShowCardOrderModal(true);
+                }}
+                className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {ts('order_cards')}
+              </button>
+            </div>
           </div>
         </div>
       )}
