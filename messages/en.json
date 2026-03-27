@@ -1934,6 +1934,7 @@
   "landing": {
     "allInclusiveBadge": "Includes taxes and fees",
     "pricingPerPeriod": "{amount} EGP",
+    "pricingAnnualBreakdown": "{total} EGP/year ({perMonth} EGP/mo)",
     "pricingRecommendedBadge": "Recommended",
     "studentsLimit": "Up to {count} students/week",
     "topCentersLimit": "2,000+ students/week",
