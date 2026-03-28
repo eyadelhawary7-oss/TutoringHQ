@@ -347,7 +347,9 @@
     "contactSales": "Your phone number is not registered. Please contact our sales team to get access.",
     "forgotPin": "Forgot PIN?",
     "smsTooMany": "Too many requests (4 SMS/hour limit)",
-    "otpError": "Invalid verification code"
+    "otpError": "Invalid verification code",
+    "phoneHint": "Enter your phone number",
+    "sendOTP": "Send OTP"
   },
   "forgotPassword": {
     "title": "Reset Password",
