@@ -124,15 +124,15 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         />
       )}
 
-      {/* Desktop: persistent 256px sidebar (always visible). Mobile: drawer overlay when open */}
+      {/* Mobile closed: full drawer width + translate off-screen; md+ closed: w-16 rail; md+ translate locked to 0 */}
       <aside
-        className={`flex flex-col fixed top-0 bottom-0 h-screen z-[100] print:hidden w-64 bg-slate-900 transition-transform duration-300 isolate ${isRTL ? 'right-0 md:left-auto md:right-0' : 'left-0 md:left-0'} ${open ? 'translate-x-0' : isRTL ? 'translate-x-full md:translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        className={`flex flex-col fixed top-0 bottom-0 h-screen z-[100] print:hidden bg-slate-900 transition-all duration-300 isolate ${open ? 'w-64' : 'w-64 md:w-16'} ${isRTL ? 'right-0 md:left-auto md:right-0' : 'left-0 md:left-0'} ${open ? 'translate-x-0' : isRTL ? 'translate-x-full md:translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
       {/* Logo + Close */}
       <div className="relative z-10 flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800 pointer-events-auto">
         <Link
           href={isSuperAdminOnly ? '/admin' : '/dashboard'}
-          className="flex items-center gap-3 shrink-0"
+          className={`flex items-center shrink-0 ${open ? 'gap-3' : 'justify-center'}`}
         >
           {user?.center?.logo_url ? (
             <img src={user.center.logo_url} alt={centerName} className="w-9 h-9 rounded-lg shrink-0 object-contain" />
@@ -141,7 +141,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
               <span className="text-white font-bold text-sm">CH</span>
             </div>
           )}
-          <span className="font-bold text-white text-lg tracking-tight">CenterHQ</span>
+          <span className={`font-bold text-white text-lg tracking-tight ${open ? 'block' : 'hidden'}`}>CenterHQ</span>
         </Link>
         <button
           type="button"
@@ -153,19 +153,23 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         </button>
       </div>
 
-      {/* Center name / Branch switcher */}
-      {user && <BranchSwitcher />}
+      {/* Center name / Branch switcher — hidden in collapsed desktop rail (no BranchSwitcher API change) */}
+      {user && (
+        <div className={open ? 'block' : 'hidden md:hidden'}>
+          <BranchSwitcher />
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
         {isSuperAdminOnly && (
           <Link
             href="/admin"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            className={`flex items-center py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${open ? 'gap-3 px-3' : 'justify-center px-2'} ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
             onClick={onClose}
           >
             <Shield size={18} className="shrink-0" />
-            <span>{t('admin')}</span>
+            <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>{t('admin')}</span>
           </Link>
         )}
         {navItems.map(({ key, href, icon: Icon, showNewBadge }) => {
@@ -175,12 +179,12 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${isActive ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              className={`flex items-center py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${open ? 'gap-3 px-3' : 'justify-center px-2'} ${isActive ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
               onClick={onClose}
             >
               <Icon size={18} className="shrink-0" />
-              <span>{t(key)}</span>
-              {showBadge && (
+              <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>{t(key)}</span>
+              {showBadge && open && (
                 <span className="ms-auto px-1.5 py-0.5 text-[10px] font-semibold bg-teal-500/20 text-teal-400 rounded">
                   {t('newBadge')}
                 </span>
@@ -191,11 +195,11 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         {isAdmin && !isSuperAdminOnly && (
           <Link
             href="/admin"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            className={`flex items-center py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${open ? 'gap-3 px-3' : 'justify-center px-2'} ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
             onClick={onClose}
           >
             <Shield size={18} className="shrink-0" />
-            <span>{t('admin')}</span>
+            <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>{t('admin')}</span>
           </Link>
         )}
       </nav>
@@ -203,11 +207,11 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       {/* Bottom */}
       <div className="border-t border-slate-800 p-4 bg-slate-800/50">
         {user && (
-          <div className="flex items-center gap-3 mb-3">
+          <div className={`flex items-center mb-3 ${open ? 'gap-3' : 'justify-center'}`}>
             <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center shrink-0">
               <span className="text-white text-sm font-bold">{(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}</span>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className={`flex-1 min-w-0 ${open ? 'block' : 'hidden'}`}>
               <p className="text-sm font-semibold text-white truncate">{centerName}</p>
               <p className="text-xs text-slate-400">{roleLabelKey ? t(roleLabelKey) : ''}</p>
             </div>
@@ -216,18 +220,20 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         {user && (
           <>
             <button
+              type="button"
               onClick={() => setIsPinModalOpen(true)}
-              className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full"
+              className={`flex items-center text-slate-400 hover:text-white text-sm transition-colors w-full ${open ? 'gap-2' : 'justify-center'}`}
             >
-              <KeyRound size={16} />
-              <span>تغيير الرمز السري</span>
+              <KeyRound size={16} className="shrink-0" />
+              <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>تغيير الرمز السري</span>
             </button>
             <button
+              type="button"
               onClick={handleLogout}
-              className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full"
+              className={`flex items-center text-slate-400 hover:text-white text-sm transition-colors w-full ${open ? 'gap-2' : 'justify-center'}`}
             >
-              <LogOut size={16} />
-              <span>{t('logout')}</span>
+              <LogOut size={16} className="shrink-0" />
+              <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>{t('logout')}</span>
             </button>
           </>
         )}

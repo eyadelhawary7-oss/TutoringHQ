@@ -110,7 +110,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen w-full bg-[var(--color-surface-0)]">
       {!isAdminRoute && <Sidebar open={sidebarOpen} onClose={closeMainSidebar} />}
 
-      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute ? '' : 'md:ms-64'}`}>
+      <div
+        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute ? '' : `${sidebarOpen ? 'md:ms-64' : 'md:ms-16'} transition-[margin] duration-300`}`}
+      >
         {/* Desktop topbar */}
         <header className="hidden md:flex items-center justify-between h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
