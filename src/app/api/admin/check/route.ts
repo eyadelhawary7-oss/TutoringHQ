@@ -42,18 +42,19 @@ export async function GET(request: Request) {
 
     const { data: userRecord } = await supabaseAdmin
       .from('users')
-      .select('phone')
+      .select('phone, role')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
+    const isSuperAdminByRole = userRecord?.role === 'super_admin';
 
-    if (!adminUser && !adminByPhone) {
+    if (!adminUser && !adminByPhone && !isSuperAdminByRole) {
       return NextResponse.json({ isAdmin: false });
     }
 
     let role = adminUser?.role ?? 'admin';
-    if (adminByPhone) role = 'super_admin';
+    if (adminByPhone || isSuperAdminByRole) role = 'super_admin';
     const customPermissions = (adminUser?.custom_permissions as string[] | null) ?? [];
 
     return NextResponse.json({

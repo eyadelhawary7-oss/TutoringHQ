@@ -1,3 +1,4 @@
+import { createBrowserClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 
 // Validate environment variables
@@ -12,16 +13,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 /**
- * Browser/Client-side Supabase client
- * Use this in Client Components and browser-side code
- * Uses the public anon key (safe to expose to the browser)
+ * Browser client — persists session to cookies so middleware (proxy) and
+ * server-side Supabase clients can read the same session (fixes admin redirect).
  */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Server-side Supabase client with elevated privileges
