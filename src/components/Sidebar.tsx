@@ -119,7 +119,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       {open && (
         <div
           className="fixed inset-0 bg-black/50 z-[90] md:hidden print:hidden"
-          onClick={onClose}
+          onClick={() => onClose?.()}
           aria-hidden="true"
         />
       )}
@@ -145,11 +145,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         </Link>
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onClose?.();
-          }}
+          onClick={() => onClose?.()}
           className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors pointer-events-auto shrink-0"
           aria-label="Close menu"
         >
