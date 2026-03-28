@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { usePathname } from '@/i18n/routing';
 import { useLayout } from '@/contexts/LayoutContext';
@@ -46,6 +46,21 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user } = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarMounted, setSidebarMounted] = useState(false);
+
+  useEffect(() => {
+    setSidebarMounted(true);
+    const stored = localStorage.getItem('centerhq_sidebar_open');
+    if (stored !== null) {
+      setSidebarOpen(stored === 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarMounted) return;
+    localStorage.setItem('centerhq_sidebar_open', String(sidebarOpen));
+  }, [sidebarOpen, sidebarMounted]);
+
   const closeMainSidebar = useCallback(() => setSidebarOpen(false), []);
   const { hideShell } = useLayout();
   const [isPending, startTransition] = useTransition();

@@ -508,9 +508,7 @@ export function CardOrderModal({
             <p className="text-lg font-medium text-[var(--color-text-primary)]">{t('orderSuccess')}</p>
           </div>
         ) : (
-          <div
-            className={`flex-1 p-4 space-y-4 ${paymentStatus === 'awaiting_payment' ? 'overflow-hidden flex flex-col min-h-0' : 'overflow-y-auto'}`}
-          >
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             {/* Step 1: Select Students */}
             {step === 1 && (
               <>
@@ -812,12 +810,12 @@ export function CardOrderModal({
                     </div>
                   )}
                   {paymentStatus === 'awaiting_payment' && paymobIframeId && paymentKey && (
-                    <div className="flex flex-col gap-3 min-h-0 flex-1">
+                    <div className="flex flex-col gap-3 overflow-visible">
                       <p className="text-sm text-[var(--color-text-secondary)]">{t('awaitingPayment')}</p>
                       <iframe
                         src={`https://accept.paymob.com/api/acceptance/iframes/${paymobIframeId}?payment_token=${paymentKey}`}
-                        className="w-full rounded-lg border-0 shrink-0"
-                        style={{ minHeight: '500px', height: '65vh', maxHeight: '700px' }}
+                        className="w-full rounded-lg border-0"
+                        style={{ height: '600px', minHeight: '600px' }}
                         title="Paymob Payment"
                       />
                     </div>

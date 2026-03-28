@@ -1398,7 +1398,6 @@ export default function StudentsPage() {
                   } catch {
                     /* ignore */
                   }
-                  clearCart();
                   setShowCardCartModal(false);
                   setShowCardOrderModal(true);
                 }}
@@ -1430,6 +1429,7 @@ export default function StudentsPage() {
           centerId={centerId}
           centerInfo={centerInfo}
           onSuccess={async () => {
+            clearCart();
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
               const meRes = await fetch('/api/me', { headers: { Authorization: `Bearer ${session.access_token}` } });
