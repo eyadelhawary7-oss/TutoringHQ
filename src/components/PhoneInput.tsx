@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Phone } from 'lucide-react';
 
 interface PhoneInputProps {
   onSubmit: (phone: string) => void;
@@ -11,6 +12,7 @@ interface PhoneInputProps {
 
 export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputProps) {
   const t = useTranslations('login');
+  const tc = useTranslations('common');
   const [phone, setPhone] = useState('');
   const [validationError, setValidationError] = useState('');
 
@@ -40,35 +42,35 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label
-          htmlFor="phone"
-          className="block text-sm font-medium text-text-primary mb-2"
-        >
+        <label htmlFor="phone" className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">
           {t('phoneLabel')}
         </label>
-        <div className="flex items-center gap-2 border border-[var(--color-border-default)] rounded-lg px-3 py-2 bg-bg-tertiary" dir="ltr">
-          <span className="text-text-secondary font-medium shrink-0 text-sm select-none">+20</span>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            inputMode="numeric"
-            value={phone}
-            onChange={(e) => {
-              setPhone(e.target.value.replace(/\D/g, ''));
-              setValidationError('');
-            }}
-            placeholder="1XXXXXXXXX"
-            className="flex-1 outline-none text-sm bg-transparent text-text-primary"
-            maxLength={10}
-            required
-          />
+        <div className="relative" dir="ltr">
+          <Phone size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)] pointer-events-none" />
+          <div className="flex items-center w-full ps-9 pe-4 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)]">
+            <span className="text-[var(--color-text-secondary)] font-medium shrink-0 text-sm select-none me-2">+20</span>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value.replace(/\D/g, ''));
+                setValidationError('');
+              }}
+              placeholder="1XXXXXXXXX"
+              className="flex-1 min-w-0 bg-transparent outline-none text-[var(--color-text-primary)] text-sm"
+              maxLength={10}
+              required
+            />
+          </div>
         </div>
-        <p className="mt-1 text-xs text-text-secondary">
+        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
           {t('phoneHint', { defaultValue: 'Enter without the leading zero' })}
         </p>
         {(validationError || error) && (
-          <p className="mt-2 text-sm text-red-600">
+          <p className="mt-2 text-sm" style={{ color: 'hsl(var(--destructive))' }}>
             {validationError || error}
           </p>
         )}
@@ -77,15 +79,16 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
       <button
         type="submit"
         disabled={isLoading || phone.length < 10}
-        className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 min-h-[48px]"
+        className="w-full py-3 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
+        style={{ background: 'hsl(var(--primary))' }}
       >
         {isLoading ? (
-          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-5 w-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         ) : null}
-        {isLoading ? t('otpSent') : t('sendOTP')}
+        {isLoading ? tc('loading') : t('sendOTP')}
       </button>
     </form>
   );

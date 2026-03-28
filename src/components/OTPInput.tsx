@@ -13,6 +13,7 @@ interface OTPInputProps {
 
 export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }: OTPInputProps) {
   const t = useTranslations('login');
+  const tc = useTranslations('common');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [resendTimer, setResendTimer] = useState(60);
@@ -76,10 +77,8 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-text-primary mb-1">
-          {t('otpTitle')}
-        </h3>
-        <p className="text-sm text-text-secondary" dir="ltr">
+        <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">{t('otpTitle')}</h3>
+        <p className="text-sm text-[var(--color-text-secondary)] font-mono" dir="ltr">
           {phone}
         </p>
       </div>
@@ -88,7 +87,9 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
         {otp.map((digit, index) => (
           <input
             key={index}
-            ref={(el) => { inputRefs.current[index] = el; }}
+            ref={(el) => {
+              inputRefs.current[index] = el;
+            }}
             type="text"
             inputMode="numeric"
             maxLength={1}
@@ -96,13 +97,13 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={index === 0 ? handlePaste : undefined}
-            className="w-12 h-14 text-center text-xl font-bold border-2 border-[var(--color-border-default)] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-bg-tertiary text-text-primary transition-colors"
+            className="w-12 h-14 text-center text-xl font-bold rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
           />
         ))}
       </div>
 
       {error && (
-        <p className="text-center text-sm text-red-600">
+        <p className="text-center text-sm" style={{ color: 'hsl(var(--destructive))' }}>
           {error}
         </p>
       )}
@@ -111,15 +112,16 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
         type="button"
         disabled={isLoading}
         onClick={() => onSubmit(otp.join(''))}
-        className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 min-h-[48px]"
+        className="w-full py-3 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
+        style={{ background: 'hsl(var(--primary))' }}
       >
         {isLoading ? (
-          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-5 w-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         ) : null}
-        {t('verify')}
+        {isLoading ? tc('loading') : t('verify')}
       </button>
 
       <div className="text-center">
@@ -127,7 +129,8 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
           type="button"
           disabled={resendTimer > 0}
           onClick={handleResend}
-          className="text-sm text-indigo-600 hover:text-indigo-700 disabled:text-text-tertiary disabled:cursor-not-allowed"
+          className="text-sm hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+          style={{ color: 'hsl(var(--primary))' }}
         >
           {resendTimer > 0 ? `${t('resend')} (${resendTimer}s)` : t('resend')}
         </button>

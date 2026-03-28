@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, FormEvent, useTransition } from 'react';
-import Image from 'next/image';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { useTranslations, useLocale } from 'next-intl';
@@ -129,9 +128,10 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      <div className="absolute top-4 end-4 z-10">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: 'var(--gradient-hero)' }}>
+      <div className="absolute top-4 end-4">
         <button
+          type="button"
           onClick={handleLocaleToggle}
           disabled={isPending}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 text-white/70 hover:text-white transition-colors"
@@ -140,112 +140,119 @@ export default function ForgotPasswordPage() {
           <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
         </button>
       </div>
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-block mb-4">
-              <Image src="/logo-icon.png" alt="CenterHQ" width={64} height={64} className="w-16 h-16 mx-auto mb-3 object-contain" />
-              <h1 className="text-3xl font-bold text-white">CenterHQ</h1>
-            </Link>
+
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col items-center mb-8">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl mb-4 shadow-lg"
+            style={{ background: 'hsl(var(--primary))' }}
+          >
+            CH
           </div>
+          <h1 className="text-2xl font-black text-white">CenterHQ</h1>
+          <p className="text-white/50 text-sm mt-1 text-center">{t('title')}</p>
+        </div>
 
-          <div className="bg-[var(--color-surface-1)]/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl p-8">
-            <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-6 text-center">
-              {t('title')}
-            </h2>
+        <div
+          className="rounded-2xl border border-white/10 p-6 shadow-xl"
+          style={{ background: 'hsl(var(--card) / 0.95)', backdropFilter: 'blur(20px)' }}
+        >
+          {error && (
+            <div
+              className="rounded-lg px-3 py-2.5 text-sm font-medium mb-4"
+              style={{ background: 'hsl(var(--destructive) / 0.1)', color: 'hsl(var(--destructive))' }}
+            >
+              {error}
+            </div>
+          )}
 
-            {error && (
-              <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded-lg mb-4 text-sm">
-                {error}
-              </div>
-            )}
+          {message && (
+            <div
+              className="rounded-lg px-3 py-2.5 text-sm font-medium mb-4"
+              style={{ background: 'hsl(142 76% 36% / 0.12)', color: 'hsl(142 76% 42%)' }}
+            >
+              {message}
+            </div>
+          )}
 
-            {message && (
-              <div className="bg-green-50 border border-green-200 text-green-600 p-3 rounded-lg mb-4 text-sm">
-                {message}
-              </div>
-            )}
-
-            {step === 'phone' && (
-              <>
-                <PhoneInput
-                  onSubmit={handleSendOTP}
-                  isLoading={loading}
-                  error={error}
-                />
-                <div className="mt-6 text-center">
-                  <Link href="/login" className="text-sm text-[#0D9488] hover:underline">
-                    {t('backToLogin')}
-                  </Link>
-                </div>
-              </>
-            )}
-
-            {step === 'otp' && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => { setStep('phone'); setError(''); setMessage(''); }}
-                  className="text-sm text-[#0D9488] hover:underline mb-4 flex items-center gap-1"
-                >
-                  <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+          {step === 'phone' && (
+            <>
+              <PhoneInput onSubmit={handleSendOTP} isLoading={loading} error={error} />
+              <div className="text-center mt-4">
+                <Link href="/login" className="text-sm hover:underline" style={{ color: 'hsl(var(--primary))' }}>
                   {t('backToLogin')}
-                </button>
-                <p className="text-[var(--color-text-secondary)] text-center mb-6 text-sm">
-                  {t('enterOTP')}
-                </p>
-                <OTPInput
-                  onSubmit={handleVerifyOTP}
-                  onResend={handleResendOTP}
-                  isLoading={loading}
-                  error={error}
-                  phone={phone}
+                </Link>
+              </div>
+            </>
+          )}
+
+          {step === 'otp' && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('phone');
+                  setError('');
+                  setMessage('');
+                }}
+                className="text-sm hover:underline mb-4 flex items-center gap-1"
+                style={{ color: 'hsl(var(--primary))' }}
+              >
+                <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                {t('backToLogin')}
+              </button>
+              <p className="text-[var(--color-text-secondary)] text-center mb-4 text-sm">{t('enterOTP')}</p>
+              <OTPInput
+                onSubmit={handleVerifyOTP}
+                onResend={handleResendOTP}
+                isLoading={loading}
+                error={error}
+                phone={phone}
+              />
+            </>
+          )}
+
+          {step === 'new-password' && (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <p className="text-[var(--color-text-secondary)] text-sm">{t('createNewPassword')}</p>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">
+                  {t('newPasswordLabel')}
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="••••••••"
+                  required
+                  minLength={8}
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                 />
-              </>
-            )}
+                <p className="text-[var(--color-text-secondary)] text-xs mt-1">{t('passwordRequirements')}</p>
+              </div>
 
-            {step === 'new-password' && (
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <p className="text-[var(--color-text-secondary)] text-sm mb-6">
-                  {t('createNewPassword')}
-                </p>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-60"
+                style={{ background: 'hsl(var(--primary))' }}
+              >
+                {loading ? t('resetting') : t('resetPassword')}
+              </button>
 
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
-                    {t('newPasswordLabel')}
-                  </label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
-                    placeholder="••••••••"
-                    required
-                    minLength={8}
-                    className="w-full px-4 py-3 bg-[var(--color-surface-0)] text-[var(--color-text-primary)] border border-border rounded-lg focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/30"
-                  />
-                  <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                    {t('passwordRequirements')}
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-2.5 bg-[#0D9488] hover:bg-[#0b7b70] text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? t('resetting') : t('resetPassword')}
-                </button>
-              </form>
-            )}
-          </div>
-
-          <div className="mt-6 text-center">
-            <Link href="/login" className="text-sm text-slate-300 hover:text-white">
-              ← {t('backToLogin')}
-            </Link>
-          </div>
+              <div className="text-center">
+                <Link href="/login" className="text-sm hover:underline" style={{ color: 'hsl(var(--primary))' }}>
+                  {t('backToLogin')}
+                </Link>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>
