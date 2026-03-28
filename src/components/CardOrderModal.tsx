@@ -277,6 +277,26 @@ export function CardOrderModal({
     return parts.join('، ') || '';
   };
 
+  const resetModal = () => {
+    setStep(1);
+    setSelectedIds(new Set());
+    setSearchQuery('');
+    setDeliveryFee(0);
+    setDeliveryForm({ full_name: '', phone: '', governorate: '', city: '', street: '', building: '', landmark: '' });
+    setNotes('');
+    setSubmitSuccess(false);
+    setCardSide('front');
+    setQrDataUrls({});
+    setUseSavedAddress(hasSavedAddress);
+    setIsSubmitting(false);
+    setSelectedColor(centerInfo?.card_color && CARD_COLORS.some((x) => x.value === centerInfo.card_color) ? centerInfo.card_color : '#0D9488');
+  };
+
+  const handleClose = () => {
+    resetModal();
+    onClose();
+  };
+
   const handleSubmit = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user?.id || !centerId) return;
@@ -328,30 +348,13 @@ export function CardOrderModal({
       setSubmitSuccess(true);
       onSuccess?.();
       setTimeout(() => {
-        onClose();
-      }, 3000);
+        handleClose();
+      }, 2000);
     } catch (err) {
       console.error('Card order submit error:', err);
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const resetModal = () => {
-    setStep(1);
-    setSelectedIds(new Set());
-    setSearchQuery('');
-    setDeliveryFee(0);
-    setDeliveryForm({ full_name: '', phone: '', governorate: '', city: '', street: '', building: '', landmark: '' });
-    setNotes('');
-    setSubmitSuccess(false);
-    setCardSide('front');
-    setSelectedColor(centerInfo?.card_color && CARD_COLORS.some((x) => x.value === centerInfo.card_color) ? centerInfo.card_color : '#0D9488');
-  };
-
-  const handleClose = () => {
-    resetModal();
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -385,8 +388,7 @@ export function CardOrderModal({
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4 text-green-600 dark:text-green-400 text-3xl">
               ✓
             </div>
-            <p className="text-lg font-medium text-[var(--color-text-primary)] mb-2">{t('orderSuccess')}</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">{tCommon('loading')}</p>
+            <p className="text-lg font-medium text-[var(--color-text-primary)]">{t('orderSuccess')}</p>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-4 space-y-4">

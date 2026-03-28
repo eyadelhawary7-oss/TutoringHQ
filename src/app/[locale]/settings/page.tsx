@@ -11,7 +11,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import { PageHeader, RoleBadge, PlanBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
-import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard, Loader2, FileText, Calendar, Smartphone } from 'lucide-react';
+import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard, Loader2, FileText, Calendar, Smartphone, Package } from 'lucide-react';
 import { getPlanLevel } from '@/lib/plans';
 import { FEATURES } from '@/lib/features';
 import {
@@ -193,6 +193,7 @@ function SettingsPageContent() {
   const tReferral = useTranslations('referral');
   const tBilling = useTranslations('billing');
   const tNav = useTranslations('nav');
+  const tCardOrders = useTranslations('cardOrders');
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale();
@@ -1002,6 +1003,15 @@ function SettingsPageContent() {
     <div className="min-h-screen bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <PageHeader title={t('title')} />
+
+        <Link
+          href="/orders"
+          className="flex items-center gap-3 w-full mb-4 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
+        >
+          <Package className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
+          <span className="font-medium text-sm flex-1 text-start">{tCardOrders('ordersNav')}</span>
+          <ChevronRight className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
+        </Link>
 
         {/* Tabs */}
         <div className="flex gap-1 p-1 rounded-xl border border-[var(--color-border-subtle)] w-fit mb-6 bg-[var(--color-surface-1)]">

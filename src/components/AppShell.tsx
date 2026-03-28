@@ -34,6 +34,7 @@ const PAGE_TITLE_MAP: Record<string, string> = {
   '/academic': 'nav.academic',
   '/branches': 'nav.branches',
   '/settings': 'nav.settings',
+  '/orders': 'cardOrders.ordersTitle',
   '/scan': 'nav.scanner',
   '/admin': 'nav.admin',
 };

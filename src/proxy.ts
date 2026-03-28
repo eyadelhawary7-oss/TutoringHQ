@@ -82,6 +82,37 @@ function isPublicRoute(pathname: string): boolean {
   return publicRoutes.some(route => cleanPath === route || cleanPath.startsWith(route + '/'));
 }
 
+/** Logged-in-only app areas (same protection as dashboard pages like /students, /payments). */
+const AUTHENTICATED_ROUTE_PREFIXES = [
+  '/dashboard',
+  '/students',
+  '/payments',
+  '/settings',
+  '/scan',
+  '/groups',
+  '/schedule',
+  '/attendance',
+  '/rooms',
+  '/academic',
+  '/branches',
+  '/referrals',
+  '/analytics',
+  '/benchmarks',
+  '/ceo',
+  '/ceo-dashboard',
+  '/messages',
+  '/offline',
+  '/status',
+  '/orders',
+  '/admin',
+];
+
+function pathRequiresAuthentication(cleanPath: string): boolean {
+  return AUTHENTICATED_ROUTE_PREFIXES.some(
+    (prefix) => cleanPath === prefix || cleanPath.startsWith(`${prefix}/`)
+  );
+}
+
 function isApiRoute(pathname: string): boolean {
   return apiRoutes.some(route => pathname.startsWith(route));
 }
@@ -152,6 +183,17 @@ export default async function proxy(request: NextRequest) {
     });
 
     const { data: { user } } = await supabase.auth.getUser();
+
+    const cleanPathForAuth = pathname.replace(/^\/(ar|en)/, '') || '/';
+    if (!user && pathRequiresAuthentication(cleanPathForAuth) && !isPublicRoute(pathname)) {
+      const localeSeg = pathname.startsWith('/ar') ? '/ar' : '/en';
+      const loginUrl = new URL(`${localeSeg}/login`, request.url);
+      const redirectResp = NextResponse.redirect(loginUrl);
+      storedCookies.forEach(({ name, value, options }) =>
+        redirectResp.cookies.set(name, value, options ?? {})
+      );
+      return applySecurityHeaders(redirectResp);
+    }
 
     if (user) {
       const { data: userRecord } = await supabase
