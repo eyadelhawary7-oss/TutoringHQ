@@ -120,8 +120,13 @@ export function CardOrderModal({
   });
   const [useSavedAddress, setUseSavedAddress] = useState(true);
   const [notes, setNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  type PaymentUiStatus = 'idle' | 'loading' | 'awaiting_payment' | 'paid' | 'failed';
+  const [paymentStatus, setPaymentStatus] = useState<PaymentUiStatus>('idle');
+  const [paymentKey, setPaymentKey] = useState<string | null>(null);
+  const [paymobIframeId, setPaymobIframeId] = useState<string | null>(null);
+  const [currentCardOrderId, setCurrentCardOrderId] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
   const [qrDataUrls, setQrDataUrls] = useState<Record<string, string>>({});
   const [selectedColor, setSelectedColor] = useState<string>('#0D9488');
@@ -288,8 +293,12 @@ export function CardOrderModal({
     setCardSide('front');
     setQrDataUrls({});
     setUseSavedAddress(hasSavedAddress);
-    setIsSubmitting(false);
     setSelectedColor(centerInfo?.card_color && CARD_COLORS.some((x) => x.value === centerInfo.card_color) ? centerInfo.card_color : '#0D9488');
+    setPaymentStatus('idle');
+    setPaymentKey(null);
+    setPaymobIframeId(null);
+    setCurrentCardOrderId(null);
+    setPaymentError(null);
   };
 
   const handleClose = () => {
@@ -297,65 +306,173 @@ export function CardOrderModal({
     onClose();
   };
 
-  const handleSubmit = async () => {
+  const buildOrderPayload = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user?.id || !centerId) return;
-    setIsSubmitting(true);
+    if (!session?.user?.id || !centerId) return null;
+    const studentsPayload = selectedStudents.map((s) => ({
+      id: s.id,
+      name: s.name,
+      student_number: s.student_number ?? '',
+      qr_code: qrDataUrls[s.id] || s.qr_code || '',
+    }));
+    const deliveryPayload = {
+      full_name: deliveryForm.full_name?.trim() || null,
+      phone: deliveryForm.phone?.trim() || null,
+      governorate: deliveryForm.governorate || null,
+      city: deliveryForm.city?.trim() || null,
+      street: deliveryForm.street?.trim() || null,
+      building: deliveryForm.building?.trim() || null,
+      landmark: deliveryForm.landmark?.trim() || null,
+    };
+    const deliveryDisplay = formatDeliveryForDisplay(deliveryForm);
+    return {
+      session,
+      studentsPayload,
+      deliveryPayload,
+      deliveryDisplay,
+    };
+  };
+
+  const handlePayNow = async () => {
+    const built = await buildOrderPayload();
+    if (!built) return;
+    const { session, studentsPayload, deliveryPayload, deliveryDisplay } = built;
+
+    setPaymentError(null);
+    setPaymentStatus('loading');
+
     try {
-      const studentsPayload = selectedStudents.map((s) => ({
-        id: s.id,
-        name: s.name,
-        student_number: s.student_number ?? '',
-        qr_code: qrDataUrls[s.id] || s.qr_code || '',
-      }));
+      let orderId = currentCardOrderId;
 
-      const deliveryPayload = {
-        full_name: deliveryForm.full_name?.trim() || null,
-        phone: deliveryForm.phone?.trim() || null,
-        governorate: deliveryForm.governorate || null,
-        city: deliveryForm.city?.trim() || null,
-        street: deliveryForm.street?.trim() || null,
-        building: deliveryForm.building?.trim() || null,
-        landmark: deliveryForm.landmark?.trim() || null,
-      };
-      const deliveryDisplay = formatDeliveryForDisplay(deliveryForm);
+      if (!orderId) {
+        const { data: inserted, error: insertErr } = await dbInsert({
+          table: 'card_orders',
+          data: {
+            center_id: centerId,
+            created_by: session.user.id,
+            students: studentsPayload,
+            quantity,
+            price_per_card: 55,
+            delivery_fee: deliveryFee,
+            total_amount: totalAmount,
+            status: 'pending',
+            payment_status: 'unpaid',
+            delivery_address: deliveryDisplay || null,
+            notes: notes.trim() || null,
+          },
+          select: 'id',
+          single: true,
+        });
 
-      await dbInsert({
-        table: 'card_orders',
-        data: {
-          center_id: centerId,
-          created_by: session.user.id,
-          students: studentsPayload,
-          quantity,
-          price_per_card: 55,
-          delivery_fee: deliveryFee,
-          total_amount: totalAmount,
-          status: 'pending',
-          delivery_address: deliveryDisplay || null,
-          notes: notes.trim() || null,
+        if (insertErr || !inserted || typeof inserted !== 'object' || !('id' in inserted)) {
+          console.error('Card order insert error:', insertErr);
+          setPaymentStatus('failed');
+          setPaymentError(t('paymentFailed'));
+          return;
+        }
+
+        orderId = (inserted as { id: string }).id;
+        setCurrentCardOrderId(orderId);
+
+        const centerUpdates: Record<string, unknown> = { card_color: selectedColor };
+        if (deliveryDisplay) centerUpdates.delivery_address = deliveryPayload;
+        await dbUpdate({
+          table: 'centers',
+          data: centerUpdates,
+          filters: [{ column: 'id', op: 'eq', value: centerId }],
+        });
+      }
+
+      const phoneForPaymob = (deliveryForm.phone?.trim() || centerPhone || '').replace(/\D/g, '');
+      if (!session.access_token) {
+        setPaymentStatus('failed');
+        setPaymentError(t('paymentFailed'));
+        return;
+      }
+
+      const res = await fetch('/api/paymob/create-payment-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
-        select: false,
+        body: JSON.stringify({
+          amount: totalAmount,
+          centerName,
+          centerPhone: phoneForPaymob || '0',
+          cardOrderId: orderId,
+        }),
       });
 
-      const centerUpdates: Record<string, unknown> = { card_color: selectedColor };
-      if (deliveryDisplay) centerUpdates.delivery_address = deliveryPayload;
-      await dbUpdate({
-        table: 'centers',
-        data: centerUpdates,
-        filters: [{ column: 'id', op: 'eq', value: centerId }],
-      });
+      const json = (await res.json().catch(() => ({}))) as { paymentKey?: string; iframeId?: string; error?: string };
+      if (!res.ok || !json.paymentKey || !json.iframeId) {
+        setPaymentStatus('failed');
+        setPaymentError(typeof json.error === 'string' ? json.error : t('paymentFailed'));
+        return;
+      }
 
-      setSubmitSuccess(true);
-      onSuccess?.();
-      setTimeout(() => {
-        handleClose();
-      }, 2000);
+      setPaymentKey(json.paymentKey);
+      setPaymobIframeId(json.iframeId);
+      setPaymentStatus('awaiting_payment');
     } catch (err) {
-      console.error('Card order submit error:', err);
-    } finally {
-      setIsSubmitting(false);
+      console.error('Card order pay error:', err);
+      setPaymentStatus('failed');
+      setPaymentError(t('paymentFailed'));
     }
   };
+
+  const handlePaymentTryAgain = () => {
+    setPaymentStatus('idle');
+    setPaymentError(null);
+    setPaymentKey(null);
+    setPaymobIframeId(null);
+  };
+
+  const handleConfirmOrderAfterPayment = () => {
+    setSubmitSuccess(true);
+    onSuccess?.();
+    setTimeout(() => {
+      resetModal();
+      onClose();
+    }, 2000);
+  };
+
+  useEffect(() => {
+    if (paymentStatus !== 'awaiting_payment' || !currentCardOrderId) return;
+
+    let ticks = 0;
+    const maxTicks = 200;
+    const interval = setInterval(async () => {
+      ticks += 1;
+      if (ticks > maxTicks) {
+        clearInterval(interval);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      try {
+        const res = await fetch(
+          `/api/paymob/payment-status?cardOrderId=${encodeURIComponent(currentCardOrderId)}`,
+          { headers: { Authorization: `Bearer ${session.access_token}` } }
+        );
+        if (!res.ok) return;
+        const body = (await res.json()) as { paymentStatus?: string };
+        if (body.paymentStatus === 'paid') {
+          setPaymentStatus('paid');
+          clearInterval(interval);
+        } else if (body.paymentStatus === 'failed') {
+          setPaymentStatus('failed');
+          clearInterval(interval);
+        }
+      } catch {
+        // ignore transient errors
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [paymentStatus, currentCardOrderId]);
 
   if (!isOpen) return null;
 
@@ -391,7 +508,9 @@ export function CardOrderModal({
             <p className="text-lg font-medium text-[var(--color-text-primary)]">{t('orderSuccess')}</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div
+            className={`flex-1 p-4 space-y-4 ${paymentStatus === 'awaiting_payment' ? 'overflow-hidden flex flex-col min-h-0' : 'overflow-y-auto'}`}
+          >
             {/* Step 1: Select Students */}
             {step === 1 && (
               <>
@@ -671,17 +790,65 @@ export function CardOrderModal({
                     <CreditCard className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" aria-hidden />
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('paymentTitle')}</h3>
-                      <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('paymentComingSoon')}</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 cursor-not-allowed opacity-60"
-                  >
-                    {t('payViaPaymob')}
-                  </button>
-                  <p className="text-xs text-[var(--color-text-tertiary)]">{t('paymentNote')}</p>
+                  {paymentError && (
+                    <p className="text-sm text-red-600 dark:text-red-400">{paymentError}</p>
+                  )}
+                  {paymentStatus === 'idle' && (
+                    <button
+                      type="button"
+                      onClick={handlePayNow}
+                      className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 flex items-center justify-center gap-2"
+                    >
+                      <CreditCard size={18} aria-hidden />
+                      {t('payNow')} — {totalAmount.toLocaleString('en-US')} EGP
+                    </button>
+                  )}
+                  {paymentStatus === 'loading' && (
+                    <div className="flex items-center justify-center gap-3 py-4 text-[var(--color-text-secondary)]">
+                      <div className="w-8 h-8 border-2 border-teal-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                      <span className="text-sm">{t('paymentLoading')}</span>
+                    </div>
+                  )}
+                  {paymentStatus === 'awaiting_payment' && paymobIframeId && paymentKey && (
+                    <div className="flex flex-col gap-3 min-h-0 flex-1">
+                      <p className="text-sm text-[var(--color-text-secondary)]">{t('awaitingPayment')}</p>
+                      <iframe
+                        src={`https://accept.paymob.com/api/acceptance/iframes/${paymobIframeId}?payment_token=${paymentKey}`}
+                        className="w-full rounded-lg border-0 shrink-0"
+                        style={{ minHeight: '500px', height: '65vh', maxHeight: '700px' }}
+                        title="Paymob Payment"
+                      />
+                    </div>
+                  )}
+                  {paymentStatus === 'paid' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                        <Check size={22} className="shrink-0" strokeWidth={2.5} />
+                        <span className="text-sm font-medium">{t('paymentSuccess')}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleConfirmOrderAfterPayment}
+                        className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700"
+                      >
+                        {t('submitOrder')}
+                      </button>
+                    </div>
+                  )}
+                  {paymentStatus === 'failed' && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-red-600 dark:text-red-400">{t('paymentFailed')}</p>
+                      <button
+                        type="button"
+                        onClick={handlePaymentTryAgain}
+                        className="w-full py-2.5 rounded-lg text-sm font-semibold border border-border hover:bg-muted"
+                      >
+                        {t('tryAgain')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -711,13 +878,7 @@ export function CardOrderModal({
                 {isRTL ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
               </button>
             ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary disabled:opacity-50"
-              >
-                {isSubmitting ? tCommon('loading') : t('submitOrder')}
-              </button>
+              <div className="w-24 shrink-0" aria-hidden />
             )}
           </div>
         )}

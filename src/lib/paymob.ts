@@ -139,3 +139,40 @@ export function buildPaymobIframeUrl(paymentToken: string): string {
   if (!iframeId) throw new Error('PAYMOB_IFRAME_ID not configured');
   return `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
 }
+
+/** Card-order callback: exact field order per Paymob HMAC spec (nested order.id, not whole order). */
+export function verifyCardOrderPaymobHmac(
+  obj: Record<string, unknown>,
+  receivedHmac: string
+): boolean {
+  const order = obj.order as Record<string, unknown> | null | undefined;
+  const sourceData = obj.source_data as Record<string, unknown> | null | undefined;
+  const toStr = (v: unknown) => (v === null || v === undefined ? '' : String(v));
+  const parts = [
+    toStr(obj.amount_cents),
+    toStr(obj.created_at),
+    toStr(obj.currency),
+    toStr(obj.error_occured),
+    toStr(obj.has_parent_transaction),
+    toStr(obj.id),
+    toStr(obj.integration_id),
+    toStr(obj.is_3d_secure),
+    toStr(obj.is_auth),
+    toStr(obj.is_capture),
+    toStr(obj.is_refunded),
+    toStr(obj.is_standalone_payment),
+    toStr(obj.is_voided),
+    toStr(order?.id),
+    toStr(obj.owner),
+    toStr(obj.pending),
+    toStr(sourceData?.pan),
+    toStr(sourceData?.sub_type),
+    toStr(sourceData?.type),
+    toStr(obj.success),
+  ];
+  const str = parts.join('');
+  const secret = process.env.PAYMOB_HMAC_SECRET;
+  if (!secret) return false;
+  const hash = crypto.createHmac('sha512', secret).update(str).digest('hex');
+  return hash === receivedHmac;
+}

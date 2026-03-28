@@ -54,7 +54,7 @@ const SECURITY_HEADERS: [string, string][] = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https: https://us-assets.i.posthog.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel.app https://*.vercel.app https://*.sentry.io https://*.ingest.sentry.io https://us.i.posthog.com https://us-assets.i.posthog.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel.app https://*.vercel.app https://*.sentry.io https://*.ingest.sentry.io https://us.i.posthog.com https://us-assets.i.posthog.com https://accept.paymob.com",
       "frame-src 'self' https://*.supabase.co https://accept.paymob.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -132,6 +132,11 @@ export default async function proxy(request: NextRequest) {
       res.headers.set('Retry-After', String(retryAfter));
       return applySecurityHeaders(res);
     }
+  }
+
+  // Paymob card-order webhook — public; Paymob calls with no user session.
+  if (pathname === '/api/paymob/webhook') {
+    return applySecurityHeaders(NextResponse.next());
   }
 
   if (isApiRoute(pathname)) {

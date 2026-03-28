@@ -303,6 +303,7 @@ export const dbInsertSchemas: Record<string, z.ZodType> = {
     delivery_fee: z.number().min(0).optional().default(0),
     total_amount: z.number().min(0),
     status: z.enum(['pending', 'confirmed', 'printing', 'shipped', 'delivered']).optional().default('pending'),
+    payment_status: z.enum(['unpaid', 'paid', 'failed']).optional().default('unpaid'),
     delivery_address: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
   }),
