@@ -7,7 +7,8 @@ const intlMiddleware = createMiddleware(routing);
 
 // --- Rate limiting: in-memory Map (Edge-compatible, per-instance) ---
 const LOGIN_RATE_LIMIT = 5;
-const LOGIN_WINDOW_MS = 900 * 1000; // 900 seconds
+const LOGIN_WINDOW_MS = 60 * 1000; // 1 minute
+const LOGIN_WINDOW_SEC = 60;
 
 type RateLimitEntry = { count: number; firstAttempt: number };
 
@@ -27,13 +28,13 @@ function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter: number
 
   if (!entry) {
     loginAttempts.set(ip, { count: 1, firstAttempt: now });
-    return { allowed: true, retryAfter: 900 };
+    return { allowed: true, retryAfter: LOGIN_WINDOW_SEC };
   }
 
   const windowEnd = entry.firstAttempt + LOGIN_WINDOW_MS;
   if (now >= windowEnd) {
     loginAttempts.set(ip, { count: 1, firstAttempt: now });
-    return { allowed: true, retryAfter: 900 };
+    return { allowed: true, retryAfter: LOGIN_WINDOW_SEC };
   }
 
   if (entry.count >= LOGIN_RATE_LIMIT) {
@@ -41,7 +42,7 @@ function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter: number
   }
 
   entry.count += 1;
-  return { allowed: true, retryAfter: 900 };
+  return { allowed: true, retryAfter: LOGIN_WINDOW_SEC };
 }
 
 // --- Security headers (applied to all responses) ---

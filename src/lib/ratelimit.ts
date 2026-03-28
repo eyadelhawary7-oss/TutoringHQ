@@ -22,12 +22,12 @@ const redis = createRedis();
 // ── Rate limiter instances ────────────────────────────────────────────────
 // All use sliding window algorithm for smooth rate limiting
 
-// Login: 10 attempts per 15 minutes per IP
+// Login: 5 attempts per 1 minute per IP
 // Protects against PIN brute-force attacks
 export const loginRatelimit = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(10, '15 m'),
+      limiter: Ratelimit.slidingWindow(5, '1 m'),
       prefix: 'rl:login',
       analytics: false,
     })
