@@ -54,7 +54,7 @@ function formatRenewalDate(dateStr: string | null, locale: string): string {
   const monthNames = months[locale] ?? months['en'];
   const day = d.getDate().toLocaleString('en-US');
   const month = monthNames[d.getMonth()];
-  const year = d.getFullYear().toLocaleString('en-US');
+  const year = String(d.getFullYear());
   return `${day} ${month} ${year}`;
 }
 

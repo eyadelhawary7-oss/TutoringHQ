@@ -200,7 +200,7 @@ export default function StatusPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-            {t('آخر ٥ حوادث', 'Last 5 Incidents')}
+            {locale === 'ar' ? `آخر ${(5).toLocaleString('en-US')} حوادث` : 'Last 5 Incidents'}
           </h2>
           <div className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] divide-y divide-slate-100">
             {d.incidents.length === 0 ? (
