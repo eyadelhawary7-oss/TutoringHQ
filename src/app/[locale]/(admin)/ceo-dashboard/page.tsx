@@ -18,18 +18,20 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import type { FinancialsResponse } from '@/types/financials';
-import type { CommandStripResponse, GrowthPanelResponse } from '@/types/founder-dash';
+import type {
+  CommandStripResponse,
+  GrowthPanelResponse,
+  HealthPanelResponse,
+} from '@/types/founder-dash';
 import FounderCommandStrip from './FounderCommandStrip';
 import FounderGrowthPanel from './FounderGrowthPanel';
+import CenterHealthPanel from './CenterHealthPanel';
 import {
   Bar,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Legend,
   Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -128,6 +130,17 @@ const DEFAULT_GROWTH_PANEL: GrowthPanelResponse = {
   },
 };
 
+const DEFAULT_HEALTH_PANEL: HealthPanelResponse = {
+  centers: [],
+  summary: {
+    healthy: 0,
+    engaged: 0,
+    atRisk: 0,
+    critical: 0,
+    noScore: 0,
+  },
+};
+
 function CeoFinancialsBody({
   financials,
   tFinancials,
@@ -135,14 +148,6 @@ function CeoFinancialsBody({
   financials: FinancialsResponse;
   tFinancials: CeoFinancialsT;
 }) {
-  const donutData = [
-    { name: tFinancials('financials.subscriptions'), value: financials.currentMonth.subscriptionRevenue },
-    { name: tFinancials('financials.cardOrders'), value: financials.currentMonth.cardOrderRevenue },
-    { name: tFinancials('financials.whatsappPack'), value: financials.currentMonth.whatsappPackRevenue },
-  ];
-  const DONUT_COLORS = ['#0D9488', '#F59E0B', '#6366F1'] as const;
-  const allZero = donutData.every((entry) => entry.value === 0);
-
   const g = financials.whatsappPack.growthVsLastMonth;
 
   return (
@@ -197,31 +202,6 @@ function CeoFinancialsBody({
             </p>
             <p className="text-[11px] text-slate-500 mt-2">{tFinancials('financials.projectedARRNote')}</p>
           </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <h3 className="text-sm font-medium text-slate-200 mb-3">{tFinancials('financials.donutTitle')}</h3>
-          {allZero ? (
-            <div className="flex h-[260px] items-center justify-center text-slate-500 text-sm">
-              {tFinancials('financials.noDataYet')}
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie data={donutData} dataKey="value" cx="50%" cy="50%" outerRadius={80}>
-                  {DONUT_COLORS.map((color, index) => (
-                    <Cell key={index} fill={color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number | string | undefined) =>
-                    value == null ? '' : `${(Number(value) ?? 0).toLocaleString('en-US')} EGP`
-                  }
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
         </div>
 
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
@@ -363,6 +343,7 @@ export default function CeoDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [commandStrip, setCommandStrip] = useState<CommandStripResponse>(DEFAULT_COMMAND_STRIP);
   const [growthPanel, setGrowthPanel] = useState<GrowthPanelResponse>(DEFAULT_GROWTH_PANEL);
+  const [healthPanel, setHealthPanel] = useState<HealthPanelResponse>(DEFAULT_HEALTH_PANEL);
 
   useEffect(() => {
     setHideShell(true);
@@ -377,7 +358,7 @@ export default function CeoDashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [res, resStrip, resGrowth] = await Promise.all([
+      const [res, resStrip, resGrowth, resHealth] = await Promise.all([
         fetch('/api/ceo/dashboard', {
           headers: { Authorization: `Bearer ${session.access_token}` },
         }),
@@ -385,6 +366,9 @@ export default function CeoDashboardPage() {
           headers: { Authorization: `Bearer ${session.access_token}` },
         }),
         fetch('/api/ceo/growth-panel', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+        fetch('/api/ceo/health-panel', {
           headers: { Authorization: `Bearer ${session.access_token}` },
         }),
       ]);
@@ -414,6 +398,18 @@ export default function CeoDashboardPage() {
       } else {
         console.error('growth-panel fetch failed', resGrowth.status);
         setGrowthPanel(DEFAULT_GROWTH_PANEL);
+      }
+      if (resHealth.ok) {
+        try {
+          const healthJson = (await resHealth.json()) as HealthPanelResponse;
+          setHealthPanel(healthJson);
+        } catch (healthParseErr) {
+          console.error('health-panel response parse error', healthParseErr);
+          setHealthPanel(DEFAULT_HEALTH_PANEL);
+        }
+      } else {
+        console.error('health-panel fetch failed', resHealth.status);
+        setHealthPanel(DEFAULT_HEALTH_PANEL);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
@@ -532,6 +528,8 @@ export default function CeoDashboardPage() {
 
         <FounderGrowthPanel {...growthPanel} />
 
+        <CenterHealthPanel {...healthPanel} />
+
         <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
           {metrics.map(({ label, value, icon: Icon }) => (
             <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-4">
@@ -544,50 +542,27 @@ export default function CeoDashboardPage() {
           ))}
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6">
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('healthDistribution')}</h2>
-            {d.healthDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie
-                    data={d.healthDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="value"
-                    nameKey="name"
-                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                  >
-                    {d.healthDistribution.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v: number | undefined) => [v ?? 0, '']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-[var(--color-text-secondary)] text-center py-8">{t('noHealthData')}</p>
-            )}
-          </div>
-
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6">
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('briefingPreview')}</h2>
-            <div className="space-y-2 text-sm text-[var(--color-text-secondary)]">
-              <p>{t('activeCenters')}: {d.totalActiveCenters}</p>
-              <p>{t('mrr')}: EGP {fmt(d.mrr)}</p>
-              <p>{t('newYesterday')}: {d.newYesterday}</p>
-              <p>{t('churned')}: {d.churned}</p>
-              <p className="flex items-center gap-1">
-                {t('atRisk')}: {d.atRisk}
-                {d.atRisk > 0 && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-              </p>
-            </div>
+        <section className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6 mb-8">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('briefingPreview')}</h2>
+          <div className="space-y-2 text-sm text-[var(--color-text-secondary)]">
+            <p>{t('activeCenters')}: {d.totalActiveCenters}</p>
+            <p>{t('mrr')}: EGP {fmt(d.mrr)}</p>
+            <p>{t('newYesterday')}: {d.newYesterday}</p>
+            <p>{t('churned')}: {d.churned}</p>
+            <p className="flex items-center gap-1">
+              {t('atRisk')}: {d.atRisk}
+              {d.atRisk > 0 && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+            </p>
           </div>
         </section>
+
+        {financialsLoading && <FinancialSkeletons />}
+
+        {financialsError && <FinancialErrorCard onRetry={retryFinancials} />}
+
+        {!financialsLoading && !financialsError && financials !== null && (
+          <CeoFinancialsBody financials={financials} tFinancials={tFinancials} />
+        )}
 
         <section className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('cohortTable')}</h2>
@@ -624,14 +599,6 @@ export default function CeoDashboardPage() {
             <p className="text-[var(--color-text-secondary)] text-center py-8">{t('noCohortData')}</p>
           )}
         </section>
-
-        {financialsLoading && <FinancialSkeletons />}
-
-        {financialsError && <FinancialErrorCard onRetry={retryFinancials} />}
-
-        {!financialsLoading && !financialsError && financials !== null && (
-          <CeoFinancialsBody financials={financials} tFinancials={tFinancials} />
-        )}
       </main>
     </div>
   );

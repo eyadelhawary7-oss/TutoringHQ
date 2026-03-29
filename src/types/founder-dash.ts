@@ -64,3 +64,28 @@ export interface GrowthPanelResponse {
     commissionsPaid: number;
   };
 }
+
+export interface CenterHealthRow {
+  id: string;
+  name: string;
+  district: string | null;
+  plan: string;
+  status: string;
+  subscription_status: string;
+  health_score: number | null;
+  health_score_band: string | null;
+  last_scan_at: string | null;
+}
+
+export interface HealthSummary {
+  healthy: number;
+  engaged: number;
+  atRisk: number;
+  critical: number;
+  noScore: number;
+}
+
+export interface HealthPanelResponse {
+  centers: CenterHealthRow[];
+  summary: HealthSummary;
+}
