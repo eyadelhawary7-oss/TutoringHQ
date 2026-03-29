@@ -18,8 +18,9 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import type { FinancialsResponse } from '@/types/financials';
-import type { CommandStripResponse } from '@/types/founder-dash';
+import type { CommandStripResponse, GrowthPanelResponse } from '@/types/founder-dash';
 import FounderCommandStrip from './FounderCommandStrip';
+import FounderGrowthPanel from './FounderGrowthPanel';
 import {
   Bar,
   CartesianGrid,
@@ -103,6 +104,28 @@ const DEFAULT_COMMAND_STRIP: CommandStripResponse = {
   actionQueue: [],
   pendingCenters: [],
   breakeven: { target: 77, activePayingCenters: 0 },
+};
+
+const DEFAULT_GROWTH_PANEL: GrowthPanelResponse = {
+  pipeline: {
+    stages: [
+      { stage: 'lead', count: 0 },
+      { stage: 'demo', count: 0 },
+      { stage: 'trial', count: 0 },
+      { stage: 'closed', count: 0 },
+      { stage: 'lost', count: 0 },
+    ],
+    totalActive: 0,
+  },
+  geography: [],
+  referral: {
+    totalReferrers: 0,
+    totalReferrals: 0,
+    converted: 0,
+    conversionRate: 0,
+    commissionsOwed: 0,
+    commissionsPaid: 0,
+  },
 };
 
 function CeoFinancialsBody({
@@ -339,6 +362,7 @@ export default function CeoDashboardPage() {
   const { setHideShell } = useLayout();
   const [data, setData] = useState<DashboardData | null>(null);
   const [commandStrip, setCommandStrip] = useState<CommandStripResponse>(DEFAULT_COMMAND_STRIP);
+  const [growthPanel, setGrowthPanel] = useState<GrowthPanelResponse>(DEFAULT_GROWTH_PANEL);
 
   useEffect(() => {
     setHideShell(true);
@@ -353,11 +377,14 @@ export default function CeoDashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [res, resStrip] = await Promise.all([
+      const [res, resStrip, resGrowth] = await Promise.all([
         fetch('/api/ceo/dashboard', {
           headers: { Authorization: `Bearer ${session.access_token}` },
         }),
         fetch('/api/ceo/command-strip', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+        fetch('/api/ceo/growth-panel', {
           headers: { Authorization: `Bearer ${session.access_token}` },
         }),
       ]);
@@ -375,6 +402,18 @@ export default function CeoDashboardPage() {
       } else {
         console.error('command-strip fetch failed', resStrip.status);
         setCommandStrip(DEFAULT_COMMAND_STRIP);
+      }
+      if (resGrowth.ok) {
+        try {
+          const growthJson = (await resGrowth.json()) as GrowthPanelResponse;
+          setGrowthPanel(growthJson);
+        } catch (growthParseErr) {
+          console.error('growth-panel response parse error', growthParseErr);
+          setGrowthPanel(DEFAULT_GROWTH_PANEL);
+        }
+      } else {
+        console.error('growth-panel fetch failed', resGrowth.status);
+        setGrowthPanel(DEFAULT_GROWTH_PANEL);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
@@ -490,6 +529,8 @@ export default function CeoDashboardPage() {
         )}
 
         <FounderCommandStrip {...commandStrip} />
+
+        <FounderGrowthPanel {...growthPanel} />
 
         <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
           {metrics.map(({ label, value, icon: Icon }) => (

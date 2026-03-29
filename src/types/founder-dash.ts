@@ -37,3 +37,30 @@ export interface CommandStripResponse {
     activePayingCenters: number;
   };
 }
+
+export interface PipelineStage {
+  stage: string;
+  count: number;
+}
+
+export interface DistrictRow {
+  district: string | null;
+  centerCount: number;
+  leadCount: number;
+}
+
+export interface GrowthPanelResponse {
+  pipeline: {
+    stages: PipelineStage[];
+    totalActive: number;
+  };
+  geography: DistrictRow[];
+  referral: {
+    totalReferrers: number;
+    totalReferrals: number;
+    converted: number;
+    conversionRate: number;
+    commissionsOwed: number;
+    commissionsPaid: number;
+  };
+}
