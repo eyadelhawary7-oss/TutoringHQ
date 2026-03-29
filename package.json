@@ -21,7 +21,12 @@
   "generate-business-plan": "node scripts/generate-business-plan.mjs",
   "check-secrets": "node scripts/check-secret-rotation.js",
   "verify-backup": "node scripts/verify-backup.js",
-  "setup-fonts": "node scripts/setup-fonts.mjs"
+  "setup-fonts": "node scripts/setup-fonts.mjs",
+  "test:unit": "vitest run",
+  "test:unit:watch": "vitest",
+  "test:e2e": "playwright test",
+  "test:e2e:ui": "playwright test --ui",
+  "test:all": "npm run test:unit && npm run test:e2e"
  },
  "dependencies": {
   "@anthropic-ai/sdk": "^0.78.0",
@@ -56,17 +61,21 @@
  },
  "devDependencies": {
   "@next/bundle-analyzer": "^16.1.6",
+  "@playwright/test": "^1.58.2",
   "@tailwindcss/postcss": "^4",
   "@types/canvas-confetti": "^1.9.0",
   "@types/node": "^20",
   "@types/react": "^19",
   "@types/react-dom": "^19",
+  "@vitest/ui": "^4.1.2",
   "babel-plugin-react-compiler": "1.0.0",
   "docx": "^9.5.3",
   "eslint": "^9",
   "eslint-config-next": "16.1.6",
   "tailwindcss": "^4",
   "tailwindcss-animate": "^1.0.7",
-  "typescript": "^5"
+  "typescript": "^5",
+  "vite-tsconfig-paths": "^6.1.1",
+  "vitest": "^4.1.2"
  }
 }
