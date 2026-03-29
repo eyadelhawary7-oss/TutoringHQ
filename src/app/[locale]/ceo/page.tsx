@@ -7,7 +7,22 @@ import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import type { CeoDashboardData, LeadStage } from '@/types/ceo';
+import type { FinancialsResponse } from '@/types/financials';
 import { ChevronDown } from 'lucide-react';
+import {
+  Bar,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Legend,
+  Line,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 const SECTION_IDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
@@ -32,6 +47,347 @@ const PLAN_LABEL_KEYS: Record<(typeof PLAN_VALUES)[number], 'pipeline.planNano' 
 
 function scrollToSection(id: string) {
   document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function FinancialSkeletons() {
+  return (
+    <div className="space-y-6 mt-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((k) => (
+          <div key={k} className="h-24 animate-pulse bg-slate-800 rounded-xl" />
+        ))}
+      </div>
+      <div className="h-48 w-full animate-pulse bg-slate-800 rounded-xl" />
+      <div className="h-72 w-full animate-pulse bg-slate-800 rounded-xl" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="h-32 animate-pulse bg-slate-800 rounded-xl" />
+        <div className="h-32 animate-pulse bg-slate-800 rounded-xl" />
+      </div>
+      <div className="h-16 w-full animate-pulse bg-slate-800 rounded-xl" />
+      <div className="h-16 w-full animate-pulse bg-slate-800 rounded-xl" />
+      <div className="h-32 w-full animate-pulse bg-slate-800 rounded-xl" />
+    </div>
+  );
+}
+
+function FinancialErrorCard({ onRetry }: { onRetry: () => void }) {
+  const t = useTranslations('ceo');
+  return (
+    <div className="rounded-xl bg-slate-800 p-6 mt-10">
+      <p className="text-red-400 text-sm mb-3">{t('financials.fetchError')}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-lg bg-[#0D9488] text-white px-4 py-2 text-sm font-medium"
+      >
+        {t('financials.retryButton')}
+      </button>
+    </div>
+  );
+}
+
+type CeoT = (key: string, values?: Record<string, string | number>) => string;
+
+function CeoFinancialsBody({
+  financials,
+  t,
+  calendarMonth,
+}: {
+  financials: FinancialsResponse;
+  t: CeoT;
+  calendarMonth: number;
+}) {
+  const donutData = [
+    { name: t('financials.subscriptions'), value: financials.currentMonth.subscriptionRevenue },
+    { name: t('financials.cardOrders'), value: financials.currentMonth.cardOrderRevenue },
+    { name: t('financials.whatsappPack'), value: financials.currentMonth.whatsappPackRevenue },
+  ];
+  const DONUT_COLORS = ['#0D9488', '#F59E0B', '#6366F1'] as const;
+  const allZero = donutData.every((entry) => entry.value === 0);
+
+  const g = financials.whatsappPack.growthVsLastMonth;
+
+  return (
+    <>
+      <section className="mt-12 space-y-6 border-t border-slate-800 pt-10">
+        <h2 className="text-lg font-semibold text-slate-100">{t('financials.sectionTitle')}</h2>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 border-l-4 border-teal-500">
+            <p className="text-xs text-slate-400">{t('financials.cardTotalTitle')}</p>
+            <p className="text-xl font-mono font-bold text-slate-100 mt-1">
+              {financials.currentMonth.totalRevenue.toLocaleString('en-US')} EGP
+            </p>
+            <div className="mt-2 space-y-0.5 text-[11px] text-slate-500">
+              <p>
+                {t('financials.cardTotalSubSubscriptions', {
+                  amount: financials.currentMonth.subscriptionRevenue.toLocaleString('en-US'),
+                })}
+              </p>
+              <p>
+                {t('financials.cardTotalSubCards', {
+                  amount: financials.currentMonth.cardOrderRevenue.toLocaleString('en-US'),
+                })}
+              </p>
+              <p>
+                {t('financials.cardTotalSubWa', {
+                  amount: financials.currentMonth.whatsappPackRevenue.toLocaleString('en-US'),
+                })}
+              </p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <p className="text-xs text-slate-400">{t('financials.cardGrossProfitTitle')}</p>
+            <p
+              className={`text-xl font-mono font-bold mt-1 ${
+                financials.currentMonth.grossProfit >= 0 ? 'text-green-400' : 'text-red-400'
+              }`}
+            >
+              {financials.currentMonth.grossProfit.toLocaleString('en-US')} EGP
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <p className="text-xs text-slate-400">{t('financials.cardMarginTitle')}</p>
+            <p className="text-xl font-mono font-bold text-[#F59E0B] mt-1">
+              {financials.currentMonth.profitMargin.toFixed(1)}%
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <p className="text-xs text-slate-400">{t('financials.cardProjectedArrTitle')}</p>
+            <p className="text-xl font-mono font-bold text-slate-300 mt-1">
+              {financials.annualView.projectedARR.toLocaleString('en-US')} EGP
+            </p>
+            <p className="text-[11px] text-slate-500 mt-2">{t('financials.projectedARRNote')}</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <h3 className="text-sm font-medium text-slate-200 mb-3">{t('financials.donutTitle')}</h3>
+          {allZero ? (
+            <div className="flex h-[260px] items-center justify-center text-slate-500 text-sm">
+              {t('financials.noDataYet')}
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={donutData} dataKey="value" cx="50%" cy="50%" outerRadius={80}>
+                  {DONUT_COLORS.map((color, index) => (
+                    <Cell key={index} fill={color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number | string | undefined) =>
+                    value == null ? '' : `${Number(value).toLocaleString('en-US')} EGP`
+                  }
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <h3 className="text-sm font-medium text-slate-200 mb-3">{t('financials.chart12MonthTitle')}</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <ComposedChart data={financials.monthly}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+              <YAxis
+                tick={{ fill: '#94a3b8' }}
+                tickFormatter={(value: number | string) => Number(value).toLocaleString('en-US')}
+              />
+              <Tooltip
+                formatter={(value: number | string | undefined) =>
+                  value == null ? '' : `${Number(value).toLocaleString('en-US')} EGP`
+                }
+              />
+              <Legend />
+              <Bar
+                name={t('financials.subscriptions')}
+                dataKey="subscriptionRevenue"
+                stackId="revenue"
+                fill="#0D9488"
+                animationBegin={0}
+                animationDuration={800}
+              />
+              <Bar
+                name={t('financials.cardOrders')}
+                dataKey="cardOrderRevenue"
+                stackId="revenue"
+                fill="#F59E0B"
+                animationBegin={0}
+                animationDuration={800}
+              />
+              <Bar
+                name={t('financials.whatsappPack')}
+                dataKey="whatsappPackRevenue"
+                stackId="revenue"
+                fill="#6366F1"
+                animationBegin={0}
+                animationDuration={800}
+              />
+              <Line
+                name={t('financials.totalRevenue')}
+                dataKey="totalRevenue"
+                stroke="#FFFFFF"
+                strokeWidth={2}
+                dot={false}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <h3 className="text-sm font-medium text-slate-200 mb-3">{t('financials.cardOrdersPanelTitle')}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-slate-500 text-xs">{t('financials.labelTotalCardsSold')}</p>
+                <p className="font-mono text-slate-100">
+                  {financials.cardOrders.totalCardsSold.toLocaleString('en-US')}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500 text-xs">{t('financials.labelRevenueAllTime')}</p>
+                <p className="font-mono text-slate-100">
+                  {financials.cardOrders.revenueAllTime.toLocaleString('en-US')} EGP
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500 text-xs">{t('financials.labelRevenueThisMonth')}</p>
+                <p className="font-mono text-slate-100">
+                  {financials.cardOrders.revenueThisMonth.toLocaleString('en-US')} EGP
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500 text-xs">{t('financials.labelAverageOrderValue')}</p>
+                <p className="font-mono text-slate-100">
+                  {financials.cardOrders.averageOrderValue.toLocaleString('en-US')} EGP
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3 items-start content-start">
+              <span className="rounded-full bg-amber-500/20 text-amber-400 text-xs px-3 py-1 font-medium">
+                {t('financials.badgePending')}: {financials.cardOrders.pendingOrders.toLocaleString('en-US')}
+              </span>
+              <span className="rounded-full bg-teal-500/20 text-[#0D9488] text-xs px-3 py-1 font-medium">
+                {t('financials.badgePaid')}: {financials.cardOrders.paidOrders.toLocaleString('en-US')}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <h3 className="text-sm font-medium text-slate-200 mb-3">{t('financials.whatsappPanelTitle')}</h3>
+          <div className="flex flex-wrap gap-6 items-baseline text-sm">
+            <div>
+              <p className="text-slate-500 text-xs">{t('financials.labelActiveParents')}</p>
+              <p className="font-mono text-slate-100">
+                {financials.whatsappPack.activeParents.toLocaleString('en-US')}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500 text-xs">{t('financials.labelPackMrr')}</p>
+              <p className="font-mono text-slate-100">
+                {financials.whatsappPack.packMRR.toLocaleString('en-US')} EGP
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500 text-xs">{t('financials.labelGrowthVsLastMonth')}</p>
+              {g > 0 ? (
+                <p className="text-green-400 font-mono" aria-label={t('financials.growthUp')}>
+                  ↑ {g.toFixed(1)}%
+                </p>
+              ) : g < 0 ? (
+                <p className="text-red-400 font-mono" aria-label={t('financials.growthDown')}>
+                  ↓ {Math.abs(g).toFixed(1)}%
+                </p>
+              ) : (
+                <p className="text-slate-400 font-mono">{t('financials.growthNeutral')}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4">
+          <h3 className="text-sm font-medium text-slate-200">{t('financials.annualPanelTitle')}</h3>
+          <div className="flex flex-wrap gap-6 text-sm">
+            <div>
+              <p className="text-slate-500 text-xs">{t('financials.labelCurrentYearRevenue')}</p>
+              <p className="font-mono text-slate-100">
+                {financials.annualView.currentYearRevenue.toLocaleString('en-US')} EGP
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500 text-xs">{t('financials.labelProjectedArr')}</p>
+              <p className="font-mono text-slate-100">
+                {financials.annualView.projectedARR.toLocaleString('en-US')} EGP
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500 text-xs">{t('financials.labelBestMonth')}</p>
+              <p className="font-mono text-slate-100">
+                {financials.annualView.bestMonth ?? t('financials.noDataYet')}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500 text-xs">{t('financials.labelWorstMonth')}</p>
+              <p className="font-mono text-slate-100">
+                {financials.annualView.worstMonth ?? t('financials.noDataYet')}
+              </p>
+            </div>
+          </div>
+          {[6, 7, 8].includes(calendarMonth) && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-4 text-amber-400 text-sm">
+              {t('financials.summerDipWarning')}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4">
+          <h3 className="text-sm font-medium text-slate-200">{t('financials.profitCalculatorTitle')}</h3>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-200">
+            <span className="font-mono">
+              {financials.currentMonth.totalRevenue.toLocaleString('en-US')} EGP
+            </span>
+            <span className="text-slate-500">{t('financials.formulaMinus')}</span>
+            <div className="flex flex-col">
+              <span className="font-mono">
+                {financials.currentMonth.fixedCosts.toLocaleString('en-US')} EGP
+              </span>
+              <span className="text-[10px] text-slate-500">{t('financials.fixedCostsNote')}</span>
+            </div>
+            <span className="text-slate-500">{t('financials.formulaMinus')}</span>
+            <div className="flex flex-col">
+              <span className="font-mono">
+                {financials.currentMonth.variableCosts.toLocaleString('en-US')} EGP
+              </span>
+              <span className="text-[10px] text-slate-500">{t('financials.variableCostsNote')}</span>
+            </div>
+            <span className="text-slate-500">{t('financials.formulaEquals')}</span>
+            <div className="flex flex-col">
+              <span className="font-mono text-slate-100">
+                {t('financials.formulaGrossProfit')}:{' '}
+                {financials.currentMonth.grossProfit.toLocaleString('en-US')} EGP
+              </span>
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 flex flex-wrap gap-2">
+            <span>{t('financials.formulaTotalRevenue')}</span>
+            <span>·</span>
+            <span>{t('financials.formulaFixedCosts')}</span>
+            <span>·</span>
+            <span>{t('financials.formulaVariableCosts')}</span>
+          </div>
+          {financials.currentMonth.grossProfit < 0 && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-4 text-amber-400 text-sm">
+              {t('financials.profitNegativeWarning')}
+            </div>
+          )}
+        </div>
+      </section>
+    </>
+  );
 }
 
 export default function CeoDashboardPage() {
@@ -106,6 +462,47 @@ export default function CeoDashboardPage() {
       setBannerDraft(v);
     }
   }, [data]);
+
+  const [financials, setFinancials] = useState<FinancialsResponse | null>(null);
+  const [financialsLoading, setFinancialsLoading] = useState(true);
+  const [financialsError, setFinancialsError] = useState(false);
+  const [financialsRetry, setFinancialsRetry] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    if (!data) {
+      return () => controller.abort();
+    }
+    setFinancialsLoading(true);
+    setFinancialsError(false);
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setFinancialsLoading(false);
+        setFinancialsError(true);
+        return;
+      }
+      try {
+        const r = await fetch('/api/ceo/financials', {
+          signal: controller.signal,
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!r.ok) throw new Error(r.statusText);
+        const json = (await r.json()) as FinancialsResponse;
+        setFinancials(json);
+        setFinancialsLoading(false);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setFinancialsError(true);
+        setFinancialsLoading(false);
+      }
+    })();
+    return () => controller.abort();
+  }, [data, financialsRetry]);
+
+  const retryFinancials = () => setFinancialsRetry((c) => c + 1);
 
   function activationStepLabel(step: number): string {
     switch (Math.min(5, Math.max(0, step))) {
@@ -262,6 +659,8 @@ export default function CeoDashboardPage() {
     amber: data.action_queue.actions.filter((a) => a.priority === 'amber'),
     green: data.action_queue.actions.filter((a) => a.priority === 'green'),
   };
+
+  const calendarMonth = new Date().getMonth() + 1;
 
   return (
     <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen bg-[var(--color-surface-0)]">
@@ -860,6 +1259,14 @@ export default function CeoDashboardPage() {
                 </div>
               )}
             </section>
+
+            {financialsLoading && <FinancialSkeletons />}
+
+            {financialsError && <FinancialErrorCard onRetry={retryFinancials} />}
+
+            {!financialsLoading && !financialsError && financials !== null && (
+              <CeoFinancialsBody financials={financials} t={t} calendarMonth={calendarMonth} />
+            )}
           </div>
         </MobileWrapper>
       </div>
