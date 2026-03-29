@@ -373,8 +373,10 @@ export default function GroupsPage() {
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject ?? '\u2014'}</p>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">EGP {(g.fee ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')}</span>
-                <span className="text-xs text-slate-400">per lesson</span>
+                <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
+                  {g.fee != null ? `${tCommon('egp')} ${g.fee.toLocaleString('en-US')}` : '\u2014'}
+                </span>
+                <span className="text-xs text-slate-400">{t('perLesson')}</span>
               </div>
             </div>
           ))}
@@ -476,7 +478,7 @@ export default function GroupsPage() {
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 <div><p className="text-xs text-[var(--color-text-secondary)]">{t('subject')}</p><p className="font-semibold text-[var(--color-text-primary)]">{detailGroup.subject ?? '\u2014'}</p></div>
-                <div><p className="text-xs text-[var(--color-text-secondary)]">{t('feePerLesson')}</p><p className="font-semibold text-[var(--color-text-primary)] font-mono">{(detailGroup.fee ?? 0).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB')} {tCommon('egp')}</p></div>
+                <div><p className="text-xs text-[var(--color-text-secondary)]">{t('feePerLesson')}</p><p className="font-semibold text-[var(--color-text-primary)] font-mono">{detailGroup.fee != null ? `${detailGroup.fee.toLocaleString('en-US')} ${tCommon('egp')}` : '\u2014'}</p></div>
                 <div><p className="text-xs text-[var(--color-text-secondary)]">{t('studentCount')}</p><p className="font-semibold text-[var(--color-text-primary)] font-mono">{detailGroup.member_count ?? 0}{detailGroup.max_capacity != null && detailGroup.max_capacity < 999 ? ` / ${detailGroup.max_capacity}` : ''}</p></div>
               </div>
               {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && (

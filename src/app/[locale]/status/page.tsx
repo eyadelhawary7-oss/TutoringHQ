@@ -153,7 +153,9 @@ export default function StatusPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-            {t('سجل الرفعية ٩٠ يوم', '90-Day Uptime History')}
+            {locale === 'ar'
+              ? `سجل الرفعية ${(90).toLocaleString('en-US')} يوم`
+              : '90-Day Uptime History'}
           </h2>
           <div className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] p-4 overflow-x-auto">
             <div className="flex gap-0.5 min-w-max">

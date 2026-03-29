@@ -342,7 +342,9 @@ export default function SchedulePage() {
                             {isConflict && <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />}
                             <p className={`text-xs font-semibold truncate pe-5 ${isConflict ? 'text-red-800' : 'text-teal-800'}`}>{slot.group_name || '—'}</p>
                             <p className={`text-xs truncate ${isConflict ? 'text-red-700' : 'text-teal-600'}`}>{slot.room_name || '—'}</p>
-                            <p className={`text-xs ${isConflict ? 'text-red-600' : 'text-teal-500'}`}>{formatTimeForDisplay(slot.start_time)}–{formatTimeForDisplay(slot.end_time)}</p>
+                            <p className={`text-xs ${isConflict ? 'text-red-600' : 'text-teal-500'}`}>
+                              <span dir="ltr">{formatTimeForDisplay(slot.start_time)} – {formatTimeForDisplay(slot.end_time)}</span>
+                            </p>
                             {canEdit && (
                               <button
                                 type="button"
@@ -382,7 +384,7 @@ export default function SchedulePage() {
                       dir="rtl"
                     >
                       <div className="font-mono text-teal-600 text-sm">
-                        {formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}
+                        <span dir="ltr">{formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}</span>
                       </div>
                       <div className="font-bold text-sm mt-0.5">{session.group_name || '—'}</div>
                       <div className="text-xs text-slate-400 mt-0.5">
@@ -398,7 +400,7 @@ export default function SchedulePage() {
                   {thisWeekSessions.map((session) => (
                     <div key={session.id} className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2" dir="rtl">
                       <div className="font-mono text-teal-600 text-sm">
-                        {formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}
+                        <span dir="ltr">{formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}</span>
                       </div>
                       <div className="font-bold text-sm mt-0.5">{session.group_name || '—'}</div>
                       <div className="text-xs text-slate-400 mt-0.5">

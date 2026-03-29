@@ -41,6 +41,18 @@ const PERIOD_COLORS: Record<PeriodType, string> = {
   peak: 'bg-teal-300',
 };
 
+function formatHolidayDate(dateStr: string, locale: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  const months: Record<string, string[]> = {
+    ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  };
+  const monthNames = months[locale] ?? months['en'];
+  const day = d.getDate().toLocaleString('en-US');
+  const month = monthNames[d.getMonth()];
+  return `${day} ${month}`;
+}
+
 function formatDateAr(dateStr: string): string {
   try {
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('ar-SA', {
@@ -481,7 +493,7 @@ export default function AcademicPage() {
                   key={h.id}
                   className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border-subtle)]"
                 >
-                  <span>{h.name} — {formatDateShort(h.date)}</span>
+                  <span>{h.name} — {formatHolidayDate(h.date, locale)}</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {

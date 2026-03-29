@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
-import { toAr } from '@/lib/number-utils';
 import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer, ShoppingCart } from 'lucide-react';
 import { CardOrderModal } from '@/components/CardOrderModal';
 import { QRCard } from '@/components/QRCard';
@@ -114,7 +113,6 @@ export default function StudentsPage() {
   const ts = useTranslations('students');
   const router = useRouter();
   const tCommon = useTranslations('common');
-  const locale = useLocale();
   const { user, hasPermission, refreshUser } = useUser();
   const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
   const { cart, addToCart, removeFromCart, clearCart, isInCart, cartCount } = useCardOrderCart();
@@ -1213,7 +1211,12 @@ export default function StudentsPage() {
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{ts('groupRequired')}</label>
                 <select value={addForm.groupId} onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" required>
                   <option value="">{tCommon('select')}</option>
-                  {groups.map((g) => (<option key={g.id} value={g.id}>{g.name} {g.fee != null ? `(EGP ${g.fee})` : ''}</option>))}
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                      {g.fee != null ? ` (EGP ${g.fee.toLocaleString('en-US')})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
               <p className="text-xs text-[var(--color-text-secondary)]">{ts('autoGenerateNumber')}</p>
@@ -1311,7 +1314,7 @@ export default function StudentsPage() {
               <div className="font-mono text-sm text-[var(--color-text-secondary)]">{qrModalStudent.student_number || ''}</div>
               {(balanceByStudent[qrModalStudent.id] ?? 0) > 0 && (
                 <div className="mt-2 text-sm font-bold text-red-600">
-                  {ts('balance')}: {locale === 'ar' ? toAr(Math.round(balanceByStudent[qrModalStudent.id]!)) : Math.round(balanceByStudent[qrModalStudent.id]!).toLocaleString('en-US')} {tCommon('egp')}
+                  {ts('balance')}: {Math.round(balanceByStudent[qrModalStudent.id]!).toLocaleString('en-US')} {tCommon('egp')}
                 </div>
               )}
             </div>

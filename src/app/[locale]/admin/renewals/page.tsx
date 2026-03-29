@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
@@ -44,23 +44,29 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] dark:bg-gray-800 dark:text-[var(--color-text-tertiary)]',
 };
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '—';
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('ar-EG', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+function formatRenewalDate(dateStr: string | null, locale: string): string {
+  if (!dateStr) return '\u2014';
+  const d = new Date(dateStr + 'T12:00:00');
+  const months: Record<string, string[]> = {
+    ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+    en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  };
+  const monthNames = months[locale] ?? months['en'];
+  const day = d.getDate().toLocaleString('en-US');
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear().toLocaleString('en-US');
+  return `${day} ${month} ${year}`;
 }
 
 function formatAmount(amount: number | null): string {
-  if (amount == null || isNaN(amount)) return '0';
-  return Number(amount).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  if (amount == null || isNaN(amount)) return Number(0).toLocaleString('en-US');
+  return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 export default function AdminRenewalsPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
@@ -194,14 +200,14 @@ export default function AdminRenewalsPage() {
                   <Calendar size={16} />
                   {t('renewalsThisWeek')}
                 </div>
-                <div className="text-2xl font-bold text-[var(--color-text-primary)]">{summary.renewalsThisWeek}</div>
+                <div className="text-2xl font-bold text-[var(--color-text-primary)]">{summary.renewalsThisWeek.toLocaleString('en-US')}</div>
               </div>
               <div className="rounded-xl border border-border bg-[var(--color-surface-1)] p-4">
                 <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                   <AlertTriangle size={16} />
                   {t('overdueCentersCount')}
                 </div>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{summary.overdueCount}</div>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{summary.overdueCount.toLocaleString('en-US')}</div>
               </div>
               <div className="rounded-xl border border-border bg-[var(--color-surface-1)] p-4">
                 <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
@@ -260,12 +266,12 @@ export default function AdminRenewalsPage() {
                     {centers.map((row) => (
                       <tr key={row.id} className="border-b border-border last:border-0 hover:bg-muted/30">
                         <td className="p-3 font-medium">{row.name}</td>
-                        <td className="p-3">{formatDate(row.renewalDate)}</td>
+                        <td className="p-3">{formatRenewalDate(row.renewalDate, locale)}</td>
                         <td className="p-3">
                           {row.daysUntil >= 0 ? (
-                            <span className="text-green-600 dark:text-green-400">{row.daysUntil} {t('daysRemaining')}</span>
+                            <span className="text-green-600 dark:text-green-400">{row.daysUntil.toLocaleString('en-US')} {t('daysRemaining')}</span>
                           ) : (
-                            <span className="text-red-600 dark:text-red-400">{Math.abs(row.daysUntil)} {t('daysOverdue')}</span>
+                            <span className="text-red-600 dark:text-red-400">{Math.abs(row.daysUntil).toLocaleString('en-US')} {t('daysOverdue')}</span>
                           )}
                         </td>
                         <td className="p-3">{formatAmount(row.subscription_monthly_fee)} {tCommon('egp')}</td>

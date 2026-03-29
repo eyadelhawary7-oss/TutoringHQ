@@ -1133,7 +1133,9 @@ export default function ScanPage() {
                     {(g as { subject?: string | null }).subject && (
                       <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{(g as { subject?: string | null }).subject}</p>
                     )}
-                    <p className="text-xs font-medium text-teal-600 mt-1">{t('perLesson')} · {tCommon('egp')} {g.fee}</p>
+                    <p className="text-xs font-medium text-teal-600 mt-1">
+                      {t('perLesson')} · {g.fee != null ? `${tCommon('egp')} ${g.fee.toLocaleString('en-US')}` : '\u2014'}
+                    </p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 </button>

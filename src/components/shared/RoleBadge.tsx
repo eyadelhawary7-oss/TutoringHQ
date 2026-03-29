@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 const styles: Record<string, string> = {
   owner: 'bg-purple-100 text-purple-700 border border-purple-200',
   admin: 'bg-blue-100 text-blue-700 border border-blue-200',
@@ -8,12 +10,21 @@ const styles: Record<string, string> = {
 };
 
 export default function RoleBadge({ role }: { role: string }) {
+  const tNav = useTranslations('nav');
   const key = role?.toLowerCase() ?? '';
+  const roleLabel: Record<string, string> = {
+    owner: tNav('roleOwner'),
+    admin: tNav('roleAdmin'),
+    assistant: tNav('roleAssistant'),
+    teacher: tNav('roleTeacher'),
+    super_admin: tNav('roleOwner'),
+  };
+  const label = role ? roleLabel[key] ?? role : role;
   return (
     <span
       className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[key] ?? 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'}`}
     >
-      {role ? role.charAt(0).toUpperCase() + role.slice(1) : role}
+      {label}
     </span>
   );
 }

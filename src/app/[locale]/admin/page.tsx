@@ -628,6 +628,20 @@ export default function AdminPage() {
       .map(([, count], i) => ({ date: `W${i + 1}`, count }));
   }, [overview?.signupsChart]);
 
+  const activityActionLabel = useMemo(
+    () =>
+      ({
+        signup_rejected: tAdmin('signupRejected'),
+        'Signup rejected': tAdmin('signupRejected'),
+        reject_signup: tAdmin('signupRejected'),
+        student_create: tAdmin('studentCreate'),
+        'student create': tAdmin('studentCreate'),
+        center_update: tAdmin('centerUpdate'),
+        'center update': tAdmin('centerUpdate'),
+      }) as Record<string, string>,
+    [tAdmin]
+  );
+
   const handleDeleteCenter = async (centerId: string) => {
     setDeleteConfirm(null);
     const headers = await getAuthHeaders();
@@ -902,7 +916,7 @@ export default function AdminPage() {
           <>
             {/* Section: PLATFORM HEALTH */}
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">PLATFORM HEALTH</span>
+              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">{tAdmin('platformHealth')}</span>
               <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
@@ -929,7 +943,7 @@ export default function AdminPage() {
 
             {/* Section: REVENUE */}
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">REVENUE</span>
+              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">{tAdmin('revenue')}</span>
               <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
@@ -947,7 +961,7 @@ export default function AdminPage() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Outstanding Invoices</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('outstandingInvoices')}</p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.pendingRevenue?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-red-100">
@@ -958,7 +972,7 @@ export default function AdminPage() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Collected This Month</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('collectedThisMonth')}</p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.revenueThisMonth?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
                   </div>
                   <div className="p-3 rounded-full bg-teal-100">
@@ -969,7 +983,7 @@ export default function AdminPage() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Collection Rate</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('collectionRate')}</p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.totalRevenueCollected != null && overview.pendingRevenue != null && overview.totalRevenueCollected + overview.pendingRevenue > 0 ? Math.round(overview.totalRevenueCollected / (overview.totalRevenueCollected + overview.pendingRevenue) * 100) : '—'}%</p>
                   </div>
                   <div className="p-3 rounded-full bg-blue-100">
@@ -981,14 +995,14 @@ export default function AdminPage() {
 
             {/* Section: SECURITY & ALERTS */}
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">SECURITY & ALERTS</span>
+              <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">{tAdmin('securityAlerts')}</span>
               <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Failed Logins 24h</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('failedLogins24h')}</p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">0</p>
                   </div>
                   <div className="p-3 rounded-full bg-orange-100">
@@ -999,7 +1013,7 @@ export default function AdminPage() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">New Signups 7d</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('newSignups7d')}</p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.pendingSignups ?? 0}</p>
                   </div>
                   <div className="p-3 rounded-full bg-purple-100">
@@ -1010,7 +1024,7 @@ export default function AdminPage() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">Flagged Activity</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('flaggedActivity')}</p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">0</p>
                   </div>
                   <div className="p-3 rounded-full bg-red-100">
@@ -1021,13 +1035,13 @@ export default function AdminPage() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">System Status</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('systemStatus')}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
                       </span>
-                      <span className="text-sm font-semibold text-[var(--color-text-primary)]">All systems operational</span>
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tAdmin('allSystemsOperational')}</span>
                     </div>
                   </div>
                   <div className="p-3 rounded-full bg-green-100">
@@ -1075,7 +1089,7 @@ export default function AdminPage() {
                   {overview.recentActivity!.slice(0, 5).map((a, i) => (
                     <div key={a.id || i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                       <span className="text-sm text-[var(--color-text-primary)]">
-                        {formatActivitySummary(a.action || '', a.details)}
+                        {activityActionLabel[a.action ?? ''] ?? formatActivitySummary(a.action || '', a.details)}
                         {a.details && typeof (a.details as { center_name?: string }).center_name === 'string' ? (
                           <> — {(a.details as { center_name: string }).center_name}</>
                         ) : null}
