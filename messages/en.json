@@ -917,6 +917,16 @@
     "week_days": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
   },
+  "ceoRange": {
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "thisQuarter": "This Quarter",
+    "lastQuarter": "Last Quarter",
+    "last6Months": "Last 6 Months",
+    "thisYear": "This Year",
+    "lastYear": "Last Year",
+    "allTime": "All Time"
+  },
   "ceoDashboard": {
     "title": "CEO Dashboard",
     "totalActiveCenters": "Active Centers",

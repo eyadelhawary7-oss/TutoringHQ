@@ -1,5 +1,6 @@
 import { getAdminContext } from '@/lib/admin-auth';
 import { getActionQueue, getPipelineSummary } from '@/lib/ceo';
+import { resolveRange } from '@/lib/ceo-time-range';
 import { getCurrentBillingMonth } from '@/lib/parent-pack';
 import type {
   CeoActivationCenter,
@@ -14,6 +15,16 @@ export async function GET(request: NextRequest) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const url = new URL(request.url);
+  const rawFrom = url.searchParams.get('from');
+  const rawTo = url.searchParams.get('to');
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const fallback = resolveRange('this_month');
+
+  const fromDate: string =
+    rawFrom !== null && DATE_RE.test(rawFrom) ? rawFrom : fallback.from;
+  const toDate: string = rawTo !== null && DATE_RE.test(rawTo) ? rawTo : fallback.to;
 
   const supabase = ctx.supabaseAdmin;
   const now = new Date();
@@ -38,6 +49,7 @@ export async function GET(request: NextRequest) {
     paymentsRes,
     referralsRes,
     cohortRes,
+    cohortTableFilteredRes,
     healthRes,
     centersResult,
     cashMtdResult,
@@ -59,6 +71,12 @@ export async function GET(request: NextRequest) {
     supabase.from('payments').select('amount, status, confirmed').gte('paid_at', monthStartDateStr),
     supabase.from('referrals').select('id').not('referrer_center_id', 'is', null),
     supabase.from('centers').select('id, created_at, subscription_status').eq('status', 'active'),
+    supabase
+      .from('centers')
+      .select('id, created_at, subscription_status')
+      .eq('status', 'active')
+      .gte('created_at', `${fromDate}T00:00:00Z`)
+      .lte('created_at', `${toDate}T23:59:59Z`),
     supabase.from('centers').select('health_score_band').eq('status', 'active').not('health_score_band', 'is', null),
     supabase
       .from('centers')
@@ -84,6 +102,11 @@ export async function GET(request: NextRequest) {
   const payments = (paymentsRes.data ?? []) as { amount: number; status: string; confirmed: boolean }[];
   const referrals = (referralsRes.data ?? []) as { id: string }[];
   const cohortCenters = (cohortRes.data ?? []) as { id: string; created_at: string; subscription_status: string }[];
+  const cohortTableCenters = (cohortTableFilteredRes.data ?? []) as {
+    id: string;
+    created_at: string;
+    subscription_status: string;
+  }[];
   const healthBands = (healthRes.data ?? []) as { health_score_band: string | null }[];
 
   const mrr = mrrSnapshot?.mrr ?? centers.reduce((s, c) => {
@@ -125,7 +148,7 @@ export async function GET(request: NextRequest) {
   }
 
   const cohortByMonth: Record<string, { total: number; activeByMonth: Record<number, number> }> = {};
-  for (const c of cohortCenters) {
+  for (const c of cohortTableCenters) {
     const signupMonth = c.created_at.slice(0, 7);
     if (!cohortByMonth[signupMonth]) {
       cohortByMonth[signupMonth] = { total: 0, activeByMonth: {} };

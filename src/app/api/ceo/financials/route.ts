@@ -1,4 +1,5 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth';
+import { resolveRange } from '@/lib/ceo-time-range';
 import type { FinancialsResponse, MonthlyRevenue } from '@/types/financials';
 import { NextRequest } from 'next/server';
 
@@ -9,23 +10,57 @@ import { NextRequest } from 'next/server';
                              once printer deal is signed. No code change needed.
 */
 
-type MrrRow = { date: string | null; mrr: number | string | null };
+type InvoiceRow = {
+  billing_period_start: string;
+  total_amount: number | string | null;
+  invoice_type: string | null;
+  status: string;
+};
+
+type CardOrderRow = {
+  total_amount: number | string | null;
+  quantity: number | string | null;
+  created_at: string;
+};
+
+type PackRow = { month: string; amount: number | string | null };
 
 function safeNum(v: unknown): number {
   const x = Number(v);
   return Number.isFinite(x) ? x : 0;
 }
 
-function latestMrrInMonth(rows: MrrRow[], startYmd: string, endYmd: string): number | null {
-  const inRange = rows.filter(
-    (r) => r.date != null && String(r.date) >= startYmd && String(r.date) < endYmd,
-  );
-  if (inRange.length === 0) return null;
-  let best = inRange[0];
-  for (const r of inRange) {
-    if (String(r.date) > String(best.date)) best = r;
+function utcMonthsInclusive(
+  fromYmd: string,
+  toYmd: string,
+): Array<{ startYmd: string; nextYmd: string; label: string }> {
+  const [fy, fm] = fromYmd.split('-').map(Number);
+  const [ty, tm, td] = toYmd.split('-').map(Number);
+  const end = Date.UTC(ty, tm - 1, td);
+  const result: Array<{ startYmd: string; nextYmd: string; label: string }> = [];
+  let cy = fy;
+  let cm0 = fm - 1;
+  for (;;) {
+    const start = Date.UTC(cy, cm0, 1);
+    if (start > end) break;
+    const d0 = new Date(start);
+    const next = new Date(Date.UTC(cy, cm0 + 1, 1));
+    result.push({
+      startYmd: d0.toISOString().slice(0, 10),
+      nextYmd: next.toISOString().slice(0, 10),
+      label: d0.toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }),
+    });
+    cm0++;
+    if (cm0 > 11) {
+      cm0 = 0;
+      cy++;
+    }
   }
-  return safeNum(best.mrr);
+  return result;
 }
 
 export async function GET(request: NextRequest) {
@@ -36,27 +71,24 @@ export async function GET(request: NextRequest) {
 
   const supabaseAdmin = auth.supabaseAdmin;
 
-  const now = new Date();
-  const currentYear = now.getUTCFullYear();
-  const currentMonthIndex = now.getUTCMonth();
+  const url = new URL(request.url);
+  const rawFrom = url.searchParams.get('from');
+  const rawTo = url.searchParams.get('to');
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const fallback = resolveRange('this_month');
 
-  const monthStartUTC = (year: number, month: number): string =>
-    new Date(Date.UTC(year, month, 1)).toISOString();
+  const fromDate: string =
+    rawFrom !== null && DATE_RE.test(rawFrom) ? rawFrom : fallback.from;
+  const toDate: string = rawTo !== null && DATE_RE.test(rawTo) ? rawTo : fallback.to;
 
-  const nextMonthStartUTC = (year: number, month: number): string =>
-    new Date(Date.UTC(year, month + 1, 1)).toISOString();
-
-  const thisMonthStart = monthStartUTC(currentYear, currentMonthIndex);
-  const thisMonthEnd = nextMonthStartUTC(currentYear, currentMonthIndex);
-  const twelveMonthsAgo = monthStartUTC(currentYear, currentMonthIndex - 11);
-
-  const twelveMonthsAgoYmd = twelveMonthsAgo.slice(0, 10);
-  const thisMonthEndYmd = thisMonthEnd.slice(0, 10);
+  const createdFrom = `${fromDate}T00:00:00.000Z`;
+  const createdTo = `${toDate}T23:59:59.999Z`;
 
   const [
     activeCentersRes,
-    mrrHistoryRes,
-    paidWindowRes,
+    invoicesRes,
+    cardOrdersRangeRes,
+    packBillingRes,
     allTimePaidRes,
     pendingOrdersRes,
     paidOrdersRes,
@@ -67,16 +99,23 @@ export async function GET(request: NextRequest) {
       .in('subscription_status', ['active', 'overdue'])
       .eq('status', 'active'),
     supabaseAdmin
-      .from('mrr_snapshots')
-      .select('date, mrr')
-      .gte('date', twelveMonthsAgoYmd)
-      .lt('date', thisMonthEndYmd),
+      .from('invoices')
+      .select('billing_period_start, total_amount, invoice_type, status')
+      .gte('billing_period_start', fromDate)
+      .lte('billing_period_start', toDate)
+      .in('status', ['paid', 'approved']),
     supabaseAdmin
       .from('card_orders')
       .select('total_amount, quantity, created_at')
       .eq('payment_status', 'paid')
-      .gte('created_at', twelveMonthsAgo)
-      .lt('created_at', thisMonthEnd),
+      .gte('created_at', createdFrom)
+      .lte('created_at', createdTo),
+    supabaseAdmin
+      .from('parent_pack_billing')
+      .select('month, amount')
+      .gte('month', fromDate)
+      .lte('month', toDate)
+      .eq('status', 'charged'),
     supabaseAdmin.from('card_orders').select('total_amount, quantity').eq('payment_status', 'paid'),
     supabaseAdmin
       .from('card_orders')
@@ -92,32 +131,6 @@ export async function GET(request: NextRequest) {
   const activeCentersData = activeCentersRes.data;
   const activeCenterIds: string[] = activeCentersData?.map((c) => c.id) ?? [];
 
-  const mrrRows: MrrRow[] =
-    !mrrHistoryRes.error && mrrHistoryRes.data ? (mrrHistoryRes.data as MrrRow[]) : [];
-
-  const allPaidCardOrders = paidWindowRes.data;
-  const allTimePaidOrders = allTimePaidRes.data;
-  const pendingOrdersCount = pendingOrdersRes.count;
-  const paidOrdersCount = paidOrdersRes.count;
-
-  const proxySubRevenue = safeNum(
-    activeCentersData?.reduce((s, c) => s + safeNum(c.subscription_monthly_fee), 0) ?? 0,
-  );
-
-  const cmSubRevenue = safeNum(proxySubRevenue);
-
-  const cmCardRevenue = safeNum(
-    (allPaidCardOrders ?? [])
-      .filter(
-        (o) =>
-          o.created_at != null &&
-          o.created_at >= thisMonthStart &&
-          o.created_at < thisMonthEnd,
-      )
-      .reduce((s, o) => s + safeNum(o.total_amount), 0),
-  );
-
-  let cmWaRevenue = 0;
   let activeParentsCount = 0;
   if (activeCenterIds.length > 0) {
     const { count: parentCount } = await supabaseAdmin
@@ -127,24 +140,59 @@ export async function GET(request: NextRequest) {
       .eq('is_active', true)
       .in('center_id', activeCenterIds);
     activeParentsCount = safeNum(parentCount ?? 0);
-    cmWaRevenue = safeNum(activeParentsCount * 10);
+  }
+
+  const invoiceRows: InvoiceRow[] =
+    !invoicesRes.error && invoicesRes.data ? (invoicesRes.data as InvoiceRow[]) : [];
+  const cardRangeRows: CardOrderRow[] =
+    !cardOrdersRangeRes.error && cardOrdersRangeRes.data
+      ? (cardOrdersRangeRes.data as CardOrderRow[])
+      : [];
+  const packRows: PackRow[] =
+    !packBillingRes.error && packBillingRes.data ? (packBillingRes.data as PackRow[]) : [];
+  const allPaidCardOrders = allTimePaidRes.data as CardOrderRow[] | null;
+  const pendingOrdersCount = pendingOrdersRes.count;
+  const paidOrdersCount = paidOrdersRes.count;
+
+  const invoicesInRange = invoiceRows;
+
+  let cmSubRevenue = 0;
+  let cmInvoiceWa = 0;
+  for (const inv of invoicesInRange) {
+    const amt = safeNum(inv.total_amount);
+    if (inv.invoice_type === 'whatsapp_addon') {
+      cmInvoiceWa += amt;
+    } else {
+      cmSubRevenue += amt;
+    }
+  }
+
+  const cmCardRevenue = safeNum(
+    cardRangeRows.reduce((s, o) => s + safeNum(o.total_amount), 0),
+  );
+
+  const cmPackRevenue = safeNum(packRows.reduce((s, p) => s + safeNum(p.amount), 0));
+
+  const cmWaRevenue = safeNum(cmInvoiceWa + cmPackRevenue);
+
+  const proxySubRevenue = safeNum(
+    activeCentersData?.reduce((s, c) => s + safeNum(c.subscription_monthly_fee), 0) ?? 0,
+  );
+
+  if (cmSubRevenue === 0 && proxySubRevenue > 0) {
+    cmSubRevenue = proxySubRevenue;
   }
 
   const cmTotalRevenue = safeNum(cmSubRevenue + cmCardRevenue + cmWaRevenue);
 
-  const fixedCosts = safeNum(parseFloat(process.env.MONTHLY_FIXED_COSTS_EGP ?? '2500'));
+  const fixedCostsPerMonth = safeNum(parseFloat(process.env.MONTHLY_FIXED_COSTS_EGP ?? '2500'));
+  const monthBuckets = utcMonthsInclusive(fromDate, toDate);
+  const monthCount = Math.max(1, monthBuckets.length);
+  const fixedCosts = safeNum(fixedCostsPerMonth * monthCount);
 
   const cardCogs = safeNum(parseFloat(process.env.CARD_COGS_EGP ?? '0'));
-
   const cmTotalQty = safeNum(
-    (allPaidCardOrders ?? [])
-      .filter(
-        (o) =>
-          o.created_at != null &&
-          o.created_at >= thisMonthStart &&
-          o.created_at < thisMonthEnd,
-      )
-      .reduce((s, o) => s + safeNum(o.quantity), 0),
+    cardRangeRows.reduce((s, o) => s + safeNum(o.quantity), 0),
   );
   const variableCosts = safeNum(cmTotalQty * cardCogs);
 
@@ -154,40 +202,47 @@ export async function GET(request: NextRequest) {
 
   const months: MonthlyRevenue[] = [];
 
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(Date.UTC(currentYear, currentMonthIndex - i, 1));
-    const loopYear = d.getUTCFullYear();
-    const loopMonth = d.getUTCMonth();
-    const loopStart = monthStartUTC(loopYear, loopMonth);
-    const loopEnd = nextMonthStartUTC(loopYear, loopMonth);
-    const loopLabel = d.toLocaleDateString('en-US', {
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC',
-    });
+  for (const bucket of monthBuckets) {
+    const { startYmd, nextYmd, label } = bucket;
+    const startIso = `${startYmd}T00:00:00.000Z`;
+    const nextIso = `${nextYmd}T00:00:00.000Z`;
 
-    const loopStartYmd = loopStart.slice(0, 10);
-    const loopEndYmd = loopEnd.slice(0, 10);
-
-    const fromSnapshot = latestMrrInMonth(mrrRows, loopStartYmd, loopEndYmd);
-    const loopSubRevenue = safeNum(fromSnapshot ?? proxySubRevenue);
+    let loopSub = 0;
+    let loopInvWa = 0;
+    for (const inv of invoicesInRange) {
+      const b = String(inv.billing_period_start ?? '').slice(0, 10);
+      if (b >= startYmd && b < nextYmd) {
+        const amt = safeNum(inv.total_amount);
+        if (inv.invoice_type === 'whatsapp_addon') {
+          loopInvWa += amt;
+        } else {
+          loopSub += amt;
+        }
+      }
+    }
 
     const loopCardRevenue = safeNum(
-      (allPaidCardOrders ?? [])
-        .filter(
-          (o) =>
-            o.created_at != null && o.created_at >= loopStart && o.created_at < loopEnd,
-        )
+      cardRangeRows
+        .filter((o) => o.created_at >= startIso && o.created_at < nextIso)
         .reduce((s, o) => s + safeNum(o.total_amount), 0),
     );
 
-    const loopWaRevenue = 0;
+    const loopPack = safeNum(
+      packRows
+        .filter((p) => {
+          const m = String(p.month ?? '').slice(0, 10);
+          return m >= startYmd && m < nextYmd;
+        })
+        .reduce((s, p) => s + safeNum(p.amount), 0),
+    );
 
-    const loopTotal = safeNum(loopSubRevenue + loopCardRevenue + loopWaRevenue);
+    const loopWaRevenue = safeNum(loopInvWa + loopPack);
+
+    const loopTotal = safeNum(loopSub + loopCardRevenue + loopWaRevenue);
 
     months.push({
-      month: loopLabel,
-      subscriptionRevenue: loopSubRevenue,
+      month: label,
+      subscriptionRevenue: loopSub,
       cardOrderRevenue: loopCardRevenue,
       whatsappPackRevenue: loopWaRevenue,
       totalRevenue: loopTotal,
@@ -195,31 +250,25 @@ export async function GET(request: NextRequest) {
   }
 
   const revenueAllTime = safeNum(
-    (allTimePaidOrders ?? []).reduce((s, o) => s + safeNum(o.total_amount), 0),
+    (allPaidCardOrders ?? []).reduce((s, o) => s + safeNum(o.total_amount), 0),
   );
 
   const totalCardsSold = safeNum(
-    (allTimePaidOrders ?? []).reduce((s, o) => s + safeNum(o.quantity), 0),
+    (allPaidCardOrders ?? []).reduce((s, o) => s + safeNum(o.quantity), 0),
   );
 
-  const revenueThisMonth = safeNum(
-    (allPaidCardOrders ?? [])
-      .filter(
-        (o) =>
-          o.created_at != null &&
-          o.created_at >= thisMonthStart &&
-          o.created_at < thisMonthEnd,
-      )
-      .reduce((s, o) => s + safeNum(o.total_amount), 0),
-  );
+  const revenueThisMonth = cmCardRevenue;
 
   const paidOrders = safeNum(paidOrdersCount ?? 0);
   const pendingOrders = safeNum(pendingOrdersCount ?? 0);
   const averageOrderValue =
     paidOrders > 0 ? safeNum(revenueAllTime / paidOrders) : 0;
 
-  const packMRR = safeNum(activeParentsCount * 10);
+  const packMRR = safeNum(cmPackRevenue / monthCount);
   const growthVsLastMonth = 0;
+
+  const now = new Date();
+  const currentYear = now.getUTCFullYear();
 
   const currentYearRevenue = safeNum(
     months
@@ -227,7 +276,7 @@ export async function GET(request: NextRequest) {
       .reduce((sum, m) => sum + safeNum(m.totalRevenue), 0),
   );
 
-  const projectedARR = safeNum(cmTotalRevenue * 12);
+  const projectedARR = safeNum((cmTotalRevenue / monthCount) * 12);
 
   const nonZeroMonths = months.filter((m) => m.totalRevenue > 0);
   let bestMonth: string | null = null;
