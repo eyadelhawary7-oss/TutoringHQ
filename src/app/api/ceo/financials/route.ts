@@ -11,6 +11,11 @@ import { NextRequest } from 'next/server';
 
 type MrrRow = { date: string | null; mrr: number | string | null };
 
+function safeNum(v: unknown): number {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
 function latestMrrInMonth(rows: MrrRow[], startYmd: string, endYmd: string): number | null {
   const inRange = rows.filter(
     (r) => r.date != null && String(r.date) >= startYmd && String(r.date) < endYmd,
@@ -20,7 +25,7 @@ function latestMrrInMonth(rows: MrrRow[], startYmd: string, endYmd: string): num
   for (const r of inRange) {
     if (String(r.date) > String(best.date)) best = r;
   }
-  return Number(best.mrr ?? 0);
+  return safeNum(best.mrr);
 }
 
 export async function GET(request: NextRequest) {
@@ -95,19 +100,22 @@ export async function GET(request: NextRequest) {
   const pendingOrdersCount = pendingOrdersRes.count;
   const paidOrdersCount = paidOrdersRes.count;
 
-  const proxySubRevenue =
-    activeCentersData?.reduce((s, c) => s + Number(c.subscription_monthly_fee ?? 0), 0) ?? 0;
+  const proxySubRevenue = safeNum(
+    activeCentersData?.reduce((s, c) => s + safeNum(c.subscription_monthly_fee), 0) ?? 0,
+  );
 
-  const cmSubRevenue = proxySubRevenue;
+  const cmSubRevenue = safeNum(proxySubRevenue);
 
-  const cmCardRevenue = (allPaidCardOrders ?? [])
-    .filter(
-      (o) =>
-        o.created_at != null &&
-        o.created_at >= thisMonthStart &&
-        o.created_at < thisMonthEnd,
-    )
-    .reduce((s, o) => s + Number(o.total_amount ?? 0), 0);
+  const cmCardRevenue = safeNum(
+    (allPaidCardOrders ?? [])
+      .filter(
+        (o) =>
+          o.created_at != null &&
+          o.created_at >= thisMonthStart &&
+          o.created_at < thisMonthEnd,
+      )
+      .reduce((s, o) => s + safeNum(o.total_amount), 0),
+  );
 
   let cmWaRevenue = 0;
   let activeParentsCount = 0;
@@ -118,28 +126,31 @@ export async function GET(request: NextRequest) {
       .or('notify_on_scan.eq.true,notify_on_absence.eq.true,notify_on_balance.eq.true')
       .eq('is_active', true)
       .in('center_id', activeCenterIds);
-    activeParentsCount = parentCount ?? 0;
-    cmWaRevenue = activeParentsCount * 10;
+    activeParentsCount = safeNum(parentCount ?? 0);
+    cmWaRevenue = safeNum(activeParentsCount * 10);
   }
 
-  const cmTotalRevenue = cmSubRevenue + cmCardRevenue + cmWaRevenue;
+  const cmTotalRevenue = safeNum(cmSubRevenue + cmCardRevenue + cmWaRevenue);
 
-  const fixedCosts = parseFloat(process.env.MONTHLY_FIXED_COSTS_EGP ?? '2500');
+  const fixedCosts = safeNum(parseFloat(process.env.MONTHLY_FIXED_COSTS_EGP ?? '2500'));
 
-  const cardCogs = parseFloat(process.env.CARD_COGS_EGP ?? '0');
+  const cardCogs = safeNum(parseFloat(process.env.CARD_COGS_EGP ?? '0'));
 
-  const cmTotalQty = (allPaidCardOrders ?? [])
-    .filter(
-      (o) =>
-        o.created_at != null &&
-        o.created_at >= thisMonthStart &&
-        o.created_at < thisMonthEnd,
-    )
-    .reduce((s, o) => s + (o.quantity ?? 0), 0);
-  const variableCosts = cmTotalQty * cardCogs;
+  const cmTotalQty = safeNum(
+    (allPaidCardOrders ?? [])
+      .filter(
+        (o) =>
+          o.created_at != null &&
+          o.created_at >= thisMonthStart &&
+          o.created_at < thisMonthEnd,
+      )
+      .reduce((s, o) => s + safeNum(o.quantity), 0),
+  );
+  const variableCosts = safeNum(cmTotalQty * cardCogs);
 
-  const grossProfit = cmTotalRevenue - fixedCosts - variableCosts;
-  const profitMargin = cmTotalRevenue > 0 ? (grossProfit / cmTotalRevenue) * 100 : 0;
+  const grossProfit = safeNum(cmTotalRevenue - fixedCosts - variableCosts);
+  const profitMargin =
+    cmTotalRevenue > 0 ? safeNum((grossProfit / cmTotalRevenue) * 100) : 0;
 
   const months: MonthlyRevenue[] = [];
 
@@ -159,18 +170,20 @@ export async function GET(request: NextRequest) {
     const loopEndYmd = loopEnd.slice(0, 10);
 
     const fromSnapshot = latestMrrInMonth(mrrRows, loopStartYmd, loopEndYmd);
-    const loopSubRevenue = fromSnapshot ?? proxySubRevenue;
+    const loopSubRevenue = safeNum(fromSnapshot ?? proxySubRevenue);
 
-    const loopCardRevenue = (allPaidCardOrders ?? [])
-      .filter(
-        (o) =>
-          o.created_at != null && o.created_at >= loopStart && o.created_at < loopEnd,
-      )
-      .reduce((s, o) => s + Number(o.total_amount ?? 0), 0);
+    const loopCardRevenue = safeNum(
+      (allPaidCardOrders ?? [])
+        .filter(
+          (o) =>
+            o.created_at != null && o.created_at >= loopStart && o.created_at < loopEnd,
+        )
+        .reduce((s, o) => s + safeNum(o.total_amount), 0),
+    );
 
     const loopWaRevenue = 0;
 
-    const loopTotal = loopSubRevenue + loopCardRevenue + loopWaRevenue;
+    const loopTotal = safeNum(loopSubRevenue + loopCardRevenue + loopWaRevenue);
 
     months.push({
       month: loopLabel,
@@ -181,37 +194,40 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const revenueAllTime = (allTimePaidOrders ?? []).reduce(
-    (s, o) => s + Number(o.total_amount ?? 0),
-    0,
+  const revenueAllTime = safeNum(
+    (allTimePaidOrders ?? []).reduce((s, o) => s + safeNum(o.total_amount), 0),
   );
 
-  const totalCardsSold = (allTimePaidOrders ?? []).reduce(
-    (s, o) => s + (o.quantity ?? 0),
-    0,
+  const totalCardsSold = safeNum(
+    (allTimePaidOrders ?? []).reduce((s, o) => s + safeNum(o.quantity), 0),
   );
 
-  const revenueThisMonth = (allPaidCardOrders ?? [])
-    .filter(
-      (o) =>
-        o.created_at != null &&
-        o.created_at >= thisMonthStart &&
-        o.created_at < thisMonthEnd,
-    )
-    .reduce((s, o) => s + Number(o.total_amount ?? 0), 0);
+  const revenueThisMonth = safeNum(
+    (allPaidCardOrders ?? [])
+      .filter(
+        (o) =>
+          o.created_at != null &&
+          o.created_at >= thisMonthStart &&
+          o.created_at < thisMonthEnd,
+      )
+      .reduce((s, o) => s + safeNum(o.total_amount), 0),
+  );
 
-  const paidOrders = paidOrdersCount ?? 0;
-  const pendingOrders = pendingOrdersCount ?? 0;
-  const averageOrderValue = paidOrders > 0 ? revenueAllTime / paidOrders : 0;
+  const paidOrders = safeNum(paidOrdersCount ?? 0);
+  const pendingOrders = safeNum(pendingOrdersCount ?? 0);
+  const averageOrderValue =
+    paidOrders > 0 ? safeNum(revenueAllTime / paidOrders) : 0;
 
-  const packMRR = activeParentsCount * 10;
+  const packMRR = safeNum(activeParentsCount * 10);
   const growthVsLastMonth = 0;
 
-  const currentYearRevenue = months
-    .filter((m) => m.month.includes(String(currentYear)))
-    .reduce((sum, m) => sum + m.totalRevenue, 0);
+  const currentYearRevenue = safeNum(
+    months
+      .filter((m) => m.month.includes(String(currentYear)))
+      .reduce((sum, m) => sum + safeNum(m.totalRevenue), 0),
+  );
 
-  const projectedARR = cmTotalRevenue * 12;
+  const projectedARR = safeNum(cmTotalRevenue * 12);
 
   const nonZeroMonths = months.filter((m) => m.totalRevenue > 0);
   let bestMonth: string | null = null;
@@ -227,32 +243,38 @@ export async function GET(request: NextRequest) {
 
   return Response.json({
     currentMonth: {
-      subscriptionRevenue: cmSubRevenue,
-      cardOrderRevenue: cmCardRevenue,
-      whatsappPackRevenue: cmWaRevenue,
-      totalRevenue: cmTotalRevenue,
-      fixedCosts,
-      variableCosts,
-      grossProfit,
-      profitMargin,
+      subscriptionRevenue: safeNum(cmSubRevenue),
+      cardOrderRevenue: safeNum(cmCardRevenue),
+      whatsappPackRevenue: safeNum(cmWaRevenue),
+      totalRevenue: safeNum(cmTotalRevenue),
+      fixedCosts: safeNum(fixedCosts),
+      variableCosts: safeNum(variableCosts),
+      grossProfit: safeNum(grossProfit),
+      profitMargin: safeNum(profitMargin),
     },
-    monthly: months,
+    monthly: months.map((m) => ({
+      month: m.month,
+      subscriptionRevenue: safeNum(m.subscriptionRevenue),
+      cardOrderRevenue: safeNum(m.cardOrderRevenue),
+      whatsappPackRevenue: safeNum(m.whatsappPackRevenue),
+      totalRevenue: safeNum(m.totalRevenue),
+    })),
     cardOrders: {
-      totalCardsSold,
-      revenueAllTime,
-      revenueThisMonth,
-      averageOrderValue,
-      pendingOrders,
-      paidOrders,
+      totalCardsSold: safeNum(totalCardsSold),
+      revenueAllTime: safeNum(revenueAllTime),
+      revenueThisMonth: safeNum(revenueThisMonth),
+      averageOrderValue: safeNum(averageOrderValue),
+      pendingOrders: safeNum(pendingOrders),
+      paidOrders: safeNum(paidOrders),
     },
     whatsappPack: {
-      activeParents: activeParentsCount,
-      packMRR,
-      growthVsLastMonth,
+      activeParents: safeNum(activeParentsCount),
+      packMRR: safeNum(packMRR),
+      growthVsLastMonth: safeNum(growthVsLastMonth),
     },
     annualView: {
-      currentYearRevenue,
-      projectedARR,
+      currentYearRevenue: safeNum(currentYearRevenue),
+      projectedARR: safeNum(projectedARR),
       bestMonth,
       worstMonth,
     },

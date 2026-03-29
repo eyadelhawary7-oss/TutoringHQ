@@ -119,22 +119,22 @@ function CeoFinancialsBody({
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 border-l-4 border-teal-500">
             <p className="text-xs text-slate-400">{tFinancials('financials.cardTotalTitle')}</p>
             <p className="text-xl font-mono font-bold text-slate-100 mt-1">
-              {financials.currentMonth.totalRevenue.toLocaleString('en-US')} EGP
+              {(financials.currentMonth.totalRevenue ?? 0).toLocaleString('en-US')} EGP
             </p>
             <div className="mt-2 space-y-0.5 text-[11px] text-slate-500">
               <p>
                 {tFinancials('financials.cardTotalSubSubscriptions', {
-                  amount: financials.currentMonth.subscriptionRevenue.toLocaleString('en-US'),
+                  amount: (financials.currentMonth.subscriptionRevenue ?? 0).toLocaleString('en-US'),
                 })}
               </p>
               <p>
                 {tFinancials('financials.cardTotalSubCards', {
-                  amount: financials.currentMonth.cardOrderRevenue.toLocaleString('en-US'),
+                  amount: (financials.currentMonth.cardOrderRevenue ?? 0).toLocaleString('en-US'),
                 })}
               </p>
               <p>
                 {tFinancials('financials.cardTotalSubWa', {
-                  amount: financials.currentMonth.whatsappPackRevenue.toLocaleString('en-US'),
+                  amount: (financials.currentMonth.whatsappPackRevenue ?? 0).toLocaleString('en-US'),
                 })}
               </p>
             </div>
@@ -146,19 +146,19 @@ function CeoFinancialsBody({
                 financials.currentMonth.grossProfit >= 0 ? 'text-green-400' : 'text-red-400'
               }`}
             >
-              {financials.currentMonth.grossProfit.toLocaleString('en-US')} EGP
+              {(financials.currentMonth.grossProfit ?? 0).toLocaleString('en-US')} EGP
             </p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <p className="text-xs text-slate-400">{tFinancials('financials.cardMarginTitle')}</p>
             <p className="text-xl font-mono font-bold text-[#F59E0B] mt-1">
-              {financials.currentMonth.profitMargin.toFixed(1)}%
+              {(financials.currentMonth.profitMargin ?? 0).toFixed(1)}%
             </p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <p className="text-xs text-slate-400">{tFinancials('financials.cardProjectedArrTitle')}</p>
             <p className="text-xl font-mono font-bold text-slate-300 mt-1">
-              {financials.annualView.projectedARR.toLocaleString('en-US')} EGP
+              {(financials.annualView.projectedARR ?? 0).toLocaleString('en-US')} EGP
             </p>
             <p className="text-[11px] text-slate-500 mt-2">{tFinancials('financials.projectedARRNote')}</p>
           </div>
@@ -180,7 +180,7 @@ function CeoFinancialsBody({
                 </Pie>
                 <Tooltip
                   formatter={(value: number | string | undefined) =>
-                    value == null ? '' : `${Number(value).toLocaleString('en-US')} EGP`
+                    value == null ? '' : `${(Number(value) ?? 0).toLocaleString('en-US')} EGP`
                   }
                 />
                 <Legend />
@@ -197,11 +197,13 @@ function CeoFinancialsBody({
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
               <YAxis
                 tick={{ fill: '#94a3b8' }}
-                tickFormatter={(value: number | string) => Number(value).toLocaleString('en-US')}
+                tickFormatter={(value: number | string) =>
+                  Number(value ?? 0).toLocaleString('en-US')
+                }
               />
               <Tooltip
                 formatter={(value: number | string | undefined) =>
-                  value == null ? '' : `${Number(value).toLocaleString('en-US')} EGP`
+                  value == null ? '' : `${(Number(value) ?? 0).toLocaleString('en-US')} EGP`
                 }
               />
               <Legend />
@@ -247,34 +249,36 @@ function CeoFinancialsBody({
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelTotalCardsSold')}</p>
                 <p className="font-mono text-slate-100">
-                  {financials.cardOrders.totalCardsSold.toLocaleString('en-US')}
+                  {(financials.cardOrders.totalCardsSold ?? 0).toLocaleString('en-US')}
                 </p>
               </div>
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelRevenueAllTime')}</p>
                 <p className="font-mono text-slate-100">
-                  {financials.cardOrders.revenueAllTime.toLocaleString('en-US')} EGP
+                  {(financials.cardOrders.revenueAllTime ?? 0).toLocaleString('en-US')} EGP
                 </p>
               </div>
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelRevenueThisMonth')}</p>
                 <p className="font-mono text-slate-100">
-                  {financials.cardOrders.revenueThisMonth.toLocaleString('en-US')} EGP
+                  {(financials.cardOrders.revenueThisMonth ?? 0).toLocaleString('en-US')} EGP
                 </p>
               </div>
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelAverageOrderValue')}</p>
                 <p className="font-mono text-slate-100">
-                  {financials.cardOrders.averageOrderValue.toLocaleString('en-US')} EGP
+                  {(financials.cardOrders.averageOrderValue ?? 0).toLocaleString('en-US')} EGP
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3 items-start content-start">
               <span className="rounded-full bg-amber-500/20 text-amber-400 text-xs px-3 py-1 font-medium">
-                {tFinancials('financials.badgePending')}: {financials.cardOrders.pendingOrders.toLocaleString('en-US')}
+                {tFinancials('financials.badgePending')}:{' '}
+                {(financials.cardOrders.pendingOrders ?? 0).toLocaleString('en-US')}
               </span>
               <span className="rounded-full bg-teal-500/20 text-[#0D9488] text-xs px-3 py-1 font-medium">
-                {tFinancials('financials.badgePaid')}: {financials.cardOrders.paidOrders.toLocaleString('en-US')}
+                {tFinancials('financials.badgePaid')}:{' '}
+                {(financials.cardOrders.paidOrders ?? 0).toLocaleString('en-US')}
               </span>
             </div>
           </div>
@@ -286,24 +290,24 @@ function CeoFinancialsBody({
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelActiveParents')}</p>
               <p className="font-mono text-slate-100">
-                {financials.whatsappPack.activeParents.toLocaleString('en-US')}
+                {(financials.whatsappPack.activeParents ?? 0).toLocaleString('en-US')}
               </p>
             </div>
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelPackMrr')}</p>
               <p className="font-mono text-slate-100">
-                {financials.whatsappPack.packMRR.toLocaleString('en-US')} EGP
+                {(financials.whatsappPack.packMRR ?? 0).toLocaleString('en-US')} EGP
               </p>
             </div>
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelGrowthVsLastMonth')}</p>
               {g > 0 ? (
                 <p className="text-green-400 font-mono" aria-label={tFinancials('financials.growthUp')}>
-                  ↑ {g.toFixed(1)}%
+                  ↑ {(g ?? 0).toFixed(1)}%
                 </p>
               ) : g < 0 ? (
                 <p className="text-red-400 font-mono" aria-label={tFinancials('financials.growthDown')}>
-                  ↓ {Math.abs(g).toFixed(1)}%
+                  ↓ {Math.abs(g ?? 0).toFixed(1)}%
                 </p>
               ) : (
                 <p className="text-slate-400 font-mono">{tFinancials('financials.growthNeutral')}</p>
@@ -318,13 +322,13 @@ function CeoFinancialsBody({
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelCurrentYearRevenue')}</p>
               <p className="font-mono text-slate-100">
-                {financials.annualView.currentYearRevenue.toLocaleString('en-US')} EGP
+                {(financials.annualView.currentYearRevenue ?? 0).toLocaleString('en-US')} EGP
               </p>
             </div>
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelProjectedArr')}</p>
               <p className="font-mono text-slate-100">
-                {financials.annualView.projectedARR.toLocaleString('en-US')} EGP
+                {(financials.annualView.projectedARR ?? 0).toLocaleString('en-US')} EGP
               </p>
             </div>
             <div>
@@ -351,19 +355,19 @@ function CeoFinancialsBody({
           <h3 className="text-sm font-medium text-slate-200">{tFinancials('financials.profitCalculatorTitle')}</h3>
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-200">
             <span className="font-mono">
-              {financials.currentMonth.totalRevenue.toLocaleString('en-US')} EGP
+              {(financials.currentMonth.totalRevenue ?? 0).toLocaleString('en-US')} EGP
             </span>
             <span className="text-slate-500">{tFinancials('financials.formulaMinus')}</span>
             <div className="flex flex-col">
               <span className="font-mono">
-                {financials.currentMonth.fixedCosts.toLocaleString('en-US')} EGP
+                {(financials.currentMonth.fixedCosts ?? 0).toLocaleString('en-US')} EGP
               </span>
               <span className="text-[10px] text-slate-500">{tFinancials('financials.fixedCostsNote')}</span>
             </div>
             <span className="text-slate-500">{tFinancials('financials.formulaMinus')}</span>
             <div className="flex flex-col">
               <span className="font-mono">
-                {financials.currentMonth.variableCosts.toLocaleString('en-US')} EGP
+                {(financials.currentMonth.variableCosts ?? 0).toLocaleString('en-US')} EGP
               </span>
               <span className="text-[10px] text-slate-500">{tFinancials('financials.variableCostsNote')}</span>
             </div>
@@ -371,7 +375,7 @@ function CeoFinancialsBody({
             <div className="flex flex-col">
               <span className="font-mono text-slate-100">
                 {tFinancials('financials.formulaGrossProfit')}:{' '}
-                {financials.currentMonth.grossProfit.toLocaleString('en-US')} EGP
+                {(financials.currentMonth.grossProfit ?? 0).toLocaleString('en-US')} EGP
               </span>
             </div>
           </div>
