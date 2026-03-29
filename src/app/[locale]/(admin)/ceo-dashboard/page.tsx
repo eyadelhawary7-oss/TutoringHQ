@@ -18,6 +18,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import type { FinancialsResponse } from '@/types/financials';
+import type { CommandStripResponse } from '@/types/founder-dash';
+import FounderCommandStrip from './FounderCommandStrip';
 import {
   Bar,
   CartesianGrid,
@@ -91,14 +93,24 @@ function FinancialErrorCard({ onRetry }: { onRetry: () => void }) {
 
 type CeoFinancialsT = (key: string, values?: Record<string, string | number>) => string;
 
+const DEFAULT_COMMAND_STRIP: CommandStripResponse = {
+  stats: {
+    pendingApprovals: 0,
+    leadsNeedingReply: 0,
+    overduePayments: 0,
+    atRiskCenters: 0,
+  },
+  actionQueue: [],
+  pendingCenters: [],
+  breakeven: { target: 77, activePayingCenters: 0 },
+};
+
 function CeoFinancialsBody({
   financials,
   tFinancials,
-  calendarMonth,
 }: {
   financials: FinancialsResponse;
   tFinancials: CeoFinancialsT;
-  calendarMonth: number;
 }) {
   const donutData = [
     { name: tFinancials('financials.subscriptions'), value: financials.currentMonth.subscriptionRevenue },
@@ -316,82 +328,6 @@ function CeoFinancialsBody({
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4">
-          <h3 className="text-sm font-medium text-slate-200">{tFinancials('financials.annualPanelTitle')}</h3>
-          <div className="flex flex-wrap gap-6 text-sm">
-            <div>
-              <p className="text-slate-500 text-xs">{tFinancials('financials.labelCurrentYearRevenue')}</p>
-              <p className="font-mono text-slate-100">
-                {(financials.annualView.currentYearRevenue ?? 0).toLocaleString('en-US')} EGP
-              </p>
-            </div>
-            <div>
-              <p className="text-slate-500 text-xs">{tFinancials('financials.labelProjectedArr')}</p>
-              <p className="font-mono text-slate-100">
-                {(financials.annualView.projectedARR ?? 0).toLocaleString('en-US')} EGP
-              </p>
-            </div>
-            <div>
-              <p className="text-slate-500 text-xs">{tFinancials('financials.labelBestMonth')}</p>
-              <p className="font-mono text-slate-100">
-                {financials.annualView.bestMonth ?? tFinancials('financials.noDataYet')}
-              </p>
-            </div>
-            <div>
-              <p className="text-slate-500 text-xs">{tFinancials('financials.labelWorstMonth')}</p>
-              <p className="font-mono text-slate-100">
-                {financials.annualView.worstMonth ?? tFinancials('financials.noDataYet')}
-              </p>
-            </div>
-          </div>
-          {[6, 7, 8].includes(calendarMonth) && (
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-4 text-amber-400 text-sm">
-              {tFinancials('financials.summerDipWarning')}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4">
-          <h3 className="text-sm font-medium text-slate-200">{tFinancials('financials.profitCalculatorTitle')}</h3>
-          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-200">
-            <span className="font-mono">
-              {(financials.currentMonth.totalRevenue ?? 0).toLocaleString('en-US')} EGP
-            </span>
-            <span className="text-slate-500">{tFinancials('financials.formulaMinus')}</span>
-            <div className="flex flex-col">
-              <span className="font-mono">
-                {(financials.currentMonth.fixedCosts ?? 0).toLocaleString('en-US')} EGP
-              </span>
-              <span className="text-[10px] text-slate-500">{tFinancials('financials.fixedCostsNote')}</span>
-            </div>
-            <span className="text-slate-500">{tFinancials('financials.formulaMinus')}</span>
-            <div className="flex flex-col">
-              <span className="font-mono">
-                {(financials.currentMonth.variableCosts ?? 0).toLocaleString('en-US')} EGP
-              </span>
-              <span className="text-[10px] text-slate-500">{tFinancials('financials.variableCostsNote')}</span>
-            </div>
-            <span className="text-slate-500">{tFinancials('financials.formulaEquals')}</span>
-            <div className="flex flex-col">
-              <span className="font-mono text-slate-100">
-                {tFinancials('financials.formulaGrossProfit')}:{' '}
-                {(financials.currentMonth.grossProfit ?? 0).toLocaleString('en-US')} EGP
-              </span>
-            </div>
-          </div>
-          <div className="text-xs text-slate-500 flex flex-wrap gap-2">
-            <span>{tFinancials('financials.formulaTotalRevenue')}</span>
-            <span>·</span>
-            <span>{tFinancials('financials.formulaFixedCosts')}</span>
-            <span>·</span>
-            <span>{tFinancials('financials.formulaVariableCosts')}</span>
-          </div>
-          {financials.currentMonth.grossProfit < 0 && (
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-4 text-amber-400 text-sm">
-              {tFinancials('financials.profitNegativeWarning')}
-            </div>
-          )}
-        </div>
       </section>
     </>
   );
@@ -402,6 +338,7 @@ export default function CeoDashboardPage() {
   const locale = useLocale();
   const { setHideShell } = useLayout();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [commandStrip, setCommandStrip] = useState<CommandStripResponse>(DEFAULT_COMMAND_STRIP);
 
   useEffect(() => {
     setHideShell(true);
@@ -416,12 +353,29 @@ export default function CeoDashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/ceo/dashboard', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const [res, resStrip] = await Promise.all([
+        fetch('/api/ceo/dashboard', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+        fetch('/api/ceo/command-strip', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+      ]);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);
+      if (resStrip.ok) {
+        try {
+          const stripJson = (await resStrip.json()) as CommandStripResponse;
+          setCommandStrip(stripJson);
+        } catch (parseErr) {
+          console.error('command-strip response parse error', parseErr);
+          setCommandStrip(DEFAULT_COMMAND_STRIP);
+        }
+      } else {
+        console.error('command-strip fetch failed', resStrip.status);
+        setCommandStrip(DEFAULT_COMMAND_STRIP);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
@@ -514,8 +468,6 @@ export default function CeoDashboardPage() {
     { label: t('referralRate'), value: `${d.referralRate.toFixed(1)}%`, icon: Gift },
   ];
 
-  const calendarMonth = new Date().getMonth() + 1;
-
   return (
     <div className="flex min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminSidebar activeTab="ceoDashboard" activeRoute="/ceo-dashboard" />
@@ -536,6 +488,8 @@ export default function CeoDashboardPage() {
             {error}
           </div>
         )}
+
+        <FounderCommandStrip {...commandStrip} />
 
         <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
           {metrics.map(({ label, value, icon: Icon }) => (
@@ -635,11 +589,7 @@ export default function CeoDashboardPage() {
         {financialsError && <FinancialErrorCard onRetry={retryFinancials} />}
 
         {!financialsLoading && !financialsError && financials !== null && (
-          <CeoFinancialsBody
-            financials={financials}
-            tFinancials={tFinancials}
-            calendarMonth={calendarMonth}
-          />
+          <CeoFinancialsBody financials={financials} tFinancials={tFinancials} />
         )}
       </main>
     </div>
