@@ -1013,6 +1013,15 @@ function SettingsPageContent() {
           <ChevronRight className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
         </Link>
 
+        <Link
+          href="/whatsapp-pack"
+          className="flex items-center gap-3 w-full mb-4 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
+        >
+          <MessageCircle className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
+          <span className="font-medium text-sm flex-1 text-start">{t('whatsappPack')}</span>
+          <ChevronRight className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
+        </Link>
+
         {/* Tabs */}
         <div className="flex gap-1 p-1 rounded-xl border border-[var(--color-border-subtle)] w-fit mb-6 bg-[var(--color-surface-1)]">
           <button

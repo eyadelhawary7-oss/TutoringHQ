@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, Link } from '@/i18n/routing';
 import {
-  LayoutDashboard, Building2, CreditCard, FileText, Clock, Users, Target, BarChart3, IdCard, Gift, CalendarCheck,
+  LayoutDashboard, Building2, CreditCard, FileText, Clock, Users, Target, BarChart3, IdCard, Gift, CalendarCheck, MessageCircle,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
@@ -40,6 +40,7 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
   const isCeo = activeRoute === '/ceo' || activeRoute === '/ceo-dashboard' || activeRoute?.endsWith('/ceo') || activeRoute?.endsWith('/ceo-dashboard');
   const isOrders = activeRoute?.includes('admin/orders');
   const isRenewals = activeRoute?.includes('admin/renewals');
+  const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [customPermissions, setCustomPermissions] = useState<string[]>([]);
 
@@ -158,6 +159,23 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
                   </button>
                 );
               }
+              if (canSee('ceo_dashboard')) {
+                items.push(
+                  <button
+                    key="whatsappPack"
+                    onClick={() => { closeMainSidebar?.(); router.push('/admin/whatsapp-pack'); }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
+                      isWaPack
+                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
+                    )}
+                  >
+                    <MessageCircle size={18} />
+                    <span>{t('whatsappPack')}</span>
+                  </button>
+                );
+              }
             }
             return items;
           })}
@@ -217,6 +235,20 @@ export function AdminSidebar({ activeTab, onTabChange, activeRoute }: AdminSideb
               <IdCard size={14} />
               <span>{t('cardOrders')}</span>
               <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">5</span>
+            </button>
+          )}
+          {canSee('ceo_dashboard') && (
+            <button
+              onClick={() => { closeMainSidebar?.(); router.push('/admin/whatsapp-pack'); }}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
+                isWaPack
+                  ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                  : 'text-[var(--color-text-secondary)]'
+              )}
+            >
+              <MessageCircle size={14} />
+              <span>{t('whatsappPack')}</span>
             </button>
           )}
         </div>

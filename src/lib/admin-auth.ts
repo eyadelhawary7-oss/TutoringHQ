@@ -73,7 +73,7 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
 }
 
 export type RequireSuperAdminResult =
-  | { ok: true; supabaseAdmin: SupabaseClient }
+  | { ok: true; supabaseAdmin: SupabaseClient; userId: string }
   | { ok: false; response: NextResponse };
 
 /** Bearer JWT + admin context; only `super_admin` internal role (same rules as getAdminContext). */
@@ -85,5 +85,5 @@ export async function requireSuperAdminApi(request: Request): Promise<RequireSup
   if (ctx.internalRole !== 'super_admin') {
     return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
-  return { ok: true, supabaseAdmin: ctx.supabaseAdmin };
+  return { ok: true, supabaseAdmin: ctx.supabaseAdmin, userId: ctx.userId };
 }
