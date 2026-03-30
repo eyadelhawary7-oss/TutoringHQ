@@ -5,9 +5,35 @@ on:
     branches: [master]
 
 jobs:
+  i18n-check:
+    name: i18n namespace parity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify ar.json root keys match en.json
+        run: |
+          node -e "
+          const en = require('./messages/en.json');
+          const ar = require('./messages/ar.json');
+          const missing = Object.keys(en).filter(k => !(k in ar));
+          if (missing.length) {
+            console.error('❌ ar.json is missing namespaces:', missing.join(', '));
+            process.exit(1);
+          }
+          console.log('✅ ar.json has all namespaces from en.json');
+          "
+
   unit-tests:
     name: Unit Tests (Vitest)
     runs-on: ubuntu-latest
+    needs: i18n-check
 
     steps:
       - name: Checkout
