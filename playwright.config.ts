@@ -57,6 +57,22 @@ export default defineConfig({
       },
       dependencies: ['setup'],
     },
+    {
+      name: 'desktop-chrome-owner',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/owner.json',
+      },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'mobile-chrome-owner',
+      use: {
+        ...devices['Pixel 5'],
+        storageState: 'playwright/.auth/owner.json',
+      },
+      dependencies: ['setup'],
+    },
   ],
 
   timeout: 90_000,
