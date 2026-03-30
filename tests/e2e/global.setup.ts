@@ -28,6 +28,7 @@ setup('authenticate as center owner', async ({ page }) => {
     throw new Error('TEST_OWNER_PHONE and TEST_OWNER_PIN environment variables are required')
   }
 
+  await page.context().clearCookies()
   await page.goto(`${base}/ar/login`)
   await page.getByPlaceholder('+20 1XXXXXXXXX').waitFor({ state: 'visible', timeout: 10_000 })
   await page.getByPlaceholder('+20 1XXXXXXXXX').fill(process.env.TEST_OWNER_PHONE)
