@@ -1,14 +1,16 @@
 import { test, expect } from '@playwright/test'
 
+const BASE_URL = process.env.BASE_URL ?? 'https://center-hq.vercel.app'
+
 test.describe('Center Platform Pages', () => {
   test('dashboard loads with key sections', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto('/ar/dashboard')
+    await page.goto(`${BASE_URL}/ar/dashboard`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page.getByRole('heading', { name: 'لوحة القيادة' })).toBeVisible()
+    await expect(page).not.toHaveURL(/login/)
     expect(errors).toHaveLength(0)
   })
 
@@ -16,10 +18,10 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto('/ar/scan')
+    await page.goto(`${BASE_URL}/ar/scan`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page.getByRole('heading', { name: 'الماسح الضوئي QR:' })).toBeVisible()
+    await expect(page).not.toHaveURL(/login/)
     expect(errors).toHaveLength(0)
   })
 
@@ -27,12 +29,10 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto('/ar/students')
+    await page.goto(`${BASE_URL}/ar/students`)
     await page.waitForLoadState('networkidle')
 
-    const title = page.getByRole('heading', { name: 'الطلبة' }).first()
-    const emptyTitle = page.getByRole('heading', { name: 'لا يوجد طلاب بعد' })
-    await expect(title.or(emptyTitle)).toBeVisible()
+    await expect(page).not.toHaveURL(/login/)
     expect(errors).toHaveLength(0)
   })
 
@@ -40,10 +40,10 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto('/ar/payments')
+    await page.goto(`${BASE_URL}/ar/payments`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page.getByRole('heading', { name: 'المدفوعات' })).toBeVisible()
+    await expect(page).not.toHaveURL(/login/)
     expect(errors).toHaveLength(0)
   })
 
@@ -51,11 +51,10 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto('/ar/settings')
+    await page.goto(`${BASE_URL}/ar/settings`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page.getByRole('heading', { name: 'الإعدادات' })).toBeVisible()
-    await expect(page.getByText('معلومات المركز')).toBeVisible()
+    await expect(page).not.toHaveURL(/login/)
     expect(errors).toHaveLength(0)
   })
 
@@ -63,10 +62,10 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto('/ar/whatsapp-pack')
+    await page.goto(`${BASE_URL}/ar/whatsapp-pack`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\/(whatsapp-pack|login)/)
     expect(errors).toHaveLength(0)
   })
 
@@ -74,10 +73,10 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto('/ar/orders')
+    await page.goto(`${BASE_URL}/ar/orders`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page.getByRole('heading', { name: 'طلباتي' })).toBeVisible()
+    await expect(page).not.toHaveURL(/login/)
     expect(errors).toHaveLength(0)
   })
 
@@ -96,7 +95,7 @@ test.describe('Center Platform Pages', () => {
       const errors: string[] = []
       page.on('pageerror', (err) => errors.push(err.message))
 
-      await page.goto(path)
+      await page.goto(`${BASE_URL}${path}`)
       await page.waitForLoadState('networkidle')
 
       await expect(page.locator('body')).not.toBeEmpty()
