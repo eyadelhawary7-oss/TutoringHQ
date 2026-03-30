@@ -13,7 +13,7 @@ async function login(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle')
   await page.getByPlaceholder('+20 1XXXXXXXXX').fill(TEST_PHONE)
   await page.getByPlaceholder('••••••').fill(TEST_PIN)
-  await page.getByRole('button', { name: 'الدخول إلى المنصة' }).click()
+  await page.getByRole('button', { name: 'تسجيل الدخول' }).click()
   await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/)
   expect(errors).toHaveLength(0)
 }
