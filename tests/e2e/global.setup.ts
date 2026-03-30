@@ -31,6 +31,9 @@ setup('authenticate as center owner', async ({ page }) => {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required')
   }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required')
+  }
 
   // Step 1: Get email from /api/login
   const loginRes = await page.request.post(`${base}/api/login`, {
@@ -41,13 +44,28 @@ setup('authenticate as center owner', async ({ page }) => {
   }
   const { email } = await loginRes.json()
 
-  // Step 2: Sign in with Supabase from Node.js — no browser needed
-  const supabase = createClient(
+  // Step 2: Use admin client to reset password via GoTrue (guarantees compatibility)
+  const adminClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+
+  // Get user id from email
+  const { data: userList } = await adminClient.auth.admin.listUsers()
+  const testUser = userList?.users?.find((u) => u.email === email)
+  if (!testUser) throw new Error(`Test owner not found in auth: ${email}`)
+
+  // Reset password via GoTrue admin API
+  await adminClient.auth.admin.updateUserById(testUser.id, { password: process.env.TEST_OWNER_PIN })
+
+  // Step 3: Sign in with the now-valid password
+  const anonClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     { auth: { persistSession: false } }
   )
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await anonClient.auth.signInWithPassword({
     email,
     password: process.env.TEST_OWNER_PIN
   })
@@ -55,7 +73,7 @@ setup('authenticate as center owner', async ({ page }) => {
     throw new Error(`Supabase signIn failed: ${error?.message}`)
   }
 
-  // Step 3: Inject session tokens into browser context as cookies
+  // Step 4: Inject session tokens into browser context as cookies
   const url = new URL(base)
   await page.context().addCookies([
     {
@@ -72,7 +90,7 @@ setup('authenticate as center owner', async ({ page }) => {
     }
   ])
 
-  // Step 4: Navigate and confirm session works
+  // Step 5: Navigate and confirm session works
   await page.goto(`${base}/ar/dashboard`)
   await page.waitForURL(/\/(ar|en)\/(dashboard|admin|onboarding|suspended)/, { timeout: 30_000 })
 
