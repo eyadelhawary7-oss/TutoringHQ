@@ -80,9 +80,6 @@ jobs:
           TEST_PIN: ${{ secrets.TEST_PIN }}
           TEST_OWNER_PHONE: ${{ secrets.TEST_OWNER_PHONE }}
           TEST_OWNER_PIN: ${{ secrets.TEST_OWNER_PIN }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           CI: true
 
       - name: Upload Playwright report on failure
