@@ -28,20 +28,59 @@ setup('authenticate as center owner', async ({ page }) => {
     throw new Error('TEST_OWNER_PHONE and TEST_OWNER_PIN environment variables are required')
   }
 
-  // Call login API directly — bypasses React form validation entirely
-  const response = await page.request.post(`${base}/api/login`, {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required for owner setup'
+    )
+  }
+
+  // Step 1: Get the email format from /api/login
+  const loginRes = await page.request.post(`${base}/api/login`, {
     data: {
       phone: process.env.TEST_OWNER_PHONE,
       pin: process.env.TEST_OWNER_PIN
     }
   })
 
-  if (!response.ok()) {
-    const body = await response.text()
-    throw new Error(`Owner API login failed (${response.status()}): ${body}`)
+  if (!loginRes.ok()) {
+    const body = await loginRes.text()
+    throw new Error(`Owner phone lookup failed (${loginRes.status()}): ${body}`)
   }
 
-  // Navigate to trigger session cookie to be set in browser context
+  const { email } = (await loginRes.json()) as { email: string }
+
+  // Step 2: Navigate to app so Supabase client is available in browser context
+  await page.goto(`${base}/ar/login`)
+  await page.waitForLoadState('networkidle')
+
+  // Step 3: Call supabase.auth.signInWithPassword inside the browser context
+  // (Bare "@supabase/ssr" is not resolvable in page.evaluate; load matching version from esm.sh.)
+  const result = await page.evaluate(
+    async ({ email, pin, supabaseUrl, supabaseAnonKey }) => {
+      // Dynamic URL import runs in Chromium only; TS does not resolve esm.sh modules.
+      const ssrMod = (await import(
+        'https://esm.sh/@supabase/ssr@0.8.0' as unknown as string
+      )) as { createBrowserClient: (url: string, key: string) => import('@supabase/supabase-js').SupabaseClient }
+      const { createBrowserClient } = ssrMod
+      const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pin })
+      return { userId: data?.user?.id, error: error?.message }
+    },
+    {
+      email,
+      pin: process.env.TEST_OWNER_PIN,
+      supabaseUrl,
+      supabaseAnonKey
+    }
+  )
+
+  if (result.error || !result.userId) {
+    throw new Error(`Supabase signIn failed: ${result.error}`)
+  }
+
+  // Step 4: Navigate to dashboard to confirm session is active
   await page.goto(`${base}/ar/dashboard`)
   await page.waitForURL(/\/(ar|en)\/(dashboard|admin|onboarding|suspended)/, { timeout: 30_000 })
 
