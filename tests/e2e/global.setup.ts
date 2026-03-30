@@ -23,12 +23,17 @@ setup('authenticate once for all tests', async ({ page }) => {
 
 setup('authenticate as center owner', async ({ page }) => {
   const base = process.env.PLAYWRIGHT_BASE_URL || 'https://center-hq.vercel.app'
+
+  if (!process.env.TEST_OWNER_PHONE || !process.env.TEST_OWNER_PIN) {
+    throw new Error('TEST_OWNER_PHONE and TEST_OWNER_PIN environment variables are required')
+  }
+
   await page.goto(`${base}/ar/login`)
-  await page.getByPlaceholder('+20 1XXXXXXXXX').fill(process.env.TEST_OWNER_PHONE!)
-  await page.getByPlaceholder('••••••').fill(process.env.TEST_OWNER_PIN!)
+  await page.getByPlaceholder('+20 1XXXXXXXXX').fill(process.env.TEST_OWNER_PHONE)
+  await page.getByPlaceholder('••••••').fill(process.env.TEST_OWNER_PIN)
   await page.getByRole('button', { name: 'تسجيل الدخول' }).click()
-  await page.waitForURL((url) => !url.href.includes('/login'), { timeout: 60_000 })
-  await page.waitForLoadState('networkidle')
+  await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
+
   const dir = path.dirname(OWNER_AUTH_FILE)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   await page.context().storageState({ path: OWNER_AUTH_FILE })
