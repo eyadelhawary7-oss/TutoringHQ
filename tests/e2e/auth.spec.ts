@@ -60,7 +60,7 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('networkidle')
 
     await fillLoginForm(page, TEST_PHONE, '000000')
-    await expect(page.getByText('رقم هاتف أو رمز PIN غير صحيح')).toBeVisible()
+    await expect(page.getByText('رقم هاتف غير صالح')).toBeVisible()
     await expect(page).toHaveURL(/\/(ar|en)\/login/)
     expect(errors).toHaveLength(0)
   })
