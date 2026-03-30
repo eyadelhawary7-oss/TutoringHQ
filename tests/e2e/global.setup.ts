@@ -29,10 +29,20 @@ setup('authenticate as center owner', async ({ page }) => {
   }
 
   await page.goto(`${base}/ar/login`)
+  await page.getByPlaceholder('+20 1XXXXXXXXX').waitFor({ state: 'visible', timeout: 10_000 })
   await page.getByPlaceholder('+20 1XXXXXXXXX').fill(process.env.TEST_OWNER_PHONE)
+  await page.getByPlaceholder('••••••').waitFor({ state: 'visible', timeout: 10_000 })
   await page.getByPlaceholder('••••••').fill(process.env.TEST_OWNER_PIN)
   await page.getByRole('button', { name: 'تسجيل الدخول' }).click()
-  await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
+
+  try {
+    await page.waitForURL(/\/(ar|en)\/(admin|dashboard|onboarding|suspended)/, { timeout: 60_000 })
+  } catch (error) {
+    console.error('Owner login failed. Current URL:', page.url())
+    const content = await page.textContent('body').catch(() => '')
+    console.error('Page body snippet:', content?.substring(0, 500))
+    throw new Error(`Owner auth timeout. URL was: ${page.url()}`)
+  }
 
   const dir = path.dirname(OWNER_AUTH_FILE)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
