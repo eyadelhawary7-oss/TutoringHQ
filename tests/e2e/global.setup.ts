@@ -44,27 +44,16 @@ setup('authenticate as center owner', async ({ page }) => {
   }
   const { email, userId } = await loginRes.json()
 
-  // Step 2: Use admin client to reset password via GoTrue (guarantees compatibility)
+  // Step 2: Create session directly via admin API — no password needed
   const adminClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
-
-  await adminClient.auth.admin.updateUserById(userId, { password: process.env.TEST_OWNER_PIN })
-
-  // Step 3: Sign in with the now-valid password
-  const anonClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    { auth: { persistSession: false } }
-  )
-  const { data, error } = await anonClient.auth.signInWithPassword({
-    email,
-    password: process.env.TEST_OWNER_PIN
-  })
+  // @ts-expect-error createSession is supported by GoTrue admin API; not yet on GoTrueAdminApi types
+  const { data, error } = await adminClient.auth.admin.createSession({ userId })
   if (error || !data.session) {
-    throw new Error(`Supabase signIn failed: ${error?.message}`)
+    throw new Error(`Admin createSession failed: ${error?.message}`)
   }
 
   // Step 4: Inject session tokens into browser context as cookies
