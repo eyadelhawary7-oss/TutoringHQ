@@ -1261,6 +1261,8 @@
     "billingDesc": "Manage plan, pricing, and subscriptions.",
     "billingLink": "Billing Settings",
     "manageReferrals": "Manage Referrals",
+    "totalReferrals": "Total Referrals",
+    "totalEarned": "Earned",
     "whatsappPack": "WhatsApp Pack",
     "deleteConfirm": "Are you sure you want to delete?",
     "subjectInUse": "Cannot delete subject because it is used by students",

@@ -1313,7 +1313,10 @@ function SettingsPageContent() {
                     {t('manageReferrals')}
                   </button>
                   <p className="text-sm text-[var(--color-text-secondary)] mb-2">{tReferral('referralRateDescription')}</p>
-                  <p className="text-xs text-[var(--color-text-secondary)] mb-2">Total Referrals: {(referralData.rewards?.length ?? 0)} | Earned: EGP {Number(referralData.totalEarned || 0).toLocaleString('ar-EG')}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mb-2">
+                    {t('totalReferrals')}: {(referralData.rewards?.length ?? 0).toLocaleString('en-US')} | {t('totalEarned')}: {tCommon('egp')}{' '}
+                    {Number(referralData.totalEarned || 0).toLocaleString('en-US')}
+                  </p>
                   <div>
                     <p className="text-sm font-medium text-[var(--color-text-primary)] mb-2">{tReferral('rewardsTable')}</p>
                     {(referralData.rewards?.length ?? 0) > 0 ? (
@@ -1333,9 +1336,9 @@ function SettingsPageContent() {
                               <tr key={r.id || r.created_at + r.referred_center_name} className="border-b border-border">
                                 <td className="py-2 text-[var(--color-text-primary)]">{r.referred_center_name}</td>
                                 <td className="py-2 text-[var(--color-text-secondary)]">{r.referred_center_plan}</td>
-                                <td className="py-2 font-mono text-[var(--color-text-primary)]">{Number(r.reward_amount).toLocaleString('ar-EG')} EGP</td>
+                                <td className="py-2 font-mono text-[var(--color-text-primary)]">{Number(r.reward_amount).toLocaleString('en-US')} EGP</td>
                                 <td className="py-2"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${r.reward_status === 'paid' ? 'badge-confirmed' : r.reward_status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-muted text-[var(--color-text-secondary)]'}`}>{r.reward_status}</span></td>
-                                <td className="py-2 text-[var(--color-text-secondary)]">{new Date(r.created_at).toLocaleDateString('ar-EG')}</td>
+                                <td className="py-2 text-[var(--color-text-secondary)]">{new Date(r.created_at).toLocaleDateString('en-US')}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1810,7 +1813,7 @@ function SettingsPageContent() {
                           const statusClass = status === 'paid' || status === 'approved' ? 'bg-green-100 text-green-700' : status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
                           return (
                             <tr key={inv.id || inv.invoice_number || String(inv.created_at)}>
-                              <td className="py-3 px-4 text-sm text-[var(--color-text-primary)]">{inv.created_at ? new Date(inv.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
+                              <td className="py-3 px-4 text-sm text-[var(--color-text-primary)]">{inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-US') : inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
                               <td className="py-3 px-4 text-sm text-[var(--color-text-primary)] font-mono">{inv.payment_reference || inv.invoice_number || '—'}</td>
                               <td className="py-3 px-4 text-sm font-mono text-[var(--color-text-primary)]">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString('en-US')} {tBilling('egp')}</td>
                               <td className="py-3 px-4 text-sm text-[var(--color-text-secondary)]">{inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
@@ -1848,7 +1851,7 @@ function SettingsPageContent() {
                         {planRequests.map(req => (
                           <tr key={req.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                             <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
-                              {new Date(req.requested_at || 0).toLocaleDateString()}
+                              {new Date(req.requested_at || 0).toLocaleDateString('en-US')}
                             </td>
                             <td className="py-3.5 px-4">
                               <PlanBadge plan={req.current_plan} />
