@@ -1,4 +1,5 @@
 import { test as setup, expect } from '@playwright/test'
+import { createClient } from '@supabase/supabase-js'
 import path from 'path'
 import fs from 'fs'
 
@@ -27,60 +28,51 @@ setup('authenticate as center owner', async ({ page }) => {
   if (!process.env.TEST_OWNER_PHONE || !process.env.TEST_OWNER_PIN) {
     throw new Error('TEST_OWNER_PHONE and TEST_OWNER_PIN environment variables are required')
   }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required for owner setup'
-    )
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required')
   }
 
-  // Step 1: Get the email format from /api/login
+  // Step 1: Get email from /api/login
   const loginRes = await page.request.post(`${base}/api/login`, {
-    data: {
-      phone: process.env.TEST_OWNER_PHONE,
-      pin: process.env.TEST_OWNER_PIN
-    }
+    data: { phone: process.env.TEST_OWNER_PHONE, pin: process.env.TEST_OWNER_PIN }
   })
-
   if (!loginRes.ok()) {
-    const body = await loginRes.text()
-    throw new Error(`Owner phone lookup failed (${loginRes.status()}): ${body}`)
+    throw new Error(`Phone lookup failed (${loginRes.status()}): ${await loginRes.text()}`)
   }
+  const { email } = await loginRes.json()
 
-  const { email } = (await loginRes.json()) as { email: string }
-
-  // Step 2: Navigate to app so Supabase client is available in browser context
-  await page.goto(`${base}/ar/login`)
-  await page.waitForLoadState('networkidle')
-
-  // Step 3: Call supabase.auth.signInWithPassword inside the browser context
-  // (Bare "@supabase/ssr" is not resolvable in page.evaluate; load matching version from esm.sh.)
-  const result = await page.evaluate(
-    async ({ email, pin, supabaseUrl, supabaseAnonKey }) => {
-      // Dynamic URL import runs in Chromium only; TS does not resolve esm.sh modules.
-      const ssrMod = (await import(
-        'https://esm.sh/@supabase/ssr@0.8.0' as unknown as string
-      )) as { createBrowserClient: (url: string, key: string) => import('@supabase/supabase-js').SupabaseClient }
-      const { createBrowserClient } = ssrMod
-      const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pin })
-      return { userId: data?.user?.id, error: error?.message }
-    },
-    {
-      email,
-      pin: process.env.TEST_OWNER_PIN,
-      supabaseUrl,
-      supabaseAnonKey
-    }
+  // Step 2: Sign in with Supabase from Node.js — no browser needed
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    { auth: { persistSession: false } }
   )
-
-  if (result.error || !result.userId) {
-    throw new Error(`Supabase signIn failed: ${result.error}`)
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: process.env.TEST_OWNER_PIN
+  })
+  if (error || !data.session) {
+    throw new Error(`Supabase signIn failed: ${error?.message}`)
   }
 
-  // Step 4: Navigate to dashboard to confirm session is active
+  // Step 3: Inject session tokens into browser context as cookies
+  const url = new URL(base)
+  await page.context().addCookies([
+    {
+      name: `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`,
+      value: JSON.stringify([
+        data.session.access_token,
+        data.session.refresh_token
+      ]),
+      domain: url.hostname,
+      path: '/',
+      httpOnly: false,
+      secure: url.protocol === 'https:',
+      sameSite: 'Lax'
+    }
+  ])
+
+  // Step 4: Navigate and confirm session works
   await page.goto(`${base}/ar/dashboard`)
   await page.waitForURL(/\/(ar|en)\/(dashboard|admin|onboarding|suspended)/, { timeout: 30_000 })
 
