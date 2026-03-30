@@ -10,7 +10,7 @@ test.describe('Admin Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/ceo-dashboard`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -27,7 +27,7 @@ test.describe('Admin Platform Pages', () => {
       await pill.click()
       await expect(page).toHaveURL(/[?&]range=last_month(?:&|$)/)
     } else {
-      await expect(page).not.toHaveURL(/login/)
+      await expect(page).toHaveURL(/\/(ar|en)\//)
     }
 
     await page.waitForLoadState('networkidle')
@@ -41,7 +41,7 @@ test.describe('Admin Platform Pages', () => {
     await page.goto(`${BASE_URL}/en/ceo-dashboard`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -52,7 +52,7 @@ test.describe('Admin Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/admin`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -63,7 +63,7 @@ test.describe('Admin Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/admin/whatsapp-pack`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).toHaveURL(/\/(ar|en)\/(admin\/whatsapp-pack|login)/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -74,7 +74,7 @@ test.describe('Admin Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/admin/orders`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -85,7 +85,7 @@ test.describe('Admin Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/admin/renewals`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 })

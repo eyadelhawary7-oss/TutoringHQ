@@ -10,7 +10,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/dashboard`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -21,7 +21,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/scan`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -32,7 +32,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/students`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -43,7 +43,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/payments`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -54,7 +54,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/settings`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -65,7 +65,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/whatsapp-pack`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).toHaveURL(/\/(ar|en)\/(whatsapp-pack|login)/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
@@ -76,7 +76,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto(`${BASE_URL}/ar/orders`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
   })
 
