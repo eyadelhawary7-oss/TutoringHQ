@@ -8,7 +8,7 @@ const TEST_PIN = process.env.TEST_PIN ?? ''
 async function fillLoginForm(page: Page, phone: string, pin: string): Promise<void> {
   await page.getByPlaceholder('+20 1XXXXXXXXX').fill(phone)
   await page.getByPlaceholder('••••••').fill(pin)
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click()
+  await page.getByRole('button', { name: 'الدخول إلى المنصة' }).click()
 }
 
 test.describe('Authentication', () => {
@@ -22,10 +22,10 @@ test.describe('Authentication', () => {
     await expect(page.getByRole('heading', { name: 'CenterHQ' })).toBeVisible()
     await expect(page.getByText('تسجيل الدخول إلى CenterHQ')).toBeVisible()
     await expect(page.getByText('رقم الهاتف', { exact: true })).toBeVisible()
-    await expect(page.getByText('رمز PIN', { exact: true })).toBeVisible()
+    await expect(page.getByText('الرمز السري', { exact: true })).toBeVisible()
     await expect(page.getByPlaceholder('+20 1XXXXXXXXX')).toBeVisible()
     await expect(page.getByPlaceholder('••••••')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'تسجيل الدخول' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'الدخول إلى المنصة' })).toBeVisible()
     expect(errors).toHaveLength(0)
   })
 
