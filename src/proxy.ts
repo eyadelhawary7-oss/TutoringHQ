@@ -75,7 +75,7 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 }
 
 // --- Route helpers ---
-const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/'];
+const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/status', '/'];
 const apiRoutes = ['/auth/callback'];
 
 function isPublicRoute(pathname: string): boolean {
@@ -103,7 +103,6 @@ const AUTHENTICATED_ROUTE_PREFIXES = [
   '/ceo-dashboard',
   '/messages',
   '/offline',
-  '/status',
   '/orders',
   '/whatsapp-pack',
   '/admin',
