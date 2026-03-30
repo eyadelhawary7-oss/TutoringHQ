@@ -14,7 +14,7 @@ async function login(page: Page): Promise<void> {
   await page.getByPlaceholder('+20 1XXXXXXXXX').fill(TEST_PHONE)
   await page.getByPlaceholder('••••••').fill(TEST_PIN)
   await page.getByRole('button', { name: 'تسجيل الدخول' }).click()
-  await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/)
+  await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
   expect(errors).toHaveLength(0)
 }
 
@@ -31,7 +31,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto('/ar/dashboard')
     await page.waitForLoadState('networkidle')
 
-    await expect(page.getByRole('heading', { name: 'لوحة التحكم' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'لوحة القيادة' })).toBeVisible()
     expect(errors).toHaveLength(0)
   })
 
@@ -42,7 +42,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto('/ar/scan')
     await page.waitForLoadState('networkidle')
 
-    await expect(page.getByRole('heading', { name: 'مسح رمز الطالب' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'الماسح الضوئي QR:' })).toBeVisible()
     expect(errors).toHaveLength(0)
   })
 
@@ -53,7 +53,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto('/ar/students')
     await page.waitForLoadState('networkidle')
 
-    const title = page.getByRole('heading', { name: 'الطلاب' }).first()
+    const title = page.getByRole('heading', { name: 'الطلبة' }).first()
     const emptyTitle = page.getByRole('heading', { name: 'لا يوجد طلاب بعد' })
     await expect(title.or(emptyTitle)).toBeVisible()
     expect(errors).toHaveLength(0)
@@ -89,9 +89,7 @@ test.describe('Center Platform Pages', () => {
     await page.goto('/ar/whatsapp-pack')
     await page.waitForLoadState('networkidle')
 
-    const enabled = page.getByRole('heading', { name: 'باقة ولي الأمر عبر واتساب' })
-    const disabled = page.getByRole('heading', { name: 'باقة واتساب غير مفعّلة' })
-    await expect(enabled.or(disabled)).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'باقة ولي الأمر عبر واتساب' })).toBeVisible()
     expect(errors).toHaveLength(0)
   })
 

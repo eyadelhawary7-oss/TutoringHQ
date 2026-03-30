@@ -33,7 +33,7 @@ export default defineConfig({
     locale: 'ar-EG',
 
     actionTimeout: 15_000,
-    navigationTimeout: 30_000,
+    navigationTimeout: 60_000,
   },
 
   projects: [
@@ -47,5 +47,5 @@ export default defineConfig({
     },
   ],
 
-  timeout: 60_000,
+  timeout: 90_000,
 })

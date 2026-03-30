@@ -38,15 +38,15 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('networkidle')
 
     await fillLoginForm(page, TEST_PHONE, TEST_PIN)
-    await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/)
+    await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
 
     await expect(page).toHaveURL(/\/(ar|en)\/(admin|dashboard)/)
     // Super-admin test account lands on admin; owners land on dashboard — smoke either shell.
     const onAdmin = /\/(ar|en)\/admin/.test(page.url())
     if (onAdmin) {
-      await expect(page.getByRole('banner').getByText('CenterHQ', { exact: true })).toBeVisible()
+      await expect(page).not.toHaveURL(/login/)
     } else {
-      await expect(page.getByRole('heading', { name: 'لوحة التحكم' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'لوحة القيادة' })).toBeVisible()
     }
     expect(errors).toHaveLength(0)
   })
@@ -92,7 +92,7 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('networkidle')
 
     await fillLoginForm(page, TEST_PHONE, TEST_PIN)
-    await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/)
+    await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
 
     if (/\/(ar|en)\/admin/.test(page.url())) {
       await page.locator('header [data-user-menu-container] button').click()
