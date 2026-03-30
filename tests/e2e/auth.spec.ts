@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+test.use({ storageState: { cookies: [], origins: [] } })
+
 const TEST_PHONE = process.env.TEST_PHONE ?? ''
 const TEST_PIN = process.env.TEST_PIN ?? ''
 
