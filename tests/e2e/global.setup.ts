@@ -28,22 +28,22 @@ setup('authenticate as center owner', async ({ page }) => {
     throw new Error('TEST_OWNER_PHONE and TEST_OWNER_PIN environment variables are required')
   }
 
-  await page.context().clearCookies()
-  await page.goto(`${base}/ar/login`)
-  await page.getByPlaceholder('+20 1XXXXXXXXX').waitFor({ state: 'visible', timeout: 10_000 })
-  await page.getByPlaceholder('+20 1XXXXXXXXX').fill(process.env.TEST_OWNER_PHONE)
-  await page.getByPlaceholder('••••••').waitFor({ state: 'visible', timeout: 10_000 })
-  await page.getByPlaceholder('••••••').fill(process.env.TEST_OWNER_PIN)
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click()
+  // Call login API directly — bypasses React form validation entirely
+  const response = await page.request.post(`${base}/api/login`, {
+    data: {
+      phone: process.env.TEST_OWNER_PHONE,
+      pin: process.env.TEST_OWNER_PIN
+    }
+  })
 
-  try {
-    await page.waitForURL(/\/(ar|en)\/(admin|dashboard|onboarding|suspended)/, { timeout: 60_000 })
-  } catch (error) {
-    console.error('Owner login failed. Current URL:', page.url())
-    const content = await page.textContent('body').catch(() => '')
-    console.error('Page body snippet:', content?.substring(0, 500))
-    throw new Error(`Owner auth timeout. URL was: ${page.url()}`)
+  if (!response.ok()) {
+    const body = await response.text()
+    throw new Error(`Owner API login failed (${response.status()}): ${body}`)
   }
+
+  // Navigate to trigger session cookie to be set in browser context
+  await page.goto(`${base}/ar/dashboard`)
+  await page.waitForURL(/\/(ar|en)\/(dashboard|admin|onboarding|suspended)/, { timeout: 30_000 })
 
   const dir = path.dirname(OWNER_AUTH_FILE)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
