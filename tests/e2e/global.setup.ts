@@ -42,7 +42,7 @@ setup('authenticate as center owner', async ({ page }) => {
   if (!loginRes.ok()) {
     throw new Error(`Phone lookup failed (${loginRes.status()}): ${await loginRes.text()}`)
   }
-  const { email } = await loginRes.json()
+  const { email, userId } = await loginRes.json()
 
   // Step 2: Use admin client to reset password via GoTrue (guarantees compatibility)
   const adminClient = createClient(
@@ -51,13 +51,7 @@ setup('authenticate as center owner', async ({ page }) => {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // Get user id from email
-  const { data: userList } = await adminClient.auth.admin.listUsers()
-  const testUser = userList?.users?.find((u) => u.email === email)
-  if (!testUser) throw new Error(`Test owner not found in auth: ${email}`)
-
-  // Reset password via GoTrue admin API
-  await adminClient.auth.admin.updateUserById(testUser.id, { password: process.env.TEST_OWNER_PIN })
+  await adminClient.auth.admin.updateUserById(userId, { password: process.env.TEST_OWNER_PIN })
 
   // Step 3: Sign in with the now-valid password
   const anonClient = createClient(
