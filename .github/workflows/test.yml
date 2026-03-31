@@ -78,8 +78,6 @@ jobs:
           BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL }}
           TEST_PHONE: ${{ secrets.TEST_PHONE }}
           TEST_PIN: ${{ secrets.TEST_PIN }}
-          TEST_OWNER_PHONE: ${{ secrets.TEST_OWNER_PHONE }}
-          TEST_OWNER_PIN: ${{ secrets.TEST_OWNER_PIN }}
           CI: true
 
       - name: Upload Playwright report on failure
