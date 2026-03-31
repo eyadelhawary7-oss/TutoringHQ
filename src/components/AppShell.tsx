@@ -18,7 +18,16 @@ import { useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 
-const PUBLIC_PATHS = ['/', '/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/status'];
+const PUBLIC_PATHS = [
+  '/',
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/onboarding',
+  '/suspended',
+  '/auth/callback',
+  '/status',
+];
 function stripLocale(path: string): string {
   return path.replace(/^\/(ar|en)(\/|$)/, '$2') || '/';
 }
