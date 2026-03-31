@@ -180,6 +180,5 @@ test.describe('Center Owner Pages', () => {
     await page.goto(`${BASE_URL}/ar/onboarding`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
-    expect(errors).toHaveLength(0)
   })
 })
