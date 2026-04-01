@@ -1,9 +1,11 @@
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import type { NotificationTypes, WaPackCenter } from '@/types/whatsapp-pack'
 import AdminWaPackClient from './AdminWaPackClient'
 
-function internalBaseUrl(): string {
+/** When NEXT_PUBLIC_SITE_URL is a different host than the incoming request (preview, alt domain), server-side fetch must target this deployment. */
+function envFallbackOrigin(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     const trimmed = process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
     try {
@@ -16,6 +18,23 @@ function internalBaseUrl(): string {
     return `https://${process.env.VERCEL_URL}`
   }
   return 'http://localhost:3000'
+}
+
+async function sameDeploymentOrigin(): Promise<string> {
+  const h = await headers()
+  const host =
+    h.get('x-forwarded-host')?.split(',')[0]?.trim() ?? h.get('host') ?? ''
+  if (!host) {
+    return envFallbackOrigin()
+  }
+  const protoHdr = h.get('x-forwarded-proto')?.split(',')[0]?.trim()
+  const protocol =
+    protoHdr === 'http' || protoHdr === 'https'
+      ? protoHdr
+      : host.startsWith('localhost') || host.startsWith('127.')
+        ? 'http'
+        : 'https'
+  return `${protocol}://${host}`
 }
 
 interface AdminPackResponse {
@@ -31,6 +50,16 @@ export default async function AdminWhatsAppPackPage({
 }) {
   const { locale } = await params
   const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    redirect(`/${locale}/login`)
+  }
+
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -39,7 +68,8 @@ export default async function AdminWhatsAppPackPage({
     redirect(`/${locale}/login`)
   }
 
-  const res = await fetch(`${internalBaseUrl()}/api/admin/whatsapp-pack`, {
+  const origin = await sameDeploymentOrigin()
+  const res = await fetch(`${origin}/api/admin/whatsapp-pack`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
     cache: 'no-store',
   })
