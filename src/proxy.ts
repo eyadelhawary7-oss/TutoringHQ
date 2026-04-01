@@ -5,6 +5,23 @@ import { createServerClient } from '@supabase/ssr';
 
 const intlMiddleware = createMiddleware(routing);
 
+/** Strip one leading locale segment for path checks (all configured locales, case-insensitive). */
+function stripLocalePrefix(pathname: string): string {
+  if (!pathname || pathname === '/') {
+    return '/';
+  }
+  const escaped = routing.locales
+    .map((loc) => loc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|');
+  const re = new RegExp(`^/(${escaped})(?=/|$)`, 'i');
+  const m = pathname.match(re);
+  if (!m) {
+    return pathname;
+  }
+  const rest = pathname.slice(m[0].length);
+  return rest === '' ? '/' : rest;
+}
+
 // --- Rate limiting: in-memory Map (Edge-compatible, per-instance) ---
 const LOGIN_RATE_LIMIT = 5;
 const LOGIN_WINDOW_MS = 60 * 1000; // 1 minute
@@ -79,7 +96,7 @@ const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/c
 const apiRoutes = ['/auth/callback'];
 
 function isPublicRoute(pathname: string): boolean {
-  const cleanPath = pathname.replace(/^\/(ar|en)/, '') || '/';
+  const cleanPath = stripLocalePrefix(pathname);
   return publicRoutes.some(route => cleanPath === route || cleanPath.startsWith(route + '/'));
 }
 
@@ -190,7 +207,7 @@ export default async function proxy(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser();
 
-    const cleanPathForAuth = pathname.replace(/^\/(ar|en)/, '') || '/';
+    const cleanPathForAuth = stripLocalePrefix(pathname);
     if (!user && pathRequiresAuthentication(cleanPathForAuth) && !isPublicRoute(pathname)) {
       const localeSeg = pathname.startsWith('/ar') ? '/ar' : '/en';
       const loginUrl = new URL(`${localeSeg}/login`, request.url);
@@ -215,7 +232,7 @@ export default async function proxy(request: NextRequest) {
           .eq('id', userRecord.center_id)
           .single();
 
-        const cleanPath = pathname.replace(/^\/(ar|en)/, '') || '/';
+        const cleanPath = stripLocalePrefix(pathname);
         const localePrefix = pathname.startsWith('/en') ? '/en' : pathname.startsWith('/ar') ? '/ar' : '';
         const suspendedPath = `${localePrefix || '/en'}/suspended`;
         const isBillingPage = cleanPath === '/settings/billing' || cleanPath.startsWith('/settings/billing');
