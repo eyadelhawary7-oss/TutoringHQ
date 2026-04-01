@@ -5,7 +5,12 @@ import AdminWaPackClient from './AdminWaPackClient'
 
 function internalBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
+    const trimmed = process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
+    try {
+      return new URL(trimmed).origin
+    } catch {
+      return trimmed
+    }
   }
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`
@@ -43,7 +48,15 @@ export default async function AdminWhatsAppPackPage({
     redirect(`/${locale}/ceo-dashboard`)
   }
 
-  const data = (await res.json()) as Partial<AdminPackResponse>
+  let data: Partial<AdminPackResponse> = {}
+  try {
+    const parsed: unknown = await res.json()
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      data = parsed as Partial<AdminPackResponse>
+    }
+  } catch {
+    redirect(`/${locale}/ceo-dashboard`)
+  }
   const defaultNotif: NotificationTypes = {
     scan: true,
     absence: true,

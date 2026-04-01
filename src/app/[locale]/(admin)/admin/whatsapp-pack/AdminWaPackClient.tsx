@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Loader2, MessageCircle } from 'lucide-react'
 import { AdminSidebar } from '@/components/AdminSidebar'
 import { useLayout } from '@/contexts/LayoutContext'
+import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import type { NotificationTypes, WaPackBillingSummary, WaPackCenter } from '@/types/whatsapp-pack'
 
@@ -161,12 +162,21 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   async function toggleCenter(centerId: string, newValue: boolean) {
     setTogglingId(centerId)
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
       const res = await fetch(`/api/admin/whatsapp-pack/${centerId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ parent_pack_enabled: newValue }),
       })
-      if (!res.ok) throw new Error('failed')
+      if (!res.ok) return
+
       setCenters((prev) =>
         prev.map((c) => (c.id === centerId ? { ...c, parent_pack_enabled: newValue } : c)),
       )
@@ -184,14 +194,32 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   async function toggleConfig(key: keyof NotificationTypes, newValue: boolean) {
     setSavingConfig(true)
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
       const res = await fetch('/api/admin/whatsapp-pack/config', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ [key]: newValue }),
       })
-      if (!res.ok) throw new Error('failed')
-      const data = (await res.json()) as { notificationTypes?: Partial<NotificationTypes> }
-      if (data?.notificationTypes && typeof data.notificationTypes === 'object') {
+      if (!res.ok) return
+
+      let data: { notificationTypes?: Partial<NotificationTypes> } = {}
+      try {
+        const parsed: unknown = await res.json()
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          data = parsed as { notificationTypes?: Partial<NotificationTypes> }
+        }
+      } catch {
+        return
+      }
+
+      if (data.notificationTypes && typeof data.notificationTypes === 'object') {
         setNotifTypes((prev) => ({ ...prev, ...data.notificationTypes }))
       }
     } catch {
