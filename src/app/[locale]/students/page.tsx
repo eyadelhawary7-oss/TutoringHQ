@@ -476,7 +476,7 @@ export default function StudentsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ opted_in: newValue }),
+        body: JSON.stringify({ parent_pack_opted_in: newValue }),
       });
       if (!res.ok) {
         setStudents((prev) =>

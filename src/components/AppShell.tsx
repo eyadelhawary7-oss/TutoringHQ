@@ -9,6 +9,7 @@ import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
 import Sidebar from '@/components/Sidebar';
 import MobileTopBar from '@/components/MobileTopBar';
+import { MobileNavDrawer } from '@/components/MobileNavDrawer';
 import { BottomTabBar } from '@/components/shell/BottomTabBar';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import { SidebarProvider } from '@/contexts/SidebarContext';
@@ -45,6 +46,7 @@ const PAGE_TITLE_MAP: Record<string, string> = {
   '/settings': 'nav.settings',
   '/orders': 'cardOrders.ordersTitle',
   '/scan': 'nav.scanner',
+  '/whatsapp-pack': 'nav.whatsappPack',
   '/admin': 'nav.admin',
 };
 
@@ -56,6 +58,23 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarMounted, setSidebarMounted] = useState(false);
+  const [openMenu, setOpenMenu] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = openMenu ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [openMenu]);
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenMenu(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [openMenu]);
 
   useEffect(() => {
     setSidebarMounted(true);
@@ -156,8 +175,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Mobile TopBar - includes hamburger (hidden on admin — AdminHeader + AdminSidebar handle nav) */}
-        {!isAdminRoute && <MobileTopBar onMenuClick={() => setSidebarOpen(true)} />}
+        {/* Mobile TopBar — hamburger opens left drawer (not desktop sidebar) */}
+        {!isAdminRoute && <MobileTopBar openMenu={openMenu} setOpenMenu={setOpenMenu} />}
+
+        {openMenu && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setOpenMenu(false)}
+            aria-hidden
+          />
+        )}
+        {!isAdminRoute && <MobileNavDrawer open={openMenu} onClose={() => setOpenMenu(false)} />}
 
         {/* Page content — scroll + safe-area padding on inner wrapper (MobileWrapper) */}
         <main className="flex-1 flex flex-col min-h-0">
@@ -165,7 +193,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {!isAdminRoute && <BottomTabBar />}
+      {!isAdminRoute && (
+        <div className="md:hidden">
+          <BottomTabBar />
+        </div>
+      )}
     </div>
     </SidebarProvider>
   );

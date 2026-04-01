@@ -28,6 +28,7 @@ import {
   GraduationCap,
   Building2,
   Gauge,
+  MessageCircle,
 } from 'lucide-react';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
@@ -84,6 +85,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
     { key: 'benchmarks', href: '/benchmarks', icon: Gauge, permission: 'can_view_dashboard', showNewBadge: true },
     { key: 'scanner', href: '/scan', icon: QrCode, permission: 'can_scan' },
     { key: 'students', href: '/students', icon: Users, permission: 'can_manage_students' },
+    { key: 'whatsappPack', href: '/whatsapp-pack', icon: MessageCircle, ownerAdminOnly: true },
     { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
     { key: 'attendance', href: '/attendance', icon: ClipboardList, permission: 'can_scan' },
     { key: 'groups', href: '/groups', icon: BookOpen, permission: 'can_manage_groups' },
@@ -115,18 +117,9 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Backdrop - mobile only when overlay (desktop: sidebar is persistent, no backdrop) */}
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[90] md:hidden print:hidden"
-          onClick={() => onClose?.()}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Mobile closed: full drawer width + translate off-screen; md+ closed: w-16 rail; md+ translate locked to 0 */}
+      {/* Desktop-only rail; mobile nav uses MobileNavDrawer from AppShell */}
       <aside
-        className={`flex flex-col fixed top-0 bottom-0 h-screen z-[100] print:hidden bg-slate-900 transition-all duration-300 isolate ${open ? 'w-64' : 'w-64 md:w-16'} ${isRTL ? 'right-0 md:left-auto md:right-0' : 'left-0 md:left-0'} ${open ? 'translate-x-0' : isRTL ? 'translate-x-full md:translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        className={`hidden md:flex flex-col fixed top-0 bottom-0 h-screen z-[100] print:hidden bg-slate-900 transition-all duration-300 isolate ${open ? 'w-64' : 'w-16'} ${isRTL ? 'right-0' : 'left-0'}`}
       >
       {/* Logo + Close */}
       <div className="relative z-10 flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800 pointer-events-auto">

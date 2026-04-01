@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import type { PermissionKey } from '@/contexts/UserContext';
-import { LayoutDashboard, QrCode, Users, CreditCard, Settings } from 'lucide-react';
+import { LayoutDashboard, QrCode, Users } from 'lucide-react';
 
 type TabDef = {
   navKey: string
@@ -29,20 +29,6 @@ const TABS: TabDef[] = [
     segment: 'students',
     icon: Users,
     permission: 'can_manage_students',
-  },
-  {
-    navKey: 'payments',
-    path: '/payments',
-    segment: 'payments',
-    icon: CreditCard,
-    permission: 'can_view_payments',
-  },
-  {
-    navKey: 'settings',
-    path: '/settings',
-    segment: 'settings',
-    icon: Settings,
-    permission: 'can_view_settings',
   },
 ];
 
@@ -71,7 +57,7 @@ export function BottomTabBar() {
     : TABS;
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 print:hidden bg-surface-1 border-t border-[var(--color-border-subtle)] shadow-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} aria-label={tm('tab_bar_label')}>
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 print:hidden bg-surface-1 border-t border-[var(--color-border-subtle)] shadow-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} aria-label={tm('tab_bar_label')}>
       <div className="flex items-stretch min-h-14 h-14">
         {visibleTabs.map(({ navKey, path, segment, icon: Icon }) => {
           const active = isTabActive(cleanPath, segment);
