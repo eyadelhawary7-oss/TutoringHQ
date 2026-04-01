@@ -18,6 +18,11 @@ interface BillingRow {
   status: string
 }
 
+function asNum(v: unknown): number {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : 0
+}
+
 export async function GET(request: Request) {
   const auth = await requireSuperAdminApi(request)
   if (!auth.ok) {
@@ -77,13 +82,13 @@ export async function GET(request: Request) {
       plan: c.plan,
       phone: c.phone,
       parent_pack_enabled: Boolean(c.parent_pack_enabled),
-      parent_pack_active_parents: c.parent_pack_active_parents ?? 0,
+      parent_pack_active_parents: asNum(c.parent_pack_active_parents),
       billing,
     }
   })
 
   const totalEnabled = centers.filter((c) => c.parent_pack_enabled).length
-  const totalActiveParents = centers.reduce((s, c) => s + (c.parent_pack_active_parents ?? 0), 0)
+  const totalActiveParents = centers.reduce((s, c) => s + asNum(c.parent_pack_active_parents), 0)
   const totalMRR = totalActiveParents * 10
 
   return NextResponse.json({

@@ -17,6 +17,20 @@ import type { GrowthPanelResponse } from '@/types/founder-dash';
 
 const ACTIVE_STAGES = ['lead', 'demo', 'trial', 'closed'] as const;
 
+function n(v: unknown): number {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
+const DEFAULT_REFERRAL = {
+  totalReferrers: 0,
+  totalReferrals: 0,
+  converted: 0,
+  conversionRate: 0,
+  commissionsOwed: 0,
+  commissionsPaid: 0,
+};
+
 function formatDistrictLabel(raw: string): string {
   return raw
     .replace(/_/g, ' ')
@@ -25,6 +39,11 @@ function formatDistrictLabel(raw: string): string {
 
 export default function FounderGrowthPanel(props: GrowthPanelResponse) {
   const t = useTranslations('founderDash');
+
+  const stages = Array.isArray(props.pipeline?.stages) ? props.pipeline.stages : [];
+  const totalActive = n(props.pipeline?.totalActive);
+  const geography = Array.isArray(props.geography) ? props.geography : [];
+  const referral = { ...DEFAULT_REFERRAL, ...props.referral };
 
   const stageLabels: Record<string, string> = {
     lead: t('stageLead'),
@@ -45,12 +64,11 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
   const convRate = (from: number, to: number): string =>
     from === 0 ? '0%' : `${Math.round((to / from) * 100).toLocaleString('en-US')}%`;
 
-  const lostCount = props.pipeline.stages.find((s) => s.stage === 'lost')?.count ?? 0;
+  const lostCount = n(stages.find((s) => s.stage === 'lost')?.count);
   const lostLabel = stageLabels['lost'];
 
   const pipelineEmpty =
-    props.pipeline.totalActive === 0 &&
-    props.pipeline.stages.every((s) => s.count === 0);
+    totalActive === 0 && stages.every((s) => n(s.count) === 0);
 
   const statusChipClass = (centerCount: number, leadCount: number): string => {
     if (centerCount >= 5) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
@@ -78,12 +96,10 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               dir="ltr"
             >
               {ACTIVE_STAGES.flatMap((stageKey, idx) => {
-                const stageEntry = props.pipeline.stages.find((s) => s.stage === stageKey);
-                const count = stageEntry?.count ?? 0;
+                const stageEntry = stages.find((s) => s.stage === stageKey);
+                const count = n(stageEntry?.count);
                 const nextKey = ACTIVE_STAGES[idx + 1];
-                const nextCount = nextKey
-                  ? (props.pipeline.stages.find((s) => s.stage === nextKey)?.count ?? 0)
-                  : 0;
+                const nextCount = nextKey ? n(stages.find((s) => s.stage === nextKey)?.count) : 0;
 
                 const box = (
                   <div
@@ -135,7 +151,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
           {t('geoTitle')}
         </h2>
-        {props.geography.length === 0 ? (
+        {geography.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center text-[var(--color-text-secondary)]">
             <MapPin className="h-10 w-10 text-[var(--color-text-tertiary)] mb-3" />
             <p className="font-medium text-[var(--color-text-primary)]">{t('geoEmpty')}</p>
@@ -160,35 +176,37 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                 </tr>
               </thead>
               <tbody>
-                {props.geography.map((row, i) => {
+                {geography.map((row, i) => {
                   const districtDisplay =
                     row.district === null ? t('geoUnknown') : formatDistrictLabel(row.district);
+                  const centerCount = n(row.centerCount);
+                  const leadCount = n(row.leadCount);
                   return (
                     <tr key={`${row.district ?? 'null'}-${i}`} className="border-b border-[var(--color-border-subtle)]">
                       <td className="py-2 pe-3 text-[var(--color-text-primary)]">{districtDisplay}</td>
                       <td
                         className={`py-2 pe-3 font-mono font-semibold ${
-                          row.centerCount > 0
+                          centerCount > 0
                             ? 'text-[#0D9488]'
                             : 'text-[var(--color-text-tertiary)]'
                         }`}
                       >
-                        {row.centerCount.toLocaleString('en-US')}
+                        {centerCount.toLocaleString('en-US')}
                       </td>
                       <td
                         className={`py-2 pe-3 font-mono font-semibold ${
-                          row.leadCount > 0
+                          leadCount > 0
                             ? 'text-amber-600 dark:text-amber-400'
                             : 'text-[var(--color-text-tertiary)]'
                         }`}
                       >
-                        {row.leadCount.toLocaleString('en-US')}
+                        {leadCount.toLocaleString('en-US')}
                       </td>
                       <td className="py-2">
                         <span
-                          className={`inline-block text-xs rounded-full px-2.5 py-0.5 font-medium ${statusChipClass(row.centerCount, row.leadCount)}`}
+                          className={`inline-block text-xs rounded-full px-2.5 py-0.5 font-medium ${statusChipClass(centerCount, leadCount)}`}
                         >
-                          {geoStatusLabel(row.centerCount, row.leadCount)}
+                          {geoStatusLabel(centerCount, leadCount)}
                         </span>
                       </td>
                     </tr>
@@ -204,7 +222,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
           {t('referralTitle')}
         </h2>
-        {props.referral.totalReferrals === 0 ? (
+        {n(referral.totalReferrals) === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center text-[var(--color-text-secondary)]">
             <Share2 className="h-10 w-10 text-[var(--color-text-tertiary)] mb-3" />
             <p className="font-medium text-[var(--color-text-primary)]">{t('referralEmpty')}</p>
@@ -218,7 +236,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                 {t('referralReferrers')}
               </div>
               <p className="text-xl font-bold font-mono text-[var(--color-text-primary)]">
-                {props.referral.totalReferrers.toLocaleString('en-US')}
+                {n(referral.totalReferrers).toLocaleString('en-US')}
               </p>
             </div>
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-4">
@@ -227,7 +245,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                 {t('referralTotal')}
               </div>
               <p className="text-xl font-bold font-mono text-[var(--color-text-primary)]">
-                {props.referral.totalReferrals.toLocaleString('en-US')}
+                {n(referral.totalReferrals).toLocaleString('en-US')}
               </p>
             </div>
             <div className="rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 p-4">
@@ -236,23 +254,23 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                 {t('referralConverted')}
               </div>
               <p className="text-xl font-bold font-mono text-[#0D9488]">
-                {props.referral.converted.toLocaleString('en-US')}
+                {n(referral.converted).toLocaleString('en-US')}
               </p>
             </div>
             <div
               className={`rounded-xl border p-4 ${
-                props.referral.conversionRate >= 50
+                n(referral.conversionRate) >= 50
                   ? 'border-emerald-500/30 bg-emerald-500/5'
-                  : props.referral.conversionRate >= 20
+                  : n(referral.conversionRate) >= 20
                     ? 'border-amber-500/30 bg-amber-500/5'
                     : 'border-red-500/30 bg-red-500/5'
               }`}
             >
               <div
                 className={`flex items-center gap-2 text-xs mb-2 ${
-                  props.referral.conversionRate >= 50
+                  n(referral.conversionRate) >= 50
                     ? 'text-emerald-600 dark:text-emerald-400'
-                    : props.referral.conversionRate >= 20
+                    : n(referral.conversionRate) >= 20
                       ? 'text-amber-700 dark:text-amber-400'
                       : 'text-red-600 dark:text-red-400'
                 }`}
@@ -262,26 +280,26 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               </div>
               <p
                 className={`text-xl font-bold font-mono ${
-                  props.referral.conversionRate >= 50
+                  n(referral.conversionRate) >= 50
                     ? 'text-emerald-600 dark:text-emerald-400'
-                    : props.referral.conversionRate >= 20
+                    : n(referral.conversionRate) >= 20
                       ? 'text-amber-700 dark:text-amber-400'
                       : 'text-red-600 dark:text-red-400'
                 }`}
               >
-                {props.referral.conversionRate.toLocaleString('en-US')}%
+                {n(referral.conversionRate).toLocaleString('en-US')}%
               </p>
             </div>
             <div
               className={`rounded-xl border p-4 ${
-                props.referral.commissionsOwed > 0
+                n(referral.commissionsOwed) > 0
                   ? 'border-amber-500/30 bg-amber-500/5'
                   : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]'
               }`}
             >
               <div
                 className={`flex items-center gap-2 text-xs mb-2 ${
-                  props.referral.commissionsOwed > 0
+                  n(referral.commissionsOwed) > 0
                     ? 'text-amber-700 dark:text-amber-400'
                     : 'text-[var(--color-text-secondary)]'
                 }`}
@@ -291,24 +309,24 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               </div>
               <p
                 className={`text-xl font-bold font-mono ${
-                  props.referral.commissionsOwed > 0
+                  n(referral.commissionsOwed) > 0
                     ? 'text-amber-700 dark:text-amber-400'
                     : 'text-[var(--color-text-primary)]'
                 }`}
               >
-                {props.referral.commissionsOwed.toLocaleString('en-US')} {t('egpAbbrev')}
+                {n(referral.commissionsOwed).toLocaleString('en-US')} {t('egpAbbrev')}
               </p>
             </div>
             <div
               className={`rounded-xl border p-4 ${
-                props.referral.commissionsPaid > 0
+                n(referral.commissionsPaid) > 0
                   ? 'border-emerald-500/30 bg-emerald-500/5'
                   : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]'
               }`}
             >
               <div
                 className={`flex items-center gap-2 text-xs mb-2 ${
-                  props.referral.commissionsPaid > 0
+                  n(referral.commissionsPaid) > 0
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-[var(--color-text-secondary)]'
                 }`}
@@ -318,12 +336,12 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               </div>
               <p
                 className={`text-xl font-bold font-mono ${
-                  props.referral.commissionsPaid > 0
+                  n(referral.commissionsPaid) > 0
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-[var(--color-text-primary)]'
                 }`}
               >
-                {props.referral.commissionsPaid.toLocaleString('en-US')} {t('egpAbbrev')}
+                {n(referral.commissionsPaid).toLocaleString('en-US')} {t('egpAbbrev')}
               </p>
             </div>
           </div>

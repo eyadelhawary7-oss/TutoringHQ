@@ -53,8 +53,13 @@ interface DashboardData {
   cohortTable: { month: string; total: number; [k: string]: number | string }[];
 }
 
-function fmt(n: number): string {
-  return n.toLocaleString('en-US');
+function nf(v: unknown): number {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function fmt(n: unknown): string {
+  return nf(n).toLocaleString('en-US');
 }
 
 function FinancialSkeletons() {
@@ -146,7 +151,8 @@ function CeoFinancialsBody({
   financials: FinancialsResponse;
   tFinancials: CeoFinancialsT;
 }) {
-  const g = financials.whatsappPack.growthVsLastMonth;
+  const g = nf(financials.whatsappPack?.growthVsLastMonth);
+  const monthly = Array.isArray(financials.monthly) ? financials.monthly : [];
 
   return (
     <>
@@ -157,22 +163,22 @@ function CeoFinancialsBody({
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 border-l-4 border-teal-500">
             <p className="text-xs text-slate-400">{tFinancials('financials.cardTotalTitle')}</p>
             <p className="text-xl font-mono font-bold text-slate-100 mt-1">
-              {(financials.currentMonth.totalRevenue ?? 0).toLocaleString('en-US')} EGP
+              {nf(financials.currentMonth?.totalRevenue).toLocaleString('en-US')} EGP
             </p>
             <div className="mt-2 space-y-0.5 text-[11px] text-slate-500">
               <p>
                 {tFinancials('financials.cardTotalSubSubscriptions', {
-                  amount: (financials.currentMonth.subscriptionRevenue ?? 0).toLocaleString('en-US'),
+                  amount: nf(financials.currentMonth?.subscriptionRevenue).toLocaleString('en-US'),
                 })}
               </p>
               <p>
                 {tFinancials('financials.cardTotalSubCards', {
-                  amount: (financials.currentMonth.cardOrderRevenue ?? 0).toLocaleString('en-US'),
+                  amount: nf(financials.currentMonth?.cardOrderRevenue).toLocaleString('en-US'),
                 })}
               </p>
               <p>
                 {tFinancials('financials.cardTotalSubWa', {
-                  amount: (financials.currentMonth.whatsappPackRevenue ?? 0).toLocaleString('en-US'),
+                  amount: nf(financials.currentMonth?.whatsappPackRevenue).toLocaleString('en-US'),
                 })}
               </p>
             </div>
@@ -182,7 +188,7 @@ function CeoFinancialsBody({
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
           <h3 className="text-sm font-medium text-slate-200 mb-3">{tFinancials('financials.chart12MonthTitle')}</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={financials.monthly}>
+            <ComposedChart data={monthly}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
               <YAxis
@@ -239,36 +245,36 @@ function CeoFinancialsBody({
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelTotalCardsSold')}</p>
                 <p className="font-mono text-slate-100">
-                  {(financials.cardOrders.totalCardsSold ?? 0).toLocaleString('en-US')}
+                  {nf(financials.cardOrders?.totalCardsSold).toLocaleString('en-US')}
                 </p>
               </div>
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelRevenueAllTime')}</p>
                 <p className="font-mono text-slate-100">
-                  {(financials.cardOrders.revenueAllTime ?? 0).toLocaleString('en-US')} EGP
+                  {nf(financials.cardOrders?.revenueAllTime).toLocaleString('en-US')} EGP
                 </p>
               </div>
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelRevenueThisMonth')}</p>
                 <p className="font-mono text-slate-100">
-                  {(financials.cardOrders.revenueThisMonth ?? 0).toLocaleString('en-US')} EGP
+                  {nf(financials.cardOrders?.revenueThisMonth).toLocaleString('en-US')} EGP
                 </p>
               </div>
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelAverageOrderValue')}</p>
                 <p className="font-mono text-slate-100">
-                  {(financials.cardOrders.averageOrderValue ?? 0).toLocaleString('en-US')} EGP
+                  {nf(financials.cardOrders?.averageOrderValue).toLocaleString('en-US')} EGP
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3 items-start content-start">
               <span className="rounded-full bg-amber-500/20 text-amber-400 text-xs px-3 py-1 font-medium">
                 {tFinancials('financials.badgePending')}:{' '}
-                {(financials.cardOrders.pendingOrders ?? 0).toLocaleString('en-US')}
+                {nf(financials.cardOrders?.pendingOrders).toLocaleString('en-US')}
               </span>
               <span className="rounded-full bg-teal-500/20 text-[#0D9488] text-xs px-3 py-1 font-medium">
                 {tFinancials('financials.badgePaid')}:{' '}
-                {(financials.cardOrders.paidOrders ?? 0).toLocaleString('en-US')}
+                {nf(financials.cardOrders?.paidOrders).toLocaleString('en-US')}
               </span>
             </div>
           </div>
@@ -280,24 +286,24 @@ function CeoFinancialsBody({
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelActiveParents')}</p>
               <p className="font-mono text-slate-100">
-                {(financials.whatsappPack.activeParents ?? 0).toLocaleString('en-US')}
+                {nf(financials.whatsappPack?.activeParents).toLocaleString('en-US')}
               </p>
             </div>
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelPackMrr')}</p>
               <p className="font-mono text-slate-100">
-                {(financials.whatsappPack.packMRR ?? 0).toLocaleString('en-US')} EGP
+                {nf(financials.whatsappPack?.packMRR).toLocaleString('en-US')} EGP
               </p>
             </div>
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelGrowthVsLastMonth')}</p>
               {g > 0 ? (
                 <p className="text-green-400 font-mono" aria-label={tFinancials('financials.growthUp')}>
-                  ↑ {(g ?? 0).toFixed(1)}%
+                  ↑ {g.toFixed(1)}%
                 </p>
               ) : g < 0 ? (
                 <p className="text-red-400 font-mono" aria-label={tFinancials('financials.growthDown')}>
-                  ↓ {Math.abs(g ?? 0).toFixed(1)}%
+                  ↓ {Math.abs(g).toFixed(1)}%
                 </p>
               ) : (
                 <p className="text-slate-400 font-mono">{tFinancials('financials.growthNeutral')}</p>
@@ -483,10 +489,14 @@ export default function CeoDashboardClient({
     { label: t('totalActiveCenters'), value: fmt(d.totalActiveCenters), icon: Building2 },
     { label: t('mrr'), value: `EGP ${fmt(d.mrr)}`, icon: DollarSign },
     { label: t('arr'), value: `EGP ${fmt(d.arr)}`, icon: TrendingUp },
-    { label: t('netNew30d'), value: d.netNew30d >= 0 ? `+${d.netNew30d}` : String(d.netNew30d), icon: Users },
-    { label: t('monthlyChurnRate'), value: `${d.monthlyChurnRate.toFixed(1)}%`, icon: TrendingDown },
-    { label: t('collectionRate'), value: `${d.collectionRate.toFixed(1)}%`, icon: CreditCard },
-    { label: t('referralRate'), value: `${d.referralRate.toFixed(1)}%`, icon: Gift },
+    {
+      label: t('netNew30d'),
+      value: nf(d.netNew30d) >= 0 ? `+${fmt(d.netNew30d)}` : String(nf(d.netNew30d)),
+      icon: Users,
+    },
+    { label: t('monthlyChurnRate'), value: `${nf(d.monthlyChurnRate).toFixed(1)}%`, icon: TrendingDown },
+    { label: t('collectionRate'), value: `${nf(d.collectionRate).toFixed(1)}%`, icon: CreditCard },
+    { label: t('referralRate'), value: `${nf(d.referralRate).toFixed(1)}%`, icon: Gift },
   ];
 
   return (
@@ -539,8 +549,8 @@ export default function CeoDashboardClient({
             <p>{t('newYesterday')}: {d.newYesterday}</p>
             <p>{t('churned')}: {d.churned}</p>
             <p className="flex items-center gap-1">
-              {t('atRisk')}: {d.atRisk}
-              {d.atRisk > 0 && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+              {t('atRisk')}: {fmt(d.atRisk)}
+              {nf(d.atRisk) > 0 && <AlertTriangle className="h-4 w-4 text-amber-500" />}
             </p>
           </div>
         </section>
@@ -555,7 +565,7 @@ export default function CeoDashboardClient({
 
         <section className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('cohortTable')}</h2>
-          {d.cohortTable.length > 0 ? (
+          {Array.isArray(d.cohortTable) && d.cohortTable.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

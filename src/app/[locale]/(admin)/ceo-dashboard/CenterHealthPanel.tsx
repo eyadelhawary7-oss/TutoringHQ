@@ -7,6 +7,11 @@ import type { HealthPanelResponse, HealthSummary } from '@/types/founder-dash';
 
 const PLAN_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 
+function n(v: unknown): number {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
 function formatDistrictLabel(raw: string): string {
   return raw
     .replace(/_/g, ' ')
@@ -17,6 +22,16 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
   const t = useTranslations('founderDash');
   const locale = useLocale();
   const tPlans = useTranslations('landing.pricing.plans');
+
+  const rawSummary = props.summary ?? ({} as HealthSummary);
+  const summary: HealthSummary = {
+    healthy: n(rawSummary.healthy),
+    engaged: n(rawSummary.engaged),
+    atRisk: n(rawSummary.atRisk),
+    critical: n(rawSummary.critical),
+    noScore: n(rawSummary.noScore),
+  };
+  const centers = Array.isArray(props.centers) ? props.centers : [];
 
   const bandLabels: Record<string, string> = {
     Healthy: t('bandHealthy'),
@@ -127,7 +142,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
         </h2>
         <div className="flex flex-wrap gap-2">
           {summaryChips.map(({ key, label, tone }) => {
-            const count = props.summary[key];
+            const count = summary[key];
             const active = count > 0;
             return (
               <span
@@ -136,7 +151,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
               >
                 <span className={active ? 'font-semibold' : 'font-normal'}>{label}</span>
                 <span className={`font-mono ${active ? 'font-bold' : ''}`}>
-                  {count.toLocaleString('en-US')}
+                  {n(count).toLocaleString('en-US')}
                 </span>
               </span>
             );
@@ -145,7 +160,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
       </section>
 
       <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6">
-        {props.centers.length === 0 ? (
+        {centers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center text-[var(--color-text-secondary)]">
             <Activity className="h-10 w-10 text-[var(--color-text-tertiary)] mb-3" />
             <p className="font-medium text-[var(--color-text-primary)]">{t('healthEmpty')}</p>
@@ -179,13 +194,14 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                   </tr>
                 </thead>
                 <tbody>
-                  {props.centers.map((center) => {
+                  {centers.map((center) => {
                     const districtDisplay = center.district
                       ? formatDistrictLabel(center.district)
                       : '—';
                     const scan = scanDisplay(center.last_scan_at);
                     const band = center.health_score_band;
                     const bandText = band != null ? (bandLabels[band] ?? '—') : '—';
+                    const healthScore = n(center.health_score);
                     return (
                       <tr key={center.id} className="border-b border-[var(--color-border-subtle)]">
                         <td className="py-2 pe-3 font-semibold text-[var(--color-text-primary)]">
@@ -200,7 +216,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                           </span>
                         </td>
                         <td className="py-2 pe-3">
-                          {center.health_score === null ? (
+                          {center.health_score == null ? (
                             <span className="text-[var(--color-text-tertiary)]">—</span>
                           ) : (
                             <div className="flex items-center gap-2 flex-wrap">
@@ -208,12 +224,12 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                                 <div
                                   className={`h-full rounded-full ${bandFillClass(band)}`}
                                   style={{
-                                    width: `${Math.min(100, Math.max(0, center.health_score))}%`,
+                                    width: `${Math.min(100, Math.max(0, healthScore))}%`,
                                   }}
                                 />
                               </div>
                               <span className="font-mono text-[var(--color-text-primary)]">
-                                {center.health_score.toLocaleString('en-US')}
+                                {healthScore.toLocaleString('en-US')}
                               </span>
                               <span
                                 className={`text-xs rounded-md px-2 py-0.5 font-medium ${bandBadgeClass(band)}`}
@@ -249,13 +265,14 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
             </div>
 
             <div className="lg:hidden space-y-4">
-              {props.centers.map((center) => {
+              {centers.map((center) => {
                 const districtDisplay = center.district
                   ? formatDistrictLabel(center.district)
                   : '—';
                 const scan = scanDisplay(center.last_scan_at);
                 const band = center.health_score_band;
                 const bandText = band != null ? (bandLabels[band] ?? '—') : '—';
+                const healthScore = n(center.health_score);
                 return (
                   <div
                     key={center.id}
@@ -270,7 +287,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                         {planDisplayName(center.plan)}
                       </span>
                     </div>
-                    {center.health_score === null ? (
+                    {center.health_score == null ? (
                       <span className="text-[var(--color-text-tertiary)]">—</span>
                     ) : (
                       <div className="space-y-1">
@@ -278,13 +295,13 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                           <div
                             className={`h-full rounded-full ${bandFillClass(band)}`}
                             style={{
-                              width: `${Math.min(100, Math.max(0, center.health_score))}%`,
+                              width: `${Math.min(100, Math.max(0, healthScore))}%`,
                             }}
                           />
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-mono text-[var(--color-text-primary)]">
-                            {center.health_score.toLocaleString('en-US')}
+                            {healthScore.toLocaleString('en-US')}
                           </span>
                           <span
                             className={`text-xs rounded-md px-2 py-0.5 font-medium ${bandBadgeClass(band)}`}

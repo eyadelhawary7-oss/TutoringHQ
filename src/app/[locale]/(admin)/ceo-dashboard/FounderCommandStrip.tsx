@@ -7,12 +7,28 @@ import type { CommandStripResponse, ActionQueueItem } from '@/types/founder-dash
 
 const PLAN_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 
+function n(v: unknown): number {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
 export default function FounderCommandStrip(props: CommandStripResponse) {
   const t = useTranslations('founderDash');
   const locale = useLocale();
   const tPlans = useTranslations('landing.pricing.plans');
 
-  const actionQueue: ActionQueueItem[] = props.actionQueue;
+  const rawStats = props.stats ?? {};
+  const stats = {
+    pendingApprovals: n(rawStats.pendingApprovals),
+    leadsNeedingReply: n(rawStats.leadsNeedingReply),
+    overduePayments: n(rawStats.overduePayments),
+    atRiskCenters: n(rawStats.atRiskCenters),
+  };
+  const rawBreakeven = props.breakeven ?? { target: 0, activePayingCenters: 0 };
+  const target = n(rawBreakeven.target);
+  const activePayingCenters = n(rawBreakeven.activePayingCenters);
+  const actionQueue: ActionQueueItem[] = Array.isArray(props.actionQueue) ? props.actionQueue : [];
+  const pendingCenters = Array.isArray(props.pendingCenters) ? props.pendingCenters : [];
 
   const typeLabels: Record<string, string> = {
     churn_risk: t('actionType_churnRisk'),
@@ -30,15 +46,14 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
     return plan;
   }
 
-  const { target, activePayingCenters } = props.breakeven;
-  const pct = Math.min(100, Math.round((activePayingCenters / target) * 100));
+  const pct = target > 0 ? Math.min(100, Math.round((activePayingCenters / target) * 100)) : 0;
 
   return (
     <div className="space-y-8 mb-8">
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div
           className={`rounded-xl border p-4 ${
-            props.stats.pendingApprovals > 0
+            stats.pendingApprovals > 0
               ? 'border-amber-500/40 bg-amber-500/10'
               : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]'
           }`}
@@ -48,13 +63,13 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             <span>{t('pendingApprovals')}</span>
           </div>
           <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-            {props.stats.pendingApprovals.toLocaleString('en-US')}
+            {stats.pendingApprovals.toLocaleString('en-US')}
           </p>
         </div>
 
         <div
           className={`rounded-xl border p-4 ${
-            props.stats.leadsNeedingReply > 0
+            stats.leadsNeedingReply > 0
               ? 'border-red-500/40 bg-red-500/10'
               : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]'
           }`}
@@ -64,13 +79,13 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             <span>{t('leadsNeedingReply')}</span>
           </div>
           <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-            {props.stats.leadsNeedingReply.toLocaleString('en-US')}
+            {stats.leadsNeedingReply.toLocaleString('en-US')}
           </p>
         </div>
 
         <div
           className={`rounded-xl border p-4 ${
-            props.stats.overduePayments > 0
+            stats.overduePayments > 0
               ? 'border-red-500/40 bg-red-500/10'
               : 'border-emerald-500/30 bg-emerald-500/5'
           }`}
@@ -80,13 +95,13 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             <span>{t('overduePayments')}</span>
           </div>
           <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-            {props.stats.overduePayments.toLocaleString('en-US')}
+            {stats.overduePayments.toLocaleString('en-US')}
           </p>
         </div>
 
         <div
           className={`rounded-xl border p-4 ${
-            props.stats.atRiskCenters > 0
+            stats.atRiskCenters > 0
               ? 'border-red-500/40 bg-red-500/10'
               : 'border-emerald-500/30 bg-emerald-500/5'
           }`}
@@ -96,7 +111,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             <span>{t('atRiskCenters')}</span>
           </div>
           <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-            {props.stats.atRiskCenters.toLocaleString('en-US')}
+            {stats.atRiskCenters.toLocaleString('en-US')}
           </p>
         </div>
       </section>
@@ -170,9 +185,9 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                       <p className="text-sm text-[var(--color-text-secondary)]">{item.subtitle}</p>
                     )}
                     <div className="flex flex-wrap items-center gap-2">
-                      {item.revenue_at_risk > 0 && (
+                      {n(item.revenue_at_risk) > 0 && (
                         <span className="text-xs rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-1 font-mono">
-                          {item.revenue_at_risk.toLocaleString('en-US')} {t('egpAbbrev')}
+                          {n(item.revenue_at_risk).toLocaleString('en-US')} {t('egpAbbrev')}
                         </span>
                       )}
                       {item.action_label && item.action_url && (
@@ -196,7 +211,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
           {t('approvalQueueTitle')}
         </h2>
-        {props.pendingCenters.length === 0 ? (
+        {pendingCenters.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center text-[var(--color-text-secondary)]">
             <CheckCircle className="h-10 w-10 text-emerald-500 mb-3" />
             <p className="font-medium text-[var(--color-text-primary)]">{t('noApprovals')}</p>
@@ -232,7 +247,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                   </tr>
                 </thead>
                 <tbody>
-                  {props.pendingCenters.map((center) => {
+                  {pendingCenters.map((center) => {
                     const location =
                       [center.city, center.district].filter(Boolean).join(', ') || '—';
                     const notesPreview = center.signup_notes
@@ -275,7 +290,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             </div>
 
             <div className="md:hidden space-y-4">
-              {props.pendingCenters.map((center) => {
+              {pendingCenters.map((center) => {
                 const location =
                   [center.city, center.district].filter(Boolean).join(', ') || '—';
                 const notesPreview = center.signup_notes

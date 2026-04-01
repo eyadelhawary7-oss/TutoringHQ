@@ -54,11 +54,11 @@ export default async function AdminWhatsAppPackPage({
   return (
     <AdminWaPackClient
       initialCenters={Array.isArray(data.centers) ? data.centers : []}
-      initialNotificationTypes={{ ...defaultNotif, ...data.notificationTypes }}
+      initialNotificationTypes={{ ...defaultNotif, ...(data.notificationTypes ?? {}) }}
       initialStats={{
-        totalEnabled: Number(data.stats?.totalEnabled) || 0,
-        totalActiveParents: Number(data.stats?.totalActiveParents) || 0,
-        totalMRR: Number(data.stats?.totalMRR) || 0,
+        totalEnabled: Number(data.stats?.totalEnabled),
+        totalActiveParents: Number(data.stats?.totalActiveParents),
+        totalMRR: Number(data.stats?.totalMRR),
       }}
     />
   )

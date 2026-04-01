@@ -27,6 +27,15 @@ const DEFAULT_BILLING: WaPackBillingSummary = {
   status: 'not_issued',
 }
 
+function asNum(v: unknown): number {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : 0
+}
+
+function fmtInt(v: unknown): string {
+  return asNum(v).toLocaleString('en-US')
+}
+
 function billingStatusKey(s: string | undefined): WaPackBillingSummary['status'] {
   if (s === 'charged' || s === 'pending' || s === 'failed' || s === 'not_issued') {
     return s
@@ -43,10 +52,10 @@ function normalizeCenter(raw: Partial<WaPackCenter> & { id?: string }): WaPackCe
     plan: String(raw.plan ?? ''),
     phone: raw.phone ?? null,
     parent_pack_enabled: Boolean(raw.parent_pack_enabled),
-    parent_pack_active_parents: Number(raw.parent_pack_active_parents) || 0,
+    parent_pack_active_parents: asNum(raw.parent_pack_active_parents),
     billing: {
-      totalAmount: Number(billingIn.totalAmount) || 0,
-      parentCount: Number(billingIn.parentCount) || 0,
+      totalAmount: asNum(billingIn.totalAmount),
+      parentCount: asNum(billingIn.parentCount),
       status,
     },
   }
@@ -113,16 +122,16 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   const tPlans = useTranslations('billing.planNames')
   const locale = useLocale()
   const [centers, setCenters] = useState<WaPackCenter[]>(() =>
-    (props.initialCenters ?? []).map((c) => normalizeCenter(c)),
+    (Array.isArray(props.initialCenters) ? props.initialCenters : []).map((c) => normalizeCenter(c)),
   )
   const [notifTypes, setNotifTypes] = useState<NotificationTypes>(() => ({
     ...DEFAULT_NOTIFICATION_TYPES,
-    ...props.initialNotificationTypes,
+    ...(props.initialNotificationTypes ?? {}),
   }))
   const [stats, setStats] = useState(() => ({
-    totalEnabled: Number(props.initialStats?.totalEnabled) || 0,
-    totalActiveParents: Number(props.initialStats?.totalActiveParents) || 0,
-    totalMRR: Number(props.initialStats?.totalMRR) || 0,
+    totalEnabled: asNum(props.initialStats?.totalEnabled),
+    totalActiveParents: asNum(props.initialStats?.totalActiveParents),
+    totalMRR: asNum(props.initialStats?.totalMRR),
   }))
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [savingConfig, setSavingConfig] = useState(false)
@@ -163,7 +172,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
       )
       setStats((prev) => ({
         ...prev,
-        totalEnabled: prev.totalEnabled + (newValue ? 1 : -1),
+        totalEnabled: asNum(prev.totalEnabled) + (newValue ? 1 : -1),
       }))
     } catch {
       // no-op — UI reverts on next refresh
@@ -207,19 +216,19 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('totalEnabled')}</p>
               <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">
-                {stats.totalEnabled.toLocaleString('en-US')}
+                {fmtInt(stats.totalEnabled)}
               </p>
             </div>
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('totalParents')}</p>
               <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">
-                {stats.totalActiveParents.toLocaleString('en-US')}
+                {fmtInt(stats.totalActiveParents)}
               </p>
             </div>
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('totalMrr')}</p>
               <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">
-                {stats.totalMRR.toLocaleString('en-US')} ج.م
+                {fmtInt(stats.totalMRR)} ج.م
               </p>
             </div>
           </section>
@@ -276,9 +285,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {centers.map((c) => {
+                  {(centers ?? []).map((c) => {
                     const billStatus = billingStatusKey(c.billing?.status)
-                    const parents = Number(c.parent_pack_active_parents) || 0
+                    const parents = asNum(c.parent_pack_active_parents)
                     return (
                     <tr key={c.id} className="border-b border-[var(--color-border-subtle)]">
                       <td className="px-4 py-3">
@@ -293,10 +302,10 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                        {parents.toLocaleString('en-US')}
+                        {fmtInt(parents)}
                       </td>
                       <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                        {(parents * 10).toLocaleString('en-US')} ج.م
+                        {fmtInt(parents * 10)} ج.م
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -324,9 +333,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
             </div>
 
             <div className="divide-y divide-[var(--color-border-subtle)] md:hidden">
-              {centers.map((c) => {
+              {(centers ?? []).map((c) => {
                 const billStatus = billingStatusKey(c.billing?.status)
-                const parents = Number(c.parent_pack_active_parents) || 0
+                const parents = asNum(c.parent_pack_active_parents)
                 return (
                 <div key={c.id} className="space-y-3 p-4">
                   <div>
@@ -352,13 +361,13 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                     <div>
                       <span className="text-[var(--color-text-tertiary)]">{t('activeParents')}: </span>
                       <span className="tabular-nums font-medium">
-                        {parents.toLocaleString('en-US')}
+                        {fmtInt(parents)}
                       </span>
                     </div>
                     <div>
                       <span className="text-[var(--color-text-tertiary)]">{t('monthlyAmount')}: </span>
                       <span className="tabular-nums font-medium">
-                        {(parents * 10).toLocaleString('en-US')} ج.م
+                        {fmtInt(parents * 10)} ج.م
                       </span>
                     </div>
                   </div>
