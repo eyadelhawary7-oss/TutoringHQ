@@ -23,7 +23,6 @@ export interface WhatsAppPackStats {
 
 export interface AnnualView {
   currentYearRevenue: number;
-  projectedARR: number;
   bestMonth: string | null;
   worstMonth: string | null;
 }
@@ -35,8 +34,6 @@ export interface CurrentMonthFinancials {
   totalRevenue: number;
   fixedCosts: number;
   variableCosts: number;
-  grossProfit: number;
-  profitMargin: number;
 }
 
 export interface FinancialsResponse {

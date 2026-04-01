@@ -43,13 +43,23 @@ export default async function AdminWhatsAppPackPage({
     redirect(`/${locale}/ceo-dashboard`)
   }
 
-  const data = (await res.json()) as AdminPackResponse
+  const data = (await res.json()) as Partial<AdminPackResponse>
+  const defaultNotif: NotificationTypes = {
+    scan: true,
+    absence: true,
+    balance: true,
+    announcement: true,
+  }
 
   return (
     <AdminWaPackClient
-      initialCenters={data.centers}
-      initialNotificationTypes={data.notificationTypes}
-      initialStats={data.stats}
+      initialCenters={Array.isArray(data.centers) ? data.centers : []}
+      initialNotificationTypes={{ ...defaultNotif, ...data.notificationTypes }}
+      initialStats={{
+        totalEnabled: Number(data.stats?.totalEnabled) || 0,
+        totalActiveParents: Number(data.stats?.totalActiveParents) || 0,
+        totalMRR: Number(data.stats?.totalMRR) || 0,
+      }}
     />
   )
 }

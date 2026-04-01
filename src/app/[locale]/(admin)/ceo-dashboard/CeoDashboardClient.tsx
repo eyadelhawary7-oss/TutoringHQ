@@ -60,10 +60,8 @@ function fmt(n: number): string {
 function FinancialSkeletons() {
   return (
     <div className="space-y-6 mt-10">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[0, 1, 2, 3].map((k) => (
-          <div key={k} className="h-24 animate-pulse bg-slate-800 rounded-xl" />
-        ))}
+      <div className="grid grid-cols-1 gap-4 max-w-xl">
+        <div className="h-24 animate-pulse bg-slate-800 rounded-xl" />
       </div>
       <div className="h-48 w-full animate-pulse bg-slate-800 rounded-xl" />
       <div className="h-72 w-full animate-pulse bg-slate-800 rounded-xl" />
@@ -155,7 +153,7 @@ function CeoFinancialsBody({
       <section className="mt-12 space-y-6 border-t border-slate-800 pt-10">
         <h2 className="text-lg font-semibold text-slate-100">{tFinancials('financials.sectionTitle')}</h2>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 max-w-xl">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 border-l-4 border-teal-500">
             <p className="text-xs text-slate-400">{tFinancials('financials.cardTotalTitle')}</p>
             <p className="text-xl font-mono font-bold text-slate-100 mt-1">
@@ -178,29 +176,6 @@ function CeoFinancialsBody({
                 })}
               </p>
             </div>
-          </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-xs text-slate-400">{tFinancials('financials.cardGrossProfitTitle')}</p>
-            <p
-              className={`text-xl font-mono font-bold mt-1 ${
-                financials.currentMonth.grossProfit >= 0 ? 'text-green-400' : 'text-red-400'
-              }`}
-            >
-              {(financials.currentMonth.grossProfit ?? 0).toLocaleString('en-US')} EGP
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-xs text-slate-400">{tFinancials('financials.cardMarginTitle')}</p>
-            <p className="text-xl font-mono font-bold text-[#F59E0B] mt-1">
-              {(financials.currentMonth.profitMargin ?? 0).toFixed(1)}%
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-xs text-slate-400">{tFinancials('financials.cardProjectedArrTitle')}</p>
-            <p className="text-xl font-mono font-bold text-slate-300 mt-1">
-              {(financials.annualView.projectedARR ?? 0).toLocaleString('en-US')} EGP
-            </p>
-            <p className="text-[11px] text-slate-500 mt-2">{tFinancials('financials.projectedARRNote')}</p>
           </div>
         </div>
 

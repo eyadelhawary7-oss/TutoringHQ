@@ -14,6 +14,44 @@ interface AdminWaPackClientProps {
   initialStats: { totalEnabled: number; totalActiveParents: number; totalMRR: number }
 }
 
+const DEFAULT_NOTIFICATION_TYPES: NotificationTypes = {
+  scan: true,
+  absence: true,
+  balance: true,
+  announcement: true,
+}
+
+const DEFAULT_BILLING: WaPackBillingSummary = {
+  totalAmount: 0,
+  parentCount: 0,
+  status: 'not_issued',
+}
+
+function billingStatusKey(s: string | undefined): WaPackBillingSummary['status'] {
+  if (s === 'charged' || s === 'pending' || s === 'failed' || s === 'not_issued') {
+    return s
+  }
+  return 'not_issued'
+}
+
+function normalizeCenter(raw: Partial<WaPackCenter> & { id?: string }): WaPackCenter {
+  const billingIn = raw.billing && typeof raw.billing === 'object' ? raw.billing : DEFAULT_BILLING
+  const status = billingStatusKey(billingIn.status)
+  return {
+    id: String(raw.id ?? ''),
+    name: String(raw.name ?? ''),
+    plan: String(raw.plan ?? ''),
+    phone: raw.phone ?? null,
+    parent_pack_enabled: Boolean(raw.parent_pack_enabled),
+    parent_pack_active_parents: Number(raw.parent_pack_active_parents) || 0,
+    billing: {
+      totalAmount: Number(billingIn.totalAmount) || 0,
+      parentCount: Number(billingIn.parentCount) || 0,
+      status,
+    },
+  }
+}
+
 const PLAN_NAME_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const
 type PlanNameKey = (typeof PLAN_NAME_KEYS)[number]
 
@@ -74,9 +112,18 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   const tNotif = useTranslations('whatsappPack')
   const tPlans = useTranslations('billing.planNames')
   const locale = useLocale()
-  const [centers, setCenters] = useState<WaPackCenter[]>(props.initialCenters)
-  const [notifTypes, setNotifTypes] = useState<NotificationTypes>(props.initialNotificationTypes)
-  const [stats, setStats] = useState(props.initialStats)
+  const [centers, setCenters] = useState<WaPackCenter[]>(() =>
+    (props.initialCenters ?? []).map((c) => normalizeCenter(c)),
+  )
+  const [notifTypes, setNotifTypes] = useState<NotificationTypes>(() => ({
+    ...DEFAULT_NOTIFICATION_TYPES,
+    ...props.initialNotificationTypes,
+  }))
+  const [stats, setStats] = useState(() => ({
+    totalEnabled: Number(props.initialStats?.totalEnabled) || 0,
+    totalActiveParents: Number(props.initialStats?.totalActiveParents) || 0,
+    totalMRR: Number(props.initialStats?.totalMRR) || 0,
+  }))
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [savingConfig, setSavingConfig] = useState(false)
   const { setHideShell } = useLayout()
@@ -134,8 +181,10 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
         body: JSON.stringify({ [key]: newValue }),
       })
       if (!res.ok) throw new Error('failed')
-      const data = (await res.json()) as { notificationTypes: NotificationTypes }
-      setNotifTypes(data.notificationTypes)
+      const data = (await res.json()) as { notificationTypes?: Partial<NotificationTypes> }
+      if (data?.notificationTypes && typeof data.notificationTypes === 'object') {
+        setNotifTypes((prev) => ({ ...prev, ...data.notificationTypes }))
+      }
     } catch {
       // no-op
     } finally {
@@ -193,7 +242,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                 >
                   <span className="text-sm font-medium text-[var(--color-text-primary)]">{label}</span>
                   <PackToggle
-                    value={on}
+                    value={Boolean(on)}
                     disabled={savingConfig}
                     ariaLabel={label}
                     onToggle={() => void toggleConfig(key, !on)}
@@ -227,7 +276,10 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {centers.map((c) => (
+                  {centers.map((c) => {
+                    const billStatus = billingStatusKey(c.billing?.status)
+                    const parents = Number(c.parent_pack_active_parents) || 0
+                    return (
                     <tr key={c.id} className="border-b border-[var(--color-border-subtle)]">
                       <td className="px-4 py-3">
                         <p className="font-medium text-[var(--color-text-primary)]">{c.name}</p>
@@ -241,37 +293,41 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                        {c.parent_pack_active_parents.toLocaleString('en-US')}
+                        {parents.toLocaleString('en-US')}
                       </td>
                       <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                        {(c.parent_pack_active_parents * 10).toLocaleString('en-US')} ج.م
+                        {(parents * 10).toLocaleString('en-US')} ج.م
                       </td>
                       <td className="px-4 py-3">
                         <span
                           className={cn(
                             'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                            billingBadgeClass(c.billing.status),
+                            billingBadgeClass(billStatus),
                           )}
                         >
-                          {billingLabels[c.billing.status]}
+                          {billingLabels[billStatus]}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <PackToggle
-                          value={c.parent_pack_enabled}
+                          value={Boolean(c.parent_pack_enabled)}
                           disabled={togglingId === c.id}
                           ariaLabel={t('packEnabled')}
                           onToggle={() => void toggleCenter(c.id, !c.parent_pack_enabled)}
                         />
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
 
             <div className="divide-y divide-[var(--color-border-subtle)] md:hidden">
-              {centers.map((c) => (
+              {centers.map((c) => {
+                const billStatus = billingStatusKey(c.billing?.status)
+                const parents = Number(c.parent_pack_active_parents) || 0
+                return (
                 <div key={c.id} className="space-y-3 p-4">
                   <div>
                     <p className="font-medium text-[var(--color-text-primary)]">{c.name}</p>
@@ -286,23 +342,23 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                     <span
                       className={cn(
                         'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                        billingBadgeClass(c.billing.status),
+                        billingBadgeClass(billStatus),
                       )}
                     >
-                      {billingLabels[c.billing.status]}
+                      {billingLabels[billStatus]}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <span className="text-[var(--color-text-tertiary)]">{t('activeParents')}: </span>
                       <span className="tabular-nums font-medium">
-                        {c.parent_pack_active_parents.toLocaleString('en-US')}
+                        {parents.toLocaleString('en-US')}
                       </span>
                     </div>
                     <div>
                       <span className="text-[var(--color-text-tertiary)]">{t('monthlyAmount')}: </span>
                       <span className="tabular-nums font-medium">
-                        {(c.parent_pack_active_parents * 10).toLocaleString('en-US')} ج.م
+                        {(parents * 10).toLocaleString('en-US')} ج.م
                       </span>
                     </div>
                   </div>
@@ -311,14 +367,15 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                       {t('packEnabled')}
                     </span>
                     <PackToggle
-                      value={c.parent_pack_enabled}
+                      value={Boolean(c.parent_pack_enabled)}
                       disabled={togglingId === c.id}
                       ariaLabel={t('packEnabled')}
                       onToggle={() => void toggleCenter(c.id, !c.parent_pack_enabled)}
                     />
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         </div>
