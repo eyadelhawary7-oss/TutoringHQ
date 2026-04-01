@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { dbSelect } from '@/lib/db-proxy';
 import { PageHeader } from '@/components/shared';
-import { Calendar, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/hooks/useToast';
+import { Calendar, Plus, Pencil, Trash2, Loader2, X, Send } from 'lucide-react';
 
 type PeriodType = 'exam' | 'holiday' | 'peak' | 'normal';
 
@@ -78,7 +81,11 @@ function formatDateShort(dateStr: string): string {
 
 export default function AcademicPage() {
   const t = useTranslations('academic');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
+  const { user } = useUser();
+  const toast = useToast();
+  const canTermSummary = user?.role === 'owner' || user?.role === 'admin';
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [periods, setPeriods] = useState<AcademicPeriod[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -93,11 +100,29 @@ export default function AcademicPage() {
   const [showHolidayModal, setShowHolidayModal] = useState(false);
   const [holidayForm, setHolidayForm] = useState<Partial<Holiday> & { id?: string }>({});
   const [saving, setSaving] = useState(false);
+  const [centerId, setCenterId] = useState<string | null>(null);
+  const [termModalOpen, setTermModalOpen] = useState(false);
+  const [termGroups, setTermGroups] = useState<{ id: string; name: string }[]>([]);
+  const [termPeriodId, setTermPeriodId] = useState('');
+  const [termGroupId, setTermGroupId] = useState('all');
+  const [termPreview, setTermPreview] = useState<number | null>(null);
+  const [termSending, setTermSending] = useState(false);
+
+  const periodsSorted = useMemo(
+    () => [...periods].sort((a, b) => b.start_date.localeCompare(a.start_date)),
+    [periods],
+  );
 
   const loadData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     try {
+      const meRes = await fetch('/api/me', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const meJson = await meRes.json();
+      setCenterId(meJson?.user?.center_id ?? null);
+
       const res = await fetch('/api/academic', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -118,6 +143,69 @@ export default function AcademicPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const openTermModal = useCallback(async () => {
+    setTermModalOpen(true);
+    const firstId = periodsSorted[0]?.id ?? '';
+    setTermPeriodId(firstId);
+    setTermGroupId('all');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || !centerId) {
+      setTermGroups([]);
+      return;
+    }
+    const { data } = await dbSelect({
+      table: 'student_groups',
+      select: 'id, name',
+      filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+      order: { column: 'name' },
+    });
+    setTermGroups((data as { id: string; name: string }[]) ?? []);
+  }, [centerId, periodsSorted]);
+
+  useEffect(() => {
+    if (!termModalOpen || !centerId || !termPeriodId) {
+      setTermPreview(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const gIds = termGroupId === 'all' ? termGroups.map((g) => g.id) : [termGroupId];
+      if (gIds.length === 0) {
+        if (!cancelled) setTermPreview(0);
+        return;
+      }
+      const seen = new Set<string>();
+      for (const gId of gIds) {
+        const { data: members } = await dbSelect({
+          table: 'student_group_members',
+          select: 'students(id, parent_pack_opted_in, parent_phone, is_active, center_id)',
+          filters: [
+            { column: 'group_id', op: 'eq', value: gId },
+            { column: 'center_id', op: 'eq', value: centerId },
+          ],
+        });
+        for (const row of (members || []) as { students: Record<string, unknown> | null }[]) {
+          const s = row.students as {
+            id: string;
+            parent_pack_opted_in?: boolean | null;
+            parent_phone?: string | null;
+            is_active?: boolean | null;
+            center_id?: string;
+          } | null;
+          if (!s || s.center_id !== centerId) continue;
+          if (!s.parent_pack_opted_in) continue;
+          if (!s.parent_phone?.trim()) continue;
+          if (s.is_active === false) continue;
+          seen.add(s.id);
+        }
+      }
+      if (!cancelled) setTermPreview(seen.size);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [termModalOpen, centerId, termPeriodId, termGroupId, termGroups]);
 
   const saveYear = async () => {
     if (!editYear) return;
@@ -300,7 +388,18 @@ export default function AcademicPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <PageHeader title={t('title')} subtitle={t('subtitle')} />
+      <PageHeader title={t('title')} subtitle={t('subtitle')}>
+        {canTermSummary && (
+          <button
+            type="button"
+            onClick={() => void openTermModal()}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700"
+          >
+            <Send className="w-4 h-4" />
+            {t('termSummarySend')}
+          </button>
+        )}
+      </PageHeader>
 
       {/* Section 1: Current year card */}
       <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
@@ -679,6 +778,101 @@ export default function AcademicPage() {
                 {t('cancel')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {termModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !termSending && setTermModalOpen(false)}
+          role="presentation"
+        >
+          <div
+            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] max-w-md w-full p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-[var(--color-text-primary)]">{t('termSummaryModalTitle')}</h3>
+              <button
+                type="button"
+                disabled={termSending}
+                onClick={() => setTermModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-[var(--color-surface-2)]"
+                aria-label={tCommon('cancel')}
+              >
+                <X className="w-5 h-5 text-[var(--color-text-secondary)]" />
+              </button>
+            </div>
+            {periodsSorted.length === 0 ? (
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('termSummaryNoPeriods')}</p>
+            ) : (
+              <>
+                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                  {t('termSummaryPeriod')}
+                </label>
+                <select
+                  value={termPeriodId}
+                  onChange={(e) => setTermPeriodId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] text-sm mb-3"
+                >
+                  {periodsSorted.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                  {t('termSummaryGroup')}
+                </label>
+                <select
+                  value={termGroupId}
+                  onChange={(e) => setTermGroupId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] text-sm mb-3"
+                >
+                  <option value="all">{t('termSummaryAllGroups')}</option>
+                  {termGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                  {termPreview != null ? t('termSummaryPreviewCount', { count: termPreview }) : '—'}
+                </p>
+                <button
+                  type="button"
+                  disabled={termSending || periodsSorted.length === 0}
+                  onClick={async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session?.access_token || !termPeriodId) return;
+                    setTermSending(true);
+                    try {
+                      const res = await fetch('/api/parent-pack/term-summary', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${session.access_token}`,
+                        },
+                        body: JSON.stringify({ periodId: termPeriodId, groupId: termGroupId }),
+                      });
+                      if (!res.ok) {
+                        toast.error(tCommon('error'));
+                        return;
+                      }
+                      const j = (await res.json()) as { sent?: number };
+                      toast.success(t('termSummaryDone', { count: j.sent ?? 0 }));
+                      setTermModalOpen(false);
+                    } finally {
+                      setTermSending(false);
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50"
+                >
+                  {termSending ? t('termSummarySending') : t('termSummaryConfirm')}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -19,6 +19,7 @@ interface UserProfile {
     plan?: string;
     parent_pack_enabled?: boolean;
     parent_pack_active_parents?: number;
+    announcement_balance?: string | number;
   } | null;
   can_scan?: boolean;
   can_view_payments?: boolean;

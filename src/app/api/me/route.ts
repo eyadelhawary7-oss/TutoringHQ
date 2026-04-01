@@ -104,12 +104,13 @@ export async function GET(request: Request) {
       card_color?: string;
       parent_pack_enabled?: boolean;
       parent_pack_active_parents?: number;
+      announcement_balance?: string | number;
     } | null = null;
     if (userRecord.center_id) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
         .select(
-          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents',
+          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, announcement_balance',
         )
         .eq('id', userRecord.center_id)
         .single();
@@ -130,6 +131,7 @@ export async function GET(request: Request) {
             centerRow.parent_pack_active_parents != null
               ? Number(centerRow.parent_pack_active_parents)
               : undefined,
+          announcement_balance: centerRow.announcement_balance ?? undefined,
         };
       }
     }

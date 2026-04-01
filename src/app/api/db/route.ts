@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import type { z } from 'zod';
 import { NextResponse } from 'next/server';
-import { dbInsertSchemas } from '@/lib/validations';
+import { dbInsertSchemas, studentUpdateSchema } from '@/lib/validations';
+import { afterStudentWriteParentPackEffects } from '@/lib/studentParentPackWelcome';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { scanRatelimit, rateLimitedResponse } from '@/lib/ratelimit';
 
@@ -100,7 +102,10 @@ export async function POST(request: Request) {
     }
 
     // Validate insert/update data for tables with schemas
-    const schema = dbInsertSchemas[table as keyof typeof dbInsertSchemas];
+    let schema: z.ZodType | undefined = dbInsertSchemas[table as keyof typeof dbInsertSchemas];
+    if (table === 'students' && operation === 'update') {
+      schema = studentUpdateSchema;
+    }
     if ((operation === 'insert' || operation === 'update') && schema && data != null) {
       const items = Array.isArray(data) ? data : [data];
       for (let i = 0; i < items.length; i++) {
@@ -140,6 +145,21 @@ export async function POST(request: Request) {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    let prevStudentPack: { parent_pack_opted_in: boolean | null; parent_phone: string | null } | null = null;
+    if (table === 'students' && operation === 'update' && filters && Array.isArray(filters)) {
+      const idFilter = filters.find(
+        (f: { column: string; op: string; value: unknown }) => f.column === 'id' && f.op === 'eq',
+      );
+      if (idFilter && typeof idFilter.value === 'string') {
+        const { data: prevRow } = await supabaseAdmin
+          .from('students')
+          .select('parent_pack_opted_in, parent_phone')
+          .eq('id', idFilter.value)
+          .maybeSingle();
+        prevStudentPack = prevRow ?? null;
+      }
+    }
 
     // Rate limiting — scanner posts attendance via insert; keyed by center_id
     if (
@@ -233,6 +253,54 @@ export async function POST(request: Request) {
     }
 
     const result = await query;
+
+    if (!result.error && table === 'students') {
+      try {
+        if (operation === 'insert' && result.data) {
+          const rows = Array.isArray(result.data) ? result.data : [result.data];
+          for (const row of rows) {
+            const r = row as {
+              id: string;
+              name: string;
+              parent_phone: string | null;
+              parent_pack_opted_in?: boolean | null;
+              center_id: string;
+            };
+            if (r?.center_id) {
+              await afterStudentWriteParentPackEffects(supabaseAdmin, {
+                kind: 'insert',
+                centerId: r.center_id,
+                row: r,
+              });
+            }
+          }
+        }
+        if (operation === 'update' && filters && Array.isArray(filters)) {
+          const idFilter = filters.find(
+            (f: { column: string; op: string; value: unknown }) => f.column === 'id' && f.op === 'eq',
+          );
+          if (idFilter && typeof idFilter.value === 'string') {
+            const { data: row } = await supabaseAdmin
+              .from('students')
+              .select('id, name, parent_phone, parent_pack_opted_in, center_id')
+              .eq('id', idFilter.value)
+              .maybeSingle();
+            if (row?.center_id) {
+              await afterStudentWriteParentPackEffects(supabaseAdmin, {
+                kind: 'update',
+                centerId: row.center_id,
+                studentId: row.id,
+                body: (data ?? {}) as Record<string, unknown>,
+                prev: prevStudentPack,
+                row,
+              });
+            }
+          }
+        }
+      } catch (packErr) {
+        console.error('[api/db] parent pack side effects:', packErr);
+      }
+    }
 
     // Include full error details for debugging (Supabase returns code, details, hint)
     const errorPayload = result.error

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { getPlanPrice, normalizeBillingPeriod, type BillingPeriod, type PlanKey } from '@/lib/pricing';
+import { getAnnouncementCap } from '@/lib/parentPack';
 
 const MONTHLY_MULTIPLIER = 4.333;
 
@@ -80,7 +81,8 @@ export async function GET(request: NextRequest) {
         billing_type, billing_period, all_in_price,
         pending_plan_change, pending_billing_type,
         current_period_start, current_period_end, last_payment_date,
-        is_early_adopter, early_adopter_price
+        is_early_adopter, early_adopter_price,
+        parent_pack_active_parents, announcement_balance
       `)
       .eq('id', ctx.user.center_id)
       .single();
@@ -176,6 +178,25 @@ export async function GET(request: NextRequest) {
       if (invData) invoices = invData;
     } catch { /* invoices query failed, using empty */ }
 
+    let recentAnnouncementBlasts: {
+      id: string;
+      blast_type: string;
+      parents_notified: number;
+      total_amount: string | number;
+      created_at: string;
+    }[] = [];
+    try {
+      const { data: blasts } = await ctx.supabaseAdmin
+        .from('announcement_blasts')
+        .select('id, blast_type, parents_notified, total_amount, created_at')
+        .eq('center_id', ctx.user.center_id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (blasts) recentAnnouncementBlasts = blasts as typeof recentAnnouncementBlasts;
+    } catch {
+      /* table or RLS */
+    }
+
     const currentPlanDetails = (plans || []).find((p) => (p as { id: string }).id === plan);
 
     const isEarlyAdopter = !!(center as { is_early_adopter?: boolean }).is_early_adopter;
@@ -186,6 +207,14 @@ export async function GET(request: NextRequest) {
       (center as { all_in_price?: number | string | null }).all_in_price != null
         ? Number((center as { all_in_price?: number | string | null }).all_in_price)
         : null;
+
+    const parentPackActiveParents = Number(
+      (center as { parent_pack_active_parents?: number | null }).parent_pack_active_parents ?? 0,
+    );
+    const announcementBalanceNum = Number(
+      (center as { announcement_balance?: string | number | null }).announcement_balance ?? 0,
+    );
+    const announcementCap = getAnnouncementCap(plan);
 
     return NextResponse.json({
       plan,
@@ -220,6 +249,10 @@ export async function GET(request: NextRequest) {
       },
       payg_weekly_charges: paygWeeklyCharges,
       payg_fixed_plan_savings: fixedPlanComparison,
+      parent_pack_active_parents: parentPackActiveParents,
+      announcement_balance: announcementBalanceNum,
+      announcement_cap: announcementCap,
+      recent_announcement_blasts: recentAnnouncementBlasts,
     });
   } catch (error) {
     return NextResponse.json(

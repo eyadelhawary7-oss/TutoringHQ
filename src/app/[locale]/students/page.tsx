@@ -18,6 +18,11 @@ import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection
 import { useUser } from '@/contexts/UserContext';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/hooks/useToast';
+import {
+  ANNOUNCEMENT_WARN_THRESHOLD,
+  BLAST_PRICE_PER_PARENT,
+  getAnnouncementCap,
+} from '@/lib/parentPack';
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 
@@ -138,7 +143,9 @@ export default function StudentsPage() {
     subjectId: '',
     monthlyFee: '',
     groupId: '',
+    parentPackOptIn: false,
   });
+  const [showParentSectionAdd, setShowParentSectionAdd] = useState(false);
   const [addError, setAddError] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [addSuccess, setAddSuccess] = useState<{ name: string; studentNumber: string; qrDataUrl?: string } | null>(null);
@@ -153,7 +160,13 @@ export default function StudentsPage() {
   const [editParentPhone, setEditParentPhone] = useState('');
   const [editGroups, setEditGroups] = useState<string[]>([]);
   const [editSiblingFamilyId, setEditSiblingFamilyId] = useState<string | null>(null);
+  const [editParentPackOptIn, setEditParentPackOptIn] = useState(false);
+  const [showParentSectionEdit, setShowParentSectionEdit] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [announcementBlastType, setAnnouncementBlastType] = useState<'ops' | 'promo' | null>(null);
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [centerInfo, setCenterInfo] = useState<{
@@ -163,6 +176,10 @@ export default function StudentsPage() {
     governorate?: string;
     delivery_address?: Record<string, unknown>;
     card_color?: string;
+    parent_pack_enabled?: boolean;
+    plan?: string;
+    announcement_balance?: string | number;
+    parent_pack_active_parents?: number;
   } | null>(null);
   const [showCardOrderModal, setShowCardOrderModal] = useState(false);
   const [showCardCartModal, setShowCardCartModal] = useState(false);
@@ -197,6 +214,10 @@ export default function StudentsPage() {
               governorate: meData.user.center.governorate,
               delivery_address: meData.user.center.delivery_address,
               card_color: meData.user.center.card_color,
+              parent_pack_enabled: meData.user.center.parent_pack_enabled,
+              plan: meData.user.center.plan,
+              announcement_balance: meData.user.center.announcement_balance,
+              parent_pack_active_parents: meData.user.center.parent_pack_active_parents,
             }
           : null
       );
@@ -362,6 +383,19 @@ export default function StudentsPage() {
     () => Math.max(1, ...students.map((s) => balanceByStudent[s.id] ?? 0)),
     [students, balanceByStudent]
   );
+
+  const activeParentsForAnnounce =
+    user?.center?.parent_pack_active_parents ?? centerInfo?.parent_pack_active_parents ?? 0;
+  const canSendAnnouncement =
+    (user?.role === 'owner' || user?.role === 'admin') && activeParentsForAnnounce > 0;
+  const announcementPlan = user?.center?.plan ?? centerInfo?.plan ?? 'starter';
+  const announcementBalanceNum = Number(
+    user?.center?.announcement_balance ?? centerInfo?.announcement_balance ?? 0,
+  );
+  const announcementCap = getAnnouncementCap(announcementPlan);
+  const announcementCapWarning =
+    announcementBalanceNum >= announcementCap * ANNOUNCEMENT_WARN_THRESHOLD;
+  const announcementCapReached = announcementBalanceNum >= announcementCap;
 
   const handlePackToggle = async (student: Student) => {
     if (togglingIds.has(student.id)) return;
@@ -540,6 +574,9 @@ export default function StudentsPage() {
     setEditPhone(s.phone || '');
     setEditParentPhone(s.parent_phone || '');
     setEditGroups(studentGroupsMap[s.id]?.groupIds ?? []);
+    setEditSiblingFamilyId(s.sibling_family_id ?? null);
+    setEditParentPackOptIn(s.parent_pack_opted_in === true);
+    setShowParentSectionEdit(false);
   };
 
   function normalizeParentPhone(phone: string): string {
@@ -555,6 +592,7 @@ export default function StudentsPage() {
     setIsSavingEdit(true);
     try {
       const parentPhoneNorm = editParentPhone.trim() ? normalizeParentPhone(editParentPhone.trim()) : null;
+      const consentAt = editParentPackOptIn ? new Date().toISOString() : null;
       await dbUpdate({
         table: 'students',
         data: {
@@ -562,6 +600,9 @@ export default function StudentsPage() {
           phone: editPhone.trim() || null,
           parent_phone: parentPhoneNorm,
           sibling_family_id: editSiblingFamilyId,
+          parent_pack_opted_in: editParentPackOptIn,
+          parent_consent_given: editParentPackOptIn,
+          parent_consent_at: consentAt,
         },
         filters: [{ column: 'id', op: 'eq', value: editStudent.id }],
       });
@@ -594,7 +635,15 @@ export default function StudentsPage() {
       setStudents((prev) =>
         prev.map((s) =>
           s.id === editStudent.id
-            ? { ...s, name: editName.trim(), phone: editPhone.trim(), parent_phone: parentPhoneNorm ?? s.parent_phone, sibling_family_id: editSiblingFamilyId }
+            ? {
+                ...s,
+                name: editName.trim(),
+                phone: editPhone.trim(),
+                parent_phone: parentPhoneNorm ?? s.parent_phone,
+                sibling_family_id: editSiblingFamilyId,
+                parent_pack_opted_in: editParentPackOptIn,
+                parent_consent_given: editParentPackOptIn,
+              }
             : s
         )
       );
@@ -649,14 +698,22 @@ export default function StudentsPage() {
     try {
       const selectedGroup = groups.find((g) => g.id === addForm.groupId);
       const subjectValue = selectedGroup?.subject ?? subjects.find((s) => s.id === addForm.subjectId)?.name ?? null;
+      const parentPhoneNorm = addForm.parentPhone.trim()
+        ? normalizeParentPhone(addForm.parentPhone.trim())
+        : null;
+      const packEnabled = meData?.user?.center?.parent_pack_enabled === true;
+      const optedIn = packEnabled && addForm.parentPackOptIn;
       // Fee comes from group (groups.fee), not from students table
       const insertPayload = {
         center_id: centerId,
         name: addForm.name.trim(),
         phone: addForm.phone.trim() || null,
-        parent_phone: addForm.parentPhone.trim() || null,
+        parent_phone: parentPhoneNorm,
         subject: subjectValue,
-        payment_status: 'unpaid',
+        payment_status: 'unpaid' as const,
+        parent_pack_opted_in: optedIn,
+        parent_consent_given: optedIn,
+        parent_consent_at: optedIn ? new Date().toISOString() : null,
       };
       const { data: inserted, error } = await dbInsert({
         table: 'students',
@@ -685,15 +742,6 @@ export default function StudentsPage() {
           select: false,
         });
       }
-      const parentPhoneNorm = addForm.parentPhone.trim()
-        ? (addForm.parentPhone.replace(/\D/g, '').length === 11 && addForm.parentPhone.replace(/\D/g, '').startsWith('01')
-          ? '+2' + addForm.parentPhone.replace(/\D/g, '')
-          : addForm.parentPhone.replace(/\D/g, '').length === 10 && addForm.parentPhone.replace(/\D/g, '').startsWith('1')
-            ? '+2' + addForm.parentPhone.replace(/\D/g, '')
-            : addForm.parentPhone.startsWith('+')
-              ? addForm.parentPhone
-              : '+2' + addForm.parentPhone.replace(/\D/g, '').slice(-10))
-        : null;
       if (parentPhoneNorm) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
@@ -721,7 +769,8 @@ export default function StudentsPage() {
       }
       setStudents((prev) => [{ ...student, student_number: studentNumber } as Student, ...prev]);
       setAddSuccess({ name: addForm.name.trim(), studentNumber, qrDataUrl: qrDataURL });
-      setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '' });
+      setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '', parentPackOptIn: false });
+      setShowParentSectionAdd(false);
       setShowAddModal(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: string }).message) : 'Failed to add student');
@@ -767,6 +816,20 @@ export default function StudentsPage() {
               >
                 <CreditCard size={14} /> {ts('order_cards')}
               </button>
+              {(user?.role === 'owner' || user?.role === 'admin') && (
+                <button
+                  type="button"
+                  disabled={!canSendAnnouncement}
+                  onClick={() => {
+                    setAnnouncementBlastType(null);
+                    setAnnouncementMessage('');
+                    setShowAnnouncementModal(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {ts('sendAnnouncement')}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setShowAddModal(true)}
@@ -1206,7 +1269,40 @@ export default function StudentsPage() {
               {addError && <p className="text-sm text-destructive">{addError}</p>}
               <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" required />
               <input value={addForm.phone} onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
-              <input value={addForm.parentPhone} onChange={(e) => setAddForm((f) => ({ ...f, parentPhone: e.target.value }))} placeholder={ts('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
+              <button
+                type="button"
+                onClick={() => setShowParentSectionAdd((v) => !v)}
+                className="w-full text-start text-sm font-medium text-teal-700 py-2 border border-dashed border-teal-200 rounded-lg px-3 hover:bg-teal-50/50"
+              >
+                {ts('parentSection')}
+              </button>
+              {showParentSectionAdd && (
+                <div className="space-y-3 ps-1 border-s-2 border-teal-100 ms-1 pe-1">
+                  <input
+                    value={addForm.parentPhone}
+                    onChange={(e) => setAddForm((f) => ({ ...f, parentPhone: e.target.value }))}
+                    placeholder={ts('parentPhonePlaceholder')}
+                    aria-label={ts('parentPhone')}
+                    type="tel"
+                    dir="ltr"
+                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                  />
+                  {centerInfo?.parent_pack_enabled === true && (
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={addForm.parentPackOptIn}
+                        onChange={(e) => setAddForm((f) => ({ ...f, parentPackOptIn: e.target.checked }))}
+                        className="mt-1 rounded accent-teal-600"
+                      />
+                      <span className="text-sm text-[var(--color-text-primary)]">
+                        <span className="font-medium block">{ts('parentPackOptIn')}</span>
+                        <span className="text-xs text-[var(--color-text-secondary)]">{ts('parentPackOptInHint')}</span>
+                      </span>
+                    </label>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{ts('groupRequired')}</label>
                 <select value={addForm.groupId} onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" required>
@@ -1240,7 +1336,40 @@ export default function StudentsPage() {
             <div className="space-y-3">
               <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
               <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
-              <input value={editParentPhone} onChange={(e) => setEditParentPhone(e.target.value)} placeholder={ts('parentPhone', { defaultValue: 'رقم ولي الأمر' })} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
+              <button
+                type="button"
+                onClick={() => setShowParentSectionEdit((v) => !v)}
+                className="w-full text-start text-sm font-medium text-teal-700 py-2 border border-dashed border-teal-200 rounded-lg px-3 hover:bg-teal-50/50"
+              >
+                {ts('parentSection')}
+              </button>
+              {showParentSectionEdit && (
+                <div className="space-y-3 ps-1 border-s-2 border-teal-100 ms-1 pe-1">
+                  <input
+                    value={editParentPhone}
+                    onChange={(e) => setEditParentPhone(e.target.value)}
+                    placeholder={ts('parentPhonePlaceholder')}
+                    aria-label={ts('parentPhone')}
+                    type="tel"
+                    dir="ltr"
+                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                  />
+                  {user?.center?.parent_pack_enabled === true && (
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editParentPackOptIn}
+                        onChange={(e) => setEditParentPackOptIn(e.target.checked)}
+                        className="mt-1 rounded accent-teal-600"
+                      />
+                      <span className="text-sm text-[var(--color-text-primary)]">
+                        <span className="font-medium block">{ts('parentPackOptIn')}</span>
+                        <span className="text-xs text-[var(--color-text-secondary)]">{ts('parentPackOptInHint')}</span>
+                      </span>
+                    </label>
+                  )}
+                </div>
+              )}
               {editStudent.parent_consent_given && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
                   {ts('parentConsented', { defaultValue: 'موافقة ولي الأمر ✓' })}
@@ -1327,6 +1456,165 @@ export default function StudentsPage() {
               </button>
             </div>
             {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-500 hover:underline">{ts('regenerateQR')}</button>}
+          </div>
+        </div>
+      )}
+
+      {showAnnouncementModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => {
+            if (!announcementSubmitting) setShowAnnouncementModal(false);
+          }}
+          role="presentation"
+        >
+          <div
+            className="bg-[var(--color-surface-1)] rounded-2xl border border-border max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-[var(--color-text-primary)]">{ts('sendAnnouncement')}</h3>
+              <button
+                type="button"
+                disabled={announcementSubmitting}
+                onClick={() => setShowAnnouncementModal(false)}
+                className="p-1 rounded-lg hover:bg-muted"
+                aria-label={tCommon('cancel')}
+              >
+                <X size={18} className="text-[var(--color-text-secondary)]" />
+              </button>
+            </div>
+            <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setAnnouncementBlastType('ops')}
+                className={`flex-1 py-2.5 rounded-lg text-xs font-semibold border transition-colors ${
+                  announcementBlastType === 'ops'
+                    ? 'border-teal-600 bg-teal-50 text-teal-900'
+                    : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)]'
+                }`}
+              >
+                {ts('announcementOps')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnnouncementBlastType('promo')}
+                className={`flex-1 py-2.5 rounded-lg text-xs font-semibold border transition-colors ${
+                  announcementBlastType === 'promo'
+                    ? 'border-amber-500 bg-amber-50 text-amber-900'
+                    : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)]'
+                }`}
+              >
+                {ts('announcementPromo')}
+              </button>
+            </div>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{ts('announcementMessage')}</label>
+            <textarea
+              value={announcementMessage}
+              onChange={(e) => setAnnouncementMessage(e.target.value.slice(0, 200))}
+              dir="rtl"
+              maxLength={200}
+              rows={4}
+              className="w-full border border-input rounded-lg p-3 text-sm bg-[var(--color-surface-0)]"
+            />
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-1 text-end">
+              {200 - announcementMessage.length}
+            </p>
+            <p className="text-xs font-medium text-[var(--color-text-secondary)] mt-3">{ts('announcementPreview')}</p>
+            <div
+              className="mt-1 p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-sm text-[var(--color-text-primary)] whitespace-pre-wrap"
+              dir="rtl"
+            >
+              {announcementBlastType === 'promo'
+                ? ts('announcementPreviewPromo', {
+                    center: centerInfo?.name ?? '',
+                    message: announcementMessage.trim() || '…',
+                  })
+                : ts('announcementPreviewOps', {
+                    center: centerInfo?.name ?? '',
+                    message: announcementMessage.trim() || '…',
+                  })}
+            </div>
+            <p className="text-sm mt-3 text-[var(--color-text-primary)]">
+              {ts('announcementParentsCount', { count: activeParentsForAnnounce })}
+            </p>
+            <p className="text-sm font-mono mt-1 text-[var(--color-text-primary)]" dir="ltr">
+              {ts('announcementCost')}:{' '}
+              {(activeParentsForAnnounce * BLAST_PRICE_PER_PARENT).toLocaleString('en-US')} {tCommon('egp')}
+            </p>
+            {announcementCapWarning && !announcementCapReached && (
+              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
+                {ts('announcementCapWarning', {
+                  balance: announcementBalanceNum.toLocaleString('en-US'),
+                  cap: announcementCap.toLocaleString('en-US'),
+                })}
+              </p>
+            )}
+            {announcementCapReached && (
+              <p className="text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg p-2 mt-2">
+                {ts('announcementCapReached')}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={
+                announcementSubmitting ||
+                !announcementBlastType ||
+                !announcementMessage.trim() ||
+                announcementCapReached ||
+                activeParentsForAnnounce === 0
+              }
+              onClick={async () => {
+                if (!announcementBlastType) return;
+                setAnnouncementSubmitting(true);
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session?.access_token) return;
+                  const res = await fetch('/api/parent-pack/announcement', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                      blast_type: announcementBlastType,
+                      message: announcementMessage.trim(),
+                    }),
+                  });
+                  if (!res.ok) {
+                    toast.error(tCommon('error'));
+                    return;
+                  }
+                  const j = (await res.json()) as { sent?: number; totalCost?: number };
+                  toast.success(
+                    ts('announcementSentToast', {
+                      count: j.sent ?? 0,
+                      cost: (j.totalCost ?? 0).toLocaleString('en-US'),
+                    }),
+                  );
+                  await refreshUser();
+                  const meRes = await fetch('/api/me', {
+                    headers: { Authorization: `Bearer ${session.access_token}` },
+                  });
+                  const meData = await meRes.json();
+                  if (meData?.user?.center) {
+                    setCenterInfo((prev) => ({
+                      ...(prev ?? {}),
+                      announcement_balance: meData.user.center.announcement_balance,
+                      parent_pack_active_parents: meData.user.center.parent_pack_active_parents,
+                    }));
+                  }
+                  setShowAnnouncementModal(false);
+                  setAnnouncementMessage('');
+                  setAnnouncementBlastType(null);
+                } finally {
+                  setAnnouncementSubmitting(false);
+                }
+              }}
+              className="mt-4 w-full py-3 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {announcementSubmitting ? tCommon('loading') : ts('announcementConfirm')}
+            </button>
           </div>
         </div>
       )}

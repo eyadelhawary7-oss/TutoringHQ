@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { dateInNDays, todayISO } from '@/lib/parentPack';
 import {
   sendRenewalReminder,
   sendRenewalSalesManagerAlert,
@@ -88,6 +89,79 @@ export async function POST(req: NextRequest) {
           monthlyFee: a.center.subscription_monthly_fee,
           daysOverdue,
         });
+      }
+
+      const { data: centerRow } = await supabase
+        .from('centers')
+        .select('id, announcement_balance, current_period_start, current_period_end')
+        .eq('id', a.centerId)
+        .maybeSingle();
+
+      if (centerRow) {
+        const announcementBalance = Number(centerRow.announcement_balance ?? 0);
+        if (announcementBalance > 0) {
+          const todayStr = todayISO();
+          await supabase.from('invoices').insert({
+            center_id: centerRow.id,
+            invoice_number: `ANNC-${Date.now()}`,
+            invoice_type: 'announcement_settlement',
+            base_amount: announcementBalance,
+            total_amount: announcementBalance,
+            billing_period_start: centerRow.current_period_start ?? todayStr,
+            billing_period_end: centerRow.current_period_end ?? todayStr,
+            due_date: dateInNDays(7),
+            status: 'pending',
+          });
+          await supabase
+            .from('announcement_blasts')
+            .update({ billing_status: 'included_in_renewal', charged_at: new Date().toISOString() })
+            .eq('center_id', centerRow.id)
+            .eq('billing_status', 'pending');
+          await supabase
+            .from('centers')
+            .update({
+              announcement_balance: 0,
+              announcement_balance_updated_at: new Date().toISOString(),
+            })
+            .eq('id', centerRow.id);
+        }
+
+        const { data: packBilling } = await supabase
+          .from('parent_pack_billing')
+          .select('id, total_amount')
+          .eq('center_id', centerRow.id)
+          .eq('status', 'pending');
+
+        const packTotal =
+          packBilling?.reduce((sum, r) => sum + Number(r.total_amount ?? 0), 0) ?? 0;
+
+        if (packTotal > 0) {
+          const { data: renewalInvoice } = await supabase
+            .from('invoices')
+            .select('id, total_amount')
+            .eq('center_id', centerRow.id)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (renewalInvoice) {
+            await supabase
+              .from('invoices')
+              .update({
+                whatsapp_parent_checkup: packTotal,
+                total_amount: Number(renewalInvoice.total_amount) + packTotal,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', renewalInvoice.id);
+          }
+
+          await supabase
+            .from('parent_pack_billing')
+            .update({ status: 'charged', charged_at: new Date().toISOString() })
+            .eq('center_id', centerRow.id)
+            .eq('status', 'pending');
+        }
       }
 
       processed++;

@@ -123,10 +123,32 @@ export const studentInsertSchema = z.object({
   parent_phone: z.string().optional().nullable(),
   subject: z.string().optional().nullable(),
   payment_status: z.enum(['paid', 'unpaid', 'pending']).optional().default('unpaid'),
+  parent_pack_opted_in: z.boolean().optional(),
+  parent_consent_given: z.boolean().optional(),
+  parent_consent_at: z.string().nullable().optional(),
 }).transform((data) => {
   const { fee: _f, monthly_fee: _m, ...rest } = data as Record<string, unknown> & { fee?: unknown; monthly_fee?: unknown };
   return rest;
 });
+
+/** Partial update for students (via /api/db) — no required fields. */
+export const studentUpdateSchema = z
+  .object({
+    name: z.string().min(2, 'Name must be at least 2 characters').max(200).optional(),
+    phone: z.string().optional().nullable(),
+    parent_phone: z.string().optional().nullable(),
+    subject: z.string().optional().nullable(),
+    payment_status: z.enum(['paid', 'unpaid', 'pending']).optional(),
+    parent_pack_opted_in: z.boolean().optional(),
+    parent_consent_given: z.boolean().optional(),
+    parent_consent_at: z.string().nullable().optional(),
+    qr_code: z.string().optional().nullable(),
+    sibling_family_id: z.string().uuid().nullable().optional(),
+  })
+  .transform((data) => {
+    const { fee: _f, monthly_fee: _m, ...rest } = data as Record<string, unknown> & { fee?: unknown; monthly_fee?: unknown };
+    return rest;
+  });
 
 export const whatsappSettingsSchema = z.object({
   individual_alerts_enabled: z.boolean(),

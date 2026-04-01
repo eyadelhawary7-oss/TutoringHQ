@@ -28,7 +28,9 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 import { calculatePackCharge } from '@/lib/parent-pack';
+import { getAnnouncementCap, PACK_PRICE_PER_PARENT } from '@/lib/parentPack';
 import { PARENT_PACK, type PackStatusResponse } from '@/types/parent-pack';
+import { useToast } from '@/hooks/useToast';
 
 type TabType = 'general' | 'billing' | 'team';
 
@@ -256,6 +258,16 @@ function SettingsPageContent() {
     early_adopter_price?: number;
     center_name?: string;
     invoices?: { id?: string; invoice_number?: string; period_start?: string; period_end?: string; total_amount?: number; payment_amount?: number; payment_reference?: string; payment_proof_url?: string; status: string; paid_at?: string; created_at?: string }[];
+    parent_pack_active_parents?: number;
+    announcement_balance?: number;
+    announcement_cap?: number;
+    recent_announcement_blasts?: {
+      id: string;
+      blast_type: string;
+      parents_notified: number;
+      total_amount: string | number;
+      created_at: string;
+    }[];
   } | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [paygSlider, setPaygSlider] = useState(200);
@@ -297,6 +309,7 @@ function SettingsPageContent() {
   const [packStatus, setPackStatus] = useState<PackStatusResponse | null>(null);
   const [packLoading, setPackLoading] = useState(false);
   const [packConfirmOpen, setPackConfirmOpen] = useState(false);
+  const toast = useToast();
 
   // Redirect assistants/teachers without can_view_settings
   useEffect(() => {
@@ -411,6 +424,10 @@ function SettingsPageContent() {
           early_adopter_price: json.early_adopter_price,
           center_name: json.center_name,
           invoices: json.invoices || [],
+          parent_pack_active_parents: json.parent_pack_active_parents,
+          announcement_balance: json.announcement_balance,
+          announcement_cap: json.announcement_cap,
+          recent_announcement_blasts: json.recent_announcement_blasts,
         });
         setSelectedBillingPeriod(normalizeBillingPeriod(json.billing_period));
         setPaygSlider(json.weekly_student_limit ?? 200);
@@ -1421,9 +1438,30 @@ function SettingsPageContent() {
                   <div className="p-2.5 bg-teal-100 rounded-xl flex-shrink-0">
                     <Smartphone className="w-5 h-5 text-teal-600" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-[var(--color-text-primary)]">{t('parentPack.sectionTitle')}</h3>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold text-[var(--color-text-primary)]">{t('parentPack.packCardTitle')}</h3>
+                      <span
+                        className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                          isPackEnabled ? 'bg-teal-100 text-teal-800' : 'bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        {isPackEnabled ? t('parentPack.packStatusActive') : t('parentPack.packStatusInactive')}
+                      </span>
+                    </div>
                     <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('parentPack.enableDescription')}</p>
+                    <div className="mt-2 flex flex-wrap gap-3 text-sm text-[var(--color-text-primary)]">
+                      <span>
+                        {t('parentPack.activeParents')}:{' '}
+                        <span className="font-mono font-semibold">{activeParentsCount.toLocaleString('en-US')}</span>
+                      </span>
+                      <span>
+                        {t('parentPack.packMonthlyCostLabel')}:{' '}
+                        <span className="font-mono font-semibold" dir="ltr">
+                          {(activeParentsCount * PACK_PRICE_PER_PARENT).toLocaleString('en-US')} {tCommon('egp')}
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
@@ -1537,7 +1575,7 @@ function SettingsPageContent() {
                         try {
                           const { data: { session } } = await supabase.auth.getSession();
                           if (!session?.access_token) return;
-                          const res = await fetch('/api/parent-pack/toggle', {
+                          const res = await fetch('/api/settings/parent-pack', {
                             method: 'PATCH',
                             headers: {
                               'Content-Type': 'application/json',
@@ -1549,8 +1587,16 @@ function SettingsPageContent() {
                             alert(t('parentPack.toggleError'));
                             return;
                           }
+                          const packJson = (await res.json()) as { activeParents?: number };
                           await refreshPackStatus();
                           await refreshUser();
+                          if (!isPackEnabled) {
+                            toast.success(
+                              t('parentPack.packEnabledToast', { count: packJson.activeParents ?? 0 }),
+                            );
+                          } else {
+                            toast.success(t('parentPack.packDisabledToast'));
+                          }
                           showSaved();
                         } catch {
                           alert(t('parentPack.toggleError'));
@@ -1667,6 +1713,78 @@ function SettingsPageContent() {
                       <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full border border-green-500/30">{tBilling('active')}</span>
                     </div>
                   </div>
+                </div>
+
+                {/* Parent WA Pack + announcement balance */}
+                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
+                  <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">{tBilling('parentPack')}</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between gap-2 flex-wrap">
+                      <span className="text-[var(--color-text-secondary)]">{t('parentPack.activeParents')}</span>
+                      <span className="font-mono font-semibold">
+                        {(billingData?.parent_pack_active_parents ?? 0).toLocaleString('en-US')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2 flex-wrap">
+                      <span className="text-[var(--color-text-secondary)]">{t('parentPack.packMonthlyCostLabel')}</span>
+                      <span className="font-mono font-semibold" dir="ltr">
+                        {(
+                          (billingData?.parent_pack_active_parents ?? 0) * PACK_PRICE_PER_PARENT
+                        ).toLocaleString('en-US')}{' '}
+                        {tCommon('egp')}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="flex justify-between gap-2 mb-1">
+                        <span className="text-[var(--color-text-secondary)]">{tBilling('announcementBalance')}</span>
+                        <span className="font-mono text-xs" dir="ltr">
+                          {Number(billingData?.announcement_balance ?? 0).toLocaleString('en-US')} {tCommon('egp')} /{' '}
+                          {(billingData?.announcement_cap ?? getAnnouncementCap(billingData?.plan ?? 'starter')).toLocaleString('en-US')}{' '}
+                          {tCommon('egp')}
+                        </span>
+                      </div>
+                      {(() => {
+                        const cap = billingData?.announcement_cap ?? getAnnouncementCap(billingData?.plan ?? 'starter');
+                        const balance = Number(billingData?.announcement_balance ?? 0);
+                        const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0;
+                        const barClass =
+                          pct >= 90 ? 'bg-amber-500' : 'bg-teal-600';
+                        return (
+                          <div className="h-2 rounded-full bg-[var(--color-surface-2)] overflow-hidden">
+                            <div className={`h-full ${barClass} transition-all`} style={{ width: `${pct}%` }} />
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-semibold text-[var(--color-text-primary)] mt-6 mb-2">{tBilling('recentBlasts')}</h4>
+                  {(billingData?.recent_announcement_blasts?.length ?? 0) === 0 ? (
+                    <p className="text-sm text-[var(--color-text-secondary)]">{tBilling('noBlasts')}</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {billingData?.recent_announcement_blasts?.map((b) => (
+                        <li
+                          key={b.id}
+                          className="flex flex-wrap items-center justify-between gap-2 text-sm border border-[var(--color-border-subtle)] rounded-lg p-3"
+                        >
+                          <span className="text-[var(--color-text-secondary)]">
+                            {b.created_at ? new Date(b.created_at).toLocaleDateString('en-US') : '—'}
+                          </span>
+                          <span
+                            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                              b.blast_type === 'ops' ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {b.blast_type === 'ops' ? tBilling('blastOps') : tBilling('blastPromo')}
+                          </span>
+                          <span className="font-mono">
+                            {b.parents_notified.toLocaleString('en-US')} · {Number(b.total_amount).toLocaleString('en-US')}{' '}
+                            {tCommon('egp')}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 {/* 2. Fixed Plans grid */}

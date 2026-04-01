@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { syncPackParentCount } from '@/lib/parent-pack'
+import { afterStudentPackToggle } from '@/lib/studentParentPackWelcome'
 
 async function getCenterUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -58,9 +58,9 @@ export async function PATCH(
 
     const { data: student, error: studentError } = await ctx.supabaseAdmin
       .from('students')
-      .select('id, center_id, is_active, parent_phone, parent_pack_opted_in')
+      .select('id, center_id, name, is_active, parent_phone, parent_pack_opted_in')
       .eq('id', studentId)
-      .single()
+      .maybeSingle()
 
     if (studentError || !student) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 })
@@ -78,6 +78,8 @@ export async function PATCH(
       }
     }
 
+    const prevPackOptedIn = student.parent_pack_opted_in === true
+
     const { error: updateError } = await ctx.supabaseAdmin
       .from('students')
       .update({ parent_pack_opted_in: opted_in })
@@ -87,12 +89,24 @@ export async function PATCH(
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    const activeParents = await syncPackParentCount(ctx.supabaseAdmin, centerId)
+    await afterStudentPackToggle(
+      ctx.supabaseAdmin,
+      centerId,
+      { name: student.name ?? '', parent_phone: student.parent_phone },
+      opted_in,
+      prevPackOptedIn,
+    )
+
+    const { data: cRow } = await ctx.supabaseAdmin
+      .from('centers')
+      .select('parent_pack_active_parents')
+      .eq('id', centerId)
+      .maybeSingle()
 
     return NextResponse.json({
       student_id: studentId,
       opted_in: opted_in,
-      active_parents: activeParents,
+      active_parents: cRow?.parent_pack_active_parents ?? 0,
     })
   } catch (e) {
     console.error('[PATCH /api/parent-pack/student/[id]]', e)
