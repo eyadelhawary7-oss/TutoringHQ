@@ -276,7 +276,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                         </td>
                         <td className="py-2">
                           <Link
-                            href={`/${locale}/admin/centers`}
+                            href={`/${locale}/admin`}
                             className="inline-flex rounded-md border border-[#0D9488] text-[#0D9488] text-xs font-medium px-3 py-1.5 hover:bg-[#0D9488]/10"
                           >
                             {t('reviewCenter')}
@@ -328,7 +328,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                       {notesPreview}
                     </div>
                     <Link
-                      href={`/${locale}/admin/centers`}
+                      href={`/${locale}/admin`}
                       className="inline-flex rounded-md border border-[#0D9488] text-[#0D9488] text-xs font-medium px-3 py-1.5 hover:bg-[#0D9488]/10 mt-2"
                     >
                       {t('reviewCenter')}

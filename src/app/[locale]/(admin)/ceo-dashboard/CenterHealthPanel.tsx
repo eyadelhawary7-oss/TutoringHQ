@@ -251,7 +251,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                         </td>
                         <td className="py-2">
                           <Link
-                            href={`/${locale}/admin/centers`}
+                            href={`/${locale}/admin`}
                             className="inline-flex rounded-md border border-[#0D9488] text-[#0D9488] text-xs font-medium px-3 py-1.5 hover:bg-[#0D9488]/10"
                           >
                             {t('viewCenter')}
@@ -318,7 +318,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                       {subLabels[center.subscription_status] ?? center.subscription_status}
                     </span>
                     <Link
-                      href={`/${locale}/admin/centers`}
+                      href={`/${locale}/admin`}
                       className="inline-flex rounded-md border border-[#0D9488] text-[#0D9488] text-xs font-medium px-3 py-1.5 hover:bg-[#0D9488]/10"
                     >
                       {t('viewCenter')}
