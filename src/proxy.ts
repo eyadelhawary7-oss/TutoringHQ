@@ -5,21 +5,9 @@ import { createServerClient } from '@supabase/ssr';
 
 const intlMiddleware = createMiddleware(routing);
 
-/** Strip one leading locale segment for path checks (all configured locales, case-insensitive). */
+/** Strip one leading locale segment for path checks. */
 function stripLocalePrefix(pathname: string): string {
-  if (!pathname || pathname === '/') {
-    return '/';
-  }
-  const escaped = routing.locales
-    .map((loc) => loc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|');
-  const re = new RegExp(`^/(${escaped})(?=/|$)`, 'i');
-  const m = pathname.match(re);
-  if (!m) {
-    return pathname;
-  }
-  const rest = pathname.slice(m[0].length);
-  return rest === '' ? '/' : rest;
+  return pathname.replace(/^\/(ar|en)(\/|$)/, '/') || '/';
 }
 
 // --- Rate limiting: in-memory Map (Edge-compatible, per-instance) ---
