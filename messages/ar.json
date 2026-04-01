@@ -738,7 +738,8 @@
     "deleteCenterPermanent": "لا يمكن التراجع. سيتم حذف السنتر وجميع بياناته نهائياً.",
     "contactWhatsApp": "تواصل عبر واتساب",
     "cardPreview": "معاينة البطاقة",
-    "deliveryAddress": "عنوان التسليم"
+    "deliveryAddress": "عنوان التسليم",
+    "announcementBalance": "رصيد الإعلانات"
   },
   "ceo": {
     "brandTitle": "CenterHQ",
@@ -2325,7 +2326,15 @@
     "paymentStatus": "حالة السداد",
     "paid": "مدفوع",
     "unpaid": "غير مدفوع",
-    "studentId": "معرف الطالب:",
+    "studentId": "رقم الطالب",
+    "printShowGroup": "إظهار المجموعة على البطاقة",
+    "academicYear": "العام الدراسي",
+    "addParentPhone": "إضافة رقم ولي الأمر",
+    "editParentPhone": "تعديل رقم ولي الأمر",
+    "parentPhoneSaved": "تم حفظ رقم ولي الأمر",
+    "parentPhoneCleared": "تم مسح رقم ولي الأمر",
+    "save": "حفظ",
+    "cancel": "إلغاء",
     "group": "Group:",
     "searchPlaceholder": "البحث حسب الاسم أو الهاتف أو رقم الطالب",
     "addStudentSuccess": "Student {name} added. ID: {studentNumber}",

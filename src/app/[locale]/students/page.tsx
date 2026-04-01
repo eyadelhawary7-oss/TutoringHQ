@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer, ShoppingCart } from 'lucide-react';
+import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer, ShoppingCart, Phone, Pencil } from 'lucide-react';
 import { CardOrderModal } from '@/components/CardOrderModal';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
@@ -184,6 +184,11 @@ export default function StudentsPage() {
   const [showCardOrderModal, setShowCardOrderModal] = useState(false);
   const [showCardCartModal, setShowCardCartModal] = useState(false);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+  const parentPhonePopoverRef = useRef<HTMLDivElement>(null);
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
+  const [parentPhoneDraft, setParentPhoneDraft] = useState('');
+  const [savingParentPhoneId, setSavingParentPhoneId] = useState<string | null>(null);
+  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
 
   const addToggling = (id: string) => setTogglingIds((prev) => new Set(prev).add(id));
   const removeToggling = (id: string) =>
@@ -192,6 +197,58 @@ export default function StudentsPage() {
       s.delete(id);
       return s;
     });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 768px)');
+    const apply = () => setIsDesktopLayout(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+
+  useEffect(() => {
+    if (openPopoverId == null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenPopoverId(null);
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (parentPhonePopoverRef.current?.contains(t)) return;
+      const el = t as HTMLElement;
+      if (el.closest?.('[data-parent-phone-trigger]')) return;
+      setOpenPopoverId(null);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onMouseDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onMouseDown);
+    };
+  }, [openPopoverId]);
+
+  const saveParentPhoneInline = async (studentId: string) => {
+    const value = parentPhoneDraft.trim();
+    setSavingParentPhoneId(studentId);
+    try {
+      const { error } = await dbUpdate({
+        table: 'students',
+        data: { parent_phone: value || null },
+        filters: [{ column: 'id', op: 'eq', value: studentId }],
+      });
+      if (error) {
+        toast.error(tCommon('error'));
+        return;
+      }
+      setStudents((prev) =>
+        prev.map((st) => (st.id === studentId ? { ...st, parent_phone: value || null } : st)),
+      );
+      setOpenPopoverId(null);
+      toast.success(value ? ts('parentPhoneSaved') : ts('parentPhoneCleared'));
+    } finally {
+      setSavingParentPhoneId(null);
+    }
+  };
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -987,7 +1044,7 @@ export default function StudentsPage() {
               onAction={() => setShowAddModal(true)}
             />
           ) : (
-            <div className="flex flex-col gap-2" key={filterKey}>
+            <div key={filterKey}>
               {filteredStudents.length === 0 ? (
                 <div className="card p-10 flex flex-col items-center gap-3 mt-4">
                   <svg
@@ -1006,10 +1063,170 @@ export default function StudentsPage() {
                   <p className="text-xs text-[var(--color-text-tertiary)]">{ts('empty_subtitle')}</p>
                 </div>
               ) : (
-                filteredStudents.map((s, index) => {
+                <>
+                  <div className="hidden md:block card overflow-hidden mb-2">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
+                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-primary)]">
+                              {ts('name')}
+                            </th>
+                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-primary)]">
+                              {ts('studentId')}
+                            </th>
+                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-primary)]">
+                              {ts('parentPhone')}
+                            </th>
+                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-primary)]">
+                              {ts('balance')}
+                            </th>
+                            <th className="px-4 py-3 text-end font-semibold text-[var(--color-text-primary)]">
+                              {tCommon('actions')}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredStudents.map((s) => {
+                            const bal = balanceByStudent[s.id] ?? 0;
+                            const balNum = Number(bal);
+                            const statusKey = studentStatusLabelKey(s.lifecycle_status);
+                            const hasParent = s.parent_phone != null && String(s.parent_phone).trim() !== '';
+                            return (
+                              <tr key={s.id} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]">
+                                <td className="px-4 py-3 align-top">
+                                  <button
+                                    type="button"
+                                    className="text-start"
+                                    onClick={() => openQRModal(s)}
+                                  >
+                                    <span className="font-semibold text-[var(--color-text-primary)]">{s.name}</span>
+                                    <div className="mt-1">
+                                      <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey)} />
+                                    </div>
+                                  </button>
+                                </td>
+                                <td className="px-4 py-3 align-top font-mono text-[var(--color-text-primary)]" dir="ltr">
+                                  {s.student_number ?? '—'}
+                                </td>
+                                <td className="px-4 py-3 align-top relative">
+                                  <div
+                                    className="relative inline-block"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onKeyDown={(e) => e.stopPropagation()}
+                                    role="presentation"
+                                  >
+                                    {!hasParent ? (
+                                      <button
+                                        type="button"
+                                        data-parent-phone-trigger
+                                        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-[var(--color-surface-2)] hover:text-slate-600"
+                                        aria-label={ts('addParentPhone')}
+                                        onClick={() => {
+                                          setOpenPopoverId(s.id);
+                                          setParentPhoneDraft('');
+                                        }}
+                                      >
+                                        <Phone className="h-4 w-4" />
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        data-parent-phone-trigger
+                                        className="inline-flex items-center gap-1.5 rounded-lg p-1 text-start hover:bg-[var(--color-surface-2)]"
+                                        onClick={() => {
+                                          setOpenPopoverId(s.id);
+                                          setParentPhoneDraft(String(s.parent_phone ?? ''));
+                                        }}
+                                      >
+                                        <span className="text-xs text-[var(--color-text-secondary)] max-w-[140px] truncate" dir="ltr">
+                                          {s.parent_phone}
+                                        </span>
+                                        <Pencil className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                                      </button>
+                                    )}
+                                    {openPopoverId === s.id && isDesktopLayout ? (
+                                      <div
+                                        ref={parentPhonePopoverRef}
+                                        className="absolute z-50 mt-1 min-w-[220px] rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-3 shadow-lg start-0"
+                                        onClick={(e) => e.stopPropagation()}
+                                        role="dialog"
+                                        aria-label={hasParent ? ts('editParentPhone') : ts('addParentPhone')}
+                                      >
+                                        <input
+                                          type="tel"
+                                          value={parentPhoneDraft}
+                                          onChange={(e) => setParentPhoneDraft(e.target.value)}
+                                          placeholder={ts('parentPhonePlaceholder')}
+                                          dir="ltr"
+                                          className="w-full rounded-lg border border-input bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+                                        />
+                                        <div className="mt-2 flex gap-2">
+                                          <button
+                                            type="button"
+                                            disabled={savingParentPhoneId === s.id}
+                                            className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                                            onClick={() => void saveParentPhoneInline(s.id)}
+                                          >
+                                            {savingParentPhoneId === s.id ? tCommon('loading') : ts('save')}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+                                            onClick={() => setOpenPopoverId(null)}
+                                          >
+                                            {ts('cancel')}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 align-top">
+                                  {balNum > 0 ? (
+                                    <span className="text-xs font-semibold text-[var(--color-danger)] tabular-nums">
+                                      {balNum.toLocaleString('en-US')} {tCommon('egp')}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-[var(--color-text-tertiary)]">{ts('no_balance')}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 align-top text-end">
+                                  <div className="flex flex-wrap justify-end gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEdit(s)}
+                                      className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                                      title={tCommon('edit')}
+                                    >
+                                      <Edit size={14} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => openQRModal(s)}
+                                      className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                                      title={ts('viewQR')}
+                                    >
+                                      <Eye size={14} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 md:hidden">
+                {filteredStudents.map((s, index) => {
                   const bal = balanceByStudent[s.id] ?? 0;
                   const balNum = Number(bal);
                   const statusKey = studentStatusLabelKey(s.lifecycle_status);
+                  const hasParent = s.parent_phone != null && String(s.parent_phone).trim() !== '';
+                  const idLineClass = searchQuery.trim()
+                    ? 'text-xs text-slate-400'
+                    : 'text-xs text-[var(--color-text-tertiary)]';
                   return (
                     <SwipeRow
                       key={s.id}
@@ -1092,10 +1309,87 @@ export default function StudentsPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
-                              {s.student_number ?? ''}
-                              {s.phone ? ` · ${s.phone}` : ''}
-                            </p>
+                            {s.student_number ? (
+                              <p className={`${idLineClass} mt-0.5`} dir="ltr">
+                                #{s.student_number}
+                              </p>
+                            ) : null}
+                            {s.phone ? (
+                              <p className="text-xs text-[var(--color-text-tertiary)] font-mono mt-0.5" dir="ltr">
+                                {s.phone}
+                              </p>
+                            ) : null}
+                            <div
+                              className="relative mt-2 inline-flex flex-wrap items-center gap-2"
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              role="presentation"
+                            >
+                              {!hasParent ? (
+                                <button
+                                  type="button"
+                                  data-parent-phone-trigger
+                                  className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-[var(--color-surface-2)]"
+                                  aria-label={ts('addParentPhone')}
+                                  onClick={() => {
+                                    setOpenPopoverId(s.id);
+                                    setParentPhoneDraft('');
+                                  }}
+                                >
+                                  <Phone className="h-4 w-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  data-parent-phone-trigger
+                                  className="inline-flex items-center gap-1.5 rounded-lg py-1 pe-2 text-start hover:bg-[var(--color-surface-2)]"
+                                  onClick={() => {
+                                    setOpenPopoverId(s.id);
+                                    setParentPhoneDraft(String(s.parent_phone ?? ''));
+                                  }}
+                                >
+                                  <span className="text-xs text-[var(--color-text-secondary)]" dir="ltr">
+                                    {s.parent_phone}
+                                  </span>
+                                  <Pencil className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                                </button>
+                              )}
+                              {openPopoverId === s.id && !isDesktopLayout ? (
+                                <div
+                                  ref={parentPhonePopoverRef}
+                                  className="absolute z-[60] start-0 top-full mt-1 min-w-[220px] rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-3 shadow-lg"
+                                  onClick={(e) => e.stopPropagation()}
+                                  role="dialog"
+                                  aria-label={hasParent ? ts('editParentPhone') : ts('addParentPhone')}
+                                >
+                                  <input
+                                    type="tel"
+                                    value={parentPhoneDraft}
+                                    onChange={(e) => setParentPhoneDraft(e.target.value)}
+                                    placeholder={ts('parentPhonePlaceholder')}
+                                    dir="ltr"
+                                    className="w-full rounded-lg border border-input bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+                                  />
+                                  <div className="mt-2 flex gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={savingParentPhoneId === s.id}
+                                      className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                                      onClick={() => void saveParentPhoneInline(s.id)}
+                                    >
+                                      {savingParentPhoneId === s.id ? tCommon('loading') : ts('save')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                                      onClick={() => setOpenPopoverId(null)}
+                                    >
+                                      {ts('cancel')}
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
                             {(studentGroupsMap[s.id]?.names ?? []).length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1.5">
                                 {(studentGroupsMap[s.id]?.names ?? []).slice(0, 3).map((n, gi) => (
@@ -1250,7 +1544,9 @@ export default function StudentsPage() {
                       </div>
                     </SwipeRow>
                   );
-                })
+                })}
+                  </div>
+                </>
               )}
             </div>
           )}

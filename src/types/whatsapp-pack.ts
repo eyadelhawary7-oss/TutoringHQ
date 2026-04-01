@@ -36,5 +36,6 @@ export interface WaPackCenter {
   phone: string | null
   parent_pack_enabled: boolean
   parent_pack_active_parents: number
+  announcement_balance?: number | null
   billing: WaPackBillingSummary
 }

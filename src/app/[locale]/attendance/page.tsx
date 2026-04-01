@@ -426,7 +426,19 @@ export default function AttendancePage() {
                       <tr className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-end">
                           <div className="font-medium text-[var(--color-text-primary)]">{r.student.name}</div>
-                          <div className="text-xs text-[var(--color-text-secondary)] font-mono" dir="ltr">{r.student.phone || r.student.student_number || '—'}</div>
+                          {r.student.student_number ? (
+                            <div className="text-xs text-slate-400 mt-0.5" dir="ltr">
+                              #{r.student.student_number}
+                            </div>
+                          ) : null}
+                          {r.student.phone ? (
+                            <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">
+                              {r.student.phone}
+                            </div>
+                          ) : null}
+                          {!r.student.student_number && !r.student.phone ? (
+                            <div className="text-xs text-[var(--color-text-secondary)]">—</div>
+                          ) : null}
                         </td>
                         <td className="py-3.5 px-4 text-sm font-mono font-bold text-[var(--color-text-primary)] text-end">{r.totalScans}</td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] text-end">{formatRelativeTime(r.lastScan, locale)}</td>

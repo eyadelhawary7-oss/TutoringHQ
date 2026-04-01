@@ -548,6 +548,14 @@
     "paid": "Paid",
     "unpaid": "Unpaid",
     "studentId": "Student ID",
+    "printShowGroup": "Show group on card",
+    "academicYear": "Academic Year",
+    "addParentPhone": "Add parent phone",
+    "editParentPhone": "Edit parent phone",
+    "parentPhoneSaved": "Parent phone saved",
+    "parentPhoneCleared": "Parent phone cleared",
+    "save": "Save",
+    "cancel": "Cancel",
     "group": "Group",
     "searchPlaceholder": "Search by name, phone, or student number",
     "addStudentSuccess": "Student {name} added. ID: {studentNumber}",
@@ -1828,7 +1836,8 @@
     "time": "Time",
     "center": "Center",
     "action": "Action",
-    "user": "User"
+    "user": "User",
+    "announcementBalance": "Announcement Balance"
   },
   "suspended": {
     "title": "Your subscription has been suspended",

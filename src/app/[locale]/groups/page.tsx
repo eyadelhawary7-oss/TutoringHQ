@@ -450,8 +450,12 @@ export default function GroupsPage() {
                   {studentsForAddModal.map(s => (
                     <label key={s.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer">
                       <input type="checkbox" checked={addForm.studentIds.includes(s.id)} onChange={() => toggleAddFormStudent(s.id)} className="rounded accent-primary" />
-                      <span className="text-sm text-[var(--color-text-primary)]">{s.name}</span>
-                      <span className="text-xs text-[var(--color-text-secondary)] font-mono ms-auto" dir="ltr">{s.student_number ?? '\u2014'}</span>
+                      <span className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm text-[var(--color-text-primary)]">{s.name}</span>
+                        {s.student_number ? (
+                          <span className="text-xs text-slate-400" dir="ltr">#{s.student_number}</span>
+                        ) : null}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -512,7 +516,13 @@ export default function GroupsPage() {
                         <div key={w.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                           <div>
                             <div className="text-sm font-medium text-[var(--color-text-primary)]">#{i + 1} {w.name}</div>
-                            <div className="text-xs text-[var(--color-text-secondary)] font-mono" dir="ltr">{w.student_number ?? w.parent_phone ?? '\u2014'}</div>
+                            {w.student_number ? (
+                              <div className="text-xs text-slate-400 mt-0.5" dir="ltr">#{w.student_number}</div>
+                            ) : w.parent_phone ? (
+                              <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">{w.parent_phone}</div>
+                            ) : (
+                              <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">—</div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -544,7 +554,11 @@ export default function GroupsPage() {
                     <div key={m.student_id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                       <div>
                         <div className="text-sm font-medium text-[var(--color-text-primary)]">{m.student_name}</div>
-                        <div className="text-xs text-[var(--color-text-secondary)] font-mono" dir="ltr">{m.student_number ?? '\u2014'}</div>
+                        {m.student_number ? (
+                          <div className="text-xs text-slate-400 mt-0.5" dir="ltr">#{m.student_number}</div>
+                        ) : (
+                          <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">—</div>
+                        )}
                       </div>
                       <button type="button" onClick={() => handleRemoveMember(m.student_id)} className="text-xs text-red-600 hover:text-red-700 font-medium">
                         {t('remove')}

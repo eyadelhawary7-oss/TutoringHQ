@@ -518,8 +518,15 @@ export default function PaymentsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-[var(--color-text-secondary)] truncate">{payment.student_name}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <p className="text-sm text-[var(--color-text-secondary)] truncate">{payment.student_name}</p>
+                      {payment.student_number && payment.student_number !== '—' ? (
+                        <p className="text-xs text-slate-400 truncate" dir="ltr">
+                          #{payment.student_number}
+                        </p>
+                      ) : null}
+                    </div>
                     <p className="text-xs text-[var(--color-text-tertiary)] shrink-0" dir="ltr">
                       {new Date(payment.paid_at ?? '').toLocaleString('en-US', {
                         month: 'short',

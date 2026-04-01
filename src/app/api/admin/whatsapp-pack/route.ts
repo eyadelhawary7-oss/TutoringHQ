@@ -10,6 +10,7 @@ interface CenterRow {
   phone: string | null
   parent_pack_enabled: boolean | null
   parent_pack_active_parents: number | null
+  announcement_balance: number | string | null
 }
 
 interface BillingRow {
@@ -35,7 +36,9 @@ export async function GET(request: Request) {
   const [centersRes, configRes, billingRes] = await Promise.all([
     supabaseAdmin
       .from('centers')
-      .select('id, name, plan, phone, parent_pack_enabled, parent_pack_active_parents')
+      .select(
+        'id, name, plan, phone, parent_pack_enabled, parent_pack_active_parents, announcement_balance',
+      )
       .order('parent_pack_enabled', { ascending: false })
       .order('name', { ascending: true }),
     supabaseAdmin
@@ -83,6 +86,7 @@ export async function GET(request: Request) {
       phone: c.phone,
       parent_pack_enabled: Boolean(c.parent_pack_enabled),
       parent_pack_active_parents: asNum(c.parent_pack_active_parents),
+      announcement_balance: asNum(c.announcement_balance),
       billing,
     }
   })

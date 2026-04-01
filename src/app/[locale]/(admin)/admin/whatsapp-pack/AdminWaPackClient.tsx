@@ -7,6 +7,7 @@ import { AdminSidebar } from '@/components/AdminSidebar'
 import { useLayout } from '@/contexts/LayoutContext'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { getAnnouncementCap } from '@/lib/parentPack'
 import type { NotificationTypes, WaPackBillingSummary, WaPackCenter } from '@/types/whatsapp-pack'
 
 interface AdminWaPackClientProps {
@@ -54,6 +55,7 @@ function normalizeCenter(raw: Partial<WaPackCenter> & { id?: string }): WaPackCe
     phone: raw.phone ?? null,
     parent_pack_enabled: Boolean(raw.parent_pack_enabled),
     parent_pack_active_parents: asNum(raw.parent_pack_active_parents),
+    announcement_balance: asNum(raw.announcement_balance),
     billing: {
       totalAmount: asNum(billingIn.totalAmount),
       parentCount: asNum(billingIn.parentCount),
@@ -119,6 +121,7 @@ function PackToggle({
 
 export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   const t = useTranslations('adminWaPack')
+  const tAdmin = useTranslations('admin')
   const tNotif = useTranslations('whatsappPack')
   const tPlans = useTranslations('billing.planNames')
   const locale = useLocale()
@@ -305,6 +308,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                       {t('monthlyAmount')}
                     </th>
                     <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                      {tAdmin('announcementBalance')}
+                    </th>
+                    <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
                       {t('billingStatus')}
                     </th>
                     <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
@@ -316,6 +322,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                   {(centers ?? []).map((c) => {
                     const billStatus = billingStatusKey(c.billing?.status)
                     const parents = asNum(c.parent_pack_active_parents)
+                    const balance = asNum(c.announcement_balance ?? 0)
+                    const cap = getAnnouncementCap(c.plan)
+                    const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0
                     return (
                     <tr key={c.id} className="border-b border-[var(--color-border-subtle)]">
                       <td className="px-4 py-3">
@@ -334,6 +343,17 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                       </td>
                       <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
                         {fmtInt(parents * 10)} ج.م
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
+                          {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
+                        </p>
+                        <div className="mt-1 h-[3px] w-full rounded bg-slate-700">
+                          <div
+                            className={cn('h-[3px] rounded', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -364,6 +384,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
               {(centers ?? []).map((c) => {
                 const billStatus = billingStatusKey(c.billing?.status)
                 const parents = asNum(c.parent_pack_active_parents)
+                const balance = asNum(c.announcement_balance ?? 0)
+                const cap = getAnnouncementCap(c.plan)
+                const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0
                 return (
                 <div key={c.id} className="space-y-3 p-4">
                   <div>
@@ -397,6 +420,18 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                       <span className="tabular-nums font-medium">
                         {fmtInt(parents * 10)} ج.م
                       </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-[var(--color-text-secondary)]">{tAdmin('announcementBalance')}</p>
+                    <p className="mt-0.5 text-xs tabular-nums text-[var(--color-text-primary)]">
+                      {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
+                    </p>
+                    <div className="mt-1 h-[3px] w-full rounded bg-slate-700">
+                      <div
+                        className={cn('h-[3px] rounded', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
