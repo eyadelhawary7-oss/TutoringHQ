@@ -121,8 +121,10 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       <aside
         className={`hidden lg:flex flex-col fixed top-0 bottom-0 h-screen z-[100] print:hidden bg-slate-900 transition-all duration-300 isolate ${open ? 'w-64' : 'w-16'} ${isRTL ? 'right-0' : 'left-0'}`}
       >
-      {/* Logo + Close */}
-      <div className="relative z-10 flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800 pointer-events-auto">
+      {/* Logo; collapse (X) only when expanded — icon rail uses header ≡ as sole opener */}
+      <div
+        className={`relative z-10 flex items-center gap-3 px-4 h-16 border-b border-slate-800 pointer-events-auto ${open ? 'justify-between' : 'justify-center'}`}
+      >
         <Link
           href={isSuperAdminOnly ? '/admin' : '/dashboard'}
           className={`flex items-center shrink-0 ${open ? 'gap-3' : 'justify-center'}`}
@@ -136,14 +138,16 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
           )}
           <span className={`font-bold text-white text-lg tracking-tight ${open ? 'block' : 'hidden'}`}>CenterHQ</span>
         </Link>
-        <button
-          type="button"
-          onClick={() => onClose?.()}
-          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors pointer-events-auto shrink-0"
-          aria-label="Close menu"
-        >
-          <X size={20} />
-        </button>
+        {open ? (
+          <button
+            type="button"
+            onClick={() => onClose?.()}
+            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors pointer-events-auto shrink-0"
+            aria-label="Collapse sidebar"
+          >
+            <X size={20} />
+          </button>
+        ) : null}
       </div>
 
       {/* Center name / Branch switcher — hidden in collapsed desktop rail (no BranchSwitcher API change) */}
