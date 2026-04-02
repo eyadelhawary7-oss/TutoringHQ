@@ -125,7 +125,9 @@ export function CardOrderModal({
   const [paymentStatus, setPaymentStatus] = useState<PaymentUiStatus>('idle');
   const [paymentKey, setPaymentKey] = useState<string | null>(null);
   const [paymobIframeId, setPaymobIframeId] = useState<string | null>(null);
+  const [paymobIframeUrl, setPaymobIframeUrl] = useState<string | null>(null);
   const [currentCardOrderId, setCurrentCardOrderId] = useState<string | null>(null);
+  const [currentPaymobOrderId, setCurrentPaymobOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
   const [qrDataUrls, setQrDataUrls] = useState<Record<string, string>>({});
@@ -297,7 +299,9 @@ export function CardOrderModal({
     setPaymentStatus('idle');
     setPaymentKey(null);
     setPaymobIframeId(null);
+    setPaymobIframeUrl(null);
     setCurrentCardOrderId(null);
+    setCurrentPaymobOrderId(null);
     setPaymentError(null);
   };
 
@@ -355,8 +359,8 @@ export function CardOrderModal({
             price_per_card: 55,
             delivery_fee: deliveryFee,
             total_amount: totalAmount,
-            status: 'pending',
-            payment_status: 'unpaid',
+            status: 'pending_payment',
+            payment_status: 'pending_payment',
             delivery_address: deliveryDisplay || null,
             notes: notes.trim() || null,
           },
@@ -404,8 +408,14 @@ export function CardOrderModal({
         }),
       });
 
-      const json = (await res.json().catch(() => ({}))) as { paymentKey?: string; iframeId?: string; error?: string };
-      if (!res.ok || !json.paymentKey || !json.iframeId) {
+      const json = (await res.json().catch(() => ({}))) as {
+        paymentKey?: string;
+        iframeId?: string;
+        paymobOrderId?: string;
+        iframeUrl?: string;
+        error?: string;
+      };
+      if (!res.ok || !json.paymentKey || !json.iframeId || !json.paymobOrderId) {
         setPaymentStatus('failed');
         setPaymentError(typeof json.error === 'string' ? json.error : t('paymentFailed'));
         return;
@@ -413,6 +423,12 @@ export function CardOrderModal({
 
       setPaymentKey(json.paymentKey);
       setPaymobIframeId(json.iframeId);
+      setPaymobIframeUrl(
+        typeof json.iframeUrl === 'string'
+          ? json.iframeUrl
+          : `https://accept.paymob.com/api/acceptance/iframes/${json.iframeId}?payment_token=${encodeURIComponent(json.paymentKey)}`,
+      );
+      setCurrentPaymobOrderId(json.paymobOrderId);
       setPaymentStatus('awaiting_payment');
     } catch (err) {
       console.error('Card order pay error:', err);
@@ -426,6 +442,8 @@ export function CardOrderModal({
     setPaymentError(null);
     setPaymentKey(null);
     setPaymobIframeId(null);
+    setPaymobIframeUrl(null);
+    setCurrentPaymobOrderId(null);
   };
 
   const handleConfirmOrderAfterPayment = () => {
@@ -438,7 +456,7 @@ export function CardOrderModal({
   };
 
   useEffect(() => {
-    if (paymentStatus !== 'awaiting_payment' || !currentCardOrderId) return;
+    if (paymentStatus !== 'awaiting_payment' || !currentPaymobOrderId) return;
 
     let ticks = 0;
     const maxTicks = 200;
@@ -449,20 +467,16 @@ export function CardOrderModal({
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
-
       try {
         const res = await fetch(
-          `/api/paymob/payment-status?cardOrderId=${encodeURIComponent(currentCardOrderId)}`,
-          { headers: { Authorization: `Bearer ${session.access_token}` } }
+          `/api/paymob/payment-status?paymobOrderId=${encodeURIComponent(currentPaymobOrderId)}`,
         );
         if (!res.ok) return;
-        const body = (await res.json()) as { paymentStatus?: string };
-        if (body.paymentStatus === 'paid') {
+        const body = (await res.json()) as { paid?: boolean; failed?: boolean };
+        if (body.paid === true) {
           setPaymentStatus('paid');
           clearInterval(interval);
-        } else if (body.paymentStatus === 'failed') {
+        } else if (body.failed === true) {
           setPaymentStatus('failed');
           clearInterval(interval);
         }
@@ -472,7 +486,7 @@ export function CardOrderModal({
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [paymentStatus, currentCardOrderId]);
+  }, [paymentStatus, currentPaymobOrderId]);
 
   if (!isOpen) return null;
 
@@ -809,11 +823,14 @@ export function CardOrderModal({
                       <span className="text-sm">{t('paymentLoading')}</span>
                     </div>
                   )}
-                  {paymentStatus === 'awaiting_payment' && paymobIframeId && paymentKey && (
+                  {paymentStatus === 'awaiting_payment' && paymentKey && (paymobIframeUrl || paymobIframeId) && (
                     <div className="flex flex-col gap-3 overflow-visible">
                       <p className="text-sm text-[var(--color-text-secondary)]">{t('awaitingPayment')}</p>
                       <iframe
-                        src={`https://accept.paymob.com/api/acceptance/iframes/${paymobIframeId}?payment_token=${paymentKey}`}
+                        src={
+                          paymobIframeUrl ??
+                          `https://accept.paymob.com/api/acceptance/iframes/${paymobIframeId}?payment_token=${encodeURIComponent(paymentKey)}`
+                        }
                         className="w-full rounded-lg border-0"
                         style={{ height: '600px', minHeight: '600px' }}
                         title="Paymob Payment"

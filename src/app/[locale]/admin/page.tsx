@@ -251,6 +251,7 @@ function formatActivitySummary(action: string, details?: unknown): string {
 export default function AdminPage() {
   const tAdmin = useTranslations('admin');
   const tCommon = useTranslations('common');
+  const tIdCards = useTranslations('idCards');
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const router = useRouter();
@@ -825,9 +826,9 @@ export default function AdminPage() {
     setActionLoading(true);
     try {
       const res = await fetch('/api/admin/card-orders', {
-        method: 'PUT',
+        method: 'PATCH',
         headers,
-        body: JSON.stringify({ orderId, status }),
+        body: JSON.stringify({ id: orderId, status }),
       });
       if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
       loadCardOrders();
@@ -1615,8 +1616,10 @@ export default function AdminPage() {
                     {cardOrders.map((order) => {
                       const statusColors: Record<string, string> = {
                         pending: 'bg-amber-100 text-amber-700',
+                        paid: 'bg-emerald-100 text-emerald-800',
                         confirmed: 'bg-blue-100 text-blue-700',
                         printing: 'bg-purple-100 text-purple-700',
+                        ready_for_pickup: 'bg-cyan-100 text-cyan-800',
                         shipped: 'bg-teal-100 text-teal-700',
                         delivered: 'bg-green-100 text-green-700',
                       };
@@ -1635,7 +1638,21 @@ export default function AdminPage() {
                             <td className="px-4 py-3 font-mono font-bold">{order.total_amount.toLocaleString('en-US')} {tCommon('egp')}</td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${sc}`}>
-                                {order.status}
+                                {order.status === 'pending'
+                                  ? tIdCards('statusPending')
+                                  : order.status === 'paid'
+                                    ? tIdCards('statusPaid')
+                                    : order.status === 'printing'
+                                      ? tIdCards('statusPrinting')
+                                      : order.status === 'ready_for_pickup'
+                                        ? tIdCards('statusReadyPickup')
+                                        : order.status === 'shipped'
+                                          ? tIdCards('statusShipped')
+                                          : order.status === 'delivered'
+                                            ? tIdCards('statusDelivered')
+                                            : order.status === 'confirmed'
+                                              ? tIdCards('statusConfirmed')
+                                              : order.status}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">{order.created_at ? new Date(order.created_at).toLocaleDateString() : '—'}</td>
@@ -1677,16 +1694,18 @@ export default function AdminPage() {
                                           disabled={actionLoading}
                                           className="px-3 py-2 rounded-lg border border-border bg-[var(--color-surface-0)] text-sm"
                                         >
-                                          <option value="pending">pending</option>
-                                          <option value="confirmed">confirmed</option>
-                                          <option value="printing">printing</option>
-                                          <option value="shipped">shipped</option>
-                                          <option value="delivered">delivered</option>
+                                          <option value="pending">{tIdCards('statusPending')}</option>
+                                          <option value="paid">{tIdCards('statusPaid')}</option>
+                                          <option value="printing">{tIdCards('statusPrinting')}</option>
+                                          <option value="ready_for_pickup">{tIdCards('statusReadyPickup')}</option>
+                                          <option value="shipped">{tIdCards('statusShipped')}</option>
+                                          <option value="delivered">{tIdCards('statusDelivered')}</option>
+                                          <option value="confirmed">{tIdCards('statusConfirmed')}</option>
                                         </select>
                                       </div>
                                       {order.center_phone && (
                                         <a
-                                          href={`https://wa.me/20${order.center_phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(`مرحباً، بخصوص طلب البطاقات رقم ${order.id.slice(0, 8)}...`)}`}
+                                          href={`https://wa.me/20${order.center_phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(tIdCards('whatsappOrderReadyMessage', { orderNumber: order.id.slice(0, 8) }))}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700"

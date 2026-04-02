@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import {
   Package,
@@ -12,6 +12,8 @@ import {
   X,
   MessageCircle,
   Eye,
+  CircleDollarSign,
+  PackageOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CardTemplatePreview from '@/components/CardTemplatePreview';
@@ -19,6 +21,17 @@ import { AdminSidebar } from '@/components/AdminSidebar';
 import { useSidebar } from '@/contexts/SidebarContext';
 import type { AdminCardOrderRow, CardOrderFulfillmentStatus } from '@/types/admin-card-orders';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/useToast';
+
+const STATUS_ORDER: CardOrderFulfillmentStatus[] = [
+  'pending',
+  'paid',
+  'printing',
+  'ready_for_pickup',
+  'shipped',
+  'delivered',
+  'confirmed',
+];
 
 const STATUS_CONFIG: Record<
   CardOrderFulfillmentStatus,
@@ -30,17 +43,23 @@ const STATUS_CONFIG: Record<
     icon: Clock,
     label: 'statusPending',
   },
-  confirmed: {
-    color: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-500/10',
-    icon: CheckCircle,
-    label: 'statusConfirmed',
+  paid: {
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-500/10',
+    icon: CircleDollarSign,
+    label: 'statusPaid',
   },
   printing: {
     color: 'text-purple-600 dark:text-purple-400',
     bg: 'bg-purple-500/10',
     icon: Printer,
     label: 'statusPrinting',
+  },
+  ready_for_pickup: {
+    color: 'text-cyan-600 dark:text-cyan-400',
+    bg: 'bg-cyan-500/10',
+    icon: PackageOpen,
+    label: 'statusReadyPickup',
   },
   shipped: {
     color: 'text-teal-600 dark:text-teal-400',
@@ -54,15 +73,17 @@ const STATUS_CONFIG: Record<
     icon: CheckCircle,
     label: 'statusDelivered',
   },
+  confirmed: {
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-500/10',
+    icon: CheckCircle,
+    label: 'statusConfirmed',
+  },
 };
 
-const FILTERS: CardOrderFulfillmentStatus[] = [
-  'pending',
-  'confirmed',
-  'printing',
-  'shipped',
-  'delivered',
-];
+function cfgFor(status: CardOrderFulfillmentStatus) {
+  return STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
+}
 
 function waDigits(phone: string | null | undefined): string {
   if (!phone) return '';
@@ -76,12 +97,15 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
   const tIdCards = useTranslations('idCards');
   const tCommon = useTranslations('common');
   const tAdmin = useTranslations('admin');
+  const locale = useLocale();
   const pathname = usePathname();
+  const toast = useToast();
   const { closeMainSidebar } = useSidebar() ?? {};
   const [orders, setOrders] = useState<AdminCardOrderRow[]>(initialOrders);
   const [filter, setFilter] = useState<'all' | CardOrderFulfillmentStatus>('all');
   const [slideOverId, setSlideOverId] = useState<string | null>(null);
   const [statusSavingId, setStatusSavingId] = useState<string | null>(null);
+  const [bookingCourier, setBookingCourier] = useState<string | null>(null);
 
   useEffect(() => {
     setOrders(initialOrders);
@@ -116,28 +140,31 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
     },
   ];
 
-  const updateStatus = useCallback(async (orderId: string, newStatus: CardOrderFulfillmentStatus) => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return;
-    setStatusSavingId(orderId);
-    try {
-      const res = await fetch('/api/admin/card-orders', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ orderId, status: newStatus }),
-      });
-      if (!res.ok) return;
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
-    } finally {
-      setStatusSavingId(null);
-    }
-  }, []);
+  const updateStatus = useCallback(
+    async (orderId: string, newStatus: CardOrderFulfillmentStatus) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      setStatusSavingId(orderId);
+      try {
+        const res = await fetch('/api/admin/card-orders', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ id: orderId, status: newStatus }),
+        });
+        if (!res.ok) return;
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+      } finally {
+        setStatusSavingId(null);
+      }
+    },
+    [],
+  );
 
   const cardsSubtotal = (o: AdminCardOrderRow) =>
     Math.round(o.quantity * o.price_per_card * 100) / 100;
@@ -186,8 +213,8 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
           >
             {tCommon('all')}
           </button>
-          {FILTERS.map((f) => {
-            const cfg = STATUS_CONFIG[f];
+          {STATUS_ORDER.map((f) => {
+            const cfg = cfgFor(f);
             return (
               <button
                 key={f}
@@ -236,7 +263,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
               </thead>
               <tbody>
                 {filteredOrders.map((order) => {
-                  const cfg = STATUS_CONFIG[order.status];
+                  const cfg = cfgFor(order.status);
                   const StatusIcon = cfg.icon;
                   return (
                     <tr
@@ -312,7 +339,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     {slideOrder.orderNumber}
                   </span>
                   {(() => {
-                    const cfg = STATUS_CONFIG[slideOrder.status];
+                    const cfg = cfgFor(slideOrder.status);
                     const Icon = cfg.icon;
                     return (
                       <span
@@ -421,13 +448,95 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     }
                     className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
                   >
-                    {FILTERS.map((s) => (
+                    {STATUS_ORDER.map((s) => (
                       <option key={s} value={s}>
-                        {tIdCards(STATUS_CONFIG[s].label)}
+                        {tIdCards(cfgFor(s).label)}
                       </option>
                     ))}
                   </select>
+                  {slideOrder.vendor_sent_at ? (
+                    <p className="text-xs text-teal-600 dark:text-teal-400 mt-2">
+                      ✓ {tIdCards('sentToVendor')} —{' '}
+                      {new Date(slideOrder.vendor_sent_at).toLocaleString(
+                        locale === 'ar' ? 'ar-EG' : 'en-US',
+                        { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
+                      )}
+                    </p>
+                  ) : null}
                 </div>
+
+                {slideOrder.status === 'ready_for_pickup' && !slideOrder.bosta_order_id ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setBookingCourier(slideOrder.id);
+                      const {
+                        data: { session },
+                      } = await supabase.auth.getSession();
+                      const token = session?.access_token;
+                      if (!token) {
+                        setBookingCourier(null);
+                        return;
+                      }
+                      try {
+                        const res = await fetch(`/api/admin/card-orders/${slideOrder.id}/book-courier`, {
+                          method: 'POST',
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (res.ok) {
+                          const data = (await res.json()) as {
+                            trackingNumber?: string;
+                            bostaOrderId?: string;
+                          };
+                          setOrders((prev) =>
+                            prev.map((o) =>
+                              o.id === slideOrder.id
+                                ? {
+                                    ...o,
+                                    status: 'shipped',
+                                    tracking_number: data.trackingNumber ?? o.tracking_number,
+                                    bosta_order_id: data.bostaOrderId ?? o.bosta_order_id,
+                                  }
+                                : o,
+                            ),
+                          );
+                          toast.success(tIdCards('courierBooked'));
+                        } else {
+                          const err = (await res.json().catch(() => ({}))) as { error?: string };
+                          toast.error(
+                            err.error === 'no_active_vendor'
+                              ? tIdCards('noVendorConfigured')
+                              : tCommon('errorGeneric'),
+                          );
+                        }
+                      } finally {
+                        setBookingCourier(null);
+                      }
+                    }}
+                    disabled={bookingCourier === slideOrder.id}
+                    className="w-full mt-1 py-2 px-4 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  >
+                    {bookingCourier === slideOrder.id
+                      ? tIdCards('bookingCourier')
+                      : tIdCards('bookCourier')}
+                  </button>
+                ) : null}
+
+                {slideOrder.tracking_number ? (
+                  <div className="mt-1 p-3 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]">
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-1">
+                      {tIdCards('trackingNumber')}
+                    </p>
+                    <a
+                      href={`https://bosta.co/tracking?trackingNumber=${encodeURIComponent(slideOrder.tracking_number)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-teal-600 dark:text-teal-400 hover:underline font-mono"
+                    >
+                      {slideOrder.tracking_number}
+                    </a>
+                  </div>
+                ) : null}
 
                 {waDigits(slideOrder.center_phone) ? (
                   <a

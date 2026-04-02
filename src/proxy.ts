@@ -145,6 +145,10 @@ export default async function proxy(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next());
   }
 
+  if (pathname === '/api/bosta/webhook') {
+    return applySecurityHeaders(NextResponse.next());
+  }
+
   if (isApiRoute(pathname)) {
     const res = NextResponse.next();
     return applySecurityHeaders(res);

@@ -21,6 +21,7 @@ import {
   Globe,
   Menu,
   X,
+  Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -90,6 +91,7 @@ export function AdminSidebar({
     activeRoute?.endsWith('/ceo') ||
     activeRoute?.endsWith('/ceo-dashboard');
   const isOrders = activeRoute?.includes('admin/orders');
+  const isVendors = activeRoute?.includes('admin/vendors');
   const isRenewals = activeRoute?.includes('admin/renewals');
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
 
@@ -379,6 +381,22 @@ export function AdminSidebar({
                   </button>,
                 );
               }
+              if (canSee('card_orders') && adminRole === 'super_admin') {
+                items.push(
+                  <button
+                    key="vendors"
+                    type="button"
+                    onClick={() => {
+                      afterNavigate();
+                      router.push('/admin/vendors');
+                    }}
+                    className={drawerBtn(!!isVendors)}
+                  >
+                    <Truck size={18} className="shrink-0" />
+                    <span>{t('vendors')}</span>
+                  </button>,
+                );
+              }
               if (canSee('ceo_dashboard')) {
                 items.push(
                   <button
@@ -489,6 +507,27 @@ export function AdminSidebar({
                         {pendingCount}
                       </span>
                     ) : null}
+                  </button>,
+                );
+              }
+              if (canSee('card_orders') && adminRole === 'super_admin') {
+                items.push(
+                  <button
+                    key="vendors"
+                    type="button"
+                    onClick={() => {
+                      closeMainSidebar?.();
+                      router.push('/admin/vendors');
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
+                      isVendors
+                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                    )}
+                  >
+                    <Truck size={18} />
+                    <span>{t('vendors')}</span>
                   </button>,
                 );
               }

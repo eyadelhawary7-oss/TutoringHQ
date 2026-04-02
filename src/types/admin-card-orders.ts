@@ -1,9 +1,11 @@
 export type CardOrderFulfillmentStatus =
   | 'pending'
-  | 'confirmed'
+  | 'paid'
   | 'printing'
+  | 'ready_for_pickup'
   | 'shipped'
-  | 'delivered';
+  | 'delivered'
+  | 'confirmed';
 
 export interface AdminCardOrderStudent {
   id: string;
@@ -31,4 +33,7 @@ export interface AdminCardOrderRow {
   status: CardOrderFulfillmentStatus;
   created_at: string;
   payment_status: string | null;
+  vendor_sent_at: string | null;
+  bosta_order_id: string | null;
+  tracking_number: string | null;
 }

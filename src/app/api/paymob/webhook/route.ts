@@ -38,23 +38,15 @@ export async function POST(request: NextRequest) {
     const order = obj.order as { id?: unknown } | null | undefined;
     const paymobOrderId =
       order?.id !== null && order?.id !== undefined ? String(order.id) : '';
+    const transactionId = String(obj.id ?? '');
 
     if (paymobOrderId) {
       if (success) {
-        const { error } = await supabaseAdmin
-          .from('card_orders')
-          .update({
-            payment_status: 'paid',
-            paymob_transaction_id: String(obj.id ?? ''),
-          })
-          .eq('paymob_order_id', paymobOrderId);
-        if (error) console.error('[paymob/webhook] paid update:', error);
+        const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
+        await finalizeCardOrderPaymentSuccess(supabaseAdmin, paymobOrderId, transactionId);
       } else {
-        const { error } = await supabaseAdmin
-          .from('card_orders')
-          .update({ payment_status: 'failed' })
-          .eq('paymob_order_id', paymobOrderId);
-        if (error) console.error('[paymob/webhook] failed update:', error);
+        const { finalizeCardOrderPaymentFailure } = await import('@/lib/cardOrderPayment');
+        await finalizeCardOrderPaymentFailure(supabaseAdmin, paymobOrderId);
       }
     }
   } catch (e) {

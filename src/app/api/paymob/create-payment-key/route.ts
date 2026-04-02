@@ -83,12 +83,20 @@ export async function POST(request: NextRequest) {
 
     const { data: orderRow, error: orderErr } = await ctx.supabaseAdmin
       .from('card_orders')
-      .select('id, center_id, total_amount')
+      .select('id, center_id, total_amount, payment_status')
       .eq('id', cardOrderId)
-      .single();
+      .maybeSingle();
 
     if (orderErr || !orderRow || orderRow.center_id !== ctx.user.center_id) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    const paySt = String((orderRow as { payment_status?: string | null }).payment_status ?? '');
+    if (paySt === 'paid') {
+      return NextResponse.json({ error: 'Order already paid' }, { status: 400 });
+    }
+    if (paySt !== 'pending_payment' && paySt !== 'unpaid') {
+      return NextResponse.json({ error: 'Order not payable' }, { status: 400 });
     }
 
     const dbTotal = Number(orderRow.total_amount);
@@ -184,9 +192,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${encodeURIComponent(keyJson.token)}`;
+
     return NextResponse.json({
       paymentKey: keyJson.token,
       iframeId,
+      paymobOrderId: String(paymobOrderId),
+      iframeUrl,
     });
   } catch (e) {
     console.error('[create-payment-key]', e);

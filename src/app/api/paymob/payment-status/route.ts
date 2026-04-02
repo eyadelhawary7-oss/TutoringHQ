@@ -1,76 +1,83 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { finalizeCardOrderPaymentFailure, finalizeCardOrderPaymentSuccess } from '@/lib/cardOrderPayment';
+import { inquirePaymobCardOrder } from '@/lib/paymobOrderInquiry';
 
-async function getUserContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!userRecord?.center_id) return null;
-
-  return { user: userRecord, supabaseAdmin };
-}
-
+/**
+ * Public polling endpoint — no auth (Amazon-style client poll).
+ * Query: paymobOrderId (Paymob ecommerce order id string).
+ */
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
-    if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !serviceKey) {
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
     }
 
-    const cardOrderId = request.nextUrl.searchParams.get('cardOrderId')?.trim();
-    if (!cardOrderId) {
-      return NextResponse.json({ error: 'cardOrderId required' }, { status: 400 });
+    const paymobOrderId = request.nextUrl.searchParams.get('paymobOrderId')?.trim() ?? '';
+    if (!paymobOrderId) {
+      return NextResponse.json({ error: 'paymobOrderId required' }, { status: 400 });
     }
 
-    const { data: row, error } = await ctx.supabaseAdmin
+    const supabaseAdmin = createClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data: order } = await supabaseAdmin
       .from('card_orders')
-      .select('payment_status, center_id')
-      .eq('id', cardOrderId)
-      .single();
+      .select(
+        `
+        id,
+        quantity,
+        students,
+        total_amount,
+        notes,
+        delivery_address,
+        payment_status,
+        paymob_order_id,
+        centers ( name, phone, governorate )
+      `,
+      )
+      .eq('paymob_order_id', paymobOrderId)
+      .maybeSingle();
 
-    if (error || !row || row.center_id !== ctx.user.center_id) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!order) {
+      return NextResponse.json({ paid: false, failed: false });
     }
 
-    const paymentStatus = row.payment_status as string;
-    if (paymentStatus !== 'unpaid' && paymentStatus !== 'paid' && paymentStatus !== 'failed') {
-      return NextResponse.json({ paymentStatus: 'unpaid' });
+    const row = order as { id: string; payment_status?: string | null };
+
+    if (row.payment_status === 'paid') {
+      return NextResponse.json({ paid: true, orderId: row.id });
     }
 
-    return NextResponse.json({ paymentStatus });
+    if (row.payment_status === 'failed') {
+      return NextResponse.json({ paid: false, failed: true });
+    }
+
+    const inquiry = await inquirePaymobCardOrder(paymobOrderId);
+
+    if (inquiry.state === 'failed') {
+      await finalizeCardOrderPaymentFailure(supabaseAdmin, paymobOrderId);
+      return NextResponse.json({ paid: false, failed: true });
+    }
+
+    if (inquiry.state === 'paid') {
+      const txId = inquiry.transactionId ?? '';
+      const finalized = await finalizeCardOrderPaymentSuccess(supabaseAdmin, paymobOrderId, txId);
+      if (!finalized) {
+        return NextResponse.json({ paid: false, failed: false });
+      }
+      return NextResponse.json({ paid: true, orderId: finalized.orderId });
+    }
+
+    return NextResponse.json({ paid: false, failed: false });
   } catch (e) {
     console.error('[payment-status]', e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'Internal error' },
-      { status: 500 }
+      { paid: false, failed: false, error: e instanceof Error ? e.message : 'Internal error' },
+      { status: 500 },
     );
   }
 }

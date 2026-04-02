@@ -8,17 +8,20 @@ import { NextResponse } from 'next/server';
 
 const VALID_STATUSES: CardOrderFulfillmentStatus[] = [
   'pending',
-  'confirmed',
+  'paid',
   'printing',
+  'ready_for_pickup',
   'shipped',
   'delivered',
+  'confirmed',
 ];
 
 function mapStatus(raw: string | null | undefined): CardOrderFulfillmentStatus {
   const s = (raw ?? '').toLowerCase();
-  return VALID_STATUSES.includes(s as CardOrderFulfillmentStatus)
-    ? (s as CardOrderFulfillmentStatus)
-    : 'pending';
+  if (VALID_STATUSES.includes(s as CardOrderFulfillmentStatus)) {
+    return s as CardOrderFulfillmentStatus;
+  }
+  return 'pending';
 }
 
 function parseStudents(raw: unknown): AdminCardOrderStudent[] {
@@ -48,6 +51,31 @@ function pickCenterJoin(row: Record<string, unknown>): CentersJoin {
   return null;
 }
 
+const STATUS_UPDATE_ALLOWED = [
+  'pending',
+  'paid',
+  'printing',
+  'ready_for_pickup',
+  'shipped',
+  'delivered',
+  'confirmed',
+];
+
+async function updateOrderStatus(
+  supabaseAdmin: import('@supabase/supabase-js').SupabaseClient,
+  orderId: string,
+  status: string,
+): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
+  if (!STATUS_UPDATE_ALLOWED.includes(status)) {
+    return { ok: false, message: 'Invalid status', status: 400 };
+  }
+  const { error } = await supabaseAdmin.from('card_orders').update({ status }).eq('id', orderId);
+  if (error) {
+    return { ok: false, message: error.message, status: 500 };
+  }
+  return { ok: true };
+}
+
 export async function GET(request: Request) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) {
@@ -74,9 +102,13 @@ export async function GET(request: Request) {
       paymob_order_id,
       paymob_transaction_id,
       students,
+      vendor_sent_at,
+      bosta_order_id,
+      tracking_number,
       centers ( name, phone, logo_url, card_color )
     `,
     )
+    .not('payment_status', 'in', '(pending_payment,failed)')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -109,13 +141,16 @@ export async function GET(request: Request) {
       created_at:
         typeof r.created_at === 'string' ? r.created_at : new Date().toISOString(),
       payment_status: r.payment_status != null ? String(r.payment_status) : null,
+      vendor_sent_at: r.vendor_sent_at != null ? String(r.vendor_sent_at) : null,
+      bosta_order_id: r.bosta_order_id != null ? String(r.bosta_order_id) : null,
+      tracking_number: r.tracking_number != null ? String(r.tracking_number) : null,
     };
   });
 
   return NextResponse.json({ orders });
 }
 
-export async function PUT(request: Request) {
+async function handleOrderStatusUpdate(request: Request) {
   const { getAdminContext } = await import('@/lib/admin-auth');
   const ctx = await getAdminContext(request);
   if (!ctx) {
@@ -123,22 +158,23 @@ export async function PUT(request: Request) {
   }
 
   const body = await request.json();
-  const { orderId, status } = body;
+  const orderId = (body.orderId ?? body.id) as string | undefined;
+  const { status } = body;
   if (!orderId || !status) {
     return NextResponse.json({ error: 'orderId and status required' }, { status: 400 });
   }
-  const validStatuses = ['pending', 'confirmed', 'printing', 'shipped', 'delivered'];
-  if (!validStatuses.includes(status)) {
-    return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
-  }
 
-  const { error } = await ctx.supabaseAdmin
-    .from('card_orders')
-    .update({ status })
-    .eq('id', orderId);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const result = await updateOrderStatus(ctx.supabaseAdmin, orderId, status);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.message }, { status: result.status });
   }
   return NextResponse.json({ success: true });
+}
+
+export async function PUT(request: Request) {
+  return handleOrderStatusUpdate(request);
+}
+
+export async function PATCH(request: Request) {
+  return handleOrderStatusUpdate(request);
 }

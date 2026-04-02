@@ -3,6 +3,15 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
+function getContrastColor(hex: string): string {
+  if (!hex?.startsWith('#')) return '#FFFFFF';
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#0F172A' : '#FFFFFF';
+}
+
 interface CardTemplatePreviewProps {
   centerName: string;
   centerLogo: string | null;
@@ -23,6 +32,7 @@ export default function CardTemplatePreview({
   color = '#0D9488',
   className,
 }: CardTemplatePreviewProps) {
+  const headerTextColor = getContrastColor(color);
   const initials = centerName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   return (
     <div
@@ -44,7 +54,12 @@ export default function CardTemplatePreview({
             {initials}
           </div>
         )}
-        <span className="text-white text-[10px] font-medium truncate">{centerName}</span>
+        <span
+          className="text-[10px] font-medium truncate"
+          style={{ color: headerTextColor }}
+        >
+          {centerName}
+        </span>
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center pt-[12%]">
         <div className="w-16 h-16 bg-[var(--color-surface-1)] rounded flex items-center justify-center border-2 border-[var(--color-border-subtle)] overflow-hidden">
