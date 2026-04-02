@@ -1,19 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Loader2, MessageCircle } from 'lucide-react'
 import { AdminSidebar } from '@/components/AdminSidebar'
 import { useLayout } from '@/contexts/LayoutContext'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
-import { getAnnouncementCap } from '@/lib/parentPack'
+import { getAnnouncementCap, PLAN_INVOICE_MINIMUMS } from '@/lib/parentPack'
 import type { NotificationTypes, WaPackBillingSummary, WaPackCenter } from '@/types/whatsapp-pack'
+import { useToast } from '@/hooks/useToast'
 
 interface AdminWaPackClientProps {
   initialCenters: WaPackCenter[]
   initialNotificationTypes: NotificationTypes
   initialStats: { totalEnabled: number; totalActiveParents: number; totalMRR: number }
+  pendingRequestCount: number
 }
 
 const DEFAULT_NOTIFICATION_TYPES: NotificationTypes = {
@@ -135,13 +137,26 @@ function PackToggle({
 
 export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   const t = useTranslations('adminWaPack')
-  const tAdmin = useTranslations('admin')
+  const tRoot = useTranslations()
   const tNotif = useTranslations('whatsappPack')
   const tPlans = useTranslations('billing.planNames')
   const locale = useLocale()
-  const [centers, setCenters] = useState<WaPackCenter[]>(() =>
+  const toast = useToast()
+
+  const [activeTab, setActiveTab] = useState<'centers' | 'requests'>('centers')
+  const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [customMinimum, setCustomMinimum] = useState('')
+  const [actionLoading, setActionLoading] = useState(false)
+  const [approveInlineError, setApproveInlineError] = useState<string | null>(null)
+  const [rejectInlineError, setRejectInlineError] = useState<string | null>(null)
+
+  const [localCenters, setLocalCenters] = useState<WaPackCenter[]>(() =>
     (Array.isArray(props.initialCenters) ? props.initialCenters : []).map((c) => normalizeCenter(c)),
   )
+  const [localPendingCount, setLocalPendingCount] = useState(asNum(props.pendingRequestCount))
+
   const [notifTypes, setNotifTypes] = useState<NotificationTypes>(() => ({
     ...DEFAULT_NOTIFICATION_TYPES,
     ...(props.initialNotificationTypes ?? {}),
@@ -176,6 +191,31 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
     return plan
   }
 
+  function packRequestStatusBadge(status: string) {
+    if (status === 'approved') {
+      return (
+        <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
+          {tRoot('admin.statusApproved')}
+        </span>
+      )
+    }
+    if (status === 'pending') {
+      return (
+        <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+          {tRoot('admin.statusPending')}
+        </span>
+      )
+    }
+    if (status === 'rejected') {
+      return (
+        <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+          {tRoot('admin.statusRejected')}
+        </span>
+      )
+    }
+    return <span className="text-[var(--color-text-tertiary)]">—</span>
+  }
+
   async function toggleCenter(centerId: string, newValue: boolean) {
     setTogglingId(centerId)
     try {
@@ -194,7 +234,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
       })
       if (!res.ok) return
 
-      setCenters((prev) =>
+      setLocalCenters((prev) =>
         prev.map((c) => (c.id === centerId ? { ...c, parent_pack_enabled: newValue } : c)),
       )
       setStats((prev) => ({
@@ -245,6 +285,8 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
       setSavingConfig(false)
     }
   }
+
+  const pendingCenters = localCenters.filter((c) => c.pack_request_status === 'pending')
 
   return (
     <div className="flex min-h-screen bg-[var(--color-surface-0)] pt-14 lg:pt-0" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -306,70 +348,169 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
             </div>
           </section>
 
-          <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-sm">
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-start text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
-                    <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
-                      {t('centerName')}
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">{t('plan')}</th>
-                    <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
-                      {t('activeParents')}
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
-                      {t('monthlyAmount')}
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
-                      {tAdmin('announcementBalance')}
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
-                      {t('billingStatus')}
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
-                      {t('packEnabled')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(centers ?? []).map((c) => {
-                    const billStatus = billingStatusKey(c.billing?.status)
-                    const parents = asNum(c.parent_pack_active_parents)
-                    const balance = asNum(c.announcement_balance ?? 0)
-                    const cap = getAnnouncementCap(c.plan)
-                    const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0
-                    return (
-                    <tr key={c.id} className="border-b border-[var(--color-border-subtle)]">
-                      <td className="px-4 py-3">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('centers')}
+              className={cn(
+                'rounded-full px-4 py-2 text-sm font-medium transition-shadow',
+                activeTab === 'centers'
+                  ? 'ring-2 ring-teal-500 bg-teal-900 text-white'
+                  : 'bg-slate-800 text-slate-400',
+              )}
+            >
+              {tRoot('admin.centersTab')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('requests')}
+              className={cn(
+                'inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-shadow',
+                activeTab === 'requests'
+                  ? 'ring-2 ring-teal-500 bg-teal-900 text-white'
+                  : 'bg-slate-800 text-slate-400',
+              )}
+            >
+              {tRoot('admin.packRequestsTab')}
+              {localPendingCount > 0 ? (
+                <span className="ms-1.5 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                  {localPendingCount.toLocaleString('en-US')}
+                </span>
+              ) : null}
+            </button>
+          </div>
+
+          {activeTab === 'centers' ? (
+            <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-sm">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-start text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        {t('centerName')}
+                      </th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">{t('plan')}</th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        {t('activeParents')}
+                      </th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        {t('monthlyAmount')}
+                      </th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        {tRoot('admin.announcementBalance')}
+                      </th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        {tRoot('admin.packRequestStatus')}
+                      </th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        {tRoot('admin.pendingBalance')}
+                      </th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        {t('billingStatus')}
+                      </th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        {t('packEnabled')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(localCenters ?? []).map((c) => {
+                      const billStatus = billingStatusKey(c.billing?.status)
+                      const parents = asNum(c.parent_pack_active_parents)
+                      const balance = asNum(c.announcement_balance ?? 0)
+                      const cap = getAnnouncementCap(c.plan)
+                      const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0
+                      const pend = asNum(c.pack_pending_balance)
+                      return (
+                        <tr key={c.id} className="border-b border-[var(--color-border-subtle)]">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-[var(--color-text-primary)]">{c.name}</p>
+                            {c.phone ? (
+                              <p className="text-xs text-[var(--color-text-tertiary)]">{c.phone}</p>
+                            ) : null}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
+                              {planLabel(c.plan)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
+                            {fmtInt(parents)}
+                          </td>
+                          <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
+                            {fmtInt(parents * 10)} ج.م
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
+                              {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
+                            </p>
+                            <div className="mt-1 h-[3px] w-full rounded bg-slate-700">
+                              <div
+                                className={cn('h-[3px] rounded', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">{packRequestStatusBadge(c.pack_request_status)}</td>
+                          <td className="px-4 py-3">
+                            {pend > 0 ? (
+                              <>
+                                <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
+                                  {pend.toLocaleString('en-US')} EGP
+                                </p>
+                                <p className="text-[10px] text-[var(--color-text-tertiary)]">
+                                  {asNum(c.pack_months_without_invoice).toLocaleString('en-US')}mo
+                                </p>
+                              </>
+                            ) : (
+                              <span className="text-[var(--color-text-tertiary)]">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+                                billingBadgeClass(billStatus),
+                              )}
+                            >
+                              {billingLabels[billStatus]}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <PackToggle
+                              value={Boolean(c.parent_pack_enabled)}
+                              disabled={togglingId === c.id}
+                              ariaLabel={t('packEnabled')}
+                              onToggle={() => void toggleCenter(c.id, !c.parent_pack_enabled)}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="divide-y divide-[var(--color-border-subtle)] md:hidden">
+                {(localCenters ?? []).map((c) => {
+                  const billStatus = billingStatusKey(c.billing?.status)
+                  const parents = asNum(c.parent_pack_active_parents)
+                  const balance = asNum(c.announcement_balance ?? 0)
+                  const cap = getAnnouncementCap(c.plan)
+                  const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0
+                  const pend = asNum(c.pack_pending_balance)
+                  return (
+                    <div key={c.id} className="space-y-3 p-4">
+                      <div>
                         <p className="font-medium text-[var(--color-text-primary)]">{c.name}</p>
                         {c.phone ? (
                           <p className="text-xs text-[var(--color-text-tertiary)]">{c.phone}</p>
                         ) : null}
-                      </td>
-                      <td className="px-4 py-3">
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
                           {planLabel(c.plan)}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                        {fmtInt(parents)}
-                      </td>
-                      <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                        {fmtInt(parents * 10)} ج.م
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
-                          {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
-                        </p>
-                        <div className="mt-1 h-[3px] w-full rounded bg-slate-700">
-                          <div
-                            className={cn('h-[3px] rounded', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
                         <span
                           className={cn(
                             'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
@@ -378,92 +519,373 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         >
                           {billingLabels[billStatus]}
                         </span>
-                      </td>
-                      <td className="px-4 py-3">
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-[var(--color-text-tertiary)]">{t('activeParents')}: </span>
+                          <span className="tabular-nums font-medium">
+                            {fmtInt(parents)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--color-text-tertiary)]">{t('monthlyAmount')}: </span>
+                          <span className="tabular-nums font-medium">
+                            {fmtInt(parents * 10)} ج.م
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-[var(--color-text-secondary)]">
+                          {tRoot('admin.announcementBalance')}
+                        </p>
+                        <p className="mt-0.5 text-xs tabular-nums text-[var(--color-text-primary)]">
+                          {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
+                        </p>
+                        <div className="mt-1 h-[3px] w-full rounded bg-slate-700">
+                          <div
+                            className={cn('h-[3px] rounded', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-[var(--color-text-secondary)]">
+                          {tRoot('admin.packRequestStatus')}:
+                        </span>
+                        {packRequestStatusBadge(c.pack_request_status)}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-[var(--color-text-secondary)]">
+                          {tRoot('admin.pendingBalance')}
+                        </p>
+                        {pend > 0 ? (
+                          <>
+                            <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
+                              {pend.toLocaleString('en-US')} EGP
+                            </p>
+                            <p className="text-[10px] text-[var(--color-text-tertiary)]">
+                              {asNum(c.pack_months_without_invoice).toLocaleString('en-US')}mo
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-[var(--color-text-tertiary)]">—</p>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                          {t('packEnabled')}
+                        </span>
                         <PackToggle
                           value={Boolean(c.parent_pack_enabled)}
                           disabled={togglingId === c.id}
                           ariaLabel={t('packEnabled')}
                           onToggle={() => void toggleCenter(c.id, !c.parent_pack_enabled)}
                         />
-                      </td>
-                    </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="divide-y divide-[var(--color-border-subtle)] md:hidden">
-              {(centers ?? []).map((c) => {
-                const billStatus = billingStatusKey(c.billing?.status)
-                const parents = asNum(c.parent_pack_active_parents)
-                const balance = asNum(c.announcement_balance ?? 0)
-                const cap = getAnnouncementCap(c.plan)
-                const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0
-                return (
-                <div key={c.id} className="space-y-3 p-4">
-                  <div>
-                    <p className="font-medium text-[var(--color-text-primary)]">{c.name}</p>
-                    {c.phone ? (
-                      <p className="text-xs text-[var(--color-text-tertiary)]">{c.phone}</p>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
-                      {planLabel(c.plan)}
-                    </span>
-                    <span
-                      className={cn(
-                        'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                        billingBadgeClass(billStatus),
-                      )}
-                    >
-                      {billingLabels[billStatus]}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-[var(--color-text-tertiary)]">{t('activeParents')}: </span>
-                      <span className="tabular-nums font-medium">
-                        {fmtInt(parents)}
-                      </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[var(--color-text-tertiary)]">{t('monthlyAmount')}: </span>
-                      <span className="tabular-nums font-medium">
-                        {fmtInt(parents * 10)} ج.م
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-[var(--color-text-secondary)]">{tAdmin('announcementBalance')}</p>
-                    <p className="mt-0.5 text-xs tabular-nums text-[var(--color-text-primary)]">
-                      {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
-                    </p>
-                    <div className="mt-1 h-[3px] w-full rounded bg-slate-700">
-                      <div
-                        className={cn('h-[3px] rounded', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                      {t('packEnabled')}
-                    </span>
-                    <PackToggle
-                      value={Boolean(c.parent_pack_enabled)}
-                      disabled={togglingId === c.id}
-                      ariaLabel={t('packEnabled')}
-                      onToggle={() => void toggleCenter(c.id, !c.parent_pack_enabled)}
-                    />
-                  </div>
+                  )
+                })}
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-sm p-4 sm:p-6">
+              {pendingCenters.length === 0 ? (
+                <p className="text-center text-sm text-[var(--color-text-tertiary)] py-12">
+                  {tRoot('admin.noPendingRequests')}
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-start text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                          {t('centerName')}
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">{t('plan')}</th>
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                          {tRoot('admin.phone')}
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                          {tRoot('admin.packRequestedAtColumn')}
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                          {tRoot('admin.actions')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingCenters.map((c) => (
+                        <Fragment key={c.id}>
+                          <tr className="border-b border-[var(--color-border-subtle)] align-top">
+                            <td className="px-4 py-3">
+                              <p className="font-bold text-[var(--color-text-primary)]">{c.name}</p>
+                              {c.phone ? (
+                                <p className="text-xs text-[var(--color-text-tertiary)]">{c.phone}</p>
+                              ) : null}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
+                                {planLabel(c.plan)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
+                              {c.phone ?? '—'}
+                            </td>
+                            <td className="px-4 py-3 text-[var(--color-text-primary)]">
+                              {c.pack_requested_at
+                                ? new Date(c.pack_requested_at).toLocaleDateString(
+                                    locale === 'ar' ? 'ar-EG' : 'en-US',
+                                    { day: 'numeric', month: 'long', year: 'numeric' },
+                                  )
+                                : '—'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setApprovingId(c.id)
+                                    setRejectingId(null)
+                                    setCustomMinimum('')
+                                    setApproveInlineError(null)
+                                  }}
+                                  className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
+                                >
+                                  {tRoot('admin.approve')}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRejectingId(c.id)
+                                    setApprovingId(null)
+                                    setRejectReason('')
+                                    setRejectInlineError(null)
+                                  }}
+                                  className="rounded-lg border border-red-500 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                >
+                                  {tRoot('admin.reject')}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {approvingId === c.id ? (
+                            <tr key={`${c.id}-approve`} className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                              <td colSpan={5} className="px-4 py-4">
+                                <div className="max-w-lg space-y-3 rounded-lg border border-[var(--color-border-subtle)] p-4">
+                                  <h3 className="font-semibold text-[var(--color-text-primary)]">
+                                    {tRoot('admin.approvePackTitle')} — {c.name}
+                                  </h3>
+                                  {c.plan === 'top_centers' ? (
+                                    <div className="space-y-1">
+                                      <label className="text-sm font-medium text-[var(--color-text-primary)]">
+                                        {tRoot('admin.customMinimum')}
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={1000}
+                                        step={100}
+                                        value={customMinimum}
+                                        onChange={(e) => {
+                                          setCustomMinimum(e.target.value)
+                                          setApproveInlineError(null)
+                                        }}
+                                        className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm"
+                                        placeholder="e.g. 15000"
+                                      />
+                                      <p className="text-xs text-[var(--color-text-tertiary)]">
+                                        {tRoot('admin.customMinimumNote')}
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-[var(--color-text-secondary)]">
+                                      {tRoot('admin.invoiceMinimumWillBe')}{' '}
+                                      {(PLAN_INVOICE_MINIMUMS[c.plan] ?? PLAN_INVOICE_MINIMUMS.starter).toLocaleString(
+                                        'en-US',
+                                      )}{' '}
+                                      EGP
+                                    </p>
+                                  )}
+                                  {approveInlineError ? (
+                                    <p className="text-sm text-red-600">{approveInlineError}</p>
+                                  ) : null}
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={actionLoading}
+                                      onClick={async () => {
+                                        if (c.plan === 'top_centers' && !customMinimum.trim()) {
+                                          setApproveInlineError(tRoot('admin.customMinimumRequired'))
+                                          return
+                                        }
+                                        setActionLoading(true)
+                                        setApproveInlineError(null)
+                                        try {
+                                          const {
+                                            data: { session },
+                                          } = await supabase.auth.getSession()
+                                          if (!session?.access_token) {
+                                            toast.error(tRoot('common.errorGeneric'))
+                                            return
+                                          }
+                                          const body: { customInvoiceMinimum?: number } = {}
+                                          if (customMinimum.trim()) {
+                                            body.customInvoiceMinimum = Number(customMinimum)
+                                          }
+                                          const res = await fetch(`/api/admin/pack-requests/${c.id}/approve`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              Authorization: `Bearer ${session.access_token}`,
+                                            },
+                                            body: JSON.stringify(body),
+                                          })
+                                          if (res.ok) {
+                                            setLocalCenters((prev) =>
+                                              prev.map((row) =>
+                                                row.id === c.id
+                                                  ? {
+                                                      ...row,
+                                                      pack_request_status: 'approved',
+                                                      parent_pack_enabled: true,
+                                                    }
+                                                  : row,
+                                              ),
+                                            )
+                                            setLocalPendingCount((prev) => Math.max(0, prev - 1))
+                                            setApprovingId(null)
+                                            setCustomMinimum('')
+                                            toast.success(tRoot('admin.packApproved'))
+                                          } else {
+                                            toast.error(tRoot('common.errorGeneric'))
+                                          }
+                                        } finally {
+                                          setActionLoading(false)
+                                        }
+                                      }}
+                                      className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                                    >
+                                      {actionLoading ? (
+                                        <Loader2 className="inline h-4 w-4 animate-spin me-1" />
+                                      ) : null}
+                                      {tRoot('admin.approve')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={actionLoading}
+                                      onClick={() => {
+                                        setApprovingId(null)
+                                        setCustomMinimum('')
+                                        setApproveInlineError(null)
+                                      }}
+                                      className="rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+                                    >
+                                      {tRoot('common.cancel')}
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ) : null}
+                          {rejectingId === c.id ? (
+                            <tr key={`${c.id}-reject`} className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                              <td colSpan={5} className="px-4 py-4">
+                                <div className="max-w-lg space-y-3 rounded-lg border border-[var(--color-border-subtle)] p-4">
+                                  <h3 className="font-semibold text-[var(--color-text-primary)]">
+                                    {tRoot('admin.rejectPackTitle')} — {c.name}
+                                  </h3>
+                                  <textarea
+                                    dir="rtl"
+                                    placeholder={tRoot('admin.rejectReasonPlaceholder')}
+                                    value={rejectReason}
+                                    onChange={(e) => {
+                                      setRejectReason(e.target.value)
+                                      setRejectInlineError(null)
+                                    }}
+                                    maxLength={500}
+                                    rows={3}
+                                    className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm"
+                                  />
+                                  {rejectInlineError ? (
+                                    <p className="text-sm text-red-600">{rejectInlineError}</p>
+                                  ) : null}
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={actionLoading || !rejectReason.trim()}
+                                      onClick={async () => {
+                                        if (!rejectReason.trim()) {
+                                          setRejectInlineError(tRoot('admin.rejectReasonRequired'))
+                                          return
+                                        }
+                                        setActionLoading(true)
+                                        setRejectInlineError(null)
+                                        try {
+                                          const {
+                                            data: { session },
+                                          } = await supabase.auth.getSession()
+                                          if (!session?.access_token) {
+                                            toast.error(tRoot('common.errorGeneric'))
+                                            return
+                                          }
+                                          const res = await fetch(`/api/admin/pack-requests/${c.id}/reject`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              Authorization: `Bearer ${session.access_token}`,
+                                            },
+                                            body: JSON.stringify({ reason: rejectReason.trim() }),
+                                          })
+                                          if (res.ok) {
+                                            setLocalCenters((prev) =>
+                                              prev.map((row) =>
+                                                row.id === c.id
+                                                  ? { ...row, pack_request_status: 'rejected' }
+                                                  : row,
+                                              ),
+                                            )
+                                            setLocalPendingCount((prev) => Math.max(0, prev - 1))
+                                            setRejectingId(null)
+                                            setRejectReason('')
+                                            toast.success(tRoot('admin.packRejected'))
+                                          } else {
+                                            toast.error(tRoot('common.errorGeneric'))
+                                          }
+                                        } finally {
+                                          setActionLoading(false)
+                                        }
+                                      }}
+                                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                                    >
+                                      {actionLoading ? (
+                                        <Loader2 className="inline h-4 w-4 animate-spin me-1" />
+                                      ) : null}
+                                      {tRoot('admin.reject')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={actionLoading}
+                                      onClick={() => {
+                                        setRejectingId(null)
+                                        setRejectReason('')
+                                        setRejectInlineError(null)
+                                      }}
+                                      className="rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+                                    >
+                                      {tRoot('common.cancel')}
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ) : null}
+                        </Fragment>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                )
-              })}
-            </div>
-          </section>
+              )}
+            </section>
+          )}
         </div>
       </main>
     </div>

@@ -41,6 +41,7 @@ interface AdminPackResponse {
   centers: WaPackCenter[]
   notificationTypes: NotificationTypes
   stats: { totalEnabled: number; totalActiveParents: number; totalMRR: number }
+  pendingRequestCount?: number
 }
 
 export default async function AdminWhatsAppPackPage({
@@ -103,6 +104,7 @@ export default async function AdminWhatsAppPackPage({
         totalActiveParents: Number(data.stats?.totalActiveParents),
         totalMRR: Number(data.stats?.totalMRR),
       }}
+      pendingRequestCount={Number(data.pendingRequestCount ?? 0)}
     />
   )
 }

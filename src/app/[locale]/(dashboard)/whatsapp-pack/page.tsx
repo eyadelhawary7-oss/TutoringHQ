@@ -3,6 +3,21 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import WhatsAppPackClient from './WhatsAppPackClient';
 
+type CenterRow = {
+  id: string;
+  name: string;
+  phone: string | null;
+  plan: string;
+  parent_pack_enabled: boolean | null;
+  parent_pack_active_parents: number | null;
+  announcement_balance: unknown;
+  pack_request_status?: string | null;
+  pack_requested_at?: string | null;
+  pack_rejection_reason?: string | null;
+  pack_pending_balance?: number | string | null;
+  pack_months_without_invoice?: number | string | null;
+};
+
 export default async function WhatsAppPackPage({
   params,
 }: {
@@ -44,7 +59,9 @@ export default async function WhatsAppPackPage({
   const { data: center } = await supabaseAdmin
     .from('centers')
     .select(
-      'id, name, phone, plan, parent_pack_enabled, parent_pack_active_parents, announcement_balance',
+      `id, name, phone, plan, parent_pack_enabled, parent_pack_active_parents, announcement_balance,
+      pack_request_status, pack_requested_at, pack_rejection_reason,
+      pack_pending_balance, pack_months_without_invoice, pack_custom_invoice_minimum`,
     )
     .eq('id', centerId)
     .maybeSingle();
@@ -109,13 +126,28 @@ export default async function WhatsAppPackPage({
     }
   }
 
+  const c = center as CenterRow;
+
   return (
     <WhatsAppPackClient
-      center={center}
+      center={{
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        plan: c.plan,
+        parent_pack_enabled: c.parent_pack_enabled === true,
+        parent_pack_active_parents: Number(c.parent_pack_active_parents ?? 0),
+        announcement_balance: Number(c.announcement_balance ?? 0),
+      }}
       students={students}
       blasts={blasts}
       lastAlertMap={lastAlertMap}
       locale={locale}
+      packRequestStatus={String(c.pack_request_status ?? 'none')}
+      packRejectionReason={c.pack_rejection_reason ?? null}
+      packRequestedAt={c.pack_requested_at ?? null}
+      packPendingBalance={Number(c.pack_pending_balance ?? 0)}
+      monthsWithoutInvoice={Number(c.pack_months_without_invoice ?? 0)}
     />
   );
 }
