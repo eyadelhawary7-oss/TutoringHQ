@@ -141,7 +141,7 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   return (
     <>
       <aside
-        className={`fixed top-0 left-0 h-full w-64 z-[60] md:hidden flex flex-col bg-slate-900 border-r border-slate-800 transition-transform duration-[250ms] ease-in-out ${
+        className={`fixed top-0 left-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-slate-900 border-r border-slate-800 transition-transform duration-[250ms] ease-in-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-hidden={!open}

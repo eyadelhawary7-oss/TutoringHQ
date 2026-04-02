@@ -57,7 +57,7 @@ export function BottomTabBar() {
     : TABS;
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 print:hidden bg-surface-1 border-t border-[var(--color-border-subtle)] shadow-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} aria-label={tm('tab_bar_label')}>
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 print:hidden bg-surface-1 border-t border-[var(--color-border-subtle)] shadow-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} aria-label={tm('tab_bar_label')}>
       <div className="flex items-stretch min-h-14 h-14">
         {visibleTabs.map(({ navKey, path, segment, icon: Icon }) => {
           const active = isTabActive(cleanPath, segment);

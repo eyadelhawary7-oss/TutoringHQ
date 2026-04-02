@@ -113,7 +113,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
 
       {/* Outer wrappers must stay pointer-events-none so fixed layers do not steal clicks from sidebar / nav (toasts use pointer-events-auto on items only). */}
-      <div className="fixed bottom-[calc(56px_+_env(safe-area-inset-bottom,0px)_+_8px)] inset-x-0 flex flex-col-reverse items-center gap-2 px-4 z-[9998] md:hidden pointer-events-none">
+      <div className="fixed bottom-[calc(56px_+_env(safe-area-inset-bottom,0px)_+_8px)] inset-x-0 flex flex-col-reverse items-center gap-2 px-4 z-[9998] lg:hidden pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto w-full max-w-sm">
             <ToastItem toast={t} onDismiss={dismiss} enterClass="toast-enter-bottom" />
@@ -121,7 +121,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         ))}
       </div>
 
-      <div className="fixed top-4 end-4 flex flex-col items-end gap-2 z-[9998] hidden md:flex pointer-events-none">
+      <div className="fixed top-4 end-4 flex flex-col items-end gap-2 z-[9998] hidden lg:flex pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto">
             <ToastItem toast={t} onDismiss={dismiss} enterClass="toast-enter-top" />

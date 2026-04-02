@@ -139,10 +139,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {!isAdminRoute && <Sidebar open={sidebarOpen} onClose={closeMainSidebar} />}
 
       <div
-        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute ? '' : `${sidebarOpen ? 'md:ms-64' : 'md:ms-16'} transition-[margin] duration-300`}`}
+        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute ? '' : `${sidebarOpen ? 'lg:ms-64' : 'lg:ms-16'} transition-[margin] duration-300`}`}
       >
         {/* Desktop topbar */}
-        <header className="hidden md:flex items-center justify-between h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30">
+        <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
             {!isAdminRoute && (
               <button
@@ -180,7 +180,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
         {openMenu && (
           <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setOpenMenu(false)}
             aria-hidden
           />
@@ -194,7 +194,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {!isAdminRoute && (
-        <div className="md:hidden">
+        <div className="lg:hidden">
           <BottomTabBar />
         </div>
       )}

@@ -44,8 +44,8 @@ export default function MobileTopBar({ openMenu, setOpenMenu }: MobileTopBarProp
   };
 
   return (
-    <header className="md:hidden fixed top-0 inset-x-0 z-40 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] min-h-14 flex items-center justify-center print:hidden relative px-4">
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 md:hidden">
+    <header className="lg:hidden fixed top-0 inset-x-0 z-40 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] min-h-14 flex items-center justify-center print:hidden relative px-4">
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 lg:hidden">
         {openMenu ? (
           <X className="h-6 w-6 cursor-pointer text-[var(--color-text-primary)]" onClick={() => setOpenMenu(false)} />
         ) : (

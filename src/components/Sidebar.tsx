@@ -119,7 +119,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
     <>
       {/* Desktop-only rail; mobile nav uses MobileNavDrawer from AppShell */}
       <aside
-        className={`hidden md:flex flex-col fixed top-0 bottom-0 h-screen z-[100] print:hidden bg-slate-900 transition-all duration-300 isolate ${open ? 'w-64' : 'w-16'} ${isRTL ? 'right-0' : 'left-0'}`}
+        className={`hidden lg:flex flex-col fixed top-0 bottom-0 h-screen z-[100] print:hidden bg-slate-900 transition-all duration-300 isolate ${open ? 'w-64' : 'w-16'} ${isRTL ? 'right-0' : 'left-0'}`}
       >
       {/* Logo + Close */}
       <div className="relative z-10 flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800 pointer-events-auto">
@@ -148,7 +148,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
 
       {/* Center name / Branch switcher — hidden in collapsed desktop rail (no BranchSwitcher API change) */}
       {user && (
-        <div className={open ? 'block' : 'hidden md:hidden'}>
+        <div className={open ? 'block' : 'hidden lg:hidden'}>
           <BranchSwitcher />
         </div>
       )}
