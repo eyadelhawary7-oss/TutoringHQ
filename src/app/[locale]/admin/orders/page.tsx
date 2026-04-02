@@ -16,7 +16,7 @@ interface CardOrder {
   orderNumber: string;
   centerName: string;
   centerLogo: string | null;
-  students: { name: string; number: string }[];
+  students: { name: string; number: string; qr_code?: string | null }[];
   total: number;
   deliveryFee: number;
   deliveryAddress: string;
@@ -309,6 +309,7 @@ export default function AdminOrders() {
                     centerLogo={slideOrder.centerLogo}
                     studentName={slideOrder.students[0]?.name || '—'}
                     studentNumber={slideOrder.students[0]?.number || 'STU-XXXXX'}
+                    qrCode={slideOrder.students[0]?.qr_code}
                     color={slideOrder.cardColor}
                     className="scale-[0.85] origin-top"
                   />

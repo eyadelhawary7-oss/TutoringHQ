@@ -8,6 +8,8 @@ interface CardTemplatePreviewProps {
   centerLogo: string | null;
   studentName: string;
   studentNumber: string;
+  /** data:image/png;base64,... from card_orders.students[0].qr_code */
+  qrCode?: string | null;
   color?: string;
   className?: string;
 }
@@ -17,6 +19,7 @@ export default function CardTemplatePreview({
   centerLogo,
   studentName,
   studentNumber,
+  qrCode,
   color = '#0D9488',
   className,
 }: CardTemplatePreviewProps) {
@@ -44,8 +47,12 @@ export default function CardTemplatePreview({
         <span className="text-white text-[10px] font-medium truncate">{centerName}</span>
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center pt-[12%]">
-        <div className="w-16 h-16 bg-[var(--color-surface-1)] rounded flex items-center justify-center border-2 border-[var(--color-border-subtle)]">
-          <span className="text-[10px] font-mono text-[var(--color-text-secondary)]">QR</span>
+        <div className="w-16 h-16 bg-[var(--color-surface-1)] rounded flex items-center justify-center border-2 border-[var(--color-border-subtle)] overflow-hidden">
+          {qrCode ? (
+            <img src={qrCode} alt="QR Code" className="w-full h-full object-contain" />
+          ) : (
+            <span className="text-[10px] font-mono text-[var(--color-text-secondary)]">QR</span>
+          )}
         </div>
         <div className="mt-1 text-xs font-bold text-[var(--color-text-primary)] truncate max-w-full px-1">{studentName}</div>
         <div className="text-[9px] font-mono truncate max-w-full px-1" style={{ color }}>{studentNumber}</div>
