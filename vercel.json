@@ -11,6 +11,10 @@
     "src/app/api/whatsapp/webhook/route.ts": { "maxDuration": 30 },
     "src/app/api/parent-pack/toggle/route.ts": { "maxDuration": 30 },
     "src/app/api/parent-pack/student/[id]/route.ts": { "maxDuration": 30 },
-    "src/app/api/db/route.ts": { "maxDuration": 30 }
+    "src/app/api/db/route.ts": { "maxDuration": 30 },
+    "src/app/api/admin/card-orders/[id]/pdf/route.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
   }
 }

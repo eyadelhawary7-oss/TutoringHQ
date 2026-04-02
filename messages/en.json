@@ -162,7 +162,10 @@
     "bookingCourier": "Booking...",
     "courierBooked": "Courier booked successfully",
     "noVendorConfigured": "No active vendor configured yet",
-    "trackingNumber": "Tracking Number"
+    "trackingNumber": "Tracking Number",
+    "downloadPdf": "Download PDF",
+    "vendorNotifyFailed": "Vendor notification failed",
+    "vendorNotifyFailedDesc": "Order was not sent to vendor automatically — please contact manually"
   },
   "vendorNotify": {
     "header": "🆕 New print order — CenterHQ",

@@ -34,6 +34,7 @@ export interface AdminCardOrderRow {
   created_at: string;
   payment_status: string | null;
   vendor_sent_at: string | null;
+  vendor_notify_failed?: boolean;
   bosta_order_id: string | null;
   tracking_number: string | null;
 }

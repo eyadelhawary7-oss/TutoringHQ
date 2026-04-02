@@ -103,6 +103,7 @@ export async function GET(request: Request) {
       paymob_transaction_id,
       students,
       vendor_sent_at,
+      vendor_notify_failed,
       bosta_order_id,
       tracking_number,
       centers ( name, phone, logo_url, card_color )
@@ -142,6 +143,7 @@ export async function GET(request: Request) {
         typeof r.created_at === 'string' ? r.created_at : new Date().toISOString(),
       payment_status: r.payment_status != null ? String(r.payment_status) : null,
       vendor_sent_at: r.vendor_sent_at != null ? String(r.vendor_sent_at) : null,
+      vendor_notify_failed: Boolean(r.vendor_notify_failed),
       bosta_order_id: r.bosta_order_id != null ? String(r.bosta_order_id) : null,
       tracking_number: r.tracking_number != null ? String(r.tracking_number) : null,
     };

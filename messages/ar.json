@@ -162,7 +162,10 @@
     "bookingCourier": "جاري الحجز...",
     "courierBooked": "تم حجز المندوب بنجاح",
     "noVendorConfigured": "لم يتم إضافة مورد نشط بعد",
-    "trackingNumber": "رقم التتبع"
+    "trackingNumber": "رقم التتبع",
+    "downloadPdf": "تحميل ملف PDF",
+    "vendorNotifyFailed": "فشل إشعار المورد",
+    "vendorNotifyFailedDesc": "لم يتم إرسال الطلب للمورد تلقائياً — يرجى التواصل يدوياً"
   },
   "vendorNotify": {
     "header": "🆕 طلب طباعة جديد — CenterHQ",

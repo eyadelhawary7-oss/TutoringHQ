@@ -140,6 +140,44 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
     },
   ];
 
+  const downloadOrderPdf = useCallback(
+    async (orderId: string) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast.error(tCommon('errorGeneric'));
+        return;
+      }
+      try {
+        const res = await fetch(`/api/admin/card-orders/${orderId}/pdf`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          toast.error(tCommon('errorGeneric'));
+          return;
+        }
+        const blob = await res.blob();
+        const cd = res.headers.get('Content-Disposition');
+        let filename = `CenterHQ-${orderId}.pdf`;
+        const m = cd?.match(/filename="([^"]+)"/);
+        if (m?.[1]) filename = m[1];
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch {
+        toast.error(tCommon('errorGeneric'));
+      }
+    },
+    [toast, tCommon],
+  );
+
   const updateStatus = useCallback(
     async (orderId: string, newStatus: CardOrderFulfillmentStatus) => {
       const {
@@ -292,6 +330,14 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                         >
                           <StatusIcon size={10} /> {tIdCards(cfg.label)}
                         </span>
+                        {order.vendor_notify_failed ? (
+                          <span
+                            title={tIdCards('vendorNotifyFailed')}
+                            className="ms-1 text-amber-400 text-sm"
+                          >
+                            ⚠️
+                          </span>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                         {new Date(order.created_at).toLocaleDateString('en-GB')}
@@ -375,6 +421,18 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                       className="scale-[0.85] origin-top"
                     />
                   </div>
+                  <a
+                    href={`/api/admin/card-orders/${slideOrder.id}/pdf`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      void downloadOrderPdf(slideOrder.id);
+                    }}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full mt-2 py-2 px-4 rounded-lg border border-slate-600 text-slate-300 text-sm font-medium text-center block hover:border-teal-500 hover:text-teal-300 transition-colors"
+                  >
+                    ⬇ {tIdCards('downloadPdf')}
+                  </a>
                 </div>
 
                 <div>
@@ -435,6 +493,20 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     </span>
                   </div>
                 </div>
+
+                {slideOrder.vendor_notify_failed ? (
+                  <div className="bg-red-950 border border-red-800 rounded-lg p-3 mb-3 flex items-start gap-2">
+                    <span className="text-red-400 text-base shrink-0">⚠️</span>
+                    <div>
+                      <p className="text-sm font-semibold text-red-300">
+                        {tIdCards('vendorNotifyFailed')}
+                      </p>
+                      <p className="text-xs text-red-400 mt-1">
+                        {tIdCards('vendorNotifyFailedDesc')}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div>
                   <h4 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase mb-1.5">

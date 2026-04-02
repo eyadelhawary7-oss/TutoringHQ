@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import arMessages from '../../messages/ar.json';
+import { generateOrderPdf, type GeneratePdfInput } from '@/lib/generateOrderPdf';
+import { uploadOrderPdf } from '@/lib/pdfStorage';
+import { notifyAdminOfVendorFailure } from '@/lib/notifyAdminFailure';
 
 function getSupabaseAdmin(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -35,6 +38,19 @@ type VendorNotifyJson = {
 
 function vn(): VendorNotifyJson['vendorNotify'] {
   return (arMessages as VendorNotifyJson).vendorNotify;
+}
+
+interface VendorPdfCenter {
+  name: string;
+  phone: string | null;
+  card_color: string | null;
+}
+
+interface VendorPdfStudent {
+  id: string;
+  name: string;
+  student_number: string;
+  qr_code: string;
 }
 
 function buildInteractiveBodyText(
@@ -188,10 +204,21 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
         }),
       });
       if (!fallbackRes.ok) {
-        console.error(
-          '[vendorNotify] Both interactive + fallback failed:',
-          await fallbackRes.text(),
-        );
+        const errText = await fallbackRes.text();
+        console.error('[vendorNotify] Both interactive + fallback failed:', errText);
+
+        await supabaseAdmin
+          .from('card_orders')
+          .update({ vendor_notify_failed: true })
+          .eq('id', orderId);
+
+        await notifyAdminOfVendorFailure({
+          ref,
+          quantity: Number(order.quantity ?? 0),
+          orderId,
+          reason: 'فشل إرسال رسالة واتساب للمورد',
+        });
+
         return;
       }
       console.log('[vendorNotify] Sent plain text fallback for', ref);
@@ -199,17 +226,107 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
       console.log('[vendorNotify] Sent interactive button for', ref);
     }
 
+    const { data: pdfOrderData } = await supabaseAdmin
+      .from('card_orders')
+      .select('id, quantity, notes, students, centers(name, phone, card_color)')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    const pdfCenter = pdfOrderData?.centers as unknown as VendorPdfCenter | null;
+    const pdfStudents = (pdfOrderData?.students ?? []) as unknown as VendorPdfStudent[];
+
+    const pdfNow = new Date();
+    const pdfMonth = pdfNow.getMonth() + 1;
+    const pdfYear = pdfNow.getFullYear();
+    const pdfAcademicYear =
+      pdfMonth >= 9 ? `${pdfYear}/${pdfYear + 1}` : `${pdfYear - 1}/${pdfYear}`;
+
+    const pdfInput: GeneratePdfInput = {
+      ref,
+      quantity: pdfOrderData?.quantity ?? 0,
+      notes: pdfOrderData?.notes ?? null,
+      centerName: pdfCenter?.name ?? '',
+      centerPhone: pdfCenter?.phone ?? '',
+      cardColor: pdfCenter?.card_color ?? '#0D9488',
+      academicYear: pdfAcademicYear,
+      students: pdfStudents,
+    };
+
+    const pdfBuffer = await generateOrderPdf(pdfInput);
+
+    let vendorNotifyFailed = false;
+
+    if (!pdfBuffer) {
+      console.error('[vendorNotify] PDF generation failed');
+
+      vendorNotifyFailed = true;
+
+      await notifyAdminOfVendorFailure({
+        ref,
+        quantity: pdfOrderData?.quantity ?? 0,
+        orderId,
+        reason: 'فشل إنشاء ملف PDF',
+      });
+    } else {
+      const signedUrl = await uploadOrderPdf(orderId, pdfBuffer);
+
+      if (!signedUrl) {
+        console.error('[vendorNotify] PDF upload failed');
+        vendorNotifyFailed = true;
+        await notifyAdminOfVendorFailure({
+          ref,
+          quantity: pdfOrderData?.quantity ?? 0,
+          orderId,
+          reason: 'فشل رفع ملف PDF',
+        });
+      } else {
+        const docRes = await fetch(
+          `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${waToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              to,
+              type: 'document',
+              document: {
+                link: signedUrl,
+                filename: `CenterHQ-${ref}.pdf`,
+                caption: `ملف البطاقات | ${ref}`,
+              },
+            }),
+          },
+        );
+
+        if (!docRes.ok) {
+          console.error('[vendorNotify] PDF doc send failed:', await docRes.text());
+          vendorNotifyFailed = true;
+          await notifyAdminOfVendorFailure({
+            ref,
+            quantity: pdfOrderData?.quantity ?? 0,
+            orderId,
+            reason: 'وصلت رسالة الطلب — لكن فشل إرسال ملف PDF',
+          });
+        } else {
+          console.log('[vendorNotify] PDF sent successfully for', ref);
+        }
+      }
+    }
+
     const { error: upErr } = await supabaseAdmin
       .from('card_orders')
       .update({
         vendor_id: vendor.id,
         vendor_sent_at: new Date().toISOString(),
+        vendor_notify_failed: vendorNotifyFailed,
       })
-      .eq('id', orderId)
-      .is('vendor_sent_at', null);
+      .eq('id', orderId);
 
     if (upErr) {
-      console.error('[vendorNotify] Failed to record vendor_sent_at:', upErr);
+      console.error('[vendorNotify] Failed to record vendor update:', upErr);
     }
 
     console.log(`[vendorNotify] Notified vendor for order ${orderId}`);
