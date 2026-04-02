@@ -150,7 +150,9 @@
     "delivery": "Delivery",
     "updateStatus": "Update Status",
     "noOrders": "No orders yet",
-    "noOrdersDesc": "Card orders from centers will appear here"
+    "noOrdersDesc": "Card orders from centers will appear here",
+    "whatsappCenterButton": "Message center on WhatsApp",
+    "whatsappOrderReadyMessage": "Hi, your card order {orderNumber} is ready."
   },
   "landing": {
     "subtitle": "Center Management System",

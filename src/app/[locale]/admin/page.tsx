@@ -60,6 +60,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { ALL_ADMIN_PERMISSIONS } from '@/lib/admin-roles';
 import { PlanBadge, BillingStatusBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
+import type { AdminCardOrderRow } from '@/types/admin-card-orders';
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -187,26 +188,12 @@ interface TeamMember {
   created_at?: string;
 }
 
-interface CardOrder {
-  id: string;
-  center_id: string;
-  center_name: string;
-  center_phone?: string | null;
-  students: Array<{ id: string; name: string; student_number?: string; qr_code?: string }>;
-  quantity: number;
-  total_amount: number;
-  status: string;
-  delivery_address?: string | null;
-  notes?: string | null;
-  created_at: string;
-}
-
 function CardOrderPreview({
   students,
   centerName,
   centerLogo,
 }: {
-  students: Array<{ id: string; name: string; student_number?: string; qr_code?: string }>;
+  students: Array<{ id: string; name: string; student_number?: string; qr_code?: string | null }>;
   centerName: string;
   centerLogo: string | null;
 }) {
@@ -306,7 +293,7 @@ export default function AdminPage() {
   const [addAdminForm, setAddAdminForm] = useState({ name: '', phone: '', email: '' });
   const [selectedRole, setSelectedRole] = useState<string>('internal_viewer');
   const [customPerms, setCustomPerms] = useState<string[]>([]);
-  const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
+  const [cardOrders, setCardOrders] = useState<AdminCardOrderRow[]>([]);
   const [cardOrdersUnread, setCardOrdersUnread] = useState(0);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string } | null>(null);
@@ -1714,7 +1701,7 @@ export default function AdminPage() {
                                     <CardOrderPreview
                                       students={order.students}
                                       centerName={order.center_name}
-                                      centerLogo={null}
+                                      centerLogo={order.center_logo_url ?? null}
                                     />
                                   </div>
                                 </div>

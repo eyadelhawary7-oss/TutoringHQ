@@ -150,7 +150,9 @@
     "delivery": "التوصيل",
     "updateStatus": "تحديث الحالة",
     "noOrders": "لا توجد طلبات بعد",
-    "noOrdersDesc": "ستظهر طلبات البطاقات من السناتر هنا"
+    "noOrdersDesc": "ستظهر طلبات البطاقات من السناتر هنا",
+    "whatsappCenterButton": "مراسلة السنتر على واتساب",
+    "whatsappOrderReadyMessage": "مرحباً، طلب البطاقات رقم {orderNumber} جاهز."
   },
   "landing": {
     "subtitle": "نظام إدارة السناتر",
