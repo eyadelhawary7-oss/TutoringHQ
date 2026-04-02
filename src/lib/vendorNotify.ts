@@ -156,34 +156,68 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
     };
     const to = String(vendor.whatsapp_number).replace(/[^0-9]/g, '');
 
-    const x = vn();
-    const interactiveBody = JSON.stringify({
-      messaging_product: 'whatsapp',
-      to,
-      type: 'interactive',
-      interactive: {
-        type: 'button',
-        body: {
-          text: buildInteractiveBodyText(ref, Number(order.quantity ?? 0), centerName, notesVal),
-        },
-        footer: {
-          text: x.platformFooter,
-        },
-        action: {
-          buttons: [
-            {
-              type: 'reply',
-              reply: {
-                id: readyButtonId,
-                title: x.buttonTitle,
+    const templateName = process.env.WHATSAPP_VENDOR_TEMPLATE_NAME?.trim();
+    const notesForTemplate =
+      order.notes != null && String(order.notes).trim() !== ''
+        ? String(order.notes)
+        : 'لا يوجد';
+
+    const primaryBody = templateName
+      ? JSON.stringify({
+          messaging_product: 'whatsapp',
+          to,
+          type: 'template',
+          template: {
+            name: templateName,
+            language: { code: 'ar' },
+            components: [
+              {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: ref },
+                  { type: 'text', text: String(order.quantity ?? 0) },
+                  { type: 'text', text: notesForTemplate },
+                ],
+              },
+              {
+                type: 'button',
+                sub_type: 'quick_reply',
+                index: '0',
+                parameters: [{ type: 'payload', payload: readyButtonId }],
+              },
+            ],
+          },
+        })
+      : (() => {
+          const x = vn();
+          return JSON.stringify({
+            messaging_product: 'whatsapp',
+            to,
+            type: 'interactive',
+            interactive: {
+              type: 'button',
+              body: {
+                text: buildInteractiveBodyText(ref, Number(order.quantity ?? 0), centerName, notesVal),
+              },
+              footer: {
+                text: x.platformFooter,
+              },
+              action: {
+                buttons: [
+                  {
+                    type: 'reply',
+                    reply: {
+                      id: readyButtonId,
+                      title: x.buttonTitle,
+                    },
+                  },
+                ],
               },
             },
-          ],
-        },
-      },
-    });
+          });
+        })();
 
-    const res = await fetch(waUrl, { method: 'POST', headers, body: interactiveBody });
+    const res = await fetch(waUrl, { method: 'POST', headers, body: primaryBody });
 
     if (!res.ok) {
       const fallbackText = buildFallbackBodyText(
@@ -205,7 +239,12 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
       });
       if (!fallbackRes.ok) {
         const errText = await fallbackRes.text();
-        console.error('[vendorNotify] Both interactive + fallback failed:', errText);
+        console.error(
+          templateName
+            ? '[vendorNotify] Template send + fallback failed:'
+            : '[vendorNotify] Both interactive + fallback failed:',
+          errText,
+        );
 
         await supabaseAdmin
           .from('card_orders')
@@ -223,7 +262,12 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
       }
       console.log('[vendorNotify] Sent plain text fallback for', ref);
     } else {
-      console.log('[vendorNotify] Sent interactive button for', ref);
+      console.log(
+        templateName
+          ? '[vendorNotify] Sent WhatsApp template for'
+          : '[vendorNotify] Sent interactive button for',
+        ref,
+      );
     }
 
     const { data: pdfOrderData } = await supabaseAdmin
