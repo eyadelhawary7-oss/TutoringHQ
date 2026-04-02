@@ -1,5 +1,5 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth';
-import { createBostaDelivery } from '@/lib/bosta';
+import { autoBookBosta } from '@/lib/autoBookBosta';
 import { NextResponse } from 'next/server';
 
 export async function POST(
@@ -16,17 +16,7 @@ export async function POST(
 
   const { data: order } = await supabaseAdmin
     .from('card_orders')
-    .select(
-      `
-      id,
-      quantity,
-      notes,
-      delivery_address,
-      status,
-      bosta_order_id,
-      centers ( phone, governorate )
-    `,
-    )
+    .select('id, bosta_order_id')
     .eq('id', id)
     .maybeSingle();
 
@@ -39,59 +29,19 @@ export async function POST(
     return NextResponse.json({ error: 'already_booked' }, { status: 400 });
   }
 
-  const { data: vendor } = await supabaseAdmin
-    .from('vendors')
-    .select('whatsapp_number, pickup_address, city')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
-
-  if (!vendor) {
-    return NextResponse.json({ error: 'no_active_vendor' }, { status: 400 });
-  }
-
-  const center = order.centers as { phone?: string | null; governorate?: string | null } | null;
-  const prefix = (process.env.BOSTA_BUSINESS_PREFIX ?? 'CHQ').replace(/[^A-Za-z0-9]/g, '') || 'CHQ';
-  const ref = `${prefix}-${String(order.id).substring(0, 8).toUpperCase()}`;
-
-  const v = vendor as {
-    whatsapp_number: string;
-    pickup_address: string;
-    city: string | null;
-  };
-
-  const result = await createBostaDelivery({
-    centerPhone: center?.phone ?? '',
-    centerAddress: String(order.delivery_address ?? ''),
-    centerCity: center?.governorate ?? 'Cairo',
-    vendorPhone: v.whatsapp_number,
-    vendorAddress: v.pickup_address,
-    vendorCity: v.city ?? 'Cairo',
-    quantity: Number(order.quantity ?? 0),
-    reference: ref,
-    notes: order.notes != null ? String(order.notes) : '',
-  });
+  const result = await autoBookBosta(id, supabaseAdmin);
 
   if (!result.success) {
+    if (result.error === 'no_active_vendor') {
+      return NextResponse.json({ error: 'no_active_vendor' }, { status: 400 });
+    }
+    if (result.error === 'order_not_found') {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
     return NextResponse.json(
       { error: 'bosta_failed', detail: result.error },
       { status: 502 },
     );
-  }
-
-  const shippedAt = new Date().toISOString();
-  const { error: upErr } = await supabaseAdmin
-    .from('card_orders')
-    .update({
-      bosta_order_id: result.bostaOrderId ?? null,
-      tracking_number: result.trackingNumber ?? null,
-      status: 'shipped',
-      shipped_at: shippedAt,
-    })
-    .eq('id', id);
-
-  if (upErr) {
-    return NextResponse.json({ error: upErr.message }, { status: 500 });
   }
 
   return NextResponse.json({

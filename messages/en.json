@@ -171,7 +171,11 @@
     "center": "🏫 Print for: {centerName}",
     "notes": "📝 Notes: {notes}",
     "footer1": "📎 PDF is being prepared — you will receive it shortly",
-    "footer2": "🚚 A courier will contact you for pickup"
+    "footer2": "🚚 A courier will contact you for pickup",
+    "interactiveCta": "🚚 Tap the button when the order is ready for pickup",
+    "platformFooter": "CenterHQ Platform",
+    "buttonTitle": "✅ Ready for pickup",
+    "fallbackConfirm": "✅ To confirm, send: {readyToken}"
   },
   "landing": {
     "subtitle": "Center Management System",

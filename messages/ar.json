@@ -171,7 +171,11 @@
     "center": "🏫 للطباعة: {centerName}",
     "notes": "📝 ملاحظات: {notes}",
     "footer1": "📎 ملف PDF قيد الإعداد — سيصلك قريباً",
-    "footer2": "🚚 سيتواصل معك المندوب لاستلام الطلب"
+    "footer2": "🚚 سيتواصل معك المندوب لاستلام الطلب",
+    "interactiveCta": "🚚 اضغط الزر عند جاهزية الطلب للاستلام",
+    "platformFooter": "CenterHQ Platform",
+    "buttonTitle": "✅ جاهز للاستلام",
+    "fallbackConfirm": "✅ للتأكيد أرسل: {readyToken}"
   },
   "landing": {
     "subtitle": "نظام إدارة السناتر",

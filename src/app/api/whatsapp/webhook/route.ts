@@ -8,12 +8,14 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   normalizePhone,
   sendFreeformMessage,
   sendTemplateMessage,
 } from '@/lib/whatsapp/client';
 import { pauseOnboardingFlow } from '@/lib/whatsapp/flows/onboarding';
+import { handleVendorReadySignal, isVendorInboundPhone } from '@/lib/vendorWebhook';
 
 const HOLDING_HOURS = 4;
 
@@ -313,9 +315,39 @@ async function processWebhookPayload(body: Record<string, unknown>): Promise<voi
           text?: { body: string };
           interactive?: { type?: string; button_reply?: { id?: string; title?: string } };
         }>;
+        const adminClient = admin as unknown as SupabaseClient;
+
         for (const msg of messages) {
           const fromPhone = msg.from;
           const messageId = msg.id;
+
+          const ix = msg.interactive as
+            | { type?: string; button_reply?: { id?: string; title?: string } }
+            | undefined;
+
+          let buttonId: string | undefined;
+          if (msg.type === 'interactive') {
+            if (ix?.type === 'button_reply') {
+              buttonId = ix.button_reply?.id;
+            } else if (ix?.button_reply?.id) {
+              buttonId = ix.button_reply.id;
+            }
+          }
+
+          const textBody = msg.type === 'text' ? (msg.text?.body ?? '').trim() : '';
+
+          const readyPayload =
+            typeof buttonId === 'string' && buttonId.startsWith('READY_')
+              ? buttonId
+              : textBody.startsWith('READY_')
+                ? textBody
+                : null;
+
+          if (readyPayload && (await isVendorInboundPhone(adminClient, fromPhone))) {
+            await handleVendorReadySignal(readyPayload, adminClient);
+            continue;
+          }
+
           let text = msg.type === 'text' ? msg.text?.body ?? '' : '';
 
           const centerId = await resolveCenterForPhone(

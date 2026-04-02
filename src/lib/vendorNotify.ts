@@ -26,21 +26,52 @@ type VendorNotifyJson = {
     qty: string;
     center: string;
     notes: string;
-    footer1: string;
-    footer2: string;
+    interactiveCta: string;
+    platformFooter: string;
+    buttonTitle: string;
+    fallbackConfirm: string;
   };
 };
 
-function notifyLines(ref: string, quantity: number, centerName: string, notes: string | null): string {
-  const vn = (arMessages as VendorNotifyJson).vendorNotify;
+function vn(): VendorNotifyJson['vendorNotify'] {
+  return (arMessages as VendorNotifyJson).vendorNotify;
+}
+
+function buildInteractiveBodyText(
+  ref: string,
+  quantity: number,
+  centerName: string,
+  notes: string | null,
+): string {
+  const x = vn();
   const lines = [
-    vn.header,
-    interpolate(vn.ref, { ref }),
-    interpolate(vn.qty, { quantity }),
-    interpolate(vn.center, { centerName }),
-    notes ? interpolate(vn.notes, { notes }) : '',
-    vn.footer1,
-    vn.footer2,
+    x.header,
+    interpolate(x.ref, { ref }),
+    interpolate(x.qty, { quantity }),
+    interpolate(x.center, { centerName }),
+    notes ? interpolate(x.notes, { notes }) : '',
+    '',
+    x.interactiveCta,
+  ];
+  return lines.filter(Boolean).join('\n');
+}
+
+function buildFallbackBodyText(
+  ref: string,
+  quantity: number,
+  centerName: string,
+  notes: string | null,
+  readyToken: string,
+): string {
+  const x = vn();
+  const lines = [
+    x.header,
+    interpolate(x.ref, { ref }),
+    interpolate(x.qty, { quantity }),
+    interpolate(x.center, { centerName }),
+    notes ? interpolate(x.notes, { notes }) : '',
+    '',
+    interpolate(x.fallbackConfirm, { readyToken }),
   ];
   return lines.filter(Boolean).join('\n');
 }
@@ -85,6 +116,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
 
     const prefix = (process.env.BOSTA_BUSINESS_PREFIX ?? 'CHQ').replace(/[^A-Za-z0-9]/g, '') || 'CHQ';
     const ref = `${prefix}-${String(order.id).substring(0, 8).toUpperCase()}`;
+    const readyButtonId = `READY_${ref}`;
 
     const centerJoin = order.centers as { name?: string | null } | { name?: string | null }[] | null;
     const centerName = Array.isArray(centerJoin)
@@ -94,8 +126,6 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
     const notesVal =
       order.notes != null && String(order.notes).trim() !== '' ? String(order.notes) : null;
 
-    const message = notifyLines(ref, Number(order.quantity ?? 0), centerName, notesVal);
-
     const phoneNumberId = process.env.PHONE_NUMBER_ID;
     const waToken = process.env.WHATSAPP_TOKEN;
     if (!phoneNumberId || !waToken) {
@@ -103,23 +133,70 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
       return;
     }
 
-    const res = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${waToken}`,
-        'Content-Type': 'application/json',
+    const waUrl = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+    const headers = {
+      Authorization: `Bearer ${waToken}`,
+      'Content-Type': 'application/json',
+    };
+    const to = String(vendor.whatsapp_number).replace(/[^0-9]/g, '');
+
+    const x = vn();
+    const interactiveBody = JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'interactive',
+      interactive: {
+        type: 'button',
+        body: {
+          text: buildInteractiveBodyText(ref, Number(order.quantity ?? 0), centerName, notesVal),
+        },
+        footer: {
+          text: x.platformFooter,
+        },
+        action: {
+          buttons: [
+            {
+              type: 'reply',
+              reply: {
+                id: readyButtonId,
+                title: x.buttonTitle,
+              },
+            },
+          ],
+        },
       },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: String(vendor.whatsapp_number).replace(/[^0-9]/g, ''),
-        type: 'text',
-        text: { body: message },
-      }),
     });
 
+    const res = await fetch(waUrl, { method: 'POST', headers, body: interactiveBody });
+
     if (!res.ok) {
-      console.error('[vendorNotify] WA send failed:', await res.text());
-      return;
+      const fallbackText = buildFallbackBodyText(
+        ref,
+        Number(order.quantity ?? 0),
+        centerName,
+        notesVal,
+        readyButtonId,
+      );
+      const fallbackRes = await fetch(waUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to,
+          type: 'text',
+          text: { body: fallbackText },
+        }),
+      });
+      if (!fallbackRes.ok) {
+        console.error(
+          '[vendorNotify] Both interactive + fallback failed:',
+          await fallbackRes.text(),
+        );
+        return;
+      }
+      console.log('[vendorNotify] Sent plain text fallback for', ref);
+    } else {
+      console.log('[vendorNotify] Sent interactive button for', ref);
     }
 
     const { error: upErr } = await supabaseAdmin
