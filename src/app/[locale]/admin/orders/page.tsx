@@ -134,9 +134,9 @@ export default function AdminOrders() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen">
+    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen pt-14 lg:pt-0">
       <AdminSidebar activeRoute={pathname} />
-      <div className="w-full flex-1 p-6 space-y-5 overflow-auto mt-12 md:mt-0 animate-fade-in min-w-0">
+      <div className="w-full flex-1 p-6 space-y-5 overflow-auto animate-fade-in min-w-0 lg:ms-56">
       {/* New order notification banner */}
       {showNewBanner && (
         <div className="relative overflow-hidden rounded-xl border border-amber-400/30 bg-amber-500/10 p-4 flex items-center gap-3 animate-fade-in">

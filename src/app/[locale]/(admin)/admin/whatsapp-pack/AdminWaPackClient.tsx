@@ -233,9 +233,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
-      <AdminSidebar activeRoute="/admin/whatsapp-pack" />
-      <main className="flex-1 overflow-auto p-4 pt-20 md:p-6 md:pt-6">
+    <div className="flex min-h-screen bg-[var(--color-surface-0)] pt-14 lg:pt-0" dir={isRTL ? 'rtl' : 'ltr'}>
+      <AdminSidebar activeRoute="/admin/whatsapp-pack" desktopSidebarFullHeight />
+      <main className="flex-1 overflow-auto p-4 md:p-6 lg:ms-56">
         <div className="mx-auto max-w-6xl space-y-8">
           <div className="flex items-center gap-2">
             <MessageCircle className="h-8 w-8 text-teal-600" aria-hidden />

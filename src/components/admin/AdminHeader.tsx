@@ -67,7 +67,7 @@ export function AdminHeader() {
 
   return (
     <>
-      <header className="fixed top-0 start-0 end-0 h-14 z-30 flex items-center justify-between px-4 md:px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
+      <header className="hidden lg:flex fixed top-0 left-0 right-0 h-14 z-30 items-center justify-between px-4 md:px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
         <span className="font-bold text-[var(--color-text-primary)] text-lg">CenterHQ</span>
         <div className="flex items-center gap-3">
           <button

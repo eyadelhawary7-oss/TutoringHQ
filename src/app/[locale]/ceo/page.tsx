@@ -264,9 +264,9 @@ export default function CeoDashboardPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen bg-[var(--color-surface-0)]">
+    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen bg-[var(--color-surface-0)] pt-14 lg:pt-0">
       <AdminSidebar activeRoute={pathname} />
-      <div className="flex-1 overflow-auto mt-12 md:mt-0 flex flex-col min-w-0">
+      <div className="flex-1 overflow-auto flex flex-col min-w-0 lg:ms-56">
         <MobileWrapper fullWidth>
           <div className="sticky top-0 z-20 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]/95 backdrop-blur-sm px-4 py-3">
             <div className="flex flex-wrap items-center gap-3">

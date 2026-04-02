@@ -181,7 +181,7 @@ export default function AdminRenewalsPage() {
       <AdminHeader />
       <div className="flex flex-1 pt-14">
         <AdminSidebar activeRoute="/admin/renewals" />
-        <main className="flex-1 flex flex-col min-w-0 p-4 md:p-6 overflow-auto">
+        <main className="flex-1 flex flex-col min-w-0 p-4 md:p-6 overflow-auto lg:ms-56">
         <div className="flex items-center gap-2 mb-4">
           <button
             onClick={() => router.push('/admin')}

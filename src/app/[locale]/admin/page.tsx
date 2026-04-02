@@ -899,7 +899,7 @@ export default function AdminPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminHeader />
-      <div className="flex flex-col md:flex-row flex-1 pt-14">
+      <div className="flex flex-col lg:flex-row flex-1 pt-14">
         <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname ?? undefined} />
 
       {/* Toast for new card order */}
@@ -910,7 +910,7 @@ export default function AdminPage() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 p-4 md:p-6 overflow-auto mt-12 md:mt-0">
+      <div className="flex-1 min-w-0 p-4 md:p-6 overflow-auto lg:ms-56">
         {/* Overview */}
         {tab === 'overview' && overview && (
           <>
