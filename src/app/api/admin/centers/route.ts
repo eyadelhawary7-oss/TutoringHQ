@@ -7,6 +7,7 @@ import { validateCSRFRequest } from '@/lib/csrf';
 import { normalizePhone } from '@/lib/utils/phone';
 import { generateReferralCode } from '@/lib/referral';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
+import { sendWelcomeTemplate } from '@/lib/centerNotify';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { PLANS, type PlanKey } from '@/lib/pricing';
@@ -795,6 +796,12 @@ export async function PUT(request: Request) {
       .from('centers')
       .update(centerUpdates)
       .eq('id', centerId);
+
+    await sendWelcomeTemplate({
+      id: centerId,
+      name: (center.name as string) ?? '',
+      phone: (center.phone as string | null) ?? (phone as string | null) ?? null,
+    });
 
     await logAdminAction(user.id, 'approve_signup', { centerId, centerName: center.name }, centerId);
 

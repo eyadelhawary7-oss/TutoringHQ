@@ -12,6 +12,7 @@ import {
   type CenterForRenewal,
   type RenewalStage,
 } from '@/lib/whatsapp/flows/renewalReminders';
+import { runProcessRenewalWhatsappTemplates } from '@/lib/centerNotify';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -42,10 +43,6 @@ export async function POST(req: NextRequest) {
   const actions = body.actions ?? [];
   const sentMonth = body.sentMonth ?? new Date().toISOString().slice(0, 7) + '-01';
 
-  if (actions.length === 0) {
-    return NextResponse.json({ ok: true, processed: 0 });
-  }
-
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseServiceKey) {
@@ -53,6 +50,18 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  let waTemplates: Awaited<ReturnType<typeof runProcessRenewalWhatsappTemplates>> | null = null;
+  try {
+    waTemplates = await runProcessRenewalWhatsappTemplates(supabase);
+  } catch (err) {
+    console.error('[process-renewals] runProcessRenewalWhatsappTemplates:', err);
+  }
+
+  if (actions.length === 0) {
+    return NextResponse.json({ ok: true, processed: 0, waTemplates });
+  }
+
   let processed = 0;
 
   for (const a of actions) {
@@ -170,5 +179,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed });
+  return NextResponse.json({ ok: true, processed, waTemplates });
 }

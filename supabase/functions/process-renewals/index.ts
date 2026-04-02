@@ -113,14 +113,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (actions.length === 0) {
-    return new Response(
-      JSON.stringify({ ok: true, processed: 0, actions: 0 }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
-  // 4. Call Next.js API
+  // 4. Call Next.js API (always — includes billing/onboarding WA templates when actions is empty)
   let processed = 0;
   try {
     const res = await fetch(`${appUrl}/api/cron/process-renewals`, {

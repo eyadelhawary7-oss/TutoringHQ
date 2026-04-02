@@ -9,6 +9,8 @@ import {
   sendDay7SalesManagerAlert,
   flagDay14InAdminPanel,
 } from '@/lib/whatsapp/flows/churnDetection';
+import { createClient } from '@supabase/supabase-js';
+import { runChqInactivityAlertTemplates } from '@/lib/centerNotify';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -45,8 +47,21 @@ export async function POST(req: NextRequest) {
   }
 
   const actions = body.actions ?? (body.action ? [body] : []);
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  let inactivityTemplateSent = 0;
+  if (supabaseUrl && supabaseServiceKey) {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    try {
+      inactivityTemplateSent = await runChqInactivityAlertTemplates(supabase);
+    } catch (err) {
+      console.error('[detect-churn] runChqInactivityAlertTemplates:', err);
+    }
+  }
+
   if (actions.length === 0) {
-    return NextResponse.json({ ok: true, processed: 0 });
+    return NextResponse.json({ ok: true, processed: 0, inactivityTemplateSent });
   }
 
   const results: { centerId: string; action: string; success: boolean; error?: string }[] = [];
@@ -109,5 +124,5 @@ export async function POST(req: NextRequest) {
   }
 
   const processed = results.filter((r) => r.success).length;
-  return NextResponse.json({ ok: true, processed, results });
+  return NextResponse.json({ ok: true, processed, results, inactivityTemplateSent });
 }
