@@ -82,7 +82,8 @@ export async function GET(request: NextRequest) {
         pending_plan_change, pending_billing_type,
         current_period_start, current_period_end, last_payment_date,
         is_early_adopter, early_adopter_price,
-        parent_pack_active_parents, announcement_balance
+        parent_pack_active_parents, announcement_balance,
+        next_payment_due, billing_status, billing_amount
       `)
       .eq('id', ctx.user.center_id)
       .single();
@@ -228,6 +229,12 @@ export async function GET(request: NextRequest) {
       current_period_start: (center as { current_period_start?: string }).current_period_start,
       current_period_end: (center as { current_period_end?: string }).current_period_end,
       last_payment_date: (center as { last_payment_date?: string }).last_payment_date,
+      next_payment_due: (center as { next_payment_due?: string | null }).next_payment_due ?? null,
+      billing_status: (center as { billing_status?: string | null }).billing_status ?? null,
+      billing_amount:
+        (center as { billing_amount?: number | string | null }).billing_amount != null
+          ? Number((center as { billing_amount?: number | string | null }).billing_amount)
+          : null,
       pending_plan_change: (center as { pending_plan_change?: string }).pending_plan_change,
       pending_billing_type: (center as { pending_billing_type?: string }).pending_billing_type,
       center_name: (center as { name?: string }).name,

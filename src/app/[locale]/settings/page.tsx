@@ -11,7 +11,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import { PageHeader, RoleBadge, PlanBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
-import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, Upload, LayoutDashboard, Loader2, FileText, Calendar, Smartphone, Package } from 'lucide-react';
+import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, FileText, Calendar, Smartphone, Package } from 'lucide-react';
 import { getPlanLevel } from '@/lib/plans';
 import { FEATURES } from '@/lib/features';
 import {
@@ -138,8 +138,6 @@ const FALLBACK_PAYG: PaygRate[] = [
 
 const MONTHLY_MULTIPLIER = 4.333;
 const ADMIN_NOTIFICATION_PHONE = '201220601410';
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
 const LOGO_MAX_SIZE = 2 * 1024 * 1024; // 2MB
 const LOGO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -257,7 +255,25 @@ function SettingsPageContent() {
     is_early_adopter?: boolean;
     early_adopter_price?: number;
     center_name?: string;
-    invoices?: { id?: string; invoice_number?: string; period_start?: string; period_end?: string; total_amount?: number; payment_amount?: number; payment_reference?: string; payment_proof_url?: string; status: string; paid_at?: string; created_at?: string }[];
+    invoices?: {
+      id?: string;
+      invoice_number?: string;
+      invoice_type?: string | null;
+      billing_period_start?: string | null;
+      billing_period_end?: string | null;
+      period_start?: string;
+      period_end?: string;
+      total_amount?: number;
+      payment_amount?: number;
+      payment_reference?: string;
+      payment_proof_url?: string;
+      status: string;
+      paid_at?: string;
+      created_at?: string;
+    }[];
+    next_payment_due?: string | null;
+    billing_status?: string | null;
+    billing_amount?: number | null;
     parent_pack_active_parents?: number;
     announcement_balance?: number;
     announcement_cap?: number;
@@ -273,13 +289,14 @@ function SettingsPageContent() {
   const [paygSlider, setPaygSlider] = useState(200);
   const [changePlanSelect, setChangePlanSelect] = useState('');
   const [showPlanRequestModal, setShowPlanRequestModal] = useState(false);
-  const [proofAmount, setProofAmount] = useState('');
-  const [proofReference, setProofReference] = useState('');
-  const [proofPaymentMethod, setProofPaymentMethod] = useState('instapay');
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [proofPreview, setProofPreview] = useState<string | null>(null);
-  const [proofUploading, setProofUploading] = useState(false);
   const [billingSaving, setBillingSaving] = useState(false);
+  const [invoicePaymentModal, setInvoicePaymentModal] = useState<{
+    open: boolean;
+    invoiceId: string | null;
+    iframeUrl: string | null;
+    loading: boolean;
+    polling: boolean;
+  }>({ open: false, invoiceId: null, iframeUrl: null, loading: false, polling: false });
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<BillingPeriod>('quarterly');
   const [planRequests, setPlanRequests] = useState<Array<{ id: string; current_plan: string; requested_plan: string; status: string; requested_at?: string }>>([]);
   const [payNowLoading, setPayNowLoading] = useState(false);
@@ -424,6 +441,9 @@ function SettingsPageContent() {
           early_adopter_price: json.early_adopter_price,
           center_name: json.center_name,
           invoices: json.invoices || [],
+          next_payment_due: json.next_payment_due ?? null,
+          billing_status: json.billing_status ?? null,
+          billing_amount: json.billing_amount != null ? Number(json.billing_amount) : null,
           parent_pack_active_parents: json.parent_pack_active_parents,
           announcement_balance: json.announcement_balance,
           announcement_cap: json.announcement_cap,
@@ -723,68 +743,126 @@ function SettingsPageContent() {
   };
 
   // Billing handlers
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > MAX_FILE_SIZE) { alert(locale === 'ar' ? 'الملف كبير جداً' : 'File too large'); e.target.value = ''; return; }
-    if (!ALLOWED_TYPES.includes(file.type)) { alert(locale === 'ar' ? 'نوع ملف غير صالح' : 'Invalid file type'); e.target.value = ''; return; }
-    setProofPreview(prev => { if (prev) URL.revokeObjectURL(prev); return file.type.startsWith('image/') ? URL.createObjectURL(file) : null; });
-    setProofFile(file);
-    e.target.value = '';
-  };
-
-  const uploadProof = async (file: File, cId: string): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('centerId', cId);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated');
-    const { getCsrfHeaders } = await import('@/lib/csrf-client');
-    const res = await fetch('/api/upload/payment-proof', { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}`, ...await getCsrfHeaders(session.access_token) }, body: formData });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json.error || 'Upload failed');
-    if (!json.url) throw new Error('No URL returned');
-    return json.url;
-  };
-
-  const handleSubmitPaymentProof = async () => {
-    const amount = parseFloat(proofAmount);
-    if (isNaN(amount) || amount <= 0 || !proofReference.trim() || billingSaving) return;
-    try {
-      setBillingSaving(true);
-      let proofUrl: string | null = null;
-      if (proofFile && centerId) {
-        setProofUploading(true);
-        proofUrl = await uploadProof(proofFile, centerId);
-        setProofUploading(false);
-      }
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const { getCsrfHeaders } = await import('@/lib/csrf-client');
-      const res = await fetch('/api/settings/billing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, ...await getCsrfHeaders(session.access_token) },
-        body: JSON.stringify({ amount, reference: proofReference.trim(), proofUrl, paymentMethod: proofPaymentMethod }),
+  const openInvoicePaymentModal = useCallback(
+    async (invoiceId: string) => {
+      if (!FEATURES.PAYMOB_ENABLED || currentUser?.role !== 'owner') return;
+      setInvoicePaymentModal({
+        open: true,
+        invoiceId,
+        iframeUrl: null,
+        loading: true,
+        polling: false,
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) { alert(json?.error || 'Failed'); return; }
-      setSavedMessage(tBilling('paymentSubmittedForReview', { defaultValue: 'Payment submitted for review.' }));
-      setProofAmount('');
-      setProofReference('');
-      setProofFile(null);
-      setProofPreview(null);
-      fetchBilling();
-      setTimeout(() => setSavedMessage(''), 5000);
-      const centerName = billingData?.center_name || currentUser?.name || 'Unknown';
-      const message = encodeURIComponent(`🔔 إثبات دفع جديد - CenterHQ\n💰 المبلغ: ${amount} EGP\n📝 المرجع: ${proofReference.trim()}\n🏢 السنتر: ${centerName}\n📅 ${new Date().toLocaleDateString('ar-EG')}`);
-      window.open(`https://wa.me/${ADMIN_NOTIFICATION_PHONE}?text=${message}`, '_blank');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : tBilling('updateFailed'));
-    } finally {
-      setBillingSaving(false);
-      setProofUploading(false);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setInvoicePaymentModal({
+          open: false,
+          invoiceId: null,
+          iframeUrl: null,
+          loading: false,
+          polling: false,
+        });
+        return;
+      }
+      try {
+        const res = await fetch(`/api/invoices/${invoiceId}/pay`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const json = (await res.json().catch(() => ({}))) as { iframeUrl?: string; orderId?: string; error?: string };
+        if (!res.ok || typeof json.iframeUrl !== 'string') {
+          toast.error(typeof json.error === 'string' ? json.error : tBilling('paymentFailed'));
+          setInvoicePaymentModal({
+            open: false,
+            invoiceId: null,
+            iframeUrl: null,
+            loading: false,
+            polling: false,
+          });
+          return;
+        }
+        setInvoicePaymentModal({
+          open: true,
+          invoiceId,
+          iframeUrl: json.iframeUrl,
+          loading: false,
+          polling: true,
+        });
+      } catch {
+        toast.error(tBilling('paymentFailed'));
+        setInvoicePaymentModal({
+          open: false,
+          invoiceId: null,
+          iframeUrl: null,
+          loading: false,
+          polling: false,
+        });
+      }
+    },
+    [currentUser?.role, toast, tBilling],
+  );
+
+  useEffect(() => {
+    if (
+      !invoicePaymentModal.open ||
+      !invoicePaymentModal.invoiceId ||
+      !invoicePaymentModal.iframeUrl ||
+      !invoicePaymentModal.polling
+    ) {
+      return;
     }
-  };
+    let cancelled = false;
+    let ticks = 0;
+    const maxTicks = 200;
+    const interval = setInterval(async () => {
+      ticks += 1;
+      if (ticks > maxTicks || cancelled) {
+        clearInterval(interval);
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/paymob/invoice-status?invoiceId=${encodeURIComponent(invoicePaymentModal.invoiceId!)}`,
+        );
+        if (!res.ok || cancelled) return;
+        const body = (await res.json()) as { paid?: boolean; failed?: boolean };
+        if (body.paid === true) {
+          cancelled = true;
+          clearInterval(interval);
+          setInvoicePaymentModal({
+            open: false,
+            invoiceId: null,
+            iframeUrl: null,
+            loading: false,
+            polling: false,
+          });
+          toast.success(tBilling('paymentSuccess'));
+          void fetchBilling();
+        } else if (body.failed === true) {
+          cancelled = true;
+          clearInterval(interval);
+          setInvoicePaymentModal((m) => ({ ...m, polling: false }));
+          toast.error(tBilling('paymentFailed'));
+        }
+      } catch {
+        // ignore transient errors
+      }
+    }, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [
+    invoicePaymentModal.open,
+    invoicePaymentModal.invoiceId,
+    invoicePaymentModal.iframeUrl,
+    invoicePaymentModal.polling,
+    fetchBilling,
+    toast,
+    tBilling,
+  ]);
 
   const handleRequestPlanChange = async () => {
     if (!changePlanSelect || billingSaving || currentUser?.role !== 'owner') return;
@@ -813,6 +891,13 @@ function SettingsPageContent() {
 
   const handlePayNow = async () => {
     if (!FEATURES.PAYMOB_ENABLED || payNowLoading || currentUser?.role !== 'owner') return;
+    const pendingSub = billingData?.invoices?.find(
+      (i) => i.invoice_type === 'subscription' && i.status?.toLowerCase() === 'pending' && i.id,
+    );
+    if (pendingSub?.id) {
+      void openInvoicePaymentModal(pendingSub.id);
+      return;
+    }
     try {
       setPayNowLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
@@ -994,7 +1079,33 @@ function SettingsPageContent() {
   const fixedSavesMoney = !fixedComparison.isCustom && fixedComparison.planFee < paygResult.monthly;
   const savingsAmount = fixedSavesMoney ? paygResult.monthly - fixedComparison.planFee : 0;
 
-  const instapayNumber = '01001963432';
+  const paymentDueBanner = useMemo(() => {
+    if (!billingData?.next_payment_due) return { show: false as const, pendingId: null as string | null, amount: 0, dueStr: '' };
+    const st = String(billingData.billing_status ?? '').toLowerCase();
+    if (st === 'paid') return { show: false as const, pendingId: null as string | null, amount: 0, dueStr: '' };
+    const due = new Date(`${billingData.next_payment_due}T12:00:00`);
+    const limit = new Date();
+    limit.setDate(limit.getDate() + 7);
+    if (due > limit) return { show: false as const, pendingId: null as string | null, amount: 0, dueStr: '' };
+    const pending = billingData.invoices?.find(
+      (i) => i.invoice_type === 'subscription' && i.status?.toLowerCase() === 'pending' && i.id,
+    );
+    const amt =
+      billingData.billing_amount != null && Number.isFinite(billingData.billing_amount)
+        ? billingData.billing_amount
+        : currentDisplayPrice;
+    const dueStr = due.toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    return {
+      show: true as const,
+      pendingId: pending?.id ?? null,
+      amount: amt,
+      dueStr,
+    };
+  }, [billingData, currentDisplayPrice, locale]);
 
   const canEnablePack = (center?.status ?? '') === 'active';
   const isPackEnabled = packStatus?.pack_enabled ?? false;
@@ -1715,6 +1826,28 @@ function SettingsPageContent() {
                   </div>
                 </div>
 
+                {paymentDueBanner.show && currentUser?.role === 'owner' && (
+                  <div className="bg-amber-950 border border-amber-700 rounded-lg p-4 mb-4">
+                    <p className="text-amber-300 font-semibold">{tBilling('paymentDueSoon')}</p>
+                    <p className="text-amber-400 text-sm mt-1">
+                      {tBilling('paymentDueDate', {
+                        amount: paymentDueBanner.amount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US'),
+                        date: paymentDueBanner.dueStr,
+                      })}
+                    </p>
+                    {FEATURES.PAYMOB_ENABLED && paymentDueBanner.pendingId && (
+                      <button
+                        type="button"
+                        onClick={() => void openInvoicePaymentModal(paymentDueBanner.pendingId!)}
+                        className="mt-3 px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold transition-colors"
+                      >
+                        {tBilling('payNow')} — {paymentDueBanner.amount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')}{' '}
+                        {tBilling('egp')}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* Parent WA Pack + announcement balance */}
                 <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
                   <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">{tBilling('parentPack')}</h3>
@@ -1923,19 +2056,46 @@ function SettingsPageContent() {
                           <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Amount</th>
                           <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Period</th>
                           <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Status</th>
+                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Pay</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {billingData?.invoices?.map((inv) => {
                           const status = inv.status?.toLowerCase?.() ?? '';
                           const statusClass = status === 'paid' || status === 'approved' ? 'bg-green-100 text-green-700' : status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
+                          const pStart = inv.billing_period_start ?? inv.period_start;
+                          const pEnd = inv.billing_period_end ?? inv.period_end;
+                          const isSub = inv.invoice_type === 'subscription';
+                          const canPaySub =
+                            FEATURES.PAYMOB_ENABLED &&
+                            currentUser?.role === 'owner' &&
+                            isSub &&
+                            status === 'pending' &&
+                            inv.id;
                           return (
                             <tr key={inv.id || inv.invoice_number || String(inv.created_at)}>
-                              <td className="py-3 px-4 text-sm text-[var(--color-text-primary)]">{inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-US') : inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
+                              <td className="py-3 px-4 text-sm text-[var(--color-text-primary)]">{inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-US') : pStart && pEnd ? `${pStart} – ${pEnd}` : '—'}</td>
                               <td className="py-3 px-4 text-sm text-[var(--color-text-primary)] font-mono">{inv.payment_reference || inv.invoice_number || '—'}</td>
                               <td className="py-3 px-4 text-sm font-mono text-[var(--color-text-primary)]">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString('en-US')} {tBilling('egp')}</td>
-                              <td className="py-3 px-4 text-sm text-[var(--color-text-secondary)]">{inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : '—'}</td>
+                              <td className="py-3 px-4 text-sm text-[var(--color-text-secondary)]">{pStart && pEnd ? `${pStart} – ${pEnd}` : '—'}</td>
                               <td className="py-3 px-4"><span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusClass}`}>{inv.status}</span></td>
+                              <td className="py-3 px-4">
+                                {canPaySub ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void openInvoicePaymentModal(inv.id!)}
+                                    className="px-3 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold"
+                                  >
+                                    {tBilling('payNow')}
+                                  </button>
+                                ) : isSub && (status === 'paid' || status === 'approved') ? (
+                                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                    {tBilling('invoicePaid')}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-[var(--color-text-tertiary)]">—</span>
+                                )}
+                              </td>
                             </tr>
                           );
                         })}
@@ -1990,39 +2150,62 @@ function SettingsPageContent() {
                   )}
                 </div>
 
-                {/* 5. Submit Payment Proof */}
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{tBilling('submitProofTitle')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mb-4">{tBilling('uploadProof')}</p>
-                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200 mb-4">
-                    <div className="p-2 bg-blue-100 rounded-lg"><CreditCard className="w-5 h-5 text-blue-600" /></div>
-                    <div className="flex-1">
-                      <p className="text-xs text-blue-600 font-medium">{tBilling('instaPayNumber')}</p>
-                      <p className="text-lg font-bold text-blue-800 font-mono">{instapayNumber}</p>
-                    </div>
-                    <button type="button" onClick={() => { navigator.clipboard.writeText(instapayNumber); setSavedMessage(tCommon('copy')); setTimeout(() => setSavedMessage(''), 2000); }} className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"><Copy className="w-4 h-4" /></button>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{tBilling('transferAmountLabel')}</label>
-                      <input type="number" min="0" step="0.01" value={proofAmount} onChange={(e) => setProofAmount(e.target.value)} placeholder={tBilling('transferAmountPlaceholder')} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{tBilling('instapayRefLabel')}</label>
-                      <input type="text" value={proofReference} onChange={(e) => setProofReference(e.target.value)} placeholder={tBilling('instapayRef')} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{tBilling('proofLabel')}</label>
-                      <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-teal-400 transition-colors cursor-pointer" onClick={() => document.getElementById('proof-file-input')?.click()}>
-                        <input id="proof-file-input" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={handleFileChange} className="hidden" />
-                        {proofPreview ? <img src={proofPreview} alt="Preview" className="mx-auto mb-2 max-h-24 rounded-lg" /> : <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />}
-                        <p className="text-sm font-medium text-[var(--color-text-secondary)]">{proofFile ? proofFile.name : 'Drop screenshot here or click to upload'}</p>
-                        <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+                {invoicePaymentModal.open && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                    onClick={() =>
+                      setInvoicePaymentModal({
+                        open: false,
+                        invoiceId: null,
+                        iframeUrl: null,
+                        loading: false,
+                        polling: false,
+                      })
+                    }
+                  >
+                    <div
+                      className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between p-4 border-b border-[var(--color-border-subtle)] shrink-0">
+                        <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tBilling('payNow')}</h2>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setInvoicePaymentModal({
+                              open: false,
+                              invoiceId: null,
+                              iframeUrl: null,
+                              loading: false,
+                              polling: false,
+                            })
+                          }
+                          className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                          aria-label="Close"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <div className="p-4 flex-1 min-h-0 overflow-y-auto">
+                        {invoicePaymentModal.loading && (
+                          <div className="flex items-center justify-center gap-3 py-16 text-[var(--color-text-secondary)]">
+                            <div className="w-8 h-8 border-2 border-teal-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                            <span className="text-sm">{tCommon('loading')}</span>
+                          </div>
+                        )}
+                        {!invoicePaymentModal.loading && invoicePaymentModal.iframeUrl && (
+                          <iframe
+                            src={invoicePaymentModal.iframeUrl}
+                            className="w-full rounded-lg border-0"
+                            style={{ height: '600px', minHeight: '600px' }}
+                            title="Paymob Payment"
+                          />
+                        )}
                       </div>
                     </div>
-                    <button type="button" onClick={handleSubmitPaymentProof} disabled={billingSaving || proofUploading || !proofAmount || parseFloat(proofAmount) <= 0 || !proofReference.trim()} className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50">{proofUploading ? tCommon('loading') : tBilling('submitPaymentProof')}</button>
                   </div>
-                </div>
+                )}
               </>
             )}
           </div>

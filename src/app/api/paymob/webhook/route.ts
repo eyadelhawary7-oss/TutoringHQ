@@ -43,10 +43,16 @@ export async function POST(request: NextRequest) {
     if (paymobOrderId) {
       if (success) {
         const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
-        await finalizeCardOrderPaymentSuccess(supabaseAdmin, paymobOrderId, transactionId);
+        const cardResult = await finalizeCardOrderPaymentSuccess(supabaseAdmin, paymobOrderId, transactionId);
+        if (!cardResult) {
+          const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
+          await finalizeInvoicePaymentSuccess(supabaseAdmin, paymobOrderId, transactionId);
+        }
       } else {
         const { finalizeCardOrderPaymentFailure } = await import('@/lib/cardOrderPayment');
         await finalizeCardOrderPaymentFailure(supabaseAdmin, paymobOrderId);
+        const { finalizeInvoicePaymentFailure } = await import('@/lib/invoicePaymobPayment');
+        await finalizeInvoicePaymentFailure(supabaseAdmin, paymobOrderId);
       }
     }
   } catch (e) {
