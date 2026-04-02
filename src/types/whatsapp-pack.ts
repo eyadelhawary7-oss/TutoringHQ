@@ -38,4 +38,10 @@ export interface WaPackCenter {
   parent_pack_active_parents: number
   announcement_balance?: number | null
   billing: WaPackBillingSummary
+  pack_request_status: string
+  pack_requested_at: string | null
+  pack_rejection_reason: string | null
+  pack_pending_balance: number
+  pack_months_without_invoice: number
+  pack_custom_invoice_minimum: number | null
 }

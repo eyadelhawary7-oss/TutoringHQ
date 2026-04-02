@@ -11,6 +11,12 @@ interface CenterRow {
   parent_pack_enabled: boolean | null
   parent_pack_active_parents: number | null
   announcement_balance: number | string | null
+  pack_request_status: string | null
+  pack_requested_at: string | null
+  pack_rejection_reason: string | null
+  pack_pending_balance: number | string | null
+  pack_months_without_invoice: number | string | null
+  pack_custom_invoice_minimum: number | string | null
 }
 
 interface BillingRow {
@@ -33,11 +39,13 @@ export async function GET(request: Request) {
   const { supabaseAdmin } = auth
   const month = currentMonthStr()
 
-  const [centersRes, configRes, billingRes] = await Promise.all([
+  const [centersRes, configRes, billingRes, pendingReqRes] = await Promise.all([
     supabaseAdmin
       .from('centers')
       .select(
-        'id, name, plan, phone, parent_pack_enabled, parent_pack_active_parents, announcement_balance',
+        `id, name, plan, phone, parent_pack_enabled, parent_pack_active_parents, announcement_balance,
+        pack_request_status, pack_requested_at, pack_rejection_reason,
+        pack_pending_balance, pack_months_without_invoice, pack_custom_invoice_minimum`,
       )
       .order('parent_pack_enabled', { ascending: false })
       .order('name', { ascending: true }),
@@ -50,12 +58,23 @@ export async function GET(request: Request) {
       .from('parent_pack_billing')
       .select('center_id, amount, status')
       .eq('month', month),
+    supabaseAdmin
+      .from('centers')
+      .select('id', { count: 'exact', head: true })
+      .eq('pack_request_status', 'pending'),
   ])
 
   if (centersRes.error) {
     console.error('[GET /api/admin/whatsapp-pack] centers', centersRes.error)
     return NextResponse.json({ error: 'Failed to load centers' }, { status: 500 })
   }
+
+  if (pendingReqRes.error) {
+    console.error('[GET /api/admin/whatsapp-pack] pending requests', pendingReqRes.error)
+    return NextResponse.json({ error: 'Failed to load pending requests' }, { status: 500 })
+  }
+
+  const pendingRequestCount = pendingReqRes.count ?? 0
 
   const defaultNotif: NotificationTypes = {
     scan: true,
@@ -79,6 +98,11 @@ export async function GET(request: Request) {
 
   const centers: WaPackCenter[] = ((centersRes.data ?? []) as CenterRow[]).map((c) => {
     const billing: WaPackBillingSummary = deriveBillingSummary(rawMap.get(c.id) ?? [])
+    const cm = c.pack_custom_invoice_minimum
+    const customMinResolved =
+      cm != null && cm !== ''
+        ? asNum(cm)
+        : null
     return {
       id: c.id,
       name: c.name,
@@ -88,6 +112,13 @@ export async function GET(request: Request) {
       parent_pack_active_parents: asNum(c.parent_pack_active_parents),
       announcement_balance: asNum(c.announcement_balance),
       billing,
+      pack_request_status: c.pack_request_status ?? 'none',
+      pack_requested_at: c.pack_requested_at ?? null,
+      pack_rejection_reason: c.pack_rejection_reason ?? null,
+      pack_pending_balance: asNum(c.pack_pending_balance),
+      pack_months_without_invoice: asNum(c.pack_months_without_invoice),
+      pack_custom_invoice_minimum:
+        customMinResolved != null && customMinResolved > 0 ? customMinResolved : null,
     }
   })
 
@@ -99,5 +130,6 @@ export async function GET(request: Request) {
     centers,
     notificationTypes,
     stats: { totalEnabled, totalActiveParents, totalMRR },
+    pendingRequestCount,
   })
 }

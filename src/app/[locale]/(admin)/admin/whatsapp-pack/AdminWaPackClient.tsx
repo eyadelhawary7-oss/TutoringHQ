@@ -48,6 +48,13 @@ function billingStatusKey(s: string | undefined): WaPackBillingSummary['status']
 function normalizeCenter(raw: Partial<WaPackCenter> & { id?: string }): WaPackCenter {
   const billingIn = raw.billing && typeof raw.billing === 'object' ? raw.billing : DEFAULT_BILLING
   const status = billingStatusKey(billingIn.status)
+  const customMinRaw = raw.pack_custom_invoice_minimum
+  const customMinNum =
+    typeof customMinRaw === 'number'
+      ? customMinRaw
+      : typeof customMinRaw === 'string' && customMinRaw !== ''
+        ? Number(customMinRaw)
+        : NaN
   return {
     id: String(raw.id ?? ''),
     name: String(raw.name ?? ''),
@@ -61,6 +68,13 @@ function normalizeCenter(raw: Partial<WaPackCenter> & { id?: string }): WaPackCe
       parentCount: asNum(billingIn.parentCount),
       status,
     },
+    pack_request_status: String(raw.pack_request_status ?? 'none'),
+    pack_requested_at: raw.pack_requested_at ?? null,
+    pack_rejection_reason: raw.pack_rejection_reason ?? null,
+    pack_pending_balance: asNum(raw.pack_pending_balance),
+    pack_months_without_invoice: asNum(raw.pack_months_without_invoice),
+    pack_custom_invoice_minimum:
+      Number.isFinite(customMinNum) && customMinNum > 0 ? customMinNum : null,
   }
 }
 

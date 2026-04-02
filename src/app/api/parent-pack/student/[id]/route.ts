@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { currentBillingPeriod } from '@/lib/parentPack';
 import { afterStudentPackToggle } from '@/lib/studentParentPackWelcome';
 
 async function getOwnerAdminContext(request: NextRequest) {
@@ -115,6 +116,30 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     nextOpted,
     prevOptedIn,
   );
+
+  if (nextOpted) {
+    const { data: row } = await supabaseAdmin
+      .from('students')
+      .select('parent_phone, center_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (row?.parent_phone) {
+      const { error: countErr } = await supabaseAdmin.from('parent_pack_monthly_counts').upsert(
+        {
+          center_id: row.center_id,
+          billing_period: currentBillingPeriod(),
+          student_id: id,
+          parent_phone: row.parent_phone,
+          opted_in_at: new Date().toISOString(),
+        },
+        { onConflict: 'center_id,billing_period,student_id', ignoreDuplicates: true },
+      );
+      if (countErr) {
+        console.error('[PATCH /api/parent-pack/student/[id]] monthly_counts', countErr);
+      }
+    }
+  }
 
   const { data: centerRow } = await supabaseAdmin
     .from('centers')

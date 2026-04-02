@@ -60,7 +60,13 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true, activeParents: list.length });
   }
 
-  await supabaseAdmin.from('centers').update({ parent_pack_enabled: false }).eq('id', centerId);
+  await supabaseAdmin
+    .from('centers')
+    .update({
+      parent_pack_enabled: false,
+      pack_request_status: 'none',
+    })
+    .eq('id', centerId);
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, warning: 'billing_continues_this_month' });
 }

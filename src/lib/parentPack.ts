@@ -82,3 +82,45 @@ export function currentMonthFirstDay(): string {
   const d = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
   return `${d.slice(0, 7)}-01`;
 }
+
+/** Plan-tiered minimum invoice thresholds (EGP). */
+export const PLAN_INVOICE_MINIMUMS: Record<string, number> = {
+  nano: 1_000,
+  starter: 2_000,
+  pro: 5_000,
+  business: 8_000,
+  enterprise: 10_000,
+  top_centers: 10_000,
+};
+
+export const MAX_ROLLOVER_MONTHS = 6;
+
+export function getInvoiceMinimum(plan: string, customMinimum: number | null | undefined): number {
+  if (customMinimum != null && customMinimum > 0) return customMinimum;
+  return PLAN_INVOICE_MINIMUMS[plan] ?? 1_000;
+}
+
+export function shouldIssueInvoice(opts: {
+  plan: string;
+  customMinimum: number | null | undefined;
+  pendingBalance: number;
+  monthsWithoutInvoice: number;
+  isFinalInvoice?: boolean;
+}): boolean {
+  const { plan, customMinimum, pendingBalance, monthsWithoutInvoice, isFinalInvoice } = opts;
+  if (pendingBalance <= 0) return false;
+  if (isFinalInvoice) return true;
+  const minimum = getInvoiceMinimum(plan, customMinimum);
+  return pendingBalance >= minimum || monthsWithoutInvoice >= MAX_ROLLOVER_MONTHS;
+}
+
+export function currentBillingPeriod(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function previousBillingPeriod(): string {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
