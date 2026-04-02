@@ -3,7 +3,17 @@
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { AlertTriangle, Clock, Loader2, MessageCircle, XCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Loader2,
+  MessageCircle,
+  Search,
+  X,
+  XCircle,
+} from 'lucide-react';
 import { BLAST_PRICE_PER_PARENT, getAnnouncementCap } from '@/lib/parentPack';
 import { supabase } from '@/lib/supabase';
 import { dbUpdate } from '@/lib/db-proxy';
@@ -90,6 +100,8 @@ export default function WhatsAppPackClient({
   const [togglingPack, setTogglingPack] = useState(false);
   const [confirmClearId, setConfirmClearId] = useState<string | null>(null);
   const [showDisableConfirm, setShowDisableConfirm] = useState(false);
+  const [parentsExpanded, setParentsExpanded] = useState(true);
+  const [parentSearch, setParentSearch] = useState('');
 
   const cap = getAnnouncementCap(center.plan);
   const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0;
@@ -114,6 +126,24 @@ export default function WhatsAppPackClient({
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(s);
   }
+
+  const normalizedSearch = parentSearch.trim().toLowerCase();
+  const filteredGroupedEntries =
+    normalizedSearch === ''
+      ? Array.from(grouped.entries())
+      : Array.from(grouped.entries()).filter(([phone, group]) => {
+          if (phone.toLowerCase().includes(normalizedSearch)) return true;
+          return group.some((s) => {
+            const name = (s.name ?? '').toLowerCase();
+            const sn = (s.student_number ?? '').toLowerCase();
+            const pp = (s.parent_phone ?? '').toLowerCase();
+            return (
+              name.includes(normalizedSearch) ||
+              sn.includes(normalizedSearch) ||
+              pp.includes(normalizedSearch)
+            );
+          });
+        });
 
   async function postPackRequest() {
     setSubmitting(true);
@@ -235,23 +265,66 @@ export default function WhatsAppPackClient({
 
         {/* Section 2 — Parents */}
         <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden">
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] px-4 pt-4 sm:px-6">
-            {t('whatsapp.parentTable')}
-          </h2>
-          {grouped.size === 0 ? (
-            <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-              <MessageCircle className="h-12 w-12 text-teal-600/80 mb-3" />
-              <p className="text-sm text-[var(--color-text-secondary)] max-w-md">{t('whatsapp.noParents')}</p>
-              <Link
-                href="/students"
-                className="mt-4 text-sm font-medium text-teal-600 hover:underline"
-              >
-                {t('whatsapp.goToStudents')}
-              </Link>
-            </div>
-          ) : (
-            <div className="p-4 sm:p-6 space-y-6">
-              {Array.from(grouped.entries()).map(([phone, group]) => (
+          <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-6">
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              {t('whatsapp.parentTable')}
+            </h2>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+              onClick={() => setParentsExpanded((prev) => !prev)}
+              aria-label={
+                parentsExpanded ? t('whatsapp.collapseParents') : t('whatsapp.expandParents')
+              }
+            >
+              {parentsExpanded ? (
+                <ChevronUp className="h-4 w-4" aria-hidden />
+              ) : (
+                <ChevronDown className="h-4 w-4" aria-hidden />
+              )}
+            </button>
+          </div>
+          {parentsExpanded &&
+            (grouped.size === 0 ? (
+              <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+                <MessageCircle className="h-12 w-12 text-teal-600/80 mb-3" />
+                <p className="text-sm text-[var(--color-text-secondary)] max-w-md">{t('whatsapp.noParents')}</p>
+                <Link
+                  href="/students"
+                  className="mt-4 text-sm font-medium text-teal-600 hover:underline"
+                >
+                  {t('whatsapp.goToStudents')}
+                </Link>
+              </div>
+            ) : (
+              <div className="p-4 sm:p-6 space-y-6">
+                <div className="relative mb-3">
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none"
+                    aria-hidden
+                  />
+                  <input
+                    type="text"
+                    value={parentSearch}
+                    onChange={(e) => setParentSearch(e.target.value)}
+                    placeholder={t('whatsapp.searchParents')}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg ps-9 pe-10 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                  />
+                  {parentSearch ? (
+                    <button
+                      type="button"
+                      onClick={() => setParentSearch('')}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                      aria-label={t('whatsapp.clearParentSearch')}
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                  ) : null}
+                </div>
+                {filteredGroupedEntries.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-4">{t('whatsapp.noSearchResults')}</p>
+                ) : (
+                  filteredGroupedEntries.map(([phone, group]) => (
                 <div key={phone} className="rounded-lg border border-[var(--color-border-subtle)] overflow-hidden">
                   <div className="bg-teal-900/20 px-3 py-2 font-medium text-sm text-teal-100 tabular-nums">
                     {phone}
@@ -380,8 +453,10 @@ export default function WhatsAppPackClient({
                     </table>
                   </div>
                 </div>
-              ))}
-            </div>
+                  ))
+                )}
+              </div>
+            )
           )}
         </section>
 

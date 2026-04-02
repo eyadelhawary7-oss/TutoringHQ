@@ -1022,7 +1022,12 @@
     "disablePackWarning": "تنبيه: إيقاف الباقة لا يلغي احتساب الشهر الحالي. سيظهر استخدام هذا الشهر في فاتورتك القادمة.",
     "today": "اليوم",
     "yesterday": "أمس",
-    "confirmDisablePack": "تأكيد الإيقاف"
+    "confirmDisablePack": "تأكيد الإيقاف",
+    "collapseParents": "طي قائمة الأهالي",
+    "expandParents": "فتح قائمة الأهالي",
+    "searchParents": "ابحث بالاسم أو رقم الطالب أو رقم الهاتف...",
+    "noSearchResults": "لا توجد نتائج مطابقة",
+    "clearParentSearch": "مسح البحث"
   },
   "whatsappPack": {
     "title": "باقة ولي الأمر عبر واتساب",

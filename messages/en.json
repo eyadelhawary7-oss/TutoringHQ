@@ -2538,7 +2538,12 @@
     "disablePackWarning": "Note: Disabling does not cancel this month's billing. This month's usage will still appear on your next invoice.",
     "today": "Today",
     "yesterday": "Yesterday",
-    "confirmDisablePack": "Confirm disable"
+    "confirmDisablePack": "Confirm disable",
+    "collapseParents": "Collapse parents",
+    "expandParents": "Expand parents",
+    "searchParents": "Search by name, student ID, or phone...",
+    "noSearchResults": "No matching results",
+    "clearParentSearch": "Clear search"
   },
   "whatsappPack": {
     "title": "Parent WhatsApp Pack",
