@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { requireSuperAdminApi } from '@/lib/admin-auth';
+import { getAdminContext } from '@/lib/admin-auth';
+import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-access';
+import { getAdminPermissions } from '@/lib/admin-roles';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
@@ -87,11 +89,24 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireSuperAdminApi(request);
-  if (!auth.ok) return auth.response;
+  const ctx = await getAdminContext(request);
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const flags = await fetchAdminAccessFlags(ctx.supabaseAdmin, ctx.userId);
+  const { data: au } = await ctx.supabaseAdmin
+    .from('admin_users')
+    .select('role, custom_permissions')
+    .eq('id', ctx.userId)
+    .maybeSingle();
+  const effRole = flags.isSuperAdmin ? 'super_admin' : (au?.role ?? 'internal_viewer');
+  const keys = customPermissionsToKeys(au?.custom_permissions);
+  const perms = getAdminPermissions(effRole, keys);
+  if (!flags.isSuperAdmin && !flags.canApproveSignups && !perms.includes('centers')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   const { id: centerId } = await params;
-  const supabaseAdmin = auth.supabaseAdmin;
+  const supabaseAdmin = ctx.supabaseAdmin;
 
   const { data: center, error: centerError } = await supabaseAdmin
     .from('centers')
@@ -177,10 +192,10 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireSuperAdminApi(request);
-  if (!auth.ok) return auth.response;
+  const ctx = await getAdminContext(request);
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabaseAdmin = auth.supabaseAdmin;
+  const supabaseAdmin = ctx.supabaseAdmin;
   const { id: centerId } = await params;
 
   let body: Record<string, unknown>;
@@ -198,6 +213,19 @@ export async function PATCH(
   }
 
   const action = typeof rawAction === 'string' ? rawAction : undefined;
+
+  const flags = await fetchAdminAccessFlags(supabaseAdmin, ctx.userId);
+  if (action === undefined || action === 'approve_plan_request') {
+    if (!flags.isSuperAdmin && !flags.canApproveSignups) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  } else if (action === 'blacklist' || action === 'unblacklist') {
+    if (!flags.isSuperAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  } else if (!flags.isSuperAdmin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   // ── action = 'update_invoice' ──
   if (action === 'update_invoice') {
@@ -309,7 +337,7 @@ export async function PATCH(
     const { data: adminByBearer } = await supabaseAdmin
       .from('admin_users')
       .select('id')
-      .eq('id', auth.userId)
+      .eq('id', ctx.userId)
       .maybeSingle();
     if (adminByBearer?.id) {
       adminUserId = adminByBearer.id as string;

@@ -607,6 +607,7 @@
     "platformConfigGroupWaBilling": "واتساب والفوترة",
     "platformConfigGroupOps": "تشغيل المنصة",
     "platformConfigGroupTargets": "أهداف العمل",
+    "platformConfigGroupBusiness": "إعدادات العمل",
     "platformConfig_auto_approve_signups_label": "الموافقة التلقائية على التسجيلات",
     "platformConfig_auto_approve_signups_desc": "تفعيل السناتر تلقائيًا بعد تأكيد الدفع",
     "platformConfig_pause_new_signups_label": "إيقاف التسجيلات الجديدة",

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
@@ -61,19 +61,25 @@ export type AdminTab =
   | 'cardOrders'
   | 'planRequests'
   | 'pendingSignups'
+  | 'renewals'
   | 'referrals'
   | 'withdrawals'
   | 'internalTeam'
   | 'salesPipeline'
   | 'analytics';
 
+/** Shown only when admin_users.role === 'super_admin' (see /api/admin/check). */
+const SUPER_ONLY_PERMISSION_KEYS = new Set(['billing', 'withdrawals', 'internal_team']);
+
 const ADMIN_NAV: { key: AdminTab; icon: React.ElementType; labelKey: string; permissionKey: string }[] = [
   { key: 'overview', icon: LayoutDashboard, labelKey: 'overview', permissionKey: 'overview' },
   { key: 'ceoDashboard', icon: BarChart3, labelKey: 'ceoDashboard', permissionKey: 'ceo_dashboard' },
   { key: 'centers', icon: Building2, labelKey: 'centers', permissionKey: 'centers' },
   { key: 'billing', icon: CreditCard, labelKey: 'billing', permissionKey: 'billing' },
-  { key: 'planRequests', icon: FileText, labelKey: 'planRequests', permissionKey: 'plan_requests' },
   { key: 'pendingSignups', icon: Clock, labelKey: 'pendingSignups', permissionKey: 'pending_signups' },
+  { key: 'cardOrders', icon: IdCard, labelKey: 'cardOrders', permissionKey: 'card_orders' },
+  { key: 'planRequests', icon: FileText, labelKey: 'planRequests', permissionKey: 'plan_requests' },
+  { key: 'renewals', icon: CalendarCheck, labelKey: 'renewals', permissionKey: 'renewals' },
   { key: 'referrals', icon: Gift, labelKey: 'referrals', permissionKey: 'referrals' },
   { key: 'withdrawals', icon: Wallet, labelKey: 'withdrawals', permissionKey: 'withdrawals' },
   { key: 'internalTeam', icon: Users, labelKey: 'internalTeam', permissionKey: 'internal_team' },
@@ -131,6 +137,18 @@ export function AdminSidebar({
   const canSee = useCallback(
     (permissionKey: string) => allowedKeys === null || allowedKeys.includes(permissionKey),
     [allowedKeys],
+  );
+
+  const navItems = useMemo(
+    () =>
+      ADMIN_NAV.filter(({ permissionKey, key }) => {
+        if (SUPER_ONLY_PERMISSION_KEYS.has(permissionKey)) {
+          return adminRole === 'super_admin' && canSee(permissionKey);
+        }
+        if (key === 'renewals' && adminRole === 'super_admin') return false;
+        return canSee(permissionKey);
+      }),
+    [adminRole, canSee],
   );
 
   useEffect(() => {
@@ -237,6 +255,14 @@ export function AdminSidebar({
     afterNavigate();
     if (key === 'ceoDashboard') {
       router.push('/ceo-dashboard');
+      return;
+    }
+    if (key === 'renewals') {
+      router.push('/admin/renewals');
+      return;
+    }
+    if (key === 'cardOrders') {
+      router.push('/admin/orders');
       return;
     }
     if (key === 'withdrawals') {
@@ -366,7 +392,7 @@ export function AdminSidebar({
           <h2 className="font-bold text-slate-900 dark:text-white">{t('title')}</h2>
         </div>
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-          {ADMIN_NAV.filter(({ permissionKey }) => canSee(permissionKey)).map(({ key, icon: Icon, labelKey }) => {
+          {navItems.map(({ key, icon: Icon, labelKey }) => {
             const isActive =
               key === 'ceoDashboard'
                 ? isCeo
@@ -374,7 +400,11 @@ export function AdminSidebar({
                   ? isWithdrawals
                   : key === 'referrals'
                     ? isReferrals
-                    : activeTab === key;
+                    : key === 'renewals'
+                      ? isRenewals
+                      : key === 'cardOrders'
+                        ? isOrders
+                        : activeTab === key;
             const items: React.ReactNode[] = [
               <button
                 key={key}
@@ -384,10 +414,15 @@ export function AdminSidebar({
               >
                 <Icon size={18} className="shrink-0" />
                 <span>{t(labelKey as Parameters<typeof t>[0])}</span>
+                {key === 'cardOrders' && pendingCount > 0 ? (
+                  <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] font-bold px-1.5">
+                    {pendingCount}
+                  </span>
+                ) : null}
               </button>,
             ];
             if (key === 'billing') {
-              if (canSee('renewals')) {
+              if (adminRole === 'super_admin' && canSee('renewals')) {
                 items.push(
                   <button
                     key="renewals"
@@ -432,27 +467,6 @@ export function AdminSidebar({
                   >
                     <Settings size={18} className="shrink-0" />
                     <span>{t('platformConfigNav')}</span>
-                  </button>,
-                );
-              }
-              if (canSee('card_orders')) {
-                items.push(
-                  <button
-                    key="cardOrders"
-                    type="button"
-                    onClick={() => {
-                      afterNavigate();
-                      router.push('/admin/orders');
-                    }}
-                    className={drawerBtn(!!isOrders)}
-                  >
-                    <IdCard size={18} className="shrink-0" />
-                    <span>{t('cardOrders')}</span>
-                    {pendingCount > 0 ? (
-                      <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] font-bold px-1.5">
-                        {pendingCount}
-                      </span>
-                    ) : null}
                   </button>,
                 );
               }
@@ -514,7 +528,7 @@ export function AdminSidebar({
           </Link>
         </div>
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-          {ADMIN_NAV.filter(({ permissionKey }) => canSee(permissionKey)).map(({ key, icon: Icon, labelKey }) => {
+          {navItems.map(({ key, icon: Icon, labelKey }) => {
             const isActive =
               key === 'ceoDashboard'
                 ? isCeo
@@ -522,7 +536,11 @@ export function AdminSidebar({
                   ? isWithdrawals
                   : key === 'referrals'
                     ? isReferrals
-                    : activeTab === key;
+                    : key === 'renewals'
+                      ? isRenewals
+                      : key === 'cardOrders'
+                        ? isOrders
+                        : activeTab === key;
             const items: React.ReactNode[] = [
               <button
                 key={key}
@@ -531,6 +549,14 @@ export function AdminSidebar({
                   closeMainSidebar?.();
                   if (key === 'ceoDashboard') {
                     router.push('/ceo-dashboard');
+                    return;
+                  }
+                  if (key === 'renewals') {
+                    router.push('/admin/renewals');
+                    return;
+                  }
+                  if (key === 'cardOrders') {
+                    router.push('/admin/orders');
                     return;
                   }
                   if (key === 'withdrawals') {
@@ -553,10 +579,15 @@ export function AdminSidebar({
               >
                 <Icon size={18} />
                 <span>{t(labelKey as Parameters<typeof t>[0])}</span>
+                {key === 'cardOrders' && pendingCount > 0 ? (
+                  <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold px-1.5">
+                    {pendingCount}
+                  </span>
+                ) : null}
               </button>,
             ];
             if (key === 'billing') {
-              if (canSee('renewals')) {
+              if (adminRole === 'super_admin' && canSee('renewals')) {
                 items.push(
                   <button
                     key="renewals"
@@ -616,32 +647,6 @@ export function AdminSidebar({
                   >
                     <Settings size={18} />
                     <span>{t('platformConfigNav')}</span>
-                  </button>,
-                );
-              }
-              if (canSee('card_orders')) {
-                items.push(
-                  <button
-                    key="cardOrders"
-                    type="button"
-                    onClick={() => {
-                      closeMainSidebar?.();
-                      router.push('/admin/orders');
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
-                      isOrders
-                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
-                    )}
-                  >
-                    <IdCard size={18} />
-                    <span>{t('cardOrders')}</span>
-                    {pendingCount > 0 ? (
-                      <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold px-1.5">
-                        {pendingCount}
-                      </span>
-                    ) : null}
                   </button>,
                 );
               }

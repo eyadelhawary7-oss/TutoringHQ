@@ -1,4 +1,28 @@
+/**
+ * Platform config API (super_admin only for writes).
+ *
+ * SM onboarding SQL (document only — run when Sales Manager is hired):
+ * -- Run this when Sales Manager is hired (at center 10):
+ * -- INSERT INTO admin_users (id, name, email, role, custom_permissions)
+ * -- VALUES (
+ * --   '{sm_auth_user_id}',
+ * --   'Sales Manager Name',
+ * --   'sm@centerhq.com',
+ * --   'staff',
+ * --   '{
+ * --     "can_view_centers": true,
+ * --     "can_approve_signups": true,
+ * --     "can_view_pipeline": true,
+ * --     "can_view_commissions": true,
+ * --     "can_approve_signups": true
+ * --   }'::jsonb
+ * -- );
+ *
+ * PATCH is not available on can_approve_signups alone — requires super_admin (see requireSuperAdminRow).
+ */
+
 import { requireSuperAdminApi } from '@/lib/admin-auth';
+import { requireSuperAdminRow } from '@/lib/admin-access';
 import { NextRequest, NextResponse } from 'next/server';
 
 const MANAGED_KEYS = new Set([
@@ -25,6 +49,10 @@ export async function GET(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
 
+  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
+  if (row403) return row403;
+  // admin_users.role === 'super_admin' (or env phone super); not can_approve_signups.
+
   const { data, error } = await auth.supabaseAdmin
     .from('platform_config')
     .select('key, value, updated_at')
@@ -42,6 +70,10 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
+
+  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
+  if (row403) return row403;
+  // admin_users.role === 'super_admin'; can_approve_signups does not grant PATCH.
 
   try {
     const body = (await request.json()) as { key?: string; value?: unknown };

@@ -5,7 +5,30 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   internal_viewer: ['overview', 'centers', 'analytics'],
   sales_rep: ['overview', 'centers', 'pending_signups', 'sales_pipeline'],
   support_agent: ['overview', 'centers', 'pending_signups'],
-  accountant: ['overview', 'billing', 'renewals', 'analytics'],
+  accountant: [
+    'overview',
+    'ceo_dashboard',
+    'centers',
+    'card_orders',
+    'plan_requests',
+    'pending_signups',
+    'referrals',
+    'sales_pipeline',
+    'analytics',
+    'renewals',
+  ],
+  /** Sales / ops staff — sidebar + API gates use custom_permissions (e.g. can_approve_signups). */
+  staff: [
+    'overview',
+    'ceo_dashboard',
+    'centers',
+    'card_orders',
+    'plan_requests',
+    'pending_signups',
+    'referrals',
+    'sales_pipeline',
+    'analytics',
+  ],
   custom: [],
 };
 

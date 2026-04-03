@@ -1718,6 +1718,7 @@
     "platformConfigGroupWaBilling": "WhatsApp & billing",
     "platformConfigGroupOps": "Platform operations",
     "platformConfigGroupTargets": "Business targets",
+    "platformConfigGroupBusiness": "Business Configuration",
     "platformConfig_auto_approve_signups_label": "Auto-approve new signups",
     "platformConfig_auto_approve_signups_desc": "Centers are approved automatically after payment confirms",
     "platformConfig_pause_new_signups_label": "Pause new signups",
@@ -1738,7 +1739,7 @@
     "platformConfig_read_only_mode_desc": "Disables all write operations",
     "platformConfig_bosta_auto_reship_on_lost_label": "Auto-reship lost card orders",
     "platformConfig_bosta_auto_reship_on_lost_desc": "Enable only after confirming Bosta covers lost packages",
-    "platformConfig_breakeven_target_label": "Break-even target (centers)",
+    "platformConfig_breakeven_target_label": "Break-Even Target (centers needed)",
     "platformConfig_breakeven_target_desc": "Number of centers needed to reach break-even",
     "centerManagement": {
       "title": "Center Management",

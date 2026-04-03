@@ -9,6 +9,8 @@ import { generateReferralCode } from '@/lib/referral';
 import { sendWelcomeTemplate } from '@/lib/centerNotify';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-access';
+import { getAdminPermissions } from '@/lib/admin-roles';
 import { PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
 
@@ -111,6 +113,14 @@ export async function GET(request: Request) {
 
     if (!adminUser && !isPhoneAdmin) {
       return NextResponse.json({ error: 'Forbidden - admin access required' }, { status: 403 });
+    }
+
+    const flags = await fetchAdminAccessFlags(adminClient, userId);
+    const effRole = flags.isSuperAdmin ? 'super_admin' : (adminUser?.role ?? 'internal_viewer');
+    const customKeys = customPermissionsToKeys(adminUser?.custom_permissions);
+    const perms = getAdminPermissions(effRole, customKeys);
+    if (!flags.isSuperAdmin && !flags.canApproveSignups && !perms.includes('centers')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);

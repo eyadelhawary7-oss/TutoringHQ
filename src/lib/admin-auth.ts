@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { isSuperAdminPhone } from '@/lib/admin-access';
 
 export type InternalRole = 'super_admin' | 'internal_admin' | 'internal_viewer';
 
@@ -7,11 +8,6 @@ export interface AdminContext {
   userId: string;
   internalRole: InternalRole;
   supabaseAdmin: SupabaseClient;
-}
-
-function isSuperAdmin(phone: string | null): boolean {
-  const admins = process.env.SUPER_ADMIN_PHONES || '';
-  return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
 }
 
 export async function getAdminContext(request: Request): Promise<AdminContext | null> {
@@ -54,7 +50,7 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     .select('phone')
     .eq('id', user.id)
     .single();
-  const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
+  const adminByPhone = isSuperAdminPhone(userRecord?.phone ?? null);
   if (!adminRow && !adminByPhone) {
     return null;
   }
@@ -65,7 +61,14 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     internalRole = 'super_admin';
   } else if (adminRow?.role === 'admin' || adminRow?.role === 'internal_admin') {
     internalRole = 'internal_admin';
-  } else if (adminRow?.role === 'sales_rep' || adminRow?.role === 'support_agent' || adminRow?.role === 'accountant' || adminRow?.role === 'custom' || adminRow?.role === 'internal_viewer') {
+  } else if (
+    adminRow?.role === 'staff' ||
+    adminRow?.role === 'sales_rep' ||
+    adminRow?.role === 'support_agent' ||
+    adminRow?.role === 'accountant' ||
+    adminRow?.role === 'custom' ||
+    adminRow?.role === 'internal_viewer'
+  ) {
     internalRole = 'internal_viewer';
   }
 

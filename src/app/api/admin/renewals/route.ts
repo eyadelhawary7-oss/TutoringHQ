@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
+import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-access';
+import { getAdminPermissions } from '@/lib/admin-roles';
 import { validateCSRFRequest } from '@/lib/csrf';
 
 function addMonths(date: Date, months: number): Date {
@@ -33,7 +35,19 @@ export async function GET(request: Request) {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { supabaseAdmin } = ctx;
+    const { supabaseAdmin, userId } = ctx;
+    const { data: au } = await supabaseAdmin
+      .from('admin_users')
+      .select('role, custom_permissions')
+      .eq('id', userId)
+      .maybeSingle();
+    const flags = await fetchAdminAccessFlags(supabaseAdmin, userId);
+    const effRole = flags.isSuperAdmin ? 'super_admin' : (au?.role ?? 'internal_viewer');
+    const keys = customPermissionsToKeys(au?.custom_permissions);
+    const perms = getAdminPermissions(effRole, keys);
+    if (!flags.canApproveSignups && !perms.includes('renewals')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const url = new URL(request.url);
     const filter = url.searchParams.get('filter') || 'all'; // all | this_week | this_month | overdue
 

@@ -1,10 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-function isSuperAdmin(phone: string | null): boolean {
-  const admins = process.env.SUPER_ADMIN_PHONES || '';
-  return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
-}
+import { customPermissionsToKeys, isSuperAdminPhone } from '@/lib/admin-access';
 
 export async function GET(request: Request) {
   try {
@@ -46,7 +42,7 @@ export async function GET(request: Request) {
       .eq('id', user.id)
       .maybeSingle();
 
-    const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
+    const adminByPhone = isSuperAdminPhone(userRecord?.phone ?? null);
     const isSuperAdminByRole = userRecord?.role === 'super_admin';
 
     if (!adminUser && !adminByPhone && !isSuperAdminByRole) {
@@ -55,12 +51,15 @@ export async function GET(request: Request) {
 
     let role = adminUser?.role ?? 'admin';
     if (adminByPhone || isSuperAdminByRole) role = 'super_admin';
-    const customPermissions = (adminUser?.custom_permissions as string[] | null) ?? [];
+    const customPermissions = customPermissionsToKeys(adminUser?.custom_permissions);
+    const canApproveSignups =
+      role === 'super_admin' || customPermissions.includes('can_approve_signups');
 
     return NextResponse.json({
       isAdmin: true,
       role,
       customPermissions,
+      canApproveSignups,
       hasCenter: false, // Admins don't have centers; they manage the platform globally
     });
   } catch (err) {

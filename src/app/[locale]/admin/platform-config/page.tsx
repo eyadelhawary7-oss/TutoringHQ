@@ -295,7 +295,7 @@ export default function PlatformConfigPage() {
 
             <section>
               <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
-                {t('platformConfigGroupTargets')}
+                {t('platformConfigGroupBusiness')}
               </h2>
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
                 <p className="font-medium text-slate-900 dark:text-slate-100">

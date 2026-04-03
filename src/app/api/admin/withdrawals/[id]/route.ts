@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminApi } from '@/lib/admin-auth';
+import { requireSuperAdminRow } from '@/lib/admin-access';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,9 @@ export async function PATCH(
 ) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
+  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
+  if (row403) return row403;
+  // super_admin only; can_approve_signups does not apply.
 
   const { id: withdrawalId } = await params;
 
