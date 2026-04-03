@@ -20,6 +20,11 @@ import {
   type BillingPeriod,
   type PlanKey,
 } from '@/lib/pricing';
+import {
+  getTodayCairo,
+  isWithdrawalWindowOpen,
+  nextQuarterFirstOnOrAfter,
+} from '@/lib/cairoBillingCalendar';
 
 const PLAN_RANK: Record<string, number> = {
   nano: 1,
@@ -77,30 +82,6 @@ type InvoiceRow = {
 
 function formatNum(n: number | null | undefined): string {
   return (Number(n) || 0).toLocaleString('en-US');
-}
-
-function todayYmdLocal(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function isWithdrawalWindow(ymd: string): boolean {
-  const [, m, d] = ymd.split('-').map((x) => parseInt(x, 10));
-  return [1, 4, 7, 10].includes(m) && d >= 1 && d <= 14;
-}
-
-function nextQuarterFirstOnOrAfter(ymd: string): string {
-  const [y0, m0, d0] = ymd.split('-').map((x) => parseInt(x, 10));
-  for (let i = 0; i < 500; i++) {
-    const dt = new Date(Date.UTC(y0, m0 - 1, d0 + i));
-    const y = dt.getUTCFullYear();
-    const m = dt.getUTCMonth() + 1;
-    const d = dt.getUTCDate();
-    if ([1, 4, 7, 10].includes(m) && d === 1) {
-      return `${y}-${String(m).padStart(2, '0')}-01`;
-    }
-  }
-  return ymd;
 }
 
 function maskInstapay(s: string): string {
@@ -357,18 +338,19 @@ export default function BillingPage() {
     if (!isPlanKey(selectedPlan)) return null;
     const newBp = normalizeBillingPeriod(selectedPeriod) as BillingPeriod;
     const newAllIn = PLANS[selectedPlan].quarterlyAllIn;
-    const currentPeriodPrice = getChargeFromQuarterlyAllIn(currentAllIn, newBp, currentPlanKey);
+    const currentPeriodPrice = getChargeFromQuarterlyAllIn(currentAllIn, currentBp, currentPlanKey);
     const newPeriodPrice = getChargeFromQuarterlyAllIn(newAllIn, newBp, selectedPlan);
     const cost = getUpgradeCost({
       newPlanPrice: newPeriodPrice,
       currentPlanPrice: currentPeriodPrice,
       newBillingPeriod: newBp,
+      currentBillingPeriod: currentBp,
       nextPaymentDue: new Date(`${npdYmd}T12:00:00`),
     });
     const amountDue = Math.round(cost.amountDue * 100) / 100;
     const monthlyRate = getChargeFromQuarterlyAllIn(newAllIn, 'monthly', selectedPlan);
     return { ...cost, amountDue, monthlyRate, newBp };
-  }, [center, selectedPlan, selectedPeriod, npdYmd, currentAllIn, currentPlanKey]);
+  }, [center, selectedPlan, selectedPeriod, npdYmd, currentAllIn, currentPlanKey, currentBp]);
 
   const downgradePreview = useMemo(() => {
     if (!center || !selectedPlan || !selectedPeriod || !npdYmd) return null;
@@ -435,7 +417,7 @@ export default function BillingPage() {
     return st || '—';
   };
 
-  const monthlyDisplay = Number(center?.all_in_price ?? 0) || Math.round(Number(center?.billing_amount ?? 0) / 3) || 0;
+  const monthlyDisplay = Number(center?.all_in_price ?? 0) || 0;
 
   const handleUpgradePay = async () => {
     if (!ownerOk || !selectedPlan || !selectedPeriod) return;
@@ -524,6 +506,19 @@ export default function BillingPage() {
         toast.toast(t('paymentSuccess'), 'success');
         setShowReactivationModal(false);
         await refreshData();
+        return;
+      }
+      if (j.reused === true) {
+        const url = j.paymobUrl as string | undefined;
+        const oid = j.paymobOrderId as string | undefined;
+        setShowReactivationModal(false);
+        if (url && oid) {
+          setPaymobIframeUrl(url);
+          setPollPaymobOrderId(String(oid));
+          setPollInvoiceId(null);
+        } else {
+          toast.toast(t('loadError'), 'error');
+        }
         return;
       }
       const url = j.paymobUrl as string | undefined;
@@ -1081,6 +1076,7 @@ export default function BillingPage() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
+              onClick={() => toast.toast(t('credits.applyInfo'), 'info')}
               className="flex-1 rounded-xl border-2 border-[#F59E0B] px-4 py-2.5 text-sm font-semibold text-[#F59E0B] hover:bg-amber-500/10"
             >
               {t('credits.applyToInvoice')}
@@ -1127,10 +1123,10 @@ export default function BillingPage() {
                 )}
               </div>
               <p className="text-xs text-slate-500">{t('withdrawal.quarterlyNote')}</p>
-              {!isWithdrawalWindow(todayYmdLocal()) && (
+              {!isWithdrawalWindowOpen() && (
                 <p className="text-sm text-amber-200">
                   {t('withdrawal.nextWindow', {
-                    date: new Date(`${nextQuarterFirstOnOrAfter(todayYmdLocal())}T12:00:00`).toLocaleDateString('en-GB'),
+                    date: new Date(`${nextQuarterFirstOnOrAfter(getTodayCairo())}T12:00:00`).toLocaleDateString('en-GB'),
                   })}
                 </p>
               )}

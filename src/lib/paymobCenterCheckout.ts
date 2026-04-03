@@ -104,3 +104,78 @@ export async function createPaymobCheckoutEgp(params: {
 
   return { paymobOrderId, iframeUrl };
 }
+
+/**
+ * Fresh iframe URL for an existing unpaid Paymob order (same amount as original order).
+ */
+export async function createPaymobIframeForExistingOrder(params: {
+  paymobOrderId: string;
+  amountEgp: number;
+  phoneDigits: string;
+  displayName: string;
+}): Promise<{ iframeUrl: string }> {
+  const apiKey = process.env.PAYMOB_API_KEY;
+  const integrationId = process.env.PAYMOB_INTEGRATION_ID;
+  const iframeId = process.env.PAYMOB_IFRAME_ID;
+  if (!apiKey || !integrationId || !iframeId) {
+    throw new Error('Paymob is not configured');
+  }
+
+  const amountCents = Math.round(params.amountEgp * 100);
+  if (!Number.isFinite(amountCents) || amountCents <= 0) {
+    throw new Error('Invalid amount');
+  }
+
+  const orderId = Number(params.paymobOrderId);
+  if (!Number.isFinite(orderId)) {
+    throw new Error('Invalid Paymob order id');
+  }
+
+  const authRes = await fetch(`${PAYMOB_BASE}/auth/tokens`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+  const authData = (await authRes.json()) as { token?: string };
+  if (!authRes.ok || !authData.token) {
+    throw new Error('Paymob auth failed');
+  }
+  const token = authData.token;
+
+  const keyRes = await fetch(`${PAYMOB_BASE}/acceptance/payment_keys`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      auth_token: token,
+      amount_cents: amountCents,
+      currency: 'EGP',
+      order_id: orderId,
+      billing_data: {
+        first_name: params.displayName.slice(0, 50) || 'Center',
+        last_name: '.',
+        phone_number: params.phoneDigits || '0',
+        email: 'NA',
+        street: 'NA',
+        building: 'NA',
+        floor: 'NA',
+        apartment: 'NA',
+        city: 'Cairo',
+        country: 'EG',
+        state: 'Cairo',
+        postal_code: 'NA',
+      },
+      integration_id: Number(integrationId),
+      lock_order_when_paid: false,
+    }),
+  });
+  const keyJson = (await keyRes.json()) as { token?: string; message?: string };
+  if (!keyRes.ok || !keyJson.token) {
+    throw new Error(keyJson.message ?? 'Paymob payment key failed');
+  }
+
+  const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${encodeURIComponent(keyJson.token)}`;
+  return { iframeUrl };
+}

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   const { data: center, error: cErr } = await supabaseAdmin
     .from('centers')
     .select(
-      'id, plan, subscription_billing_period, billing_period, all_in_price, next_payment_due',
+      'id, plan, status, subscription_status, billing_status, subscription_billing_period, billing_period, all_in_price, next_payment_due',
     )
     .eq('id', centerId)
     .maybeSingle();
@@ -66,11 +66,32 @@ export async function POST(request: NextRequest) {
 
   const c = center as {
     plan?: string;
+    status?: string;
+    subscription_status?: string | null;
+    billing_status?: string | null;
     subscription_billing_period?: string | null;
     billing_period?: string | null;
     all_in_price?: number | null;
     next_payment_due?: string | null;
   };
+
+  if (
+    c.status !== 'active' ||
+    c.subscription_status !== 'active' ||
+    !['active', 'paid'].includes(String(c.billing_status ?? '').toLowerCase())
+  ) {
+    return NextResponse.json(
+      { error: 'Center must be active and paid to downgrade' },
+      { status: 400 },
+    );
+  }
+
+  if (newPlan === 'top_centers') {
+    return NextResponse.json(
+      { error: 'Top Centers plan requires manual admin setup' },
+      { status: 400 },
+    );
+  }
 
   const currentPlan = c.plan ?? 'starter';
   const currentRank = PLAN_RANK[currentPlan] ?? 1;

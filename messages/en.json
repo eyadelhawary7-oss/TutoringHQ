@@ -2263,6 +2263,7 @@
       "expiryNote": "Credits expire 6 months from when they were earned. Oldest credits spent first.",
       "expiryWarning": "{amount} credits expiring on {date}",
       "applyToInvoice": "Apply to Next Invoice",
+      "applyInfo": "Credits are automatically applied at your next renewal if your balance is sufficient.",
       "applyNote": "Credits will be automatically applied at your next renewal if your balance is sufficient.",
       "requestWithdrawal": "Request Withdrawal"
     },
@@ -2282,7 +2283,9 @@
       "minRequired": "Minimum 2,000 credits required for withdrawal.",
       "minBalanceNote": "You need at least 2,000 credits to request a withdrawal. You currently have {amount} credits.",
       "nextWindow": "Next withdrawal window opens {date}.",
-      "settingsLink": "Open Settings"
+      "settingsLink": "Open Settings",
+      "insufficient": "Insufficient available credits (after reservations)",
+      "reservationFailed": "Could not reserve credits. Try again."
     },
     "reactivation": {
       "tier1": "Reactivation Fine (6 days)",

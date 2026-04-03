@@ -10,7 +10,7 @@ import {
 } from '@/lib/billingEngine';
 import { reactivateCenterFromSession } from '@/lib/combinedPaymentFinalize';
 import { normalizeBillingPeriod, type BillingPeriod } from '@/lib/pricing';
-import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
+import { createPaymobCheckoutEgp, createPaymobIframeForExistingOrder } from '@/lib/paymobCenterCheckout';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,22 +89,83 @@ export async function POST(request: NextRequest) {
 
   if (paymobAmount <= 0) {
     const ref = randomUUID();
-    const spent = await spendCredits({
-      centerId,
-      amount: creditToApply,
-      referenceId: ref,
-      referenceType: 'subscription',
-      supabase: supabaseAdmin,
-    });
-    if (spent.insufficient || spent.spent < creditToApply) {
+    try {
+      await spendCredits({
+        centerId,
+        amount: creditToApply,
+        referenceId: ref,
+        referenceType: 'subscription',
+        supabase: supabaseAdmin,
+      });
+    } catch {
       return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
     }
-    await reactivateCenterFromSession(supabaseAdmin, centerId);
+    try {
+      await reactivateCenterFromSession(supabaseAdmin, centerId);
+    } catch (e) {
+      console.error('[billing/reactivate] reactivateCenterFromSession', e);
+      return NextResponse.json({ error: 'Failed to reactivate' }, { status: 500 });
+    }
     const newBalance = await getCreditBalance(centerId, supabaseAdmin);
     return NextResponse.json({
       reactivated: true,
       breakdown: calc.breakdown,
       newBalance,
+    });
+  }
+
+  const { data: existingSession, error: existingErr } = await supabaseAdmin
+    .from('combined_payment_sessions')
+    .select('id, paymob_amount, credit_amount, total_amount, expires_at, paymob_order_id, metadata')
+    .eq('center_id', centerId)
+    .in('session_type', ['reactivation_tier1', 'reactivation_tier2'])
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle();
+
+  if (!existingErr && existingSession) {
+    const ex = existingSession as {
+      id: string;
+      paymob_amount: number | string;
+      credit_amount: number | string | null;
+      total_amount: number | string;
+      paymob_order_id: string | null;
+      metadata: unknown;
+    };
+    const phone = String(c.phone ?? '').replace(/\D/g, '') || '0';
+    const meta: Record<string, unknown> =
+      ex.metadata && typeof ex.metadata === 'object' && !Array.isArray(ex.metadata)
+        ? { ...(ex.metadata as Record<string, unknown>) }
+        : {};
+    let paymobUrl: string | null =
+      typeof meta.paymob_iframe_url === 'string' ? meta.paymob_iframe_url : null;
+    if (!paymobUrl && ex.paymob_order_id) {
+      try {
+        const refreshed = await createPaymobIframeForExistingOrder({
+          paymobOrderId: String(ex.paymob_order_id),
+          amountEgp: Number(ex.paymob_amount),
+          phoneDigits: phone,
+          displayName: String(c.name ?? 'Center'),
+        });
+        paymobUrl = refreshed.iframeUrl;
+        meta.paymob_iframe_url = paymobUrl;
+        await supabaseAdmin
+          .from('combined_payment_sessions')
+          .update({ metadata: meta as never })
+          .eq('id', ex.id);
+      } catch (e) {
+        console.error('[billing/reactivate] refresh iframe for reused session', e);
+      }
+    }
+    return NextResponse.json({
+      reused: true,
+      sessionId: ex.id,
+      paymobUrl: paymobUrl ?? undefined,
+      paymobOrderId: ex.paymob_order_id ?? undefined,
+      breakdown: calc.breakdown,
+      total: Number(ex.total_amount),
+      paymobAmount: Number(ex.paymob_amount),
+      creditApplied: Number(ex.credit_amount ?? 0),
     });
   }
 
@@ -140,9 +201,25 @@ export async function POST(request: NextRequest) {
       displayName: String(c.name ?? 'Center'),
     });
 
+    const { data: metaRow } = await supabaseAdmin
+      .from('combined_payment_sessions')
+      .select('metadata')
+      .eq('id', sessionRowId)
+      .maybeSingle();
+    const prevMeta: Record<string, unknown> =
+      metaRow?.metadata &&
+      typeof metaRow.metadata === 'object' &&
+      !Array.isArray(metaRow.metadata)
+        ? { ...(metaRow.metadata as Record<string, unknown>) }
+        : { tier, period, nextPeriodAmount };
+    prevMeta.paymob_iframe_url = checkout.iframeUrl;
+
     const { error: upErr } = await supabaseAdmin
       .from('combined_payment_sessions')
-      .update({ paymob_order_id: checkout.paymobOrderId })
+      .update({
+        paymob_order_id: checkout.paymobOrderId,
+        metadata: prevMeta as never,
+      })
       .eq('id', sessionRowId);
 
     if (upErr) {

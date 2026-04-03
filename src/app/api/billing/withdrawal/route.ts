@@ -1,36 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { todayISO } from '@/lib/parentPack';
+import {
+  getTodayCairo,
+  isWithdrawalWindowOpen,
+  nextProcessingQuarterStart,
+  nextQuarterFirstOnOrAfter,
+} from '@/lib/cairoBillingCalendar';
 
 export const dynamic = 'force-dynamic';
-
-function isWithdrawalWindow(ymd: string): boolean {
-  const [, m, d] = ymd.split('-').map((x) => parseInt(x, 10));
-  return [1, 4, 7, 10].includes(m) && d >= 1 && d <= 14;
-}
-
-/** Next Jan/Apr/Jul/Oct 1 on or after `ymd` (YYYY-MM-DD, Cairo calendar string). */
-function nextQuarterFirstOnOrAfter(ymd: string): string {
-  const [y0, m0, d0] = ymd.split('-').map((x) => parseInt(x, 10));
-  for (let i = 0; i < 500; i++) {
-    const dt = new Date(Date.UTC(y0, m0 - 1, d0 + i));
-    const y = dt.getUTCFullYear();
-    const m = dt.getUTCMonth() + 1;
-    const d = dt.getUTCDate();
-    if ([1, 4, 7, 10].includes(m) && d === 1) {
-      return `${y}-${String(m).padStart(2, '0')}-01`;
-    }
-  }
-  return ymd;
-}
-
-function nextProcessingQuarterStart(ymd: string): string {
-  const [y, m] = ymd.split('-').map((x) => parseInt(x, 10));
-  if (m <= 3) return `${y}-04-01`;
-  if (m <= 6) return `${y}-07-01`;
-  if (m <= 9) return `${y}-10-01`;
-  return `${y + 1}-01-01`;
-}
 
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
@@ -55,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   const { data: center, error: cErr } = await supabaseAdmin
     .from('centers')
-    .select('id, instapay_number, credit_balance')
+    .select('id, instapay_number, credit_balance, credit_reserved')
     .eq('id', centerId)
     .maybeSingle();
 
@@ -66,6 +43,7 @@ export async function POST(request: NextRequest) {
   const c = center as {
     instapay_number?: string | null;
     credit_balance?: number | string | null;
+    credit_reserved?: number | string | null;
   };
 
   const instapay = (c.instapay_number ?? '').trim();
@@ -83,9 +61,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const balance = Number(c.credit_balance ?? 0);
-  if (balance < creditAmount) {
-    return NextResponse.json({ error: 'Insufficient credit balance' }, { status: 400 });
+  const available =
+    Number(c.credit_balance ?? 0) - Number(c.credit_reserved ?? 0);
+
+  if (available < creditAmount) {
+    return NextResponse.json(
+      { error: 'Insufficient available credits (after reservations)' },
+      { status: 400 },
+    );
   }
 
   const { data: pending } = await supabaseAdmin
@@ -102,13 +85,33 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const today = todayISO();
-  if (!isWithdrawalWindow(today)) {
+  const today = getTodayCairo();
+  if (!isWithdrawalWindowOpen()) {
     const next = nextQuarterFirstOnOrAfter(today);
     return NextResponse.json(
       {
         error: `Withdrawals are processed quarterly. Next window: ${next}`,
       },
+      { status: 400 },
+    );
+  }
+
+  const { data: reserved, error: resErr } = await supabaseAdmin.rpc('reserve_credits_atomic', {
+    p_center_id: centerId,
+    p_amount: creditAmount,
+  });
+
+  if (resErr) {
+    console.error('[billing/withdrawal] reserve_credits_atomic', resErr);
+    return NextResponse.json(
+      { error: 'Could not reserve credits. Try again.' },
+      { status: 400 },
+    );
+  }
+
+  if (!reserved) {
+    return NextResponse.json(
+      { error: 'Could not reserve credits. Try again.' },
       { status: 400 },
     );
   }
@@ -127,7 +130,11 @@ export async function POST(request: NextRequest) {
 
   if (insErr) {
     console.error('[billing/withdrawal] insert', insErr);
-    return NextResponse.json({ error: 'Failed to submit withdrawal' }, { status: 500 });
+    await supabaseAdmin.rpc('cancel_reservation_atomic', {
+      p_center_id: centerId,
+      p_amount: creditAmount,
+    });
+    return NextResponse.json({ error: 'Failed to create request' }, { status: 500 });
   }
 
   return NextResponse.json({

@@ -63,6 +63,7 @@ export function getUpgradeCost(params: {
   newPlanPrice: number;
   currentPlanPrice: number;
   newBillingPeriod: 'monthly' | 'quarterly' | 'annual';
+  currentBillingPeriod: 'monthly' | 'quarterly' | 'annual';
   nextPaymentDue: Date;
 }): {
   daysRemaining: number;
@@ -79,11 +80,8 @@ export function getUpgradeCost(params: {
     Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
   );
 
-  const periodDays = { monthly: 30, quarterly: 90, annual: 365 };
-  const days = periodDays[params.newBillingPeriod];
-
-  const newDailyRate = params.newPlanPrice / days;
-  const currentDailyRate = params.currentPlanPrice / days;
+  const newDailyRate = getDailyRate(params.newPlanPrice, params.newBillingPeriod);
+  const currentDailyRate = getDailyRate(params.currentPlanPrice, params.currentBillingPeriod);
   const dailyRateDifference = newDailyRate - currentDailyRate;
 
   return {
@@ -130,69 +128,22 @@ export async function getCreditBalance(centerId: string, supabase: SupabaseClien
   return Number(data?.credit_balance ?? 0);
 }
 
-/** FIFO: spend oldest non-expired credits first. Call only after Paymob success or credit-only payment. */
+/** FIFO atomic spend — call only after Paymob success or explicit credit-only flows. */
 export async function spendCredits(params: {
   centerId: string;
   amount: number;
   referenceId: string;
   referenceType: string;
   supabase: SupabaseClient;
-}): Promise<{ spent: number; insufficient: boolean }> {
-  const nowMs = Date.now();
-  const { centerId, amount, referenceId, referenceType, supabase } = params;
-
-  const { data: batchRows } = await supabase
-    .from('credit_ledger')
-    .select('id, amount, expires_at')
-    .eq('center_id', centerId)
-    .eq('type', 'earned')
-    .gt('amount', 0)
-    .order('created_at', { ascending: true });
-
-  const batches = (batchRows ?? []).filter((b) => {
-    const ex = (b as { expires_at?: string | null }).expires_at;
-    if (ex == null) return true;
-    return new Date(ex).getTime() > nowMs;
+}): Promise<boolean> {
+  const { error } = await params.supabase.rpc('spend_credits_atomic', {
+    p_center_id: params.centerId,
+    p_amount: params.amount,
+    p_reference_id: params.referenceId,
+    p_reference_type: params.referenceType,
   });
-
-  if (batches.length === 0) {
-    return { spent: 0, insufficient: true };
-  }
-
-  let remaining = amount;
-  let totalSpent = 0;
-
-  for (const batch of batches) {
-    if (remaining <= 0) break;
-    const batchAmount = Number(batch.amount);
-    const useFromBatch = Math.min(batchAmount, remaining);
-
-    await supabase
-      .from('credit_ledger')
-      .update({ amount: batchAmount - useFromBatch })
-      .eq('id', batch.id);
-
-    await supabase.from('credit_ledger').insert({
-      center_id: centerId,
-      amount: -useFromBatch,
-      type: 'spent',
-      reference_id: referenceId,
-      reference_type: referenceType,
-    });
-
-    remaining -= useFromBatch;
-    totalSpent += useFromBatch;
-  }
-
-  const { data: center } = await supabase
-    .from('centers')
-    .select('credit_balance')
-    .eq('id', centerId)
-    .maybeSingle();
-  const newBalance = Math.max(0, Number(center?.credit_balance ?? 0) - totalSpent);
-  await supabase.from('centers').update({ credit_balance: newBalance }).eq('id', centerId);
-
-  return { spent: totalSpent, insufficient: remaining > 0 };
+  if (error) throw new Error(`spendCredits failed: ${error.message}`);
+  return true;
 }
 
 export async function earnCredits(params: {
@@ -201,34 +152,13 @@ export async function earnCredits(params: {
   referenceId: string;
   referenceType: string;
   supabase: SupabaseClient;
-}): Promise<void> {
-  const { centerId, amount, referenceId, referenceType, supabase } = params;
-  const expiresAt = new Date();
-  expiresAt.setMonth(expiresAt.getMonth() + 6);
-
-  await supabase.from('credit_ledger').insert({
-    center_id: centerId,
-    amount,
-    type: 'earned',
-    reference_id: referenceId,
-    reference_type: referenceType,
-    expires_at: expiresAt.toISOString(),
+}): Promise<number> {
+  const { data, error } = await params.supabase.rpc('earn_credits_atomic', {
+    p_center_id: params.centerId,
+    p_amount: params.amount,
+    p_reference_id: params.referenceId,
+    p_reference_type: params.referenceType,
   });
-
-  const { data: center } = await supabase
-    .from('centers')
-    .select('credit_balance')
-    .eq('id', centerId)
-    .maybeSingle();
-
-  const { data: planData } = await supabase
-    .from('centers')
-    .select('all_in_price')
-    .eq('id', centerId)
-    .maybeSingle();
-
-  const maxBalance = Number(planData?.all_in_price ?? 0) * 3;
-  const newBalance = Math.min(maxBalance, Number(center?.credit_balance ?? 0) + amount);
-
-  await supabase.from('centers').update({ credit_balance: newBalance }).eq('id', centerId);
+  if (error) throw new Error(`earnCredits failed: ${error.message}`);
+  return Number(data);
 }

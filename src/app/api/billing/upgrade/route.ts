@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     (PLANS[currentPk as PlanKey]?.quarterlyAllIn ?? PLANS.starter.quarterlyAllIn);
   const currentPeriodPrice = getChargeFromQuarterlyAllIn(
     currentAllIn,
-    newBp,
+    periodForLimit,
     currentPk as PlanKey,
   );
   const newPeriodPrice = getChargeFromQuarterlyAllIn(newAllIn, newBp, newPlan as PlanKey);
@@ -141,6 +141,7 @@ export async function POST(request: NextRequest) {
     newPlanPrice: newPeriodPrice,
     currentPlanPrice: currentPeriodPrice,
     newBillingPeriod: newBp,
+    currentBillingPeriod: periodForLimit,
     nextPaymentDue: new Date(`${npd}T12:00:00`),
   });
 
@@ -151,7 +152,8 @@ export async function POST(request: NextRequest) {
 
   const today = new Date().toISOString().slice(0, 10);
   const code = (c.center_code ?? 'XXX').toString().replace(/\s+/g, '') || 'XXX';
-  const invoiceNumber = `UPG-${code}-${today.slice(0, 7)}`;
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const invoiceNumber = `UPG-${code}-${today.slice(0, 7)}-${suffix}`;
 
   const { data: inv, error: invErr } = await supabaseAdmin
     .from('invoices')
