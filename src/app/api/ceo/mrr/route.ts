@@ -10,8 +10,8 @@ export async function GET(request: Request) {
 
   const { data: snapshots, error } = await supabase
     .from('mrr_snapshots')
-    .select('date, mrr, active_centers, new_centers, churned_centers')
-    .order('date', { ascending: false })
+    .select('snapshot_date, mrr, active_centers, new_centers, churned_centers')
+    .order('snapshot_date', { ascending: false })
     .limit(30);
 
   if (error) {
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   // This month aggregates
   const thisMonth = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
   const thisMonthRows = safeSnapshots.filter(
-    (s) => typeof s.date === 'string' && s.date.startsWith(thisMonth)
+    (s) => typeof s.snapshot_date === 'string' && s.snapshot_date.startsWith(thisMonth)
   );
 
   return Response.json({
