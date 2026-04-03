@@ -46,7 +46,7 @@ function ThemeToggle() {
       title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
     >
       <span style={{ fontSize: 16 }}>{isDark ? '☀️' : '🌙'}</span>
-      <span className="hidden lg:block">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+      <span className="hidden xl:block">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
     </button>
   );
 }
