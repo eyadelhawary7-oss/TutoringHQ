@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     !body.message ||
     typeof body.message !== 'string' ||
     body.message.trim().length === 0 ||
-    body.message.length > 200
+    body.message.length > 160
   ) {
     return NextResponse.json({ error: 'Invalid message' }, { status: 400 });
   }
@@ -48,6 +48,22 @@ export async function POST(request: NextRequest) {
 
   if (!center) {
     return NextResponse.json({ error: 'Center not found' }, { status: 404 });
+  }
+
+  const now = new Date();
+  const startOfMonthUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const { count: blastsThisMonth, error: monthCountErr } = await supabaseAdmin
+    .from('announcement_blasts')
+    .select('id', { count: 'exact', head: true })
+    .eq('center_id', centerId)
+    .gte('created_at', startOfMonthUtc);
+  if (monthCountErr) {
+    console.error('[parent-pack/announcement] monthly count', monthCountErr);
+    return NextResponse.json({ error: 'Failed to verify announcement limit' }, { status: 500 });
+  }
+  // Rate limit: max 2 announcement blasts per center per calendar month (UTC).
+  if ((blastsThisMonth ?? 0) >= 2) {
+    return NextResponse.json({ error: 'monthly_limit', message: 'Maximum 2 announcements per month' }, { status: 429 });
   }
 
   const cap = getAnnouncementCap(center.plan as string);

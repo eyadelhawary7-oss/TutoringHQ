@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import {
@@ -19,6 +20,8 @@ import { supabase } from '@/lib/supabase';
 import { dbUpdate } from '@/lib/db-proxy';
 import { useToast } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
+
+const ANNOUNCEMENT_MESSAGE_MAX = 160;
 
 type CenterData = {
   id: string;
@@ -59,6 +62,7 @@ type Props = {
   packRequestedAt: string | null;
   packPendingBalance: number;
   monthsWithoutInvoice: number;
+  announcementsThisMonth: number;
 };
 
 async function jsonAuthHeaders(): Promise<Record<string, string>> {
@@ -81,9 +85,11 @@ export default function WhatsAppPackClient({
   packRequestedAt,
   packPendingBalance,
   monthsWithoutInvoice,
+  announcementsThisMonth: initialAnnouncementsThisMonth,
 }: Props) {
   const t = useTranslations();
   const toast = useToast();
+  const router = useRouter();
 
   const [requestStatus, setRequestStatus] = useState(packRequestStatus);
   const [rejectionReason, setRejectionReason] = useState(packRejectionReason);
@@ -97,6 +103,9 @@ export default function WhatsAppPackClient({
   const [blastType, setBlastType] = useState<'ops' | 'promo' | null>(null);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [announcementInlineError, setAnnouncementInlineError] = useState<string | null>(null);
+  const [announcementsThisMonth, setAnnouncementsThisMonth] = useState(initialAnnouncementsThisMonth);
   const [togglingPack, setTogglingPack] = useState(false);
   const [confirmClearId, setConfirmClearId] = useState<string | null>(null);
   const [showDisableConfirm, setShowDisableConfirm] = useState(false);
@@ -107,6 +116,65 @@ export default function WhatsAppPackClient({
   const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0;
   const pendingBal = Number(packPendingBalance);
   const monthsAccum = Number(monthsWithoutInvoice);
+  const blastCost = activeParents * BLAST_PRICE_PER_PARENT;
+  const remainingAllowance = Math.max(0, cap - balance);
+  const monthlyLimitReached = announcementsThisMonth >= 2;
+  const cannotAffordBlast = balance >= cap || pct >= 100;
+
+  const sendAnnouncementBlast = useCallback(async () => {
+    if (!blastType || !message.trim()) return;
+    setSending(true);
+    setAnnouncementInlineError(null);
+    const currentBlastType = blastType;
+    const currentMessage = message;
+    try {
+      const res = await fetch('/api/parent-pack/announcement', {
+        method: 'POST',
+        headers: await jsonAuthHeaders(),
+        body: JSON.stringify({ blast_type: currentBlastType, message: currentMessage }),
+      });
+      const payload = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+        sent?: number;
+        totalCost?: number;
+      };
+      if (!res.ok) {
+        if (payload.error === 'monthly_limit') {
+          setAnnouncementInlineError(t('whatsapp.announcementMonthlyLimit'));
+        } else if (payload.error === 'cap_reached') {
+          setAnnouncementInlineError(t('whatsapp.capReached'));
+        } else if (payload.error === 'no_parents') {
+          setAnnouncementInlineError(t('whatsapp.noParentsForBlast'));
+        } else {
+          setAnnouncementInlineError(payload.message ?? payload.error ?? t('common.errorGeneric'));
+        }
+        return;
+      }
+      const cost = Number(payload.totalCost ?? blastCost);
+      setBalance((prev) => prev + cost);
+      setAnnouncementsThisMonth((n) => n + 1);
+      setBlastType(null);
+      setMessage('');
+      setShowConfirm(false);
+      setBlastList((prev) => [
+        {
+          id: Date.now().toString(),
+          blast_type: currentBlastType!,
+          message: currentMessage,
+          parents_notified: activeParents,
+          total_amount: cost,
+          billing_status: 'pending',
+          created_at: new Date().toISOString(),
+        },
+        ...prev.slice(0, 9),
+      ]);
+      toast.success(t('whatsapp.announcementSent', { count: activeParents }));
+      router.refresh();
+    } finally {
+      setSending(false);
+    }
+  }, [blastType, message, activeParents, blastCost, t, toast, router]);
 
   const lastAlertLabel = useCallback(
     (phone: string | null) => {
@@ -460,23 +528,48 @@ export default function WhatsAppPackClient({
           )}
         </section>
 
-        {/* Section 3 — Announcement */}
+        {/* Section 3 — Announcement blast (parent_pack_enabled only; composer max 160 chars; sendAnnouncementBlast POST) */}
         <section
           className={cn(
-            'rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 sm:p-6 space-y-4',
+            'rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 space-y-4 shadow-sm',
             activeParents === 0 && 'opacity-50 pointer-events-none',
           )}
         >
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('whatsapp.sendAnnouncement')}</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            {t('whatsapp.announcementSectionTitle')}
+          </h2>
           {activeParents === 0 ? (
             <p className="text-sm text-[var(--color-text-tertiary)]">{t('whatsapp.noParentsForBlast')}</p>
           ) : null}
 
-          <div>
-            <p className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              {balance.toLocaleString('en-US')} EGP / {cap.toLocaleString('en-US')} EGP
+          <p className="text-sm font-medium text-[var(--color-text-primary)]">
+            {t('whatsapp.announcementBalanceRemaining', {
+              remaining: remainingAllowance.toLocaleString('en-US'),
+            })}
+          </p>
+          {remainingAllowance <= 0 ? (
+            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 px-3 py-2">
+              {t('whatsapp.announcementNoBalance')}
             </p>
-            <div className="w-full h-1 rounded bg-slate-700 overflow-hidden" aria-hidden>
+          ) : null}
+
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            {t('whatsapp.announcementMonthlyUsage', {
+              used: announcementsThisMonth,
+              max: 2,
+            })}
+          </p>
+          {monthlyLimitReached ? (
+            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 px-3 py-2">
+              {t('whatsapp.announcementMonthlyLimit')}
+            </p>
+          ) : null}
+
+          <div>
+            <p className="text-xs text-[var(--color-text-tertiary)] mb-1">
+              {balance.toLocaleString('en-US')} EGP / {cap.toLocaleString('en-US')} EGP {t('whatsapp.announcementUsedOfCap')}
+            </p>
+            <div className="w-full h-1 rounded bg-slate-200 dark:bg-slate-700 overflow-hidden" aria-hidden>
               <div
                 className={cn('h-1 rounded transition-all', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
                 style={{ width: `${pct}%` }}
@@ -487,20 +580,26 @@ export default function WhatsAppPackClient({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setBlastType('ops')}
+              onClick={() => {
+                setBlastType('ops');
+                setAnnouncementInlineError(null);
+              }}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-shadow',
-                blastType === 'ops' ? 'ring-2 ring-teal-500 bg-teal-900' : 'bg-slate-800',
+                blastType === 'ops' ? 'ring-2 ring-teal-500 bg-teal-900 text-white' : 'bg-slate-100 dark:bg-slate-900 text-[var(--color-text-primary)]',
               )}
             >
               {t('billing.blastOps')}
             </button>
             <button
               type="button"
-              onClick={() => setBlastType('promo')}
+              onClick={() => {
+                setBlastType('promo');
+                setAnnouncementInlineError(null);
+              }}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-shadow',
-                blastType === 'promo' ? 'ring-2 ring-teal-500 bg-teal-900' : 'bg-slate-800',
+                blastType === 'promo' ? 'ring-2 ring-teal-500 bg-teal-900 text-white' : 'bg-slate-100 dark:bg-slate-900 text-[var(--color-text-primary)]',
               )}
             >
               {t('billing.blastPromo')}
@@ -509,36 +608,60 @@ export default function WhatsAppPackClient({
 
           <div>
             <textarea
-              dir="rtl"
-              placeholder={t('whatsapp.messagePlaceholder')}
-              maxLength={200}
+              dir="auto"
+              data-announcement-message
+              placeholder={t('whatsapp.announcementPlaceholder')}
+              maxLength={ANNOUNCEMENT_MESSAGE_MAX}
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="w-full min-h-[100px] rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+              onChange={(e) => {
+                setMessage(e.target.value);
+                setAnnouncementInlineError(null);
+              }}
+              className="w-full min-h-[100px] rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-[var(--color-text-primary)]"
             />
-            <p className="text-end text-xs text-[var(--color-text-tertiary)] mt-1">
-              {(200 - message.length).toLocaleString('en-US')} / 200
+            <p className="text-end text-xs text-[var(--color-text-tertiary)] mt-1" data-announcement-counter>
+              {message.length}/{ANNOUNCEMENT_MESSAGE_MAX}
             </p>
           </div>
 
-          <div className="rounded-lg bg-emerald-800/40 border border-emerald-700/50 max-w-xs p-3 text-sm text-white">
-            {blastType === 'ops'
-              ? t('whatsapp.previewOps', { center: center.name, message: message || '...' })
-              : blastType === 'promo'
-                ? t('whatsapp.previewPromo', { center: center.name, message: message || '...' })
-                : t('whatsapp.previewIdle', { center: center.name })}
+          <div className="flex justify-end" dir="ltr">
+            <div className="max-w-[min(100%,20rem)] rounded-2xl rounded-tr-sm bg-[#dcf8c6] dark:bg-[#056162] px-3 py-2.5 text-sm text-slate-900 dark:text-slate-50 shadow-sm">
+              {blastType === 'ops'
+                ? t('whatsapp.previewOps', { center: center.name, message: message.trim() || '…' })
+                : blastType === 'promo'
+                  ? t('whatsapp.previewPromo', { center: center.name, message: message.trim() || '…' })
+                  : t('whatsapp.previewIdle', { center: center.name })}
+            </div>
           </div>
 
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            {activeParents.toLocaleString('en-US')} × {BLAST_PRICE_PER_PARENT.toLocaleString('en-US')} ={' '}
-            {(activeParents * BLAST_PRICE_PER_PARENT).toLocaleString('en-US')} EGP
-          </p>
+          <div className="space-y-1 text-sm text-[var(--color-text-secondary)]">
+            <p>
+              {t('whatsapp.announcementCostLine', {
+                cost: blastCost.toLocaleString('en-US'),
+                parents: activeParents.toLocaleString('en-US'),
+                price: BLAST_PRICE_PER_PARENT.toLocaleString('en-US'),
+              })}
+            </p>
+            <p className="text-xs text-[var(--color-text-tertiary)]">
+              {t('whatsapp.announcementCostBalanceNote', { cost: blastCost.toLocaleString('en-US') })}
+            </p>
+          </div>
 
           {pct >= 90 && pct < 100 ? (
-            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-200 px-3 py-2">{t('whatsapp.capWarning')}</p>
+            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 px-3 py-2">
+              {t('whatsapp.capWarning')}
+            </p>
           ) : null}
           {pct >= 100 ? (
-            <p className="text-sm rounded-lg bg-red-500/15 text-red-200 px-3 py-2">{t('whatsapp.capReached')}</p>
+            <p className="text-sm rounded-lg bg-red-500/15 text-red-700 dark:text-red-200 px-3 py-2">
+              {t('whatsapp.capReached')}
+            </p>
+          ) : null}
+
+          {announcementInlineError ? (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {announcementInlineError}
+            </p>
           ) : null}
 
           <button
@@ -546,48 +669,62 @@ export default function WhatsAppPackClient({
             disabled={
               !blastType ||
               !message.trim() ||
-              pct >= 100 ||
+              cannotAffordBlast ||
               activeParents === 0 ||
-              sending
+              sending ||
+              monthlyLimitReached
             }
-            onClick={async () => {
-              setSending(true);
-              const currentBlastType = blastType;
-              const currentMessage = message;
-              try {
-                const res = await fetch('/api/parent-pack/announcement', {
-                  method: 'POST',
-                  headers: await jsonAuthHeaders(),
-                  body: JSON.stringify({ blast_type: currentBlastType, message: currentMessage }),
-                });
-                if (res.ok) {
-                  const cost = activeParents * BLAST_PRICE_PER_PARENT;
-                  setBalance((prev) => prev + cost);
-                  setBlastType(null);
-                  setMessage('');
-                  setBlastList((prev) => [
-                    {
-                      id: Date.now().toString(),
-                      blast_type: currentBlastType!,
-                      message: currentMessage,
-                      parents_notified: activeParents,
-                      total_amount: cost,
-                      billing_status: 'pending',
-                      created_at: new Date().toISOString(),
-                    },
-                    ...prev.slice(0, 9),
-                  ]);
-                  toast.success(t('whatsapp.announcementSent', { count: activeParents }));
-                }
-              } finally {
-                setSending(false);
-              }
-            }}
-            className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+            onClick={() => setShowConfirm(true)}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
           >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {t('whatsapp.sendBtn')}
           </button>
+
+          {showConfirm ? (
+            <div
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="announcement-confirm-title"
+              onClick={() => {
+                if (!sending) setShowConfirm(false);
+              }}
+            >
+              <div
+                className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 p-5 shadow-xl space-y-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 id="announcement-confirm-title" className="text-lg font-semibold text-[var(--color-text-primary)]">
+                  {t('whatsapp.announcementConfirmTitle', { parents: activeParents.toLocaleString('en-US') })}
+                </h3>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  {t('whatsapp.announcementConfirmCost', {
+                    cost: blastCost.toLocaleString('en-US'),
+                    after: (balance + blastCost).toLocaleString('en-US'),
+                  })}
+                </p>
+                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+                  <button
+                    type="button"
+                    disabled={sending}
+                    onClick={() => setShowConfirm(false)}
+                    className="rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={sending}
+                    onClick={() => void sendAnnouncementBlast()}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                  >
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {t('whatsapp.announcementConfirmSend')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </section>
 
         {/* Section 4 — History */}

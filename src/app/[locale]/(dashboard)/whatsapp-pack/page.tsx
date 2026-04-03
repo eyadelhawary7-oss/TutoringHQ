@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import WhatsAppPackClient from './WhatsAppPackClient';
 
+/** Announcement blast UI: composer, 160-char limit, WA preview, sendAnnouncementBlast → POST /api/parent-pack/announcement */
+
 type CenterRow = {
   id: string;
   name: string;
@@ -89,6 +91,7 @@ export default async function WhatsAppPackPage({
   }[] = [];
 
   let lastAlertMap: Record<string, string> = {};
+  let announcementsThisMonth = 0;
 
   if (center.parent_pack_enabled === true) {
     const { data: studentsData } = await supabaseAdmin
@@ -110,6 +113,14 @@ export default async function WhatsAppPackPage({
       .limit(10);
 
     blasts = blastsData ?? [];
+
+    const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+    const { count: monthBlastCount } = await supabaseAdmin
+      .from('announcement_blasts')
+      .select('id', { count: 'exact', head: true })
+      .eq('center_id', centerId)
+      .gte('created_at', monthStart);
+    announcementsThisMonth = monthBlastCount ?? 0;
 
     const { data: lastAlerts } = await supabaseAdmin
       .from('wa_message_queue')
@@ -148,6 +159,7 @@ export default async function WhatsAppPackPage({
       packRequestedAt={c.pack_requested_at ?? null}
       packPendingBalance={Number(c.pack_pending_balance ?? 0)}
       monthsWithoutInvoice={Number(c.pack_months_without_invoice ?? 0)}
+      announcementsThisMonth={announcementsThisMonth}
     />
   );
 }
