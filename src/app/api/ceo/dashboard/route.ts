@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     hasPaymentResult,
   ] = await Promise.all([
     supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active'),
-    supabase.from('mrr_snapshots').select('mrr, active_centers').order('date', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('mrr_snapshots').select('mrr, active_centers').order('snapshot_date', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('centers').select('id').eq('status', 'active').gte('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()).lt('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()),
     supabase.from('centers').select('id').in('subscription_status', ['suspended', 'cancelled']).gte('updated_at', monthStartDateStr),
     supabase.from('payments').select('amount, status, confirmed').gte('paid_at', monthStartDateStr),
