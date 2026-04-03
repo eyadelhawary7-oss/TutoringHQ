@@ -11,7 +11,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import { PageHeader, RoleBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
-import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Smartphone, Package } from 'lucide-react';
+import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Smartphone, Package, Wallet } from 'lucide-react';
 import { calculatePackCharge } from '@/lib/parent-pack';
 import { getAnnouncementCap, PACK_PRICE_PER_PARENT } from '@/lib/parentPack';
 import { PARENT_PACK, type PackStatusResponse } from '@/types/parent-pack';
@@ -37,6 +37,7 @@ interface CenterInfo {
   daily_summary_enabled?: boolean;
   summer_mode?: boolean;
   status?: string | null;
+  instapay_number?: string | null;
 }
 
 interface TeamMember {
@@ -66,6 +67,12 @@ interface PendingInvite {
 }
 
 const ADMIN_NOTIFICATION_PHONE = '201220601410';
+
+function maskInstapayDisplay(digits: string): string {
+  const d = digits.replace(/\D/g, '');
+  if (d.length !== 11) return '';
+  return `${d.slice(0, 2)}XXXXXXXX${d.slice(-2)}`;
+}
 
 const LOGO_MAX_SIZE = 2 * 1024 * 1024; // 2MB
 const LOGO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -143,6 +150,12 @@ function SettingsPageContent() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoToast, setLogoToast] = useState<'success' | 'error' | null>(null);
+
+  const [instapayStored, setInstapayStored] = useState<string | null>(null);
+  const [instapayDraft, setInstapayDraft] = useState('');
+  const [instapayEditing, setInstapayEditing] = useState(false);
+  const [instapaySaving, setInstapaySaving] = useState(false);
+  const [instapayError, setInstapayError] = useState('');
 
   // Team
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -223,6 +236,11 @@ function SettingsPageContent() {
         setSummerModeEnabled(c.summer_mode === true);
         setLogoUrl(c.logo_url ?? null);
         setLogoLoadFailed(false);
+        const ip = typeof c.instapay_number === 'string' ? c.instapay_number.replace(/\D/g, '') : '';
+        setInstapayStored(ip.length === 11 ? ip : null);
+        setInstapayDraft('');
+        setInstapayEditing(false);
+        setInstapayError('');
       }
 
       const { data: subjectsData } = await dbSelect({
@@ -331,6 +349,42 @@ function SettingsPageContent() {
   const showSaved = () => {
     setSavedMessage(t('saved'));
     setTimeout(() => setSavedMessage(''), 2000);
+  };
+
+  const handleSaveInstapay = async () => {
+    setInstapayError('');
+    const normalized = instapayDraft.replace(/\D/g, '');
+    if (normalized.length !== 11 || !normalized.startsWith('01')) {
+      setInstapayError(t('invalidPhone'));
+      return;
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    setInstapaySaving(true);
+    try {
+      const { getCsrfHeaders } = await import('@/lib/csrf-client');
+      const res = await fetch('/api/settings/instapay', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
+        },
+        body: JSON.stringify({ instapay_number: normalized }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setInstapayError(typeof j.error === 'string' ? j.error : t('instapaySaveFailed'));
+        return;
+      }
+      setInstapayStored(normalized);
+      setInstapayEditing(false);
+      setInstapayDraft('');
+      setCenter((prev) => (prev ? { ...prev, instapay_number: normalized } : null));
+      showSaved();
+    } finally {
+      setInstapaySaving(false);
+    }
   };
 
   // Center handlers
@@ -951,6 +1005,90 @@ function SettingsPageContent() {
                 </div>
               </div>
             </div>
+
+            {/* Financial Settings (owner — InstaPay for withdrawals) */}
+            {currentUser?.role === 'owner' ? (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-[var(--color-border-subtle)] p-6 mb-4 shadow-sm">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl shrink-0">
+                    <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[var(--color-text-primary)]">{t('financialSettingsTitle')}</h3>
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('financialSettingsSubtitle')}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)]" htmlFor="instapay-input">
+                    {t('instapayNumber')}
+                  </label>
+                  {instapayStored && !instapayEditing ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span
+                        className="font-mono text-[var(--color-text-primary)] px-3 py-2 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]"
+                        dir="ltr"
+                      >
+                        {maskInstapayDisplay(instapayStored)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInstapayError('');
+                          setInstapayDraft(instapayStored);
+                          setInstapayEditing(true);
+                        }}
+                        className="px-4 py-2 border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg hover:bg-[var(--color-surface-0)] transition-colors"
+                      >
+                        {t('editInstapay')}
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      id="instapay-input"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      dir="ltr"
+                      placeholder={t('instapayPlaceholder')}
+                      value={instapayDraft}
+                      onChange={(e) => setInstapayDraft(e.target.value)}
+                      className="w-full max-w-md px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)] font-mono"
+                    />
+                  )}
+                  {instapayError ? (
+                    <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+                      {instapayError}
+                    </p>
+                  ) : null}
+                  {(instapayEditing || !instapayStored) && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={instapaySaving}
+                        onClick={() => void handleSaveInstapay()}
+                        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
+                      >
+                        {instapaySaving ? tCommon('loading') : tCommon('save')}
+                      </button>
+                      {instapayStored && instapayEditing ? (
+                        <button
+                          type="button"
+                          disabled={instapaySaving}
+                          onClick={() => {
+                            setInstapayEditing(false);
+                            setInstapayDraft('');
+                            setInstapayError('');
+                          }}
+                          className="px-4 py-2 border border-[var(--color-border-subtle)] text-sm font-semibold rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)]"
+                        >
+                          {tCommon('cancel')}
+                        </button>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
 
             {/* 5. Referral Program */}
             <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">

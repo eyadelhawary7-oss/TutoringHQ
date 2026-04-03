@@ -1,5 +1,5 @@
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
-  super_admin: ['overview', 'ceo_dashboard', 'centers', 'billing', 'renewals', 'card_orders', 'plan_requests', 'pending_signups', 'internal_team', 'referrals', 'sales_pipeline', 'analytics'],
+  super_admin: ['overview', 'ceo_dashboard', 'centers', 'billing', 'renewals', 'card_orders', 'plan_requests', 'pending_signups', 'internal_team', 'referrals', 'withdrawals', 'sales_pipeline', 'analytics'],
   admin: ['overview', 'centers', 'billing', 'renewals', 'card_orders', 'plan_requests', 'pending_signups', 'referrals', 'sales_pipeline', 'analytics'],
   internal_admin: ['overview', 'centers', 'billing', 'renewals', 'plan_requests', 'pending_signups'],
   internal_viewer: ['overview', 'centers', 'analytics'],
@@ -20,6 +20,7 @@ export const ALL_PERMISSIONS = [
   { key: 'pending_signups', labelAr: 'التسجيل المعلق', labelEn: 'Pending Signups' },
   { key: 'internal_team', labelAr: 'الفريق الداخلي', labelEn: 'Internal Team' },
   { key: 'referrals', labelAr: 'الإحالات', labelEn: 'Referrals' },
+  { key: 'withdrawals', labelAr: 'السحوبات', labelEn: 'Withdrawals' },
   { key: 'sales_pipeline', labelAr: 'خط المبيعات', labelEn: 'Sales Pipeline' },
   { key: 'analytics', labelAr: 'الإحصائيات', labelEn: 'Analytics' },
 ];

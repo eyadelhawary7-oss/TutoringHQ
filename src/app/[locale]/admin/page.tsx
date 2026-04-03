@@ -56,7 +56,7 @@ import {
   Cell,
 } from 'recharts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
-import { AdminSidebar } from '@/components/AdminSidebar';
+import { AdminSidebar, type AdminTab } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { ALL_ADMIN_PERMISSIONS } from '@/lib/admin-roles';
 import { PlanBadge, BillingStatusBadge } from '@/components/shared';
@@ -70,8 +70,6 @@ const STATUS_STYLES: Record<string, string> = {
   trial: 'bg-blue-100 text-blue-700',
   rejected: 'bg-red-100 text-red-700',
 };
-
-type AdminTab = 'overview' | 'centers' | 'billing' | 'planRequests' | 'pendingSignups' | 'referrals' | 'internalTeam' | 'salesPipeline' | 'analytics' | 'ceoDashboard' | 'cardOrders';
 
 interface OverviewData {
   totalCenters: number;

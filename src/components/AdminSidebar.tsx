@@ -16,6 +16,7 @@ import {
   BarChart3,
   IdCard,
   Gift,
+  Wallet,
   CalendarCheck,
   MessageCircle,
   Globe,
@@ -61,6 +62,7 @@ export type AdminTab =
   | 'planRequests'
   | 'pendingSignups'
   | 'referrals'
+  | 'withdrawals'
   | 'internalTeam'
   | 'salesPipeline'
   | 'analytics';
@@ -73,6 +75,7 @@ const ADMIN_NAV: { key: AdminTab; icon: React.ElementType; labelKey: string; per
   { key: 'planRequests', icon: FileText, labelKey: 'planRequests', permissionKey: 'plan_requests' },
   { key: 'pendingSignups', icon: Clock, labelKey: 'pendingSignups', permissionKey: 'pending_signups' },
   { key: 'referrals', icon: Gift, labelKey: 'referrals', permissionKey: 'referrals' },
+  { key: 'withdrawals', icon: Wallet, labelKey: 'withdrawals', permissionKey: 'withdrawals' },
   { key: 'internalTeam', icon: Users, labelKey: 'internalTeam', permissionKey: 'internal_team' },
   { key: 'salesPipeline', icon: Target, labelKey: 'salesPipeline', permissionKey: 'sales_pipeline' },
   { key: 'analytics', icon: BarChart3, labelKey: 'analytics', permissionKey: 'analytics' },
@@ -119,6 +122,7 @@ export function AdminSidebar({
   const isPricing = activeRoute?.includes('admin/pricing');
   const isPlatformConfig = activeRoute?.includes('admin/platform-config');
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
+  const isWithdrawals = activeRoute?.includes('admin/withdrawals');
 
   const allowedKeys =
     adminRole === 'super_admin' ? null : adminRole ? getAdminPermissions(adminRole, customPermissions) : null;
@@ -232,6 +236,10 @@ export function AdminSidebar({
     afterNavigate();
     if (key === 'ceoDashboard') {
       router.push('/ceo-dashboard');
+      return;
+    }
+    if (key === 'withdrawals') {
+      router.push('/admin/withdrawals');
       return;
     }
     if (isCeo || isOrders) router.push('/admin');
@@ -358,7 +366,8 @@ export function AdminSidebar({
         </div>
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {ADMIN_NAV.filter(({ permissionKey }) => canSee(permissionKey)).map(({ key, icon: Icon, labelKey }) => {
-            const isActive = key === 'ceoDashboard' ? isCeo : activeTab === key;
+            const isActive =
+              key === 'ceoDashboard' ? isCeo : key === 'withdrawals' ? isWithdrawals : activeTab === key;
             const items: React.ReactNode[] = [
               <button
                 key={key}
@@ -499,7 +508,8 @@ export function AdminSidebar({
         </div>
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {ADMIN_NAV.filter(({ permissionKey }) => canSee(permissionKey)).map(({ key, icon: Icon, labelKey }) => {
-            const isActive = key === 'ceoDashboard' ? isCeo : activeTab === key;
+            const isActive =
+              key === 'ceoDashboard' ? isCeo : key === 'withdrawals' ? isWithdrawals : activeTab === key;
             const items: React.ReactNode[] = [
               <button
                 key={key}
@@ -508,6 +518,10 @@ export function AdminSidebar({
                   closeMainSidebar?.();
                   if (key === 'ceoDashboard') {
                     router.push('/ceo-dashboard');
+                    return;
+                  }
+                  if (key === 'withdrawals') {
+                    router.push('/admin/withdrawals');
                     return;
                   }
                   if (isCeo || isOrders) router.push('/admin');
