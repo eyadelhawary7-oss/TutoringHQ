@@ -1,16 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
-import { Gift, Copy, ChevronDown, ChevronUp, Link2, DollarSign, Calendar, Users, Banknote } from 'lucide-react';
+import { Gift, Copy, Link2, DollarSign, Users, Banknote, MessageCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
-
-const ARABIC_MONTHS: Record<string, string> = {
-  '01': 'يناير', '02': 'فبراير', '03': 'مارس', '04': 'أبريل', '05': 'مايو', '06': 'يونيو',
-  '07': 'يوليو', '08': 'أغسطس', '09': 'سبتمبر', '10': 'أكتوبر', '11': 'نوفمبر', '12': 'ديسمبر',
-};
 
 function maskCenterName(name: string): string {
   if (!name || name.length < 2) return '***';
@@ -19,6 +14,13 @@ function maskCenterName(name: string): string {
 
 function fmt(n: number): string {
   return Number(n).toLocaleString('en-US');
+}
+
+function formatPeriodMonth(periodMonth: string, loc: string): string {
+  const [y, m] = (periodMonth || '').split('-');
+  if (!y || !m) return '—';
+  const d = new Date(Number(y), Number(m) - 1, 1);
+  return d.toLocaleDateString(loc === 'ar' ? 'ar' : 'en-US', { month: 'short', year: 'numeric' });
 }
 
 type ActiveReferral = {
@@ -63,13 +65,14 @@ export default function ReferralsPage() {
   const [loading, setLoading] = useState(true);
   const [codeCopied, setCodeCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [payoutAmount, setPayoutAmount] = useState('');
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
   const [payoutError, setPayoutError] = useState<string | null>(null);
 
   const fetchData = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) return;
     try {
       const res = await fetch('/api/referral', {
@@ -103,17 +106,24 @@ export default function ReferralsPage() {
   const handlePayoutRequest = async () => {
     const amount = parseFloat(payoutAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      setPayoutError('أدخل مبلغاً صحيحاً');
+      setPayoutError(t('payoutInvalidAmount'));
       return;
     }
     if (amount > (data?.available ?? 0)) {
-      setPayoutError(`المبلغ يتجاوز الرصيد المتاح (${fmt(data?.available ?? 0)} ${tc('egp')})`);
+      setPayoutError(
+        t('payoutExceedsBalance', {
+          max: fmt(data?.available ?? 0),
+          egp: tc('egp'),
+        })
+      );
       return;
     }
     setPayoutError(null);
     setPayoutSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error('Unauthorized');
       const res = await fetch('/api/referrals/payout', {
         method: 'POST',
@@ -131,17 +141,35 @@ export default function ReferralsPage() {
       setPayoutAmount('');
       await fetchData();
     } catch (err) {
-      setPayoutError(err instanceof Error ? err.message : 'حدث خطأ');
+      setPayoutError(err instanceof Error ? err.message : t('payoutGenericError'));
     } finally {
       setPayoutSubmitting(false);
     }
   };
 
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://centerhq.com';
+  const localePrefix = locale === 'ar' ? '' : `/${locale}`;
+  const referLink = `${appUrl}${localePrefix}/refer/${data?.referralCode ?? ''}`;
+  const whatsappShare = useMemo(() => {
+    const text = t('whatsappShareText', { link: referLink });
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
+  }, [t, referLink]);
+
+  const howSteps = useMemo(
+    () =>
+      [
+        { n: 1, title: t('step1Title'), desc: t('step1Desc') },
+        { n: 2, title: t('step2Title'), desc: t('step2Desc') },
+        { n: 3, title: t('step3Title'), desc: t('step3Desc') },
+      ] as const,
+    [t]
+  );
+
   if (user?.role !== 'owner') {
     return (
       <div className="min-h-screen bg-[var(--color-surface-0)] p-4">
         <PageHeader title={t('title')} />
-        <p className="text-[var(--color-text-secondary)]">{t('ownerOnly', { defaultValue: 'Only center owners can view the referrals dashboard.' })}</p>
+        <p className="text-[var(--color-text-secondary)]">{t('ownerOnly')}</p>
       </div>
     );
   }
@@ -154,126 +182,152 @@ export default function ReferralsPage() {
     );
   }
 
-  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://centerhq.com';
-  const localePrefix = locale === 'ar' ? '' : `/${locale}`;
-  const referLink = `${appUrl}${localePrefix}/refer/${data?.referralCode ?? ''}`;
-  const signupLink = `${appUrl}${localePrefix}/signup?ref=${data?.referralCode ?? ''}`;
-  const whatsappShare = `https://wa.me/?text=${encodeURIComponent(`مرحباً! جرّب CenterHQ لإدارة سنترك بسهولة 🎓\nاحجز عرضك التجريبي من هنا:\n${referLink}`)}`;
-
   return (
-    <div className="min-h-screen bg-[var(--color-surface-0)] p-4 md:p-6" dir="rtl">
+    <div className="min-h-screen bg-[var(--color-surface-0)] p-4 md:p-6">
       <PageHeader title={t('title')} />
 
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Section 1 — Stats cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
-            <p className="text-xs text-teal-700 font-medium mb-1">{t('totalEarned')}</p>
-            <p className="text-xl font-bold text-teal-800 font-mono">{fmt(data?.totalEarned ?? 0)}</p>
-            <p className="text-xs text-teal-600">{tc('egp')}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">{t('totalReferrals')}</p>
+            <p className="text-xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">{fmt(data?.totalReferrals ?? 0)}</p>
           </div>
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-            <p className="text-xs text-green-700 font-medium mb-1">{t('withdrawable')}</p>
-            <p className="text-xl font-bold text-green-800 font-mono">{fmt(data?.available ?? 0)}</p>
-            <p className="text-xs text-green-600">{tc('egp')}</p>
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4 card-shadow btn-lift">
+            <p className="text-xs text-amber-800 dark:text-amber-200 font-medium mb-1">{t('pending')}</p>
+            <p className="text-xl font-bold text-amber-900 dark:text-amber-100 font-mono tabular-nums">{fmt(data?.pending ?? 0)}</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300">{tc('egp')}</p>
           </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <p className="text-xs text-amber-700 font-medium mb-1">{t('pending', { defaultValue: 'Pending' })}</p>
-            <p className="text-xl font-bold text-amber-800 font-mono">{fmt(data?.pending ?? 0)}</p>
-            <p className="text-xs text-amber-600">{tc('egp')}</p>
+          <div className="rounded-xl border border-teal-200 dark:border-teal-800/50 bg-teal-50 dark:bg-teal-950/30 p-4 card-shadow btn-lift">
+            <p className="text-xs text-teal-800 dark:text-teal-200 font-medium mb-1">{t('withdrawable')}</p>
+            <p className="text-xl font-bold text-teal-900 dark:text-teal-100 font-mono tabular-nums">{fmt(data?.available ?? 0)}</p>
+            <p className="text-xs text-teal-700 dark:text-teal-300">{tc('egp')}</p>
           </div>
-          <div className="bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] rounded-xl p-4">
-            <p className="text-xs text-[var(--color-text-secondary)] font-medium mb-1">{t('totalReferrals', { defaultValue: 'Total Referrals' })}</p>
-            <p className="text-xl font-bold text-[var(--color-text-primary)] font-mono">{fmt(data?.totalReferrals ?? 0)}</p>
+          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/30 p-4 card-shadow btn-lift">
+            <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium mb-1">{t('totalEarned')}</p>
+            <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100 font-mono tabular-nums">{fmt(data?.totalEarned ?? 0)}</p>
+            <p className="text-xs text-emerald-700 dark:text-emerald-300">{tc('egp')}</p>
           </div>
         </div>
 
-        {/* Section 2 — Active referrals table */}
-        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-[var(--color-border-subtle)]">
-            <h2 className="font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-              <Users className="w-5 h-5 text-teal-600" />
-              {t('activeReferrals', { defaultValue: 'Active Referrals' })}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow overflow-hidden">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              {t('activeReferrals')}
             </h2>
           </div>
           {(data?.activeReferrals?.length ?? 0) > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">السنتر</th>
-                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الحالة</th>
-                    <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الشهور</th>
-                    <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">مكافأة/شهر</th>
-                    <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الإجمالي</th>
+                  <tr className="bg-slate-50 dark:bg-slate-900/50">
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableCenter')}</th>
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableStatus')}</th>
+                    <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableMonths')}</th>
+                    <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableMonthlyReward')}</th>
+                    <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableTotal')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data?.activeReferrals?.map((r) => (
-                    <tr key={r.id} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]">
-                      <td className="py-3 px-4 text-[var(--color-text-primary)] font-mono">{maskCenterName(r.center_name)}</td>
+                    <tr
+                      key={r.id}
+                      className="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                    >
+                      <td className="py-3 px-4 text-slate-900 dark:text-white font-mono">{maskCenterName(r.center_name)}</td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === 'converted' || r.status === 'active' ? 'bg-green-100 text-green-700' : r.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'}`}>
-                          {r.status === 'converted' ? 'نشط' : r.status === 'active' ? 'نشط' : r.status === 'pending' ? 'معلق' : r.status}
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            r.status === 'converted' || r.status === 'active'
+                              ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300'
+                              : r.status === 'pending'
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                          }`}
+                        >
+                          {r.status === 'converted' || r.status === 'active'
+                            ? t('statusActiveShort')
+                            : r.status === 'pending'
+                              ? t('statusPendingShort')
+                              : r.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-end text-[var(--color-text-primary)]">{fmt(r.months)}</td>
-                      <td className="py-3 px-4 text-end font-mono text-[var(--color-text-primary)]">{fmt(r.monthly_reward)} {tc('egp')}</td>
-                      <td className="py-3 px-4 text-end font-mono text-teal-700">{fmt(r.total)} {tc('egp')}</td>
+                      <td className="py-3 px-4 text-end text-slate-900 dark:text-white tabular-nums">{fmt(r.months)}</td>
+                      <td className="py-3 px-4 text-end font-mono text-slate-900 dark:text-white tabular-nums">
+                        {fmt(r.monthly_reward)} {tc('egp')}
+                      </td>
+                      <td className="py-3 px-4 text-end font-mono text-teal-700 dark:text-teal-300 tabular-nums">
+                        {fmt(r.total)} {tc('egp')}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-[var(--color-text-secondary)] text-sm">{t('noReferrals', { defaultValue: 'No referrals yet' })}</div>
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-sm">{t('noReferrals')}</div>
           )}
         </div>
 
-        {/* Section 3 — Reward history */}
-        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-[var(--color-border-subtle)]">
-            <h2 className="font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-teal-600" />
-              {t('rewardHistory', { defaultValue: 'Reward History' })}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow overflow-hidden">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              {t('rewardHistory')}
             </h2>
           </div>
           {(data?.rewardHistory?.length ?? 0) > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الشهر</th>
-                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">السنتر</th>
-                    <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">المبلغ</th>
-                    <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">الحالة</th>
+                  <tr className="bg-slate-50 dark:bg-slate-900/50">
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardMonthCol')}</th>
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardCenterCol')}</th>
+                    <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardAmountCol')}</th>
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardStatusCol')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data?.rewardHistory?.map((h) => {
-                    const [y, m] = (h.period_month || '').split('-');
-                    const monthLabel = m ? `${ARABIC_MONTHS[m] || m} ${y}` : '—';
+                    const monthLabel = formatPeriodMonth(h.period_month, locale);
                     let statusBadge: React.ReactNode;
                     if (h.status === 'held') {
                       const holdDate = h.held_until ? new Date(h.held_until) : null;
                       const daysLeft = holdDate ? Math.max(0, Math.ceil((holdDate.getTime() - Date.now()) / 86400000)) : 0;
                       statusBadge = (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                          في الانتظار 🔒 {daysLeft > 0 && `${daysLeft} يوم`}
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                          {daysLeft > 0 ? t('rewardStatusHeld', { days: fmt(daysLeft) }) : t('rewardStatusHeldShort')}
                         </span>
                       );
                     } else if (h.status === 'available') {
-                      statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">متاح ✅</span>;
+                      statusBadge = (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                          {t('rewardStatusAvailable')}
+                        </span>
+                      );
                     } else if (h.status === 'paid') {
-                      statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface-2)] text-[var(--color-text-primary)]">تم الصرف 💰</span>;
+                      statusBadge = (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200">
+                          {t('rewardStatusPaid')}
+                        </span>
+                      );
                     } else {
-                      statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">{h.status}</span>;
+                      statusBadge = (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                          {h.status}
+                        </span>
+                      );
                     }
                     return (
-                      <tr key={h.id} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]">
-                        <td className="py-3 px-4 text-[var(--color-text-primary)]">{monthLabel}</td>
-                        <td className="py-3 px-4 text-[var(--color-text-primary)] font-mono">{maskCenterName(h.referred_center_name)}</td>
-                        <td className="py-3 px-4 text-end font-mono text-[var(--color-text-primary)]">{fmt(h.reward_amount)} {tc('egp')}</td>
+                      <tr
+                        key={h.id}
+                        className="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                      >
+                        <td className="py-3 px-4 text-slate-900 dark:text-white">{monthLabel}</td>
+                        <td className="py-3 px-4 text-slate-900 dark:text-white font-mono">{maskCenterName(h.referred_center_name)}</td>
+                        <td className="py-3 px-4 text-end font-mono text-slate-900 dark:text-white tabular-nums">
+                          {fmt(h.reward_amount)} {tc('egp')}
+                        </td>
                         <td className="py-3 px-4">{statusBadge}</td>
                       </tr>
                     );
@@ -282,23 +336,25 @@ export default function ReferralsPage() {
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-[var(--color-text-secondary)] text-sm">{t('noCommissions')}</div>
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-sm">{t('noCommissions')}</div>
           )}
         </div>
 
-        {/* Section 4 — Payout request form */}
         {(data?.available ?? 0) > 0 && (
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-            <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-              <Banknote className="w-5 h-5 text-teal-600" />
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-6">
+            <h2 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+              <Banknote className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               {t('requestWithdrawal')}
             </h2>
-            <p className="text-[var(--color-text-primary)] mb-3">
-              رصيدك المتاح: <span className="font-bold font-mono text-teal-600">{fmt(data?.available ?? 0)} {tc('egp')}</span>
+            <p className="text-slate-700 dark:text-slate-200 mb-3 text-sm">
+              {t('availableBalanceLine', {
+                amount: fmt(data?.available ?? 0),
+                egp: tc('egp'),
+              })}
             </p>
             <div className="flex flex-wrap gap-2 items-end">
               <div>
-                <label className="block text-xs text-[var(--color-text-secondary)] mb-1">المبلغ (ج.م)</label>
+                <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('payoutAmountLabel')}</label>
                 <input
                   type="number"
                   min={0}
@@ -306,33 +362,56 @@ export default function ReferralsPage() {
                   value={payoutAmount}
                   onChange={(e) => setPayoutAmount(e.target.value)}
                   placeholder={fmt(data?.available ?? 0)}
-                  className="w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono"
+                  className="w-36 px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-mono bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  dir="ltr"
                 />
               </div>
               <button
-                onClick={handlePayoutRequest}
+                type="button"
+                onClick={() => void handlePayoutRequest()}
                 disabled={payoutSubmitting}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50"
+                className="btn-lift px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
               >
-                {payoutSubmitting ? 'جاري الإرسال...' : t('requestWithdrawal')}
+                {payoutSubmitting ? t('payoutSubmitting') : t('requestWithdrawal')}
               </button>
             </div>
-            {payoutError && <p className="text-red-600 text-sm mt-2">{payoutError}</p>}
-            <p className="text-xs text-[var(--color-text-secondary)] mt-3">{t('processingTime')}</p>
+            {payoutError && <p className="text-red-600 dark:text-red-400 text-sm mt-2">{payoutError}</p>}
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">{t('processingTime')}</p>
           </div>
         )}
 
-        {/* Section 5 — Share */}
-        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-          <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-            <Gift className="w-5 h-5 text-teal-600" />
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-6 md:p-8">
+          <h2 className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+            <Gift className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             {t('yourCode')}
           </h2>
-          <p className="font-mono text-2xl font-bold text-teal-600 mb-4" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
+          <p className="font-mono text-3xl md:text-4xl font-bold text-teal-600 dark:text-teal-400 tracking-wider mb-6 break-all">
             {data?.referralCode || '—'}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+            <a
+              href={whatsappShare}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700"
+            >
+              <MessageCircle className="w-4 h-4" />
+              {t('shareWhatsApp')}
+            </a>
             <button
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText(referLink);
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              }}
+              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+            >
+              <Link2 className="w-4 h-4" />
+              {linkCopied ? t('copyDoneCheck') : t('shareLink')}
+            </button>
+            <button
+              type="button"
               onClick={async () => {
                 if (data?.referralCode) {
                   await navigator.clipboard.writeText(data.referralCode);
@@ -340,55 +419,31 @@ export default function ReferralsPage() {
                   setTimeout(() => setCodeCopied(false), 2000);
                 }
               }}
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-[var(--color-text-primary)] text-sm font-medium hover:bg-[var(--color-surface-0)]"
+              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700/50"
             >
               <Copy className="w-4 h-4" />
-              {codeCopied ? tc('copy') + ' ✓' : t('copyCode')}
+              {codeCopied ? t('copyDoneCheck') : t('copyCode')}
             </button>
-            <button
-              onClick={async () => {
-                await navigator.clipboard.writeText(referLink);
-                setLinkCopied(true);
-                setTimeout(() => setLinkCopied(false), 2000);
-              }}
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-[var(--color-text-primary)] text-sm font-medium hover:bg-[var(--color-surface-0)]"
-            >
-              <Link2 className="w-4 h-4" />
-              {linkCopied ? tc('copy') + ' ✓' : t('shareLink')}
-            </button>
-            <a
-              href={whatsappShare}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-lg text-sm font-medium hover:bg-[#20bd5a]"
-            >
-              <span>💬</span>
-              {t('shareWhatsApp')}
-            </a>
           </div>
         </div>
 
-        {/* How It Works */}
-        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
-          <button
-            onClick={() => setHowItWorksOpen(!howItWorksOpen)}
-            className="w-full flex items-center justify-between p-4 text-start hover:bg-[var(--color-surface-0)]"
-          >
-            <h2 className="font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-teal-600" />
-              {t('howItWorks')}
-            </h2>
-            {howItWorksOpen ? <ChevronUp className="w-5 h-5 text-[var(--color-text-secondary)]" /> : <ChevronDown className="w-5 h-5 text-[var(--color-text-secondary)]" />}
-          </button>
-          {howItWorksOpen && (
-            <div className="px-4 pb-4 space-y-3 text-sm text-[var(--color-text-primary)]">
-              <p className="flex items-start gap-2"><span className="text-teal-600">1.</span> شارك كودك مع أصحاب السناتر 🔗</p>
-              <p className="flex items-start gap-2"><span className="text-teal-600">2.</span> يسجلوا ويدفعوا أول شهر ← تكسب 25% 💰</p>
-              <p className="flex items-start gap-2"><span className="text-teal-600">3.</span> كل شهر يدفعوا ← تكسب 10% 📅</p>
-              <p className="flex items-start gap-2"><span className="text-teal-600">4.</span> بعد السنة الأولى ← 5% للأبد ♾️</p>
-              <p className="text-red-600 text-xs mt-2">{t('commissionCondition')}</p>
-            </div>
-          )}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-6">
+          <h2 className="font-bold text-slate-900 dark:text-white mb-4">{t('howItWorks')}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {howSteps.map((step) => (
+              <div
+                key={step.n}
+                className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 p-4 flex flex-col gap-2"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-white text-sm font-bold shrink-0">
+                  {step.n}
+                </div>
+                <p className="font-semibold text-slate-900 dark:text-white">{step.title}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-snug">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-amber-700 dark:text-amber-400 text-xs mt-4">{t('commissionCondition')}</p>
         </div>
       </div>
     </div>

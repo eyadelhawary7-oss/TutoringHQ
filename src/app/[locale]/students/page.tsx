@@ -842,24 +842,29 @@ export default function StudentsPage() {
       <div className="bg-[var(--color-surface-0)] min-h-screen animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
-              <p className="text-xs text-[var(--color-text-secondary)]">{ts('subtitle')}</p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
+                <span className="inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0">
+                  {students.length.toLocaleString('en-US')}
+                </span>
+              </div>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ts('subtitle')}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <Link
                 href="/students/import"
-                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow"
               >
-                <Upload size={14} /> {ts('import')}
+                <Upload size={16} /> {ts('import')}
               </Link>
               <button
                 type="button"
                 onClick={() => setShowCardCartModal(true)}
-                className="relative flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow"
                 aria-label={ts('cardOrderCart')}
               >
-                <ShoppingCart size={14} />
+                <ShoppingCart size={16} />
                 {cartCount > 0 ? (
                   <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
                     {cartCount > 99 ? '99+' : cartCount}
@@ -869,9 +874,9 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={() => setShowCardOrderModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] text-xs font-semibold rounded-lg transition-colors"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow"
               >
-                <CreditCard size={14} /> {ts('order_cards')}
+                <CreditCard size={16} /> {ts('order_cards')}
               </button>
               {(user?.role === 'owner' || user?.role === 'admin') && (
                 <button
@@ -882,7 +887,7 @@ export default function StudentsPage() {
                     setAnnouncementMessage('');
                     setShowAnnouncementModal(true);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {ts('sendAnnouncement')}
                 </button>
@@ -890,31 +895,31 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-brand-500 hover:opacity-90 text-white text-xs font-semibold rounded-lg transition-colors"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl transition-all duration-150 shadow-sm"
               >
-                <Plus size={14} /> {ts('add_student')}
+                <Plus size={16} /> {ts('add_student')}
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="card p-3 flex items-center gap-3">
-              <span className="text-[var(--color-text-secondary)] text-xs">{ts('total_students')}</span>
-              <span className="text-lg font-bold text-[var(--color-text-primary)] ms-auto">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow flex flex-col gap-1">
+              <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{ts('total_students')}</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">
                 {students.length.toLocaleString('en-US')}
               </span>
             </div>
-            <div className="card p-3 flex items-center gap-3">
-              <span className="text-[var(--color-text-secondary)] text-xs">{ts('active_students')}</span>
-              <span className="text-lg font-bold text-[var(--color-success)] ms-auto">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow flex flex-col gap-1">
+              <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{ts('active_students')}</span>
+              <span className="text-lg font-bold text-teal-600 dark:text-teal-400 tabular-nums">
                 {students.filter((s) => s.lifecycle_status === 'active').length.toLocaleString('en-US')}
               </span>
             </div>
           </div>
 
-          <div className="card p-0 overflow-hidden mb-3">
+          <div className="rounded-xl bg-white dark:bg-slate-800 mb-3 ring-1 ring-slate-200 dark:ring-slate-700 border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
             <div className="relative">
-              <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-tertiary)]" />
+              <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
               <input
                 type="search"
                 value={searchQuery}
@@ -923,21 +928,25 @@ export default function StudentsPage() {
                   setFilterKey((k) => k + 1);
                 }}
                 placeholder={ts('search_placeholder')}
-                className="w-full bg-transparent ps-9 pe-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] outline-none border-none"
+                className="w-full bg-transparent ps-12 pe-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none border-0 rounded-xl"
                 dir="auto"
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-3 mb-3">
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--color-surface-2)] overflow-x-auto">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
               <button
                 type="button"
                 onClick={() => {
                   setSubjectFilter(null);
                   setFilterKey((k) => k + 1);
                 }}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${subjectFilter === null ? 'bg-[var(--color-surface-1)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
+                  subjectFilter === null
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                }`}
               >
                 {tCommon('all', { defaultValue: 'All' })}
               </button>
@@ -949,7 +958,11 @@ export default function StudentsPage() {
                     setSubjectFilter(subjectFilter === sub ? null : sub);
                     setFilterKey((k) => k + 1);
                   }}
-                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${subjectFilter === sub ? 'bg-[var(--color-surface-1)] text-[var(--color-text-primary)] shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                  className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
+                    subjectFilter === sub
+                      ? 'bg-teal-600 text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                  }`}
                 >
                   {sub}
                 </button>
@@ -965,7 +978,11 @@ export default function StudentsPage() {
                     setLifecycleFilter(f);
                     setFilterKey((k) => k + 1);
                   }}
-                  className={`shrink-0 px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${lifecycleFilter === f ? 'bg-[var(--color-brand-500)] text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
+                  className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
+                    lifecycleFilter === f
+                      ? 'bg-teal-600 text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                  }`}
                 >
                   {ts(lifecycleFilterLabelKey(f))}
                 </button>
@@ -980,7 +997,11 @@ export default function StudentsPage() {
                   setSortBy('name');
                   setFilterKey((k) => k + 1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sortBy === 'name' ? 'bg-[var(--color-brand-500)] text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
+                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
+                  sortBy === 'name'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }`}
               >
                 {ts('sortName')}
               </button>
@@ -990,7 +1011,11 @@ export default function StudentsPage() {
                   setSortBy('balance');
                   setFilterKey((k) => k + 1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sortBy === 'balance' ? 'bg-[var(--color-brand-500)] text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
+                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
+                  sortBy === 'balance'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }`}
               >
                 {ts('sortBalance')}
               </button>
@@ -1064,24 +1089,24 @@ export default function StudentsPage() {
                 </div>
               ) : (
                 <>
-                  <div className="hidden md:block card overflow-hidden mb-2">
+                  <div className="hidden md:block rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden mb-2 card-shadow">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
-                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-primary)]">
+                          <tr className="bg-slate-50 dark:bg-slate-900/50">
+                            <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
                               {ts('name')}
                             </th>
-                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-primary)]">
+                            <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
                               {ts('studentId')}
                             </th>
-                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-primary)]">
+                            <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
                               {ts('parentPhone')}
                             </th>
-                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-primary)]">
+                            <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
                               {ts('balance')}
                             </th>
-                            <th className="px-4 py-3 text-end font-semibold text-[var(--color-text-primary)]">
+                            <th className="px-4 py-3 text-end font-semibold text-slate-700 dark:text-slate-200">
                               {tCommon('actions')}
                             </th>
                           </tr>
@@ -1093,8 +1118,11 @@ export default function StudentsPage() {
                             const statusKey = studentStatusLabelKey(s.lifecycle_status);
                             const hasParent = s.parent_phone != null && String(s.parent_phone).trim() !== '';
                             return (
-                              <tr key={s.id} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]">
-                                <td className="px-4 py-3 align-top">
+                              <tr
+                                key={s.id}
+                                className="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                              >
+                                <td className="px-4 py-4 align-top">
                                   <button
                                     type="button"
                                     className="text-start"
@@ -1106,10 +1134,10 @@ export default function StudentsPage() {
                                     </div>
                                   </button>
                                 </td>
-                                <td className="px-4 py-3 align-top font-mono text-[var(--color-text-primary)]" dir="ltr">
+                                <td className="px-4 py-4 align-top font-mono text-[var(--color-text-primary)]" dir="ltr">
                                   {s.student_number ?? '—'}
                                 </td>
-                                <td className="px-4 py-3 align-top relative">
+                                <td className="px-4 py-4 align-top relative">
                                   <div
                                     className="relative inline-block"
                                     onClick={(e) => e.stopPropagation()}
@@ -1182,32 +1210,32 @@ export default function StudentsPage() {
                                     ) : null}
                                   </div>
                                 </td>
-                                <td className="px-4 py-3 align-top">
+                                <td className="px-4 py-4 align-top">
                                   {balNum > 0 ? (
-                                    <span className="text-xs font-semibold text-[var(--color-danger)] tabular-nums">
+                                    <span className="text-sm font-medium text-red-600 dark:text-red-400 tabular-nums">
                                       {balNum.toLocaleString('en-US')} {tCommon('egp')}
                                     </span>
                                   ) : (
-                                    <span className="text-xs text-[var(--color-text-tertiary)]">{ts('no_balance')}</span>
+                                    <span className="text-sm text-slate-400 dark:text-slate-500">{ts('no_balance')}</span>
                                   )}
                                 </td>
-                                <td className="px-4 py-3 align-top text-end">
-                                  <div className="flex flex-wrap justify-end gap-1">
+                                <td className="px-4 py-4 align-top text-end">
+                                  <div className="flex flex-wrap justify-end gap-0.5">
                                     <button
                                       type="button"
                                       onClick={() => openEdit(s)}
-                                      className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                                      className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 transition-colors duration-150"
                                       title={tCommon('edit')}
                                     >
-                                      <Edit size={14} />
+                                      <Edit size={18} />
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => openQRModal(s)}
-                                      className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                                      className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 transition-colors duration-150"
                                       title={ts('viewQR')}
                                     >
-                                      <Eye size={14} />
+                                      <Eye size={18} />
                                     </button>
                                   </div>
                                 </td>
@@ -1420,8 +1448,8 @@ export default function StudentsPage() {
                         {balNum > 0 ? (
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs text-[var(--color-danger)] font-medium">{ts('balance_due')}:</span>
-                              <span className="text-xs font-bold text-[var(--color-danger)]">
+                              <span className="text-xs text-red-600 dark:text-red-400 font-medium">{ts('balance_due')}:</span>
+                              <span className="text-xs font-semibold text-red-600 dark:text-red-400 tabular-nums">
                                 {balNum.toLocaleString('en-US')} {tCommon('egp')}
                               </span>
                             </div>
@@ -1433,7 +1461,7 @@ export default function StudentsPage() {
                             </div>
                           </div>
                         ) : (
-                          <p className="text-xs text-[var(--color-text-tertiary)]">{ts('no_balance')}</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500">{ts('no_balance')}</p>
                         )}
 
                         {user?.center?.parent_pack_enabled === true && (

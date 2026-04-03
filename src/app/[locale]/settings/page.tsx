@@ -1,7 +1,6 @@
 'use client';
 
-import Image from 'next/image';
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
@@ -16,6 +15,7 @@ import { calculatePackCharge } from '@/lib/parent-pack';
 import { getAnnouncementCap, PACK_PRICE_PER_PARENT } from '@/lib/parentPack';
 import { PARENT_PACK, type PackStatusResponse } from '@/types/parent-pack';
 import { useToast } from '@/hooks/useToast';
+import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
 
 type TabType = 'general' | 'team';
 
@@ -77,6 +77,19 @@ function maskInstapayDisplay(digits: string): string {
 const LOGO_MAX_SIZE = 2 * 1024 * 1024; // 2MB
 const LOGO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+const DISTRICT_VALUES = [
+  'nasr_city',
+  'maadi',
+  'dokki',
+  'heliopolis',
+  'new_cairo',
+  '6th_october',
+  'giza',
+  'zamalek',
+  'mohandiseen',
+  'other',
+] as const;
+
 const PERMISSION_KEYS: { key: string; labelKey: string }[] = [
   { key: 'can_scan', labelKey: 'canScan' },
   { key: 'can_view_payments', labelKey: 'canViewPayments' },
@@ -103,6 +116,9 @@ function SettingsPageContent() {
   const locale = useLocale();
   const { user: currentUser, hasPermission, refreshUser } = useUser();
   const isRTL = locale === 'ar';
+  const dailySummarySwitchId = useId();
+  const summerSwitchId = useId();
+  const parentPackSwitchId = useId();
 
   // Tab from URL or default
   const tabParam = searchParams?.get('tab');
@@ -686,10 +702,10 @@ function SettingsPageContent() {
   };
 
   const getRoleBadgeClass = (role: string) => {
-    if (role === 'owner') return 'bg-purple-100 text-purple-800';
-    if (role === 'admin') return 'bg-blue-100 text-blue-800';
-    if (role === 'teacher') return 'bg-amber-100 text-amber-800';
-    return 'bg-green-100 text-green-800';
+    if (role === 'owner') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200';
+    if (role === 'admin') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200';
+    if (role === 'teacher') return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200';
+    return 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200';
   };
 
   const getRoleLabel = (role: string) => {
@@ -729,7 +745,7 @@ function SettingsPageContent() {
 
         <Link
           href="/orders"
-          className="flex items-center gap-3 w-full mb-4 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
+          className="btn-lift flex items-center gap-3 w-full mb-4 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
         >
           <Package className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
           <span className="font-medium text-sm flex-1 text-start">{tCardOrders('ordersNav')}</span>
@@ -738,7 +754,7 @@ function SettingsPageContent() {
 
         <Link
           href="/whatsapp-pack"
-          className="flex items-center gap-3 w-full mb-4 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
+          className="btn-lift flex items-center gap-3 w-full mb-4 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
         >
           <MessageCircle className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
           <span className="font-medium text-sm flex-1 text-start">{t('whatsappPack')}</span>
@@ -755,10 +771,10 @@ function SettingsPageContent() {
           </button>
           <Link
             href="/settings/billing"
-            className="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
+            className="btn-lift inline-flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors card-shadow"
           >
             {t('billing')}
-            <ChevronRight className="w-4 h-4" aria-hidden />
+            <ChevronRight className="w-6 h-6 text-teal-600 dark:text-teal-400 rtl:rotate-180" aria-hidden />
           </Link>
           <button
             onClick={() => setActiveTab('team')}
@@ -769,7 +785,7 @@ function SettingsPageContent() {
         </div>
 
         {savedMessage && (
-          <div className="mb-4 p-3 bg-green-100 border border-green-500/30 text-green-700 rounded-xl text-sm text-center">
+          <div className="mb-4 p-3 bg-teal-50 dark:bg-teal-950/40 border border-teal-500/30 text-teal-800 dark:text-teal-200 rounded-xl text-sm text-center">
             {savedMessage}
           </div>
         )}
@@ -778,14 +794,14 @@ function SettingsPageContent() {
         {activeTab === 'general' && (
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
             {/* 1. Center Information */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-teal-100 rounded-xl flex-shrink-0">
-                  <Building2 className="w-5 h-5 text-teal-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <Building2 className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('centerInfo')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('centerName')} · {t('centerPhone')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('centerName')} · {t('centerPhone')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -820,15 +836,15 @@ function SettingsPageContent() {
                     </label>
                     {logoToast === 'success' && (
                       <div className="absolute -bottom-1 start-0 end-0 text-center">
-                        <span className="inline-block px-2 py-0.5 bg-green-600 text-white text-xs rounded-full">
-                          تم رفع الشعار بنجاح
+                        <span className="inline-block px-2 py-0.5 bg-teal-600 text-white text-xs rounded-full">
+                          {t('logoToastSuccess')}
                         </span>
                       </div>
                     )}
                     {logoToast === 'error' && (
                       <div className="absolute -bottom-1 start-0 end-0 text-center">
                         <span className="inline-block px-2 py-0.5 bg-red-600 text-white text-xs rounded-full">
-                          فشل رفع الشعار، حاول مرة أخرى
+                          {t('logoToastError')}
                         </span>
                       </div>
                     )}
@@ -840,22 +856,17 @@ function SettingsPageContent() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('centerPhone')}</label>
-                      <input type="tel" value={centerPhone} onChange={(e) => setCenterPhone(e.target.value)} dir="ltr" placeholder="01xxxxxxxxx" className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" />
+                      <input type="tel" value={centerPhone} onChange={(e) => setCenterPhone(e.target.value)} dir="ltr" placeholder={t('phonePlaceholder')} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('district')}</label>
                       <select value={centerDistrict} onChange={(e) => setCenterDistrict(e.target.value)} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]">
-                        <option value="">—</option>
-                        <option value="nasr_city">مدينة نصر</option>
-                        <option value="maadi">المعادي</option>
-                        <option value="dokki">الدقي</option>
-                        <option value="heliopolis">هليوبوليس</option>
-                        <option value="new_cairo">القاهرة الجديدة</option>
-                        <option value="6th_october">السادس من أكتوبر</option>
-                        <option value="giza">الجيزة</option>
-                        <option value="zamalek">الزمالك</option>
-                        <option value="mohandiseen">المهندسين</option>
-                        <option value="other">أخرى</option>
+                        <option value="">{t('districtSelectPlaceholder')}</option>
+                        {DISTRICT_VALUES.map((d) => (
+                          <option key={d} value={d}>
+                            {t(`districts.${d}`)}
+                          </option>
+                        ))}
                       </select>
                       <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('districtHint')}</p>
                     </div>
@@ -868,14 +879,14 @@ function SettingsPageContent() {
             </div>
 
             {/* 2. Subject Management */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-blue-100 rounded-xl flex-shrink-0">
-                  <BookOpen className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('subjects')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('subjectName')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('subjectName')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -904,14 +915,14 @@ function SettingsPageContent() {
             </div>
 
             {/* 3. Team Members */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-purple-100 rounded-xl flex-shrink-0">
-                  <Users className="w-5 h-5 text-purple-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('manageTeamDesc')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('manageTeamDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -922,14 +933,14 @@ function SettingsPageContent() {
             </div>
 
             {/* 4. Scanner Settings */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-amber-100 rounded-xl flex-shrink-0">
-                  <QrCode className="w-5 h-5 text-amber-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <QrCode className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('scanner')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('defaultMode')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('defaultMode')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -947,75 +958,67 @@ function SettingsPageContent() {
             </div>
 
             {/* 4b. Daily WhatsApp Summary */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-teal-100 rounded-xl flex-shrink-0">
-                  <MessageCircle className="w-5 h-5 text-teal-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <MessageCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('dailySummary')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('dailySummaryDesc')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('dailySummaryDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center justify-between gap-4">
+                  <div id={dailySummarySwitchId} className="min-w-0">
                     <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('dailySummaryToggle')}</p>
-                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{t('dailySummaryDesc')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('dailySummaryDesc')}</p>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={dailySummaryEnabled}
-                    onClick={() => handleDailySummaryToggle(!dailySummaryEnabled)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${dailySummaryEnabled ? 'bg-teal-600' : 'bg-slate-200'}`}
-                  >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[var(--color-surface-1)] shadow ring-0 transition-transform ${dailySummaryEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
-                  </button>
+                  <SettingsSwitch
+                    checked={dailySummaryEnabled}
+                    onCheckedChange={handleDailySummaryToggle}
+                    aria-labelledby={dailySummarySwitchId}
+                  />
                 </div>
               </div>
             </div>
 
             {/* 4c. Summer mode */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-amber-100 rounded-xl flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-amber-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('summerMode')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('summerModeDesc')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('summerModeDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center justify-between gap-4">
+                  <div id={summerSwitchId} className="min-w-0">
                     <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('summerModeToggle')}</p>
-                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{t('summerModeDesc')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('summerModeDesc')}</p>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={summerModeEnabled}
-                    onClick={() => handleSummerModeToggle(!summerModeEnabled)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${summerModeEnabled ? 'bg-teal-600' : 'bg-slate-200'}`}
-                  >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[var(--color-surface-1)] shadow ring-0 transition-transform ${summerModeEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
-                  </button>
+                  <SettingsSwitch
+                    checked={summerModeEnabled}
+                    onCheckedChange={handleSummerModeToggle}
+                    aria-labelledby={summerSwitchId}
+                  />
                 </div>
               </div>
             </div>
 
             {/* Financial Settings (owner — InstaPay for withdrawals) */}
             {currentUser?.role === 'owner' ? (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-[var(--color-border-subtle)] p-6 mb-4 shadow-sm">
+              <div className="bg-[var(--color-surface-1)] dark:bg-slate-800 rounded-2xl border border-[var(--color-border-subtle)] p-6 mb-4 card-shadow">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl shrink-0">
-                    <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                  <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                    <Wallet className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-semibold text-[var(--color-text-primary)]">{t('financialSettingsTitle')}</h3>
-                    <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('financialSettingsSubtitle')}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('financialSettingsSubtitle')}</p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -1091,32 +1094,45 @@ function SettingsPageContent() {
             ) : null}
 
             {/* 5. Referral Program */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-green-100 rounded-xl flex-shrink-0">
-                  <Gift className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <Gift className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{tReferral('title')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tReferral('shareText')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{tReferral('shareText')}</p>
                 </div>
               </div>
               <div className="p-6">
               {referralData && (
                 <>
-                  <div className="flex items-center gap-3 p-4 bg-[var(--color-surface-0)] rounded-xl border border-[var(--color-border-subtle)] mb-4">
-                    <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-3 p-4 bg-[var(--color-surface-0)] rounded-xl border border-[var(--color-border-subtle)] mb-4">
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tReferral('yourCode')}</p>
-                      <p className="text-xl font-bold text-[var(--color-text-primary)] font-mono tracking-widest">{referralData.referralCode || '—'}</p>
+                      <p className="text-2xl font-bold text-teal-600 dark:text-teal-400 font-mono tracking-widest break-all">
+                        {referralData.referralCode || '—'}
+                      </p>
                     </div>
-                    <button type="button" onClick={async () => { if (referralData.referralCode) { await navigator.clipboard.writeText(referralData.referralCode); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); } }} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">
-                      <Copy className="w-4 h-4" /> {referralCopied ? tReferral('copied') : tReferral('copyCode')}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (referralData.referralCode) {
+                          await navigator.clipboard.writeText(referralData.referralCode);
+                          setReferralCopied(true);
+                          setTimeout(() => setReferralCopied(false), 2000);
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 hover:bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors shrink-0"
+                    >
+                      <Copy className="w-4 h-4 shrink-0" aria-hidden />
+                      {referralCopied ? tReferral('copied') : tReferral('copyCode')}
                     </button>
                   </div>
                   <button
                     type="button"
                     onClick={() => router.push(`/${locale}/settings/referrals`)}
-                    className="flex items-center gap-2 px-4 py-2 border border-teal-600 text-teal-600 rounded-lg text-sm hover:bg-teal-50 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 border border-teal-600 text-teal-600 dark:text-teal-400 rounded-lg text-sm hover:bg-teal-50 dark:hover:bg-teal-950/40 transition-colors"
                   >
                     {t('manageReferrals')}
                   </button>
@@ -1144,7 +1160,9 @@ function SettingsPageContent() {
                               <tr key={r.id || r.created_at + r.referred_center_name} className="border-b border-border">
                                 <td className="py-2 text-[var(--color-text-primary)]">{r.referred_center_name}</td>
                                 <td className="py-2 text-[var(--color-text-secondary)]">{r.referred_center_plan}</td>
-                                <td className="py-2 font-mono text-[var(--color-text-primary)]">{Number(r.reward_amount).toLocaleString('en-US')} EGP</td>
+                                <td className="py-2 font-mono text-[var(--color-text-primary)]" dir="ltr">
+                                  {tCommon('egp')} {Number(r.reward_amount).toLocaleString('en-US')}
+                                </td>
                                 <td className="py-2"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${r.reward_status === 'paid' ? 'badge-confirmed' : r.reward_status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-muted text-[var(--color-text-secondary)]'}`}>{r.reward_status}</span></td>
                                 <td className="py-2 text-[var(--color-text-secondary)]">{new Date(r.created_at).toLocaleDateString('en-US')}</td>
                               </tr>
@@ -1162,55 +1180,56 @@ function SettingsPageContent() {
               </div>
             </div>
 
-            {/* 6. Billing & Subscriptions */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-indigo-100 rounded-xl flex-shrink-0">
-                  <CreditCard className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('billing')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('billingDesc')}</p>
-                </div>
+            <Link
+              href="/settings/billing"
+              className="group flex items-center gap-4 w-full p-6 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow btn-lift mb-4 text-start transition-colors hover:border-teal-500/30"
+            >
+              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                <CreditCard className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden />
               </div>
-              <div className="p-6">
-                <Link
-                  href="/settings/billing"
-                  className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit"
-                >
-                  <CreditCard className="w-4 h-4" /> {tBilling('page.fullManagement')} <ChevronRight className="w-4 h-4 ms-1" />
-                </Link>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('billingCardTitle')}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('billingDesc')}</p>
               </div>
-            </div>
+              <ChevronRight className="w-6 h-6 text-teal-600 dark:text-teal-400 shrink-0 rtl:rotate-180" aria-hidden />
+            </Link>
 
             {/* 7. WhatsApp Support */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-green-100 rounded-xl flex-shrink-0">
-                  <MessageCircle className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <MessageCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{tBilling('whatsappSupport')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tBilling('contactSupportViaWhatsapp')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{tBilling('contactSupportViaWhatsapp')}</p>
                 </div>
               </div>
               <div className="p-6">
-                <p className="text-sm text-[var(--color-text-secondary)] mb-3" dir="ltr">Contact support: support@centerhq.com | WhatsApp: +20 122 060 1410</p>
-                <a href={`https://wa.me/${ADMIN_NOTIFICATION_PHONE}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                  <MessageCircle className="w-4 h-4" /> Chat on WhatsApp
+                <p className="text-sm text-[var(--color-text-secondary)] mb-3" dir="ltr">
+                  {t('supportContact', { email: 'support@centerhq.com', phone: '+20 122 060 1410' })}
+                </p>
+                <a
+                  href={`https://wa.me/${ADMIN_NOTIFICATION_PHONE}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 shrink-0" aria-hidden />
+                  {t('chatOnWhatsapp')}
                 </a>
               </div>
             </div>
 
             {/* 8. Account */}
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2.5 bg-red-100 rounded-xl flex-shrink-0">
-                  <Shield className="w-5 h-5 text-red-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <Shield className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('account')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tBilling('securityAndSignOut')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{tBilling('securityAndSignOut')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -1227,10 +1246,10 @@ function SettingsPageContent() {
 
             {/* 9. Parent WA Pack */}
             {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm mb-4">
+              <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
                 <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                  <div className="p-2.5 bg-teal-100 rounded-xl flex-shrink-0">
-                    <Smartphone className="w-5 h-5 text-teal-600" />
+                  <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                    <Smartphone className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -1243,7 +1262,7 @@ function SettingsPageContent() {
                         {isPackEnabled ? t('parentPack.packStatusActive') : t('parentPack.packStatusInactive')}
                       </span>
                     </div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('parentPack.enableDescription')}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('parentPack.enableDescription')}</p>
                     <div className="mt-2 flex flex-wrap gap-3 text-sm text-[var(--color-text-primary)]">
                       <span>
                         {t('parentPack.activeParents')}:{' '}
@@ -1260,22 +1279,16 @@ function SettingsPageContent() {
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <div>
+                    <div id={parentPackSwitchId} className="min-w-0">
                       <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('parentPack.enableTitle')}</p>
-                      <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{t('parentPack.enableDescription')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('parentPack.enableDescription')}</p>
                     </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={isPackEnabled}
+                    <SettingsSwitch
+                      checked={isPackEnabled}
+                      onCheckedChange={() => setPackConfirmOpen(true)}
                       disabled={!canEnablePack || packLoading}
-                      onClick={() => setPackConfirmOpen(true)}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${isPackEnabled ? 'bg-teal-600' : 'bg-slate-200'}`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[var(--color-surface-1)] shadow ring-0 transition-transform ${isPackEnabled ? 'translate-x-5' : 'translate-x-1'}`}
-                      />
-                    </button>
+                      aria-labelledby={parentPackSwitchId}
+                    />
                   </div>
                   {!canEnablePack && (
                     <p className="text-sm text-amber-600">{t('parentPack.notActive')}</p>
@@ -1424,9 +1437,14 @@ function SettingsPageContent() {
                   <button onClick={() => { setInviteRole('assistant'); setInviteTeacherGroupIds([]); setInvitePerms({ can_scan: true, can_view_payments: true, can_view_dashboard: true, can_manage_students: false, can_manage_groups: false, can_view_settings: false }); setShowInviteModal(true); }} disabled={limits ? !limits.canAddTeacher : false} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"><UserPlus className="w-4 h-4" /> {t('inviteMemberPlus')}</button>
                 </div>
 
-                {lastInvitePassword && <div className="p-4 bg-green-100 rounded-xl border border-green-500/30 text-sm text-green-700 mb-4"><p className="font-medium">{t('inviteSuccess')}</p><p className="mt-1">{t('passwordIs', { password: lastInvitePassword })}</p></div>}
+                {lastInvitePassword && (
+                  <div className="p-4 bg-teal-50 dark:bg-teal-950/40 rounded-xl border border-teal-500/30 text-sm text-teal-800 dark:text-teal-200 mb-4">
+                    <p className="font-medium">{t('inviteSuccess')}</p>
+                    <p className="mt-1">{t('passwordIs', { password: lastInvitePassword })}</p>
+                  </div>
+                )}
 
-                <div className="bg-[var(--color-surface-1)] rounded-xl overflow-hidden border border-[var(--color-border-subtle)] shadow-sm">
+                <div className="bg-[var(--color-surface-1)] rounded-2xl overflow-hidden border border-[var(--color-border-subtle)] card-shadow">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
@@ -1444,13 +1462,13 @@ function SettingsPageContent() {
                           const isSelf = member.id === userId;
                           const isPermReadOnly = isOwner(member) || isSelf;
                           const permChecked = (k: string) => isOwner(member) ? true : (assistantPermissions[member.id]?.[k] ?? false);
-                          const PERM_CHIPS = [
-                            { key: 'can_scan', emoji: '📷', title: 'Scanner' },
-                            { key: 'can_view_payments', emoji: '💳', title: 'Payments' },
-                            { key: 'can_view_dashboard', emoji: '📊', title: 'Dashboard' },
-                            { key: 'can_manage_students', emoji: '👥', title: 'Students' },
-                            { key: 'can_manage_groups', emoji: '📚', title: 'Groups' },
-                            { key: 'can_view_settings', emoji: '⚙️', title: 'Settings' },
+                          const PERM_CHIPS: { key: string; emoji: string; labelKey: 'canScan' | 'canViewPayments' | 'canViewDashboard' | 'canManageStudents' | 'canManageGroups' | 'canViewSettings' }[] = [
+                            { key: 'can_scan', emoji: '📷', labelKey: 'canScan' },
+                            { key: 'can_view_payments', emoji: '💳', labelKey: 'canViewPayments' },
+                            { key: 'can_view_dashboard', emoji: '📊', labelKey: 'canViewDashboard' },
+                            { key: 'can_manage_students', emoji: '👥', labelKey: 'canManageStudents' },
+                            { key: 'can_manage_groups', emoji: '📚', labelKey: 'canManageGroups' },
+                            { key: 'can_view_settings', emoji: '⚙️', labelKey: 'canViewSettings' },
                           ];
                           return (
                             <tr key={member.id} className={member.is_active === false ? 'opacity-60' : ''}>
@@ -1472,15 +1490,21 @@ function SettingsPageContent() {
                                   </div>
                                 ) : (
                                   <div className="flex flex-wrap gap-1">
-                                    {PERM_CHIPS.map(({ key, emoji, title }) => (
-                                      <span key={key} className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-green-100 text-green-700' : 'bg-[var(--color-surface-2)] text-slate-400'}`} title={title}>{emoji}</span>
+                                    {PERM_CHIPS.map(({ key, emoji, labelKey }) => (
+                                      <span
+                                        key={key}
+                                        className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200' : 'bg-[var(--color-surface-2)] text-slate-400'}`}
+                                        title={t(labelKey)}
+                                      >
+                                        {emoji}
+                                      </span>
                                     ))}
                                     {canEditPermissions(member) && <button type="button" onClick={() => setEditingPermissionsId(member.id)} className="text-teal-600 hover:underline text-xs ms-1">{t('editPermissions')}</button>}
                                   </div>
                                 )}
                               </td>
                               <td className="px-4 py-3">
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${member.is_active !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${member.is_active !== false ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200'}`}>
                                   {member.is_active !== false ? t('activeStatus') : t('deactivatedStatus')}
                                 </span>
                               </td>

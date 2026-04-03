@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { useUser } from '@/contexts/UserContext';
 import { useBranchStore } from '@/stores/branchStore';
 import PageHeader from '@/components/shared/PageHeader';
 import { Link } from '@/i18n/routing';
@@ -33,22 +32,44 @@ function formatPct(n: number): string {
   return `${(n * 100).toFixed(1)}%`;
 }
 
-function formatEgp(n: number): string {
-  return `${n.toLocaleString('en-US')} ج.م`;
+const DISTRICT_TARGET = 10;
+
+function BenchmarkLockIllustration() {
+  return (
+    <svg
+      className="w-28 h-28 mx-auto text-teal-600 dark:text-teal-400"
+      viewBox="0 0 120 120"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <rect x="24" y="52" width="12" height="36" rx="2" className="fill-teal-500/25 stroke-teal-600 dark:stroke-teal-400" strokeWidth="2" />
+      <rect x="44" y="40" width="12" height="48" rx="2" className="fill-teal-500/35 stroke-teal-600 dark:stroke-teal-400" strokeWidth="2" />
+      <rect x="64" y="60" width="12" height="28" rx="2" className="fill-teal-500/20 stroke-slate-400 dark:stroke-slate-500" strokeWidth="2" />
+      <rect x="84" y="48" width="12" height="40" rx="2" className="fill-teal-500/30 stroke-teal-600 dark:stroke-teal-400" strokeWidth="2" />
+      <rect x="38" y="28" width="44" height="34" rx="6" className="fill-slate-200/90 dark:fill-slate-700 stroke-slate-500 dark:stroke-slate-400" strokeWidth="2" />
+      <path
+        d="M52 44h16v10c0 4-3.5 7-8 7s-8-3-8-7V44z"
+        className="fill-slate-500 dark:fill-slate-300"
+      />
+      <circle cx="60" cy="56" r="3" className="fill-slate-800 dark:fill-slate-100" />
+    </svg>
+  );
 }
 
 export default function BenchmarksPage() {
   const t = useTranslations('benchmarks');
   const tNav = useTranslations('nav');
-  const locale = useLocale();
-  const { user } = useUser();
+  const tc = useTranslations('common');
   const { activeCenterId } = useBranchStore();
   const [data, setData] = useState<BenchmarksData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) return;
 
     setLoading(true);
@@ -65,21 +86,21 @@ export default function BenchmarksPage() {
       const json = await res.json();
       setData(json);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
+      setError(e instanceof Error ? e.message : tc('errorGeneric'));
     } finally {
       setLoading(false);
     }
-  }, [activeCenterId]);
+  }, [activeCenterId, tc]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const isRTL = locale === 'ar';
+  const formatEgp = (n: number) => `${n.toLocaleString('en-US')} ${tc('egp')}`;
 
   if (loading && !data) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[300px]" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="p-6 flex items-center justify-center min-h-[300px]">
         <Loader2 className="h-8 w-8 animate-spin text-[var(--color-text-secondary)]" />
       </div>
     );
@@ -87,7 +108,7 @@ export default function BenchmarksPage() {
 
   if (error) {
     return (
-      <div className="p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="p-6">
         <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
         <p className="text-destructive">{error}</p>
       </div>
@@ -99,35 +120,76 @@ export default function BenchmarksPage() {
   if (d.insufficient_data) {
     const centersNeeded = d.centers_needed ?? 10;
     const isNoDistrict = d.reason === 'no_district';
+    const currentCenters =
+      d.center_count != null ? d.center_count : Math.max(1, DISTRICT_TARGET - centersNeeded);
+    const progressPct = Math.min(100, Math.round((currentCenters / DISTRICT_TARGET) * 100));
+
     return (
-      <div className="p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="px-4 py-6 md:py-10">
         <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
-        <div className="rounded-xl border bg-[var(--color-surface-1)] p-8 text-center max-w-lg mx-auto">
-          <p className="text-lg text-[var(--color-text-secondary)] mb-6">
-            {isNoDistrict ? t('noDistrict') : t('insufficientData', { count: centersNeeded })}
+        <div className="max-w-md mx-auto text-center pt-10 md:pt-16">
+          <BenchmarkLockIllustration />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-6">{t('districtTitle')}</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{t('emptySubheading')}</p>
+
+          <div className="mt-8 text-start">
+            <div className="flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+              <span>
+                {t('progressLabel', {
+                  current: currentCenters.toLocaleString('en-US'),
+                  total: DISTRICT_TARGET.toLocaleString('en-US'),
+                })}
+              </span>
+              <span className="tabular-nums">{progressPct}%</span>
+            </div>
+            <div className="h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-teal-500 transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-6 leading-relaxed">
+            {isNoDistrict ? t('noDistrict') : t('emptyBody')}
           </p>
-          {isNoDistrict ? (
+
+          <div className="mt-8 flex flex-col gap-3 items-stretch">
+            {isNoDistrict ? (
+              <Link
+                href="/settings"
+                className="btn-lift inline-flex items-center justify-center px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                {t('settingsCta')}
+              </Link>
+            ) : (
+              <Link
+                href="/referrals"
+                className="btn-lift inline-flex items-center justify-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                <Gift size={20} />
+                {t('referEarnCta')}
+              </Link>
+            )}
             <Link
               href="/settings"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors"
+              className="text-sm font-medium text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center justify-center gap-1"
             >
-              {t('settingsCta')}
+              {t('learnMore')}
             </Link>
-          ) : (
-            <Link
-              href="/referrals"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors"
-            >
-              <Gift size={20} />
-              {t('referralCta')}
-            </Link>
-          )}
+          </div>
         </div>
       </div>
     );
   }
 
-  const cards: { key: string; icon: React.ElementType; metric: BenchmarkMetric | undefined; format: (n: number) => string; descKey: string }[] = [
+  const cards: {
+    key: string;
+    icon: React.ElementType;
+    metric: BenchmarkMetric | undefined;
+    format: (n: number) => string;
+    descKey: string;
+  }[] = [
     { key: 'attendance', icon: TrendingUp, metric: d.attendance, format: formatPct, descKey: 'attendanceDesc' },
     { key: 'revenue', icon: DollarSign, metric: d.revenue_per_student, format: formatEgp, descKey: 'revenueDesc' },
     { key: 'retention', icon: Users, metric: d.retention_30d, format: formatPct, descKey: 'retentionDesc' },
@@ -135,7 +197,7 @@ export default function BenchmarksPage() {
   ];
 
   return (
-    <div className="p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="p-6">
       <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -145,22 +207,25 @@ export default function BenchmarksPage() {
           const avgVal = metric.district_avg ?? 0;
           const pct = Math.min(100, Math.max(0, metric.percentile));
           return (
-            <div key={key} className="rounded-xl border bg-[var(--color-surface-1)] p-6">
-              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-2">
-                <Icon className="h-4 w-4" />
+            <div
+              key={key}
+              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 card-shadow"
+            >
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
+                <Icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                 {t(key)}
               </div>
-              <p className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">{format(yourVal)}</p>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+              <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{format(yourVal)}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                 {t('districtAvg')}: {format(avgVal)}
               </p>
-              <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
+              <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-3">
                 <div
                   className="h-full bg-teal-500 rounded-full transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <p className="text-sm text-[var(--color-text-secondary)]">{t(descKey, { percentile: pct.toFixed(0) })}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{t(descKey, { percentile: pct.toFixed(0) })}</p>
             </div>
           );
         })}
