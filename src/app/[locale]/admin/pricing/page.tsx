@@ -14,9 +14,9 @@ import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Banknote } from 'lucide-react';
 
 type PlanRow = {
-  id: string;
-  name_en: string;
-  name_ar: string;
+  plan_key: string;
+  english_name: string;
+  arabic_name: string;
   students_per_week_limit: number;
   monthly_fee: number;
   all_in_price: number;
@@ -121,7 +121,7 @@ export default function AdminPricingPage() {
     setPlans(list);
     const next: Record<string, PlanDraft> = {};
     for (const p of list) {
-      next[p.id] = {
+      next[p.plan_key] = {
         weekly_student_limit: String(p.students_per_week_limit ?? ''),
         monthly_fee: String(p.monthly_fee ?? ''),
         all_in_price: String(p.all_in_price ?? ''),
@@ -171,15 +171,15 @@ export default function AdminPricingPage() {
     [],
   );
 
-  const updateDraft = useCallback((planId: string, patch: Partial<PlanDraft>) => {
+  const updateDraft = useCallback((planKey: string, patch: Partial<PlanDraft>) => {
     setDrafts((d) => ({
       ...d,
-      [planId]: { ...d[planId]!, ...patch },
+      [planKey]: { ...d[planKey]!, ...patch },
     }));
   }, []);
 
-  const savePlan = async (planId: string) => {
-    const d = drafts[planId];
+  const savePlan = async (planKey: string) => {
+    const d = drafts[planKey];
     if (!d) return;
     const monthly_fee = parseFloat(d.monthly_fee);
     const all_in_price = parseFloat(d.all_in_price);
@@ -194,9 +194,9 @@ export default function AdminPricingPage() {
     }
     const headers = await getAuthHeaders();
     if (!headers) return;
-    setSavingPlanId(planId);
+    setSavingPlanId(planKey);
     try {
-      const res = await fetch(`/api/admin/pricing/plans/${encodeURIComponent(planId)}`, {
+      const res = await fetch(`/api/admin/pricing/plans/${encodeURIComponent(planKey)}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({
@@ -213,10 +213,10 @@ export default function AdminPricingPage() {
       }
       const plan = data.plan as PlanRow | undefined;
       if (plan) {
-        setPlans((prev) => prev.map((p) => (p.id === planId ? plan : p)));
+        setPlans((prev) => prev.map((p) => (p.plan_key === planKey ? plan : p)));
         setDrafts((prev) => ({
           ...prev,
-          [planId]: {
+          [planKey]: {
             weekly_student_limit: String(plan.students_per_week_limit ?? ''),
             monthly_fee: String(plan.monthly_fee ?? ''),
             all_in_price: String(plan.all_in_price ?? ''),
@@ -321,19 +321,19 @@ export default function AdminPricingPage() {
                     </thead>
                     <tbody>
                       {plans.map((p) => {
-                        const d = drafts[p.id];
+                        const d = drafts[p.plan_key];
                         if (!d) return null;
                         const allIn = parseFloat(d.all_in_price);
                         const annual = Number.isFinite(allIn) ? allIn * 12 * 0.85 : NaN;
                         const prem = Number.isFinite(allIn) ? allIn * 1.15 : NaN;
-                        const busy = savingPlanId === p.id;
+                        const busy = savingPlanId === p.plan_key;
                         return (
                           <tr
-                            key={p.id}
+                            key={p.plan_key}
                             className="border-b border-[var(--color-border-subtle)] last:border-0 text-[var(--color-text-primary)]"
                           >
                             <td className="p-3 font-medium">
-                              {locale === 'ar' ? p.name_ar : p.name_en}
+                              {locale === 'ar' ? p.arabic_name : p.english_name}
                             </td>
                             <td className="p-2">
                               <input
@@ -341,7 +341,7 @@ export default function AdminPricingPage() {
                                 min={0}
                                 className="w-full min-w-[4.5rem] rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-2 py-1.5"
                                 value={d.weekly_student_limit}
-                                onChange={(e) => updateDraft(p.id, { weekly_student_limit: e.target.value })}
+                                onChange={(e) => updateDraft(p.plan_key, { weekly_student_limit: e.target.value })}
                               />
                             </td>
                             <td className="p-2">
@@ -351,7 +351,7 @@ export default function AdminPricingPage() {
                                 step="0.01"
                                 className="w-full min-w-[5rem] rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-2 py-1.5"
                                 value={d.monthly_fee}
-                                onChange={(e) => updateDraft(p.id, { monthly_fee: e.target.value })}
+                                onChange={(e) => updateDraft(p.plan_key, { monthly_fee: e.target.value })}
                               />
                             </td>
                             <td className="p-2">
@@ -361,7 +361,7 @@ export default function AdminPricingPage() {
                                 step="0.01"
                                 className="w-full min-w-[5rem] rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-2 py-1.5"
                                 value={d.all_in_price}
-                                onChange={(e) => updateDraft(p.id, { all_in_price: e.target.value })}
+                                onChange={(e) => updateDraft(p.plan_key, { all_in_price: e.target.value })}
                               />
                             </td>
                             <td className="p-3 tabular-nums text-[var(--color-text-secondary)]">{fmtMoney(annual)}</td>
@@ -371,7 +371,7 @@ export default function AdminPricingPage() {
                                 <input
                                   type="checkbox"
                                   checked={d.is_active}
-                                  onChange={(e) => updateDraft(p.id, { is_active: e.target.checked })}
+                                  onChange={(e) => updateDraft(p.plan_key, { is_active: e.target.checked })}
                                   className="rounded border-[var(--color-border-default)]"
                                 />
                               </label>
@@ -380,7 +380,7 @@ export default function AdminPricingPage() {
                               <button
                                 type="button"
                                 disabled={busy}
-                                onClick={() => void savePlan(p.id)}
+                                onClick={() => void savePlan(p.plan_key)}
                                 className="w-full rounded-lg bg-[var(--color-brand-500)] text-white px-3 py-2 text-xs font-semibold hover:opacity-90 disabled:opacity-50"
                               >
                                 {busy ? t('pricingSaving') : t('pricingSave')}

@@ -31,8 +31,8 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ plan_
 
   const { data: existing, error: fetchErr } = await auth.supabaseAdmin
     .from('pricing_plans')
-    .select('id')
-    .eq('id', planKey)
+    .select('plan_key')
+    .eq('plan_key', planKey)
     .maybeSingle();
 
   if (fetchErr || !existing) {
@@ -76,9 +76,9 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ plan_
   const { data: row, error: upErr } = await auth.supabaseAdmin
     .from('pricing_plans')
     .update(updates)
-    .eq('id', planKey)
+    .eq('plan_key', planKey)
     .select(
-      'id, name_en, name_ar, students_per_week_limit, monthly_fee, all_in_price, is_custom, sort_order, is_active',
+      'plan_key, english_name, arabic_name, students_per_week_limit, monthly_fee, all_in_price, is_custom, sort_order, is_active',
     )
     .single();
 

@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const { data, error } = await auth.supabaseAdmin
     .from('pricing_plans')
     .select(
-      'id, name_en, name_ar, students_per_week_limit, monthly_fee, all_in_price, is_custom, sort_order, is_active',
+      'plan_key, english_name, arabic_name, students_per_week_limit, monthly_fee, all_in_price, is_custom, sort_order, is_active',
     )
     .order('sort_order', { ascending: true });
 
