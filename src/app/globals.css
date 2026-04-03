@@ -1612,25 +1612,36 @@ html.light {
   color: #0f172a !important;
 }
 
-/* ─── Native date input dark theme (admin shell only) ─── */
-[data-admin="true"] input[type="date"] {
+/* ─── Native date input (admin shell only) ─── */
+.dark [data-admin="true"] input[type="date"] {
   color-scheme: dark;
 }
-[data-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator {
+.light [data-admin="true"] input[type="date"] {
+  color-scheme: light;
+}
+.dark [data-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1) opacity(0.6);
   cursor: pointer;
 }
-[data-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator:hover {
+.dark [data-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator:hover {
   filter: invert(1) opacity(1);
 }
 /* ─── end date input ─── */
 
-[data-admin="true"] .admin-textarea,
-[data-admin="true"] textarea.admin-textarea,
-[data-admin="true"] div .admin-textarea,
-[data-admin="true"] .admin-textarea:not([disabled]) {
+.dark [data-admin="true"] .admin-textarea,
+.dark [data-admin="true"] textarea.admin-textarea,
+.dark [data-admin="true"] div .admin-textarea,
+.dark [data-admin="true"] .admin-textarea:not([disabled]) {
   background-color: #334155 !important;
   color: white !important;
   border-color: #475569 !important;
   color-scheme: dark !important;
+}
+
+.light [data-admin="true"] .admin-textarea,
+.light [data-admin="true"] textarea.admin-textarea {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+  color-scheme: light !important;
 }

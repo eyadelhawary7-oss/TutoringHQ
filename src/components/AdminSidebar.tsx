@@ -42,7 +42,7 @@ function ThemeToggle() {
     <button
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors text-sm"
+      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-sm"
       title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
     >
       <span style={{ fontSize: 16 }}>{isDark ? '☀️' : '🌙'}</span>
@@ -239,7 +239,9 @@ export function AdminSidebar({
   const drawerBtn = (active: boolean) =>
     cn(
       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
-      active ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white',
+      active
+        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
     );
 
   const desktopAsideTop = desktopSidebarFullHeight ? 'top-0' : 'top-14';
@@ -337,20 +339,20 @@ export function AdminSidebar({
 
       {/* Mobile drawer */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-slate-900 border-r border-slate-800 transition-transform duration-[250ms] ease-in-out ${
+        className={`fixed top-0 left-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 transition-transform duration-[250ms] ease-in-out ${
           openMenu ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-hidden={!openMenu}
       >
-        <div className="p-4 border-b border-slate-800 shrink-0">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-800 shrink-0">
           <Link
             href="/dashboard"
             onClick={afterNavigate}
-            className="text-xs text-slate-400 hover:text-white block mb-3"
+            className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white block mb-3"
           >
             {t('backToMyCenter')}
           </Link>
-          <h2 className="font-bold text-white">{t('title')}</h2>
+          <h2 className="font-bold text-slate-900 dark:text-white">{t('title')}</h2>
         </div>
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {ADMIN_NAV.filter(({ permissionKey }) => canSee(permissionKey)).map(({ key, icon: Icon, labelKey }) => {
@@ -456,7 +458,7 @@ export function AdminSidebar({
             return items;
           })}
         </nav>
-        <div className="shrink-0 p-2 border-t border-slate-800">
+        <div className="shrink-0 p-2 border-t border-gray-200 dark:border-slate-800">
           <ThemeToggle />
         </div>
       </aside>
@@ -464,15 +466,15 @@ export function AdminSidebar({
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex flex-col fixed left-0 w-56 z-20 bg-[var(--color-surface-1)] border-e border-[var(--color-border-default)] bottom-0',
+          'hidden lg:flex flex-col fixed left-0 w-56 z-20 bg-white dark:bg-slate-900 border-e border-gray-200 dark:border-slate-700 bottom-0',
           desktopAsideTop,
         )}
       >
-        <div className="p-4 border-b border-[var(--color-border-default)] bg-[var(--color-surface-2)]">
-          <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+          <h2 className="font-bold text-slate-900 dark:text-white">{t('title')}</h2>
           <Link
             href="/dashboard"
-            className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] mt-1 block"
+            className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mt-1 block"
           >
             {t('backToMyCenter')}
           </Link>
@@ -496,8 +498,8 @@ export function AdminSidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                   isActive
-                    ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
                 )}
               >
                 <Icon size={18} />
@@ -517,8 +519,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isRenewals
-                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
                     )}
                   >
                     <CalendarCheck size={18} />
@@ -538,8 +540,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isPricing
-                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
                     )}
                   >
                     <Banknote size={18} />
@@ -559,8 +561,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isOrders
-                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
                     )}
                   >
                     <IdCard size={18} />
@@ -585,8 +587,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isVendors
-                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
                     )}
                   >
                     <Truck size={18} />
@@ -606,8 +608,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isWaPack
-                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
                     )}
                   >
                     <MessageCircle size={18} />
@@ -619,7 +621,7 @@ export function AdminSidebar({
             return items;
           })}
         </nav>
-        <div className="shrink-0 p-2 border-t border-[var(--color-border-default)]">
+        <div className="shrink-0 p-2 border-t border-gray-200 dark:border-slate-700">
           <ThemeToggle />
         </div>
       </aside>
