@@ -17,7 +17,7 @@ type PlanRow = {
   plan_key: string;
   english_name: string;
   arabic_name: string;
-  students_per_week_limit: number;
+  weekly_student_limit: number;
   monthly_fee: number;
   all_in_price: number;
   is_custom: boolean;
@@ -122,7 +122,7 @@ export default function AdminPricingPage() {
     const next: Record<string, PlanDraft> = {};
     for (const p of list) {
       next[p.plan_key] = {
-        weekly_student_limit: String(p.students_per_week_limit ?? ''),
+        weekly_student_limit: String(p.weekly_student_limit ?? ''),
         monthly_fee: String(p.monthly_fee ?? ''),
         all_in_price: String(p.all_in_price ?? ''),
         is_active: p.is_active !== false,
@@ -217,7 +217,7 @@ export default function AdminPricingPage() {
         setDrafts((prev) => ({
           ...prev,
           [planKey]: {
-            weekly_student_limit: String(plan.students_per_week_limit ?? ''),
+            weekly_student_limit: String(plan.weekly_student_limit ?? ''),
             monthly_fee: String(plan.monthly_fee ?? ''),
             all_in_price: String(plan.all_in_price ?? ''),
             is_active: plan.is_active !== false,

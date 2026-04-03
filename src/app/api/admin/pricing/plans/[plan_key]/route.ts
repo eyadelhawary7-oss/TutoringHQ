@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ plan_
     if (!Number.isFinite(n) || n < 0) {
       return NextResponse.json({ error: 'weekly_student_limit must be a non-negative integer' }, { status: 400 });
     }
-    updates.students_per_week_limit = n;
+    updates.weekly_student_limit = n;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ plan_
     .update(updates)
     .eq('plan_key', planKey)
     .select(
-      'plan_key, english_name, arabic_name, students_per_week_limit, monthly_fee, all_in_price, is_custom, sort_order, is_active',
+      'plan_key, english_name, arabic_name, weekly_student_limit, monthly_fee, all_in_price, is_custom, sort_order, is_active',
     )
     .single();
 
