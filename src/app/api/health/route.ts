@@ -20,15 +20,16 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 export async function GET() {
-  const timestamp = new Date().toISOString();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    return Response.json(
+      { status: 'degraded', timestamp: new Date().toISOString() },
+      { status: 200 }
+    );
+  }
 
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) {
-      return Response.json({ status: 'degraded', timestamp }, { status: 200 });
-    }
-
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const result = await withTimeout(
       Promise.resolve(supabase.from('centers').select('id').limit(1).maybeSingle()),
@@ -36,11 +37,20 @@ export async function GET() {
     );
 
     if (result.error) {
-      return Response.json({ status: 'degraded', timestamp }, { status: 200 });
+      return Response.json(
+        { status: 'degraded', timestamp: new Date().toISOString() },
+        { status: 200 }
+      );
     }
 
-    return Response.json({ status: 'ok', timestamp }, { status: 200 });
+    return Response.json(
+      { status: 'ok', timestamp: new Date().toISOString() },
+      { status: 200 }
+    );
   } catch {
-    return Response.json({ status: 'degraded', timestamp }, { status: 200 });
+    return Response.json(
+      { status: 'degraded', timestamp: new Date().toISOString() },
+      { status: 200 }
+    );
   }
 }
