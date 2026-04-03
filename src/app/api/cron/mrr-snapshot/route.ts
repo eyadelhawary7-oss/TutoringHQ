@@ -1,13 +1,12 @@
 /**
  * Daily MRR snapshot — stores aggregates in mrr_snapshots (idempotent per snapshot_date).
- * Invoked via Supabase pg_cron + net.http_post with Bearer CRON_SECRET.
  */
 
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorization');
+  const authHeader = req.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -29,7 +28,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (pausedError) {
-    console.error('[mrr-snapshot] platform_config error:', pausedError);
+    console.error('[mrr-snapshot] platform_config:', pausedError);
     return Response.json({ error: pausedError.message }, { status: 500 });
   }
 
@@ -37,16 +36,15 @@ export async function POST(req: NextRequest) {
     return Response.json({ skipped: true, reason: 'cron_paused' }, { status: 200 });
   }
 
-  // Aligns with Postgres CURRENT_DATE-style boundaries using UTC calendar dates (Supabase default).
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const yesterdayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
+  const snapshot_date = new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const yesterdayUtc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - 1));
   const yesterdayStr = yesterdayUtc.toISOString().slice(0, 10);
   const yesterdayStart = `${yesterdayStr}T00:00:00.000Z`;
-  const todayStart = `${today}T00:00:00.000Z`;
 
-  // mrr: COALESCE(SUM(billing_amount), 0) FROM centers WHERE status = 'active'
-  // active_centers / new_centers / churned_centers: COUNT(*) with same filters as specified SQL
+  // mrr: COALESCE(SUM(billing_amount), 0) WHERE status = 'active'
+  // new_centers: approved_at >= CURRENT_DATE - INTERVAL '1 day' (≥ start of yesterday, UTC)
+  // churned_centers: auto_suspend_at = CURRENT_DATE - 1 (calendar date equality)
   const [billingRes, activeCountRes, newCountRes, churnedRes] = await Promise.all([
     supabase.from('centers').select('billing_amount').eq('status', 'active'),
     supabase.from('centers').select('*', { count: 'exact', head: true }).eq('status', 'active'),
@@ -59,8 +57,7 @@ export async function POST(req: NextRequest) {
       .from('centers')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'suspended')
-      .gte('auto_suspend_at', yesterdayStart)
-      .lt('auto_suspend_at', todayStart),
+      .eq('auto_suspend_at', yesterdayStr),
   ]);
 
   const qErr =
@@ -76,10 +73,9 @@ export async function POST(req: NextRequest) {
   const new_centers = newCountRes.count ?? 0;
   const churned_centers = churnedRes.count ?? 0;
 
-  // ON CONFLICT (snapshot_date) DO NOTHING — idempotent
   const { error: upsertError } = await supabase.from('mrr_snapshots').upsert(
     {
-      snapshot_date: today,
+      snapshot_date,
       mrr,
       active_centers,
       new_centers,
@@ -96,7 +92,7 @@ export async function POST(req: NextRequest) {
   return Response.json(
     {
       success: true,
-      snapshot_date: today,
+      snapshot_date,
       mrr,
       active_centers,
       new_centers,
