@@ -115,6 +115,7 @@ export async function GET(request: Request) {
       billing_amount?: number | null;
       all_in_price?: number | null;
       credit_balance?: number | null;
+      credit_reserved?: number | null;
       instapay_number?: string | null;
       upgrade_count_this_period?: number | null;
       suspended_at?: string | null;
@@ -123,7 +124,7 @@ export async function GET(request: Request) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
         .select(
-          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, instapay_number, upgrade_count_this_period, suspended_at',
+          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, credit_reserved, instapay_number, upgrade_count_this_period, suspended_at',
         )
         .eq('id', userRecord.center_id)
         .single();
@@ -157,6 +158,7 @@ export async function GET(request: Request) {
           billing_amount: cr.billing_amount != null ? Number(cr.billing_amount) : undefined,
           all_in_price: cr.all_in_price != null ? Number(cr.all_in_price) : undefined,
           credit_balance: cr.credit_balance != null ? Number(cr.credit_balance) : undefined,
+          credit_reserved: cr.credit_reserved != null ? Number(cr.credit_reserved) : undefined,
           instapay_number: (cr.instapay_number as string | null) ?? undefined,
           upgrade_count_this_period:
             cr.upgrade_count_this_period != null ? Number(cr.upgrade_count_this_period) : undefined,

@@ -1,6 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
@@ -21,6 +29,12 @@ import {
   getReactivationTier,
   getReactivationAmount,
 } from '@/lib/billingEngine';
+import {
+  getTodayCairo,
+  isWithdrawalWindowOpen,
+  nextQuarterFirstOnOrAfter,
+  nextProcessingQuarterStart,
+} from '@/lib/cairoBillingCalendar';
 
 const SUGGESTED_RESALE_EGP = 25;
 
@@ -92,6 +106,8 @@ type CenterRow = {
   parent_pack_active_parents?: number | null;
   announcement_balance?: number | string | null;
   credit_balance?: number | null;
+  credit_reserved?: number | null;
+  instapay_number?: string | null;
   upgrade_count_this_period?: number | null;
   suspended_at?: string | null;
 };
@@ -117,6 +133,12 @@ type PlanRequestRow = {
 
 function formatNum(n: number | null | undefined): string {
   return (Number(n) || 0).toLocaleString('en-US');
+}
+
+function maskInstapay(raw: string | null | undefined): string {
+  const s = String(raw ?? '').replace(/\s/g, '');
+  if (s.length < 7) return '••••••';
+  return `${s.slice(0, 3)}XXXXX${s.slice(-3)}`;
 }
 
 type CostSummary = {
@@ -330,6 +352,15 @@ export default function BillingPage() {
   const [useCredits, setUseCredits] = useState(false);
   const [reactivationLoading, setReactivationLoading] = useState(false);
   const [reactivationError, setReactivationError] = useState<string | null>(null);
+  const [withdrawAmount, setWithdrawAmount] = useState(2000);
+  const [withdrawalSubmitting, setWithdrawalSubmitting] = useState(false);
+  const [withdrawalError, setWithdrawalError] = useState<string | null>(null);
+  const [withdrawalSuccess, setWithdrawalSuccess] = useState<{
+    cashAmount: number;
+    instapay: string;
+    processingDate: string;
+  } | null>(null);
+  const withdrawalSectionRef = useRef<HTMLElement | null>(null);
 
   const refresh = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -514,6 +545,28 @@ export default function BillingPage() {
   const packReq = (center?.pack_request_status ?? 'none').toLowerCase();
   const profitPerParent = SUGGESTED_RESALE_EGP - packPrice;
   const monthlyPackCost = packParents * packPrice;
+
+  const creditBal = Number(center?.credit_balance ?? 0);
+  const creditReserved = Number(center?.credit_reserved ?? 0);
+  const availableCredits = Math.max(0, creditBal - creditReserved);
+  const todayCairo = getTodayCairo();
+  const withdrawalWindowOpen = isWithdrawalWindowOpen();
+  const nextWithdrawalWindowYmd = nextQuarterFirstOnOrAfter(todayCairo);
+  const nextWithdrawalWindowLabel = (() => {
+    const d = new Date(`${nextWithdrawalWindowYmd}T12:00:00`);
+    return Number.isNaN(d.getTime())
+      ? nextWithdrawalWindowYmd
+      : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  })();
+
+  useEffect(() => {
+    if (availableCredits >= 2000) {
+      setWithdrawAmount((v) => {
+        const n = Math.floor(Number(v)) || 2000;
+        return Math.min(Math.max(n, 2000), availableCredits);
+      });
+    }
+  }, [availableCredits]);
 
   const centerStatusLower = (center?.status ?? '').toLowerCase();
   const canPlanChange =
@@ -880,6 +933,102 @@ export default function BillingPage() {
   const cairoFont = { fontFamily: 'var(--font-cairo), Cairo, sans-serif' } as const;
   const numFont = { fontFamily: 'ui-sans-serif, system-ui, sans-serif' } as const;
 
+  const openInvoicePdf = useCallback(
+    async (e: MouseEvent<HTMLAnchorElement>, invoiceId: string) => {
+      e.preventDefault();
+      if (!ownerOk) return;
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) {
+          toast.error(t('loadError'));
+          return;
+        }
+        const res = await fetch(`/api/invoices/${invoiceId}/pdf`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
+          toast.error(typeof j.error === 'string' ? j.error : t('paymentFailed'));
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const opened = window.open(url, '_blank', 'noopener,noreferrer');
+        if (!opened) {
+          toast.error(t('loadError'));
+          URL.revokeObjectURL(url);
+          return;
+        }
+        setTimeout(() => URL.revokeObjectURL(url), 120_000);
+      } catch {
+        toast.error(t('paymentFailed'));
+      }
+    },
+    [ownerOk, toast, t],
+  );
+
+  const handleWithdrawalSubmit = useCallback(async () => {
+    if (!ownerOk || !withdrawalWindowOpen || !String(center?.instapay_number ?? '').trim()) return;
+    const amt = Math.floor(Number(withdrawAmount));
+    if (!Number.isFinite(amt) || amt < 2000 || amt > availableCredits) {
+      setWithdrawalError(t('withdrawal.insufficient'));
+      return;
+    }
+    setWithdrawalSubmitting(true);
+    setWithdrawalError(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error(t('loadError'));
+      const res = await fetch('/api/billing/withdrawal', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creditAmount: amt }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        cashAmount?: number;
+        instapay?: string;
+        processingDate?: string;
+      };
+      if (!res.ok) {
+        const err = typeof data.error === 'string' ? data.error : '';
+        if (/reserve|Reserve/i.test(err)) {
+          setWithdrawalError(t('withdrawal.reservationFailed'));
+        } else if (/Insufficient/i.test(err)) {
+          setWithdrawalError(t('withdrawal.insufficient'));
+        } else {
+          setWithdrawalError(err || t('paymentFailed'));
+        }
+        return;
+      }
+      const proc =
+        typeof data.processingDate === 'string' && data.processingDate
+          ? data.processingDate
+          : nextProcessingQuarterStart(todayCairo);
+      setWithdrawalSuccess({
+        cashAmount: Number(data.cashAmount ?? amt / 2),
+        instapay: String(data.instapay ?? center?.instapay_number ?? ''),
+        processingDate: proc,
+      });
+      await refresh();
+    } catch (e) {
+      setWithdrawalError(e instanceof Error ? e.message : t('paymentFailed'));
+    } finally {
+      setWithdrawalSubmitting(false);
+    }
+  }, [
+    ownerOk,
+    withdrawalWindowOpen,
+    center?.instapay_number,
+    withdrawAmount,
+    availableCredits,
+    t,
+    refresh,
+    todayCairo,
+  ]);
+
   const renderInvoiceStatusBadge = (st: string) => {
     const base = 'inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold';
     if (st === 'paid' || st === 'approved') {
@@ -935,15 +1084,19 @@ export default function BillingPage() {
       );
     }
     if (st === 'paid' || st === 'approved') {
+      if (!ownerOk) {
+        return <span className="text-slate-400">—</span>;
+      }
       return (
-        <button
-          type="button"
-          disabled
-          title={t('history.pdfComingSoon')}
-          className="cursor-not-allowed rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-400 dark:border-slate-600"
+        <a
+          href={`/api/invoices/${inv.id}/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => void openInvoicePdf(e, inv.id)}
+          className="inline-block rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#0D9488] hover:bg-teal-50 dark:border-slate-600 dark:hover:bg-teal-950/30"
         >
           {t('history.downloadPdf')}
-        </button>
+        </a>
       );
     }
     if (st === 'cancelled' || st === 'canceled') {
@@ -1502,6 +1655,236 @@ export default function BillingPage() {
               </div>
             )}
           </section>
+        ) : null}
+
+        {ownerOk ? (
+          <>
+            {/* SECTION 3: CREDITS BALANCE */}
+            <section
+              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+              aria-labelledby="billing-credits-heading"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2
+                  id="billing-credits-heading"
+                  className="text-lg font-semibold text-slate-900 dark:text-white"
+                  style={cairoFont}
+                >
+                  {t('credits.title')}
+                </h2>
+                {creditBal > 0 ? (
+                  <span
+                    className="rounded-full px-3 py-1 text-sm font-semibold text-teal-800 dark:bg-teal-900/40 dark:text-teal-100"
+                    style={{ backgroundColor: 'rgba(13, 148, 136, 0.15)' }}
+                  >
+                    {formatNum(availableCredits)}
+                  </span>
+                ) : null}
+              </div>
+
+              {creditBal > 0 ? (
+                <div className="mt-4 space-y-4">
+                  <p className="text-3xl font-bold tabular-nums text-slate-900 dark:text-white" style={numFont}>
+                    {t('credits.available', { amount: formatNum(availableCredits) })}
+                  </p>
+                  {creditReserved > 0 ? (
+                    <p className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                      {t('credits.reserved', { amount: formatNum(creditReserved) })}
+                    </p>
+                  ) : null}
+                  <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                    {t('credits.equivalent', { amount: formatNum(availableCredits / 2) })}
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                    {t('credits.expiryNote')}
+                  </p>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => toast.info(t('credits.applyInfo'))}
+                      className="w-full rounded-xl border-2 border-amber-500 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/30 sm:w-auto"
+                      style={cairoFont}
+                    >
+                      {t('credits.applyToInvoice')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        withdrawalSectionRef.current?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        })
+                      }
+                      className="w-full rounded-xl border-2 border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto"
+                      style={cairoFont}
+                    >
+                      {t('credits.requestWithdrawal')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-6 flex flex-col items-center py-8 text-center text-slate-500 dark:text-slate-400">
+                  <span className="mb-3 text-4xl opacity-50" aria-hidden>
+                    🪙
+                  </span>
+                  <p className="font-medium text-slate-600 dark:text-slate-300" style={cairoFont}>
+                    {t('credits.empty')}
+                  </p>
+                  <p className="mt-2 max-w-sm text-sm" style={cairoFont}>
+                    {t('credits.earnTip')}
+                  </p>
+                </div>
+              )}
+            </section>
+
+            {/* SECTION 4: WITHDRAWAL */}
+            <section
+              ref={withdrawalSectionRef}
+              id="billing-withdrawal"
+              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+              aria-labelledby="billing-withdrawal-heading"
+            >
+              {availableCredits < 2000 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                  {t('withdrawal.insufficientNote', { amount: formatNum(availableCredits) })}
+                </p>
+              ) : (
+                <>
+                  <h2
+                    id="billing-withdrawal-heading"
+                    className="text-lg font-semibold text-slate-900 dark:text-white"
+                    style={cairoFont}
+                  >
+                    {t('withdrawal.title')}
+                  </h2>
+                  <div className="mt-4 rounded-xl bg-teal-50 p-4 dark:bg-teal-900/20">
+                    <p className="font-semibold text-slate-900 dark:text-teal-50" style={cairoFont}>
+                      {t('withdrawal.rate')}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-teal-100/90" style={cairoFont}>
+                      {t('withdrawal.fee')}
+                    </p>
+                  </div>
+
+                  {String(center?.instapay_number ?? '').trim() ? (
+                    <p className="mt-4 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                      {t('withdrawal.instapaySet', { number: maskInstapay(center?.instapay_number) })}
+                    </p>
+                  ) : (
+                    <div
+                      className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                      style={cairoFont}
+                    >
+                      <p>{t('withdrawal.noInstapay')}</p>
+                      <Link
+                        href="/settings"
+                        className="mt-2 inline-block font-semibold hover:underline"
+                        style={{ color: '#0D9488' }}
+                      >
+                        {t('withdrawal.settingsLink')}
+                      </Link>
+                    </div>
+                  )}
+
+                  <div className="mt-4">
+                    {withdrawalWindowOpen ? (
+                      <span
+                        className="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200"
+                        style={cairoFont}
+                      >
+                        {t('withdrawal.windowOpen')}
+                      </span>
+                    ) : (
+                      <div className="space-y-1">
+                        <span
+                          className="inline-block rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-200"
+                          style={cairoFont}
+                        >
+                          {t('withdrawal.windowClosed', { date: nextWithdrawalWindowLabel })}
+                        </span>
+                        <p className="text-xs text-slate-500 dark:text-slate-400" style={cairoFont}>
+                          {t('withdrawal.quarterly')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {withdrawalSuccess ? (
+                    <div
+                      className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100"
+                      style={cairoFont}
+                    >
+                      <p className="font-semibold">{t('withdrawal.successTitle')}</p>
+                      <p className="mt-2">
+                        {t('withdrawal.successAmount', {
+                          amount: formatNum(withdrawalSuccess.cashAmount),
+                          number: withdrawalSuccess.instapay,
+                        })}
+                      </p>
+                      <p className="mt-1">
+                        {t('withdrawal.successDate', {
+                          date: new Date(`${withdrawalSuccess.processingDate}T12:00:00`).toLocaleDateString(
+                            'en-US',
+                            { year: 'numeric', month: 'short', day: 'numeric' },
+                          ),
+                        })}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {withdrawalError ? (
+                    <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
+                      {withdrawalError}
+                    </p>
+                  ) : null}
+
+                  {String(center?.instapay_number ?? '').trim() && withdrawalWindowOpen ? (
+                    <div className="mt-6 space-y-3">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300" style={cairoFont}>
+                        {t('withdrawal.amountLabel')}
+                      </label>
+                      <input
+                        type="number"
+                        min={2000}
+                        step={100}
+                        max={availableCredits}
+                        value={withdrawAmount}
+                        onChange={(e) => {
+                          setWithdrawalSuccess(null);
+                          setWithdrawAmount(Number(e.target.value));
+                        }}
+                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 tabular-nums dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                      />
+                      <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                        {t('withdrawal.youReceive', {
+                          amount: formatNum(Math.max(0, withdrawAmount) / 2),
+                        })}
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                        {t('withdrawal.platformFee', {
+                          amount: formatNum(Math.max(0, withdrawAmount) / 2),
+                        })}
+                      </p>
+                      <button
+                        type="button"
+                        disabled={
+                          withdrawalSubmitting ||
+                          Math.floor(Number(withdrawAmount)) < 2000 ||
+                          !withdrawalWindowOpen ||
+                          !String(center?.instapay_number ?? '').trim()
+                        }
+                        onClick={() => void handleWithdrawalSubmit()}
+                        className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                        style={{ backgroundColor: '#0D9488' }}
+                      >
+                        {withdrawalSubmitting ? t('loadingShort') : t('withdrawal.submit')}
+                      </button>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </section>
+          </>
         ) : null}
 
         {showReactivation && reactivationCalc && center?.suspended_at ? (
