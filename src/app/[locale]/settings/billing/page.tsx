@@ -1,14 +1,80 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
-import { normalizeBillingPeriod, PLANS, isPlanKey, type PlanKey } from '@/lib/pricing';
+import {
+  normalizeBillingPeriod,
+  PLANS,
+  isPlanKey,
+  getChargeFromQuarterlyAllIn,
+  type PlanKey,
+  type BillingPeriod,
+} from '@/lib/pricing';
 import { FEATURES } from '@/lib/features';
+import {
+  getUpgradeCost,
+  getDailyRate,
+  getUpgradeLimit,
+  getReactivationTier,
+  getReactivationAmount,
+} from '@/lib/billingEngine';
 
 const SUGGESTED_RESALE_EGP = 25;
+
+type CenterPlanKey = 'nano' | 'starter' | 'pro' | 'business' | 'enterprise';
+
+const CENTER_PLAN_KEYS: readonly CenterPlanKey[] = [
+  'nano',
+  'starter',
+  'pro',
+  'business',
+  'enterprise',
+];
+
+/** Rank within center-facing plans only; unknown/custom plans sort after enterprise. */
+function planRank(plan: string): number {
+  const i = CENTER_PLAN_KEYS.indexOf(plan as CenterPlanKey);
+  if (i >= 0) return i + 1;
+  return CENTER_PLAN_KEYS.length + 1;
+}
+
+type PricingPlanRow = {
+  id?: string;
+  plan_key?: string | null;
+  monthly_fee?: number | string | null;
+  all_in_price?: number | string | null;
+  students_per_week_limit?: number | string | null;
+};
+
+function rowPlanKey(row: PricingPlanRow): string {
+  return String(row.plan_key ?? row.id ?? '');
+}
+
+function pricingForPlan(
+  planKey: string,
+  rows: PricingPlanRow[],
+): { allIn: number; monthlyFee: number; students: number } {
+  const row = rows.find((r) => rowPlanKey(r) === planKey);
+  if (row && row.all_in_price != null && Number(row.all_in_price) > 0) {
+    const pk = isPlanKey(planKey) ? planKey : 'starter';
+    const def = PLANS[pk];
+    return {
+      allIn: Number(row.all_in_price),
+      monthlyFee: Number(row.monthly_fee ?? def.monthlyListPrice),
+      students: Number(row.students_per_week_limit ?? def.weeklyStudentLimit ?? 0),
+    };
+  }
+  const pk = isPlanKey(planKey) ? planKey : 'starter';
+  const p = PLANS[pk];
+  return {
+    allIn: p.quarterlyAllIn,
+    monthlyFee: p.monthlyListPrice,
+    students: p.weeklyStudentLimit ?? 0,
+  };
+}
 
 type CenterRow = {
   plan?: string;
@@ -16,6 +82,7 @@ type CenterRow = {
   billing_period?: string | null;
   next_payment_due?: string | null;
   all_in_price?: number | null;
+  billing_amount?: number | null;
   billing_status?: string;
   subscription_status?: string;
   status?: string;
@@ -24,6 +91,9 @@ type CenterRow = {
   pack_price_per_parent?: number | string | null;
   parent_pack_active_parents?: number | null;
   announcement_balance?: number | string | null;
+  credit_balance?: number | null;
+  upgrade_count_this_period?: number | null;
+  suspended_at?: string | null;
 };
 
 type InvoiceRow = {
@@ -49,34 +119,185 @@ function formatNum(n: number | null | undefined): string {
   return (Number(n) || 0).toLocaleString('en-US');
 }
 
+type CostSummary = {
+  daysRemaining: number;
+  dailyRateDifference: number;
+  amountDue: number;
+};
+
 function PaymobModal({
   iframeUrl,
+  sessionId,
+  invoicePollId,
   title,
   closeLabel,
   onClose,
+  onSuccess,
+  onError,
 }: {
   iframeUrl: string;
+  sessionId: string | null;
+  invoicePollId: string | null;
   title: string;
   closeLabel: string;
   onClose: () => void;
+  onSuccess: () => void;
+  onError: () => void;
 }) {
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  onSuccessRef.current = onSuccess;
+  onErrorRef.current = onError;
+
+  useEffect(() => {
+    const pollId = sessionId ?? invoicePollId;
+    if (!pollId) return;
+    const interval = setInterval(async () => {
+      const qs = sessionId
+        ? `paymobOrderId=${encodeURIComponent(sessionId)}`
+        : `invoiceId=${encodeURIComponent(invoicePollId!)}`;
+      const res = await fetch(`/api/paymob/invoice-status?${qs}`);
+      const data = (await res.json()) as { status?: string; paid?: boolean; failed?: boolean };
+      if (data.status === 'paid' || data.paid === true) {
+        clearInterval(interval);
+        onSuccessRef.current();
+      }
+      if (data.status === 'failed' || data.failed === true) {
+        clearInterval(interval);
+        onErrorRef.current();
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [sessionId, invoicePollId]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white dark:bg-slate-900">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
-          <span className="font-semibold text-slate-800 dark:text-slate-100">{title}</span>
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white">
+        <div className="flex items-center border-b border-slate-200 px-4 py-3">
+          <span className="font-semibold text-slate-800">{title}</span>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+            className="ms-auto text-slate-500 hover:text-slate-800"
             aria-label={closeLabel}
           >
             ✕
           </button>
         </div>
-        <iframe src={iframeUrl} className="w-full" style={{ height: '600px' }} title="Paymob Payment" />
+        <iframe src={iframeUrl} className="h-[600px] w-full" title="Paymob" />
       </div>
     </div>
+  );
+}
+
+function PlanCard({
+  nameAr,
+  nameEn,
+  price,
+  period,
+  studentLimit,
+  studentsLine,
+  isSelected,
+  isCurrent,
+  currentLabel,
+  onClick,
+  cairoFont,
+  numFont,
+}: {
+  nameAr: string;
+  nameEn: string;
+  price: number;
+  period: string;
+  studentLimit: number;
+  studentsLine: string;
+  isSelected: boolean;
+  isCurrent: boolean;
+  currentLabel: string;
+  onClick: () => void;
+  cairoFont: CSSProperties;
+  numFont: CSSProperties;
+}) {
+  const perStudent = studentLimit > 0 ? price / studentLimit : 0;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full rounded-xl border-2 p-4 text-start transition-shadow ${
+        isSelected ? 'border-teal-600 ring-2 ring-teal-600/30' : 'border-slate-200 hover:border-slate-300'
+      } dark:border-slate-600`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="font-semibold text-slate-900 dark:text-white" style={cairoFont}>
+            {nameAr}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{nameEn}</p>
+        </div>
+        {isCurrent ? (
+          <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-800 dark:bg-teal-900/40 dark:text-teal-200">
+            {currentLabel}
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+        {studentsLine}
+      </p>
+      <p className="mt-1 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
+        {formatNum(price)} EGP / {period}
+      </p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums" style={numFont}>
+        {formatNum(Math.round(perStudent * 100) / 100)} EGP / student
+      </p>
+    </button>
+  );
+}
+
+function PeriodCard({
+  label,
+  price,
+  isSelected,
+  isCurrent,
+  badge,
+  currentLabel,
+  onClick,
+  cairoFont,
+  numFont,
+}: {
+  label: string;
+  price: number;
+  isSelected: boolean;
+  isCurrent: boolean;
+  badge: string | null;
+  currentLabel: string;
+  onClick: () => void;
+  cairoFont: CSSProperties;
+  numFont: CSSProperties;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full rounded-xl border-2 p-4 text-start transition-shadow ${
+        isSelected ? 'border-teal-600 ring-2 ring-teal-600/30' : 'border-slate-200 hover:border-slate-300'
+      } dark:border-slate-600`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-semibold text-slate-900 dark:text-white" style={cairoFont}>
+          {label}
+        </span>
+        {badge ? (
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+            {badge}
+          </span>
+        ) : null}
+      </div>
+      {isCurrent ? (
+        <p className="mt-1 text-xs font-medium text-teal-600 dark:text-teal-400">{currentLabel}</p>
+      ) : null}
+      <p className="mt-2 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
+        {formatNum(price)} EGP
+      </p>
+    </button>
   );
 }
 
@@ -92,9 +313,23 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [packRequestLoading, setPackRequestLoading] = useState(false);
-  const [paymobIframeUrl, setPaymobIframeUrl] = useState<string | null>(null);
-  const [pollInvoiceId, setPollInvoiceId] = useState<string | null>(null);
+  const [paymobUrl, setPaymobUrl] = useState<string | null>(null);
+  const [paymobSessionId, setPaymobSessionId] = useState<string | null>(null);
+  const [paymobInvoicePollId, setPaymobInvoicePollId] = useState<string | null>(null);
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
+  const [pricingRows, setPricingRows] = useState<PricingPlanRow[]>([]);
+  const [activeTab, setActiveTab] = useState<'upgrade' | 'downgrade'>('upgrade');
+  const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | ''>('');
+  const [selectedPlan, setSelectedPlan] = useState<CenterPlanKey | ''>('');
+  const [costSummary, setCostSummary] = useState<CostSummary | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [downgradeError, setDowngradeError] = useState<string | null>(null);
+  const [downgradeLoading, setDowngradeLoading] = useState(false);
+  const [showReactivation, setShowReactivation] = useState(false);
+  const [useCredits, setUseCredits] = useState(false);
+  const [reactivationLoading, setReactivationLoading] = useState(false);
+  const [reactivationError, setReactivationError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -187,31 +422,51 @@ export default function BillingPage() {
     };
   }, [t]);
 
+  const closePaymob = useCallback(() => {
+    setPaymobUrl(null);
+    setPaymobSessionId(null);
+    setPaymobInvoicePollId(null);
+  }, []);
+
+  const onPaymobSuccess = useCallback(() => {
+    closePaymob();
+    toast.success(t('paymentSuccess'));
+    void refresh();
+  }, [closePaymob, toast, t, refresh]);
+
+  const onPaymobError = useCallback(() => {
+    closePaymob();
+    toast.error(t('paymentFailed'));
+  }, [closePaymob, toast, t]);
+
   useEffect(() => {
-    if (!paymobIframeUrl || !pollInvoiceId) return;
-    const tick = async () => {
-      try {
-        const r = await fetch(`/api/paymob/invoice-status?invoiceId=${encodeURIComponent(pollInvoiceId)}`);
-        const j = (await r.json()) as { paid?: boolean; failed?: boolean };
-        if (j.paid) {
-          setPaymobIframeUrl(null);
-          setPollInvoiceId(null);
-          toast.success(t('paymentSuccess'));
-          await refresh();
-        }
-        if (j.failed) {
-          setPaymobIframeUrl(null);
-          setPollInvoiceId(null);
-          toast.error(t('paymentFailed'));
-        }
-      } catch {
-        /* keep polling */
-      }
+    if (userRole !== 'owner') return;
+    let cancelled = false;
+    (async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token || cancelled) return;
+      const res = await fetch('/api/settings/billing', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok || cancelled) return;
+      const j = (await res.json()) as { plans?: PricingPlanRow[] };
+      if (!Array.isArray(j.plans) || cancelled) return;
+      const keyed = j.plans.filter((p) =>
+        CENTER_PLAN_KEYS.includes(rowPlanKey(p) as CenterPlanKey),
+      );
+      setPricingRows(keyed.length ? keyed : []);
+    })();
+    return () => {
+      cancelled = true;
     };
-    tick();
-    const id = setInterval(tick, 3000);
-    return () => clearInterval(id);
-  }, [paymobIframeUrl, pollInvoiceId, refresh, t, toast]);
+  }, [userRole]);
+
+  useEffect(() => {
+    setSelectedPeriod('');
+    setSelectedPlan('');
+    setCostSummary(null);
+    setPlanError(null);
+    setDowngradeError(null);
+  }, [activeTab]);
 
   const ownerOk = userRole === 'owner';
 
@@ -260,6 +515,251 @@ export default function BillingPage() {
   const profitPerParent = SUGGESTED_RESALE_EGP - packPrice;
   const monthlyPackCost = packParents * packPrice;
 
+  const centerStatusLower = (center?.status ?? '').toLowerCase();
+  const canPlanChange =
+    ownerOk &&
+    !!center &&
+    centerStatusLower === 'active' &&
+    !isSuspendedCenter &&
+    (bsLower === 'paid' || bsLower === 'active') &&
+    subLower === 'active' &&
+    !isOverdue;
+
+  const currentRank = planRank(center?.plan ?? 'starter');
+
+  const upgradePlanOptions = useMemo(
+    () => CENTER_PLAN_KEYS.filter((k) => planRank(k) > currentRank),
+    [currentRank],
+  );
+
+  const downgradePlanOptions = useMemo(() => {
+    const cp = center?.plan ?? 'starter';
+    if (cp === 'nano') return [];
+    const cr = planRank(cp);
+    return CENTER_PLAN_KEYS.filter((k) => planRank(k) < cr);
+  }, [center?.plan]);
+
+  const periodRefKey: PlanKey = useMemo(() => {
+    if (activeTab === 'downgrade' && selectedPlan) {
+      return selectedPlan as PlanKey;
+    }
+    return planKey;
+  }, [activeTab, selectedPlan, planKey]);
+
+  const periodRefPricing = useMemo(
+    () => pricingForPlan(periodRefKey, pricingRows),
+    [periodRefKey, pricingRows],
+  );
+
+  const periodPrices = useMemo(() => {
+    const pk = isPlanKey(periodRefKey) ? periodRefKey : 'starter';
+    const allIn = periodRefPricing.allIn;
+    return {
+      monthly: getChargeFromQuarterlyAllIn(allIn, 'monthly', pk),
+      quarterly: getChargeFromQuarterlyAllIn(allIn, 'quarterly', pk),
+      annual: getChargeFromQuarterlyAllIn(allIn, 'annual', pk),
+    };
+  }, [periodRefKey, periodRefPricing.allIn]);
+
+  useEffect(() => {
+    if (activeTab !== 'upgrade' || !selectedPeriod || !selectedPlan || !npdYmd) {
+      setCostSummary(null);
+      return;
+    }
+    const pricing = pricingForPlan(selectedPlan, pricingRows);
+    const currentPricing = pricingForPlan(planKey, pricingRows);
+    const currentAllIn = Number(center?.all_in_price ?? 0) || currentPricing.allIn;
+    const newPeriodPrice = getChargeFromQuarterlyAllIn(
+      pricing.allIn,
+      selectedPeriod as BillingPeriod,
+      selectedPlan as PlanKey,
+    );
+    const currentPeriodPrice = getChargeFromQuarterlyAllIn(currentAllIn, bp, planKey);
+    const cost = getUpgradeCost({
+      newPlanPrice: newPeriodPrice,
+      currentPlanPrice: currentPeriodPrice,
+      newBillingPeriod: selectedPeriod as BillingPeriod,
+      currentBillingPeriod: bp,
+      nextPaymentDue: new Date(`${npdYmd}T12:00:00`),
+    });
+    const amountDue = Math.round(Math.max(0, cost.amountDue) * 100) / 100;
+    setCostSummary({
+      daysRemaining: cost.daysRemaining,
+      dailyRateDifference: cost.dailyRateDifference,
+      amountDue,
+    });
+  }, [activeTab, selectedPeriod, selectedPlan, npdYmd, pricingRows, center?.all_in_price, bp, planKey]);
+
+  const downgradePreview = useMemo(() => {
+    if (activeTab !== 'downgrade' || !selectedPeriod || !selectedPlan || !npdYmd || !center) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(`${npdYmd}T12:00:00`);
+    due.setHours(0, 0, 0, 0);
+    const remainingDays = Math.max(
+      0,
+      Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+    );
+    const currentAllIn =
+      Number(center.all_in_price ?? 0) || pricingForPlan(planKey, pricingRows).allIn;
+    const newP = pricingForPlan(selectedPlan, pricingRows);
+    const newPeriodPrice = getChargeFromQuarterlyAllIn(
+      newP.allIn,
+      selectedPeriod as BillingPeriod,
+      selectedPlan as PlanKey,
+    );
+    const currentPeriodPrice = getChargeFromQuarterlyAllIn(currentAllIn, bp, planKey);
+    const currentDaily = getDailyRate(currentPeriodPrice, bp);
+    const newDaily = getDailyRate(newPeriodPrice, selectedPeriod as BillingPeriod);
+    const earned = Math.round(Math.max(0, (currentDaily - newDaily) * remainingDays) * 100) / 100;
+    return { currentDaily, newDaily, remainingDays, earned };
+  }, [activeTab, selectedPeriod, selectedPlan, npdYmd, center, bp, planKey, pricingRows]);
+
+  const reactivationCalc = useMemo(() => {
+    const ba = Number(center?.billing_amount ?? 0);
+    if (!center?.suspended_at || !Number.isFinite(ba) || ba <= 0) return null;
+    const tier = getReactivationTier(new Date(center.suspended_at));
+    const dailyRate = getDailyRate(ba, bp);
+    const calc = getReactivationAmount({ tier, nextPeriodAmount: ba, dailyRate });
+    return { tier, ...calc, nextPeriodAmount: ba, dailyRate };
+  }, [center?.suspended_at, center?.billing_amount, bp]);
+
+  const upgradeUsed = Number(center?.upgrade_count_this_period ?? 0);
+  const upgradeLimit = getUpgradeLimit(bp);
+  const upgradeLimitReached = upgradeUsed >= upgradeLimit;
+
+  const handleUpgradePay = async () => {
+    if (!selectedPlan || !selectedPeriod || !FEATURES.PAYMOB_ENABLED) {
+      if (!FEATURES.PAYMOB_ENABLED) toast.info(t('history.payDisabled'));
+      return;
+    }
+    setPaymentLoading(true);
+    setPlanError(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error(t('loadError'));
+      const res = await fetch('/api/billing/upgrade', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ newPlan: selectedPlan, newBillingPeriod: selectedPeriod }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        paymobUrl?: string;
+        paymobOrderId?: string;
+      };
+      if (!res.ok) {
+        setPlanError(typeof data.error === 'string' ? data.error : t('paymentFailed'));
+        return;
+      }
+      if (data.paymobUrl && data.paymobOrderId) {
+        setPaymobUrl(data.paymobUrl);
+        setPaymobSessionId(data.paymobOrderId);
+        setPaymobInvoicePollId(null);
+      }
+    } catch (e) {
+      setPlanError(e instanceof Error ? e.message : t('paymentFailed'));
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleDowngradeConfirm = async () => {
+    if (!selectedPlan || !selectedPeriod) return;
+    setDowngradeLoading(true);
+    setDowngradeError(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error(t('loadError'));
+      const res = await fetch('/api/billing/downgrade', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ newPlan: selectedPlan, newBillingPeriod: selectedPeriod }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setDowngradeError(typeof data.error === 'string' ? data.error : t('paymentFailed'));
+        return;
+      }
+      toast.success(t('downgrade.success'));
+      await refresh();
+    } catch (e) {
+      setDowngradeError(e instanceof Error ? e.message : t('paymentFailed'));
+    } finally {
+      setDowngradeLoading(false);
+    }
+  };
+
+  const handleReactivationPay = async () => {
+    if (!reactivationCalc) return;
+    const creditBal = Number(center?.credit_balance ?? 0);
+    const total = reactivationCalc.total;
+    const appliedPreview = useCredits ? Math.min(creditBal, total) : 0;
+    const viaPayPreview = Math.max(0, total - appliedPreview);
+    if (viaPayPreview > 0 && !FEATURES.PAYMOB_ENABLED) {
+      toast.info(t('history.payDisabled'));
+      return;
+    }
+    setReactivationLoading(true);
+    setReactivationError(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error(t('loadError'));
+      const res = await fetch('/api/billing/reactivate', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          useCredits,
+          creditAmount: useCredits ? Math.min(creditBal, total) : 0,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        reactivated?: boolean;
+        paymobUrl?: string;
+        paymobOrderId?: string;
+        reused?: boolean;
+      };
+      if (!res.ok) {
+        setReactivationError(typeof data.error === 'string' ? data.error : t('paymentFailed'));
+        return;
+      }
+      if (data.reactivated) {
+        toast.success(t('paymentSuccess'));
+        setShowReactivation(false);
+        setUseCredits(false);
+        await refresh();
+        return;
+      }
+      if (data.paymobUrl && data.paymobOrderId) {
+        setPaymobUrl(data.paymobUrl);
+        setPaymobSessionId(data.paymobOrderId);
+        setPaymobInvoicePollId(null);
+        setShowReactivation(false);
+        return;
+      }
+      setReactivationError(t('paymentFailed'));
+    } catch (e) {
+      setReactivationError(e instanceof Error ? e.message : t('paymentFailed'));
+    } finally {
+      setReactivationLoading(false);
+    }
+  };
+
   const handlePackRequest = async () => {
     if (!ownerOk) return;
     setPackRequestLoading(true);
@@ -305,9 +805,11 @@ export default function BillingPage() {
         return;
       }
       const iframeUrl = j.iframeUrl as string | undefined;
+      const orderId = typeof j.orderId === 'string' ? j.orderId : '';
       if (iframeUrl) {
-        setPaymobIframeUrl(iframeUrl);
-        setPollInvoiceId(invoiceId);
+        setPaymobUrl(iframeUrl);
+        setPaymobSessionId(orderId || null);
+        setPaymobInvoicePollId(orderId ? null : invoiceId);
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t('paymentFailed'));
@@ -571,16 +1073,19 @@ export default function BillingPage() {
                 <span aria-hidden>⚠️</span>
                 <span>{t('currentPlan.overdue')}</span>
               </p>
-              {ownerOk && (
+              {ownerOk && isSuspendedCenter ? (
                 <button
                   type="button"
                   className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm md:w-auto"
                   style={{ backgroundColor: '#F59E0B' }}
-                  onClick={() => toast.info(t('page.reactivateSoon'))}
+                  onClick={() => {
+                    setReactivationError(null);
+                    setShowReactivation(true);
+                  }}
                 >
                   {t('currentPlan.reactivate')}
                 </button>
-              )}
+              ) : null}
             </div>
           )}
 
@@ -594,6 +1099,544 @@ export default function BillingPage() {
             </div>
           )}
         </section>
+
+        {/* SECTION 2: UPGRADE / DOWNGRADE */}
+        {canPlanChange ? (
+          <section
+            className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+            aria-labelledby="billing-plan-change-heading"
+          >
+            <h2
+              id="billing-plan-change-heading"
+              className="text-lg font-semibold text-slate-900 dark:text-white"
+              style={cairoFont}
+            >
+              {activeTab === 'upgrade' ? t('upgrade.title') : t('downgrade.title')}
+            </h2>
+            <div className="mt-4 flex gap-4 border-b border-slate-200 dark:border-slate-600">
+              <button
+                type="button"
+                onClick={() => setActiveTab('upgrade')}
+                className={`pb-2 ps-1 pe-1 text-sm ${
+                  activeTab === 'upgrade'
+                    ? 'border-b-2 border-teal-600 font-semibold text-teal-600'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+                style={cairoFont}
+              >
+                {t('upgrade.title')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('downgrade')}
+                className={`pb-2 ps-1 pe-1 text-sm ${
+                  activeTab === 'downgrade'
+                    ? 'border-b-2 border-teal-600 font-semibold text-teal-600'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+                style={cairoFont}
+              >
+                {t('downgrade.title')}
+              </button>
+            </div>
+
+            {activeTab === 'upgrade' ? (
+              <div className="mt-6 space-y-6">
+                <div>
+                  <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                    {t('upgrade.usedOf', { used: String(upgradeUsed), limit: String(upgradeLimit) })}
+                  </p>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    <div
+                      className="h-2 rounded-full bg-teal-600 transition-all"
+                      style={{
+                        inlineSize: `${Math.min(100, upgradeLimit ? (upgradeUsed / upgradeLimit) * 100 : 0)}%`,
+                      }}
+                    />
+                  </div>
+                  {upgradeLimitReached ? (
+                    <p className="mt-2 text-sm text-amber-700 dark:text-amber-300" style={cairoFont}>
+                      {t('upgrade.limitReached')}
+                      {npdYmd
+                        ? ` — ${new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US')}`
+                        : ''}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                    {t('upgrade.choosePeriod')}
+                  </h3>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <PeriodCard
+                      label={t('period.monthly')}
+                      price={periodPrices.monthly}
+                      isSelected={selectedPeriod === 'monthly'}
+                      isCurrent={bp === 'monthly'}
+                      badge={t('upgrade.monthlyPremiumHint')}
+                      currentLabel={t('upgrade.currentPeriod')}
+                      onClick={() => {
+                        setSelectedPeriod('monthly');
+                        setSelectedPlan('');
+                      }}
+                      cairoFont={cairoFont}
+                      numFont={numFont}
+                    />
+                    <PeriodCard
+                      label={t('period.quarterly')}
+                      price={periodPrices.quarterly}
+                      isSelected={selectedPeriod === 'quarterly'}
+                      isCurrent={bp === 'quarterly'}
+                      badge={t('upgrade.quarterlyDefaultHint')}
+                      currentLabel={t('upgrade.currentPeriod')}
+                      onClick={() => {
+                        setSelectedPeriod('quarterly');
+                        setSelectedPlan('');
+                      }}
+                      cairoFont={cairoFont}
+                      numFont={numFont}
+                    />
+                    <PeriodCard
+                      label={t('period.annual')}
+                      price={periodPrices.annual}
+                      isSelected={selectedPeriod === 'annual'}
+                      isCurrent={bp === 'annual'}
+                      badge={t('upgrade.annualSaveHint')}
+                      currentLabel={t('upgrade.currentPeriod')}
+                      onClick={() => {
+                        setSelectedPeriod('annual');
+                        setSelectedPlan('');
+                      }}
+                      cairoFont={cairoFont}
+                      numFont={numFont}
+                    />
+                  </div>
+                </div>
+
+                {selectedPeriod ? (
+                  <div
+                    className={`transition-opacity duration-300 ${selectedPeriod ? 'opacity-100' : 'opacity-0'}`}
+                  >
+                    <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                      {t('upgrade.choosePlan')}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {upgradePlanOptions.map((pk) => {
+                        const pr = pricingForPlan(pk, pricingRows);
+                        const price = getChargeFromQuarterlyAllIn(
+                          pr.allIn,
+                          selectedPeriod as BillingPeriod,
+                          pk,
+                        );
+                        const periodLabel =
+                          selectedPeriod === 'monthly'
+                            ? t('perMonth')
+                            : selectedPeriod === 'annual'
+                              ? t('perYear')
+                              : t('perQuarter');
+                        return (
+                          <PlanCard
+                            key={pk}
+                            nameAr={t(`planNames.${pk}` as 'billing.planNames.starter')}
+                            nameEn={PLANS[pk].englishName}
+                            price={price}
+                            period={periodLabel}
+                            studentLimit={pr.students}
+                            studentsLine={t('studentsLimit', { limit: formatNum(pr.students) })}
+                            isSelected={selectedPlan === pk}
+                            isCurrent={false}
+                            currentLabel={t('upgrade.currentPeriod')}
+                            onClick={() => setSelectedPlan(pk)}
+                            cairoFont={cairoFont}
+                            numFont={numFont}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+
+                {selectedPeriod && selectedPlan && costSummary ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-900/50">
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                      {t('upgrade.summary')}
+                    </h3>
+                    <dl className="mt-3 space-y-2 text-sm">
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                          {t('upgrade.newPlan')}
+                        </dt>
+                        <dd className="text-end font-medium text-slate-900 dark:text-slate-100" style={cairoFont}>
+                          {t(`planNames.${selectedPlan}` as 'billing.planNames.starter')} / {PLANS[selectedPlan].englishName}
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                          {t('upgrade.newPeriod')}
+                        </dt>
+                        <dd className="text-end text-slate-900 dark:text-slate-100" style={cairoFont}>
+                          {t(`period.${selectedPeriod}` as 'billing.period.monthly')}
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                          {t('upgrade.daysRemaining')}
+                        </dt>
+                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                          {formatNum(costSummary.daysRemaining)}
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                          {t('upgrade.dailyDiff')}
+                        </dt>
+                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                          {formatNum(Math.round(costSummary.dailyRateDifference * 100) / 100)} {t('egp')}
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className="my-3 border-t border-slate-200 dark:border-slate-600" />
+                    <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                      {t('upgrade.amountDue')}
+                    </p>
+                    <p className="text-2xl font-bold text-teal-600 tabular-nums dark:text-teal-400" style={numFont}>
+                      {formatNum(costSummary.amountDue)} {t('egp')}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                      {t('upgrade.nextRenewal')}
+                    </p>
+                    <p className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                      {npdYmd ? new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US') : '—'}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                      {t('upgrade.newMonthlyRate')}
+                    </p>
+                    <p className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                      {formatNum(pricingForPlan(selectedPlan, pricingRows).allIn)} {t('egp')}
+                    </p>
+                    {planError ? (
+                      <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+                        {planError}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={
+                        paymentLoading ||
+                        upgradeLimitReached ||
+                        costSummary.amountDue <= 0 ||
+                        !FEATURES.PAYMOB_ENABLED
+                      }
+                      onClick={() => void handleUpgradePay()}
+                      className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 md:w-full"
+                      style={{ backgroundColor: '#0D9488' }}
+                    >
+                      {paymentLoading ? t('loadingShort') : t('upgrade.proceed')}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="mt-6 space-y-6">
+                <div
+                  className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                  style={cairoFont}
+                >
+                  {t('downgrade.notice')}
+                </div>
+
+                <div>
+                  <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                    {t('downgrade.choosePlan')}
+                  </h3>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {downgradePlanOptions.map((pk) => {
+                      const pr = pricingForPlan(pk, pricingRows);
+                      const price = getChargeFromQuarterlyAllIn(pr.allIn, 'quarterly', pk);
+                      return (
+                        <PlanCard
+                          key={pk}
+                          nameAr={t(`planNames.${pk}` as 'billing.planNames.starter')}
+                          nameEn={PLANS[pk].englishName}
+                          price={price}
+                          period={t('perQuarter')}
+                          studentLimit={pr.students}
+                          studentsLine={t('studentsLimit', { limit: formatNum(pr.students) })}
+                          isSelected={selectedPlan === pk}
+                          isCurrent={planKey === pk}
+                          currentLabel={t('upgrade.currentPeriod')}
+                          onClick={() => {
+                            setSelectedPlan(pk);
+                            setSelectedPeriod('');
+                          }}
+                          cairoFont={cairoFont}
+                          numFont={numFont}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {selectedPlan ? (
+                  <div className="transition-opacity duration-300 opacity-100">
+                    <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                      {t('downgrade.choosePeriod')}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <PeriodCard
+                        label={t('period.monthly')}
+                        price={getChargeFromQuarterlyAllIn(
+                          pricingForPlan(selectedPlan, pricingRows).allIn,
+                          'monthly',
+                          selectedPlan,
+                        )}
+                        isSelected={selectedPeriod === 'monthly'}
+                        isCurrent={bp === 'monthly'}
+                        badge={t('upgrade.monthlyPremiumHint')}
+                        currentLabel={t('upgrade.currentPeriod')}
+                        onClick={() => setSelectedPeriod('monthly')}
+                        cairoFont={cairoFont}
+                        numFont={numFont}
+                      />
+                      <PeriodCard
+                        label={t('period.quarterly')}
+                        price={getChargeFromQuarterlyAllIn(
+                          pricingForPlan(selectedPlan, pricingRows).allIn,
+                          'quarterly',
+                          selectedPlan,
+                        )}
+                        isSelected={selectedPeriod === 'quarterly'}
+                        isCurrent={bp === 'quarterly'}
+                        badge={t('upgrade.quarterlyDefaultHint')}
+                        currentLabel={t('upgrade.currentPeriod')}
+                        onClick={() => setSelectedPeriod('quarterly')}
+                        cairoFont={cairoFont}
+                        numFont={numFont}
+                      />
+                      <PeriodCard
+                        label={t('period.annual')}
+                        price={getChargeFromQuarterlyAllIn(
+                          pricingForPlan(selectedPlan, pricingRows).allIn,
+                          'annual',
+                          selectedPlan,
+                        )}
+                        isSelected={selectedPeriod === 'annual'}
+                        isCurrent={bp === 'annual'}
+                        badge={t('upgrade.annualSaveHint')}
+                        currentLabel={t('upgrade.currentPeriod')}
+                        onClick={() => setSelectedPeriod('annual')}
+                        cairoFont={cairoFont}
+                        numFont={numFont}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {selectedPlan && selectedPeriod && downgradePreview ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-900/50">
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                      {t('downgrade.summary')}
+                    </h3>
+                    <dl className="mt-3 space-y-2 text-sm">
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                          {t('downgrade.currentRate')}
+                        </dt>
+                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                          {formatNum(Math.round(downgradePreview.currentDaily * 100) / 100)} {t('egp')}
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                          {t('downgrade.newRate')}
+                        </dt>
+                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                          {formatNum(Math.round(downgradePreview.newDaily * 100) / 100)} {t('egp')}
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                          {t('upgrade.daysRemaining')}
+                        </dt>
+                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                          {formatNum(downgradePreview.remainingDays)}
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className="my-3 border-t border-slate-200 dark:border-slate-600" />
+                    <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                      {t('downgrade.creditsEarned')}
+                    </p>
+                    <p className="text-2xl font-bold text-teal-600 tabular-nums dark:text-teal-400" style={numFont}>
+                      {formatNum(downgradePreview.earned)} {t('downgrade.creditPoints')}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                      {t('downgrade.currentBalance')}:{' '}
+                      <span className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                        {formatNum(Number(center?.credit_balance ?? 0))}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                      {t('downgrade.newBalance')}:{' '}
+                      <span className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                        {formatNum(Number(center?.credit_balance ?? 0) + downgradePreview.earned)}
+                      </span>
+                    </p>
+                    {downgradeError ? (
+                      <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+                        {downgradeError}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={downgradeLoading}
+                      onClick={() => void handleDowngradeConfirm()}
+                      className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm disabled:opacity-50"
+                      style={{ backgroundColor: '#F59E0B' }}
+                    >
+                      {downgradeLoading ? t('loadingShort') : t('downgrade.confirm')}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </section>
+        ) : null}
+
+        {showReactivation && reactivationCalc && center?.suspended_at ? (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">
+            <div
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="reactivation-title"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <h2 id="reactivation-title" className="text-lg font-bold text-slate-900" style={cairoFont}>
+                  {t('reactivation.title')}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowReactivation(false)}
+                  className="text-slate-500 hover:text-slate-800"
+                  aria-label={t('close')}
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="mt-2 text-sm text-slate-600" style={cairoFont}>
+                {t('reactivation.suspendedSince', {
+                  date: new Date(center.suspended_at).toLocaleDateString('en-US'),
+                })}
+              </p>
+              <div className="mt-3">
+                <span
+                  className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                    reactivationCalc.tier === 'tier1'
+                      ? 'bg-amber-100 text-amber-900'
+                      : 'bg-slate-200 text-slate-800'
+                  }`}
+                  style={cairoFont}
+                >
+                  {reactivationCalc.tier === 'tier1' ? t('reactivation.tier1') : t('reactivation.tier2')}
+                </span>
+              </div>
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                {reactivationCalc.tier === 'tier1' ? (
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between gap-2">
+                      <dt style={cairoFont}>{t('reactivation.fine')}</dt>
+                      <dd className="tabular-nums font-medium" style={numFont}>
+                        {formatNum(Math.round(reactivationCalc.fine * 100) / 100)} {t('egp')}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt style={cairoFont}>{t('reactivation.nextPeriod')}</dt>
+                      <dd className="tabular-nums font-medium" style={numFont}>
+                        {formatNum(reactivationCalc.nextPeriod)} {t('egp')}
+                      </dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between gap-2">
+                      <dt style={cairoFont}>{t('reactivation.fee')}</dt>
+                      <dd className="tabular-nums font-medium" style={numFont}>
+                        {formatNum(Math.round(reactivationCalc.reactivationFee * 100) / 100)} {t('egp')}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt style={cairoFont}>{t('reactivation.nextPeriod')}</dt>
+                      <dd className="tabular-nums font-medium" style={numFont}>
+                        {formatNum(reactivationCalc.nextPeriod)} {t('egp')}
+                      </dd>
+                    </div>
+                  </dl>
+                )}
+                <div className="mt-3 flex justify-between border-t border-slate-200 pt-3">
+                  <span className="font-semibold text-slate-900" style={cairoFont}>
+                    {t('reactivation.total')}
+                  </span>
+                  <span className="tabular-nums font-bold text-slate-900" style={numFont}>
+                    {formatNum(reactivationCalc.total)} {t('egp')}
+                  </span>
+                </div>
+              </div>
+              {Number(center?.credit_balance ?? 0) > 0 ? (
+                <label className="mt-4 flex cursor-pointer items-center gap-3 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={useCredits}
+                    onChange={(e) => setUseCredits(e.target.checked)}
+                    className="size-4 rounded border-slate-300 text-teal-600"
+                  />
+                  <span style={cairoFont}>
+                    {t('reactivation.useCredits', {
+                      amount: formatNum(Number(center?.credit_balance ?? 0)),
+                    })}
+                  </span>
+                </label>
+              ) : null}
+              {useCredits && Number(center?.credit_balance ?? 0) > 0 ? (
+                <div className="mt-2 rounded-lg bg-teal-50 px-3 py-2 text-sm dark:bg-teal-950/30">
+                  <p className="text-slate-700" style={cairoFont}>
+                    {t('reactivation.creditApplied')}: −
+                    {formatNum(Math.min(Number(center?.credit_balance ?? 0), reactivationCalc.total))}{' '}
+                    {t('egp')}
+                  </p>
+                  <p className="text-slate-700" style={cairoFont}>
+                    {t('reactivation.viaPay')}:{' '}
+                    <span className="tabular-nums font-semibold" style={numFont}>
+                      {formatNum(
+                        Math.max(
+                          0,
+                          reactivationCalc.total -
+                            Math.min(Number(center?.credit_balance ?? 0), reactivationCalc.total),
+                        ),
+                      )}{' '}
+                      {t('egp')}
+                    </span>
+                  </p>
+                </div>
+              ) : null}
+              {reactivationError ? (
+                <p className="mt-2 text-sm text-red-600" role="alert">
+                  {reactivationError}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                disabled={reactivationLoading}
+                onClick={() => void handleReactivationPay()}
+                className="mt-6 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                style={{ backgroundColor: '#0D9488' }}
+              >
+                {reactivationLoading ? t('loadingShort') : t('reactivation.proceed')}
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {/* SECTION 5: WA PACK */}
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -852,17 +1895,18 @@ export default function BillingPage() {
         </section>
       </div>
 
-      {paymobIframeUrl && (
+      {paymobUrl && (paymobSessionId || paymobInvoicePollId) ? (
         <PaymobModal
-          iframeUrl={paymobIframeUrl}
+          iframeUrl={paymobUrl}
+          sessionId={paymobSessionId}
+          invoicePollId={paymobInvoicePollId}
           title={t('completePayment')}
           closeLabel={t('close')}
-          onClose={() => {
-            setPaymobIframeUrl(null);
-            setPollInvoiceId(null);
-          }}
+          onClose={closePaymob}
+          onSuccess={onPaymobSuccess}
+          onError={onPaymobError}
         />
-      )}
+      ) : null}
     </div>
   );
 }
