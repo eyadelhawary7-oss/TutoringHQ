@@ -29,6 +29,27 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { supabase } from '@/lib/supabase';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
+import { useTheme } from 'next-themes';
+
+function ThemeToggle() {
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  const isDark = resolvedTheme === 'dark';
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors text-sm"
+      title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+    >
+      <span style={{ fontSize: 16 }}>{isDark ? '☀️' : '🌙'}</span>
+      <span className="hidden lg:block">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+    </button>
+  );
+}
 
 export type AdminTab =
   | 'overview'
@@ -435,6 +456,9 @@ export function AdminSidebar({
             return items;
           })}
         </nav>
+        <div className="shrink-0 p-2 border-t border-slate-800">
+          <ThemeToggle />
+        </div>
       </aside>
 
       {/* Desktop sidebar */}
@@ -595,6 +619,9 @@ export function AdminSidebar({
             return items;
           })}
         </nav>
+        <div className="shrink-0 p-2 border-t border-[var(--color-border-default)]">
+          <ThemeToggle />
+        </div>
       </aside>
     </>
   );

@@ -30,6 +30,7 @@ import PwaInstallBanner from '@/components/PwaInstallBanner';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { SwUpdateBanner } from '@/components/ui/SwUpdateBanner';
 import { PostHogProvider } from '@/components/PostHogProvider';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -108,6 +109,7 @@ export default async function LocaleLayout({
         suppressHydrationWarning
       >
         <PostHogProvider>
+        <ThemeProvider>
         <NextIntlClientProvider messages={messages}>
           <ToastProvider>
             <UserProvider>
@@ -120,6 +122,7 @@ export default async function LocaleLayout({
           </ToastProvider>
           <PwaInstallBanner />
         </NextIntlClientProvider>
+        </ThemeProvider>
         <ServiceWorkerRegistrarWrapper />
         <SwUpdateBanner />
         <WebVitalsReporter />

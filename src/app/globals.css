@@ -1612,23 +1612,23 @@ html.light {
   color: #0f172a !important;
 }
 
-/* ─── Native date input dark theme ─── */
-input[type="date"] {
+/* ─── Native date input dark theme (admin shell only) ─── */
+[data-admin="true"] input[type="date"] {
   color-scheme: dark;
 }
-input[type="date"]::-webkit-calendar-picker-indicator {
+[data-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1) opacity(0.6);
   cursor: pointer;
 }
-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+[data-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator:hover {
   filter: invert(1) opacity(1);
 }
 /* ─── end date input ─── */
 
-.admin-textarea,
-textarea.admin-textarea,
-div .admin-textarea,
-.admin-textarea:not([disabled]) {
+[data-admin="true"] .admin-textarea,
+[data-admin="true"] textarea.admin-textarea,
+[data-admin="true"] div .admin-textarea,
+[data-admin="true"] .admin-textarea:not([disabled]) {
   background-color: #334155 !important;
   color: white !important;
   border-color: #475569 !important;
