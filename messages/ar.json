@@ -2,7 +2,7 @@
   "plan": {
     "nano": {
       "name": "سنتر نانو",
-      "description": "للسناتر الجديدة والصغيرة — حتى 75 طالب في الأسبوع"
+      "description": "للسناتر الجديدة والصغيرة — حتى 100 طالب في الأسبوع"
     },
     "nanoDescription": "للسناتر الجديدة والصغيرة"
   },
@@ -228,36 +228,36 @@
       "plans": {
         "nano": {
           "name": "ناشئ",
-          "students": "75",
-          "price_month": "1,200",
-          "price_per": "4.00",
-          "early_price": "720"
+          "students": "100",
+          "price_month": "2,000",
+          "price_per": "4.62",
+          "early_price": "1,200"
         },
         "starter": {
           "name": "أساسي",
-          "students": "150",
-          "price_month": "2,000",
-          "price_per": "3.33",
-          "early_price": "1,200"
+          "students": "250",
+          "price_month": "4,500",
+          "price_per": "4.15",
+          "early_price": "2,700"
         },
         "pro": {
           "name": "محترف",
           "students": "500",
-          "price_month": "4,500",
-          "price_per": "2.25",
-          "early_price": "2,700"
+          "price_month": "8,000",
+          "price_per": "3.69",
+          "early_price": "4,800"
         },
         "business": {
           "name": "أعمال",
           "students": "1,000",
-          "price_month": "6,500",
-          "price_per": "1.63"
+          "price_month": "13,000",
+          "price_per": "3.00"
         },
         "enterprise": {
           "name": "مؤسسات",
           "students": "2,000",
-          "price_month": "9,000",
-          "price_per": "1.13"
+          "price_month": "18,500",
+          "price_per": "2.13"
         },
         "top_centers": {
           "name": "كبار السناتر",
@@ -361,7 +361,7 @@
     "planProPlus": "متميز",
     "planEnterprise": "مؤسسات",
     "planTopCenters": "كبار السناتر",
-    "starterFeature1": "حتى ١٥٠ طالب",
+    "starterFeature1": "حتى ٢٥٠ طالب",
     "starterFeature2": "حضور QR",
     "starterFeature3": "متابعة مدفوعات أساسية",
     "starterFeature4": "عضوَي فريق",
@@ -389,7 +389,7 @@
     "topCentersFeature2": "كل مزايا المؤسسات",
     "topCentersFeature3": "تكاملات مخصصة",
     "topCentersFeature4": "مدير حساب",
-    "pricingStarter1": "حتى ١٥٠ طالب/أسبوع",
+    "pricingStarter1": "حتى ٢٥٠ طالب/أسبوع",
     "pricingStarter2": "عضوَان فريق",
     "pricingStarter3": "حضور QR (أوفلاين)",
     "pricingStarter4": "متابعة مدفوعات (٦ طرق)",
@@ -2398,7 +2398,7 @@
     "contactWhatsApp": "للتواصل معنا عبر واتساب",
     "customPricing": "التسعير المخصص",
     "topCentersDesc": "أكثر من 2000 طالب/أسبوع",
-    "starterLimit": "ما يصل إلى 150 طالبًا/أسبوعًا",
+    "starterLimit": "ما يصل إلى 250 طالبًا/أسبوعًا",
     "proLimit": "ما يصل إلى 500 طالب/أسبوع",
     "businessLimit": "ما يصل إلى 1000 طالب/أسبوع",
     "enterpriseLimit": "ما يصل إلى 2000 طالب/أسبوع",

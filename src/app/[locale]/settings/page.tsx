@@ -121,7 +121,7 @@ const FALLBACK_PLANS: PricingPlan[] = FALLBACK_PLAN_KEYS.map((id) => {
     name_en: p.englishName,
     name_ar: p.arabicName,
     students_per_week_limit: p.weeklyStudentLimit ?? 999999,
-    monthly_fee: p.quarterlyAllIn,
+    monthly_fee: p.monthlyListPrice,
     per_student_at_capacity_egp: w ?? 0,
     setup_fee_egp: SETUP_FEE_BY_PLAN[id] ?? 0,
     is_custom: id === 'top_centers',
@@ -129,9 +129,10 @@ const FALLBACK_PLANS: PricingPlan[] = FALLBACK_PLAN_KEYS.map((id) => {
 });
 
 const FALLBACK_PAYG: PaygRate[] = [
-  { min_students_per_week: 0, max_students_per_week: 150, rate_per_student_egp: 4 },
-  { min_students_per_week: 151, max_students_per_week: 500, rate_per_student_egp: 3 },
-  { min_students_per_week: 501, max_students_per_week: 1000, rate_per_student_egp: 2.5 },
+  { min_students_per_week: 0, max_students_per_week: 100, rate_per_student_egp: 4 },
+  { min_students_per_week: 101, max_students_per_week: 250, rate_per_student_egp: 3 },
+  { min_students_per_week: 251, max_students_per_week: 500, rate_per_student_egp: 2.5 },
+  { min_students_per_week: 501, max_students_per_week: 1000, rate_per_student_egp: 2 },
   { min_students_per_week: 1001, max_students_per_week: 2000, rate_per_student_egp: 2 },
   { min_students_per_week: 2001, max_students_per_week: 10000, rate_per_student_egp: 1.75 },
 ];
@@ -158,9 +159,10 @@ const PERMISSION_KEYS: { key: string; labelKey: string }[] = [
 
 // ========== Helpers ==========
 function getBracketRate(students: number): number {
-  if (students <= 150) return 4;
-  if (students <= 500) return 3;
-  if (students <= 1000) return 2.5;
+  if (students <= 100) return 4;
+  if (students <= 250) return 3;
+  if (students <= 500) return 2.5;
+  if (students <= 1000) return 2;
   if (students <= 2000) return 2;
   return 1.75;
 }
@@ -174,8 +176,8 @@ function calculatePaygCost(_rates: PaygRate[], students: number) {
 }
 
 function getFixedPlanComparison(students: number) {
-  if (students <= 75) return { planName: PLANS.nano.englishName, planNameAr: PLANS.nano.arabicName, planFee: getPlanPrice('nano', 'monthly'), isCustom: false };
-  if (students <= 150) return { planName: PLANS.starter.englishName, planNameAr: PLANS.starter.arabicName, planFee: getPlanPrice('starter', 'monthly'), isCustom: false };
+  if (students <= 100) return { planName: PLANS.nano.englishName, planNameAr: PLANS.nano.arabicName, planFee: getPlanPrice('nano', 'monthly'), isCustom: false };
+  if (students <= 250) return { planName: PLANS.starter.englishName, planNameAr: PLANS.starter.arabicName, planFee: getPlanPrice('starter', 'monthly'), isCustom: false };
   if (students <= 500) return { planName: PLANS.pro.englishName, planNameAr: PLANS.pro.arabicName, planFee: getPlanPrice('pro', 'monthly'), isCustom: false };
   if (students <= 1000) return { planName: PLANS.business.englishName, planNameAr: PLANS.business.arabicName, planFee: getPlanPrice('business', 'monthly'), isCustom: false };
   if (students <= 2000) return { planName: PLANS.enterprise.englishName, planNameAr: PLANS.enterprise.arabicName, planFee: getPlanPrice('enterprise', 'monthly'), isCustom: false };
@@ -1056,23 +1058,21 @@ function SettingsPageContent() {
   const currentPlanKey: PlanKey = isPlanKey(billingData?.plan) ? (billingData!.plan as PlanKey) : 'starter';
   const quarterlyBaseForCurrentCenter = useMemo(() => {
     if (!billingData || currentPlanKey === 'top_centers') return 0;
-    if (billingData.is_early_adopter && typeof billingData.early_adopter_price === 'number') {
-      return billingData.early_adopter_price;
-    }
     if (billingData.all_in_price != null && billingData.all_in_price > 0) return billingData.all_in_price;
+    if (billingData.is_early_adopter && typeof billingData.early_adopter_price === 'number' && billingData.early_adopter_price > 0) {
+      return Math.round(billingData.early_adopter_price / 3);
+    }
     return PLANS[currentPlanKey].quarterlyAllIn;
   }, [billingData, currentPlanKey]);
   const currentDisplayPrice = useMemo(() => {
     if (!billingData || currentPlanKey === 'top_centers') return 0;
     const q = quarterlyBaseForCurrentCenter;
     if (q <= 0) return 0;
-    if (selectedBillingPeriod === 'quarterly') return q;
-    if (selectedBillingPeriod === 'monthly') return Math.round(q * 1.15);
-    return Math.round(q * 12 * 0.85);
+    return getChargeFromQuarterlyAllIn(q, selectedBillingPeriod, currentPlanKey);
   }, [billingData, currentPlanKey, quarterlyBaseForCurrentCenter, selectedBillingPeriod]);
   const currentCycleCharge = useMemo(() => {
     if (!billingData || currentPlanKey === 'top_centers') return 0;
-    return getChargeFromQuarterlyAllIn(quarterlyBaseForCurrentCenter, selectedBillingPeriod);
+    return getChargeFromQuarterlyAllIn(quarterlyBaseForCurrentCenter, selectedBillingPeriod, currentPlanKey);
   }, [billingData, currentPlanKey, quarterlyBaseForCurrentCenter, selectedBillingPeriod]);
   const paygResult = useMemo(() => calculatePaygCost(paygRates, paygSlider), [paygRates, paygSlider]);
   const fixedComparison = useMemo(() => getFixedPlanComparison(paygSlider), [paygSlider]);

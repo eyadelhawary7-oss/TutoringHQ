@@ -9,9 +9,10 @@ const MONTHLY_MULTIPLIER = 4.333;
 
 /** Flat rate per bracket: entire student count uses the rate of the bracket it falls into. 5 brackets matching fixed plans. */
 function getBracketRate(students: number): number {
-  if (students <= 150) return 4;
-  if (students <= 500) return 3;
-  if (students <= 1000) return 2.5;
+  if (students <= 100) return 4;
+  if (students <= 250) return 3;
+  if (students <= 500) return 2.5;
+  if (students <= 1000) return 2;
   if (students <= 2000) return 2;
   return 1.75;
 }

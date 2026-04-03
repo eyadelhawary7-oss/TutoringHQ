@@ -230,13 +230,19 @@ export async function GET(request: Request) {
     const referringMap = new Map((referringCenters || []).map((r: { id: string; name: string; referral_code: string }) => [r.id, { name: r.name, referral_code: r.referral_code }]));
 
     const PLAN_LIMITS: Record<string, number> = {
-      starter: 150, pro: 500, business: 1000, enterprise: 2000, top_centers: 999999, payg: 999999,
+      nano: 100,
+      starter: 250,
+      pro: 500,
+      business: 1000,
+      enterprise: 2000,
+      top_centers: 999999,
+      payg: 999999,
     };
     const rows = centers.map((c: Record<string, unknown>) => {
       const referredBy = (c as { referred_by?: string }).referred_by;
       const referring = referredBy ? referringMap.get(referredBy) : null;
       const plan = (c as { plan?: string }).plan || 'starter';
-      const maxStudents = PLAN_LIMITS[plan] ?? 150;
+      const maxStudents = PLAN_LIMITS[plan] ?? 250;
       const weeklyUnique = weeklyUniqueByCenter[c.id as string]?.size ?? 0;
       const limitStatus = maxStudents < 999999
         ? (weeklyUnique >= maxStudents ? 'over' : weeklyUnique >= maxStudents * 0.9 ? 'approaching' : 'ok')
@@ -772,7 +778,7 @@ export async function PUT(request: Request) {
     // Early Adopter: first 10 approved centers get 40% discount locked in (quarterly all-in base)
     const plan = (center.plan as string) || 'starter';
     const planKey = (plan in PLANS ? plan : 'starter') as PlanKey;
-    const listQuarterlyAllIn = PLANS[planKey]?.quarterlyAllIn ?? PLANS.starter.quarterlyAllIn;
+    const listAllInPerMonth = PLANS[planKey]?.quarterlyAllIn ?? PLANS.starter.quarterlyAllIn;
     const earlyAdopterEligiblePlans = new Set(['nano', 'starter', 'pro', 'business', 'enterprise']);
     const { count: earlyAdopterCount } = await supabaseAdmin
       .from('centers')
@@ -780,10 +786,8 @@ export async function PUT(request: Request) {
       .eq('is_early_adopter', true);
     const canBeEarlyAdopter = (earlyAdopterCount ?? 0) < 10 && earlyAdopterEligiblePlans.has(plan);
     const earlyAdopterNumber = canBeEarlyAdopter ? (earlyAdopterCount ?? 0) + 1 : null;
-    const earlyAdopterPrice = canBeEarlyAdopter ? Math.round(listQuarterlyAllIn * 0.6) : null;
-
-    const quarterlyCharge =
-      canBeEarlyAdopter && earlyAdopterPrice != null ? earlyAdopterPrice : listQuarterlyAllIn;
+    const effectiveAllInPerMonth = canBeEarlyAdopter ? Math.round(listAllInPerMonth * 0.6) : listAllInPerMonth;
+    const quarterlyInvoiceAmount = Math.round(effectiveAllInPerMonth * 3);
 
     const centerUpdates: Record<string, unknown> = {
       status: 'active',
@@ -795,12 +799,12 @@ export async function PUT(request: Request) {
       auto_suspend_at: `${autoSuspendDay}T12:00:00.000Z`,
       billing_status: 'active',
       subscription_billing_period: 'quarterly',
-      billing_amount: quarterlyCharge,
-      all_in_price: listQuarterlyAllIn,
+      billing_amount: quarterlyInvoiceAmount,
+      all_in_price: effectiveAllInPerMonth,
     };
     if (canBeEarlyAdopter) {
       centerUpdates.is_early_adopter = true;
-      centerUpdates.early_adopter_price = earlyAdopterPrice;
+      centerUpdates.early_adopter_price = quarterlyInvoiceAmount;
       centerUpdates.early_adopter_number = earlyAdopterNumber;
       centerUpdates.early_adopter_date = now.toISOString();
     }

@@ -8,9 +8,10 @@ import { getPlanPrice, type PlanKey } from '@/lib/pricing';
 const MONTHLY_WEEKS = 4.333;
 
 export const PAYG_RATES: { min: number; max: number; rate: number }[] = [
-  { min: 0, max: 150, rate: 4 },
-  { min: 151, max: 500, rate: 3 },
-  { min: 501, max: 1000, rate: 2.5 },
+  { min: 0, max: 100, rate: 4 },
+  { min: 101, max: 250, rate: 3 },
+  { min: 251, max: 500, rate: 2.5 },
+  { min: 501, max: 1000, rate: 2 },
   { min: 1001, max: 2000, rate: 2 },
   { min: 2001, max: 99999, rate: 1.75 },
 ];

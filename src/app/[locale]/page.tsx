@@ -316,7 +316,7 @@ export default function LocaleHomePage() {
                       {billingPeriod === 'annual' ? (
                         <>
                           <span className="line-through font-mono text-base text-[var(--color-text-tertiary)]" dir="ltr">
-                            {t('annualPriceMo', { amount: formatPrice(plan.quarterlyAllIn) })}
+                            {t('annualPriceMo', { amount: formatPrice(plan.monthlyListPrice) })}
                           </span>
                           <span className="text-3xl font-bold text-white font-mono" dir="ltr">
                             {t('annualPriceMo', { amount: formatPrice(annualEq) })}

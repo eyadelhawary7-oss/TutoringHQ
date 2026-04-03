@@ -2,7 +2,7 @@
   "plan": {
     "nano": {
       "name": "Nano Center",
-      "description": "For new and small centers — up to 75 students per week"
+      "description": "For new and small centers — up to 100 students per week"
     },
     "nanoDescription": "For new and small centers"
   },
@@ -280,7 +280,7 @@
     "planProPlus": "Pro+",
     "planEnterprise": "Enterprise",
     "planTopCenters": "Top Centers",
-    "starterFeature1": "Up to 150 students",
+    "starterFeature1": "Up to 250 students",
     "starterFeature2": "QR Attendance",
     "starterFeature3": "Basic payment tracking",
     "starterFeature4": "2 team members",
@@ -308,7 +308,7 @@
     "topCentersFeature2": "Everything in Enterprise",
     "topCentersFeature3": "Custom integrations",
     "topCentersFeature4": "Account manager",
-    "pricingStarter1": "Up to 150 students/week",
+    "pricingStarter1": "Up to 250 students/week",
     "pricingStarter2": "2 team members",
     "pricingStarter3": "QR Attendance (offline)",
     "pricingStarter4": "Payment tracking (6 methods)",
@@ -1571,7 +1571,7 @@
     "contactWhatsApp": "Contact via WhatsApp",
     "customPricing": "Custom pricing",
     "topCentersDesc": "2,000+ students/week",
-    "starterLimit": "Up to 150 students/week",
+    "starterLimit": "Up to 250 students/week",
     "proLimit": "Up to 500 students/week",
     "businessLimit": "Up to 1,000 students/week",
     "enterpriseLimit": "Up to 2,000 students/week",
@@ -2273,36 +2273,36 @@
       "plans": {
         "nano": {
           "name": "Nano",
-          "students": "75",
-          "price_month": "1,200",
-          "price_per": "4.00",
-          "early_price": "720"
+          "students": "100",
+          "price_month": "2,000",
+          "price_per": "4.62",
+          "early_price": "1,200"
         },
         "starter": {
           "name": "Starter",
-          "students": "150",
-          "price_month": "2,000",
-          "price_per": "3.33",
-          "early_price": "1,200"
+          "students": "250",
+          "price_month": "4,500",
+          "price_per": "4.15",
+          "early_price": "2,700"
         },
         "pro": {
           "name": "Pro",
           "students": "500",
-          "price_month": "4,500",
-          "price_per": "2.25",
-          "early_price": "2,700"
+          "price_month": "8,000",
+          "price_per": "3.69",
+          "early_price": "4,800"
         },
         "business": {
           "name": "Business",
           "students": "1,000",
-          "price_month": "6,500",
-          "price_per": "1.63"
+          "price_month": "13,000",
+          "price_per": "3.00"
         },
         "enterprise": {
           "name": "Enterprise",
           "students": "2,000",
-          "price_month": "9,000",
-          "price_per": "1.13"
+          "price_month": "18,500",
+          "price_per": "2.13"
         },
         "top_centers": {
           "name": "Top Centers",

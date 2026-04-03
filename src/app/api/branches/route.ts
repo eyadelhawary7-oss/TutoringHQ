@@ -87,20 +87,22 @@ export async function POST(request: NextRequest) {
       owner_name?: string;
     } | null;
     const pk: PlanKey = isPlanKey(fc?.plan) ? (fc!.plan as PlanKey) : 'starter';
-    const parentQuarterly =
+    const parentAllInPerMonth =
       fc?.all_in_price != null && Number(fc.all_in_price) > 0
         ? Number(fc.all_in_price)
         : pk === 'top_centers'
           ? 0
           : PLANS[pk].quarterlyAllIn;
+    const defaultQuarterlyInvoice =
+      parentAllInPerMonth > 0 ? Math.round(parentAllInPerMonth * 3) : 0;
     const insert: Record<string, unknown> = {
       name,
       organization_id: organizationId,
       plan: fc?.plan ?? 'starter',
       billing_type: fc?.billing_type ?? 'fixed',
       billing_period: fc?.billing_period ?? 'quarterly',
-      billing_amount: fc?.billing_amount ?? parentQuarterly,
-      all_in_price: fc?.all_in_price ?? parentQuarterly,
+      billing_amount: fc?.billing_amount ?? defaultQuarterlyInvoice,
+      all_in_price: fc?.all_in_price ?? parentAllInPerMonth,
       status: 'active',
       owner_name: fc?.owner_name ?? '',
       phone: fc?.phone ?? null,

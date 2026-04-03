@@ -1,25 +1,30 @@
 // src/lib/pricing.ts
-// Single source of truth for all CenterHQ pricing logic
+// Single source of truth for CenterHQ subscription pricing.
+// `quarterlyAllIn` matches pricing_plans.all_in_price: EGP/month when billed quarterly (×3 = one quarter invoice).
 
-export type PlanKey = 'nano' | 'starter' | 'pro' | 'business' | 'enterprise' | 'top_centers'
-export type BillingPeriod = 'monthly' | 'quarterly' | 'annual'
+export type PlanKey = 'nano' | 'starter' | 'pro' | 'business' | 'enterprise' | 'top_centers';
+export type BillingPeriod = 'monthly' | 'quarterly' | 'annual';
 
 /** DB/UI legacy → canonical billing period */
 export function normalizeBillingPeriod(raw: string | null | undefined): BillingPeriod {
-  const p = String(raw || 'quarterly').toLowerCase()
-  if (p === 'yearly' || p === 'annual') return 'annual'
-  if (p === 'half_yearly' || p === 'biannual' || p === 'semi_annual') return 'quarterly'
-  if (p === 'monthly' || p === 'quarterly') return p
-  return 'quarterly'
+  const p = String(raw || 'quarterly').toLowerCase();
+  if (p === 'yearly' || p === 'annual') return 'annual';
+  if (p === 'half_yearly' || p === 'biannual' || p === 'semi_annual') return 'quarterly';
+  if (p === 'monthly' || p === 'quarterly') return p;
+  return 'quarterly';
 }
 
 export interface PlanConfig {
-  key: PlanKey
-  arabicName: string
-  englishName: string
-  weeklyStudentLimit: number | null // null = unlimited (top_centers)
-  quarterlyAllIn: number // all-inclusive quarterly price
-  isMegaCenter?: boolean // enterprise/top_centers get gold border
+  key: PlanKey;
+  arabicName: string;
+  englishName: string;
+  /** Max students/week for this tier (top_centers = custom / unlimited). */
+  weeklyStudentLimit: number | null;
+  /** Same as DB all_in_price — monthly rate on quarterly billing. */
+  quarterlyAllIn: number;
+  /** Listed price if customer pays monthly (+15% tier; nano uses exact list). */
+  monthlyListPrice: number;
+  isMegaCenter?: boolean;
 }
 
 export const PLANS: Record<PlanKey, PlanConfig> = {
@@ -27,36 +32,41 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     key: 'nano',
     arabicName: 'ناشئ',
     englishName: 'Nano',
-    weeklyStudentLimit: 75,
-    quarterlyAllIn: 1500,
+    weeklyStudentLimit: 100,
+    quarterlyAllIn: 2000,
+    monthlyListPrice: 2500,
   },
   starter: {
     key: 'starter',
     arabicName: 'أساسي',
     englishName: 'Starter',
-    weeklyStudentLimit: 150,
-    quarterlyAllIn: 3000,
+    weeklyStudentLimit: 250,
+    quarterlyAllIn: 4500,
+    monthlyListPrice: 5200,
   },
   pro: {
     key: 'pro',
     arabicName: 'محترف',
     englishName: 'Pro',
     weeklyStudentLimit: 500,
-    quarterlyAllIn: 5500,
+    quarterlyAllIn: 8000,
+    monthlyListPrice: 9200,
   },
   business: {
     key: 'business',
     arabicName: 'أعمال',
     englishName: 'Business',
     weeklyStudentLimit: 1000,
-    quarterlyAllIn: 9000,
+    quarterlyAllIn: 13000,
+    monthlyListPrice: 15000,
   },
   enterprise: {
     key: 'enterprise',
     arabicName: 'مؤسسات',
     englishName: 'Enterprise',
     weeklyStudentLimit: 2000,
-    quarterlyAllIn: 12500,
+    quarterlyAllIn: 18500,
+    monthlyListPrice: 21300,
     isMegaCenter: true,
   },
   top_centers: {
@@ -64,79 +74,106 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     arabicName: 'كبار السناتر',
     englishName: 'Top Centers',
     weeklyStudentLimit: null,
-    quarterlyAllIn: 0, // custom — contact sales
+    quarterlyAllIn: 0,
+    monthlyListPrice: 0,
     isMegaCenter: true,
   },
-}
+};
 
 export function isPlanKey(id: string | null | undefined): id is PlanKey {
-  return id != null && Object.prototype.hasOwnProperty.call(PLANS, id)
+  return id != null && Object.prototype.hasOwnProperty.call(PLANS, id);
 }
 
-function chargePerBillingCycleFromQuarterlyAllIn(quarterlyAllIn: number, period: BillingPeriod): number {
-  switch (period) {
-    case 'quarterly': return quarterlyAllIn
-    case 'monthly':   return Math.round(quarterlyAllIn * 1.15)
-    case 'annual':    return Math.round(quarterlyAllIn * 0.85)
-    default:          return quarterlyAllIn
-  }
-}
-
-/** Amount due per billing cycle from a center's all-inclusive quarterly base (e.g. Paymob / invoices). */
-export function getChargeFromQuarterlyAllIn(quarterlyAllIn: number, period: BillingPeriod): number {
-  if (quarterlyAllIn <= 0) return 0
-  return chargePerBillingCycleFromQuarterlyAllIn(quarterlyAllIn, period)
-}
-
-/** Normalized monthly revenue estimate from all-inclusive quarterly base (admin / dashboards). */
-export function getImpliedMonthlyMrr(quarterlyAllIn: number, period: BillingPeriod): number {
-  if (quarterlyAllIn <= 0) return 0
-  if (period === 'monthly') return getChargeFromQuarterlyAllIn(quarterlyAllIn, 'monthly')
-  if (period === 'quarterly') return Math.round(quarterlyAllIn / 3)
-  return Math.round(quarterlyAllIn * 0.85)
-}
-
-/** Returns displayed all-inclusive price for a billing period */
-export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
-  const plan = PLANS[planKey]
-  if (!plan || planKey === 'top_centers') return 0
-  const base = plan.quarterlyAllIn
-  switch (period) {
-    case 'quarterly': return base
-    case 'monthly':   return Math.round(base * 1.15)
-    case 'annual':    return Math.round(base * 12 * 0.85) // annual total
-    default:          return base
-  }
-}
-
-/** Monthly equivalent for display in annual billing */
-export function getAnnualMonthlyEquivalent(planKey: PlanKey): number {
-  const plan = PLANS[planKey]
-  if (!plan || planKey === 'top_centers') return 0
-  return Math.round(plan.quarterlyAllIn * 0.85)
-}
-
-/** Quarterly charge amount to collect (period = 'annual' still charges quarterly) */
-export function getQuarterlyCharge(planKey: PlanKey, period: BillingPeriod): number {
-  const plan = PLANS[planKey]
-  if (!plan || planKey === 'top_centers') return 0
-  return chargePerBillingCycleFromQuarterlyAllIn(plan.quarterlyAllIn, period)
-}
-
-/** Average weeks per month (52÷12 ≈ 4.333) — not 52÷4 (weeks per quarter). */
-const WEEKS_PER_MONTH = 52 / 12
+const WEEKS_PER_QUARTER = 13;
 
 /**
- * Per-student weekly cost at capacity: quarterly all-in ÷ (capacity × weeks per month).
+ * One billing-cycle charge from all_in_price (monthly rate on quarterly plan) and period.
+ * @param allInPerMonth — centers.all_in_price or PLANS[].quarterlyAllIn
+ * @param planKey — required for correct monthly list price when scaling custom all_in
  */
-export function getPerStudentWeeklyCost(planKey: PlanKey): number | null {
-  const plan = PLANS[planKey]
-  if (!plan || !plan.weeklyStudentLimit) return null
-  const raw = plan.quarterlyAllIn / (plan.weeklyStudentLimit * WEEKS_PER_MONTH)
-  return Math.round(raw * 100) / 100
+export function getChargeFromQuarterlyAllIn(
+  allInPerMonth: number,
+  period: BillingPeriod,
+  planKey?: PlanKey,
+): number {
+  if (allInPerMonth <= 0) return 0;
+  const p = normalizeBillingPeriod(period);
+  const pk =
+    planKey && isPlanKey(planKey) && planKey !== 'top_centers' ? planKey : null;
+  const def = pk ? PLANS[pk] : null;
+  const defaultAllIn = def?.quarterlyAllIn ?? allInPerMonth;
+  const scale = defaultAllIn > 0 ? allInPerMonth / defaultAllIn : 1;
+
+  switch (p) {
+    case 'quarterly':
+      return Math.round(allInPerMonth * 3);
+    case 'monthly': {
+      const list = def?.monthlyListPrice ?? Math.round(allInPerMonth * 1.15);
+      return Math.max(1, Math.round(list * scale));
+    }
+    case 'annual':
+      return Math.round(allInPerMonth * 12 * 0.85);
+    default:
+      return Math.round(allInPerMonth * 3);
+  }
 }
 
-/** Format price for display — always en-US */
+/** MRR-style monthly equivalent for dashboards. */
+export function getImpliedMonthlyMrr(
+  allInPerMonth: number,
+  period: BillingPeriod,
+  planKey?: PlanKey,
+): number {
+  if (allInPerMonth <= 0) return 0;
+  const p = normalizeBillingPeriod(period);
+  if (p === 'quarterly') return Math.round(allInPerMonth);
+  if (p === 'monthly') {
+    return getChargeFromQuarterlyAllIn(allInPerMonth, 'monthly', planKey);
+  }
+  return Math.round(allInPerMonth * 0.85);
+}
+
+/** Display price for plan picker / landing (full cycle amount for the selected period). */
+export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
+  const plan = PLANS[planKey];
+  if (!plan || planKey === 'top_centers') return 0;
+  const p = normalizeBillingPeriod(period);
+  switch (p) {
+    case 'quarterly':
+      return Math.round(plan.quarterlyAllIn * 3);
+    case 'monthly':
+      return plan.monthlyListPrice;
+    case 'annual':
+      return Math.round(plan.quarterlyAllIn * 12 * 0.85);
+    default:
+      return Math.round(plan.quarterlyAllIn * 3);
+  }
+}
+
+/** Per-month figure when customer pays annual (−15% on year vs 12× quarterly-monthly). */
+export function getAnnualMonthlyEquivalent(planKey: PlanKey): number {
+  const plan = PLANS[planKey];
+  if (!plan || planKey === 'top_centers') return 0;
+  return Math.round(plan.quarterlyAllIn * 0.85);
+}
+
+export function getQuarterlyCharge(planKey: PlanKey, period: BillingPeriod): number {
+  const plan = PLANS[planKey];
+  if (!plan || planKey === 'top_centers') return 0;
+  return getChargeFromQuarterlyAllIn(plan.quarterlyAllIn, period, planKey);
+}
+
+/**
+ * Per-student weekly cost at capacity: one quarter’s revenue ÷ (capacity × 13 weeks).
+ */
+export function getPerStudentWeeklyCost(planKey: PlanKey): number | null {
+  const plan = PLANS[planKey];
+  if (!plan || !plan.weeklyStudentLimit) return null;
+  const quarterTotal = plan.quarterlyAllIn * 3;
+  const raw = quarterTotal / (plan.weeklyStudentLimit * WEEKS_PER_QUARTER);
+  return Math.round(raw * 100) / 100;
+}
+
 export function formatPrice(amount: number, locale?: string): string {
-  return amount.toLocaleString('en-US')
+  return amount.toLocaleString(locale ?? 'en-US');
 }

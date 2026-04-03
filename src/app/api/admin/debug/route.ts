@@ -56,16 +56,22 @@ export async function GET() {
     const totalMRR = activeCenters.reduce((sum, center) => {
       const plan = String(center.plan || 'starter').toLowerCase() as PlanKey;
       const pk = plan in PLANS ? plan : 'starter';
-      const baseQ =
-        center.is_early_adopter && typeof center.early_adopter_price === 'number'
-          ? center.early_adopter_price
-          : center.all_in_price != null && Number(center.all_in_price) > 0
-            ? Number(center.all_in_price)
-            : PLANS[pk].quarterlyAllIn;
+      let baseQ = 0;
+      if (center.all_in_price != null && Number(center.all_in_price) > 0) {
+        baseQ = Number(center.all_in_price);
+      } else if (
+        center.is_early_adopter &&
+        typeof center.early_adopter_price === 'number' &&
+        center.early_adopter_price > 0
+      ) {
+        baseQ = Math.round(Number(center.early_adopter_price) / 3);
+      } else {
+        baseQ = PLANS[pk].quarterlyAllIn;
+      }
       const period = normalizeBillingPeriod(
         (center as { billing_period?: string | null }).billing_period,
       );
-      return sum + getImpliedMonthlyMrr(baseQ, period);
+      return sum + getImpliedMonthlyMrr(baseQ, period, pk);
     }, 0);
 
     const response = {

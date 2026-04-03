@@ -2346,11 +2346,11 @@ export default function AdminPage() {
                   className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
                 >
                   <option value="">Select a plan...</option>
-                  <option value="nano">Nano — ≤75 students — EGP 1,200/mo</option>
-                  <option value="starter">Starter — ≤150 students — EGP 2,000/mo</option>
-                  <option value="pro">Pro — ≤500 students — EGP 4,500/mo</option>
-                  <option value="business">Business — ≤1,000 students — EGP 6,500/mo</option>
-                  <option value="enterprise">Enterprise — ≤2,000 students — EGP 9,000/mo</option>
+                  <option value="nano">Nano — ≤100 students — EGP 2,500/mo</option>
+                  <option value="starter">Starter — ≤250 students — EGP 5,200/mo</option>
+                  <option value="pro">Pro — ≤500 students — EGP 9,200/mo</option>
+                  <option value="business">Business — ≤1,000 students — EGP 15,000/mo</option>
+                  <option value="enterprise">Enterprise — ≤2,000 students — EGP 21,300/mo</option>
                   <option value="top_centers">Top Centers — Custom</option>
                 </select>
               </div>

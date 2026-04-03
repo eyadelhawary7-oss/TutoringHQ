@@ -118,17 +118,17 @@ export async function fetchCeoBriefingData(): Promise<CeoBriefingData> {
         },
       ) => {
         const pk = (String(c.plan || 'starter').toLowerCase() in PLANS ? String(c.plan || 'starter').toLowerCase() : 'starter') as PlanKey;
-        const baseQ =
-          c.all_in_price != null && Number(c.all_in_price) > 0
-            ? Number(c.all_in_price)
-            : typeof c.early_adopter_price === 'number' && c.early_adopter_price > 0
-              ? c.early_adopter_price
-              : typeof c.subscription_monthly_fee === 'number' && c.subscription_monthly_fee > 0
-                ? c.subscription_monthly_fee
-                : c.billing_amount != null
-                  ? Number(c.billing_amount)
-                  : PLANS[pk].quarterlyAllIn;
-        const fee = getImpliedMonthlyMrr(baseQ, normalizeBillingPeriod(c.billing_period));
+        let baseQ = 0;
+        if (c.all_in_price != null && Number(c.all_in_price) > 0) {
+          baseQ = Number(c.all_in_price);
+        } else if (c.billing_amount != null && Number(c.billing_amount) > 0) {
+          baseQ = Math.round(Number(c.billing_amount) / 3);
+        } else if (typeof c.subscription_monthly_fee === 'number' && c.subscription_monthly_fee > 0) {
+          baseQ = c.subscription_monthly_fee;
+        } else {
+          baseQ = PLANS[pk].quarterlyAllIn;
+        }
+        const fee = getImpliedMonthlyMrr(baseQ, normalizeBillingPeriod(c.billing_period), pk);
         return s + Number(fee);
       },
       0,

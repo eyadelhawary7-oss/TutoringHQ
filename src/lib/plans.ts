@@ -7,8 +7,8 @@ export const PLAN_ORDER = ['nano', 'starter', 'pro', 'business', 'enterprise', '
 export type PlanId = (typeof PLAN_ORDER)[number];
 
 export const PLAN_STUDENT_LIMITS: Record<string, number> = {
-  nano: 75,
-  starter: 150,
+  nano: 100,
+  starter: 250,
   pro: 500,
   business: 1000,
   enterprise: 2000,
@@ -63,7 +63,7 @@ export function hasPlanFeature(plan: string | null | undefined, feature: keyof t
 }
 
 export function getStudentLimit(plan: string | null | undefined): number {
-  return PLAN_STUDENT_LIMITS[plan || 'starter'] ?? 150;
+  return PLAN_STUDENT_LIMITS[plan || 'starter'] ?? 250;
 }
 
 export function getTeamLimit(plan: string | null | undefined): number {

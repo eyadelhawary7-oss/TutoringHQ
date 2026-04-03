@@ -2,20 +2,30 @@ import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
 import { adminPlanRequestsSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
-import { PLANS, getPlanPrice, isPlanKey, type PlanKey } from '@/lib/pricing';
+import { getImpliedMonthlyMrr, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
 
-function planPriceMonthly(plan: string | undefined, isEarly: boolean, earlyPrice: number | undefined): number {
-  if (isEarly && typeof earlyPrice === 'number') return getChargeApproxFromEarlyBase(earlyPrice);
+function monthlyEquivFromCenter(
+  plan: string | undefined,
+  c: { all_in_price?: number | null; billing_period?: string | null } | null | undefined,
+): number {
   const k = (plan || 'starter').toLowerCase();
   if (k === 'payg') return 0;
   if (!isPlanKey(k) || k === 'top_centers') return 0;
-  return getPlanPrice(k, 'monthly');
+  const pk = k as PlanKey;
+  const base =
+    c && typeof c.all_in_price === 'number' && c.all_in_price > 0
+      ? c.all_in_price
+      : PLANS[pk].quarterlyAllIn;
+  return getImpliedMonthlyMrr(base, normalizeBillingPeriod(c?.billing_period), pk);
 }
 
-/** Legacy early_adopter_price treated as quarterly all-in → monthly all-in display. */
-function getChargeApproxFromEarlyBase(quarterlyBase: number): number {
-  return Math.round(quarterlyBase * 1.15);
+function monthlyEquivListPlan(plan: string | undefined): number {
+  const k = (plan || 'starter').toLowerCase();
+  if (k === 'payg') return 0;
+  if (!isPlanKey(k) || k === 'top_centers') return 0;
+  const pk = k as PlanKey;
+  return getImpliedMonthlyMrr(PLANS[pk].quarterlyAllIn, 'quarterly', pk);
 }
 
 function calendarAddDays(baseYmd: string, delta: number): string {
@@ -47,17 +57,25 @@ export async function GET(request: Request) {
     const centerIds = [...new Set((requests || []).map((r: { center_id: string }) => r.center_id))];
     const { data: centers } = await supabaseAdmin
       .from('centers')
-      .select('id, name, phone, is_early_adopter, early_adopter_price')
+      .select('id, name, phone, all_in_price, billing_period')
       .in('id', centerIds);
 
-    const centerMap = new Map((centers || []).map((c: { id: string; name: string; phone?: string; is_early_adopter?: boolean; early_adopter_price?: number }) => [c.id, c]));
+    const centerMap = new Map(
+      (centers || []).map(
+        (c: {
+          id: string;
+          name: string;
+          phone?: string;
+          all_in_price?: number | null;
+          billing_period?: string | null;
+        }) => [c.id, c],
+      ),
+    );
 
     const rows = (requests || []).map((r: { center_id: string; current_plan?: string; requested_plan?: string; [k: string]: unknown }) => {
       const center = centerMap.get(r.center_id);
-      const ea = !!(center?.is_early_adopter && typeof center?.early_adopter_price === 'number');
-      const ep = center?.early_adopter_price;
-      const currentPrice = planPriceMonthly(r.current_plan as string, ea, ep);
-      const requestedPrice = planPriceMonthly(r.requested_plan as string, false, undefined);
+      const currentPrice = monthlyEquivFromCenter(r.current_plan as string, center);
+      const requestedPrice = monthlyEquivListPlan(r.requested_plan as string);
       const priceDiff = requestedPrice - currentPrice;
       return {
         ...r,

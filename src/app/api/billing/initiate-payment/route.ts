@@ -13,9 +13,10 @@ import { getChargeFromQuarterlyAllIn, normalizeBillingPeriod, PLANS, type Billin
 const MONTHLY_MULTIPLIER = 4.333;
 
 function getBracketRate(students: number): number {
-  if (students <= 150) return 4;
-  if (students <= 500) return 3;
-  if (students <= 1000) return 2.5;
+  if (students <= 100) return 4;
+  if (students <= 250) return 3;
+  if (students <= 500) return 2.5;
+  if (students <= 1000) return 2;
   if (students <= 2000) return 2;
   return 1.75;
 }
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
           : (center as { all_in_price?: number | null }).all_in_price != null
             ? Number((center as { all_in_price?: number | null }).all_in_price)
             : PLANS[planKey].quarterlyAllIn;
-      billingAmountEgp = getChargeFromQuarterlyAllIn(qBase, period as BillingPeriod);
+      billingAmountEgp = getChargeFromQuarterlyAllIn(qBase, period as BillingPeriod, planKey);
     }
 
     if (billingAmountEgp <= 0) {

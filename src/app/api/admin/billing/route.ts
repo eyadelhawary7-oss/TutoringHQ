@@ -38,12 +38,13 @@ function quarterlyAllInForCenter(row: {
   return PLANS[pk].quarterlyAllIn;
 }
 
-function adminCycleAmount(periodRaw: string, baseQ: number): number {
+function adminCycleAmount(periodRaw: string, baseQ: number, plan: string): number {
   const p = normalizeBillingPeriod(periodRaw);
+  const pk = planKeyOrStarter(plan);
   if (periodRaw === 'semi_annual' || periodRaw === 'half_yearly') {
-    return Math.round(baseQ * 2);
+    return Math.round(baseQ * 6);
   }
-  return getChargeFromQuarterlyAllIn(baseQ, p);
+  return getChargeFromQuarterlyAllIn(baseQ, p, pk);
 }
 
 function addMonths(date: Date, months: number): Date {
@@ -97,11 +98,12 @@ export async function GET(request: Request) {
         (row as Record<string, unknown>).monthlyEquivalent = 0;
       } else {
         const baseQ = quarterlyAllInForCenter(row as Parameters<typeof quarterlyAllInForCenter>[0]);
-        const amount = adminCycleAmount(bp, baseQ);
+        const planStr = (row as { plan?: string }).plan || 'starter';
+        const amount = adminCycleAmount(bp, baseQ, planStr);
         (row as Record<string, unknown>).amount = amount;
         const mrrPeriod: BillingPeriod =
           bp === 'semi_annual' || bp === 'half_yearly' ? 'quarterly' : normalizeBillingPeriod(bp);
-        const monthlyEquiv = getImpliedMonthlyMrr(baseQ, mrrPeriod);
+        const monthlyEquiv = getImpliedMonthlyMrr(baseQ, mrrPeriod, planKeyOrStarter(planStr));
         (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
         fixedMRR += monthlyEquiv;
         const planKey = (row.plan as string) || 'starter';

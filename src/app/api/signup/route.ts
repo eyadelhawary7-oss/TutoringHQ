@@ -61,7 +61,8 @@ export async function POST(request: Request) {
 
     const planLower = normalizedPlan.toLowerCase() as PlanKey;
     const planKey: PlanKey = planLower in PLANS ? planLower : 'starter';
-    const quarterlyAllIn = PLANS[planKey].quarterlyAllIn;
+    const allInPerMonth = PLANS[planKey].quarterlyAllIn;
+    const defaultQuarterlyInvoice = Math.round(allInPerMonth * 3);
     const periodResolved: BillingPeriod = normalizeBillingPeriod(
       ['monthly', 'quarterly', 'annual'].includes(String(billing_period)) ? String(billing_period) : 'quarterly',
     );
@@ -99,8 +100,8 @@ export async function POST(request: Request) {
       subscription_status: 'pending',
       billing_type: 'fixed',
       billing_period: periodResolved,
-      billing_amount: quarterlyAllIn,
-      all_in_price: quarterlyAllIn,
+      billing_amount: defaultQuarterlyInvoice,
+      all_in_price: allInPerMonth,
       requested_at: new Date().toISOString(),
     };
     if (referrerCenterId) {

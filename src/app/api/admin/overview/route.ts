@@ -121,17 +121,19 @@ export async function GET(request: Request) {
       }
       centersByPlan[plan] = (centersByPlan[plan] ?? 0) + 1;
       const pk = (plan in PLANS ? plan : 'starter') as PlanKey;
-      const baseQ =
-        c.is_early_adopter && typeof c.early_adopter_price === 'number'
-          ? c.early_adopter_price
-          : c.all_in_price != null && Number(c.all_in_price) > 0
-            ? Number(c.all_in_price)
-            : PLANS[pk]?.quarterlyAllIn ?? 0;
+      let baseQ = 0;
+      if (c.all_in_price != null && Number(c.all_in_price) > 0) {
+        baseQ = Number(c.all_in_price);
+      } else if (c.is_early_adopter && typeof c.early_adopter_price === 'number' && c.early_adopter_price > 0) {
+        baseQ = Math.round(Number(c.early_adopter_price) / 3);
+      } else {
+        baseQ = PLANS[pk]?.quarterlyAllIn ?? 0;
+      }
       const period =
         c.billing_period === 'semi_annual' || c.billing_period === 'half_yearly'
           ? normalizeBillingPeriod('quarterly')
           : normalizeBillingPeriod(c.billing_period);
-      const amt = getImpliedMonthlyMrr(baseQ, period);
+      const amt = getImpliedMonthlyMrr(baseQ, period, pk);
       mrrByPlan[plan] = (mrrByPlan[plan] ?? 0) + amt;
       return sum + amt;
     }, 0);
