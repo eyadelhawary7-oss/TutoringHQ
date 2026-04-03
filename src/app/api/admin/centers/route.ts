@@ -6,7 +6,6 @@ import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { normalizePhone } from '@/lib/utils/phone';
 import { generateReferralCode } from '@/lib/referral';
-import { sendWhatsAppMessage } from '@/lib/whatsapp';
 import { sendWelcomeTemplate } from '@/lib/centerNotify';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
@@ -817,31 +816,6 @@ export async function PUT(request: Request) {
       }
       generatedCode = generateReferralCode(center.name as string);
     }
-
-    const displayOwnerName = (center.owner_name || center.name) as string;
-    const centerName = center.name as string;
-    const referralCode = generatedCode || '';
-    const waPhone = (phone || '').replace(/^\+/, '').replace(/^0(\d{10})$/, '20$1');
-
-    await sendWhatsAppMessage(
-      waPhone,
-      `أهلاً ${displayOwnerName} 👋\n\nتم تفعيل حساب ${centerName} على CenterHQ بنجاح! 🎉`
-    );
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await sendWhatsAppMessage(
-      waPhone,
-      `📱 رابط تسجيل الدخول:\nhttps://center-hq.vercel.app/ar/login\n\n🔐 رقم الهاتف المسجل: ${phone}\n📋 الباقة: ${plan}`
-    );
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await sendWhatsAppMessage(
-      waPhone,
-      `🎁 كود الإحالة الخاص بك: ${referralCode}\nشارك الكود مع أصحاب السناتر وأكسب 25% من اشتراكاتهم الشهرية!`
-    );
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await sendWhatsAppMessage(
-      waPhone,
-      `كيف سير الأمور مع CenterHQ؟ 😊\nنحن هنا للمساعدة — رد على هذه الرسالة في أي وقت.`
-    );
 
     // Referral rewards are now created only when admin approves the referred center's first payment (in admin billing)
 
