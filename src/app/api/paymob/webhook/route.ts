@@ -35,11 +35,38 @@ export async function POST(request: NextRequest) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // IDEMPOTENCY GUARD — Paymob order id is the idempotency key (not transaction_id)
+  const orderForIdem = obj.order as { id?: unknown } | null | undefined;
+  const orderId =
+    orderForIdem?.id !== null && orderForIdem?.id !== undefined
+      ? String(orderForIdem.id)
+      : '';
+  if (!orderId) {
+    return NextResponse.json({ error: 'No order ID' }, { status: 400 });
+  }
+
+  const { data: existingSession } = await supabaseAdmin
+    .from('combined_payment_sessions')
+    .select('id, status')
+    .eq('paymob_order_id', orderId)
+    .maybeSingle();
+
+  if (existingSession?.status === 'paid') {
+    return NextResponse.json({ received: true });
+  }
+
+  const { data: existingInvoice } = await supabaseAdmin
+    .from('invoices')
+    .select('id, status')
+    .eq('paymob_order_id', orderId)
+    .maybeSingle();
+
+  if (existingInvoice?.status === 'paid') {
+    return NextResponse.json({ received: true });
+  }
+
   try {
     const success = obj.success === true || obj.success === 'true';
-    const order = obj.order as { id?: unknown } | null | undefined;
-    const paymobOrderId =
-      order?.id !== null && order?.id !== undefined ? String(order.id) : '';
     const transactionId = String(obj.id ?? '');
 
     /** Paymob HMAC object includes is_voided / is_refunded — used for chargebacks after capture. */
@@ -49,26 +76,24 @@ export async function POST(request: NextRequest) {
       obj.is_refunded === true ||
       obj.is_refunded === 'true';
 
-    if (paymobOrderId) {
-      if (isChargebackLike) {
-        const { finalizeInvoiceChargeback } = await import('@/lib/invoicePaymobPayment');
-        await finalizeInvoiceChargeback(supabaseAdmin, paymobOrderId, transactionId);
-      } else if (success) {
-        const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
-        const cardResult = await finalizeCardOrderPaymentSuccess(supabaseAdmin, paymobOrderId, transactionId);
-        if (!cardResult) {
-          const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
-          await finalizeInvoicePaymentSuccess(supabaseAdmin, paymobOrderId, transactionId);
-        }
-      } else {
-        const { finalizeCardOrderPaymentFailure } = await import('@/lib/cardOrderPayment');
-        await finalizeCardOrderPaymentFailure(supabaseAdmin, paymobOrderId);
-        const { finalizeInvoicePaymentFailure, notifySubscriptionInvoicePaymentFailed } = await import(
-          '@/lib/invoicePaymobPayment'
-        );
-        await finalizeInvoicePaymentFailure(supabaseAdmin, paymobOrderId);
-        await notifySubscriptionInvoicePaymentFailed(supabaseAdmin, paymobOrderId, paymentFailedEnabled);
+    if (isChargebackLike) {
+      const { finalizeInvoiceChargeback } = await import('@/lib/invoicePaymobPayment');
+      await finalizeInvoiceChargeback(supabaseAdmin, orderId, transactionId);
+    } else if (success) {
+      const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
+      const cardResult = await finalizeCardOrderPaymentSuccess(supabaseAdmin, orderId, transactionId);
+      if (!cardResult) {
+        const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
+        await finalizeInvoicePaymentSuccess(supabaseAdmin, orderId, transactionId);
       }
+    } else {
+      const { finalizeCardOrderPaymentFailure } = await import('@/lib/cardOrderPayment');
+      await finalizeCardOrderPaymentFailure(supabaseAdmin, orderId);
+      const { finalizeInvoicePaymentFailure, notifySubscriptionInvoicePaymentFailed } = await import(
+        '@/lib/invoicePaymobPayment'
+      );
+      await finalizeInvoicePaymentFailure(supabaseAdmin, orderId);
+      await notifySubscriptionInvoicePaymentFailed(supabaseAdmin, orderId, paymentFailedEnabled);
     }
   } catch (e) {
     console.error('[paymob/webhook]', e);

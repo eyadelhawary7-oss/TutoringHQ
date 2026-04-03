@@ -259,6 +259,7 @@ export async function runSubscriptionBillingCron(
     }
   }
 
+  // Auto-suspend when auto_suspend_at falls on today (grace = 6 days after next_payment_due; see DB default + invoice payment handler).
   const tomorrow = calendarAddDays(today, 1);
   const { data: suspendRows, error: susErr } = await supabase
     .from('centers')

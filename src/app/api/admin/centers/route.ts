@@ -773,7 +773,7 @@ export async function PUT(request: Request) {
     const now = new Date();
     const approveDay = todayISO();
     const nextPaymentDue = calendarAddDays(approveDay, 30);
-    const autoSuspendDay = calendarAddDays(approveDay, 38);
+    const autoSuspendDay = calendarAddDays(nextPaymentDue, 6);
 
     // Early Adopter: first 10 approved centers get 40% discount locked in (quarterly all-in base)
     const plan = (center.plan as string) || 'starter';

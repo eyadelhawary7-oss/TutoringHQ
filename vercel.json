@@ -1,5 +1,6 @@
 {
   "crons": [
+    { "path": "/api/cron/expire-credits", "schedule": "0 1 * * *" },
     { "path": "/api/cron/parent-pack-billing", "schedule": "1 0 1 * *" },
     { "path": "/api/cron/parent-absence-alerts", "schedule": "0 19 * * *" },
     { "path": "/api/cron/parent-balance-alerts", "schedule": "0 8 * * *" },

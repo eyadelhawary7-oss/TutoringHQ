@@ -139,6 +139,32 @@ export async function sendChqPackInvoiceTemplate(
   });
 }
 
+/** chq_credit_expiry — credits expiring within 30 days (billing engine). Enable when template is Active in Meta. */
+export async function sendChqCreditExpiryTemplate(
+  supabase: SupabaseClient,
+  templateEnabled: boolean,
+  opts: { name: string; phone: string | null; amountStr: string; expiresOnStr: string },
+): Promise<boolean> {
+  if (!templateEnabled) return false;
+
+  const { data: cfg } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  if (cfg?.value === false) return false;
+
+  const to = digitsOnly(opts.phone ?? '');
+  if (!to) return false;
+
+  return postWhatsappTemplate({
+    templateName: 'chq_credit_expiry',
+    languageCode: 'ar_EG',
+    toDigits: to,
+    bodyParameters: [opts.name, opts.amountStr, opts.expiresOnStr],
+  });
+}
+
 /** chq_payment_failed — subscription Paymob failure (Session E). Pass `templateEnabled` from route flag. */
 export async function sendChqPaymentFailedTemplate(
   supabase: SupabaseClient,

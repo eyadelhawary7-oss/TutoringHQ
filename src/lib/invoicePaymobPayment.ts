@@ -121,7 +121,7 @@ async function handleSubscriptionInvoicePaid(
     billing_cycle_start: c.billing_cycle_start,
     approved_at: c.approved_at,
   });
-  const autoSus = calendarAddDays(newDue, 8);
+  const autoSus = calendarAddDays(newDue, 6);
   const totalAmt = Number(inv.total_amount ?? 0);
   const today = todayISO();
 
@@ -138,6 +138,7 @@ async function handleSubscriptionInvoicePaid(
     next_payment_due: newDue,
     auto_suspend_at: `${autoSus}T12:00:00.000Z`,
     last_payment_date: today,
+    upgrade_count_this_period: 0,
   };
 
   if (wasSuspendedBilling) {
@@ -249,11 +250,14 @@ export async function finalizeInvoicePaymentSuccess(
     base.setMonth(base.getMonth() + months);
     const nextDueStr = base.toISOString().slice(0, 10);
 
+    const autoSusLegacy = calendarAddDays(nextDueStr, 6);
     const centerUpdates: Record<string, unknown> = {
       billing_status: 'paid',
       last_payment_date: new Date().toISOString().slice(0, 10),
       next_payment_due: nextDueStr,
       payment_due_date: nextDueStr,
+      auto_suspend_at: `${autoSusLegacy}T12:00:00.000Z`,
+      upgrade_count_this_period: 0,
     };
     const st = (center as { status?: string | null }).status;
     if (st === 'suspended') {
