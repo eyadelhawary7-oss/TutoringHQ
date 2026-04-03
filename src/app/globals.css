@@ -1647,3 +1647,8 @@ html.light {
   border: 1px solid #334155 !important;
   border-radius: 4px;
 }
+
+textarea {
+  background-color: #334155 !important;
+  color: white !important;
+}
