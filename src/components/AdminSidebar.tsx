@@ -25,6 +25,7 @@ import {
   Truck,
   Banknote,
   Settings,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -130,6 +131,7 @@ export function AdminSidebar({
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
   const isWithdrawals = activeRoute?.includes('admin/withdrawals');
   const isReferrals = activeRoute?.includes('admin/referrals');
+  const isHealth = activeRoute?.includes('admin/health');
 
   const allowedKeys =
     adminRole === 'super_admin' ? null : adminRole ? getAdminPermissions(adminRole, customPermissions) : null;
@@ -505,6 +507,22 @@ export function AdminSidebar({
             }
             return items;
           })}
+          {/* Platform Health: /admin/health (super_admin only) */}
+          {adminRole === 'super_admin' ? (
+            <Link
+              href="/admin/health"
+              onClick={afterNavigate}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                isHealth
+                  ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+              )}
+            >
+              <Activity size={18} className="shrink-0" />
+              <span>{t('platformHealthNav')}</span>
+            </Link>
+          ) : null}
         </nav>
         <div className="shrink-0 p-2 border-t border-gray-200 dark:border-slate-800">
           <ThemeToggle />
@@ -695,6 +713,22 @@ export function AdminSidebar({
             }
             return items;
           })}
+          {/* Platform Health: /admin/health (super_admin only) */}
+          {adminRole === 'super_admin' ? (
+            <Link
+              href="/admin/health"
+              onClick={() => closeMainSidebar?.()}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                isHealth
+                  ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+              )}
+            >
+              <Activity size={18} />
+              <span>{t('platformHealthNav')}</span>
+            </Link>
+          ) : null}
         </nav>
         <div className="shrink-0 p-2 border-t border-gray-200 dark:border-slate-700">
           <ThemeToggle />
