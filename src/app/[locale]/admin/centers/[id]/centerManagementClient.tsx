@@ -186,6 +186,42 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s4CreateSaving, setS4CreateSaving] = useState(false);
   const [s4ActionLoadingId, setS4ActionLoadingId] = useState<string | null>(null);
 
+  // Section 5
+  const [s5History, setS5History] = useState<Record<string, unknown>[]>([]);
+  const [s5ShowModal, setS5ShowModal] = useState(false);
+  const [s5Date, setS5Date] = useState('');
+  const [s5Amount, setS5Amount] = useState('');
+  const [s5Method, setS5Method] = useState('cash');
+  const [s5Notes, setS5Notes] = useState('');
+  const [s5AmountError, setS5AmountError] = useState('');
+  const [s5Saving, setS5Saving] = useState(false);
+
+  // Section 6
+  const [s6PackEnabled, setS6PackEnabled] = useState(false);
+  const [s6PackRequestStatus, setS6PackRequestStatus] = useState('none');
+  const [s6PackPrice, setS6PackPrice] = useState('12');
+  const [s6PackCustomMin, setS6PackCustomMin] = useState('');
+  const [s6PackPendingBalance, setS6PackPendingBalance] = useState('0');
+  const [s6PackMonthsNoInvoice, setS6PackMonthsNoInvoice] = useState('0');
+  const [s6PackRejectionReason, setS6PackRejectionReason] = useState('');
+  const [s6Saving, setS6Saving] = useState(false);
+
+  // Section 7
+  const [s7Balance, setS7Balance] = useState('0');
+  const [s7PricePerBlast, setS7PricePerBlast] = useState('8');
+  const [s7Cap, setS7Cap] = useState('1500');
+  const [s7Saving, setS7Saving] = useState(false);
+
+  // Section 8
+  const [s8IndividualAlerts, setS8IndividualAlerts] = useState(false);
+  const [s8DailySummary, setS8DailySummary] = useState(true);
+  const [s8SummerMode, setS8SummerMode] = useState(false);
+  const [s8WhatsappOptedIn, setS8WhatsappOptedIn] = useState(false);
+  const [s8ScheduleStart, setS8ScheduleStart] = useState('8');
+  const [s8ScheduleEnd, setS8ScheduleEnd] = useState('20');
+  const [s8ScheduleError, setS8ScheduleError] = useState('');
+  const [s8Saving, setS8Saving] = useState(false);
+
   const getSession = useCallback(async () => {
     const {
       data: { session },
@@ -239,6 +275,28 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     setS4CreateDueDate('');
     setS4CreateNotes('');
     setS4CreateError('');
+  };
+
+  const openRecordModal = () => {
+    setS5ShowModal(true);
+    setS5Amount('');
+    setS5Method('cash');
+    setS5Notes('');
+    setS5AmountError('');
+    setS5Date(new Date().toISOString().slice(0, 10));
+  };
+
+  const parseHour = (s: string, defaultVal: number): number => {
+    const n = parseInt(s, 10);
+    return !isNaN(n) && n >= 0 && n <= 23 ? n : defaultVal;
+  };
+
+  const getRecordedByName = (recordedById: unknown): string => {
+    if (!recordedById) return 'System';
+    const found = data?.adminUsers?.find(
+      (u: Record<string, unknown>) => String(u.id) === String(recordedById),
+    );
+    return (found?.name as string) ?? String(recordedById).slice(0, 8) + '...';
   };
 
   useEffect(() => {
@@ -309,11 +367,28 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     setS3IsEarlyAdopter((c.is_early_adopter as boolean) ?? false);
     setS3EarlyAdopterPrice(c.early_adopter_price != null ? String(c.early_adopter_price) : '');
     setS3EarlyAdopterNumber(c.early_adopter_number != null ? String(c.early_adopter_number) : '');
+    setS6PackEnabled((c.parent_pack_enabled as boolean) ?? false);
+    setS6PackRequestStatus((c.pack_request_status as string) ?? 'none');
+    setS6PackPrice(c.pack_price_per_parent != null ? String(c.pack_price_per_parent) : '12');
+    setS6PackCustomMin(c.pack_custom_invoice_minimum != null ? String(c.pack_custom_invoice_minimum) : '');
+    setS6PackPendingBalance(c.pack_pending_balance != null ? String(c.pack_pending_balance) : '0');
+    setS6PackMonthsNoInvoice(c.pack_months_without_invoice != null ? String(c.pack_months_without_invoice) : '0');
+    setS6PackRejectionReason((c.pack_rejection_reason as string) ?? '');
+    setS7Balance(c.announcement_balance != null ? String(c.announcement_balance) : '0');
+    setS7PricePerBlast(c.announcement_price_per_blast != null ? String(c.announcement_price_per_blast) : '8');
+    setS7Cap(c.announcement_cap != null ? String(c.announcement_cap) : '1500');
+    setS8IndividualAlerts((c.individual_alerts_enabled as boolean) ?? false);
+    setS8DailySummary((c.daily_summary_enabled as boolean) ?? true);
+    setS8SummerMode((c.summer_mode as boolean) ?? false);
+    setS8WhatsappOptedIn((c.whatsapp_opted_in as boolean) ?? false);
+    setS8ScheduleStart(c.schedule_start_hour != null ? String(c.schedule_start_hour) : '8');
+    setS8ScheduleEnd(c.schedule_end_hour != null ? String(c.schedule_end_hour) : '20');
   }, [data?.center?.id]);
 
   useEffect(() => {
     if (!data) return;
     setS4Invoices((data.invoices ?? []) as Record<string, unknown>[]);
+    setS5History((data.renewalHistory ?? []) as Record<string, unknown>[]);
   }, [dataFetchedAt]);
 
   useEffect(() => {
@@ -669,6 +744,188 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
       toast.success(t('centerManagement.saveSuccess'));
     } finally {
       setS4CreateSaving(false);
+    }
+  };
+
+  const submitRecordPayment = async () => {
+    setS5AmountError('');
+    if (isNaN(Number(s5Amount)) || Number(s5Amount) <= 0) {
+      setS5AmountError(t('centerManagement.section5.amountRequired'));
+      return;
+    }
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS5Saving(true);
+    try {
+      const response = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          action: 'record_payment',
+          renewalDate: s5Date,
+          amountPaid: Number(s5Amount),
+          paymentMethod: s5Method,
+          notes: s5Notes || null,
+        }),
+      });
+      const raw = await response.text();
+      let res: { error?: string; renewal?: Record<string, unknown> } = {};
+      try {
+        res = JSON.parse(raw) as typeof res;
+      } catch {
+        /* non-JSON */
+      }
+      if (!response.ok) {
+        toast.error(typeof res.error === 'string' ? res.error : t('centerManagement.saveError'));
+        return;
+      }
+      const r = res;
+      if (r?.renewal) {
+        setS5History((prev) => [r.renewal!, ...prev]);
+      }
+      setS5ShowModal(false);
+      setS5Date(new Date().toISOString().slice(0, 10)); // record_payment
+      setS5Amount('');
+      setS5Method('cash');
+      setS5Notes('');
+      toast.success(t('centerManagement.saveSuccess'));
+    } finally {
+      setS5Saving(false);
+    }
+  };
+
+  const saveSection6 = async () => {
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS6Saving(true);
+    try {
+      const res = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          parent_pack_enabled: s6PackEnabled,
+          pack_request_status: s6PackRequestStatus,
+          pack_price_per_parent: Number(s6PackPrice),
+          pack_custom_invoice_minimum: s6PackCustomMin !== '' ? Number(s6PackCustomMin) : null,
+          pack_pending_balance: Number(s6PackPendingBalance),
+          pack_months_without_invoice: Number(s6PackMonthsNoInvoice),
+          pack_rejection_reason: s6PackRejectionReason || null,
+        }),
+      });
+      const raw = await res.text();
+      let body: { error?: string; center?: Record<string, unknown> } = {};
+      try {
+        body = JSON.parse(raw) as typeof body;
+      } catch {
+        /* non-JSON */
+      }
+      if (!res.ok) {
+        toast.error(typeof body.error === 'string' ? body.error : t('centerManagement.saveError'));
+        return;
+      }
+      if (body.center) {
+        setData((prev) => (prev ? { ...prev, center: body.center! } : prev));
+      }
+      toast.success(t('centerManagement.saveSuccess'));
+    } catch {
+      toast.error(t('centerManagement.saveError'));
+    } finally {
+      setS6Saving(false);
+    }
+  };
+
+  const saveSection7 = async () => {
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS7Saving(true);
+    try {
+      const res = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          announcement_balance: Number(s7Balance),
+          announcement_price_per_blast: Number(s7PricePerBlast),
+          announcement_cap: Number(s7Cap),
+          announcement_balance_updated_at: new Date().toISOString(),
+        }),
+      });
+      const raw = await res.text();
+      let body: { error?: string; center?: Record<string, unknown> } = {};
+      try {
+        body = JSON.parse(raw) as typeof body;
+      } catch {
+        /* non-JSON */
+      }
+      if (!res.ok) {
+        toast.error(typeof body.error === 'string' ? body.error : t('centerManagement.saveError'));
+        return;
+      }
+      if (body.center) {
+        setData((prev) => (prev ? { ...prev, center: body.center! } : prev));
+      }
+      toast.success(t('centerManagement.saveSuccess'));
+    } catch {
+      toast.error(t('centerManagement.saveError'));
+    } finally {
+      setS7Saving(false);
+    }
+  };
+
+  const saveSection8 = async () => {
+    const startVal = parseHour(s8ScheduleStart, 8);
+    const endVal = parseHour(s8ScheduleEnd, 20);
+    if (endVal <= startVal) {
+      setS8ScheduleError(t('centerManagement.section8.scheduleHourError'));
+      return;
+    }
+    setS8ScheduleError('');
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS8Saving(true);
+    try {
+      const res = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          individual_alerts_enabled: s8IndividualAlerts,
+          daily_summary_enabled: s8DailySummary,
+          summer_mode: s8SummerMode,
+          whatsapp_opted_in: s8WhatsappOptedIn,
+          schedule_start_hour: parseHour(s8ScheduleStart, 8),
+          schedule_end_hour: parseHour(s8ScheduleEnd, 20),
+        }),
+      });
+      const raw = await res.text();
+      let body: { error?: string; center?: Record<string, unknown> } = {};
+      try {
+        body = JSON.parse(raw) as typeof body;
+      } catch {
+        /* non-JSON */
+      }
+      if (!res.ok) {
+        toast.error(typeof body.error === 'string' ? body.error : t('centerManagement.saveError'));
+        return;
+      }
+      if (body.center) {
+        setData((prev) => (prev ? { ...prev, center: body.center! } : prev));
+      }
+      toast.success(t('centerManagement.saveSuccess'));
+    } catch {
+      toast.error(t('centerManagement.saveError'));
+    } finally {
+      setS8Saving(false);
     }
   };
 
@@ -1507,6 +1764,435 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   </div>
                 </div>
               ) : null}
+
+              <section className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <h2 className="text-lg font-semibold text-white">{t('centerManagement.section5.title')}</h2>
+                  <button
+                    type="button"
+                    onClick={() => openRecordModal()}
+                    className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-500 shrink-0"
+                  >
+                    {t('centerManagement.section5.recordPayment')}
+                  </button>
+                </div>
+                {s5History.length === 0 ? (
+                  <p className="text-slate-400">{t('centerManagement.section5.noPayments')}</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-slate-600">
+                    <table className="w-full text-sm text-slate-200 min-w-[640px]">
+                      <thead className="bg-slate-900 text-slate-400">
+                        <tr>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section5.date')}</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section5.amount')}</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section5.method')}</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section5.recordedBy')}</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section4.notes')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {s5History.map((row, idx) => {
+                          const rk = String(row.id ?? `rh-${idx}`);
+                          const ap = row.amount_paid;
+                          const amt =
+                            ap != null && !isNaN(Number(ap))
+                              ? `${Number(ap).toLocaleString('en-US')} EGP`
+                              : '—';
+                          return (
+                            <tr key={rk} className="border-t border-slate-700">
+                              <td className="p-2 whitespace-nowrap">
+                                {row.renewal_date != null ? String(row.renewal_date).slice(0, 10) : '—'}
+                              </td>
+                              <td className="p-2 tabular-nums">{amt}</td>
+                              <td className="p-2">{String(row.payment_method ?? '—')}</td>
+                              <td className="p-2">{getRecordedByName(row.recorded_by)}</td>
+                              <td className="p-2 max-w-xs truncate" title={String(row.notes ?? '')}>
+                                {row.notes != null ? String(row.notes) : '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+
+              {s5ShowModal ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                  <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 max-w-md w-full space-y-3">
+                    <h3 className="text-lg font-semibold text-white">
+                      {t('centerManagement.section5.recordPayment')}
+                    </h3>
+                    {s5AmountError ? <p className="text-red-400 text-sm">{s5AmountError}</p> : null}
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section5.paymentDate')}
+                      </label>
+                      <input
+                        type="date"
+                        value={s5Date}
+                        onChange={(e) => setS5Date(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section5.amountPaid')}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={s5Amount}
+                        onChange={(e) => setS5Amount(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section5.paymentMethod')}
+                      </label>
+                      <select
+                        value={s5Method}
+                        onChange={(e) => setS5Method(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      >
+                        <option value="cash">cash</option>
+                        <option value="bank_transfer">bank_transfer</option>
+                        <option value="card">card</option>
+                        <option value="other">other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section4.notes')}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={s5Notes}
+                        onChange={(e) => setS5Notes(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setS5ShowModal(false)}
+                        className="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700"
+                      >
+                        {tCommon('cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={s5Saving}
+                        onClick={() => void submitRecordPayment()}
+                        className="px-4 py-2 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-500 disabled:opacity-50"
+                      >
+                        {s5Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <section className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+                <h2 className="text-lg font-semibold text-white mb-4">{t('centerManagement.section6.title')}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-slate-400">
+                  <div>
+                    <span className="text-slate-500">{t('centerManagement.section6.packApprovedAt')}: </span>
+                    <span className="text-slate-200">
+                      {data.center.pack_approved_at != null
+                        ? String(data.center.pack_approved_at).slice(0, 19)
+                        : '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">{t('centerManagement.section6.packRequestedAt')}: </span>
+                    <span className="text-slate-200">
+                      {data.center.pack_requested_at != null
+                        ? String(data.center.pack_requested_at).slice(0, 19)
+                        : '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">{t('centerManagement.section6.packDisabledAt')}: </span>
+                    <span className="text-slate-200">
+                      {data.center.pack_disabled_at != null
+                        ? String(data.center.pack_disabled_at).slice(0, 19)
+                        : '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">{t('centerManagement.section6.activeParents')}: </span>
+                    <span className="text-slate-200">
+                      {data.center.parent_pack_active_parents != null
+                        ? String(data.center.parent_pack_active_parents)
+                        : '—'}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="pack-enabled"
+                      checked={s6PackEnabled}
+                      onChange={(e) => setS6PackEnabled(e.target.checked)}
+                      className="rounded border-slate-600"
+                    />
+                    <label htmlFor="pack-enabled" className="text-sm text-slate-300">
+                      {t('centerManagement.section6.packEnabled')}
+                    </label>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section6.packRequestStatus')}
+                    </label>
+                    <select
+                      value={s6PackRequestStatus}
+                      onChange={(e) => setS6PackRequestStatus(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                    >
+                      <option value="none">none</option>
+                      <option value="requested">requested</option>
+                      <option value="approved">approved</option>
+                      <option value="rejected">rejected</option>
+                      <option value="suspended">suspended</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section6.packPrice')}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={s6PackPrice}
+                      onChange={(e) => setS6PackPrice(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section6.packCustomMin')}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={s6PackCustomMin}
+                      onChange={(e) => setS6PackCustomMin(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      dir="ltr"
+                    />
+                    {s2Plan === 'top_centers' ? (
+                      <p className="text-xs text-amber-400/90 mt-1">
+                        {t('centerManagement.section6.packCustomMinRequired')}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section6.packPendingBalance')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={s6PackPendingBalance}
+                      onChange={(e) => setS6PackPendingBalance(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      dir="ltr"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">{t('centerManagement.section6.packBalanceNote')}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section6.packMonths')}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={s6PackMonthsNoInvoice}
+                      onChange={(e) => setS6PackMonthsNoInvoice(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      dir="ltr"
+                    />
+                  </div>
+                  {s6PackRequestStatus === 'rejected' ? (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm text-slate-300 mb-1">
+                        {t('centerManagement.section6.packRejectionReason')}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={s6PackRejectionReason}
+                        onChange={(e) => setS6PackRejectionReason(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    disabled={s6Saving}
+                    onClick={() => void saveSection6()}
+                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+                  >
+                    {s6Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
+                  </button>
+                </div>
+              </section>
+
+              <section className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+                <h2 className="text-lg font-semibold text-white mb-4">{t('centerManagement.section7.title')}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section7.balance')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={s7Balance}
+                      onChange={(e) => setS7Balance(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2 max-w-md"
+                      dir="ltr"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">{t('centerManagement.section7.balanceNote')}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {t('centerManagement.section7.balanceUpdated')}:{' '}
+                      {data.center.announcement_balance_updated_at != null
+                        ? String(data.center.announcement_balance_updated_at).slice(0, 19)
+                        : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section7.pricePerBlast')}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={s7PricePerBlast}
+                      onChange={(e) => setS7PricePerBlast(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">{t('centerManagement.section7.cap')}</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={s7Cap}
+                      onChange={(e) => setS7Cap(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    disabled={s7Saving}
+                    onClick={() => void saveSection7()}
+                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+                  >
+                    {s7Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
+                  </button>
+                </div>
+              </section>
+
+              <section className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+                <h2 className="text-lg font-semibold text-white mb-4">{t('centerManagement.section8.title')}</h2>
+                {s8ScheduleError ? <p className="text-red-400 text-sm mb-3">{s8ScheduleError}</p> : null}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2 flex flex-wrap gap-4">
+                    <label className="inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={s8IndividualAlerts}
+                        onChange={(e) => setS8IndividualAlerts(e.target.checked)}
+                        className="rounded border-slate-600"
+                      />
+                      {t('centerManagement.section8.individualAlerts')}
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={s8DailySummary}
+                        onChange={(e) => setS8DailySummary(e.target.checked)}
+                        className="rounded border-slate-600"
+                      />
+                      {t('centerManagement.section8.dailySummary')}
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={s8SummerMode}
+                        onChange={(e) => setS8SummerMode(e.target.checked)}
+                        className="rounded border-slate-600"
+                      />
+                      {t('centerManagement.section8.summerMode')}
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={s8WhatsappOptedIn}
+                        onChange={(e) => setS8WhatsappOptedIn(e.target.checked)}
+                        className="rounded border-slate-600"
+                      />
+                      {t('centerManagement.section8.whatsappOptedIn')}
+                    </label>
+                  </div>
+                  <p className="md:col-span-2 text-xs text-amber-400/90">{t('centerManagement.section8.summerModeWarning')}</p>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section8.scheduleStart')}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={23}
+                      value={s8ScheduleStart}
+                      onChange={(e) => setS8ScheduleStart(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section8.scheduleEnd')}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={23}
+                      value={s8ScheduleEnd}
+                      onChange={(e) => setS8ScheduleEnd(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    disabled={s8Saving}
+                    onClick={() => void saveSection8()}
+                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+                  >
+                    {s8Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
+                  </button>
+                </div>
+              </section>
             </>
           ) : null}
         </main>

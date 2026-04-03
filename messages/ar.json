@@ -671,6 +671,54 @@
         "periodStart": "بداية الفترة",
         "periodEnd": "نهاية الفترة",
         "notes": "ملاحظات"
+      },
+      "section5": {
+        "title": "سجل المدفوعات",
+        "recordPayment": "تسجيل دفعة يدوية",
+        "noPayments": "لا توجد مدفوعات",
+        "date": "التاريخ",
+        "amount": "المبلغ",
+        "method": "الطريقة",
+        "recordedBy": "سجّله",
+        "paymentDate": "تاريخ الدفع",
+        "amountPaid": "المبلغ المدفوع (ج.م)",
+        "paymentMethod": "طريقة الدفع",
+        "amountRequired": "المبلغ يجب أن يكون أكبر من صفر"
+      },
+      "section6": {
+        "title": "باقة الواتساب",
+        "packEnabled": "الباقة مفعّلة",
+        "packRequestStatus": "حالة طلب الباقة",
+        "packPrice": "السعر للأب / شهر (ج.م)",
+        "packCustomMin": "الحد الأدنى للفاتورة (ج.م)",
+        "packCustomMinRequired": "مطلوب لخطة كبار السناتر",
+        "packPendingBalance": "الرصيد المعلّق (ج.م)",
+        "packBalanceNote": "يضبط الرصيد مباشرة",
+        "packMonths": "أشهر بدون فاتورة",
+        "packRejectionReason": "سبب رفض الباقة",
+        "packApprovedAt": "تاريخ الموافقة",
+        "packRequestedAt": "تاريخ الطلب",
+        "packDisabledAt": "تاريخ التعطيل",
+        "activeParents": "أولياء الأمور النشطون"
+      },
+      "section7": {
+        "title": "الإعلانات",
+        "balance": "رصيد الإعلانات (ج.م)",
+        "balanceNote": "يضبط الرصيد مباشرة",
+        "balanceUpdated": "آخر تحديث",
+        "pricePerBlast": "سعر الإرسال (ج.م)",
+        "cap": "الحد الأقصى (ج.م)"
+      },
+      "section8": {
+        "title": "الخصائص والإعدادات",
+        "individualAlerts": "تنبيهات الحضور الفردية",
+        "dailySummary": "الملخص اليومي",
+        "summerMode": "وضع الصيف",
+        "summerModeWarning": "وضع الصيف يوقف أتمتة الفواتير أثناء الإغلاق الموسمي",
+        "whatsappOptedIn": "مشترك في واتساب",
+        "scheduleStart": "بداية الجدول (0–23)",
+        "scheduleEnd": "نهاية الجدول (0–23)",
+        "scheduleHourError": "ساعة النهاية يجب أن تكون أكبر"
       }
     },
     "billing": "الفوترة",

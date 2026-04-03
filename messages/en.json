@@ -1775,6 +1775,54 @@
         "periodStart": "Period Start",
         "periodEnd": "Period End",
         "notes": "Notes"
+      },
+      "section5": {
+        "title": "Payment History",
+        "recordPayment": "Record Manual Payment",
+        "noPayments": "No payments recorded",
+        "date": "Date",
+        "amount": "Amount",
+        "method": "Method",
+        "recordedBy": "Recorded By",
+        "paymentDate": "Payment Date",
+        "amountPaid": "Amount Paid (EGP)",
+        "paymentMethod": "Payment Method",
+        "amountRequired": "Amount must be greater than 0"
+      },
+      "section6": {
+        "title": "WhatsApp Pack",
+        "packEnabled": "Pack Enabled",
+        "packRequestStatus": "Pack Request Status",
+        "packPrice": "Price Per Parent/Month (EGP)",
+        "packCustomMin": "Custom Invoice Minimum (EGP)",
+        "packCustomMinRequired": "Required for Top Centers plan",
+        "packPendingBalance": "Pending Balance (EGP)",
+        "packBalanceNote": "Sets absolute balance — not additive",
+        "packMonths": "Months Without Invoice",
+        "packRejectionReason": "Pack Rejection Reason",
+        "packApprovedAt": "Pack Approved At",
+        "packRequestedAt": "Pack Requested At",
+        "packDisabledAt": "Pack Disabled At",
+        "activeParents": "Active Parents"
+      },
+      "section7": {
+        "title": "Announcements",
+        "balance": "Announcement Balance (EGP)",
+        "balanceNote": "Sets absolute balance — not additive",
+        "balanceUpdated": "Last updated",
+        "pricePerBlast": "Price Per Blast (EGP)",
+        "cap": "Blast Cap (EGP)"
+      },
+      "section8": {
+        "title": "Features & Settings",
+        "individualAlerts": "Individual Attendance Alerts",
+        "dailySummary": "Daily WhatsApp Summary",
+        "summerMode": "Summer Mode",
+        "summerModeWarning": "Summer mode pauses billing automation during seasonal closure",
+        "whatsappOptedIn": "WhatsApp Opted In",
+        "scheduleStart": "Schedule Start Hour (0–23)",
+        "scheduleEnd": "Schedule End Hour (0–23)",
+        "scheduleHourError": "End hour must be greater than start hour"
       }
     },
     "billing": "Billing",
