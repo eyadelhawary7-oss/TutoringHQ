@@ -116,7 +116,8 @@ export async function GET(request: NextRequest) {
       if (inquiry.state === 'paid') {
         const txId = inquiry.transactionId ?? '';
         const { tryFinalizeCombinedPaymentSession } = await import('@/lib/combinedPaymentFinalize');
-        await tryFinalizeCombinedPaymentSession(supabaseAdmin, paymobOrderIdParam, txId);
+        const sid = (sess as { id: string }).id;
+        await tryFinalizeCombinedPaymentSession(sid, supabaseAdmin, 'cron', txId);
         return NextResponse.json({ paid: true });
       }
     }

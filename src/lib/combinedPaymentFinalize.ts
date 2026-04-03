@@ -79,17 +79,18 @@ export async function reactivateCenterFromSession(
 
 /**
  * Paymob success: finalize pending combined_payment_sessions row (upgrade / reactivation).
- * Returns true if this order was a combined session (handled or already paid).
+ * Pass session row id (not Paymob order id). Returns true if handled, already paid, or idempotent skip.
  */
 export async function tryFinalizeCombinedPaymentSession(
+  sessionId: string,
   supabase: SupabaseClient,
-  paymobOrderId: string,
-  paymobTransactionId: string,
+  source: 'webhook' | 'cron' | 'credits' = 'webhook',
+  paymobTransactionId = '',
 ): Promise<boolean> {
   const { data: session } = await supabase
     .from('combined_payment_sessions')
     .select('*')
-    .eq('paymob_order_id', paymobOrderId)
+    .eq('id', sessionId)
     .maybeSingle();
 
   if (!session) return false;
@@ -101,6 +102,7 @@ export async function tryFinalizeCombinedPaymentSession(
     session_type: string;
     credit_amount: number | string | null;
     invoice_ids: string[] | null;
+    paymob_order_id?: string | null;
     metadata?: unknown;
   };
 
@@ -109,6 +111,21 @@ export async function tryFinalizeCombinedPaymentSession(
 
   const handled = new Set(['upgrade', 'reactivation_tier1', 'reactivation_tier2']);
   if (!handled.has(row.session_type)) return false;
+
+  const paymobOrderId = String(row.paymob_order_id ?? '');
+
+  // IDEMPOTENCY GUARD — one finalization per session guaranteed
+  const { data: lockResult, error: lockError } = await supabase.rpc('try_finalize_payment_session', {
+    p_session_id: row.id,
+    p_finalized_by: source,
+  });
+  if (lockError) {
+    console.error('[combinedPayment] try_finalize_payment_session', lockError);
+    return false;
+  }
+  if (!lockResult) {
+    return true;
+  }
 
   const creditToSpend = Number(row.credit_amount ?? 0);
   const meta = asMeta(row.metadata);
@@ -204,7 +221,7 @@ export async function tryFinalizeCombinedPaymentSession(
       days_remaining: Math.max(0, Math.floor(Number(meta.daysRemaining ?? 0))),
       daily_rate_difference: Number(meta.dailyRateDifference ?? 0),
       amount_charged: Number(meta.amountCharged ?? 0),
-      paymob_order_id: paymobOrderId,
+      paymob_order_id: paymobOrderId || null,
       billing_anchor_unchanged: anchorYmd,
       upgrade_count_this_cycle: prevCount + 1,
     });

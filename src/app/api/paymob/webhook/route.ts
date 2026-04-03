@@ -82,7 +82,16 @@ export async function POST(request: NextRequest) {
       await finalizeInvoiceChargeback(supabaseAdmin, orderId, transactionId);
     } else if (success) {
       const { tryFinalizeCombinedPaymentSession } = await import('@/lib/combinedPaymentFinalize');
-      const combined = await tryFinalizeCombinedPaymentSession(supabaseAdmin, orderId, transactionId);
+      const combo = existingSession as { id?: string; status?: string } | null;
+      const combined =
+        combo?.id && combo.status === 'pending'
+          ? await tryFinalizeCombinedPaymentSession(
+              combo.id,
+              supabaseAdmin,
+              'webhook',
+              transactionId,
+            )
+          : false;
       if (!combined) {
         const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
         const cardResult = await finalizeCardOrderPaymentSuccess(supabaseAdmin, orderId, transactionId);
