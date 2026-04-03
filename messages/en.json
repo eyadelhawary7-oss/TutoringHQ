@@ -1823,7 +1823,9 @@
         "whatsappOptedIn": "WhatsApp Opted In",
         "scheduleStart": "Schedule Start Hour (0–23)",
         "scheduleEnd": "Schedule End Hour (0–23)",
-        "scheduleHourError": "End hour must be greater than start hour"
+        "scheduleHourError": "End hour must be greater than start hour",
+        "instapayNumber": "InstaPay Number",
+        "instapayNote": "Required for credit withdrawals"
       },
       "section9": {
         "title": "Plan Requests",
@@ -2183,6 +2185,20 @@
     "paymentSuccess": "Payment successful ✅",
     "paymentFailed": "Payment failed — please try again",
     "invoicePaid": "Paid ✓",
+    "reactivation": {
+      "tier1": "Reactivation Fine (6 days)",
+      "tier2": "Reactivation Fee (3%)",
+      "nextPeriod": "Next Billing Period"
+    },
+    "credits": {
+      "earned": "Credits Earned",
+      "spent": "Credits Used",
+      "expiring": "Credits expiring soon"
+    },
+    "withdrawal": {
+      "minimum": "Minimum withdrawal is 2,000 credits",
+      "noInstapay": "Please add your InstaPay number in Settings first"
+    },
     "halfYearly": "Half-Yearly",
     "recommended": "Recommended",
     "bestValue": "Best Value",

@@ -719,7 +719,9 @@
         "whatsappOptedIn": "مشترك في واتساب",
         "scheduleStart": "بداية الجدول (0–23)",
         "scheduleEnd": "نهاية الجدول (0–23)",
-        "scheduleHourError": "ساعة النهاية يجب أن تكون أكبر"
+        "scheduleHourError": "ساعة النهاية يجب أن تكون أكبر",
+        "instapayNumber": "رقم الإنستاباي",
+        "instapayNote": "مطلوب لسحب الرصيد عبر الإنستاباي"
       },
       "section9": {
         "title": "طلبات تغيير الخطة",
@@ -1515,6 +1517,20 @@
     "paymentSuccess": "تم الدفع بنجاح ✅",
     "paymentFailed": "فشل الدفع — يرجى المحاولة مرة أخرى",
     "invoicePaid": "مدفوع ✓",
+    "reactivation": {
+      "tier1": "غرامة إعادة التفعيل (6 أيام)",
+      "tier2": "رسوم إعادة التفعيل (3%)",
+      "nextPeriod": "فترة الفاتورة القادمة"
+    },
+    "credits": {
+      "earned": "رصيد مكتسب",
+      "spent": "رصيد مستخدم",
+      "expiring": "رصيد على وشك الانتهاء"
+    },
+    "withdrawal": {
+      "minimum": "الحد الأدنى للسحب 2,000 نقطة رصيد",
+      "noInstapay": "يرجى إضافة رقم الإنستاباي في الإعدادات أولاً"
+    },
     "halfYearly": "نصف سنوي",
     "recommended": "الخيار المقترح",
     "bestValue": "القيمة الأفضل",

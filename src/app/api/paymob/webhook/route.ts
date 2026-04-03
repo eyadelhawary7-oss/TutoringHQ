@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
     .eq('paymob_order_id', orderId)
     .maybeSingle();
 
-  if (existingInvoice?.status === 'paid') {
+  const sessionPending = existingSession?.status === 'pending';
+  if (existingInvoice?.status === 'paid' && !sessionPending) {
     return NextResponse.json({ received: true });
   }
 
@@ -80,11 +81,15 @@ export async function POST(request: NextRequest) {
       const { finalizeInvoiceChargeback } = await import('@/lib/invoicePaymobPayment');
       await finalizeInvoiceChargeback(supabaseAdmin, orderId, transactionId);
     } else if (success) {
-      const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
-      const cardResult = await finalizeCardOrderPaymentSuccess(supabaseAdmin, orderId, transactionId);
-      if (!cardResult) {
-        const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
-        await finalizeInvoicePaymentSuccess(supabaseAdmin, orderId, transactionId);
+      const { tryFinalizeCombinedPaymentSession } = await import('@/lib/combinedPaymentFinalize');
+      const combined = await tryFinalizeCombinedPaymentSession(supabaseAdmin, orderId, transactionId);
+      if (!combined) {
+        const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
+        const cardResult = await finalizeCardOrderPaymentSuccess(supabaseAdmin, orderId, transactionId);
+        if (!cardResult) {
+          const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
+          await finalizeInvoicePaymentSuccess(supabaseAdmin, orderId, transactionId);
+        }
       }
     } else {
       const { finalizeCardOrderPaymentFailure } = await import('@/lib/cardOrderPayment');

@@ -1,6 +1,7 @@
 /**
  * Core billing calculations and credit ledger helpers (single source of truth).
  * Rules: Paymob order_id is idempotency key; spend credits only after payment success (or credit-only flows).
+ * FIFO batches by created_at; earned rows carry expires_at (null = no expiry). DB migrations may use clock_timestamp() for ledger created_at.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';

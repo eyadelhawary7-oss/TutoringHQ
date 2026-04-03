@@ -293,6 +293,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s8WhatsappOptedIn, setS8WhatsappOptedIn] = useState(false);
   const [s8ScheduleStart, setS8ScheduleStart] = useState('8');
   const [s8ScheduleEnd, setS8ScheduleEnd] = useState('20');
+  const [s8InstapayNumber, setS8InstapayNumber] = useState('');
   const [s8ScheduleError, setS8ScheduleError] = useState('');
   const [s8Saving, setS8Saving] = useState(false);
 
@@ -547,6 +548,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     setS8WhatsappOptedIn((c.whatsapp_opted_in as boolean) ?? false);
     setS8ScheduleStart(c.schedule_start_hour != null ? String(c.schedule_start_hour) : '8');
     setS8ScheduleEnd(c.schedule_end_hour != null ? String(c.schedule_end_hour) : '20');
+    setS8InstapayNumber((c.instapay_number as string) ?? '');
     setS10RewardStatus((c.referral_reward_status as string) ?? 'pending');
     setS10RewardAmount(c.referral_reward_amount != null ? String(c.referral_reward_amount) : '0');
   }, [data?.center?.id]);
@@ -1072,6 +1074,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
           whatsapp_opted_in: s8WhatsappOptedIn,
           schedule_start_hour: parseHour(s8ScheduleStart, 8),
           schedule_end_hour: parseHour(s8ScheduleEnd, 20),
+          instapay_number: s8InstapayNumber.trim() || null,
         }),
       });
       const raw = await res.text();
@@ -2596,6 +2599,20 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section8.instapayNumber')}
+                    </label>
+                    <input
+                      type="tel"
+                      value={s8InstapayNumber}
+                      onChange={(e) => setS8InstapayNumber(e.target.value)}
+                      className="bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm w-full"
+                      placeholder="01XXXXXXXXX"
+                      dir="ltr"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">{t('centerManagement.section8.instapayNote')}</p>
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end">
