@@ -1275,7 +1275,7 @@ export default function AdminPage() {
                               href={`/admin/centers/${c.id}`}
                               className="text-teal-400 hover:text-teal-300 text-sm font-medium transition-colors shrink-0"
                             >
-                              {tAdmin('centers.manage')}
+                              {tAdmin('centersManage')}
                             </Link>
                           </div>
                         </td>

@@ -181,7 +181,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s4CreatePeriodStart, setS4CreatePeriodStart] = useState('');
   const [s4CreatePeriodEnd, setS4CreatePeriodEnd] = useState('');
   const [s4CreateDueDate, setS4CreateDueDate] = useState('');
-  const [s4CreateNotes, setS4CreateNotes] = useState('');
   const [s4CreateError, setS4CreateError] = useState('');
   const [s4CreateSaving, setS4CreateSaving] = useState(false);
   const [s4ActionLoadingId, setS4ActionLoadingId] = useState<string | null>(null);
@@ -303,7 +302,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     setS4CreatePeriodStart('');
     setS4CreatePeriodEnd('');
     setS4CreateDueDate('');
-    setS4CreateNotes('');
     setS4CreateError('');
   };
 
@@ -818,7 +816,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
           billingPeriodStart: s4CreatePeriodStart,
           billingPeriodEnd: s4CreatePeriodEnd,
           dueDate: s4CreateDueDate,
-          notes: s4CreateNotes || null,
         }),
       });
       const raw = await response.text();
@@ -2148,17 +2145,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         placeholder="YYYY-MM-DD"
                         className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
                         dir="ltr"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">
-                        {t('centerManagement.section4.notes')}
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={s4CreateNotes}
-                        onChange={(e) => setS4CreateNotes(e.target.value)}
-                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
                       />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">

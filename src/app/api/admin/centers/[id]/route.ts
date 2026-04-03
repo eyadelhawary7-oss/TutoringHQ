@@ -281,7 +281,6 @@ export async function PATCH(
       status: 'pending',
       discount_amount: 0,
     };
-    if (body.notes !== undefined) insertRow.notes = body.notes;
 
     const { data: newRow, error } = await supabaseAdmin.from('invoices').insert(insertRow).select().single();
 

@@ -528,7 +528,7 @@
     "create": "إنشاء سنتر",
     "creating": "جاري الإنشاء...",
     "centers": "السناتر",
-    "centers.manage": "إدارة",
+    "centersManage": "إدارة",
     "noCenters": "لا توجد سناتر بعد",
     "demoRequests": "طلبات العرض",
     "name": "الاسم",
