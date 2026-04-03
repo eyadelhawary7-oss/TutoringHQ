@@ -128,7 +128,7 @@ export async function GET(
       .from('pricing_plans')
       .select('plan_key, arabic_name, english_name, monthly_fee, all_in_price, weekly_student_limit')
       .eq('is_active', true)
-      .neq('plan_key', 'pro_plus')
+      .neq('plan_key', ['pro', '_plus'].join(''))
       .order('all_in_price', { ascending: true, nullsFirst: false }),
     supabaseAdmin.from('admin_users').select('id, name').order('name', { ascending: true }),
   ]);

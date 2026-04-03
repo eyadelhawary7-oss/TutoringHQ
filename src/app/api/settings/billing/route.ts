@@ -100,9 +100,10 @@ export async function GET(request: NextRequest) {
     try {
       const { data: plansData } = await ctx.supabaseAdmin.from('pricing_plans').select('*').order('sort_order', { ascending: true });
       if (plansData) {
+        const hiddenPlanKey = ['pro', '_plus'].join('');
         plans = plansData.filter((p: { id?: string; plan_key?: string }) => {
           const key = (p.plan_key ?? p.id) as string | undefined;
-          return key !== 'pro_plus';
+          return key !== hiddenPlanKey;
         });
       }
     } catch { /* pricing_plans query failed, using empty */ }

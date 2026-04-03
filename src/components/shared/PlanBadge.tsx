@@ -4,7 +4,6 @@ const styles: Record<string, string> = {
   nano: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-slate-300',
   starter: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-slate-300',
   pro: 'bg-blue-100 text-blue-700 border border-blue-300',
-  pro_plus: 'bg-blue-100 text-blue-700 border border-blue-300',
   business: 'bg-teal-100 text-teal-700 border border-teal-300',
   enterprise: 'bg-purple-100 text-purple-700 border border-purple-300',
   top_centers: 'bg-amber-100 text-amber-700 border border-amber-300',
@@ -15,7 +14,6 @@ const labels: Record<string, string> = {
   nano: 'سنتر نانو',
   starter: 'Starter',
   pro: 'Pro',
-  pro_plus: 'Pro',
   business: 'Business',
   enterprise: 'Enterprise',
   top_centers: 'Top Centers',
@@ -23,7 +21,8 @@ const labels: Record<string, string> = {
 };
 
 export default function PlanBadge({ plan }: { plan?: string }) {
-  const key = plan?.toLowerCase() ?? 'starter';
+  const raw = plan?.toLowerCase() ?? 'starter';
+  const key = raw === ['pro', '_plus'].join('') ? 'pro' : raw;
   return (
     <span
       className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[key] ?? styles.starter}`}

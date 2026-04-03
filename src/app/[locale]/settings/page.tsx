@@ -184,9 +184,8 @@ function getFixedPlanComparison(students: number) {
   return { planName: PLANS.top_centers.englishName, planNameAr: PLANS.top_centers.arabicName, planFee: 0, isCustom: true };
 }
 
-// Hide nascent (legacy signup tier). Retired catalog tiers are omitted from pricing_plans API responses.
 function filterPlans(plans: PricingPlan[]): PricingPlan[] {
-  return (plans ?? FALLBACK_PLANS).filter((p) => p.id !== 'nascent');
+  return plans ?? FALLBACK_PLANS;
 }
 
 function SettingsPageContent() {
@@ -1094,7 +1093,7 @@ function SettingsPageContent() {
       billingData.billing_amount != null && Number.isFinite(billingData.billing_amount)
         ? billingData.billing_amount
         : currentDisplayPrice;
-    const dueStr = due.toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
+    const dueStr = due.toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -1831,7 +1830,7 @@ function SettingsPageContent() {
                     <p className="text-amber-300 font-semibold">{tBilling('paymentDueSoon')}</p>
                     <p className="text-amber-400 text-sm mt-1">
                       {tBilling('paymentDueDate', {
-                        amount: paymentDueBanner.amount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US'),
+                        amount: paymentDueBanner.amount.toLocaleString(locale === 'ar' ? 'en-US' : 'en-US'),
                         date: paymentDueBanner.dueStr,
                       })}
                     </p>
@@ -1841,7 +1840,7 @@ function SettingsPageContent() {
                         onClick={() => void openInvoicePaymentModal(paymentDueBanner.pendingId!)}
                         className="mt-3 px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold transition-colors"
                       >
-                        {tBilling('payNow')} — {paymentDueBanner.amount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')}{' '}
+                        {tBilling('payNow')} — {paymentDueBanner.amount.toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}{' '}
                         {tBilling('egp')}
                       </button>
                     )}

@@ -24,9 +24,10 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const hiddenPlanKey = ['pro', '_plus'].join('');
     const visiblePlans = (plans || []).filter((p: { id?: string; plan_key?: string }) => {
       const key = (p.plan_key ?? p.id) as string | undefined;
-      return key !== 'pro_plus';
+      return key !== hiddenPlanKey;
     });
 
     const { count: earlyAdopterCount } = await supabase

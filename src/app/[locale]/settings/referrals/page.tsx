@@ -148,7 +148,7 @@ export default function SettingsReferralsPage() {
 
   const formatDate = (d: string) => {
     const date = new Date(d);
-    return date.toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB', {
+    return date.toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { canonicalPlanId } from '@/lib/plans';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Link } from '@/i18n/routing';
 import {
@@ -558,7 +559,7 @@ export default function AdminPage() {
   }, [loadCardOrders, playNewOrderChime, tAdmin]);
 
   const PLAN_SORT_ORDER: Record<string, number> = {
-    nano: 1, starter: 2, pro: 3, pro_plus: 4, business: 4, enterprise: 5, top_centers: 6,
+    nano: 1, starter: 2, pro: 3, business: 4, enterprise: 5, top_centers: 6,
   };
 
   const displayedCenters = useMemo(() => {
@@ -590,11 +591,11 @@ export default function AdminPage() {
       );
     } else if (sortBy === 'plan_high') {
       result = [...result].sort((a, b) =>
-        (PLAN_SORT_ORDER[b.plan ?? ''] ?? 0) - (PLAN_SORT_ORDER[a.plan ?? ''] ?? 0)
+        (PLAN_SORT_ORDER[canonicalPlanId(b.plan)] ?? 0) - (PLAN_SORT_ORDER[canonicalPlanId(a.plan)] ?? 0)
       );
     } else if (sortBy === 'plan_low') {
       result = [...result].sort((a, b) =>
-        (PLAN_SORT_ORDER[a.plan ?? ''] ?? 0) - (PLAN_SORT_ORDER[b.plan ?? ''] ?? 0)
+        (PLAN_SORT_ORDER[canonicalPlanId(a.plan)] ?? 0) - (PLAN_SORT_ORDER[canonicalPlanId(b.plan)] ?? 0)
       );
     }
 
@@ -1619,7 +1620,7 @@ export default function AdminPage() {
                       <tr key={p.center_id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.center_name}</td>
                         <td className="py-3.5 px-4 font-mono text-sm text-[var(--color-text-primary)]">{p.code}</td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-teal-600">{p.amount.toLocaleString('ar-EG')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-teal-600">{p.amount.toLocaleString('en-US')} {tCommon('egp')}</td>
                         <td className="py-3.5 px-4">
                           <button
                             onClick={async () => {
@@ -2023,7 +2024,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { label: 'Avg Students/Center', value: centers.length > 0 ? Math.round(centers.reduce((s, c) => s + (c.students_count ?? 0), 0) / centers.length) : 0 },
-                { label: 'Avg Revenue/Center', value: centers.filter(c => (c.status ?? 'active') === 'active').length > 0 ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, centers.filter(c => (c.status ?? 'active') === 'active').length)).toLocaleString('ar-EG')} ${tCommon('egp')}` : '—' },
+                { label: 'Avg Revenue/Center', value: centers.filter(c => (c.status ?? 'active') === 'active').length > 0 ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, centers.filter(c => (c.status ?? 'active') === 'active').length)).toLocaleString('en-US')} ${tCommon('egp')}` : '—' },
                 { label: 'Centers with 0 Students', value: centers.filter(c => (c.students_count ?? 0) === 0).length },
                 { label: 'Centers at Risk', value: centers.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
               ].map(({ label, value }) => (

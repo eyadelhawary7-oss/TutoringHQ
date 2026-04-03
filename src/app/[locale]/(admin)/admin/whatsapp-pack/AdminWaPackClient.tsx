@@ -634,7 +634,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                             <td className="px-4 py-3 text-[var(--color-text-primary)]">
                               {c.pack_requested_at
                                 ? new Date(c.pack_requested_at).toLocaleDateString(
-                                    locale === 'ar' ? 'ar-EG' : 'en-US',
+                                    locale === 'ar' ? 'en-US' : 'en-US',
                                     { day: 'numeric', month: 'long', year: 'numeric' },
                                   )
                                 : '—'}

@@ -606,7 +606,7 @@ export default function WhatsAppPackClient({
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs text-[var(--color-text-tertiary)]">
                         {new Date(blast.created_at).toLocaleDateString(
-                          locale === 'ar' ? 'ar-EG' : 'en-US',
+                          locale === 'ar' ? 'en-US' : 'en-US',
                           { day: 'numeric', month: 'long', year: 'numeric' },
                         )}
                       </span>
@@ -647,7 +647,7 @@ export default function WhatsAppPackClient({
             <p className="mt-3 text-xs text-[var(--color-text-tertiary)]">
               {t('whatsapp.requestedOn')}{' '}
               {new Date(packRequestedAtState).toLocaleDateString(
-                locale === 'ar' ? 'ar-EG' : 'en-US',
+                locale === 'ar' ? 'en-US' : 'en-US',
                 { day: 'numeric', month: 'long', year: 'numeric' },
               )}
             </p>

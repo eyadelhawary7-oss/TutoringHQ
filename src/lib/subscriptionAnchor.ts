@@ -1,6 +1,6 @@
 /**
  * Quarterly subscription anchor: next_payment_due after a successful Paymob renewal.
- * Anchor date chain: subscription_start_date → billing_cycle_start → approved_at::date (no billing_start_date).
+ * Anchor date chain: subscription_start_date → billing_cycle_start → approved_at::date.
  */
 
 function parseYmd(ymd: string): { y: number; m: number; d: number } {

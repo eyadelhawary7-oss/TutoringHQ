@@ -42,7 +42,7 @@ function buildCardHtml(input: GeneratePdfInput): string {
   const textColor = getContrastColor(safeColor);
   const initial = (centerName || 'C').charAt(0).toUpperCase();
   const displayNotes = notes || 'لا يوجد';
-  const displayDate = new Date().toLocaleDateString('ar-EG', {
+  const displayDate = new Date().toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

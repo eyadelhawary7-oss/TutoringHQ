@@ -85,7 +85,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   function getCellTooltip(dateStr: string): string {
     const present = cellMap[dateStr];
-    const arabicDate = new Date(dateStr + 'T12:00:00Z').toLocaleDateString('ar-EG', {
+    const arabicDate = new Date(dateStr + 'T12:00:00Z').toLocaleDateString('en-US', {
       weekday: 'short',
       day: 'numeric',
       month: 'short',

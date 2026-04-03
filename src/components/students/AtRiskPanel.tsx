@@ -127,12 +127,12 @@ export function AtRiskPanel() {
                       {t('daysSinceLastScan', { days: s.days_since_last_scan, defaultValue: `${s.days_since_last_scan} يوم منذ آخر مسح` })}
                       {s.at_risk_since && (
                         <span className="ms-2">
-                          • {t('atRiskSince', { defaultValue: 'معرض منذ' })} {new Date(s.at_risk_since).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
+                          • {t('atRiskSince', { defaultValue: 'معرض منذ' })} {new Date(s.at_risk_since).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                         </span>
                       )}
                     </p>
                     <p className="text-sm font-mono text-[var(--color-text-secondary)] mt-1">
-                      {t('balance', { defaultValue: 'المستحق' })}: {s.balance_due.toLocaleString('ar-EG')} ج.م
+                      {t('balance', { defaultValue: 'المستحق' })}: {s.balance_due.toLocaleString('en-US')} ج.م
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">

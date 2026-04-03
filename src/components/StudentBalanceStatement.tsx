@@ -94,14 +94,14 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
                 className={i % 2 === 0 ? 'bg-[var(--color-surface-1)]' : 'bg-[var(--color-surface-0)]'}
               >
                 <td className="py-1">
-                  {new Date(p.paid_at).toLocaleDateString('ar-EG', {
+                  {new Date(p.paid_at).toLocaleDateString('en-US', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
                   })}
                 </td>
                 <td className="py-1 font-bold font-mono text-right">
-                  {p.amount.toLocaleString('ar-EG')}
+                  {p.amount.toLocaleString('en-US')}
                 </td>
                 <td className="py-1">{p.method}</td>
                 <td className="py-1">
@@ -116,9 +116,9 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
 
       {/* Summary */}
       <div className="border-t-2 border-black pt-3 text-right font-bold space-y-1">
-        <div>إجمالي المدفوع: {confirmedTotal.toLocaleString('ar-EG')} جنيه</div>
-        <div>إجمالي المعلق: {pendingTotal.toLocaleString('ar-EG')} جنيه</div>
-        <div>الرصيد الحالي: {student.balance_due.toLocaleString('ar-EG')} جنيه</div>
+        <div>إجمالي المدفوع: {confirmedTotal.toLocaleString('en-US')} جنيه</div>
+        <div>إجمالي المعلق: {pendingTotal.toLocaleString('en-US')} جنيه</div>
+        <div>الرصيد الحالي: {student.balance_due.toLocaleString('en-US')} جنيه</div>
       </div>
 
       {/* Footer */}
@@ -126,7 +126,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
         <div>CenterHQ — centerhq.com</div>
         <div>
           تاريخ الإصدار:{' '}
-          {new Date().toLocaleDateString('ar-EG', {
+          {new Date().toLocaleDateString('en-US', {
             day: 'numeric',
             month: 'long',
             year: 'numeric',

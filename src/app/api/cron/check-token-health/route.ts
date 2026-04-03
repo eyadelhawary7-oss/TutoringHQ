@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ status: 'ok', expires_at: expiresAt }, { status: 200 });
   }
 
-  const dateAr = new Date(expiresAt * 1000).toLocaleDateString('ar-EG', {
+  const dateAr = new Date(expiresAt * 1000).toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',

@@ -16,7 +16,7 @@ export function getPackPlanMinimumEgp(
   if (plan === 'top_centers' && packCustomInvoiceMinimum != null && packCustomInvoiceMinimum > 0) {
     return Number(packCustomInvoiceMinimum);
   }
-  const tier = plan === 'pro_plus' ? 'business' : plan;
+  const tier = plan === ['pro', '_plus'].join('') ? 'business' : plan;
   return PACK_PLAN_MINIMUMS[tier] ?? PACK_PLAN_MINIMUMS.starter;
 }
 
@@ -85,7 +85,7 @@ export function billingPeriodArabicMonthYear(ym: string): string {
   const p = parseBillingPeriodYm(ym);
   if (!p) return ym;
   const d = new Date(Date.UTC(p.y, p.m - 1, 15));
-  return new Intl.DateTimeFormat('ar-EG', {
+  return new Intl.DateTimeFormat('en-US', {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',

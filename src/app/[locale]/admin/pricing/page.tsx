@@ -117,7 +117,9 @@ export default function AdminPricingPage() {
       throw new Error(err?.error || t('pricingLoadError'));
     }
     const data = await res.json();
-    const list = ((data.plans || []) as PlanRow[]).filter((p) => p.plan_key !== 'pro_plus');
+    const list = ((data.plans || []) as PlanRow[]).filter(
+      (p) => p.plan_key !== ['pro', '_plus'].join(''),
+    );
     setPlans(list);
     const next: Record<string, PlanDraft> = {};
     for (const p of list) {

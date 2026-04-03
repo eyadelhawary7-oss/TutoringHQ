@@ -27,7 +27,7 @@ export function exportToExcel(students: StudentExport[], filename?: string) {
       'اسم الطالب': s.name,
       'المادة': s.subject || '',
       'الحالة': s.payment_status === 'paid' ? 'مسدد' : s.payment_status === 'pending' ? 'معلق' : 'غير مسدد',
-      'تاريخ آخر دفعة': s.last_paid_date ? new Date(s.last_paid_date).toLocaleDateString('ar-EG') : '',
+      'تاريخ آخر دفعة': s.last_paid_date ? new Date(s.last_paid_date).toLocaleDateString('en-US') : '',
       'المبلغ': s.fee || 0,
       'طريقة الدفع': s.last_payment_method ? (METHOD_LABELS[s.last_payment_method] || s.last_payment_method) : '',
     }))
@@ -64,7 +64,7 @@ export function exportDashboardToExcel(data: DashboardExportData) {
   const attendanceSheet = XLSX.utils.json_to_sheet(
     data.attendance.map(a => ({
       'اسم الطالب': a.student_name,
-      'وقت المسح': a.scanned_at ? new Date(a.scanned_at).toLocaleString('ar-EG') : '',
+      'وقت المسح': a.scanned_at ? new Date(a.scanned_at).toLocaleString('en-US') : '',
       'الحالة وقت المسح': a.payment_status_at_scan || '',
     }))
   );
@@ -75,7 +75,7 @@ export function exportDashboardToExcel(data: DashboardExportData) {
       'اسم الطالب': p.student_name,
       'المبلغ': p.amount,
       'طريقة الدفع': METHOD_LABELS[p.method] || p.method,
-      'تاريخ الدفع': p.paid_at ? new Date(p.paid_at).toLocaleString('ar-EG') : '',
+      'تاريخ الدفع': p.paid_at ? new Date(p.paid_at).toLocaleString('en-US') : '',
       'سجّل بواسطة': p.recorded_by || '',
     }))
   );
@@ -99,7 +99,7 @@ export interface PaymentExportRecord {
 export function exportPaymentsToExcel(records: PaymentExportRecord[], filename?: string) {
   const worksheet = XLSX.utils.json_to_sheet(
     records.map(r => ({
-      'التاريخ': r.paid_at ? new Date(r.paid_at).toLocaleDateString('ar-EG') : '',
+      'التاريخ': r.paid_at ? new Date(r.paid_at).toLocaleDateString('en-US') : '',
       'اسم الطالب': r.student_name || '',
       'رقم الطالب': r.student_number || '',
       'المجموعة': r.group_name || '',

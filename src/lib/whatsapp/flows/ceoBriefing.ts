@@ -21,7 +21,7 @@ function getSupabaseAdmin() {
 
 function formatDateArabic(): string {
   const now = new Date();
-  return now.toLocaleDateString('ar-EG', {
+  return now.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',

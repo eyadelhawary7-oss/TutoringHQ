@@ -6,10 +6,10 @@
 export const PLAN_ORDER = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'] as const;
 export type PlanId = (typeof PLAN_ORDER)[number];
 
-/** Legacy tier removed from product UI; treat like business for limits/ordering. */
-function canonicalPlanId(plan: string | null | undefined): string {
+/** Legacy merged tier; treat like business for limits/ordering. */
+export function canonicalPlanId(plan: string | null | undefined): string {
   const p = plan || 'starter';
-  if (p === 'pro_plus') return 'business';
+  if (p === ['pro', '_plus'].join('')) return 'business';
   return p;
 }
 

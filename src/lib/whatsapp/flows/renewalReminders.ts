@@ -33,13 +33,13 @@ export interface CenterForRenewal {
 
 function formatAmount(amount: number | null): string {
   if (amount == null || isNaN(amount)) return '0';
-  return Number(amount).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr + 'T12:00:00').toLocaleDateString('ar-EG', {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

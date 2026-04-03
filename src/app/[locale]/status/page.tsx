@@ -213,9 +213,9 @@ export default function StatusPage() {
                   <div>
                     <p className="font-medium text-[var(--color-text-primary)]">{inc.title}</p>
                     <p className="text-sm text-[var(--color-text-secondary)]">
-                      {new Date(inc.started_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')}
+                      {new Date(inc.started_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}
                       {inc.resolved_at && (
-                        <> — {t('تم الحل', 'Resolved')} {new Date(inc.resolved_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')}</>
+                        <> — {t('تم الحل', 'Resolved')} {new Date(inc.resolved_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}</>
                       )}
                     </p>
                   </div>

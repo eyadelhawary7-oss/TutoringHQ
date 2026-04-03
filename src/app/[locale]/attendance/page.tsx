@@ -60,7 +60,7 @@ function formatRelativeTime(dateStr: string, locale: string): string {
     if (diffDays === 2) return 'منذ يومين';
     if (diffDays < 7) return `منذ ${diffDays} أيام`;
     if (diffDays < 30) return `منذ ${Math.floor(diffDays / 7)} أسبوع`;
-    return d.toLocaleDateString('ar-EG', { dateStyle: 'short' });
+    return d.toLocaleDateString('en-US', { dateStyle: 'short' });
   }
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
@@ -293,7 +293,7 @@ export default function AttendancePage() {
         r.student.name || '',
         r.student.phone || '',
         String(r.totalScans),
-        r.lastScan ? new Date(r.lastScan).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : '',
+        r.lastScan ? new Date(r.lastScan).toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB') : '',
         r.expected > 0 ? `${Math.round((r.totalScans / r.expected) * 100)}%` : `${r.totalScans}`,
       ]);
       const csv = '\uFEFF' + [cols.join(','), ...rows.map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
@@ -493,7 +493,7 @@ export default function AttendancePage() {
                                       return (
                                         <tr key={sc.id} className="border-b border-[var(--color-border-subtle)]">
                                           <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end" dir="ltr">
-                                            {sc.scanned_at ? new Date(sc.scanned_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                                            {sc.scanned_at ? new Date(sc.scanned_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
                                           </td>
                                           <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end">{grp?.name ?? '—'}</td>
                                           <td className="py-2 px-4 text-end">
@@ -563,7 +563,7 @@ export default function AttendancePage() {
                         <td className="py-3.5 px-4 text-sm font-mono font-bold text-[var(--color-text-primary)] text-end">{r.sessionsCount}</td>
                         <td className="py-3.5 px-4 text-sm font-mono text-[var(--color-text-primary)] text-end">{r.avgAttendance}</td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] text-end" dir="ltr">
-                          {r.lastSession ? new Date(r.lastSession).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB') : '—'}
+                          {r.lastSession ? new Date(r.lastSession).toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB') : '—'}
                         </td>
                         <td className="py-3.5 px-4 text-end">
                           <button
@@ -604,7 +604,7 @@ export default function AttendancePage() {
                                     {r.sessionBreakdown.map((sb) => (
                                       <tr key={sb.date} className="border-b border-[var(--color-border-subtle)]">
                                         <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end" dir="ltr">
-                                          {new Date(sb.date).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB')}
+                                          {new Date(sb.date).toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB')}
                                         </td>
                                         <td className="py-2 px-4 text-[var(--color-text-primary)] font-mono text-end">{sb.present}</td>
                                         <td className="py-2 px-4 text-end">

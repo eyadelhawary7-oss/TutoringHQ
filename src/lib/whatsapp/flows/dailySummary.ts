@@ -50,7 +50,7 @@ export function formatYesterdayArabic(): string {
   const yesterday = getYesterdayCairo();
   const [y, m, d] = yesterday.split('-').map(Number);
   const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString('ar-EG', {
+  return date.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',

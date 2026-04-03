@@ -530,7 +530,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     <p className="text-xs text-teal-600 dark:text-teal-400 mt-2">
                       ✓ {tIdCards('sentToVendor')} —{' '}
                       {new Date(slideOrder.vendor_sent_at).toLocaleString(
-                        locale === 'ar' ? 'ar-EG' : 'en-US',
+                        locale === 'ar' ? 'en-US' : 'en-US',
                         { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
                       )}
                     </p>

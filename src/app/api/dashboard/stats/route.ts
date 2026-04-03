@@ -223,7 +223,7 @@ export async function GET(request: NextRequest) {
         if (diffMins < 60) return `منذ ${diffMins} د`;
         if (diffHours < 24) return `منذ ${diffHours} س`;
         if (diffDays < 7) return `منذ ${diffDays} يوم`;
-        return d.toLocaleDateString('ar-EG', { dateStyle: 'short' });
+        return d.toLocaleDateString('en-US', { dateStyle: 'short' });
       }
       if (diffMins < 1) return 'Just now';
       if (diffMins < 60) return `${diffMins}m ago`;

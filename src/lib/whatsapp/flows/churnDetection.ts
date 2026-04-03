@@ -64,9 +64,9 @@ export async function sendDay7SalesManagerAlert(params: SalesManagerParams): Pro
 
   const { centerId, centerName, lastScanAt, monthlyFee, daysInactive, alertType } = params;
   const lastScanStr = lastScanAt
-    ? new Date(lastScanAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
+    ? new Date(lastScanAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
     : 'لا يوجد';
-  const mrrStr = `${Number(monthlyFee).toLocaleString('ar-EG')} ج.م`;
+  const mrrStr = `${Number(monthlyFee).toLocaleString('en-US')} ج.م`;
 
   const variables: Record<string, string> = {
     center_name: centerName,
@@ -93,7 +93,7 @@ export interface FlagDay14Params {
 export async function flagDay14InAdminPanel(params: FlagDay14Params): Promise<{ success: boolean; error?: string }> {
   const { centerId, centerName, lastScanAt, daysInactive } = params;
   const lastScanStr = lastScanAt
-    ? new Date(lastScanAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
+    ? new Date(lastScanAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
     : 'لا يوجد';
 
   const message = `سنتر "${centerName}" بدون استخدام للماسح منذ ${daysInactive} يوم. آخر مسح: ${lastScanStr}`;
