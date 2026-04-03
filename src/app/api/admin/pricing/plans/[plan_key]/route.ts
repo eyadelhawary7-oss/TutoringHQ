@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ plan_
     .update(updates)
     .eq('plan_key', planKey)
     .select(
-      'plan_key, english_name, arabic_name, weekly_student_limit, monthly_fee, all_in_price, is_custom, sort_order, is_active',
+      'plan_key, arabic_name, english_name, weekly_student_limit, monthly_fee, cost_per_student, setup_fee, is_active, all_in_price',
     )
     .single();
 

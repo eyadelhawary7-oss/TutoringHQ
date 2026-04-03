@@ -15,14 +15,14 @@ import { ArrowLeft, Banknote } from 'lucide-react';
 
 type PlanRow = {
   plan_key: string;
-  english_name: string;
   arabic_name: string;
+  english_name: string;
   weekly_student_limit: number;
   monthly_fee: number;
-  all_in_price: number;
-  is_custom: boolean;
-  sort_order: number;
+  cost_per_student: number;
+  setup_fee: number;
   is_active: boolean;
+  all_in_price: number;
 };
 
 type PlanDraft = {

@@ -9,9 +9,9 @@ export async function GET(request: Request) {
   const { data, error } = await auth.supabaseAdmin
     .from('pricing_plans')
     .select(
-      'plan_key, english_name, arabic_name, weekly_student_limit, monthly_fee, all_in_price, is_custom, sort_order, is_active',
+      'plan_key, arabic_name, english_name, weekly_student_limit, monthly_fee, cost_per_student, setup_fee, is_active, all_in_price',
     )
-    .order('sort_order', { ascending: true });
+    .order('plan_key', { ascending: true });
 
   if (error) {
     console.error('[GET /api/admin/pricing/plans]', error);
