@@ -1,5 +1,8 @@
 'use client';
 
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -26,6 +29,35 @@ type CenterData = {
 interface CenterManagementClientProps {
   centerId: string;
 }
+
+const AdminDatePicker = ({
+  value,
+  onChange,
+  placeholder = 'Select date',
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}) => {
+  const selected = value ? new Date(value) : null;
+  return (
+    <DatePicker
+      selected={selected}
+      onChange={(date: Date | null) => {
+        onChange(date ? date.toISOString().slice(0, 10) : '');
+      }}
+      dateFormat="yyyy-MM-dd"
+      placeholderText={placeholder}
+      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm"
+      calendarClassName="bg-slate-800 border border-slate-600 text-white"
+      wrapperClassName="w-full"
+      popperPlacement="bottom-start"
+      showMonthDropdown
+      showYearDropdown
+      dropdownMode="select"
+    />
+  );
+};
 
 const GOVERNORATE_OPTIONS: { value: string; label: string }[] = [
   { value: 'cairo', label: 'Cairo — القاهرة' },
@@ -1747,40 +1779,22 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <label className="block text-sm text-slate-300 mb-1">
                       {t('centerManagement.section3.nextPaymentDue')}
                     </label>
-                    <input
-                      type="text"
-                      value={s3NextPaymentDue}
-                      onChange={(e) => setS3NextPaymentDue(e.target.value)}
-                      placeholder="YYYY-MM-DD"
-                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
-                      dir="ltr"
-                    />
+                    <AdminDatePicker value={s3NextPaymentDue} onChange={setS3NextPaymentDue} placeholder="YYYY-MM-DD" />
                   </div>
                   <div>
                     <label className="block text-sm text-slate-300 mb-1">
                       {t('centerManagement.section3.autoSuspendAt')}
                     </label>
-                    <input
-                      type="text"
-                      value={s3AutoSuspendAt}
-                      onChange={(e) => setS3AutoSuspendAt(e.target.value)}
-                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
-                      dir="ltr"
-                    />
+                    <AdminDatePicker value={s3AutoSuspendAt} onChange={setS3AutoSuspendAt} />
                     <p className="text-slate-400 text-xs mt-1">{t('centerManagement.section3.autoSuspendWarning')}</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm text-slate-300 mb-1">
                       {t('centerManagement.section3.subscriptionStartDate')}
                     </label>
-                    <input
-                      type="text"
-                      value={s3SubStartDate}
-                      onChange={(e) => setS3SubStartDate(e.target.value)}
-                      placeholder="YYYY-MM-DD"
-                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2 max-w-md"
-                      dir="ltr"
-                    />
+                    <div className="max-w-md">
+                      <AdminDatePicker value={s3SubStartDate} onChange={setS3SubStartDate} placeholder="YYYY-MM-DD" />
+                    </div>
                   </div>
                   <div className="md:col-span-2 flex items-center gap-2">
                     <input
@@ -2042,12 +2056,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <label className="block text-xs text-slate-400 mb-1">
                         {t('centerManagement.section4.paidAt')}
                       </label>
-                      <input
-                        type="date"
-                        value={s4MarkPaidAt}
-                        onChange={(e) => setS4MarkPaidAt(e.target.value)}
-                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
-                      />
+                      <AdminDatePicker value={s4MarkPaidAt} onChange={setS4MarkPaidAt} />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <button
@@ -2111,26 +2120,20 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         <label className="block text-xs text-slate-400 mb-1">
                           {t('centerManagement.section4.periodStart')}
                         </label>
-                        <input
-                          type="text"
+                        <AdminDatePicker
                           value={s4CreatePeriodStart}
-                          onChange={(e) => setS4CreatePeriodStart(e.target.value)}
+                          onChange={setS4CreatePeriodStart}
                           placeholder="YYYY-MM-DD"
-                          className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
-                          dir="ltr"
                         />
                       </div>
                       <div>
                         <label className="block text-xs text-slate-400 mb-1">
                           {t('centerManagement.section4.periodEnd')}
                         </label>
-                        <input
-                          type="text"
+                        <AdminDatePicker
                           value={s4CreatePeriodEnd}
-                          onChange={(e) => setS4CreatePeriodEnd(e.target.value)}
+                          onChange={setS4CreatePeriodEnd}
                           placeholder="YYYY-MM-DD"
-                          className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
-                          dir="ltr"
                         />
                       </div>
                     </div>
@@ -2138,14 +2141,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <label className="block text-xs text-slate-400 mb-1">
                         {t('centerManagement.section4.dueDate')}
                       </label>
-                      <input
-                        type="text"
-                        value={s4CreateDueDate}
-                        onChange={(e) => setS4CreateDueDate(e.target.value)}
-                        placeholder="YYYY-MM-DD"
-                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
-                        dir="ltr"
-                      />
+                      <AdminDatePicker value={s4CreateDueDate} onChange={setS4CreateDueDate} placeholder="YYYY-MM-DD" />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <button
@@ -2232,12 +2228,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <label className="block text-xs text-slate-400 mb-1">
                         {t('centerManagement.section5.paymentDate')}
                       </label>
-                      <input
-                        type="date"
-                        value={s5Date}
-                        onChange={(e) => setS5Date(e.target.value)}
-                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
-                      />
+                      <AdminDatePicker value={s5Date} onChange={setS5Date} />
                     </div>
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">
