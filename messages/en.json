@@ -734,6 +734,7 @@
     "bankTransfer": "Bank Transfer",
     "paymentRecorded": "Payment recorded",
     "scanError": "Scan error",
+    "loadingRetry": "Still loading — try again in a moment",
     "studentNotFound": "Student not found",
     "attendanceRecorded": "Attendance recorded",
     "pending": "pending",
@@ -782,7 +783,12 @@
     "tab_camera": "Camera",
     "tab_bluetooth": "Bluetooth",
     "tab_manual": "Manual Entry",
-    "tab_bar_label": "Scanner tabs"
+    "tab_bar_label": "Scanner tabs",
+    "point_camera": "Point camera at QR code",
+    "history_empty_hint": "Scan a student's QR card to begin",
+    "sound_on_label": "🔊 Sound on",
+    "sound_off_label": "🔇 Sound off",
+    "attendance_toast": "✓ Attendance recorded"
   },
   "sync": {
     "online": "Online",
@@ -922,7 +928,13 @@
     "printCards": "Print Cards",
     "recentActivity": "Recent Activity",
     "viewAll": "View Payments",
-    "viewAllAttendance": "View Attendance"
+    "viewAllAttendance": "View Attendance",
+    "action_scan_subtitle": "Record attendance instantly",
+    "action_add_student_subtitle": "Enroll a new student",
+    "action_payments_subtitle": "Review and collect balances",
+    "action_print_subtitle": "Generate QR cards for students",
+    "view_student": "View",
+    "trend_up_suffix": "vs yesterday"
   },
   "analytics": {
     "title": "Financial Intelligence",
@@ -963,7 +975,25 @@
     "export_pdf": "Export PDF",
     "no_data": "Not enough data yet",
     "week_days": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-    "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "aiChat": {
+      "title": "Ask about your center",
+      "placeholder": "Ask in Arabic or English…",
+      "send": "Send",
+      "close": "Close chat",
+      "loading": "Thinking…",
+      "beta": "Ask about your center (Beta)",
+      "fabLabel": "AI",
+      "emptyHint": "Try a suggested question or type your own.",
+      "loginRequired": "Sign in to use the assistant.",
+      "errorGeneric": "Something went wrong. Try rephrasing your question.",
+      "suggested": [
+        "How many students attended this week?",
+        "Which group has the highest revenue?",
+        "Which students have overdue balances?",
+        "How many payments were recorded today?"
+      ]
+    }
   },
   "ceoRange": {
     "thisMonth": "This Month",

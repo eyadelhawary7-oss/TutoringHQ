@@ -17,8 +17,9 @@ import { syncQueuedScans } from '@/lib/sync';
 import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
-import { Camera, Bluetooth, Hash, BookOpen, ChevronRight, Search } from 'lucide-react';
+import { Camera, Bluetooth, Hash, BookOpen, ChevronRight, Search, QrCode } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/hooks/useToast';
 
 type ScanMode = 'camera' | 'bluetooth' | 'manual';
 
@@ -74,6 +75,7 @@ export default function ScanPage() {
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const { user, hasPermission } = useUser();
+  const toast = useToast();
 
   const [mode, setMode] = useState<ScanMode>(persistedMode);
   const [manualIdInput, setManualIdInput] = useState('');
@@ -110,7 +112,16 @@ export default function ScanPage() {
   const resultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [scanFrameState, setScanFrameState] = useState<'idle' | 'success' | 'error'>('idle');
   const [lastSuccessStudentName, setLastSuccessStudentName] = useState('');
+  const [successFlashTick, setSuccessFlashTick] = useState(0);
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    if (scanFrameState !== 'success') return;
+    setSuccessFlashTick((n) => n + 1);
+  }, [scanFrameState]);
+  useEffect(() => {
+    if (!lastSuccessStudentName) return;
+    toast.success(`${lastSuccessStudentName} — ${ts('attendance_toast')}`);
+  }, [lastSuccessStudentName, toast, ts]);
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { persistedMode = mode; }, [mode]);
 
@@ -292,7 +303,7 @@ export default function ScanPage() {
   const handleScan = useCallback(async (code: string) => {
     if (isProcessingRef.current) return;
     if (!centerId || !userId) {
-      setError('جاري التحميل... حاول مرة أخرى');
+      setError(t('loadingRetry'));
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -868,21 +879,9 @@ export default function ScanPage() {
                 localStorage.setItem('chq-scanner-sound', String(next));
               }}
               aria-label={soundEnabled ? ts('sound_on') : ts('sound_off')}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-badge border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)] transition-colors duration-fast ease-out"
+              className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 shadow-sm hover:border-teal-500/40 dark:hover:border-teal-400/30 transition-all duration-200 ease-out"
             >
-              {soundEnabled ? (
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-                </svg>
-              ) : (
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                  <line x1="23" y1="9" x2="17" y2="15" />
-                  <line x1="17" y1="9" x2="23" y2="15" />
-                </svg>
-              )}
-              {soundEnabled ? ts('sound_on') : ts('sound_off')}
+              <span className="tabular-nums">{soundEnabled ? ts('sound_on_label') : ts('sound_off_label')}</span>
             </button>
             {pendingCount > 0 && (
               <span className="text-xs text-[var(--color-warning)] font-medium">
@@ -1053,7 +1052,15 @@ export default function ScanPage() {
                 {ts('history_title')}
               </h2>
               {scanHistory.length === 0 ? (
-                <p className="text-sm text-[var(--color-text-tertiary)] text-center py-6">{ts('history_empty')}</p>
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                  <QrCode
+                    className="w-14 h-14 text-slate-300 dark:text-slate-600 mb-3"
+                    strokeWidth={1.25}
+                    aria-hidden
+                  />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{ts('history_empty')}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs">{ts('history_empty_hint')}</p>
+                </div>
               ) : (
                 <div className="card overflow-hidden">
                   {scanHistory.map((scan) => (

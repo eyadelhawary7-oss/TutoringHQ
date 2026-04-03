@@ -167,6 +167,16 @@
 }
 
 :root {
+  /* CenterHQ Design Tokens */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1), 0 8px 32px rgba(0, 0, 0, 0.06);
+  --shadow-teal: 0 4px 24px rgba(13, 148, 136, 0.15);
+  --shadow-card-dark: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
+  --radius-card: 16px;
+  --radius-inner: 10px;
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+
   /* ── Semantic text colors (var() only) ──────────── */
   --color-text-primary:   #f8fafc;
   --color-text-secondary: #94a3b8;
@@ -205,6 +215,34 @@
   --space-stack-sm:      0.5rem;
   --space-stack-md:      0.75rem;
   --space-stack-lg:      1rem;
+}
+
+html:not(.light) {
+  --shadow-card: var(--shadow-card-dark);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.45), 0 8px 32px rgba(0, 0, 0, 0.28);
+}
+
+.card-shadow {
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-normal);
+}
+.card-shadow:hover {
+  box-shadow: var(--shadow-hover);
+}
+.teal-glow {
+  box-shadow: var(--shadow-teal);
+}
+.btn-lift {
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+.btn-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+.btn-lift:active {
+  transform: translateY(0);
 }
 
 /* ── Global theme enforcement ───────────────────────────────
@@ -1100,14 +1138,29 @@ html.light .text-white\/70 {
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+@keyframes scanner-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.02); }
+}
+
+.scanner-frame-corner {
+  animation: scanner-pulse 2s ease-in-out infinite;
+}
+
+@keyframes scan-success-flash {
+  0% { opacity: 0; }
+  35% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.scan-success-overlay-flash {
+  animation: scan-success-flash 400ms ease-out forwards;
+}
+
 .scanner-frame {
   position: relative;
   border-radius: var(--radius-card);
   overflow: hidden;
-}
-
-.scanner-frame.scanning {
-  animation: scan-pulse 2s ease-in-out infinite;
 }
 
 .scanner-frame.success {

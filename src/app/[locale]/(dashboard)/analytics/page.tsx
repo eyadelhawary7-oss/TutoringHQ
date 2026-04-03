@@ -7,12 +7,12 @@ import { useUser } from '@/contexts/UserContext';
 import RevenueByGroup from '@/components/charts/RevenueByGroup';
 import AgingReport from '@/components/analytics/AgingReport';
 import PnLCard from '@/components/analytics/PnLCard';
-import NaturalQueryBox from '@/components/ai/NaturalQueryBox';
+import AnalyticsAiChatWidget from '@/components/analytics/AnalyticsAiChatWidget';
 import { RevenueAreaChart } from '@/components/analytics/RevenueAreaChart';
 import { PaymentDonutChart } from '@/components/analytics/PaymentDonutChart';
 import { AttendanceHeatmap } from '@/components/analytics/AttendanceHeatmap';
 import { chartColors, colors } from '@/lib/tokens';
-import { Loader2 } from 'lucide-react';
+import { Loader2, TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 
 interface AnalyticsData {
   mrr: number;
@@ -42,6 +42,7 @@ const DONUT_PALETTE = [
 
 export default function AnalyticsPage() {
   const ta = useTranslations('analytics');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const { user, hasPermission } = useUser();
   const canViewRevenue = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_revenue');
@@ -69,11 +70,11 @@ export default function AnalyticsPage() {
       const json = await res.json();
       setData(json);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
+      setError(e instanceof Error ? e.message : tCommon('errorGeneric'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tCommon]);
 
   useEffect(() => {
     if (!canViewRevenue) return;
@@ -156,17 +157,20 @@ export default function AnalyticsPage() {
     );
   }
 
+  const egp = tCommon('egp');
+
   return (
-    <div
-      className="bg-[var(--color-surface-0)] min-h-screen pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-6"
-      dir={locale === 'ar' ? 'rtl' : 'ltr'}
-    >
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 no-print">
+    <div className="bg-[var(--color-surface-0)] min-h-screen pb-[calc(56px+env(safe-area-inset-bottom,0px)+5rem)] md:pb-28">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-4 pt-4 pb-4 no-print border-b border-slate-200/80 dark:border-slate-800">
         <div>
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ta('title')}</h1>
-          <p className="text-xs text-[var(--color-text-secondary)]">{ta('subtitle')}</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">{ta('title')}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">{ta('subtitle')}</p>
         </div>
-        <button type="button" onClick={() => window.print()} className="btn btn-ghost text-xs gap-1.5">
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="inline-flex items-center justify-center gap-2 self-stretch sm:self-auto sm:ms-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold shadow-sm hover:border-teal-500/40 dark:hover:border-teal-400/30 transition-colors"
+        >
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
             <polyline points="6 9 6 2 18 2 18 9" />
             <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
@@ -176,39 +180,91 @@ export default function AnalyticsPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 px-4 mb-4 chart-animate">
-        <div className="card p-4 flex flex-col gap-1">
-          <span className="text-xs text-[var(--color-text-secondary)]">{ta('mrr')}</span>
-          <span className="text-xl font-bold text-[var(--color-text-primary)]">
-            {Number(d.mrr ?? 0).toLocaleString('en-US')}
-            <span className="text-xs text-[var(--color-text-tertiary)] ms-1">EGP</span>
-          </span>
-          {mrrDelta !== undefined && (
-            <span className={`text-xs font-medium ${mrrDelta >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-              {mrrDelta >= 0 ? '+' : ''}
-              {Number(mrrDelta).toLocaleString('en-US')}% {ta('mrr_delta')}
-            </span>
-          )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 px-4 mt-4 mb-4 chart-animate">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('mrr')}</span>
+              <span className="block text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">
+                {Number(d.mrr ?? 0).toLocaleString('en-US')}
+                <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ms-1">{egp}</span>
+              </span>
+              {mrrDelta !== undefined && (
+                <span
+                  className={`inline-flex items-center gap-0.5 text-xs font-semibold mt-1 ${
+                    mrrDelta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                  }`}
+                >
+                  {mrrDelta >= 0 ? (
+                    <TrendingUp className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                  ) : (
+                    <span className="shrink-0" aria-hidden>
+                      ↓
+                    </span>
+                  )}
+                  <span>
+                    {Number(Math.abs(mrrDelta)).toLocaleString('en-US')}% {ta('mrr_delta')}
+                  </span>
+                </span>
+              )}
+            </div>
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/30 border border-teal-100/80 dark:border-teal-800/40"
+              aria-hidden
+            >
+              <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            </div>
+          </div>
         </div>
-        <div className="card p-4 flex flex-col gap-1">
-          <span className="text-xs text-[var(--color-text-secondary)]">{ta('collection_rate')}</span>
-          <span className="text-xl font-bold text-[var(--color-text-primary)]">
-            {Number(d.collection_rate ?? 0).toLocaleString('en-US', { maximumFractionDigits: 1 })}%
-          </span>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('collection_rate')}</span>
+              <span className="block text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">
+                {Number(d.collection_rate ?? 0).toLocaleString('en-US', { maximumFractionDigits: 1 })}%
+              </span>
+            </div>
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100/80 dark:border-blue-800/40"
+              aria-hidden
+            >
+              <Percent className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
         </div>
-        <div className="card p-4 flex flex-col gap-1">
-          <span className="text-xs text-[var(--color-text-secondary)]">{ta('avg_per_student')}</span>
-          <span className="text-xl font-bold text-[var(--color-text-primary)]">
-            {Number(d.avg_payment_per_student ?? 0).toLocaleString('en-US')}
-            <span className="text-xs text-[var(--color-text-tertiary)] ms-1">EGP</span>
-          </span>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('avg_per_student')}</span>
+              <span className="block text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">
+                {Number(d.avg_payment_per_student ?? 0).toLocaleString('en-US')}
+                <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ms-1">{egp}</span>
+              </span>
+            </div>
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-100/80 dark:border-purple-800/40"
+              aria-hidden
+            >
+              <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
         </div>
-        <div className="card p-4 flex flex-col gap-1">
-          <span className="text-xs text-[var(--color-text-secondary)]">{ta('total_revenue')}</span>
-          <span className="text-xl font-bold text-[var(--color-text-primary)]">
-            {Number(totalRevenue).toLocaleString('en-US')}
-            <span className="text-xs text-[var(--color-text-tertiary)] ms-1">EGP</span>
-          </span>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('total_revenue')}</span>
+              <span className="block text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">
+                {Number(totalRevenue).toLocaleString('en-US')}
+                <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ms-1">{egp}</span>
+              </span>
+            </div>
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-100/80 dark:border-amber-800/40"
+              aria-hidden
+            >
+              <Wallet className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -238,7 +294,7 @@ export default function AnalyticsPage() {
                       <span className="text-[var(--color-text-secondary)]">{slice.name}</span>
                     </div>
                     <span className="font-medium text-[var(--color-text-primary)]">
-                      {Number(slice.value).toLocaleString('en-US')} EGP
+                      {Number(slice.value).toLocaleString('en-US')} {egp}
                     </span>
                   </div>
                 ))}
@@ -280,9 +336,7 @@ export default function AnalyticsPage() {
         <AgingReport data={d.aging_report} onRefresh={loadData} />
       </section>
 
-      <section className="px-4 mt-4 no-print">
-        <NaturalQueryBox />
-      </section>
+      <AnalyticsAiChatWidget />
     </div>
   );
 }

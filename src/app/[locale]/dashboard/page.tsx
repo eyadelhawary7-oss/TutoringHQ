@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -23,7 +23,23 @@ import {
   SkeletonCircle,
   SkeletonRow,
 } from '@/components/ui/skeleton';
-import { QrCode, TrendingUp, Users, CreditCard, UserPlus, Printer, X } from 'lucide-react';
+import {
+  QrCode,
+  TrendingUp,
+  Users,
+  CreditCard,
+  UserPlus,
+  Printer,
+  X,
+  ArrowUpRight,
+  CalendarCheck,
+} from 'lucide-react';
+
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
+  return (name.slice(0, 2) || '?').toUpperCase();
+}
 
 const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -761,6 +777,21 @@ export default function DashboardPage() {
     month: formatMonthLabel(r.month, locale),
     revenue: Number(r.amount) || 0,
   }));
+  const sparklineData = useMemo(() => {
+    const daily = data.revenueChartData.map((d) => ({
+      month: d.day,
+      revenue:
+        d.cash +
+        d.instapay +
+        d.vodafone +
+        d.orange +
+        d.fawry +
+        d.bank +
+        d.other,
+    }));
+    if (daily.length > 0) return daily;
+    return monthlyRevenueData;
+  }, [data.revenueChartData, monthlyRevenueData]);
   const collectionRate = Number(data.collectionRatePct ?? 0);
   const avgRevenue =
     data.totalStudents > 0
@@ -797,18 +828,6 @@ export default function DashboardPage() {
           <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('subtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 p-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
-            {(['7', '30'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setTimeRange(r)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${timeRange === r ? 'bg-[var(--color-surface-3)] text-white shadow-sm' : 'text-[var(--color-text-secondary)]'}`}
-              >
-                {r === '7' ? t('last7Days') : t('last30Days')}
-              </button>
-            ))}
-          </div>
           <button
             type="button"
             onClick={handleExport}
@@ -876,110 +895,184 @@ export default function DashboardPage() {
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             {canViewRevenue && (
-              <div className="card p-4 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--color-text-secondary)] font-medium">
-                    {t('stats.revenue_today')}
-                  </span>
-                  <TrendingUp className="w-5 h-5 text-brand-400 shrink-0" strokeWidth={2} />
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
+                      {t('stats.revenue_today')}
+                    </p>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-white mt-1 tabular-nums">
+                      {Number(revenueTodayKpi).toLocaleString('en-US')}
+                      <span className="text-sm font-normal text-slate-500 dark:text-slate-400 ms-1">{egpSuffix}</span>
+                    </p>
+                    {data.revenueDeltaPct > 0 && (
+                      <p className="text-xs text-teal-600 dark:text-teal-400 mt-1 flex items-center gap-0.5 font-medium">
+                        <TrendingUp className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                        <span>
+                          {Number(data.revenueDeltaPct).toLocaleString('en-US')}% {t('trend_up_suffix')}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/30 border border-teal-100/80 dark:border-teal-800/40"
+                    aria-hidden
+                  >
+                    <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" strokeWidth={2} />
+                  </div>
                 </div>
-                <span className="text-xl font-bold text-white">
-                  {Number(revenueTodayKpi).toLocaleString('en-US')}
-                  <span className="text-sm font-normal text-[var(--color-text-tertiary)] ms-1">
-                    {egpSuffix}
-                  </span>
-                </span>
               </div>
             )}
-            <div className="card p-4 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[var(--color-text-secondary)] font-medium">
-                  {t('stats.active_students')}
-                </span>
-                <Users className="w-5 h-5 text-[var(--color-info)] shrink-0" strokeWidth={2} />
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
+                    {t('stats.active_students')}
+                  </p>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-white mt-1 tabular-nums">
+                    {Number(activeStudentsThisWeek).toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100/80 dark:border-blue-800/40"
+                  aria-hidden
+                >
+                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" strokeWidth={2} />
+                </div>
               </div>
-              <span className="text-xl font-bold text-white">
-                {Number(activeStudentsThisWeek).toLocaleString('en-US')}
-              </span>
             </div>
-            <div className="card p-4 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[var(--color-text-secondary)] font-medium">
-                  {t('stats.attendance_today')}
-                </span>
-                <QrCode className="w-5 h-5 text-[var(--color-success)] shrink-0" strokeWidth={2} />
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
+                    {t('stats.attendance_today')}
+                  </p>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-white mt-1 tabular-nums">
+                    {Number(attendanceTodayCount).toLocaleString('en-US')}
+                  </p>
+                  {data.scanDeltaPct > 0 && (
+                    <p className="text-xs text-teal-600 dark:text-teal-400 mt-1 flex items-center gap-0.5 font-medium">
+                      <TrendingUp className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                      <span>
+                        {Number(data.scanDeltaPct).toLocaleString('en-US')}% {t('trend_up_suffix')}
+                      </span>
+                    </p>
+                  )}
+                </div>
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-100/80 dark:border-purple-800/40"
+                  aria-hidden
+                >
+                  <CalendarCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" strokeWidth={2} />
+                </div>
               </div>
-              <span className="text-xl font-bold text-white">
-                {Number(attendanceTodayCount).toLocaleString('en-US')}
-              </span>
             </div>
-            <div className="card p-4 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[var(--color-text-secondary)] font-medium">
-                  {t('stats.pending_payments')}
-                </span>
-                <CreditCard className="w-5 h-5 text-[var(--color-warning)] shrink-0" strokeWidth={2} />
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
+                    {t('stats.pending_payments')}
+                  </p>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-white mt-1 tabular-nums">
+                    {Number(pendingBalanceKpi).toLocaleString('en-US')}
+                    <span className="text-sm font-normal text-slate-500 dark:text-slate-400 ms-1">{egpSuffix}</span>
+                  </p>
+                </div>
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-100/80 dark:border-amber-800/40"
+                  aria-hidden
+                >
+                  <CreditCard className="w-5 h-5 text-amber-600 dark:text-amber-500" strokeWidth={2} />
+                </div>
               </div>
-              <span className="text-xl font-bold text-white">
-                {Number(pendingBalanceKpi).toLocaleString('en-US')}
-                <span className="text-sm font-normal text-[var(--color-text-tertiary)] ms-1">
-                  {egpSuffix}
-                </span>
-              </span>
             </div>
           </div>
 
-          {canViewRevenue && monthlyRevenueData.length > 0 && (
-            <div className="card p-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-white">{t('sparkline_title')}</span>
+          {canViewRevenue && sparklineData.length > 0 && (
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 border-s-4 border-s-teal-500/45 dark:border-s-teal-400/35 bg-white dark:bg-slate-800 p-6 card-shadow mb-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                <h2 className="text-base font-semibold text-slate-800 dark:text-white">{t('sparkline_title')}</h2>
+                <div
+                  className="flex items-center gap-1 p-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 w-fit"
+                  role="group"
+                  aria-label={t('sparkline_title')}
+                >
+                  {(['7', '30'] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setTimeRange(r)}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        timeRange === r
+                          ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/80 dark:border-slate-600'
+                          : 'text-slate-500 dark:text-slate-400'
+                      }`}
+                    >
+                      {r === '7' ? t('last7Days') : t('last30Days')}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <RevenueSparkline data={monthlyRevenueData} currencySuffix={egpSuffix} />
+              <RevenueSparkline data={sparklineData} currencySuffix={egpSuffix} />
             </div>
           )}
 
           <div className="mb-6">
-            <h2
-              className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3 uppercase tracking-wide"
-            >
+            <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wide">
               {t('quick_actions')}
             </h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Link
                 href="/scan"
-                className="card p-4 flex flex-col items-center gap-2 text-center hover:shadow-brand-sm hover:border-[var(--color-border-brand)] transition-all duration-fast ease-out active:scale-[0.97]"
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow btn-lift flex items-center gap-4 text-start"
               >
-                <span className="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(13,148,136,0.12)] text-brand-400">
-                  <QrCode className="w-5 h-5" strokeWidth={2} />
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/30">
+                  <QrCode className="w-8 h-8 text-teal-600 dark:text-teal-400" strokeWidth={2} />
                 </span>
-                <span className="text-xs font-medium text-white">{t('action_scan')}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-slate-800 dark:text-white">{t('action_scan')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('action_scan_subtitle')}</p>
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 rtl:rotate-180" aria-hidden />
               </Link>
               <Link
                 href="/students"
-                className="card p-4 flex flex-col items-center gap-2 text-center hover:shadow-brand-sm hover:border-[var(--color-border-brand)] transition-all duration-fast ease-out active:scale-[0.97]"
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow btn-lift flex items-center gap-4 text-start"
               >
-                <span className="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(59,130,246,0.12)] text-[var(--color-info)]">
-                  <UserPlus className="w-5 h-5" strokeWidth={2} />
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30">
+                  <UserPlus className="w-8 h-8 text-blue-600 dark:text-blue-400" strokeWidth={2} />
                 </span>
-                <span className="text-xs font-medium text-white">{t('action_add_student')}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-slate-800 dark:text-white">{t('action_add_student')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('action_add_student_subtitle')}</p>
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 rtl:rotate-180" aria-hidden />
               </Link>
               <Link
                 href="/payments"
-                className="card p-4 flex flex-col items-center gap-2 text-center hover:shadow-brand-sm hover:border-[var(--color-border-brand)] transition-all duration-fast ease-out active:scale-[0.97]"
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow btn-lift flex items-center gap-4 text-start"
               >
-                <span className="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(245,158,11,0.12)] text-[var(--color-warning)]">
-                  <CreditCard className="w-5 h-5" strokeWidth={2} />
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30">
+                  <CreditCard className="w-8 h-8 text-amber-600 dark:text-amber-500" strokeWidth={2} />
                 </span>
-                <span className="text-xs font-medium text-white">{t('action_payments')}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-slate-800 dark:text-white">{t('action_payments')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('action_payments_subtitle')}</p>
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 rtl:rotate-180" aria-hidden />
               </Link>
               <Link
                 href="/students/print"
-                className="card p-4 flex flex-col items-center gap-2 text-center hover:shadow-brand-sm hover:border-[var(--color-border-brand)] transition-all duration-fast ease-out active:scale-[0.97]"
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow btn-lift flex items-center gap-4 text-start"
               >
-                <span className="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(16,185,129,0.12)] text-[var(--color-success)]">
-                  <Printer className="w-5 h-5" strokeWidth={2} />
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/30">
+                  <Printer className="w-8 h-8 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
                 </span>
-                <span className="text-xs font-medium text-white">{t('action_print')}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-slate-800 dark:text-white">{t('action_print')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('action_print_subtitle')}</p>
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 rtl:rotate-180" aria-hidden />
               </Link>
             </div>
           </div>
@@ -1037,40 +1130,62 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-white">{t('at_risk_title')}</h2>
-              <Link href="/students" className="text-xs text-brand-400 hover:text-brand-300">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-white">{t('at_risk_title')}</h2>
+              <Link
+                href="/students"
+                className="text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 inline-flex items-center gap-1"
+              >
                 {t('view_all')}
+                <ArrowUpRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden />
               </Link>
             </div>
 
             {atRiskStudents.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-secondary)] text-center py-4">
-                {t('at_risk_empty')}
-              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-6">{t('at_risk_empty')}</p>
             ) : (
-              <div className="flex flex-col divide-y divide-[var(--color-border-subtle)]">
-                {atRiskStudents.slice(0, 5).map((student) => (
-                  <div
-                    key={student.id}
-                    className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
-                  >
-                    <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center bg-[rgba(239,68,68,0.12)] text-[var(--color-danger)] font-semibold text-sm">
-                      {student.name?.charAt(0) ?? '?'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{student.name}</p>
-                      <p className="text-xs text-[var(--color-text-tertiary)]">
-                        {student.student_number ?? ''}
-                      </p>
-                    </div>
-                    <span className="badge badge-danger text-xs flex-shrink-0">
-                      {Number(student.days_since_last_scan).toLocaleString('en-US')} {t('at_risk_days')}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <ul className="flex flex-col gap-2">
+                {atRiskStudents.slice(0, 5).map((student) => {
+                  const high = student.days_since_last_scan >= 14;
+                  return (
+                    <li
+                      key={student.id}
+                      className="flex items-center gap-3 rounded-xl border border-slate-100 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-900/30 px-3 py-3"
+                    >
+                      <div
+                        className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center bg-teal-100 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200 font-semibold text-xs border border-teal-200/60 dark:border-teal-800/50"
+                        aria-hidden
+                      >
+                        {initialsFromName(student.name ?? '')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-800 dark:text-white truncate">{student.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate">
+                          {student.student_number ?? '\u2014'}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <span
+                          className={`text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full ${
+                            high
+                              ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
+                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+                          }`}
+                        >
+                          {Number(student.days_since_last_scan).toLocaleString('en-US')} {t('at_risk_days')}
+                        </span>
+                        <Link
+                          href="/students"
+                          className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline px-2 py-1 rounded-lg border border-transparent hover:border-teal-200 dark:hover:border-teal-800"
+                        >
+                          {t('view_student')}
+                        </Link>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
         </>
