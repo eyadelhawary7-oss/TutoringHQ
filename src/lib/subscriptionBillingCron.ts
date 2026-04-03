@@ -44,11 +44,27 @@ export async function runSubscriptionBillingCron(
 
   const today = todayISO();
 
+  // Centers with pending_cancellation: finalize cancel after current_period_end (Cairo YMD vs DATE column).
+  const { error: periodEndCancelErr } = await supabase
+    .from('centers')
+    .update({
+      status: 'cancelled',
+      subscription_status: 'cancelled',
+      billing_status: 'suspended',
+    })
+    .eq('status', 'pending_cancellation')
+    .lt('current_period_end', today);
+  if (periodEndCancelErr) {
+    console.error('[subscriptionBillingCron] pending_cancellation period-end cancel:', periodEndCancelErr);
+  }
+
   const { data: resetRows, error: resetErr } = await supabase
     .from('centers')
     .update({ billing_status: 'active' })
     .lte('next_payment_due', today)
     .eq('billing_status', 'paid')
+    .not('status', 'in', '(cancelled,rejected)')
+    .not('subscription_status', 'in', '(cancelled)')
     .select('id');
 
   if (resetErr) {
@@ -68,6 +84,8 @@ export async function runSubscriptionBillingCron(
     )
     .eq('next_payment_due', in7)
     .eq('status', 'active')
+    .not('status', 'in', '(cancelled,rejected)')
+    .not('subscription_status', 'in', '(cancelled)')
     .not('next_payment_due', 'is', null);
 
   if (q7err) {
@@ -141,6 +159,8 @@ export async function runSubscriptionBillingCron(
     .select('id, name, phone, next_payment_due, billing_amount, billing_status')
     .eq('next_payment_due', dueMinus3)
     .eq('status', 'active')
+    .not('status', 'in', '(cancelled,rejected)')
+    .not('subscription_status', 'in', '(cancelled)')
     .neq('billing_status', 'paid')
     .not('next_payment_due', 'is', null);
 
@@ -200,6 +220,9 @@ export async function runSubscriptionBillingCron(
     .from('centers')
     .select('id, name, phone, next_payment_due, billing_amount, billing_status')
     .eq('next_payment_due', dueMinus7)
+    .eq('status', 'active')
+    .not('status', 'in', '(cancelled,rejected)')
+    .not('subscription_status', 'in', '(cancelled)')
     .neq('billing_status', 'paid')
     .not('next_payment_due', 'is', null);
 
@@ -259,7 +282,8 @@ export async function runSubscriptionBillingCron(
     }
   }
 
-  // Auto-suspend when auto_suspend_at falls on today (grace = 6 days after next_payment_due; see DB default + invoice payment handler).
+  // Auto-suspend when auto_suspend_at falls on today. Grace period is hardcoded at +6 calendar days
+  // after next_payment_due wherever auto_suspend_at is set (DB / payment handlers — not platform_config).
   const tomorrow = calendarAddDays(today, 1);
   const { data: suspendRows, error: susErr } = await supabase
     .from('centers')
@@ -272,6 +296,8 @@ export async function runSubscriptionBillingCron(
     .lt('auto_suspend_at', `${tomorrow}T00:00:00.000Z`)
     .neq('billing_status', 'paid')
     .neq('status', 'suspended')
+    .not('status', 'in', '(cancelled,rejected)')
+    .not('subscription_status', 'in', '(cancelled)')
     .select('id');
 
   if (susErr) {
