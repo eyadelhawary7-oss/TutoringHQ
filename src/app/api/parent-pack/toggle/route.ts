@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendChqPackInvoiceTemplate } from '@/lib/centerNotify'
 import { syncPackParentCount } from '@/lib/parent-pack'
+import { dateInNDays } from '@/lib/parentPack'
+import {
+  billingPeriodArabicMonthYear,
+  cairoYmdParts,
+  computeRollingParentCount,
+  daysInCairoMonth,
+  getPackPlanMinimumEgp,
+} from '@/lib/packBilling'
+
+const packInvoiceEnabled = false // TODO: set to true when chq_pack_invoice is Active
+
+function centerCodeForPack(c: { center_code?: string | null; referral_code?: string | null; id: string }): string {
+  const raw = (c.center_code || c.referral_code || '').trim()
+  if (raw) return raw.replace(/\s+/g, '')
+  return 'UNK'
+}
 
 async function getCenterUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -48,11 +65,15 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { enabled } = (await request.json()) as { enabled: boolean }
+    const body = (await request.json()) as { enabled: boolean; confirmed?: boolean }
 
     const { data: centerRow, error: centerErr } = await ctx.supabaseAdmin
       .from('centers')
-      .select('id, status, parent_pack_enabled, parent_pack_active_parents')
+      .select(
+        `id, status, plan, name, phone, center_code, referral_code,
+        parent_pack_enabled, parent_pack_active_parents,
+        pack_disabled_at, pack_price_per_parent, pack_custom_invoice_minimum, pack_pending_balance`,
+      )
       .eq('id', ctx.centerId)
       .single()
 
@@ -60,13 +81,99 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Center not found' }, { status: 404 })
     }
 
-    if (enabled && centerRow.status !== 'active') {
+    const plan = String(centerRow.plan ?? '')
+    const pricePer = Number((centerRow as { pack_price_per_parent?: number }).pack_price_per_parent ?? 12)
+    const customMin = (centerRow as { pack_custom_invoice_minimum?: number | null }).pack_custom_invoice_minimum
+    const packDisabledAt = (centerRow as { pack_disabled_at?: string | null }).pack_disabled_at
+
+    if (body.enabled && centerRow.status !== 'active') {
       return NextResponse.json({ error: 'center_not_active' }, { status: 400 })
     }
 
-    const updateData = enabled
-      ? { parent_pack_enabled: true }
-      : { parent_pack_enabled: false, parent_pack_active_parents: 0 }
+    if (body.enabled && packDisabledAt) {
+      const { data: unpaid } = await ctx.supabaseAdmin
+        .from('invoices')
+        .select('id')
+        .eq('center_id', ctx.centerId)
+        .eq('invoice_type', 'pack_billing')
+        .in('status', ['pending', 'overdue'])
+        .limit(1)
+        .maybeSingle()
+
+      if (unpaid) {
+        return NextResponse.json({ error: 'pack_invoice_unpaid' }, { status: 400 })
+      }
+    }
+
+    if (!body.enabled) {
+      const { y, m, d, ym } = cairoYmdParts()
+      const daysInMonth = daysInCairoMonth(y, m)
+      const rolling = await computeRollingParentCount(ctx.supabaseAdmin, ctx.centerId, ym)
+      const planMin = getPackPlanMinimumEgp(plan, customMin)
+      const proratedBase = Math.max((d / daysInMonth) * rolling * pricePer, planMin)
+      const pending = Number((centerRow as { pack_pending_balance?: number }).pack_pending_balance ?? 0)
+      const proratedTotal = Math.ceil(proratedBase) + (pending > 0 ? pending : 0)
+
+      if (body.confirmed !== true) {
+        return NextResponse.json({
+          requires_confirmation: true,
+          prorated_amount: proratedTotal,
+        })
+      }
+
+      const code = centerCodeForPack(centerRow as { center_code?: string; referral_code?: string; id: string })
+      const invoiceNumber = `PACK-${code}-${y}-${String(m).padStart(2, '0')}-PARTIAL`
+      const periodStart = `${ym}-01`
+      const periodEnd = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+
+      const { error: invErr } = await ctx.supabaseAdmin.from('invoices').insert({
+        center_id: ctx.centerId,
+        invoice_number: invoiceNumber,
+        invoice_type: 'pack_billing',
+        base_amount: proratedTotal,
+        total_amount: proratedTotal,
+        billing_period_start: periodStart,
+        billing_period_end: periodEnd,
+        due_date: dateInNDays(7),
+        status: 'pending',
+        payment_reference: `Parent Pack — partial ${ym} (through ${periodEnd})`,
+      })
+
+      if (invErr) {
+        console.error('[PATCH /api/parent-pack/toggle] partial invoice', invErr)
+        return NextResponse.json({ error: invErr.message }, { status: 500 })
+      }
+
+      const { error: updateErr } = await ctx.supabaseAdmin
+        .from('centers')
+        .update({
+          parent_pack_enabled: false,
+          parent_pack_active_parents: 0,
+          pack_disabled_at: new Date().toISOString(),
+          pack_pending_balance: 0,
+        })
+        .eq('id', ctx.centerId)
+
+      if (updateErr) {
+        return NextResponse.json({ error: updateErr.message }, { status: 500 })
+      }
+
+      await sendChqPackInvoiceTemplate(ctx.supabaseAdmin, packInvoiceEnabled, {
+        name: (centerRow as { name?: string }).name ?? '—',
+        phone: (centerRow as { phone?: string | null }).phone ?? null,
+        monthArabic: billingPeriodArabicMonthYear(ym),
+        parentCountStr: String(rolling),
+        amountStr: String(proratedTotal),
+      })
+
+      return NextResponse.json({
+        pack_enabled: false,
+        active_parents: 0,
+        prorated_amount: proratedTotal,
+      })
+    }
+
+    const updateData = { parent_pack_enabled: true }
 
     const { error: updateErr } = await ctx.supabaseAdmin
       .from('centers')
@@ -77,13 +184,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 })
     }
 
-    let activeCount = 0
-    if (enabled) {
-      activeCount = await syncPackParentCount(ctx.supabaseAdmin, ctx.centerId)
-    }
+    const activeCount = await syncPackParentCount(ctx.supabaseAdmin, ctx.centerId)
 
     return NextResponse.json({
-      pack_enabled: enabled,
+      pack_enabled: true,
       active_parents: activeCount,
     })
   } catch (e) {

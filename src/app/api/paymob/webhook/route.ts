@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyCardOrderPaymobHmac } from '@/lib/paymob';
 
+const paymentFailedEnabled = false; // TODO: set to true when chq_payment_failed is Active
+
 export async function POST(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -61,13 +63,16 @@ export async function POST(request: NextRequest) {
       } else {
         const { finalizeCardOrderPaymentFailure } = await import('@/lib/cardOrderPayment');
         await finalizeCardOrderPaymentFailure(supabaseAdmin, paymobOrderId);
-        const { finalizeInvoicePaymentFailure } = await import('@/lib/invoicePaymobPayment');
+        const { finalizeInvoicePaymentFailure, notifySubscriptionInvoicePaymentFailed } = await import(
+          '@/lib/invoicePaymobPayment'
+        );
         await finalizeInvoicePaymentFailure(supabaseAdmin, paymobOrderId);
+        await notifySubscriptionInvoicePaymentFailed(supabaseAdmin, paymobOrderId, paymentFailedEnabled);
       }
     }
   } catch (e) {
     console.error('[paymob/webhook]', e);
   }
 
-  return NextResponse.json({ ok: true }, { status: 200 });
+  return NextResponse.json({ received: true }, { status: 200 });
 }

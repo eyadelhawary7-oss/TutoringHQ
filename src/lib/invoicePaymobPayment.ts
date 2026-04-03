@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { todayISO } from '@/lib/parentPack';
 import { computeNextQuarterlyPaymentDue } from '@/lib/subscriptionAnchor';
-import { sendChqPaymentConfirmedTemplate } from '@/lib/centerNotify';
+import { sendChqPaymentConfirmedTemplate, sendChqPaymentFailedTemplate } from '@/lib/centerNotify';
 
 const PERIOD_MONTHS: Record<string, number> = {
   monthly: 1,
@@ -158,6 +158,24 @@ async function handleSubscriptionInvoicePaid(
   });
 }
 
+async function handlePackBillingInvoicePaid(
+  supabaseAdmin: SupabaseClient,
+  inv: { center_id: string },
+  _paymobTransactionId: string,
+): Promise<void> {
+  const { error: cErr } = await supabaseAdmin
+    .from('centers')
+    .update({
+      pack_request_status: 'approved',
+      parent_pack_enabled: true,
+      pack_disabled_at: null,
+    })
+    .eq('id', inv.center_id);
+  if (cErr) {
+    console.error('[invoicePaymob] pack_billing center reinstate', cErr);
+  }
+}
+
 /**
  * Mark invoice paid and extend center billing (subscription / plan upgrade / legacy).
  */
@@ -212,6 +230,11 @@ export async function finalizeInvoicePaymentSuccess(
     return { invoiceId: row.id };
   }
 
+  if (row.invoice_type === 'pack_billing') {
+    await handlePackBillingInvoicePaid(supabaseAdmin, row, paymobTransactionId);
+    return { invoiceId: row.id };
+  }
+
   const { data: center } = await supabaseAdmin
     .from('centers')
     .select('billing_period, status, subscription_status, next_payment_due')
@@ -256,6 +279,43 @@ export async function finalizeInvoicePaymentFailure(
     .update({ status: 'failed' })
     .eq('paymob_order_id', paymobOrderId)
     .neq('status', 'paid');
+}
+
+/**
+ * After Paymob failure webhook: notify center for subscription invoices only (Session E).
+ */
+export async function notifySubscriptionInvoicePaymentFailed(
+  supabaseAdmin: SupabaseClient,
+  paymobOrderId: string,
+  templateEnabled: boolean,
+): Promise<void> {
+  if (!templateEnabled || !paymobOrderId) return;
+
+  const { data: inv } = await supabaseAdmin
+    .from('invoices')
+    .select('invoice_type, center_id, total_amount')
+    .eq('paymob_order_id', paymobOrderId)
+    .maybeSingle();
+
+  const row = inv as {
+    invoice_type?: string | null;
+    center_id?: string;
+    total_amount?: number | string | null;
+  } | null;
+  if (!row?.center_id || row.invoice_type !== 'subscription') return;
+
+  const { data: center } = await supabaseAdmin
+    .from('centers')
+    .select('name, phone')
+    .eq('id', row.center_id)
+    .maybeSingle();
+
+  const c = center as { name?: string; phone?: string | null } | null;
+  await sendChqPaymentFailedTemplate(supabaseAdmin, templateEnabled, {
+    name: c?.name ?? '—',
+    phone: c?.phone ?? null,
+    amountStr: String(row.total_amount ?? ''),
+  });
 }
 
 /**

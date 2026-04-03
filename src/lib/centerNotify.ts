@@ -107,6 +107,64 @@ export async function sendChqPaymentConfirmedTemplate(
   });
 }
 
+/** chq_pack_invoice — Parent Pack monthly or partial invoice (Session D). Pass `templateEnabled` from route flag. */
+export async function sendChqPackInvoiceTemplate(
+  supabase: SupabaseClient,
+  templateEnabled: boolean,
+  opts: {
+    name: string;
+    phone: string | null;
+    monthArabic: string;
+    parentCountStr: string;
+    amountStr: string;
+  },
+): Promise<boolean> {
+  if (!templateEnabled) return false;
+
+  const { data: cfg } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  if (cfg?.value === false) return false;
+
+  const to = digitsOnly(opts.phone ?? '');
+  if (!to) return false;
+
+  return postWhatsappTemplate({
+    templateName: 'chq_pack_invoice',
+    languageCode: 'ar_EG',
+    toDigits: to,
+    bodyParameters: [opts.name, opts.monthArabic, opts.parentCountStr, opts.amountStr],
+  });
+}
+
+/** chq_payment_failed — subscription Paymob failure (Session E). Pass `templateEnabled` from route flag. */
+export async function sendChqPaymentFailedTemplate(
+  supabase: SupabaseClient,
+  templateEnabled: boolean,
+  opts: { name: string; phone: string | null; amountStr: string },
+): Promise<boolean> {
+  if (!templateEnabled) return false;
+
+  const { data: cfg } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  if (cfg?.value === false) return false;
+
+  const to = digitsOnly(opts.phone ?? '');
+  if (!to) return false;
+
+  return postWhatsappTemplate({
+    templateName: 'chq_payment_failed',
+    languageCode: 'ar_EG',
+    toDigits: to,
+    bodyParameters: [opts.name, opts.amountStr],
+  });
+}
+
 export async function sendWelcomeTemplate(center: {
   id: string;
   name: string;
