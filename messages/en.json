@@ -1632,6 +1632,7 @@
     "create": "Create Center",
     "creating": "Creating...",
     "centers": "Centers",
+    "centers.manage": "Manage",
     "noCenters": "No centers yet",
     "demoRequests": "Demo Requests",
     "name": "Name",

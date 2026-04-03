@@ -1222,14 +1222,15 @@ export default function AdminPage() {
                         <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.usage_scans ?? 0}</td>
                         <td className="py-3.5 px-4 text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
                         <td className="py-3.5 px-4">
-                          <div className="relative">
-                            <button
-                              onClick={() => setOpenActionsId(openActionsId === c.id ? null : c.id)}
-                              className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
-                              title={tCommon('actions')}
-                            >
-                              <MoreVertical size={16} />
-                            </button>
+                          <div className="flex items-center justify-end gap-3">
+                            <div className="relative">
+                              <button
+                                onClick={() => setOpenActionsId(openActionsId === c.id ? null : c.id)}
+                                className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                                title={tCommon('actions')}
+                              >
+                                <MoreVertical size={16} />
+                              </button>
                             {openActionsId === c.id && (
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setOpenActionsId(null)} aria-hidden="true" />
@@ -1269,6 +1270,13 @@ export default function AdminPage() {
                                 </div>
                               </>
                             )}
+                            </div>
+                            <Link
+                              href={`/admin/centers/${c.id}`}
+                              className="text-teal-400 hover:text-teal-300 text-sm font-medium transition-colors shrink-0"
+                            >
+                              {tAdmin('centers.manage')}
+                            </Link>
                           </div>
                         </td>
                       </tr>
