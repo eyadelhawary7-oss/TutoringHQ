@@ -1624,7 +1624,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       onChange={(e) => setS1SignupNotes(e.target.value)}
                       rows={5}
                       style={{ backgroundColor: '#334155', color: 'white', borderColor: '#475569' }}
-                      className="w-full rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="admin-textarea w-full rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
                       placeholder={t('centerManagement.section1.signupNotes')}
                     />
                   </div>

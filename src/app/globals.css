@@ -1648,7 +1648,7 @@ html.light {
   border-radius: 4px;
 }
 
-textarea {
+.admin-textarea {
   background-color: #334155 !important;
   color: white !important;
 }
