@@ -22,6 +22,7 @@ import {
   Menu,
   X,
   Truck,
+  Banknote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -93,6 +94,7 @@ export function AdminSidebar({
   const isOrders = activeRoute?.includes('admin/orders');
   const isVendors = activeRoute?.includes('admin/vendors');
   const isRenewals = activeRoute?.includes('admin/renewals');
+  const isPricing = activeRoute?.includes('admin/pricing');
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
 
   const allowedKeys =
@@ -360,6 +362,22 @@ export function AdminSidebar({
                   </button>,
                 );
               }
+              if (adminRole === 'super_admin') {
+                items.push(
+                  <button
+                    key="pricing"
+                    type="button"
+                    onClick={() => {
+                      afterNavigate();
+                      router.push('/admin/pricing');
+                    }}
+                    className={drawerBtn(!!isPricing)}
+                  >
+                    <Banknote size={18} className="shrink-0" />
+                    <span>{t('pricingPanel')}</span>
+                  </button>,
+                );
+              }
               if (canSee('card_orders')) {
                 items.push(
                   <button
@@ -481,6 +499,27 @@ export function AdminSidebar({
                   >
                     <CalendarCheck size={18} />
                     <span>{t('renewals')}</span>
+                  </button>,
+                );
+              }
+              if (adminRole === 'super_admin') {
+                items.push(
+                  <button
+                    key="pricing"
+                    type="button"
+                    onClick={() => {
+                      closeMainSidebar?.();
+                      router.push('/admin/pricing');
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
+                      isPricing
+                        ? 'bg-[rgba(13,148,136,0.12)] text-[var(--color-brand-500)]'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                    )}
+                  >
+                    <Banknote size={18} />
+                    <span>{t('pricingPanel')}</span>
                   </button>,
                 );
               }
