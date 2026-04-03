@@ -2146,7 +2146,21 @@
   },
   "billing": {
     "title": "Billing Settings",
-    "currentPlan": "Current Plan",
+    "loadingShort": "…",
+    "page": {
+      "title": "Billing & Subscriptions",
+      "fullManagement": "Full billing management →",
+      "reactivateSoon": "Reactivation checkout will be available in the next update."
+    },
+    "currentPlan": {
+      "title": "Current Plan",
+      "monthlyPrice": "Monthly Price",
+      "nextPayment": "Next Payment",
+      "status": "Billing Status",
+      "reactivate": "Reactivate Now",
+      "dueSoon": "Payment due in {days} days",
+      "overdue": "Your center has been suspended. Pay to reactivate."
+    },
     "plan": "Plan",
     "billingCycle": "Current cycle",
     "amount": "Current Amount",
@@ -2207,6 +2221,42 @@
       "pending": "Pending",
       "cancelled": "Cancelled",
       "failed": "Failed"
+    },
+    "status": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "overdue": "Overdue",
+      "cancelled": "Cancelled",
+      "active": "Active",
+      "suspended": "Suspended"
+    },
+    "pack": {
+      "title": "Parent WhatsApp Pack",
+      "pricePerParent": "Price per parent",
+      "suggestedResale": "Suggested resale",
+      "suggestedResalePerMonth": "{amount} EGP/month",
+      "yourProfit": "Your profit",
+      "subscribedParents": "Subscribed parents",
+      "monthlyCost": "Monthly cost",
+      "announcementBalance": "Announcement balance",
+      "request": "Request Pack",
+      "requestSuccess": "Pack request submitted.",
+      "badgeActive": "Active",
+      "badgeInactive": "Inactive",
+      "badgeRequested": "Requested",
+      "enableDescription": "Send automated WhatsApp updates to parents. Request access to enable the pack for your center.",
+      "pendingApproval": "Your request is pending admin approval."
+    },
+    "planHistory": {
+      "title": "Plan Change Requests",
+      "empty": "No plan change requests yet",
+      "date": "Date",
+      "from": "From",
+      "to": "To",
+      "status": "Status",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "pending": "Pending"
     },
     "invoiceType": {
       "subscription": "Subscription",
@@ -2302,13 +2352,21 @@
       "proceed": "Proceed to Payment"
     },
     "history": {
-      "title": "Billing History",
+      "title": "Invoice History",
+      "subtitle": "Your recent invoices and payments",
       "invoice": "Invoice",
       "type": "Type",
       "amount": "Amount",
       "period": "Period",
       "status": "Status",
       "date": "Date",
+      "reference": "Reference",
+      "action": "Action",
+      "payNow": "Pay Now",
+      "downloadPdf": "Download PDF",
+      "payDisabled": "Online payment is not enabled yet.",
+      "pdfComingSoon": "Coming in next update",
+      "empty": "No invoices yet",
       "noInvoices": "No invoices found."
     },
     "halfYearly": "Half-Yearly",

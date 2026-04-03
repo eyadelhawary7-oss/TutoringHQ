@@ -1478,7 +1478,21 @@
   },
   "billing": {
     "title": "إعدادات الفوترة",
-    "currentPlan": "الخطة الحالية",
+    "loadingShort": "…",
+    "page": {
+      "title": "الفوترة والاشتراكات",
+      "fullManagement": "إدارة الفوترة الكاملة ←",
+      "reactivateSoon": "سيتوفر إتمام إعادة التفعيل في التحديث القادم."
+    },
+    "currentPlan": {
+      "title": "الخطة الحالية",
+      "monthlyPrice": "السعر الشهري",
+      "nextPayment": "الدفعة القادمة",
+      "status": "حالة الفاتورة",
+      "reactivate": "إعادة التفعيل الآن",
+      "dueSoon": "الدفعة خلال {days} أيام",
+      "overdue": "تم تعليق سنترك. ادفع الآن لإعادة التفعيل."
+    },
     "plan": "خطة",
     "billingCycle": "الدورة الحالية",
     "amount": "المبلغ",
@@ -1539,6 +1553,42 @@
       "pending": "قيد الانتظار",
       "cancelled": "ملغاة",
       "failed": "فشل"
+    },
+    "status": {
+      "paid": "مدفوع",
+      "pending": "قيد الانتظار",
+      "overdue": "متأخر",
+      "cancelled": "ملغى",
+      "active": "نشط",
+      "suspended": "موقوف"
+    },
+    "pack": {
+      "title": "باقة واتساب أولياء الأمور",
+      "pricePerParent": "السعر لكل ولي أمر",
+      "suggestedResale": "سعر البيع المقترح",
+      "suggestedResalePerMonth": "{amount} جنيه/شهر",
+      "yourProfit": "ربحك",
+      "subscribedParents": "الأولياء المشتركون",
+      "monthlyCost": "التكلفة الشهرية",
+      "announcementBalance": "رصيد الإعلانات",
+      "request": "طلب الباقة",
+      "requestSuccess": "تم إرسال طلب الباقة.",
+      "badgeActive": "نشطة",
+      "badgeInactive": "غير مفعّلة",
+      "badgeRequested": "قيد الطلب",
+      "enableDescription": "إرسال تحديثات واتساب تلقائية لأولياء الأمور. اطلب تفعيل الباقة لسنترك.",
+      "pendingApproval": "طلبك قيد موافقة الإدارة."
+    },
+    "planHistory": {
+      "title": "طلبات تغيير الخطة",
+      "empty": "لا توجد طلبات تغيير خطة بعد",
+      "date": "التاريخ",
+      "from": "من",
+      "to": "إلى",
+      "status": "الحالة",
+      "approved": "موافق",
+      "rejected": "مرفوض",
+      "pending": "قيد الانتظار"
     },
     "invoiceType": {
       "subscription": "اشتراك",
@@ -1635,12 +1685,20 @@
     },
     "history": {
       "title": "سجل الفواتير",
+      "subtitle": "أحدث فواتيرك ومدفوعاتك",
       "invoice": "فاتورة",
       "type": "النوع",
       "amount": "المبلغ",
       "period": "الفترة",
       "status": "الحالة",
       "date": "التاريخ",
+      "reference": "المرجع",
+      "action": "الإجراء",
+      "payNow": "ادفع الآن",
+      "downloadPdf": "تحميل PDF",
+      "payDisabled": "الدفع الإلكتروني غير مفعّل بعد.",
+      "pdfComingSoon": "سيُتاح في التحديث القادم",
+      "empty": "لا توجد فواتير بعد",
       "noInvoices": "لا توجد فواتير."
     },
     "halfYearly": "نصف سنوي",

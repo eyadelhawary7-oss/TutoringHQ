@@ -106,6 +106,8 @@ export async function GET(request: Request) {
       card_color?: string;
       parent_pack_enabled?: boolean;
       parent_pack_active_parents?: number;
+      pack_price_per_parent?: number | string;
+      pack_request_status?: string | null;
       announcement_balance?: string | number;
       subscription_billing_period?: string | null;
       billing_period?: string | null;
@@ -121,7 +123,7 @@ export async function GET(request: Request) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
         .select(
-          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, instapay_number, upgrade_count_this_period, suspended_at',
+          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, instapay_number, upgrade_count_this_period, suspended_at',
         )
         .eq('id', userRecord.center_id)
         .single();
@@ -145,6 +147,9 @@ export async function GET(request: Request) {
             centerRow.parent_pack_active_parents != null
               ? Number(centerRow.parent_pack_active_parents)
               : undefined,
+          pack_price_per_parent:
+            cr.pack_price_per_parent != null ? Number(cr.pack_price_per_parent) : undefined,
+          pack_request_status: (cr.pack_request_status as string | null) ?? undefined,
           announcement_balance: centerRow.announcement_balance ?? undefined,
           subscription_billing_period: (cr.subscription_billing_period as string | null) ?? undefined,
           billing_period: (cr.billing_period as string | null) ?? undefined,

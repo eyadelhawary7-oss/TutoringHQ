@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
@@ -9,30 +9,15 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
-import { PageHeader, RoleBadge, PlanBadge } from '@/components/shared';
+import { PageHeader, RoleBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
-import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, FileText, Calendar, Smartphone, Package } from 'lucide-react';
-import { getPlanLevel } from '@/lib/plans';
-import { FEATURES } from '@/lib/features';
-import {
-  PLANS,
-  getPlanPrice,
-  getQuarterlyCharge,
-  getAnnualMonthlyEquivalent,
-  getPerStudentWeeklyCost,
-  getChargeFromQuarterlyAllIn,
-  formatPrice,
-  normalizeBillingPeriod,
-  isPlanKey,
-  type BillingPeriod,
-  type PlanKey,
-} from '@/lib/pricing';
+import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Smartphone, Package } from 'lucide-react';
 import { calculatePackCharge } from '@/lib/parent-pack';
 import { getAnnouncementCap, PACK_PRICE_PER_PARENT } from '@/lib/parentPack';
 import { PARENT_PACK, type PackStatusResponse } from '@/types/parent-pack';
 import { useToast } from '@/hooks/useToast';
 
-type TabType = 'general' | 'billing' | 'team';
+type TabType = 'general' | 'team';
 
 // ========== Types ==========
 interface Subject {
@@ -80,64 +65,6 @@ interface PendingInvite {
   status: string;
 }
 
-interface PricingPlan {
-  id: string;
-  name_en: string;
-  name_ar: string;
-  students_per_week_limit: number;
-  monthly_fee: number;
-  per_student_at_capacity_egp: number;
-  setup_fee_egp: number;
-  is_custom: boolean;
-}
-
-interface PaygRate {
-  min_students_per_week: number;
-  max_students_per_week: number;
-  rate_per_student_egp: number;
-}
-
-// ========== Constants ==========
-const PLAN_DISPLAY_NAMES: Record<string, string> = {
-  nano: PLANS.nano.arabicName,
-  starter: PLANS.starter.arabicName,
-  pro: PLANS.pro.arabicName,
-  business: PLANS.business.arabicName,
-  enterprise: PLANS.enterprise.arabicName,
-  top_centers: PLANS.top_centers.arabicName,
-};
-
-const SETUP_FEE_BY_PLAN: Record<string, number> = {
-  nano: 500, starter: 1000, pro: 2000, business: 3000, enterprise: 5000, top_centers: 0,
-};
-
-const FALLBACK_PLAN_KEYS: PlanKey[] = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'];
-
-const FALLBACK_PLANS: PricingPlan[] = FALLBACK_PLAN_KEYS.map((id) => {
-  const p = PLANS[id];
-  const w = getPerStudentWeeklyCost(id);
-  return {
-    id,
-    name_en: p.englishName,
-    name_ar: p.arabicName,
-    students_per_week_limit: p.weeklyStudentLimit ?? 999999,
-    monthly_fee: p.monthlyListPrice,
-    per_student_at_capacity_egp: w ?? 0,
-    setup_fee_egp: SETUP_FEE_BY_PLAN[id] ?? 0,
-    is_custom: id === 'top_centers',
-  };
-});
-
-const FALLBACK_PAYG: PaygRate[] = [
-  { min_students_per_week: 0, max_students_per_week: 100, rate_per_student_egp: 4 },
-  { min_students_per_week: 101, max_students_per_week: 250, rate_per_student_egp: 3 },
-  { min_students_per_week: 251, max_students_per_week: 500, rate_per_student_egp: 2.5 },
-  { min_students_per_week: 501, max_students_per_week: 1000, rate_per_student_egp: 2 },
-  { min_students_per_week: 1001, max_students_per_week: 2000, rate_per_student_egp: 2 },
-  { min_students_per_week: 2001, max_students_per_week: 10000, rate_per_student_egp: 1.75 },
-];
-
-const MONTHLY_MULTIPLIER = 4.333;
 const ADMIN_NOTIFICATION_PHONE = '201220601410';
 
 const LOGO_MAX_SIZE = 2 * 1024 * 1024; // 2MB
@@ -157,37 +84,6 @@ const PERMISSION_KEYS: { key: string; labelKey: string }[] = [
   { key: 'can_view_settings', labelKey: 'canViewSettings' },
 ];
 
-// ========== Helpers ==========
-function getBracketRate(students: number): number {
-  if (students <= 100) return 4;
-  if (students <= 250) return 3;
-  if (students <= 500) return 2.5;
-  if (students <= 1000) return 2;
-  if (students <= 2000) return 2;
-  return 1.75;
-}
-
-function calculatePaygCost(_rates: PaygRate[], students: number) {
-  const rate = getBracketRate(students);
-  const weeklyCost = students * rate;
-  const monthly = Math.round(weeklyCost * MONTHLY_MULTIPLIER);
-  const breakdown = students > 0 ? [{ from: 1, to: students, count: students, rate, cost: weeklyCost }] : [];
-  return { weekly: weeklyCost, monthly, effectiveRate: rate, breakdown };
-}
-
-function getFixedPlanComparison(students: number) {
-  if (students <= 100) return { planName: PLANS.nano.englishName, planNameAr: PLANS.nano.arabicName, planFee: getPlanPrice('nano', 'monthly'), isCustom: false };
-  if (students <= 250) return { planName: PLANS.starter.englishName, planNameAr: PLANS.starter.arabicName, planFee: getPlanPrice('starter', 'monthly'), isCustom: false };
-  if (students <= 500) return { planName: PLANS.pro.englishName, planNameAr: PLANS.pro.arabicName, planFee: getPlanPrice('pro', 'monthly'), isCustom: false };
-  if (students <= 1000) return { planName: PLANS.business.englishName, planNameAr: PLANS.business.arabicName, planFee: getPlanPrice('business', 'monthly'), isCustom: false };
-  if (students <= 2000) return { planName: PLANS.enterprise.englishName, planNameAr: PLANS.enterprise.arabicName, planFee: getPlanPrice('enterprise', 'monthly'), isCustom: false };
-  return { planName: PLANS.top_centers.englishName, planNameAr: PLANS.top_centers.arabicName, planFee: 0, isCustom: true };
-}
-
-function filterPlans(plans: PricingPlan[]): PricingPlan[] {
-  return plans ?? FALLBACK_PLANS;
-}
-
 function SettingsPageContent() {
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
@@ -202,14 +98,20 @@ function SettingsPageContent() {
   const isRTL = locale === 'ar';
 
   // Tab from URL or default
-  const tabParam = searchParams?.get('tab') as TabType | null;
-  const [activeTab, setActiveTab] = useState<TabType>(tabParam && ['general', 'billing', 'team'].includes(tabParam) ? tabParam : 'general');
+  const tabParam = searchParams?.get('tab');
+  const [activeTab, setActiveTab] = useState<TabType>(
+    tabParam === 'team' ? 'team' : 'general',
+  );
 
   useEffect(() => {
-    if (tabParam && ['general', 'billing', 'team'].includes(tabParam)) {
-      setActiveTab(tabParam as TabType);
+    if (tabParam === 'billing') {
+      router.replace('/settings/billing');
+      return;
     }
-  }, [tabParam]);
+    if (tabParam === 'general' || tabParam === 'team') {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -241,66 +143,6 @@ function SettingsPageContent() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoToast, setLogoToast] = useState<'success' | 'error' | null>(null);
-
-  // Billing
-  const [billingData, setBillingData] = useState<{
-    plan: string;
-    pricing_type: string;
-    billing_type?: string;
-    billing_period?: BillingPeriod;
-    all_in_price?: number | null;
-    weekly_student_limit: number;
-    plans: PricingPlan[];
-    payg_rates: PaygRate[];
-    current_plan_details?: PricingPlan;
-    is_early_adopter?: boolean;
-    early_adopter_price?: number;
-    center_name?: string;
-    invoices?: {
-      id?: string;
-      invoice_number?: string;
-      invoice_type?: string | null;
-      billing_period_start?: string | null;
-      billing_period_end?: string | null;
-      period_start?: string;
-      period_end?: string;
-      total_amount?: number;
-      payment_amount?: number;
-      payment_reference?: string;
-      payment_proof_url?: string;
-      status: string;
-      paid_at?: string;
-      created_at?: string;
-    }[];
-    next_payment_due?: string | null;
-    billing_status?: string | null;
-    billing_amount?: number | null;
-    parent_pack_active_parents?: number;
-    announcement_balance?: number;
-    announcement_cap?: number;
-    recent_announcement_blasts?: {
-      id: string;
-      blast_type: string;
-      parents_notified: number;
-      total_amount: string | number;
-      created_at: string;
-    }[];
-  } | null>(null);
-  const [billingLoading, setBillingLoading] = useState(false);
-  const [paygSlider, setPaygSlider] = useState(200);
-  const [changePlanSelect, setChangePlanSelect] = useState('');
-  const [showPlanRequestModal, setShowPlanRequestModal] = useState(false);
-  const [billingSaving, setBillingSaving] = useState(false);
-  const [invoicePaymentModal, setInvoicePaymentModal] = useState<{
-    open: boolean;
-    invoiceId: string | null;
-    iframeUrl: string | null;
-    loading: boolean;
-    polling: boolean;
-  }>({ open: false, invoiceId: null, iframeUrl: null, loading: false, polling: false });
-  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<BillingPeriod>('quarterly');
-  const [planRequests, setPlanRequests] = useState<Array<{ id: string; current_plan: string; requested_plan: string; status: string; requested_at?: string }>>([]);
-  const [payNowLoading, setPayNowLoading] = useState(false);
 
   // Team
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -408,77 +250,6 @@ function SettingsPageContent() {
     };
     if (centerId) fetchReferral();
   }, [centerId]);
-
-  // Load billing when tab is billing
-  const fetchBilling = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    setBillingLoading(true);
-    try {
-      const res = await fetch('/api/settings/billing', { headers: { Authorization: `Bearer ${session.access_token}` } });
-      if (!res.ok) {
-        setBillingData({
-          plan: 'starter',
-          pricing_type: 'fixed',
-          weekly_student_limit: 200,
-          plans: FALLBACK_PLANS,
-          payg_rates: FALLBACK_PAYG,
-        });
-      } else {
-        const json = await res.json();
-        const plans = (json.plans?.length ? json.plans : FALLBACK_PLANS) as PricingPlan[];
-        const paygRates = (json.payg_rates?.length ? json.payg_rates : FALLBACK_PAYG) as PaygRate[];
-        setBillingData({
-          plan: json.plan || 'starter',
-          pricing_type: json.pricing_type || json.billing_type || 'fixed',
-          billing_type: json.billing_type || json.pricing_type,
-          billing_period: normalizeBillingPeriod(json.billing_period),
-          all_in_price: json.all_in_price != null ? Number(json.all_in_price) : null,
-          weekly_student_limit: json.weekly_student_limit ?? 200,
-          plans,
-          payg_rates: paygRates,
-          current_plan_details: json.current_plan_details,
-          is_early_adopter: json.is_early_adopter,
-          early_adopter_price: json.early_adopter_price,
-          center_name: json.center_name,
-          invoices: json.invoices || [],
-          next_payment_due: json.next_payment_due ?? null,
-          billing_status: json.billing_status ?? null,
-          billing_amount: json.billing_amount != null ? Number(json.billing_amount) : null,
-          parent_pack_active_parents: json.parent_pack_active_parents,
-          announcement_balance: json.announcement_balance,
-          announcement_cap: json.announcement_cap,
-          recent_announcement_blasts: json.recent_announcement_blasts,
-        });
-        setSelectedBillingPeriod(normalizeBillingPeriod(json.billing_period));
-        setPaygSlider(json.weekly_student_limit ?? 200);
-      }
-      // Fetch plan requests for this center
-      if (centerId) {
-        const { data: planReqs } = await supabase
-          .from('plan_requests')
-          .select('id, current_plan, requested_plan, status, requested_at')
-          .eq('center_id', centerId)
-          .order('requested_at', { ascending: false })
-          .limit(10);
-        setPlanRequests(planReqs ?? []);
-      }
-    } catch {
-      setBillingData({
-        plan: 'starter',
-        pricing_type: 'fixed',
-        weekly_student_limit: 200,
-        plans: FALLBACK_PLANS,
-        payg_rates: FALLBACK_PAYG,
-      });
-    } finally {
-      setBillingLoading(false);
-    }
-  }, [centerId]);
-
-  useEffect(() => {
-    if (activeTab === 'billing') fetchBilling();
-  }, [activeTab, fetchBilling]);
 
   // Load team when tab is team
   const loadTeamData = useCallback(async () => {
@@ -743,180 +514,6 @@ function SettingsPageContent() {
     }
   };
 
-  // Billing handlers
-  const openInvoicePaymentModal = useCallback(
-    async (invoiceId: string) => {
-      if (!FEATURES.PAYMOB_ENABLED || currentUser?.role !== 'owner') return;
-      setInvoicePaymentModal({
-        open: true,
-        invoiceId,
-        iframeUrl: null,
-        loading: true,
-        polling: false,
-      });
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        setInvoicePaymentModal({
-          open: false,
-          invoiceId: null,
-          iframeUrl: null,
-          loading: false,
-          polling: false,
-        });
-        return;
-      }
-      try {
-        const res = await fetch(`/api/invoices/${invoiceId}/pay`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const json = (await res.json().catch(() => ({}))) as { iframeUrl?: string; orderId?: string; error?: string };
-        if (!res.ok || typeof json.iframeUrl !== 'string') {
-          toast.error(typeof json.error === 'string' ? json.error : tBilling('paymentFailed'));
-          setInvoicePaymentModal({
-            open: false,
-            invoiceId: null,
-            iframeUrl: null,
-            loading: false,
-            polling: false,
-          });
-          return;
-        }
-        setInvoicePaymentModal({
-          open: true,
-          invoiceId,
-          iframeUrl: json.iframeUrl,
-          loading: false,
-          polling: true,
-        });
-      } catch {
-        toast.error(tBilling('paymentFailed'));
-        setInvoicePaymentModal({
-          open: false,
-          invoiceId: null,
-          iframeUrl: null,
-          loading: false,
-          polling: false,
-        });
-      }
-    },
-    [currentUser?.role, toast, tBilling],
-  );
-
-  useEffect(() => {
-    if (
-      !invoicePaymentModal.open ||
-      !invoicePaymentModal.invoiceId ||
-      !invoicePaymentModal.iframeUrl ||
-      !invoicePaymentModal.polling
-    ) {
-      return;
-    }
-    let cancelled = false;
-    let ticks = 0;
-    const maxTicks = 200;
-    const interval = setInterval(async () => {
-      ticks += 1;
-      if (ticks > maxTicks || cancelled) {
-        clearInterval(interval);
-        return;
-      }
-      try {
-        const res = await fetch(
-          `/api/paymob/invoice-status?invoiceId=${encodeURIComponent(invoicePaymentModal.invoiceId!)}`,
-        );
-        if (!res.ok || cancelled) return;
-        const body = (await res.json()) as { paid?: boolean; failed?: boolean };
-        if (body.paid === true) {
-          cancelled = true;
-          clearInterval(interval);
-          setInvoicePaymentModal({
-            open: false,
-            invoiceId: null,
-            iframeUrl: null,
-            loading: false,
-            polling: false,
-          });
-          toast.success(tBilling('paymentSuccess'));
-          void fetchBilling();
-        } else if (body.failed === true) {
-          cancelled = true;
-          clearInterval(interval);
-          setInvoicePaymentModal((m) => ({ ...m, polling: false }));
-          toast.error(tBilling('paymentFailed'));
-        }
-      } catch {
-        // ignore transient errors
-      }
-    }, 3000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [
-    invoicePaymentModal.open,
-    invoicePaymentModal.invoiceId,
-    invoicePaymentModal.iframeUrl,
-    invoicePaymentModal.polling,
-    fetchBilling,
-    toast,
-    tBilling,
-  ]);
-
-  const handleRequestPlanChange = async () => {
-    if (!changePlanSelect || billingSaving || currentUser?.role !== 'owner') return;
-    try {
-      setBillingSaving(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const { getCsrfHeaders } = await import('@/lib/csrf-client');
-      const res = await fetch('/api/settings/plan-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, ...await getCsrfHeaders(session.access_token) },
-        body: JSON.stringify({ requested_plan: changePlanSelect }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed');
-      setSavedMessage(json.message || tBilling('requestSubmitted'));
-      setChangePlanSelect('');
-      setShowPlanRequestModal(false);
-      setTimeout(() => setSavedMessage(''), 5000);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : tBilling('updateFailed'));
-    } finally {
-      setBillingSaving(false);
-    }
-  };
-
-  const handlePayNow = async () => {
-    if (!FEATURES.PAYMOB_ENABLED || payNowLoading || currentUser?.role !== 'owner') return;
-    const pendingSub = billingData?.invoices?.find(
-      (i) => i.invoice_type === 'subscription' && i.status?.toLowerCase() === 'pending' && i.id,
-    );
-    if (pendingSub?.id) {
-      void openInvoicePaymentModal(pendingSub.id);
-      return;
-    }
-    try {
-      setPayNowLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const res = await fetch('/api/billing/initiate-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed');
-      if (json.payment_url) window.open(json.payment_url, '_blank', 'noopener,noreferrer');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : tBilling('updateFailed'));
-    } finally {
-      setPayNowLoading(false);
-    }
-  };
-
   // Team handlers
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1051,61 +648,6 @@ function SettingsPageContent() {
   const isOwner = (member: TeamMember) => member.role === 'owner' || member.role === 'admin';
   const canEditPermissions = (member: TeamMember) => !isOwner(member) && member.id !== userId;
 
-  const plans = filterPlans(billingData?.plans ?? FALLBACK_PLANS);
-  const paygRates = billingData?.payg_rates ?? FALLBACK_PAYG;
-  const currentPlanDetails = billingData?.current_plan_details ?? plans.find(p => p.id === billingData?.plan);
-  const currentPlanKey: PlanKey = isPlanKey(billingData?.plan) ? (billingData!.plan as PlanKey) : 'starter';
-  const quarterlyBaseForCurrentCenter = useMemo(() => {
-    if (!billingData || currentPlanKey === 'top_centers') return 0;
-    if (billingData.all_in_price != null && billingData.all_in_price > 0) return billingData.all_in_price;
-    if (billingData.is_early_adopter && typeof billingData.early_adopter_price === 'number' && billingData.early_adopter_price > 0) {
-      return Math.round(billingData.early_adopter_price / 3);
-    }
-    return PLANS[currentPlanKey].quarterlyAllIn;
-  }, [billingData, currentPlanKey]);
-  const currentDisplayPrice = useMemo(() => {
-    if (!billingData || currentPlanKey === 'top_centers') return 0;
-    const q = quarterlyBaseForCurrentCenter;
-    if (q <= 0) return 0;
-    return getChargeFromQuarterlyAllIn(q, selectedBillingPeriod, currentPlanKey);
-  }, [billingData, currentPlanKey, quarterlyBaseForCurrentCenter, selectedBillingPeriod]);
-  const currentCycleCharge = useMemo(() => {
-    if (!billingData || currentPlanKey === 'top_centers') return 0;
-    return getChargeFromQuarterlyAllIn(quarterlyBaseForCurrentCenter, selectedBillingPeriod, currentPlanKey);
-  }, [billingData, currentPlanKey, quarterlyBaseForCurrentCenter, selectedBillingPeriod]);
-  const paygResult = useMemo(() => calculatePaygCost(paygRates, paygSlider), [paygRates, paygSlider]);
-  const fixedComparison = useMemo(() => getFixedPlanComparison(paygSlider), [paygSlider]);
-  const fixedSavesMoney = !fixedComparison.isCustom && fixedComparison.planFee < paygResult.monthly;
-  const savingsAmount = fixedSavesMoney ? paygResult.monthly - fixedComparison.planFee : 0;
-
-  const paymentDueBanner = useMemo(() => {
-    if (!billingData?.next_payment_due) return { show: false as const, pendingId: null as string | null, amount: 0, dueStr: '' };
-    const st = String(billingData.billing_status ?? '').toLowerCase();
-    if (st === 'paid') return { show: false as const, pendingId: null as string | null, amount: 0, dueStr: '' };
-    const due = new Date(`${billingData.next_payment_due}T12:00:00`);
-    const limit = new Date();
-    limit.setDate(limit.getDate() + 7);
-    if (due > limit) return { show: false as const, pendingId: null as string | null, amount: 0, dueStr: '' };
-    const pending = billingData.invoices?.find(
-      (i) => i.invoice_type === 'subscription' && i.status?.toLowerCase() === 'pending' && i.id,
-    );
-    const amt =
-      billingData.billing_amount != null && Number.isFinite(billingData.billing_amount)
-        ? billingData.billing_amount
-        : currentDisplayPrice;
-    const dueStr = due.toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-    return {
-      show: true as const,
-      pendingId: pending?.id ?? null,
-      amount: amt,
-      dueStr,
-    };
-  }, [billingData, currentDisplayPrice, locale]);
-
   const canEnablePack = (center?.status ?? '') === 'active';
   const isPackEnabled = packStatus?.pack_enabled ?? false;
   const activeParentsCount = packStatus?.active_parents ?? 0;
@@ -1157,12 +699,13 @@ function SettingsPageContent() {
           >
             {t('general')}
           </button>
-          <button
-            onClick={() => setActiveTab('billing')}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'billing' ? 'bg-teal-600 text-white shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+          <Link
+            href="/settings/billing"
+            className="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
           >
             {t('billing')}
-          </button>
+            <ChevronRight className="w-4 h-4" aria-hidden />
+          </Link>
           <button
             onClick={() => setActiveTab('team')}
             className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === 'team' ? 'bg-teal-600 text-white shadow-sm' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
@@ -1493,9 +1036,12 @@ function SettingsPageContent() {
                 </div>
               </div>
               <div className="p-6">
-                <button type="button" onClick={() => setActiveTab('billing')} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit">
-                  <CreditCard className="w-4 h-4" /> {t('billingLink')} <ChevronRight className="w-4 h-4 ms-1" />
-                </button>
+                <Link
+                  href="/settings/billing"
+                  className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit"
+                >
+                  <CreditCard className="w-4 h-4" /> {tBilling('page.fullManagement')} <ChevronRight className="w-4 h-4 ms-1" />
+                </Link>
               </div>
             </div>
 
@@ -1725,491 +1271,6 @@ function SettingsPageContent() {
           </div>
         )}
 
-        {/* BILLING TAB */}
-        {activeTab === 'billing' && (
-          <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
-            {billingLoading ? (
-              <div className="flex justify-center py-16"><div className="animate-spin h-8 w-8 border-2 border-teal-500 border-t-transparent rounded-full" /></div>
-            ) : (
-              <>
-                {/* 1. Current Plan hero */}
-                <div className="bg-gradient-to-br from-teal-600 to-slate-800 rounded-2xl p-6 text-white mb-6 shadow-lg">
-                  <p className="text-teal-200 text-sm font-medium uppercase tracking-wider mb-3">{tBilling('currentPlan')}</p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {(['monthly', 'quarterly', 'annual'] as const).map((period) => (
-                      <button
-                        key={period}
-                        type="button"
-                        onClick={() => setSelectedBillingPeriod(period)}
-                        className={`relative rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                          selectedBillingPeriod === period
-                            ? 'bg-[var(--color-surface-1)] text-teal-800'
-                            : 'bg-[var(--color-surface-1)]/15 text-teal-100 hover:bg-[var(--color-surface-1)]/25'
-                        }`}
-                      >
-                        {tBilling(`period.${period}`)}
-                        {period === 'quarterly' && (
-                          <span className="absolute -top-2 start-2 bg-amber-400/90 text-teal-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                            {tBilling('period.recommended')}
-                          </span>
-                        )}
-                        {period === 'monthly' && (
-                          <span className="absolute -top-2 end-0 bg-[var(--color-surface-1)]/30 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                            {tBilling('period.monthlyPremium')}
-                          </span>
-                        )}
-                        {period === 'annual' && (
-                          <span className="absolute -top-2 end-0 bg-amber-400/90 text-teal-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                            {tBilling('period.twoMonthsFree')}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div>
-                      <p className="text-4xl font-bold mt-1">
-                        {currentPlanDetails?.is_custom
-                          ? (tBilling(`planNames.${currentPlanKey}`) || currentPlanDetails?.name_ar || currentPlanDetails?.name_en)
-                          : (tBilling(`planNames.${currentPlanKey}`) || (PLAN_DISPLAY_NAMES[billingData?.plan ?? 'starter'] ?? currentPlanDetails?.name_en))}
-                      </p>
-                      {currentPlanKey !== 'top_centers' && getPerStudentWeeklyCost(currentPlanKey) != null && (
-                        <p className="text-teal-100 text-sm mt-2">
-                          {tBilling('perStudentWeekly', { price: formatPrice(getPerStudentWeeklyCost(currentPlanKey)!) })}
-                        </p>
-                      )}
-                      <p className="text-teal-200 text-sm mt-2">
-                        {currentPlanDetails?.is_custom
-                          ? tBilling('unlimitedStudents')
-                          : tBilling('studentsLimit', { limit: formatPrice(currentPlanDetails?.students_per_week_limit ?? 0) })}
-                      </p>
-                    </div>
-                    <div className="text-start sm:text-end">
-                      {!currentPlanDetails?.is_custom && currentPlanKey !== 'top_centers' ? (
-                        <>
-                          <p className="text-3xl font-bold font-mono">
-                            {formatPrice(currentDisplayPrice)} {tBilling('egp')}
-                          </p>
-                          {selectedBillingPeriod === 'annual' && (
-                            <p className="text-teal-200 text-sm mt-1">
-                              {tBilling('monthlyEquivShort', { amount: formatPrice(Math.round(quarterlyBaseForCurrentCenter * 0.85)) })}
-                            </p>
-                          )}
-                          <p className="text-teal-300 text-xs mt-2 max-w-xs sm:ms-auto">{tBilling('priceLabel')}</p>
-                          <p className="text-teal-100 text-sm font-mono mt-1">
-                            {tBilling('quarterlyChargeLine', { amount: formatPrice(currentCycleCharge) })}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-2xl font-bold">{tBilling('custom')}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-teal-500/40 flex items-center justify-between flex-wrap gap-2">
-                    <p className="text-teal-200 text-sm">
-                      {tBilling('nextBilling')}: <span className="text-white font-semibold">—</span>
-                    </p>
-                    <div className="flex items-center gap-2">
-                      {FEATURES.PAYMOB_ENABLED && (
-                        <button
-                          type="button"
-                          onClick={handlePayNow}
-                          disabled={payNowLoading}
-                          className="px-4 py-2 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {payNowLoading ? tCommon('loading') : tBilling('payNow')}
-                        </button>
-                      )}
-                      <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full border border-green-500/30">{tBilling('active')}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {paymentDueBanner.show && currentUser?.role === 'owner' && (
-                  <div className="bg-amber-950 border border-amber-700 rounded-lg p-4 mb-4">
-                    <p className="text-amber-300 font-semibold">{tBilling('paymentDueSoon')}</p>
-                    <p className="text-amber-400 text-sm mt-1">
-                      {tBilling('paymentDueDate', {
-                        amount: paymentDueBanner.amount.toLocaleString(locale === 'ar' ? 'en-US' : 'en-US'),
-                        date: paymentDueBanner.dueStr,
-                      })}
-                    </p>
-                    {FEATURES.PAYMOB_ENABLED && paymentDueBanner.pendingId && (
-                      <button
-                        type="button"
-                        onClick={() => void openInvoicePaymentModal(paymentDueBanner.pendingId!)}
-                        className="mt-3 px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold transition-colors"
-                      >
-                        {tBilling('payNow')} — {paymentDueBanner.amount.toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}{' '}
-                        {tBilling('egp')}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Parent WA Pack + announcement balance */}
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
-                  <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">{tBilling('parentPack')}</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between gap-2 flex-wrap">
-                      <span className="text-[var(--color-text-secondary)]">{t('parentPack.activeParents')}</span>
-                      <span className="font-mono font-semibold">
-                        {(billingData?.parent_pack_active_parents ?? 0).toLocaleString('en-US')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-2 flex-wrap">
-                      <span className="text-[var(--color-text-secondary)]">{t('parentPack.packMonthlyCostLabel')}</span>
-                      <span className="font-mono font-semibold" dir="ltr">
-                        {(
-                          (billingData?.parent_pack_active_parents ?? 0) * PACK_PRICE_PER_PARENT
-                        ).toLocaleString('en-US')}{' '}
-                        {tCommon('egp')}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="flex justify-between gap-2 mb-1">
-                        <span className="text-[var(--color-text-secondary)]">{tBilling('announcementBalance')}</span>
-                        <span className="font-mono text-xs" dir="ltr">
-                          {Number(billingData?.announcement_balance ?? 0).toLocaleString('en-US')} {tCommon('egp')} /{' '}
-                          {(billingData?.announcement_cap ?? getAnnouncementCap(billingData?.plan ?? 'starter')).toLocaleString('en-US')}{' '}
-                          {tCommon('egp')}
-                        </span>
-                      </div>
-                      {(() => {
-                        const cap = billingData?.announcement_cap ?? getAnnouncementCap(billingData?.plan ?? 'starter');
-                        const balance = Number(billingData?.announcement_balance ?? 0);
-                        const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0;
-                        const barClass =
-                          pct >= 90 ? 'bg-amber-500' : 'bg-teal-600';
-                        return (
-                          <div className="h-2 rounded-full bg-[var(--color-surface-2)] overflow-hidden">
-                            <div className={`h-full ${barClass} transition-all`} style={{ width: `${pct}%` }} />
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  <h4 className="text-sm font-semibold text-[var(--color-text-primary)] mt-6 mb-2">{tBilling('recentBlasts')}</h4>
-                  {(billingData?.recent_announcement_blasts?.length ?? 0) === 0 ? (
-                    <p className="text-sm text-[var(--color-text-secondary)]">{tBilling('noBlasts')}</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {billingData?.recent_announcement_blasts?.map((b) => (
-                        <li
-                          key={b.id}
-                          className="flex flex-wrap items-center justify-between gap-2 text-sm border border-[var(--color-border-subtle)] rounded-lg p-3"
-                        >
-                          <span className="text-[var(--color-text-secondary)]">
-                            {b.created_at ? new Date(b.created_at).toLocaleDateString('en-US') : '—'}
-                          </span>
-                          <span
-                            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                              b.blast_type === 'ops' ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800'
-                            }`}
-                          >
-                            {b.blast_type === 'ops' ? tBilling('blastOps') : tBilling('blastPromo')}
-                          </span>
-                          <span className="font-mono">
-                            {b.parents_notified.toLocaleString('en-US')} · {Number(b.total_amount).toLocaleString('en-US')}{' '}
-                            {tCommon('egp')}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {/* 2. Fixed Plans grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                  {plans.map((plan) => {
-                    const isCurrent = billingData?.plan === plan.id && billingData?.pricing_type === 'fixed';
-                    const setupFee = plan.setup_fee_egp ?? SETUP_FEE_BY_PLAN[plan.id] ?? 0;
-                    const pkCard = isPlanKey(plan.id) ? (plan.id as PlanKey) : 'starter';
-                    const perStudentWeek = plan.is_custom ? null : getPerStudentWeeklyCost(pkCard);
-                    const planName = tBilling(`planNames.${plan.id}`) || PLAN_DISPLAY_NAMES[plan.id] || plan.name_en || plan.name_ar;
-                    const cardPrice = !plan.is_custom && isPlanKey(plan.id) ? getPlanPrice(plan.id as PlanKey, selectedBillingPeriod) : 0;
-                    const goldBorder = plan.id === 'enterprise' || plan.is_custom;
-                    const proRecommended = plan.id === 'pro';
-                    return (
-                      <div
-                        key={plan.id}
-                        className={[
-                          'bg-[var(--color-surface-1)] rounded-xl border shadow-sm p-5 relative',
-                          isCurrent ? 'border-2 border-teal-500 ring-2 ring-teal-500/20' : 'border-[var(--color-border-subtle)]',
-                          !isCurrent && goldBorder ? 'border-[var(--color-gold-500)] ring-1 ring-[var(--color-gold-500)]' : '',
-                        ].join(' ')}
-                      >
-                        {proRecommended && (
-                          <span className="absolute -top-3 start-1/2 -translate-x-1/2 badge badge-brand text-xs whitespace-nowrap px-3 py-1">
-                            {tBilling('period.recommended')}
-                          </span>
-                        )}
-                        {isCurrent && (
-                          <div className={`absolute ${proRecommended ? '-top-8' : '-top-3'} start-1/2 -translate-x-1/2`}>
-                            <span className="px-3 py-1 bg-teal-600 text-white text-xs font-semibold rounded-full shadow">{tBilling('currentPlan')}</span>
-                          </div>
-                        )}
-                        <h3 className="font-bold text-[var(--color-text-primary)] text-lg mt-2">{planName}</h3>
-                        <ul className="text-sm text-[var(--color-text-secondary)] mt-1 space-y-0.5" dir={isRTL ? 'rtl' : 'ltr'}>
-                          <li>
-                            •{' '}
-                            {plan.is_custom
-                              ? tBilling('unlimitedStudents')
-                              : tBilling('studentsLimit', { limit: formatPrice(plan.students_per_week_limit ?? 0) })}
-                          </li>
-                          {perStudentWeek != null && (
-                            <li>• {tBilling('perStudentWeekly', { price: formatPrice(perStudentWeek) })}</li>
-                          )}
-                          {plan.is_custom && <li>• {tBilling('customPricingNote')}</li>}
-                        </ul>
-                        <p className="text-xs text-[var(--color-text-tertiary)] mt-2">{tBilling('priceLabel')}</p>
-                        <div className="my-4">
-                          <span className="text-3xl font-bold text-[var(--color-text-primary)] font-mono">
-                            {plan.is_custom ? tBilling('custom') : formatPrice(cardPrice)}
-                          </span>
-                          {!plan.is_custom && (
-                            <span className="text-base font-normal text-[var(--color-text-tertiary)] ms-1">
-                              {selectedBillingPeriod === 'monthly'
-                                ? `(${tBilling('period.monthly')})`
-                                : selectedBillingPeriod === 'annual'
-                                  ? `(${tBilling('annualTotalShort')})`
-                                  : `(${tBilling('period.quarterly')})`}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
-                          {tBilling('setup')}: {tBilling('egp')}{' '}
-                          {plan.is_custom ? '—' : formatPrice(setupFee)}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => !isCurrent && (setChangePlanSelect(plan.id), setShowPlanRequestModal(true))}
-                          className={
-                            isCurrent
-                              ? 'w-full py-2 rounded-lg text-sm font-semibold bg-[var(--color-surface-2)] text-teal-700 border border-[var(--color-border-subtle)] cursor-default'
-                              : 'w-full py-2 rounded-lg text-sm font-semibold border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors'
-                          }
-                          disabled={isCurrent}
-                        >
-                          {isCurrent
-                            ? tBilling('currentPlan')
-                            : getPlanLevel(plan.id) > getPlanLevel(billingData?.plan)
-                              ? tBilling('requestUpgrade')
-                              : tBilling('requestDowngrade')}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* 3. PAYG Calculator */}
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
-                  <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{tBilling('paygTitle')}</h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mb-4">{tBilling('paygSubtitle')}</p>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-[var(--color-text-primary)]">{tBilling('studentsPerWeekSlider', { defaultValue: 'Students per week' })}</label>
-                        <span className="text-lg font-bold text-teal-600 font-mono">{paygSlider}</span>
-                      </div>
-                      <input type="range" min={1} max={2000} value={paygSlider} onChange={(e) => setPaygSlider(Number(e.target.value))} className="w-full accent-teal-600" />
-                    </div>
-                    <div className="p-4 bg-teal-50 rounded-xl border border-teal-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-teal-600 font-medium">{tBilling('weeklyCost')}</p>
-                          <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.weekly.toLocaleString('en-US')} {tBilling('egp')}</p>
-                        </div>
-                        <div className="text-end">
-                          <p className="text-xs text-teal-600 font-medium">{tBilling('monthlyEst')}</p>
-                          <p className="text-2xl font-bold text-teal-800 font-mono">{paygResult.monthly.toLocaleString('en-US')} {tBilling('egp')}</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-teal-600 mt-2">Rate: {tBilling('egp')} {paygResult.effectiveRate}{tBilling('perStudentWeek', { defaultValue: '/student/week' })}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Want to change your plan? */}
-                {currentUser?.role === 'owner' && (
-                  <section className="ch-card">
-                    <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4">{tBilling('changeQuestion')}</h2>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button onClick={() => setShowPlanRequestModal(true)} className="px-4 py-2.5 text-white text-sm font-semibold rounded-lg" style={{ background: 'hsl(var(--primary))' }}>{tBilling('requestPlanChange')}</button>
-                      <a href={`https://wa.me/201001963432?text=${encodeURIComponent(`مرحباً، أريد تغيير خطة سنتر ${billingData?.center_name || ''}`)}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 text-sm font-medium">{tBilling('requestViaWhatsapp')}</a>
-                    </div>
-                  </section>
-                )}
-
-                {/* 4. Invoice History */}
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
-                  <div className="p-6 border-b border-[var(--color-border-subtle)]">
-                    <h3 className="font-semibold text-[var(--color-text-primary)]">{tBilling('invoiceHistory')}</h3>
-                  </div>
-                  {(billingData?.invoices?.length ?? 0) > 0 ? (
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Date</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Reference</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Amount</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Period</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Status</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Pay</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {billingData?.invoices?.map((inv) => {
-                          const status = inv.status?.toLowerCase?.() ?? '';
-                          const statusClass = status === 'paid' || status === 'approved' ? 'bg-green-100 text-green-700' : status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
-                          const pStart = inv.billing_period_start ?? inv.period_start;
-                          const pEnd = inv.billing_period_end ?? inv.period_end;
-                          const isSub = inv.invoice_type === 'subscription';
-                          const canPaySub =
-                            FEATURES.PAYMOB_ENABLED &&
-                            currentUser?.role === 'owner' &&
-                            isSub &&
-                            status === 'pending' &&
-                            inv.id;
-                          return (
-                            <tr key={inv.id || inv.invoice_number || String(inv.created_at)}>
-                              <td className="py-3 px-4 text-sm text-[var(--color-text-primary)]">{inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-US') : pStart && pEnd ? `${pStart} – ${pEnd}` : '—'}</td>
-                              <td className="py-3 px-4 text-sm text-[var(--color-text-primary)] font-mono">{inv.payment_reference || inv.invoice_number || '—'}</td>
-                              <td className="py-3 px-4 text-sm font-mono text-[var(--color-text-primary)]">{Number(inv.payment_amount ?? inv.total_amount ?? 0).toLocaleString('en-US')} {tBilling('egp')}</td>
-                              <td className="py-3 px-4 text-sm text-[var(--color-text-secondary)]">{pStart && pEnd ? `${pStart} – ${pEnd}` : '—'}</td>
-                              <td className="py-3 px-4"><span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusClass}`}>{inv.status}</span></td>
-                              <td className="py-3 px-4">
-                                {canPaySub ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => void openInvoicePaymentModal(inv.id!)}
-                                    className="px-3 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold"
-                                  >
-                                    {tBilling('payNow')}
-                                  </button>
-                                ) : isSub && (status === 'paid' || status === 'approved') ? (
-                                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                                    {tBilling('invoicePaid')}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm text-[var(--color-text-tertiary)]">—</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  ) : <p className="p-8 text-center text-[var(--color-text-secondary)]">{tBilling('noInvoices')}</p>}
-                </div>
-
-                {/* Plan Change Requests */}
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
-                  <div className="p-6 border-b border-[var(--color-border-subtle)]">
-                    <h3 className="font-semibold text-[var(--color-text-primary)]">Plan Change Requests</h3>
-                    <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">History of your plan upgrade/downgrade requests</p>
-                  </div>
-                  {planRequests.length === 0 ? (
-                    <div className="text-center py-10">
-                      <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                      <p className="text-[var(--color-text-secondary)] text-sm">No plan change requests yet</p>
-                    </div>
-                  ) : (
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Date</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">From</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">To</th>
-                          <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {planRequests.map(req => (
-                          <tr key={req.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
-                            <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
-                              {new Date(req.requested_at || 0).toLocaleDateString('en-US')}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <PlanBadge plan={req.current_plan} />
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <PlanBadge plan={req.requested_plan} />
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${req.status === 'approved' ? 'bg-green-100 text-green-700' : req.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {req.status === 'approved' ? '✓ Approved' :
-                                 req.status === 'rejected' ? '✗ Rejected' : '⏳ Pending'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-
-                {invoicePaymentModal.open && (
-                  <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-                    dir={isRTL ? 'rtl' : 'ltr'}
-                    onClick={() =>
-                      setInvoicePaymentModal({
-                        open: false,
-                        invoiceId: null,
-                        iframeUrl: null,
-                        loading: false,
-                        polling: false,
-                      })
-                    }
-                  >
-                    <div
-                      className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-between p-4 border-b border-[var(--color-border-subtle)] shrink-0">
-                        <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tBilling('payNow')}</h2>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setInvoicePaymentModal({
-                              open: false,
-                              invoiceId: null,
-                              iframeUrl: null,
-                              loading: false,
-                              polling: false,
-                            })
-                          }
-                          className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
-                          aria-label="Close"
-                        >
-                          <X size={20} />
-                        </button>
-                      </div>
-                      <div className="p-4 flex-1 min-h-0 overflow-y-auto">
-                        {invoicePaymentModal.loading && (
-                          <div className="flex items-center justify-center gap-3 py-16 text-[var(--color-text-secondary)]">
-                            <div className="w-8 h-8 border-2 border-teal-600 border-t-transparent rounded-full animate-spin shrink-0" />
-                            <span className="text-sm">{tCommon('loading')}</span>
-                          </div>
-                        )}
-                        {!invoicePaymentModal.loading && invoicePaymentModal.iframeUrl && (
-                          <iframe
-                            src={invoicePaymentModal.iframeUrl}
-                            className="w-full rounded-lg border-0"
-                            style={{ height: '600px', minHeight: '600px' }}
-                            title="Paymob Payment"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
         {/* TEAM TAB */}
         {activeTab === 'team' && (
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
@@ -2313,26 +1374,6 @@ function SettingsPageContent() {
                 </div>
               </>
             )}
-          </div>
-        )}
-
-        {/* Plan Request Modal */}
-        {showPlanRequestModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowPlanRequestModal(false)}>
-            <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl max-w-md w-full p-6 border border-border" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{tBilling('requestPlanChange')}</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-4">{tBilling('selectPlan')}</p>
-              <div className="space-y-2 mb-6">
-                {plans.filter(p => p.id !== 'top_centers').map(p => (
-                  <button key={p.id} type="button" onClick={() => setChangePlanSelect(p.id)} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === p.id ? 'border-primary bg-primary/20 text-[var(--color-text-primary)]' : 'border-border bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-muted'}`}>{PLAN_DISPLAY_NAMES[p.id] ?? p.name_en} — {p.monthly_fee > 0 && isPlanKey(p.id) ? `${formatPrice(getPlanPrice(p.id as PlanKey, selectedBillingPeriod))} ${tBilling('egp')} (${tBilling(`period.${selectedBillingPeriod}`)})` : tBilling('custom')}</button>
-                ))}
-                <button type="button" onClick={() => setChangePlanSelect('payg')} className={`w-full px-4 py-2.5 text-left rounded-xl border ${changePlanSelect === 'payg' ? 'border-primary bg-primary/20 text-[var(--color-text-primary)]' : 'border-border bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-muted'}`}>Pay-As-You-Go</button>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={handleRequestPlanChange} disabled={billingSaving || !changePlanSelect} className="flex-1 px-4 py-2.5 disabled:opacity-50 text-white rounded-xl font-semibold" style={{ background: 'hsl(var(--primary))' }}>{billingSaving ? tBilling('saving') : tBilling('submitRequest')}</button>
-                <button onClick={() => { setShowPlanRequestModal(false); setChangePlanSelect(''); }} className="px-4 py-2.5 bg-muted rounded-xl text-[var(--color-text-primary)]">{tCommon('cancel')}</button>
-              </div>
-            </div>
           </div>
         )}
 
