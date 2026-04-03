@@ -39,7 +39,7 @@ const AdminDatePicker = ({
   <input
     type="date"
     value={value}
-    title={placeholder}
+    aria-label={placeholder}
     onChange={(e) => onChange(e.target.value)}
     style={{
       backgroundColor: '#334155',
