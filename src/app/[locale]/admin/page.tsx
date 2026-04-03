@@ -558,7 +558,7 @@ export default function AdminPage() {
   }, [loadCardOrders, playNewOrderChime, tAdmin]);
 
   const PLAN_SORT_ORDER: Record<string, number> = {
-    nano: 1, starter: 2, pro: 3, business: 4, enterprise: 5, top_centers: 6,
+    nano: 1, starter: 2, pro: 3, pro_plus: 4, business: 4, enterprise: 5, top_centers: 6,
   };
 
   const displayedCenters = useMemo(() => {

@@ -99,7 +99,12 @@ export async function GET(request: NextRequest) {
     let plans: unknown[] = [];
     try {
       const { data: plansData } = await ctx.supabaseAdmin.from('pricing_plans').select('*').order('sort_order', { ascending: true });
-      if (plansData) plans = plansData;
+      if (plansData) {
+        plans = plansData.filter((p: { id?: string; plan_key?: string }) => {
+          const key = (p.plan_key ?? p.id) as string | undefined;
+          return key !== 'pro_plus';
+        });
+      }
     } catch { /* pricing_plans query failed, using empty */ }
 
     let paygRates: unknown[] = [];

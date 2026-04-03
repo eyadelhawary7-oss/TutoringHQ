@@ -24,6 +24,11 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const visiblePlans = (plans || []).filter((p: { id?: string; plan_key?: string }) => {
+      const key = (p.plan_key ?? p.id) as string | undefined;
+      return key !== 'pro_plus';
+    });
+
     const { count: earlyAdopterCount } = await supabase
       .from('centers')
       .select('*', { count: 'exact', head: true })
@@ -31,7 +36,7 @@ export async function GET() {
     const earlyAdopterSpotsRemaining = Math.max(0, 10 - (earlyAdopterCount ?? 0));
 
     return NextResponse.json({
-      plans: plans || [],
+      plans: visiblePlans,
       early_adopter_spots_remaining: earlyAdopterSpotsRemaining,
       early_adopter_discount_pct: 40,
     });

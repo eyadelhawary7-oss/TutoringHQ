@@ -11,6 +11,7 @@ export async function GET(request: Request) {
     .select(
       'plan_key, arabic_name, english_name, weekly_student_limit, monthly_fee, cost_per_student, setup_fee, is_active, all_in_price',
     )
+    .neq('plan_key', 'pro_plus')
     .order('plan_key', { ascending: true });
 
   if (error) {

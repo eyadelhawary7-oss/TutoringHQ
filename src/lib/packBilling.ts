@@ -5,7 +5,6 @@ export const PACK_PLAN_MINIMUMS: Record<string, number> = {
   nano: 1000,
   starter: 2000,
   pro: 5000,
-  pro_plus: 5000,
   business: 8000,
   enterprise: 10000,
 };
@@ -17,7 +16,8 @@ export function getPackPlanMinimumEgp(
   if (plan === 'top_centers' && packCustomInvoiceMinimum != null && packCustomInvoiceMinimum > 0) {
     return Number(packCustomInvoiceMinimum);
   }
-  return PACK_PLAN_MINIMUMS[plan] ?? PACK_PLAN_MINIMUMS.starter;
+  const tier = plan === 'pro_plus' ? 'business' : plan;
+  return PACK_PLAN_MINIMUMS[tier] ?? PACK_PLAN_MINIMUMS.starter;
 }
 
 function parseBillingPeriodYm(ym: string): { y: number; m: number } | null {

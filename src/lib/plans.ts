@@ -6,6 +6,13 @@
 export const PLAN_ORDER = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'] as const;
 export type PlanId = (typeof PLAN_ORDER)[number];
 
+/** Legacy tier removed from product UI; treat like business for limits/ordering. */
+function canonicalPlanId(plan: string | null | undefined): string {
+  const p = plan || 'starter';
+  if (p === 'pro_plus') return 'business';
+  return p;
+}
+
 export const PLAN_STUDENT_LIMITS: Record<string, number> = {
   nano: 100,
   starter: 250,
@@ -51,7 +58,7 @@ export const FEATURE_PLANS: Record<string, PlanId> = {
 };
 
 export function getPlanLevel(plan: string | null | undefined): number {
-  return PLAN_LEVEL[plan || 'starter'] ?? 0;
+  return PLAN_LEVEL[canonicalPlanId(plan)] ?? 0;
 }
 
 export function hasPlanFeature(plan: string | null | undefined, feature: keyof typeof FEATURE_PLANS): boolean {
@@ -63,9 +70,9 @@ export function hasPlanFeature(plan: string | null | undefined, feature: keyof t
 }
 
 export function getStudentLimit(plan: string | null | undefined): number {
-  return PLAN_STUDENT_LIMITS[plan || 'starter'] ?? 250;
+  return PLAN_STUDENT_LIMITS[canonicalPlanId(plan)] ?? 250;
 }
 
 export function getTeamLimit(plan: string | null | undefined): number {
-  return PLAN_TEAM_LIMITS[plan || 'starter'] ?? 2;
+  return PLAN_TEAM_LIMITS[canonicalPlanId(plan)] ?? 2;
 }

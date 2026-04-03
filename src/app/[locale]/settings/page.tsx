@@ -184,9 +184,9 @@ function getFixedPlanComparison(students: number) {
   return { planName: PLANS.top_centers.englishName, planNameAr: PLANS.top_centers.arabicName, planFee: 0, isCustom: true };
 }
 
-// Filter out pro_plus and nascent (legacy)
+// Hide nascent (legacy signup tier). Retired catalog tiers are omitted from pricing_plans API responses.
 function filterPlans(plans: PricingPlan[]): PricingPlan[] {
-  return (plans ?? FALLBACK_PLANS).filter(p => p.id !== 'pro_plus' && p.id !== 'nascent');
+  return (plans ?? FALLBACK_PLANS).filter((p) => p.id !== 'nascent');
 }
 
 function SettingsPageContent() {
