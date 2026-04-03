@@ -222,6 +222,36 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s8ScheduleError, setS8ScheduleError] = useState('');
   const [s8Saving, setS8Saving] = useState(false);
 
+  // Section 9
+  const [s9Requests, setS9Requests] = useState<Record<string, unknown>[]>([]);
+  const [s9ActionLoading, setS9ActionLoading] = useState(false);
+  const [s9ApproveId, setS9ApproveId] = useState<string | null>(null);
+  const [s9ApprovePlan, setS9ApprovePlan] = useState('');
+  const [s9ApproveBilling, setS9ApproveBilling] = useState('');
+  const [s9ApproveAllIn, setS9ApproveAllIn] = useState('');
+  const [s9RejectId, setS9RejectId] = useState<string | null>(null);
+  const [s9RejectNotes, setS9RejectNotes] = useState('');
+  const [s9RejectNotesError, setS9RejectNotesError] = useState('');
+  const [s9ShowOverride, setS9ShowOverride] = useState(false);
+  const [s9OverridePlan, setS9OverridePlan] = useState('nano');
+  const [s9OverrideBilling, setS9OverrideBilling] = useState('');
+  const [s9OverrideAllIn, setS9OverrideAllIn] = useState('');
+
+  // Section 10
+  const [s10Commissions, setS10Commissions] = useState<Record<string, unknown>[]>([]);
+  const [s10RewardStatus, setS10RewardStatus] = useState('pending');
+  const [s10RewardAmount, setS10RewardAmount] = useState('0');
+  const [s10CommLoadingId, setS10CommLoadingId] = useState<string | null>(null);
+  const [s10Saving, setS10Saving] = useState(false);
+  const [s10CopiedCode, setS10CopiedCode] = useState(false);
+
+  // Section 11
+  const [s11ShowBlacklist, setS11ShowBlacklist] = useState(false);
+  const [s11Reason, setS11Reason] = useState('');
+  const [s11ReasonError, setS11ReasonError] = useState('');
+  const [s11ShowUnblacklist, setS11ShowUnblacklist] = useState(false);
+  const [s11Loading, setS11Loading] = useState(false);
+
   const getSession = useCallback(async () => {
     const {
       data: { session },
@@ -297,6 +327,67 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
       (u: Record<string, unknown>) => String(u.id) === String(recordedById),
     );
     return (found?.name as string) ?? String(recordedById).slice(0, 8) + '...';
+  };
+
+  const computePlanBilling = (planKey: string): { billing: string; allIn: string } => {
+    const planData = data?.pricingPlans?.find((p: Record<string, unknown>) => p.plan_key === planKey);
+    if (planData && planData.all_in_price != null) {
+      const monthly = Number(planData.all_in_price);
+      if (!isNaN(monthly)) return { billing: String(monthly * 3), allIn: String(monthly) };
+    }
+    if (planKey === 'top_centers') return { billing: '0', allIn: '0' };
+    return { billing: '', allIn: '' };
+  };
+
+  const openApproveModal = (request: Record<string, unknown>) => {
+    const requestId = request.id as string;
+    const requestedPlan = (request.requested_plan as string) ?? 'nano';
+    const { billing, allIn } = computePlanBilling(requestedPlan);
+    setS9ApproveId(requestId);
+    setS9ApprovePlan(requestedPlan);
+    setS9ApproveBilling(billing);
+    setS9ApproveAllIn(allIn);
+  };
+
+  const handleApprovePlanChange = (newPlan: string) => {
+    setS9ApprovePlan(newPlan);
+    const { billing, allIn } = computePlanBilling(newPlan);
+    setS9ApproveBilling(billing);
+    setS9ApproveAllIn(allIn);
+  };
+
+  const openOverrideModal = () => {
+    const currentPlan = (data?.center?.plan as string) ?? 'nano';
+    const { billing, allIn } = computePlanBilling(currentPlan);
+    setS9OverridePlan(currentPlan);
+    setS9OverrideBilling(billing);
+    setS9OverrideAllIn(allIn);
+    setS9ShowOverride(true);
+  };
+
+  const handleOverridePlanChange = (newPlan: string) => {
+    setS9OverridePlan(newPlan);
+    const { billing, allIn } = computePlanBilling(newPlan);
+    setS9OverrideBilling(billing);
+    setS9OverrideAllIn(allIn);
+  };
+
+  const formatDate = (val: unknown): string => {
+    if (!val) return '—';
+    const d = new Date(val as string);
+    return isNaN(d.getTime())
+      ? String(val)
+      : d.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+  };
+  const shortUuid = (val: unknown): string => (val ? String(val).slice(0, 8) + '...' : '—');
+  const getAdminName = (id: unknown): string => {
+    if (!id) return '—';
+    const found = data?.adminUsers?.find((u: Record<string, unknown>) => String(u.id) === String(id));
+    return (found?.name as string) ?? shortUuid(id);
   };
 
   useEffect(() => {
@@ -383,12 +474,16 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     setS8WhatsappOptedIn((c.whatsapp_opted_in as boolean) ?? false);
     setS8ScheduleStart(c.schedule_start_hour != null ? String(c.schedule_start_hour) : '8');
     setS8ScheduleEnd(c.schedule_end_hour != null ? String(c.schedule_end_hour) : '20');
+    setS10RewardStatus((c.referral_reward_status as string) ?? 'pending');
+    setS10RewardAmount(c.referral_reward_amount != null ? String(c.referral_reward_amount) : '0');
   }, [data?.center?.id]);
 
   useEffect(() => {
     if (!data) return;
     setS4Invoices((data.invoices ?? []) as Record<string, unknown>[]);
     setS5History((data.renewalHistory ?? []) as Record<string, unknown>[]);
+    setS9Requests((data.planRequests ?? []) as Record<string, unknown>[]);
+    setS10Commissions((data.referralCommissions ?? []) as Record<string, unknown>[]);
   }, [dataFetchedAt]);
 
   useEffect(() => {
@@ -926,6 +1021,328 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
       toast.error(t('centerManagement.saveError'));
     } finally {
       setS8Saving(false);
+    }
+  };
+
+  const confirmApprovePlanRequest = async () => {
+    const capturedId = s9ApproveId;
+    const capturedPlan = s9ApprovePlan;
+    const capturedBilling = s9ApproveBilling;
+    const capturedAllIn = s9ApproveAllIn;
+    setS9ApproveId(null);
+    if (!capturedId) return;
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS9ActionLoading(true);
+    try {
+      const response = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          action: 'approve_plan_request',
+          planRequestId: capturedId,
+          newPlan: capturedPlan,
+          newBillingAmount: Number(capturedBilling),
+          newAllInPrice: Number(capturedAllIn),
+        }),
+      });
+      const raw = await response.text();
+      let res: { error?: string } = {};
+      try {
+        res = JSON.parse(raw) as typeof res;
+      } catch {
+        /* non-JSON */
+      }
+      if (!response.ok) {
+        toast.error(typeof res.error === 'string' ? res.error : t('centerManagement.saveError'));
+        return;
+      }
+      setS9Requests((prev) =>
+        prev.map((r) => (String(r.id) === capturedId ? { ...r, status: 'approved' } : r)),
+      );
+      toast.success(t('centerManagement.saveSuccess'));
+    } finally {
+      setS9ActionLoading(false);
+    }
+  };
+
+  const confirmRejectPlanRequest = async () => {
+    const capturedId = s9RejectId;
+    if (!capturedId) return;
+    if (!s9RejectNotes.trim()) {
+      setS9RejectNotesError(t('centerManagement.section9.rejectNotesEmpty'));
+      return;
+    }
+    const capturedNotes = s9RejectNotes.trim();
+    setS9RejectId(null);
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS9ActionLoading(true);
+    try {
+      const response = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          action: 'reject_plan_request',
+          planRequestId: capturedId,
+          notes: capturedNotes,
+        }),
+      });
+      const raw = await response.text();
+      let res: { error?: string } = {};
+      try {
+        res = JSON.parse(raw) as typeof res;
+      } catch {
+        /* non-JSON */
+      }
+      if (!response.ok) {
+        toast.error(typeof res.error === 'string' ? res.error : t('centerManagement.saveError'));
+        return;
+      }
+      setS9Requests((prev) =>
+        prev.map((r) => (String(r.id) === capturedId ? { ...r, status: 'rejected' } : r)),
+      );
+      toast.success(t('centerManagement.saveSuccess'));
+    } finally {
+      setS9ActionLoading(false);
+    }
+  };
+
+  const confirmOverridePlan = async () => {
+    const capturedPlan = s9OverridePlan;
+    const capturedBilling = s9OverrideBilling;
+    const capturedAllIn = s9OverrideAllIn;
+    setS9ShowOverride(false);
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS9ActionLoading(true);
+    try {
+      const response = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          action: 'override_plan',
+          newPlan: capturedPlan,
+          newBillingAmount: Number(capturedBilling),
+          newAllInPrice: Number(capturedAllIn),
+        }),
+      });
+      const raw = await response.text();
+      let res: { error?: string; center?: Record<string, unknown> } = {};
+      try {
+        res = JSON.parse(raw) as typeof res;
+      } catch {
+        /* non-JSON */
+      }
+      if (!response.ok) {
+        toast.error(typeof res.error === 'string' ? res.error : t('centerManagement.saveError'));
+        return;
+      }
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              center: {
+                ...prev.center,
+                plan: capturedPlan,
+                billing_amount: Number(capturedBilling),
+                all_in_price: Number(capturedAllIn),
+              },
+            }
+          : prev,
+      );
+      setS3BillingAmount(capturedBilling);
+      setS3AllInPrice(capturedAllIn);
+      toast.success(t('centerManagement.saveSuccess'));
+    } finally {
+      setS9ActionLoading(false);
+    }
+  };
+
+  const markCommissionPaidHandler = async (commission: Record<string, unknown>) => {
+    const capturedId = String(commission.id ?? '');
+    if (!capturedId) return;
+    setS10CommLoadingId(capturedId);
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      setS10CommLoadingId(null);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: 'mark_commission_paid', commissionId: capturedId }),
+      });
+      const raw = await response.text();
+      let res: { error?: string } = {};
+      try {
+        res = JSON.parse(raw) as typeof res;
+      } catch {
+        /* non-JSON */
+      }
+      if (response.status === 404) {
+        toast.error(t('centerManagement.section10.commissionTableUnavailable'));
+        return;
+      }
+      if (!response.ok) {
+        toast.error(typeof res.error === 'string' ? res.error : t('centerManagement.saveError'));
+        return;
+      }
+      setS10Commissions((prev) =>
+        prev.map((c) => (String(c.id) === capturedId ? { ...c, status: 'paid' } : c)),
+      );
+      toast.success(t('centerManagement.saveSuccess'));
+    } finally {
+      setS10CommLoadingId(null);
+    }
+  };
+
+  const saveReferralRewardsSection10 = async () => {
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS10Saving(true);
+    try {
+      const res = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          referral_reward_status: s10RewardStatus,
+          referral_reward_amount: Number(s10RewardAmount),
+        }),
+      });
+      const raw = await res.text();
+      let body: { error?: string; center?: Record<string, unknown> } = {};
+      try {
+        body = JSON.parse(raw) as typeof body;
+      } catch {
+        /* non-JSON */
+      }
+      if (!res.ok) {
+        toast.error(typeof body.error === 'string' ? body.error : t('centerManagement.saveError'));
+        return;
+      }
+      if (body.center) {
+        setData((prev) => (prev ? { ...prev, center: body.center! } : prev));
+      }
+      toast.success(t('centerManagement.saveSuccess'));
+    } catch {
+      toast.error(t('centerManagement.saveError'));
+    } finally {
+      setS10Saving(false);
+    }
+  };
+
+  const confirmBlacklist = async () => {
+    if (s11Reason.trim().length < 10) {
+      setS11ReasonError(t('centerManagement.section11.reasonMinLength'));
+      return;
+    }
+    const capturedReason = s11Reason.trim();
+    setS11ShowBlacklist(false);
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS11Loading(true);
+    try {
+      const response = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: 'blacklist', reason: capturedReason }),
+      });
+      const raw = await response.text();
+      let res: { error?: string; center?: Record<string, unknown> } = {};
+      try {
+        res = JSON.parse(raw) as typeof res;
+      } catch {
+        /* non-JSON */
+      }
+      if (!response.ok) {
+        toast.error(typeof res.error === 'string' ? res.error : t('centerManagement.saveError'));
+        return;
+      }
+      const nowIso = new Date().toISOString();
+      setData((prev) =>
+        !prev
+          ? prev
+          : {
+              ...prev,
+              center: {
+                ...prev.center,
+                is_blacklisted: true,
+                blacklisted_at: nowIso,
+                blacklist_reason: capturedReason,
+                status: 'suspended',
+                subscription_status: 'suspended',
+                billing_status: 'suspended',
+              },
+            },
+      );
+      setS2Status('suspended');
+      setS2SubscriptionStatus('suspended');
+      setS2BillingStatus('suspended');
+      toast.success(t('centerManagement.section11.blacklistedToast'));
+    } finally {
+      setS11Loading(false);
+    }
+  };
+
+  const confirmUnblacklist = async () => {
+    setS11ShowUnblacklist(false);
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS11Loading(true);
+    try {
+      const response = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: 'unblacklist' }),
+      });
+      const raw = await response.text();
+      let res: { error?: string; center?: Record<string, unknown> } = {};
+      try {
+        res = JSON.parse(raw) as typeof res;
+      } catch {
+        /* non-JSON */
+      }
+      if (!response.ok) {
+        toast.error(typeof res.error === 'string' ? res.error : t('centerManagement.saveError'));
+        return;
+      }
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              center: {
+                ...prev.center,
+                is_blacklisted: false,
+                blacklisted_at: null,
+                blacklist_reason: null,
+              },
+            }
+          : prev,
+      );
+      toast.info(t('centerManagement.section11.unblacklistedInfo'));
+    } finally {
+      setS11Loading(false);
     }
   };
 
@@ -2191,6 +2608,590 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   >
                     {s8Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                   </button>
+                </div>
+              </section>
+
+              <section className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <h2 className="text-lg font-semibold text-white">{t('centerManagement.section9.title')}</h2>
+                  <button
+                    type="button"
+                    onClick={() => openOverrideModal()}
+                    className="rounded-lg border border-amber-600/50 text-amber-300 px-4 py-2 text-sm font-semibold hover:bg-amber-900/20 shrink-0"
+                  >
+                    {t('centerManagement.section9.overridePlan')}
+                  </button>
+                </div>
+                <p className="text-xs text-amber-400/80 mb-4">{t('centerManagement.section9.overrideWarning')}</p>
+                {s9Requests.length === 0 ? (
+                  <p className="text-slate-400">{t('centerManagement.section9.noRequests')}</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-slate-600">
+                    <table className="w-full text-sm text-slate-200 min-w-[800px]">
+                      <thead className="bg-slate-900 text-slate-400">
+                        <tr>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section9.currentPlan')}</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section9.requestedPlan')}</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section4.status')}</th>
+                          <th className="text-start p-2 font-medium">{t('requestedAt')}</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section4.notes')}</th>
+                          <th className="text-start p-2 font-medium">{tCommon('actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {s9Requests.map((req, i) => {
+                          const rid = String(req.id ?? `pr-${i}`);
+                          const st = String(req.status ?? '');
+                          const canAct = st === 'pending' || st === 'pending_payment';
+                          return (
+                            <tr key={rid} className="border-t border-slate-700">
+                              <td className="p-2">{String(data.center.plan ?? '—')}</td>
+                              <td className="p-2">{String(req.requested_plan ?? '—')}</td>
+                              <td className="p-2 capitalize">{st || '—'}</td>
+                              <td className="p-2 whitespace-nowrap text-xs">
+                                {formatDate(req.requested_at)}
+                              </td>
+                              <td className="p-2 max-w-[200px] truncate" title={String(req.notes ?? '')}>
+                                {req.notes != null ? String(req.notes) : '—'}
+                              </td>
+                              <td className="p-2 flex flex-wrap gap-1">
+                                {canAct ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={s9ActionLoading}
+                                      onClick={() => openApproveModal(req)}
+                                      className="rounded bg-teal-700 text-white px-2 py-1 text-xs disabled:opacity-50"
+                                    >
+                                      {t('centerManagement.section9.approve')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={s9ActionLoading}
+                                      onClick={() => {
+                                        setS9RejectId(String(req.id ?? ''));
+                                        setS9RejectNotes('');
+                                        setS9RejectNotesError('');
+                                      }}
+                                      className="rounded bg-red-900/80 text-white px-2 py-1 text-xs disabled:opacity-50"
+                                    >
+                                      {t('centerManagement.section9.reject')}
+                                    </button>
+                                  </>
+                                ) : (
+                                  '—'
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+
+              {s9ApproveId ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                  <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 max-w-md w-full space-y-3">
+                    <h3 className="text-lg font-semibold text-white">{t('centerManagement.section9.approve')}</h3>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">{t('centerManagement.section2.plan')}</label>
+                      <select
+                        value={s9ApprovePlan}
+                        onChange={(e) => handleApprovePlanChange(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      >
+                        {(data.pricingPlans ?? []).map((p) => (
+                          <option key={String(p.plan_key)} value={String(p.plan_key)}>
+                            {String(p.plan_key)}
+                          </option>
+                        ))}
+                        {(data.pricingPlans ?? []).every((p) => p.plan_key !== 'top_centers') ? (
+                          <option value="top_centers">top_centers</option>
+                        ) : null}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section9.newBillingAmount')}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={s9ApproveBilling}
+                        onChange={(e) => setS9ApproveBilling(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section9.newAllInPrice')}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={s9ApproveAllIn}
+                        onChange={(e) => setS9ApproveAllIn(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setS9ApproveId(null)}
+                        className="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700"
+                      >
+                        {tCommon('cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={s9ActionLoading}
+                        onClick={() => void confirmApprovePlanRequest()}
+                        className="px-4 py-2 rounded-lg bg-teal-600 text-white font-semibold disabled:opacity-50"
+                      >
+                        {t('centerManagement.section9.approve')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {s9RejectId ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                  <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 max-w-md w-full space-y-3">
+                    <h3 className="text-lg font-semibold text-white">{t('centerManagement.section9.reject')}</h3>
+                    {s9RejectNotesError ? <p className="text-red-400 text-sm">{s9RejectNotesError}</p> : null}
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section9.rejectNotes')}
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={s9RejectNotes}
+                        onChange={(e) => setS9RejectNotes(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setS9RejectId(null)}
+                        className="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700"
+                      >
+                        {tCommon('cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={s9ActionLoading}
+                        onClick={() => void confirmRejectPlanRequest()}
+                        className="px-4 py-2 rounded-lg bg-red-800 text-white font-semibold disabled:opacity-50"
+                      >
+                        {t('centerManagement.section9.reject')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {s9ShowOverride ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                  <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 max-w-md w-full space-y-3">
+                    <h3 className="text-lg font-semibold text-white">{t('centerManagement.section9.overridePlan')}</h3>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">{t('centerManagement.section2.plan')}</label>
+                      <select
+                        value={s9OverridePlan}
+                        onChange={(e) => handleOverridePlanChange(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      >
+                        {(data.pricingPlans ?? []).map((p) => (
+                          <option key={String(p.plan_key)} value={String(p.plan_key)}>
+                            {String(p.plan_key)}
+                          </option>
+                        ))}
+                        {(data.pricingPlans ?? []).every((p) => p.plan_key !== 'top_centers') ? (
+                          <option value="top_centers">top_centers</option>
+                        ) : null}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section9.newBillingAmount')}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={s9OverrideBilling}
+                        onChange={(e) => setS9OverrideBilling(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section9.newAllInPrice')}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={s9OverrideAllIn}
+                        onChange={(e) => setS9OverrideAllIn(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setS9ShowOverride(false)}
+                        className="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700"
+                      >
+                        {tCommon('cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={s9ActionLoading}
+                        onClick={() => void confirmOverridePlan()}
+                        className="px-4 py-2 rounded-lg bg-amber-700 text-white font-semibold disabled:opacity-50"
+                      >
+                        {t('centerManagement.saveSection')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <section className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+                <h2 className="text-lg font-semibold text-white mb-4">{t('centerManagement.section10.title')}</h2>
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <span className="text-sm text-slate-400">{t('centerManagement.section10.referralCode')}:</span>
+                  <code className="text-teal-300 font-mono text-sm">
+                    {String(data.center.referral_code ?? '—')}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard
+                        .writeText((data?.center?.referral_code as string) ?? '')
+                        .then(() => {
+                          setS10CopiedCode(true);
+                          setTimeout(() => setS10CopiedCode(false), 2000);
+                        })
+                        .catch(() => {});
+                    }}
+                    className="rounded-lg bg-slate-700 text-white px-3 py-1.5 text-xs font-semibold hover:bg-slate-600"
+                  >
+                    {s10CopiedCode ? t('centerManagement.section10.copied') : t('centerManagement.section10.copy')}
+                  </button>
+                </div>
+                <p className="text-sm text-slate-400 mb-2">
+                  {t('centerManagement.section10.referredBy')}:{' '}
+                  <span className="text-slate-200">{shortUuid(data.center.referred_by)}</span>
+                </p>
+                <p className="text-sm text-slate-400 mb-4">
+                  {(data.referralsMade ?? []).length} {t('centerManagement.section10.centersReferred')}
+                </p>
+                {(data.referralsMade ?? []).length === 0 ? (
+                  <p className="text-slate-500 text-sm mb-6">{t('centerManagement.section10.noReferrals')}</p>
+                ) : (
+                  <ul className="list-disc list-inside text-slate-300 text-sm mb-6 space-y-1">
+                    {(data.referralsMade ?? []).map((ref, j) => (
+                      <li key={String(ref.id ?? j)}>
+                        {String((ref as { name?: string }).name ?? '—')} — {String((ref as { plan?: string }).plan ?? '')}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <h3 className="text-md font-semibold text-white mb-2">{t('centerManagement.section10.commissions')}</h3>
+                {s10Commissions.length === 0 ? (
+                  <p className="text-slate-500 text-sm mb-4">{t('centerManagement.section10.noCommissions')}</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-slate-600 mb-4">
+                    <table className="w-full text-sm text-slate-200 min-w-[360px]">
+                      <thead className="bg-slate-900 text-slate-400">
+                        <tr>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section4.amount')}</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section4.status')}</th>
+                          <th className="text-start p-2 font-medium">{tCommon('actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {s10Commissions.map((com, k) => {
+                          const cid = String(com.id ?? k);
+                          const cst = String(com.status ?? '');
+                          const amt =
+                            com.amount != null
+                              ? String(com.amount)
+                              : com.commission_amount != null
+                                ? String(com.commission_amount)
+                                : '—';
+                          return (
+                            <tr key={cid} className="border-t border-slate-700">
+                              <td className="p-2 tabular-nums">{amt}</td>
+                              <td className="p-2 capitalize">{cst}</td>
+                              <td className="p-2">
+                                {cst !== 'paid' ? (
+                                  <button
+                                    type="button"
+                                    disabled={s10CommLoadingId === cid}
+                                    onClick={() => void markCommissionPaidHandler(com)}
+                                    className="rounded bg-teal-700 text-white px-2 py-1 text-xs disabled:opacity-50"
+                                  >
+                                    {t('centerManagement.section10.markPaid')}
+                                  </button>
+                                ) : (
+                                  '—'
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section10.rewardStatus')}
+                    </label>
+                    <select
+                      value={s10RewardStatus}
+                      onChange={(e) => setS10RewardStatus(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                    >
+                      <option value="pending">pending</option>
+                      <option value="paid">paid</option>
+                      <option value="cancelled">cancelled</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">
+                      {t('centerManagement.section10.rewardAmount')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={s10RewardAmount}
+                      onChange={(e) => setS10RewardAmount(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={s10Saving}
+                  onClick={() => void saveReferralRewardsSection10()}
+                  className="rounded-lg bg-teal-600 text-white px-5 py-2 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50 mb-6"
+                >
+                  {s10Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
+                </button>
+                <h3 className="text-md font-semibold text-white mb-2">{t('centerManagement.section10.payoutRequests')}</h3>
+                {(data.payoutRequests ?? []).length === 0 ? (
+                  <p className="text-slate-500 text-sm">{t('centerManagement.section10.noPayouts')}</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-slate-600">
+                    <table className="w-full text-sm text-slate-200">
+                      <thead className="bg-slate-900 text-slate-400">
+                        <tr>
+                          <th className="text-start p-2 font-medium">ID</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section4.status')}</th>
+                          <th className="text-start p-2 font-medium">{t('centerManagement.section4.amount')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data.payoutRequests ?? []).map((p, m) => (
+                          <tr key={String((p as { id?: string }).id ?? m)} className="border-t border-slate-700">
+                            <td className="p-2 font-mono text-xs">{shortUuid((p as { id?: string }).id)}</td>
+                            <td className="p-2">{String((p as { status?: string }).status ?? '—')}</td>
+                            <td className="p-2 tabular-nums">{String((p as { amount?: unknown }).amount ?? '—')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+
+              <section className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+                <h2 className="text-lg font-semibold text-white mb-4">{t('centerManagement.section11.title')}</h2>
+                {data.center.is_blacklisted ? (
+                  <div className="rounded-lg border border-red-800 bg-red-950/40 p-4 mb-4">
+                    <p className="text-red-200 font-medium mb-2">{t('centerManagement.section11.isBlacklisted')}</p>
+                    <p className="text-red-200/80 text-sm mb-3">{t('centerManagement.section11.unblacklistWarning')}</p>
+                    <button
+                      type="button"
+                      disabled={s11Loading}
+                      onClick={() => setS11ShowUnblacklist(true)}
+                      className="rounded-lg bg-slate-700 text-white px-4 py-2 text-sm font-semibold hover:bg-slate-600 disabled:opacity-50"
+                    >
+                      {t('centerManagement.section11.unblacklistBtn')}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setS11Reason('');
+                      setS11ReasonError('');
+                      setS11ShowBlacklist(true);
+                    }}
+                    className="rounded-lg bg-red-800 text-white px-4 py-2 text-sm font-semibold hover:bg-red-700"
+                  >
+                    {t('centerManagement.section11.blacklistBtn')}
+                  </button>
+                )}
+                <p className="text-xs text-red-400/80 mt-3">{t('centerManagement.section11.blacklistWarning')}</p>
+              </section>
+
+              {s11ShowBlacklist ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                  <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 max-w-md w-full space-y-3">
+                    <h3 className="text-lg font-semibold text-white">{t('centerManagement.section11.confirmBlacklist')}</h3>
+                    {s11ReasonError ? <p className="text-red-400 text-sm">{s11ReasonError}</p> : null}
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('centerManagement.section11.reasonLabel')}
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={s11Reason}
+                        onChange={(e) => setS11Reason(e.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 text-white px-3 py-2"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setS11ShowBlacklist(false)}
+                        className="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700"
+                      >
+                        {tCommon('cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={s11Loading}
+                        onClick={() => void confirmBlacklist()}
+                        className="px-4 py-2 rounded-lg bg-red-700 text-white font-semibold disabled:opacity-50"
+                      >
+                        {t('centerManagement.section11.confirmBlacklist')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {s11ShowUnblacklist ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                  <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 max-w-md w-full space-y-3">
+                    <h3 className="text-lg font-semibold text-white">{t('centerManagement.section11.confirmRemove')}</h3>
+                    <p className="text-sm text-slate-400">{t('centerManagement.section11.unblacklistWarning')}</p>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setS11ShowUnblacklist(false)}
+                        className="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700"
+                      >
+                        {tCommon('cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={s11Loading}
+                        onClick={() => void confirmUnblacklist()}
+                        className="px-4 py-2 rounded-lg bg-teal-700 text-white font-semibold disabled:opacity-50"
+                      >
+                        {t('centerManagement.section11.confirmRemove')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <section className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+                <h2 className="text-lg font-semibold text-white mb-4">{t('centerManagement.section12.title')}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.id')}</div>
+                    <div className="text-white font-mono text-xs">{shortUuid(data?.center?.id)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.createdAt')}</div>
+                    <div className="text-white">{formatDate(data?.center?.created_at)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.approvedAt')}</div>
+                    <div className="text-white">{formatDate(data?.center?.approved_at)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.approvedBy')}</div>
+                    <div className="text-white">{getAdminName(data?.center?.approved_by)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.healthScore')}</div>
+                    <div className="text-white">
+                      {data.center.health_score != null && !isNaN(Number(data.center.health_score))
+                        ? Number(data.center.health_score).toLocaleString('en-US')
+                        : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.healthBand')}</div>
+                    <div className="text-white">
+                      {data.center.health_score_band != null ? String(data.center.health_score_band) : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.onboardingStep')}</div>
+                    <div className="text-white">
+                      {data.center.onboarding_step != null ? String(data.center.onboarding_step) : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.onboardingCompleted')}</div>
+                    <div className="text-white">
+                      {data.center.onboarding_completed === true
+                        ? '✅'
+                        : data.center.onboarding_completed === false
+                          ? '❌'
+                          : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.onboardingStarted')}</div>
+                    <div className="text-white">{formatDate(data?.center?.onboarding_started_at)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.lastPayment')}</div>
+                    <div className="text-white">{formatDate(data?.center?.last_payment_date)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.studentSequence')}</div>
+                    <div className="text-white">
+                      {data.center.student_sequence != null && !isNaN(Number(data.center.student_sequence))
+                        ? Number(data.center.student_sequence).toLocaleString('en-US')
+                        : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.packActivatedAt')}</div>
+                    <div className="text-white">{formatDate(data?.center?.parent_pack_activated_at)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.packDisabledAt')}</div>
+                    <div className="text-white">{formatDate(data?.center?.pack_disabled_at)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.renewalReminder')}</div>
+                    <div className="text-white">{formatDate(data?.center?.renewal_reminder_sent_at)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">{t('centerManagement.section12.overdueReminder')}</div>
+                    <div className="text-white">{formatDate(data?.center?.overdue_reminder_sent_at)}</div>
+                  </div>
                 </div>
               </section>
             </>
