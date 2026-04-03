@@ -100,6 +100,9 @@ export async function POST(request: NextRequest) {
           await finalizeInvoicePaymentSuccess(supabaseAdmin, orderId, transactionId);
         }
       }
+      // Signup flow: platform_config keys auto_approve_signups, pause_new_signups (see signupPaymobAutoApprove).
+      const { processSignupAutoApprovalAfterPaymobSuccess } = await import('@/lib/signupPaymobAutoApprove');
+      await processSignupAutoApprovalAfterPaymobSuccess(supabaseAdmin, orderId, transactionId);
     } else {
       const { finalizeCardOrderPaymentFailure } = await import('@/lib/cardOrderPayment');
       await finalizeCardOrderPaymentFailure(supabaseAdmin, orderId);

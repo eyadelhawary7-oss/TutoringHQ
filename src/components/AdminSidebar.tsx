@@ -23,6 +23,7 @@ import {
   X,
   Truck,
   Banknote,
+  Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -116,6 +117,7 @@ export function AdminSidebar({
   const isVendors = activeRoute?.includes('admin/vendors');
   const isRenewals = activeRoute?.includes('admin/renewals');
   const isPricing = activeRoute?.includes('admin/pricing');
+  const isPlatformConfig = activeRoute?.includes('admin/platform-config');
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
 
   const allowedKeys =
@@ -401,6 +403,22 @@ export function AdminSidebar({
                   </button>,
                 );
               }
+              if (adminRole === 'super_admin') {
+                items.push(
+                  <button
+                    key="platformConfig"
+                    type="button"
+                    onClick={() => {
+                      afterNavigate();
+                      router.push('/admin/platform-config');
+                    }}
+                    className={drawerBtn(!!isPlatformConfig)}
+                  >
+                    <Settings size={18} className="shrink-0" />
+                    <span>{t('platformConfigNav')}</span>
+                  </button>,
+                );
+              }
               if (canSee('card_orders')) {
                 items.push(
                   <button
@@ -546,6 +564,27 @@ export function AdminSidebar({
                   >
                     <Banknote size={18} />
                     <span>{t('pricingPanel')}</span>
+                  </button>,
+                );
+              }
+              if (adminRole === 'super_admin') {
+                items.push(
+                  <button
+                    key="platformConfig"
+                    type="button"
+                    onClick={() => {
+                      closeMainSidebar?.();
+                      router.push('/admin/platform-config');
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
+                      isPlatformConfig
+                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                    )}
+                  >
+                    <Settings size={18} />
+                    <span>{t('platformConfigNav')}</span>
                   </button>,
                 );
               }
