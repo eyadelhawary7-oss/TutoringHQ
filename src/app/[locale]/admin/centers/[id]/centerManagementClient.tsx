@@ -1,7 +1,5 @@
 'use client';
 
-import DatePicker from 'react-datepicker';
-
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -37,33 +35,21 @@ const AdminDatePicker = ({
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
-}) => {
-  const selected = value ? new Date(`${value}T12:00:00`) : null;
-  return (
-    <DatePicker
-      selected={selected}
-      onChange={(date: Date | null) => {
-        if (!date) {
-          onChange('');
-          return;
-        }
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        onChange(`${y}-${m}-${d}`);
-      }}
-      dateFormat="yyyy-MM-dd"
-      placeholderText={placeholder}
-      withPortal
-      portalId="datepicker-portal"
-      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm cursor-pointer"
-      wrapperClassName="w-full"
-      showMonthDropdown
-      showYearDropdown
-      dropdownMode="select"
-    />
-  );
-};
+}) => (
+  <input
+    type="date"
+    value={value}
+    title={placeholder}
+    onChange={(e) => onChange(e.target.value)}
+    style={{
+      backgroundColor: '#334155',
+      color: value ? 'white' : '#94a3b8',
+      borderColor: '#475569',
+      colorScheme: 'dark',
+    }}
+    className="w-full rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-teal-500"
+  />
+);
 
 const Toggle = ({
   checked,
@@ -1622,7 +1608,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       value={s1SignupNotes}
                       onChange={(e) => setS1SignupNotes(e.target.value)}
                       rows={5}
-                      style={{ backgroundColor: '#334155', color: 'white', borderColor: '#475569' }}
+                      style={{
+                        backgroundColor: '#334155',
+                        color: 'white',
+                        borderColor: '#475569',
+                        colorScheme: 'dark',
+                      }}
                       className="admin-textarea w-full rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
                       placeholder={t('centerManagement.section1.signupNotes')}
                     />
@@ -3206,7 +3197,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
           ) : null}
         </main>
       </div>
-      <div id="datepicker-portal" />
     </div>
   );
 }
