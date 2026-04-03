@@ -40,8 +40,18 @@ export async function POST(request: NextRequest) {
       order?.id !== null && order?.id !== undefined ? String(order.id) : '';
     const transactionId = String(obj.id ?? '');
 
+    /** Paymob HMAC object includes is_voided / is_refunded — used for chargebacks after capture. */
+    const isChargebackLike =
+      obj.is_voided === true ||
+      obj.is_voided === 'true' ||
+      obj.is_refunded === true ||
+      obj.is_refunded === 'true';
+
     if (paymobOrderId) {
-      if (success) {
+      if (isChargebackLike) {
+        const { finalizeInvoiceChargeback } = await import('@/lib/invoicePaymobPayment');
+        await finalizeInvoiceChargeback(supabaseAdmin, paymobOrderId, transactionId);
+      } else if (success) {
         const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
         const cardResult = await finalizeCardOrderPaymentSuccess(supabaseAdmin, paymobOrderId, transactionId);
         if (!cardResult) {

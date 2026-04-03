@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    if (row.invoice_type !== 'subscription') {
+    if (row.invoice_type !== 'subscription' && row.invoice_type !== 'plan_upgrade_difference') {
       return NextResponse.json({ error: 'This invoice cannot be paid online' }, { status: 400 });
     }
 

@@ -220,34 +220,41 @@ export default async function proxy(request: NextRequest) {
       if (userRecord?.center_id) {
         const { data: center } = await supabase
           .from('centers')
-          .select('status, billing_status, auto_suspend_at')
+          .select('status, billing_status, auto_suspend_at, is_blacklisted')
           .eq('id', userRecord.center_id)
           .single();
 
         const cleanPath = stripLocalePrefix(pathname);
         const localePrefix = pathname.startsWith('/en') ? '/en' : pathname.startsWith('/ar') ? '/ar' : '';
         const suspendedPath = `${localePrefix || '/en'}/suspended`;
-        const isBillingPage = cleanPath === '/settings/billing' || cleanPath.startsWith('/settings/billing');
+        const allowsBlacklistedEscape =
+          cleanPath.startsWith('/settings') || cleanPath === '/session-expired';
+
+        if ((center as { is_blacklisted?: boolean } | null)?.is_blacklisted === true) {
+          if (!allowsBlacklistedEscape) {
+            const blocked = new NextResponse('Unauthorized', { status: 401 });
+            storedCookies.forEach(({ name, value, options }) =>
+              blocked.cookies.set(name, value, options ?? {})
+            );
+            return applySecurityHeaders(blocked);
+          }
+        }
 
         if (!cleanPath.startsWith('/suspended')) {
           let shouldRedirect = false;
           let redirectUrl = '';
 
           if (center?.status === 'suspended') {
-            if (!isBillingPage) {
-              shouldRedirect = true;
-              redirectUrl = `${suspendedPath}?reason=center_suspended`;
-            }
+            shouldRedirect = true;
+            redirectUrl = `${suspendedPath}?reason=center_suspended`;
           } else {
             const billingStatus = (center as { billing_status?: string })?.billing_status;
             const autoSuspendAt = (center as { auto_suspend_at?: string })?.auto_suspend_at;
             if (autoSuspendAt && billingStatus !== 'paid') {
               const suspendDate = new Date(autoSuspendAt);
               if (new Date() >= suspendDate) {
-                if (!isBillingPage) {
-                  shouldRedirect = true;
-                  redirectUrl = `${suspendedPath}?reason=payment_overdue`;
-                }
+                shouldRedirect = true;
+                redirectUrl = `${suspendedPath}?reason=payment_overdue`;
               }
             }
           }

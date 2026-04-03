@@ -108,6 +108,8 @@ interface CenterRow {
   referring_center_name?: string | null;
   last_active?: string;
   usage_scans?: number;
+  is_blacklisted?: boolean;
+  blacklist_reason?: string | null;
 }
 
 interface SalesLead {
@@ -282,6 +284,8 @@ export default function AdminPage() {
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [showRejectReason, setShowRejectReason] = useState<PendingSignup | null>(null);
   const [openActionsId, setOpenActionsId] = useState<string | null>(null);
+  const [blacklistModal, setBlacklistModal] = useState<CenterRow | null>(null);
+  const [blacklistReasonInput, setBlacklistReasonInput] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState<
     | { type: 'suspend'; center: CenterRow }
     | { type: 'approve_invoice'; inv: { id: string; centerName: string; payment_amount: number } }
@@ -649,6 +653,37 @@ export default function AdminPage() {
     } catch (err) {
       console.error('Delete error:', err);
       alert('Failed to delete center: ' + (err as Error).message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBlacklistCenter = async () => {
+    if (!blacklistModal) return;
+    const reason = blacklistReasonInput.trim();
+    if (!reason) {
+      alert('Blacklist reason is required');
+      return;
+    }
+    const headers = await getAuthHeaders(false);
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/centers/${blacklistModal.id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: 'blacklist', blacklist_reason: reason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Blacklist failed');
+      setBlacklistModal(null);
+      setBlacklistReasonInput('');
+      setOpenActionsId(null);
+      loadCenters();
+      setToast({ msg: 'Center blacklisted' });
+      setTimeout(() => setToast(null), 3000);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Blacklist failed');
     } finally {
       setActionLoading(false);
     }
@@ -1164,7 +1199,16 @@ export default function AdminPage() {
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {displayedCenters.map((c) => (
                       <tr key={c.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{c.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">
+                          <span className="inline-flex flex-wrap items-center gap-2">
+                            {c.name}
+                            {c.is_blacklisted ? (
+                              <span className="inline-flex rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-red-600 text-white">
+                                Blacklisted
+                              </span>
+                            ) : null}
+                          </span>
+                        </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
                         <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
                         <td className="py-3.5 px-4"><PlanBadge plan={c.plan} /></td>
@@ -1196,6 +1240,19 @@ export default function AdminPage() {
                                   {c.status === 'active' && (
                                     <button onClick={() => { setShowSuspendConfirm(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start">
                                       <AlertTriangle size={14} />{tAdmin('suspend')}
+                                    </button>
+                                  )}
+                                  {!c.is_blacklisted && (
+                                    <button
+                                      onClick={() => {
+                                        setBlacklistModal(c);
+                                        setBlacklistReasonInput('');
+                                        setOpenActionsId(null);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 text-start"
+                                    >
+                                      <ShieldAlert size={14} />
+                                      Blacklist
                                     </button>
                                   )}
                                   {c.status === 'suspended' && (
@@ -2353,6 +2410,35 @@ export default function AdminPage() {
               alt="Payment proof"
               className="w-full rounded-xl shadow-2xl max-h-[80vh] object-contain bg-[var(--color-surface-1)]"
             />
+          </div>
+        </div>
+      )}
+
+      {blacklistModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setBlacklistModal(null)}>
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-xl max-w-md w-full p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">Blacklist center</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-3">{blacklistModal.name}</p>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Reason (required)</label>
+            <textarea
+              value={blacklistReasonInput}
+              onChange={(e) => setBlacklistReasonInput(e.target.value)}
+              className="w-full min-h-[88px] rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              placeholder="Document why this center is blacklisted…"
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button type="button" onClick={() => setBlacklistModal(null)} className="px-4 py-2 text-sm rounded-lg border border-[var(--color-border-subtle)]">
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => void handleBlacklistCenter()}
+                className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white font-medium disabled:opacity-50"
+              >
+                {actionLoading ? 'Saving…' : 'Blacklist'}
+              </button>
+            </div>
           </div>
         </div>
       )}

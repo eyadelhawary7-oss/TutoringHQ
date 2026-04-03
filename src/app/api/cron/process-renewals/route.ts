@@ -13,6 +13,7 @@ import {
   type RenewalStage,
 } from '@/lib/whatsapp/flows/renewalReminders';
 import { runProcessRenewalWhatsappTemplates } from '@/lib/centerNotify';
+import { runSubscriptionBillingCron } from '@/lib/subscriptionBillingCron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -51,6 +52,13 @@ export async function POST(req: NextRequest) {
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+  let billingCron: Awaited<ReturnType<typeof runSubscriptionBillingCron>> | null = null;
+  try {
+    billingCron = await runSubscriptionBillingCron(supabase);
+  } catch (err) {
+    console.error('[process-renewals] runSubscriptionBillingCron:', err);
+  }
+
   let waTemplates: Awaited<ReturnType<typeof runProcessRenewalWhatsappTemplates>> | null = null;
   try {
     waTemplates = await runProcessRenewalWhatsappTemplates(supabase);
@@ -59,7 +67,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (actions.length === 0) {
-    return NextResponse.json({ ok: true, processed: 0, waTemplates });
+    return NextResponse.json({ ok: true, processed: 0, waTemplates, billingCron });
   }
 
   let processed = 0;
@@ -179,5 +187,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed, waTemplates });
+  return NextResponse.json({ ok: true, processed, waTemplates, billingCron });
 }

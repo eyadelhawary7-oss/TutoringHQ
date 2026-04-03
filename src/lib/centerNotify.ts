@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { dateInNDays, todayISO } from '@/lib/parentPack';
+import { dateInNDays } from '@/lib/parentPack';
 
 const PLATFORM_URL = 'https://center-hq.vercel.app';
 
@@ -17,19 +17,6 @@ function digitsOnly(phone: string): string {
 
 function cairoDateFromTimestamp(iso: string): string {
   return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
-}
-
-function formatNextPaymentDueAr(nextPaymentDue: string | null): string {
-  if (!nextPaymentDue) return '—';
-  try {
-    return new Date(`${nextPaymentDue}T12:00:00`).toLocaleDateString('ar-EG', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  } catch {
-    return nextPaymentDue;
-  }
 }
 
 async function postWhatsappTemplate(opts: {
@@ -78,6 +65,46 @@ async function postWhatsappTemplate(opts: {
     console.error('[centerNotify] Template send error:', opts.templateName, err);
     return false;
   }
+}
+
+/** chq_renewal_overdue — used by subscription billing cron (Items 2–3). */
+export async function sendChqRenewalOverdueTemplate(opts: {
+  name: string;
+  phone: string | null;
+  daysLate: string;
+  amountStr: string;
+}): Promise<boolean> {
+  const to = digitsOnly(opts.phone ?? '');
+  if (!to) return false;
+  return postWhatsappTemplate({
+    templateName: 'chq_renewal_overdue',
+    languageCode: 'ar_EG',
+    toDigits: to,
+    bodyParameters: [opts.name ?? '—', opts.daysLate, opts.amountStr],
+  });
+}
+
+/** chq_payment_confirmed — Paymob subscription / renewal success (Item 7). */
+export async function sendChqPaymentConfirmedTemplate(
+  supabase: SupabaseClient,
+  opts: { name: string; phone: string | null; billingPeriodLabel: string; billingAmountStr: string },
+): Promise<boolean> {
+  const { data: cfg } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  if (cfg?.value === false) return false;
+
+  const to = digitsOnly(opts.phone ?? '');
+  if (!to) return false;
+
+  return postWhatsappTemplate({
+    templateName: 'chq_payment_confirmed',
+    languageCode: 'ar_EG',
+    toDigits: to,
+    bodyParameters: [opts.name, opts.billingPeriodLabel, opts.billingAmountStr],
+  });
 }
 
 export async function sendWelcomeTemplate(center: {
@@ -130,37 +157,6 @@ export async function sendOnboardingStep1Template(center: {
   }
 }
 
-type CenterBillingRow = {
-  id: string;
-  name: string;
-  phone: string | null;
-  next_payment_due: string | null;
-  billing_amount: number | string | null;
-  billing_status: string | null;
-  current_period_start: string | null;
-  renewal_reminder_sent_at: string | null;
-  overdue_reminder_sent_at: string | null;
-};
-
-function canSendRenewalReminder(row: CenterBillingRow): boolean {
-  if (!row.renewal_reminder_sent_at) return true;
-  if (!row.current_period_start) return false;
-  const sent = new Date(row.renewal_reminder_sent_at).getTime();
-  const period = new Date(`${row.current_period_start}T00:00:00Z`).getTime();
-  return sent < period;
-}
-
-function canSendOverdueReminder(row: CenterBillingRow, todayCairo: string): boolean {
-  if (!row.overdue_reminder_sent_at) return true;
-  return cairoDateFromTimestamp(row.overdue_reminder_sent_at) < todayCairo;
-}
-
-function daysOverdueCount(nextPaymentDue: string, todayCairo: string): number {
-  const due = new Date(`${nextPaymentDue}T12:00:00`).getTime();
-  const today = new Date(`${todayCairo}T12:00:00`).getTime();
-  return Math.floor((today - due) / (24 * 60 * 60 * 1000));
-}
-
 /**
  * Renewal reminder (7 days before due), overdue template + optional suspend,
  * onboarding step 1 (24h after approval). Called from process-renewals cron.
@@ -178,95 +174,7 @@ export async function runProcessRenewalWhatsappTemplates(
   let suspended = 0;
   let onboardingStep1 = 0;
 
-  const todayCairo = todayISO();
-  const dueIn7 = dateInNDays(7);
-  const sixDaysAgoCairo = dateInNDays(-6);
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-  const billingSelect =
-    'id, name, phone, next_payment_due, billing_amount, billing_status, current_period_start, renewal_reminder_sent_at, overdue_reminder_sent_at';
-
-  const { data: reminderRows, error: reminderErr } = await supabase
-    .from('centers')
-    .select(billingSelect)
-    .eq('next_payment_due', dueIn7)
-    .neq('billing_status', 'suspended')
-    .not('phone', 'is', null);
-
-  if (reminderErr) {
-    console.error('[centerNotify] renewal query:', reminderErr);
-  } else {
-    for (const raw of reminderRows ?? []) {
-      const row = raw as CenterBillingRow;
-      if (!canSendRenewalReminder(row)) continue;
-      const to = digitsOnly(row.phone ?? '');
-      if (!to) {
-        console.warn('[centerNotify] renewal skip invalid phone', row.id);
-        continue;
-      }
-      const amountStr = String(row.billing_amount ?? 0);
-      const dueAr = formatNextPaymentDueAr(row.next_payment_due);
-      const ok = await postWhatsappTemplate({
-        templateName: 'chq_renewal_reminder',
-        languageCode: 'ar',
-        toDigits: to,
-        bodyParameters: [row.name ?? '—', dueAr, amountStr],
-      });
-      if (ok) {
-        await supabase.from('centers').update({ renewal_reminder_sent_at: new Date().toISOString() }).eq('id', row.id);
-        renewalReminders += 1;
-      }
-    }
-  }
-
-  const { data: overdueRows, error: overdueErr } = await supabase
-    .from('centers')
-    .select(billingSelect)
-    .lt('next_payment_due', todayCairo)
-    .neq('billing_status', 'suspended')
-    .not('phone', 'is', null)
-    .not('next_payment_due', 'is', null);
-
-  if (overdueErr) {
-    console.error('[centerNotify] overdue query:', overdueErr);
-  } else {
-    for (const raw of overdueRows ?? []) {
-      const row = raw as CenterBillingRow;
-      if (!canSendOverdueReminder(row, todayCairo)) continue;
-      const to = digitsOnly(row.phone ?? '');
-      if (!to) {
-        console.warn('[centerNotify] overdue skip invalid phone', row.id);
-        continue;
-      }
-      const daysLate = String(Math.max(0, daysOverdueCount(row.next_payment_due!, todayCairo)));
-      const amountStr = String(row.billing_amount ?? 0);
-      const ok = await postWhatsappTemplate({
-        templateName: 'chq_renewal_overdue',
-        languageCode: 'ar_EG',
-        toDigits: to,
-        bodyParameters: [row.name ?? '—', daysLate, amountStr],
-      });
-      if (ok) {
-        await supabase.from('centers').update({ overdue_reminder_sent_at: new Date().toISOString() }).eq('id', row.id);
-        overdueReminders += 1;
-        if (daysOverdueCount(row.next_payment_due!, todayCairo) >= 7) {
-          const { error: susErr } = await supabase
-            .from('centers')
-            .update({
-              billing_status: 'suspended',
-              subscription_status: 'suspended',
-              status: 'suspended',
-            })
-            .eq('id', row.id);
-          if (susErr) {
-            console.error('[centerNotify] auto-suspend failed:', row.id, susErr);
-          } else {
-            suspended += 1;
-          }
-        }
-      }
-    }
-  }
 
   const { data: onboardRows, error: onboardErr } = await supabase
     .from('centers')

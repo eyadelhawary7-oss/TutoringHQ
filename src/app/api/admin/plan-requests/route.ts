@@ -3,6 +3,7 @@ import { getAdminContext } from '@/lib/admin-auth';
 import { adminPlanRequestsSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { PLANS, getPlanPrice, isPlanKey, type PlanKey } from '@/lib/pricing';
+import { todayISO } from '@/lib/parentPack';
 
 function planPriceMonthly(plan: string | undefined, isEarly: boolean, earlyPrice: number | undefined): number {
   if (isEarly && typeof earlyPrice === 'number') return getChargeApproxFromEarlyBase(earlyPrice);
@@ -15,6 +16,13 @@ function planPriceMonthly(plan: string | undefined, isEarly: boolean, earlyPrice
 /** Legacy early_adopter_price treated as quarterly all-in → monthly all-in display. */
 function getChargeApproxFromEarlyBase(quarterlyBase: number): number {
   return Math.round(quarterlyBase * 1.15);
+}
+
+function calendarAddDays(baseYmd: string, delta: number): string {
+  const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
+  const t = Date.UTC(y, m - 1, d + delta);
+  const dt = new Date(t);
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
 }
 
 export async function GET(request: Request) {
@@ -121,60 +129,133 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: true, action: 'rejected' });
     }
 
-    const centerPlanUpdates: Record<string, unknown> = {
-      plan: pr.requested_plan,
-      pending_plan_change: null,
-      pending_billing_type: pr.requested_plan === 'payg' ? 'payg' : 'fixed',
-    };
-    if (isPlanKey(pr.requested_plan)) {
-      const pk = pr.requested_plan as PlanKey;
-      if (pk !== 'top_centers') {
-        centerPlanUpdates.all_in_price = PLANS[pk].quarterlyAllIn;
-      }
+    const { data: centerRow, error: centerErr } = await supabaseAdmin
+      .from('centers')
+      .select('phone, billing_amount, next_payment_due, center_code, referral_code')
+      .eq('id', pr.center_id)
+      .single();
+
+    if (centerErr || !centerRow) {
+      return NextResponse.json({ error: 'Center not found' }, { status: 404 });
     }
 
-    await supabaseAdmin.from('centers').update(centerPlanUpdates).eq('id', pr.center_id);
+    const rp = (pr.requested_plan as string) || '';
+    const { data: planRow, error: planErr } = await supabaseAdmin
+      .from('pricing_plans')
+      .select('all_in_price')
+      .eq('id', rp)
+      .maybeSingle();
+
+    if (planErr) {
+      return NextResponse.json({ error: planErr.message }, { status: 500 });
+    }
+
+    const requestedAllIn = (planRow as { all_in_price?: number | null } | null)?.all_in_price;
+    if (requestedAllIn == null) {
+      return NextResponse.json({ error: 'Custom pricing required' }, { status: 400 });
+    }
+
+    const currentBilling = Number((centerRow as { billing_amount?: number | null }).billing_amount ?? 0);
+    const difference = Number(requestedAllIn) - currentBilling;
+
+    if (difference <= 0) {
+      await supabaseAdmin
+        .from('plan_requests')
+        .update({ status: 'pending_downgrade', notes: notes || null })
+        .eq('id', requestId);
+
+      try {
+        await supabaseAdmin.from('audit_log').insert({
+          center_id: pr.center_id,
+          user_id: userId,
+          action: 'admin_plan_request_pending_downgrade',
+          entity_type: 'plan_requests',
+          details: { request_id: requestId, requested_plan: pr.requested_plan, difference },
+        });
+      } catch {
+        // ignore
+      }
+
+      return NextResponse.json({
+        success: true,
+        action: 'pending_downgrade',
+        message: 'No upgrade charge; marked as pending downgrade for follow-up.',
+      });
+    }
+
+    const todayStr = todayISO();
+    const npd = (centerRow as { next_payment_due?: string | null }).next_payment_due;
+    const billingPeriodEnd = npd ?? calendarAddDays(todayStr, 90);
+    const code =
+      ((centerRow as { center_code?: string | null }).center_code ||
+        (centerRow as { referral_code?: string | null }).referral_code ||
+        'UNK')
+        .toString()
+        .replace(/\s+/g, '') || 'UNK';
+    const yyyymm = todayStr.slice(0, 7);
+    const invoiceNumber = `UPG-${code}-${yyyymm}`;
+
+    const { error: invErr } = await supabaseAdmin.from('invoices').insert({
+      center_id: pr.center_id,
+      invoice_number: invoiceNumber,
+      invoice_type: 'plan_upgrade_difference',
+      status: 'pending',
+      total_amount: difference,
+      base_amount: difference,
+      billing_period_start: todayStr,
+      billing_period_end: billingPeriodEnd,
+      due_date: todayStr,
+    });
+
+    if (invErr) {
+      return NextResponse.json({ error: invErr.message }, { status: 500 });
+    }
 
     await supabaseAdmin
       .from('plan_requests')
-      .update({ status: 'approved', approved_at: now, notes: notes || null })
+      .update({ status: 'pending_payment', notes: notes || null })
       .eq('id', requestId);
 
     try {
       await supabaseAdmin.from('audit_log').insert({
         center_id: pr.center_id,
         user_id: userId,
-        action: 'admin_plan_request_approved',
+        action: 'admin_plan_request_pending_payment',
         entity_type: 'plan_requests',
-        details: { request_id: requestId, old_plan: pr.current_plan, new_plan: pr.requested_plan },
+        details: {
+          request_id: requestId,
+          old_plan: pr.current_plan,
+          new_plan: pr.requested_plan,
+          difference,
+          invoice_number: invoiceNumber,
+        },
       });
     } catch {
       // ignore
     }
 
     const PLAN_LABELS: Record<string, string> = {
-      starter: 'Starter', pro: 'Pro', business: 'Business', enterprise: 'Enterprise', top_centers: 'Top Centers', payg: 'PAYG',
+      starter: 'Starter',
+      pro: 'Pro',
+      business: 'Business',
+      enterprise: 'Enterprise',
+      top_centers: 'Top Centers',
+      payg: 'PAYG',
     };
-    const { data: center } = await supabaseAdmin
-      .from('centers')
-      .select('phone')
-      .eq('id', pr.center_id)
-      .single();
-    const requestedLabel = PLAN_LABELS[(pr.requested_plan as string) || ''] || pr.requested_plan;
-    const rp = (pr.requested_plan as string) || '';
-    const reqPrice =
-      isPlanKey(rp) && rp !== 'top_centers' ? getPlanPrice(rp as PlanKey, 'monthly') : 0;
-    const waMessage = reqPrice > 0
-      ? `مرحباً، تم الموافقة على ترقية خطتك إلى ${requestedLabel}. السعر الجديد: ${reqPrice.toLocaleString('en-US')} EGP/شهر. شكراً لثقتك!`
-      : `مرحباً، تم الموافقة على تغيير خطتك إلى ${requestedLabel}. شكراً لثقتك!`;
-    const phone = (center?.phone as string || '').trim();
-    const waLink = phone ? `https://wa.me/${phone.startsWith('+') ? phone.slice(1).replace(/\D/g, '') : '20' + phone.replace(/^0/, '').replace(/\D/g, '')}?text=${encodeURIComponent(waMessage)}` : null;
+    const requestedLabel = PLAN_LABELS[rp] || rp;
+    const phone = ((centerRow as { phone?: string }).phone || '').trim();
+    const waMessage = `مرحباً، تمت الموافقة على ترقية خطتك إلى ${requestedLabel}. يرجى سداد فرق الترقية (${difference.toLocaleString('en-US')} ج.م) من صفحة الفواتير لإكمال التفعيل.`;
+    const waLink = phone
+      ? `https://wa.me/${phone.startsWith('+') ? phone.slice(1).replace(/\D/g, '') : '20' + phone.replace(/^0/, '').replace(/\D/g, '')}?text=${encodeURIComponent(waMessage)}`
+      : null;
 
     return NextResponse.json({
       success: true,
-      action: 'approved',
+      action: 'pending_payment',
       centerPhone: phone || null,
       whatsappLink: waLink,
+      invoiceNumber,
+      difference,
     });
   } catch (error) {
     return NextResponse.json(

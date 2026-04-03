@@ -35,6 +35,21 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    const { data: blacklistedMatch } = await supabase
+      .from('centers')
+      .select('id')
+      .eq('is_blacklisted', true)
+      .eq('phone', formattedPhone)
+      .limit(1)
+      .maybeSingle();
+
+    if (blacklistedMatch) {
+      return NextResponse.json(
+        { error: 'Registration is not available for this phone number.' },
+        { status: 403 },
+      );
+    }
+
     const setupFees: Record<string, number> = {
       NANO: 500,
       STARTER: 1000,

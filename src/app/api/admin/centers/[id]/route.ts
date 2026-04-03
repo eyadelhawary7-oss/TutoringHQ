@@ -14,7 +14,31 @@ export async function PATCH(
   const { id } = await params;
 
   try {
-    const body = (await request.json()) as { status?: string };
+    const body = (await request.json()) as {
+      status?: string;
+      action?: string;
+      blacklist_reason?: string;
+    };
+
+    if (body.action === 'blacklist') {
+      const reason = (body.blacklist_reason ?? '').trim();
+      if (!reason) {
+        return NextResponse.json({ error: 'blacklist_reason is required' }, { status: 400 });
+      }
+      const { data, error } = await supabaseAdmin
+        .from('centers')
+        .update({
+          is_blacklisted: true,
+          blacklisted_at: new Date().toISOString(),
+          blacklist_reason: reason,
+        })
+        .eq('id', id)
+        .select('id, name, status, is_blacklisted')
+        .single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ center: data });
+    }
+
     if (body.status && !(ALLOWED_CENTER_STATUSES as readonly string[]).includes(body.status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }

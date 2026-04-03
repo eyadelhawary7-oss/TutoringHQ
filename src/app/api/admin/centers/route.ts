@@ -10,6 +10,14 @@ import { sendWelcomeTemplate } from '@/lib/centerNotify';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { PLANS, type PlanKey } from '@/lib/pricing';
+import { todayISO } from '@/lib/parentPack';
+
+function calendarAddDays(baseYmd: string, delta: number): string {
+  const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
+  const t = Date.UTC(y, m - 1, d + delta);
+  const dt = new Date(t);
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
 
 function isSuperAdmin(phone: string | null): boolean {
   const admins = process.env.SUPER_ADMIN_PHONES || '';
@@ -112,7 +120,7 @@ export async function GET(request: Request) {
 
     let query = adminClient
       .from('centers')
-      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at, billing_status, billing_type, is_early_adopter, early_adopter_price')
+      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at, billing_status, billing_type, is_early_adopter, early_adopter_price, is_blacklisted, blacklisted_at, blacklist_reason')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
@@ -757,9 +765,9 @@ export async function PUT(request: Request) {
     }
 
     const now = new Date();
-    const dueDate = now.toISOString().slice(0, 10);
-    const suspendAt = new Date(now);
-    suspendAt.setDate(suspendAt.getDate() + 1);
+    const approveDay = todayISO();
+    const nextPaymentDue = calendarAddDays(approveDay, 30);
+    const autoSuspendDay = calendarAddDays(approveDay, 38);
 
     // Early Adopter: first 10 approved centers get 40% discount locked in (quarterly all-in base)
     const plan = (center.plan as string) || 'starter';
@@ -774,14 +782,20 @@ export async function PUT(request: Request) {
     const earlyAdopterNumber = canBeEarlyAdopter ? (earlyAdopterCount ?? 0) + 1 : null;
     const earlyAdopterPrice = canBeEarlyAdopter ? Math.round(listQuarterlyAllIn * 0.6) : null;
 
+    const quarterlyCharge =
+      canBeEarlyAdopter && earlyAdopterPrice != null ? earlyAdopterPrice : listQuarterlyAllIn;
+
     const centerUpdates: Record<string, unknown> = {
       status: 'active',
       approved_at: now.toISOString(),
       approved_by: user.id,
       subscription_status: 'active',
-      payment_due_date: dueDate,
-      auto_suspend_at: suspendAt.toISOString(),
-      billing_start_date: dueDate,
+      next_payment_due: nextPaymentDue,
+      subscription_start_date: nextPaymentDue,
+      auto_suspend_at: `${autoSuspendDay}T12:00:00.000Z`,
+      billing_status: 'active',
+      subscription_billing_period: 'quarterly',
+      billing_amount: quarterlyCharge,
       all_in_price: listQuarterlyAllIn,
     };
     if (canBeEarlyAdopter) {
