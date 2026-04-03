@@ -668,6 +668,16 @@
         "weeklyStudentLimit": "حد الطلاب الأسبوعي",
         "paygRate": "سعر الاستخدام (ج.م)"
       },
+      "cancellation": {
+        "bannerTitle": "هذا السنتر طلب إلغاء الاشتراك",
+        "reason": "السبب",
+        "requested": "تاريخ الطلب",
+        "approve": "قبول الإلغاء",
+        "reject": "رفض — الإبقاء على النشاط",
+        "approveConfirm": "سيتم إلغاء السنتر عند نهاية الفترة. المتابعة؟",
+        "approved": "تم قبول الإلغاء",
+        "rejected": "تم رفض الإلغاء — السنتر يبقى نشطاً"
+      },
       "section3": {
         "title": "الفاتورة والتسعير",
         "billingAmount": "إجمالي الفاتورة الربع سنوية (ج.م)",
@@ -1572,6 +1582,28 @@
     "completePayment": "إتمام الدفع",
     "close": "إغلاق",
     "ownerOnly": "مالك السنتر فقط يمكنه إدارة الفوترة والمدفوعات.",
+    "cancel": {
+      "title": "إلغاء الاشتراك",
+      "subtitle": "يظل سنترك نشطاً حتى نهاية الفترة الحالية. لا توجد استردادات.",
+      "link": "إلغاء الاشتراك",
+      "modalTitle": "هل أنت متأكد؟",
+      "modalSubtitle": "سيُلغى اشتراكك في نهاية الفترة الحالية.",
+      "reasonLabel": "سبب الإلغاء",
+      "reasonPlaceholder": "اختر السبب",
+      "confirmLabel": "اكتب \"CANCEL\" للتأكيد",
+      "submit": "إلغاء الاشتراك",
+      "keep": "الاحتفاظ باشتراكي",
+      "success": "تم جدولة الإلغاء. يستمر الوصول حتى {date}.",
+      "pendingBanner": "تم جدولة الإلغاء. يستمر الوصول حتى {date}.",
+      "errorGeneric": "تعذر إرسال طلب الإلغاء. حاول مرة أخرى.",
+      "reason": {
+        "moving_competitor": "التحول لمنصة أخرى",
+        "too_expensive": "السعر مرتفع",
+        "center_closing": "السنتر سيغلق",
+        "not_using": "عدم استخدام المنصة بما يكفي",
+        "other": "سبب آخر"
+      }
+    },
     "loadError": "تعذر تحميل بيانات الفوترة. حاول مرة أخرى.",
     "suspended": {
       "warning": "تم تعليق سنتر. ادفع الآن لإعادة التفعيل."
@@ -2194,6 +2226,7 @@
     "actionType_sales": "المبيعات",
     "actionType_ops": "التشغيل",
     "actionType_renewal": "التجديد",
+    "actionType_cancellationRequest": "طلب إلغاء اشتراك",
     "revenueAtRisk": "الإيرادات المعرضة للخطر",
     "egpAbbrev": "جنيه مصري",
     "approvalQueueTitle": "المراكز التي تنتظر موافقتي",

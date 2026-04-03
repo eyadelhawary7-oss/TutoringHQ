@@ -1016,6 +1016,7 @@
     "actionType_sales": "Sales",
     "actionType_ops": "Operations",
     "actionType_renewal": "Renewal",
+    "actionType_cancellationRequest": "Cancellation request",
     "revenueAtRisk": "Revenue at risk",
     "egpAbbrev": "EGP",
     "approvalQueueTitle": "Centers Awaiting My Approval",
@@ -1772,6 +1773,16 @@
         "weeklyStudentLimit": "Weekly Student Limit (override)",
         "paygRate": "PAYG Rate (EGP)"
       },
+      "cancellation": {
+        "bannerTitle": "This center has requested cancellation",
+        "reason": "Reason",
+        "requested": "Requested",
+        "approve": "Approve Cancellation",
+        "reject": "Reject — Keep Active",
+        "approveConfirm": "This will cancel the center at period end. Proceed?",
+        "approved": "Cancellation approved",
+        "rejected": "Cancellation rejected — center stays active"
+      },
       "section3": {
         "title": "Billing & Pricing",
         "billingAmount": "Quarterly Invoice Total (EGP)",
@@ -2240,6 +2251,28 @@
     "completePayment": "Complete Payment",
     "close": "Close",
     "ownerOnly": "Only the center owner can manage billing and payments.",
+    "cancel": {
+      "title": "Cancel Subscription",
+      "subtitle": "Your center remains active until end of current period. No refunds.",
+      "link": "Cancel Subscription",
+      "modalTitle": "Are you sure?",
+      "modalSubtitle": "This will cancel your subscription at the end of your current period.",
+      "reasonLabel": "Reason for cancelling",
+      "reasonPlaceholder": "Select a reason",
+      "confirmLabel": "Type \"CANCEL\" to confirm",
+      "submit": "Cancel Subscription",
+      "keep": "Keep My Subscription",
+      "success": "Cancellation scheduled. Access continues until {date}.",
+      "pendingBanner": "Cancellation is scheduled. Access continues until {date}.",
+      "errorGeneric": "Could not submit cancellation. Try again.",
+      "reason": {
+        "moving_competitor": "Switching to another platform",
+        "too_expensive": "Too expensive",
+        "center_closing": "Center is closing",
+        "not_using": "Not using the platform enough",
+        "other": "Other reason"
+      }
+    },
     "loadError": "Could not load billing data. Please try again.",
     "suspended": {
       "warning": "Your center has been suspended. Pay now to reactivate."

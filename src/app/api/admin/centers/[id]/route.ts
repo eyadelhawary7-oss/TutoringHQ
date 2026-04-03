@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { sendFreeformMessage } from '@/lib/whatsapp/client';
 
 const STRIP = [
   'action',
@@ -41,6 +42,8 @@ const PATCH_ACTIONS = new Set([
   'mark_commission_paid',
   'blacklist',
   'unblacklist',
+  'approve_cancellation',
+  'reject_cancellation',
 ]);
 
 /** (b) Cookie session + getUser → admin_users.id; any failure → null */
@@ -510,6 +513,116 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ center: updatedRow });
+  }
+
+  // ── action = 'approve_cancellation' ──
+  if (action === 'approve_cancellation') {
+    const { data: row, error: fetchErr } = await supabaseAdmin
+      .from('centers')
+      .select('id, status, phone, name, current_period_end, next_payment_due')
+      .eq('id', centerId)
+      .maybeSingle();
+
+    if (fetchErr || !row) {
+      return NextResponse.json({ error: 'Center not found' }, { status: 404 });
+    }
+    const st = String((row as { status?: string }).status ?? '');
+    if (st !== 'pending_cancellation') {
+      return NextResponse.json({ error: 'Center is not pending cancellation' }, { status: 400 });
+    }
+
+    const { data: updatedRow, error } = await supabaseAdmin
+      .from('centers')
+      .update({
+        status: 'cancelled',
+        subscription_status: 'cancelled',
+        cancellation_approved_at: new Date().toISOString(),
+      })
+      .eq('id', centerId)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const r = row as {
+      phone?: string | null;
+      current_period_end?: string | null;
+      next_payment_due?: string | null;
+    };
+    const peRaw =
+      (r.current_period_end && String(r.current_period_end).slice(0, 10)) ||
+      (r.next_payment_due && String(r.next_payment_due).slice(0, 10)) ||
+      null;
+    const peLabel = peRaw
+      ? (() => {
+          const d = new Date(`${peRaw}T12:00:00`);
+          return Number.isNaN(d.getTime()) ? peRaw : d.toLocaleDateString('en-GB');
+        })()
+      : '—';
+    const phone = String(r.phone ?? '').trim();
+    if (phone) {
+      try {
+        await sendFreeformMessage(
+          centerId,
+          phone,
+          `تم قبول طلب إلغاء اشتراكك. يمكنك استخدام المنصة حتى ${peLabel}.`,
+        );
+      } catch (e) {
+        console.error('[admin/centers] approve_cancellation WA:', e);
+      }
+    }
+
+    return NextResponse.json({ success: true, center: updatedRow });
+  }
+
+  // ── action = 'reject_cancellation' ──
+  if (action === 'reject_cancellation') {
+    const { data: row, error: fetchErr } = await supabaseAdmin
+      .from('centers')
+      .select('id, status, phone')
+      .eq('id', centerId)
+      .maybeSingle();
+
+    if (fetchErr || !row) {
+      return NextResponse.json({ error: 'Center not found' }, { status: 404 });
+    }
+    const st = String((row as { status?: string }).status ?? '');
+    if (st !== 'pending_cancellation') {
+      return NextResponse.json({ error: 'Center is not pending cancellation' }, { status: 400 });
+    }
+
+    const { data: updatedRow, error } = await supabaseAdmin
+      .from('centers')
+      .update({
+        status: 'active',
+        cancellation_reason: null,
+        cancellation_requested_at: null,
+        cancellation_approved_at: null,
+      })
+      .eq('id', centerId)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const phone = String((row as { phone?: string | null }).phone ?? '').trim();
+    if (phone) {
+      try {
+        await sendFreeformMessage(
+          centerId,
+          phone,
+          'تم رفض طلب إلغاء اشتراكك. سيستمر اشتراكك كالمعتاد.',
+        );
+      } catch (e) {
+        console.error('[admin/centers] reject_cancellation WA:', e);
+      }
+    }
+
+    return NextResponse.json({ success: true, center: updatedRow });
   }
 
   // ── DEFAULT (no action) ──

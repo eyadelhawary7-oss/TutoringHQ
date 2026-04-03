@@ -2,7 +2,14 @@
 
 export type LeadStage = 'lead' | 'demo' | 'trial' | 'closed' | 'lost'
 export type ActionPriority = 'red' | 'amber' | 'green'
-export type ActionType = 'churn_risk' | 'activation' | 'collection' | 'sales' | 'ops' | 'renewal'
+export type ActionType =
+  | 'churn_risk'
+  | 'activation'
+  | 'collection'
+  | 'sales'
+  | 'ops'
+  | 'renewal'
+  | 'cancellation_request'
 
 export interface SalesLead {
   id: string

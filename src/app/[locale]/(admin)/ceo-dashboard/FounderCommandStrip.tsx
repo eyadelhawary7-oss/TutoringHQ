@@ -37,6 +37,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
     sales: t('actionType_sales'),
     ops: t('actionType_ops'),
     renewal: t('actionType_renewal'),
+    cancellation_request: t('actionType_cancellationRequest'),
   };
 
   function planDisplayName(plan: string): string {

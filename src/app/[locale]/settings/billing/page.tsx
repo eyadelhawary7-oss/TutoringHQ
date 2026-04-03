@@ -38,6 +38,14 @@ import {
 
 const SUGGESTED_RESALE_EGP = 25;
 
+const CANCEL_REASON_KEYS = [
+  'moving_competitor',
+  'too_expensive',
+  'center_closing',
+  'not_using',
+  'other',
+] as const;
+
 type CenterPlanKey = 'nano' | 'starter' | 'pro' | 'business' | 'enterprise';
 
 const CENTER_PLAN_KEYS: readonly CenterPlanKey[] = [
@@ -110,6 +118,9 @@ type CenterRow = {
   instapay_number?: string | null;
   upgrade_count_this_period?: number | null;
   suspended_at?: string | null;
+  current_period_end?: string | null;
+  cancellation_reason?: string | null;
+  cancellation_requested_at?: string | null;
 };
 
 type InvoiceRow = {
@@ -361,6 +372,11 @@ export default function BillingPage() {
     processingDate: string;
   } | null>(null);
   const withdrawalSectionRef = useRef<HTMLElement | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState<string>('');
+  const [cancelConfirmText, setCancelConfirmText] = useState('');
+  const [cancelSubmitError, setCancelSubmitError] = useState<string | null>(null);
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
 
   const refresh = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -577,6 +593,23 @@ export default function BillingPage() {
     (bsLower === 'paid' || bsLower === 'active') &&
     subLower === 'active' &&
     !isOverdue;
+
+  const billingPeriodEndLabel = useMemo(() => {
+    const ymd =
+      (center?.current_period_end && String(center.current_period_end).slice(0, 10)) ||
+      (center?.next_payment_due ? center.next_payment_due.slice(0, 10) : '');
+    if (!ymd) return '—';
+    const d = new Date(`${ymd}T12:00:00`);
+    return Number.isNaN(d.getTime())
+      ? ymd
+      : d.toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US');
+  }, [center?.current_period_end, center?.next_payment_due, locale]);
+
+  const showCancelDanger =
+    ownerOk &&
+    !!center &&
+    centerStatusLower === 'active' &&
+    !isSuspendedCenter;
 
   const currentRank = planRank(center?.plan ?? 'starter');
 
@@ -1027,6 +1060,59 @@ export default function BillingPage() {
     t,
     refresh,
     todayCairo,
+  ]);
+
+  const handleCancelSubscription = useCallback(async () => {
+    if (!cancelReason || cancelConfirmText !== 'CANCEL') return;
+    setCancelSubmitting(true);
+    setCancelSubmitError(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error(t('loadError'));
+      const res = await fetch('/api/billing/cancel', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: cancelReason }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        periodEnd?: string | null;
+      };
+      if (!res.ok) {
+        setCancelSubmitError(typeof data.error === 'string' ? data.error : t('cancel.errorGeneric'));
+        return;
+      }
+      const ymd =
+        (data.periodEnd && String(data.periodEnd).slice(0, 10)) ||
+        (center?.next_payment_due && center.next_payment_due.slice(0, 10)) ||
+        '';
+      const pe =
+        ymd && !Number.isNaN(new Date(`${ymd}T12:00:00`).getTime())
+          ? new Date(`${ymd}T12:00:00`).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US')
+          : billingPeriodEndLabel;
+      toast.success(t('cancel.success', { date: pe }));
+      setShowCancelModal(false);
+      setCancelConfirmText('');
+      setCancelReason('');
+      await refresh();
+    } catch (e) {
+      setCancelSubmitError(e instanceof Error ? e.message : t('cancel.errorGeneric'));
+    } finally {
+      setCancelSubmitting(false);
+    }
+  }, [
+    cancelReason,
+    cancelConfirmText,
+    t,
+    toast,
+    refresh,
+    billingPeriodEndLabel,
+    locale,
+    center?.next_payment_due,
   ]);
 
   const renderInvoiceStatusBadge = (st: string) => {
@@ -2276,7 +2362,134 @@ export default function BillingPage() {
             </div>
           )}
         </section>
+
+        {ownerOk && centerStatusLower === 'pending_cancellation' ? (
+          <section
+            className="rounded-2xl border border-amber-300 bg-amber-50 p-6 shadow-sm dark:border-amber-700 dark:bg-amber-950/30"
+            aria-labelledby="billing-pending-cancel-heading"
+          >
+            <h2
+              id="billing-pending-cancel-heading"
+              className="text-lg font-semibold text-amber-900 dark:text-amber-100"
+              style={cairoFont}
+            >
+              {t('cancel.title')}
+            </h2>
+            <p className="mt-2 text-sm text-amber-900/90 dark:text-amber-100/90" style={cairoFont}>
+              {t('cancel.pendingBanner', { date: billingPeriodEndLabel })}
+            </p>
+          </section>
+        ) : null}
+
+        {showCancelDanger ? (
+          <section
+            className="rounded-2xl border border-red-200 p-6 dark:border-red-900"
+            aria-labelledby="billing-danger-heading"
+          >
+            <h2
+              id="billing-danger-heading"
+              className="text-lg font-semibold text-red-600 dark:text-red-400"
+              style={cairoFont}
+            >
+              {t('cancel.title')}
+            </h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+              {t('cancel.subtitle')}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setCancelSubmitError(null);
+                setShowCancelModal(true);
+              }}
+              className="mt-3 text-sm text-red-500 underline hover:text-red-600 dark:text-red-400"
+              style={cairoFont}
+            >
+              {t('cancel.link')}
+            </button>
+          </section>
+        ) : null}
       </div>
+
+      {showCancelModal ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-modal-title"
+          >
+            <h2
+              id="cancel-modal-title"
+              className="text-lg font-bold text-slate-900 dark:text-white"
+              style={cairoFont}
+            >
+              {t('cancel.modalTitle')}
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+              {t('cancel.modalSubtitle')}
+            </p>
+            <label className="mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200" style={cairoFont}>
+              {t('cancel.reasonLabel')}
+            </label>
+            <select
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            >
+              <option value="">{t('cancel.reasonPlaceholder')}</option>
+              {CANCEL_REASON_KEYS.map((k) => (
+                <option key={k} value={k}>
+                  {t(`cancel.reason.${k}` as 'billing.cancel.reason.other')}
+                </option>
+              ))}
+            </select>
+            <label className="mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200" style={cairoFont}>
+              {t('cancel.confirmLabel')}
+            </label>
+            {/* CANCEL confirm */}
+            <input
+              type="text"
+              value={cancelConfirmText}
+              onChange={(e) => setCancelConfirmText(e.target.value)}
+              placeholder={t('cancel.confirmLabel')}
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              dir="ltr"
+              autoComplete="off"
+            />
+            {cancelSubmitError ? (
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+                {cancelSubmitError}
+              </p>
+            ) : null}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelSubmitError(null);
+                  setCancelConfirmText('');
+                }}
+                className="order-2 rounded-xl border-2 border-teal-600 px-4 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-200 dark:hover:bg-teal-950/40 sm:order-1"
+                style={cairoFont}
+              >
+                {t('cancel.keep')}
+              </button>
+              <button
+                type="button"
+                disabled={
+                  cancelSubmitting || !cancelReason || cancelConfirmText !== 'CANCEL'
+                }
+                onClick={() => void handleCancelSubscription()}
+                className="order-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50 sm:order-2"
+                style={cairoFont}
+              >
+                {cancelSubmitting ? t('loadingShort') : t('cancel.submit')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {paymobUrl && (paymobSessionId || paymobInvoicePollId) ? (
         <PaymobModal

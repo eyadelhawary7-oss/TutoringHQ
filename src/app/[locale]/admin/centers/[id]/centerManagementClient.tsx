@@ -96,6 +96,14 @@ const Toggle = ({
   </div>
 );
 
+const CANCELLATION_REASON_LABELS: Record<string, string> = {
+  moving_competitor: 'Switching to another platform',
+  too_expensive: 'Too expensive',
+  center_closing: 'Center is closing',
+  not_using: 'Not using the platform enough',
+  other: 'Other reason',
+};
+
 const GOVERNORATE_OPTIONS: { value: string; label: string }[] = [
   { value: 'cairo', label: 'Cairo — القاهرة' },
   { value: 'giza', label: 'Giza — الجيزة' },
@@ -134,6 +142,10 @@ function statusBadgeClass(status: string | undefined): string {
       return 'bg-red-900 text-red-300';
     case 'pending':
       return 'bg-amber-900 text-amber-300';
+    case 'pending_cancellation':
+      return 'bg-amber-900 text-amber-200';
+    case 'cancelled':
+      return 'bg-slate-700 text-slate-200';
     case 'rejected':
       return 'bg-gray-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400';
     default:
@@ -223,6 +235,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s2PaygRate, setS2PaygRate] = useState('');
   const [s2PlanWarning, setS2PlanWarning] = useState(false);
   const [s2Saving, setS2Saving] = useState(false);
+  const [s2CancellationBusy, setS2CancellationBusy] = useState(false);
 
   // Section 3 — MUST precede handlePlanChange (which calls setS3AllInPrice, setS3BillingAmount)
   const [s3BillingAmount, setS3BillingAmount] = useState('');
@@ -661,6 +674,45 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
       toast.error(t('centerManagement.saveError'));
     } finally {
       setS2Saving(false);
+    }
+  };
+
+  const patchCancellationAction = async (cancellationAction: 'approve_cancellation' | 'reject_cancellation') => {
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      toast.error(tCommon('errorGeneric'));
+      return;
+    }
+    setS2CancellationBusy(true);
+    try {
+      const res = await fetch(`/api/admin/centers/${centerId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: cancellationAction }),
+      });
+      const raw = await res.text();
+      let body: { error?: string; center?: Record<string, unknown> } = {};
+      try {
+        body = JSON.parse(raw) as typeof body;
+      } catch {
+        /* non-JSON */
+      }
+      if (!res.ok) {
+        toast.error(typeof body.error === 'string' ? body.error : t('centerManagement.saveError'));
+        return;
+      }
+      if (body.center) {
+        setData((prev) => (prev ? { ...prev, center: body.center! } : prev));
+      }
+      toast.success(
+        cancellationAction === 'approve_cancellation'
+          ? t('centerManagement.cancellation.approved')
+          : t('centerManagement.cancellation.rejected'),
+      );
+    } catch {
+      toast.error(t('centerManagement.saveError'));
+    } finally {
+      setS2CancellationBusy(false);
     }
   };
 
@@ -1630,6 +1682,49 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section2.title')}</h2>
+                {String(data.center?.status) === 'pending_cancellation' ? (
+                  <div
+                    className="mb-4 rounded-xl border border-amber-400/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-100"
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                  >
+                    <p className="font-semibold">⚠️ {t('centerManagement.cancellation.bannerTitle')}</p>
+                    <p className="mt-2 text-slate-800 dark:text-amber-50/95">
+                      {t('centerManagement.cancellation.reason')}:{' '}
+                      {CANCELLATION_REASON_LABELS[String(data.center?.cancellation_reason)] ??
+                        String(data.center?.cancellation_reason ?? '—')}
+                    </p>
+                    <p className="mt-1 text-slate-700 dark:text-amber-50/90">
+                      {t('centerManagement.cancellation.requested')}: {formatDate(data.center?.cancellation_requested_at)}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        disabled={s2CancellationBusy}
+                        onClick={() => {
+                          if (
+                            !window.confirm(t('centerManagement.cancellation.approveConfirm'))
+                          ) {
+                            return;
+                          }
+                          void patchCancellationAction('approve_cancellation');
+                        }}
+                        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
+                      >
+                        {s2CancellationBusy
+                          ? t('centerManagement.saving')
+                          : t('centerManagement.cancellation.approve')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={s2CancellationBusy}
+                        onClick={() => void patchCancellationAction('reject_cancellation')}
+                        className="rounded-lg border-2 border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-200 dark:hover:bg-teal-950/40 disabled:opacity-50"
+                      >
+                        {t('centerManagement.cancellation.reject')}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 {s2PlanWarning ? (
                   <p className="text-amber-400/90 text-sm mb-4">{t('centerManagement.section2.planWarning')}</p>
                 ) : null}
@@ -1642,6 +1737,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="active">active</option>
+                      <option value="pending_cancellation">pending_cancellation</option>
+                      <option value="cancelled">cancelled</option>
+                      <option value="paid_pending_activation">paid_pending_activation</option>
                       <option value="suspended">suspended</option>
                       <option value="pending">pending</option>
                       <option value="rejected">rejected</option>

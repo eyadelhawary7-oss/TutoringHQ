@@ -101,6 +101,10 @@ export async function GET(request: Request) {
       billing_status?: string;
       subscription_status?: string;
       status?: string;
+      current_period_end?: string | null;
+      cancellation_reason?: string | null;
+      cancellation_requested_at?: string | null;
+      cancellation_approved_at?: string | null;
       plan?: string;
       delivery_address?: Record<string, unknown>;
       card_color?: string;
@@ -124,7 +128,7 @@ export async function GET(request: Request) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
         .select(
-          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, credit_reserved, instapay_number, upgrade_count_this_period, suspended_at',
+          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, current_period_end, cancellation_reason, cancellation_requested_at, cancellation_approved_at, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, credit_reserved, instapay_number, upgrade_count_this_period, suspended_at',
         )
         .eq('id', userRecord.center_id)
         .single();
@@ -140,6 +144,10 @@ export async function GET(request: Request) {
           billing_status: centerRow.billing_status ?? undefined,
           subscription_status: (cr.subscription_status as string | null) ?? undefined,
           status: (cr.status as string | null) ?? undefined,
+          current_period_end: (cr.current_period_end as string | null) ?? undefined,
+          cancellation_reason: (cr.cancellation_reason as string | null) ?? undefined,
+          cancellation_requested_at: (cr.cancellation_requested_at as string | null) ?? undefined,
+          cancellation_approved_at: (cr.cancellation_approved_at as string | null) ?? undefined,
           plan: centerRow.plan ?? undefined,
           delivery_address: centerRow.delivery_address ?? undefined,
           card_color: centerRow.card_color ?? undefined,
