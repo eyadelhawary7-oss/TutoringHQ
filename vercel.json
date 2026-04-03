@@ -1,5 +1,7 @@
 {
   "crons": [
+    { "path": "/api/cron/check-stuck-payments", "schedule": "*/30 * * * *" },
+    { "path": "/api/cron/cleanup-expired-sessions", "schedule": "0 1 * * *" },
     { "path": "/api/cron/expire-credits", "schedule": "0 1 * * *" },
     { "path": "/api/cron/parent-pack-billing", "schedule": "1 0 1 * *" },
     { "path": "/api/cron/parent-absence-alerts", "schedule": "0 19 * * *" },

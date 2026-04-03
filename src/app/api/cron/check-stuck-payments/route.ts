@@ -1,0 +1,165 @@
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import { tryFinalizeCombinedPaymentSession } from '@/lib/combinedPaymentFinalize';
+import { inquirePaymobCardOrder } from '@/lib/paymobOrderInquiry';
+import { createAction } from '@/lib/ceo';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
+const HANDLED_COMBINED_TYPES = new Set(['upgrade', 'reactivation_tier1', 'reactivation_tier2']);
+
+async function runCheckStuckPayments(request: Request): Promise<Response> {
+  const cronStart = Date.now();
+
+  const auth = request.headers.get('authorization');
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    return NextResponse.json({ success: false, error: 'Server misconfigured' }, { status: 200 });
+  }
+
+  const supabase = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  try {
+    const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const now = new Date().toISOString();
+
+    const { data: stuckSessions, error: fetchErr } = await supabase
+      .from('combined_payment_sessions')
+      .select(
+        'id, paymob_order_id, center_id, total_amount, session_type, created_at, credit_amount',
+      )
+      .eq('status', 'pending')
+      .lt('created_at', cutoff)
+      .gt('expires_at', now)
+      .is('finalized_at', null);
+
+    if (fetchErr) {
+      throw new Error(fetchErr.message);
+    }
+
+    if (!stuckSessions?.length) {
+      await supabase.from('cron_log').insert({
+        cron_name: 'check-stuck-payments',
+        status: 'success',
+        duration_ms: Date.now() - cronStart,
+        records_processed: 0,
+        metadata: { message: 'No stuck sessions found' },
+      });
+      return NextResponse.json({ success: true, processed: 0 });
+    }
+
+    let resolved = 0;
+    let flagged = 0;
+
+    for (const session of stuckSessions) {
+      try {
+        const orderId = String((session as { paymob_order_id?: string | null }).paymob_order_id ?? '').trim();
+        if (!orderId) continue;
+
+        const inquiry = await inquirePaymobCardOrder(orderId);
+
+        if (inquiry.state === 'paid') {
+          const txId = inquiry.transactionId ?? '';
+          const primaryOk = await tryFinalizeCombinedPaymentSession(
+            (session as { id: string }).id,
+            supabase,
+            'cron',
+            txId,
+          );
+          if (primaryOk) {
+            resolved++;
+          } else if (
+            !HANDLED_COMBINED_TYPES.has(String((session as { session_type?: string }).session_type ?? ''))
+          ) {
+            const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
+            const card = await finalizeCardOrderPaymentSuccess(supabase, orderId, txId);
+            if (!card) {
+              const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
+              await finalizeInvoicePaymentSuccess(supabase, orderId, txId);
+            }
+            const { processSignupAutoApprovalAfterPaymobSuccess } = await import('@/lib/signupPaymobAutoApprove');
+            await processSignupAutoApprovalAfterPaymobSuccess(supabase, orderId, txId);
+            resolved++;
+          }
+        } else if (inquiry.state === 'failed') {
+          await supabase.from('combined_payment_sessions').update({ status: 'failed' }).eq('id', (session as { id: string }).id);
+
+          const st = String((session as { session_type?: string }).session_type ?? '');
+          const creditAmt = Number((session as { credit_amount?: number | string | null }).credit_amount ?? 0);
+          if (st !== 'signup' && creditAmt > 0) {
+            await supabase.rpc('cancel_reservation_atomic', {
+              p_center_id: (session as { center_id: string }).center_id,
+              p_amount: creditAmt,
+            });
+          }
+        } else {
+          const createdRaw = (session as { created_at?: string }).created_at;
+          const createdAt = createdRaw ? new Date(createdRaw) : new Date();
+          const ageHours = (Date.now() - createdAt.getTime()) / 3600000;
+          if (ageHours > 2) {
+            try {
+              await createAction(supabase, {
+                type: 'ops',
+                priority: 'red',
+                center_id: (session as { center_id: string }).center_id,
+                title: `Stuck payment session — ${(session as { center_id: string }).center_id}`,
+                subtitle: `Order ${orderId} · ${ageHours.toFixed(1)}h · ${String((session as { session_type?: string }).session_type ?? '')}`,
+                revenue_at_risk: Number((session as { total_amount?: number | string }).total_amount) || 0,
+                auto_generated: true,
+              });
+            } catch (ceoErr) {
+              console.error('[check-stuck-payments] ceo_action_queue', ceoErr);
+            }
+            flagged++;
+          }
+        }
+      } catch (sessionError) {
+        console.error(`[check-stuck-payments] session ${(session as { id?: string }).id}:`, sessionError);
+      }
+    }
+
+    await supabase.from('cron_log').insert({
+      cron_name: 'check-stuck-payments',
+      status: 'success',
+      duration_ms: Date.now() - cronStart,
+      records_processed: stuckSessions.length,
+      metadata: { resolved, flagged },
+    });
+
+    return NextResponse.json({
+      success: true,
+      found: stuckSessions.length,
+      resolved,
+      flagged,
+    });
+  } catch (error) {
+    try {
+      await supabase.from('cron_log').insert({
+        cron_name: 'check-stuck-payments',
+        status: 'failure',
+        duration_ms: Date.now() - cronStart,
+        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown error',
+      });
+    } catch (logErr) {
+      console.error('[check-stuck-payments] cron_log', logErr);
+    }
+    return NextResponse.json({ success: false }, { status: 200 });
+  }
+}
+
+export async function GET(request: Request) {
+  return runCheckStuckPayments(request);
+}
+
+export async function POST(request: Request) {
+  return runCheckStuckPayments(request);
+}
