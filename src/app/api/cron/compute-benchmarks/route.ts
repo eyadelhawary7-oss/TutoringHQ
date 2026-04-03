@@ -3,25 +3,39 @@
  * Calls compute_benchmark_snapshots RPC
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+export async function POST(request: Request) {
+  const cronStart = Date.now();
+  const CRON_NAME = 'compute-benchmarks';
+
+  const auth = request.headers.get('authorization');
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json({ error: 'Missing Supabase config' }, { status: 500 });
+    return NextResponse.json({ success: false }, { status: 200 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: pausedRow } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'cron_paused')
+    .maybeSingle();
+  if (pausedRow?.value === true) {
+    return NextResponse.json({ skipped: 'cron_paused' }, { status: 200 });
+  }
 
   try {
     const yesterday = new Date();
@@ -33,17 +47,36 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      console.error('[compute-benchmarks] RPC error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      throw new Error(error.message);
     }
 
     const rowsAffected = (data as number) ?? 0;
-    return NextResponse.json({ ok: true, rows_affected: rowsAffected, snapshot_date: snapshotDate });
-  } catch (err) {
-    console.error('[compute-benchmarks] Error:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Unknown error' },
-      { status: 500 }
-    );
+
+    await supabase.from('cron_log').insert({
+      cron_name: CRON_NAME,
+      status: 'success',
+      duration_ms: Date.now() - cronStart,
+      records_processed: rowsAffected,
+      metadata: { snapshot_date: snapshotDate },
+    });
+
+    return NextResponse.json({ success: true, rows_affected: rowsAffected, snapshot_date: snapshotDate });
+  } catch (error) {
+    console.error(`[${CRON_NAME}] Error:`, error);
+    try {
+      await supabase.from('cron_log').insert({
+        cron_name: CRON_NAME,
+        status: 'failure',
+        duration_ms: Date.now() - cronStart,
+        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown',
+      });
+    } catch (logErr) {
+      console.error(`[${CRON_NAME}] cron_log:`, logErr);
+    }
+    return NextResponse.json({ success: false }, { status: 200 });
   }
+}
+
+export async function GET(request: Request) {
+  return POST(request);
 }

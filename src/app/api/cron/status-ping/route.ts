@@ -3,13 +3,13 @@
  * Pings API (Supabase), Scanner (Edge Function), Payments → insert status_checks
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-async function pingSupabase(supabase: SupabaseClient<any, any, any>): Promise<{ status: string; ms: number }> {
+async function pingSupabase(supabase: SupabaseClient): Promise<{ status: string; ms: number }> {
   const start = Date.now();
   try {
     const { error } = await supabase.from('centers').select('id').limit(1);
@@ -42,7 +42,9 @@ async function pingScanner(): Promise<{ status: string; ms: number }> {
 
 async function pingPayments(): Promise<{ status: string; ms: number }> {
   const start = Date.now();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://center-hq.vercel.app');
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://center-hq.vercel.app');
   try {
     const res = await fetch(`${appUrl}/api/health`, { signal: AbortSignal.timeout(10000) }).catch(() => null);
     const ms = Date.now() - start;
@@ -53,33 +55,77 @@ async function pingPayments(): Promise<{ status: string; ms: number }> {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
+  const cronStart = Date.now();
+  const CRON_NAME = 'status-ping';
+
+  const auth = request.headers.get('authorization');
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json({ error: 'Missing Supabase config' }, { status: 500 });
+    return NextResponse.json({ success: false }, { status: 200 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
-  const [apiResult, scannerResult, paymentsResult] = await Promise.all([
-    pingSupabase(supabase),
-    pingScanner(),
-    pingPayments(),
-  ]);
-
-  const rows = [
-    { service: 'api', status: apiResult.status, response_time_ms: apiResult.ms },
-    { service: 'scanner', status: scannerResult.status, response_time_ms: scannerResult.ms },
-    { service: 'payments', status: paymentsResult.status, response_time_ms: paymentsResult.ms },
-  ];
-
-  const { error } = await supabase.from('status_checks').insert(rows);
-
-  if (error) {
-    console.error('[status-ping] Insert error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const { data: pausedRow } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'cron_paused')
+    .maybeSingle();
+  if (pausedRow?.value === true) {
+    return NextResponse.json({ skipped: 'cron_paused' }, { status: 200 });
   }
 
-  return NextResponse.json({ ok: true, pings: rows });
+  try {
+    const [apiResult, scannerResult, paymentsResult] = await Promise.all([
+      pingSupabase(supabase),
+      pingScanner(),
+      pingPayments(),
+    ]);
+
+    const rows = [
+      { service: 'api', status: apiResult.status, response_time_ms: apiResult.ms },
+      { service: 'scanner', status: scannerResult.status, response_time_ms: scannerResult.ms },
+      { service: 'payments', status: paymentsResult.status, response_time_ms: paymentsResult.ms },
+    ];
+
+    const { error } = await supabase.from('status_checks').insert(rows);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await supabase.from('cron_log').insert({
+      cron_name: CRON_NAME,
+      status: 'success',
+      duration_ms: Date.now() - cronStart,
+      records_processed: rows.length,
+    });
+
+    return NextResponse.json({ success: true, pings: rows });
+  } catch (error) {
+    console.error(`[${CRON_NAME}] Error:`, error);
+    try {
+      await supabase.from('cron_log').insert({
+        cron_name: CRON_NAME,
+        status: 'failure',
+        duration_ms: Date.now() - cronStart,
+        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown',
+      });
+    } catch (logErr) {
+      console.error(`[${CRON_NAME}] cron_log:`, logErr);
+    }
+    return NextResponse.json({ success: false }, { status: 200 });
+  }
+}
+
+export async function GET(request: Request) {
+  return POST(request);
 }

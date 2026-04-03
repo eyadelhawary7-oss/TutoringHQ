@@ -1,16 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
 export const maxDuration = 60;
 
 function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 function addDays(date: Date, days: number): string {
@@ -70,61 +69,107 @@ ${ownerName}، اشتراك *${centerName}* سيتجدد *غداً*.
 للمساعدة تواصل معنا فوراً 🙏`;
 }
 
-export async function GET(request: NextRequest) {
-  if (!process.env.CRON_SECRET) {
-    console.error('[Renewal Reminders] CRON_SECRET env var is not set — refusing to run');
-    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
-  }
+export async function POST(request: Request) {
+  const cronStart = Date.now();
+  const CRON_NAME = 'renewal-reminders';
 
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const auth = request.headers.get('authorization');
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    return NextResponse.json({ success: false }, { status: 200 });
+  }
+
   const supabase = getSupabaseAdmin();
-  const today = new Date();
-  const in7Days = addDays(today, 7);
-  const tomorrow = addDays(today, 1);
 
-  const { data: centers, error } = await supabase
-    .from('centers')
-    .select('id, name, phone, owner_name, plan, billing_amount, next_billing_date, subscription_status')
-    .in('next_billing_date', [in7Days, tomorrow])
-    .eq('subscription_status', 'active')
-    .not('phone', 'is', null);
-
-  if (error) {
-    console.error('[Renewal Reminders] DB error:', error);
-    return NextResponse.json({ error: 'DB error' }, { status: 500 });
+  const { data: pausedRow } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'cron_paused')
+    .maybeSingle();
+  if (pausedRow?.value === true) {
+    return NextResponse.json({ skipped: 'cron_paused' }, { status: 200 });
   }
 
-  if (!centers || centers.length === 0) {
-    return NextResponse.json({ sent: 0, message: 'No centers due today' });
+  try {
+    const today = new Date();
+    const in7Days = addDays(today, 7);
+    const tomorrow = addDays(today, 1);
+
+    const { data: centers, error } = await supabase
+      .from('centers')
+      .select('id, name, phone, owner_name, plan, billing_amount, next_billing_date, subscription_status')
+      .in('next_billing_date', [in7Days, tomorrow])
+      .eq('subscription_status', 'active')
+      .not('phone', 'is', null);
+
+    if (error) {
+      throw new Error(error.message || 'DB error');
+    }
+
+    if (!centers || centers.length === 0) {
+      await supabase.from('cron_log').insert({
+        cron_name: CRON_NAME,
+        status: 'success',
+        duration_ms: Date.now() - cronStart,
+        records_processed: 0,
+      });
+      return NextResponse.json({ success: true, sent: 0, message: 'No centers due today' });
+    }
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const center of centers) {
+      const daysUntilDue = center.next_billing_date === in7Days ? 7 : 1;
+      const phone = normalizePhoneForMeta(center.phone as string);
+      const ownerName = (center.owner_name || center.name) as string;
+      const amount = Number(center.billing_amount) || 0;
+
+      const message = buildReminderMessage(
+        ownerName,
+        center.name as string,
+        center.plan as string,
+        amount,
+        daysUntilDue
+      );
+
+      const success = await sendWhatsAppMessage(phone, message);
+      if (success) sent++;
+      else failed++;
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    await supabase.from('cron_log').insert({
+      cron_name: CRON_NAME,
+      status: 'success',
+      duration_ms: Date.now() - cronStart,
+      records_processed: sent + failed,
+      metadata: { sent, failed, total: centers.length },
+    });
+
+    return NextResponse.json({ success: true, sent, failed, total: centers.length });
+  } catch (error) {
+    console.error(`[${CRON_NAME}] Error:`, error);
+    try {
+      await supabase.from('cron_log').insert({
+        cron_name: CRON_NAME,
+        status: 'failure',
+        duration_ms: Date.now() - cronStart,
+        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown',
+      });
+    } catch (logErr) {
+      console.error(`[${CRON_NAME}] cron_log:`, logErr);
+    }
+    return NextResponse.json({ success: false }, { status: 200 });
   }
+}
 
-  let sent = 0;
-  let failed = 0;
-
-  for (const center of centers) {
-    const daysUntilDue = center.next_billing_date === in7Days ? 7 : 1;
-    const phone = normalizePhoneForMeta(center.phone as string);
-    const ownerName = (center.owner_name || center.name) as string;
-    const amount = Number(center.billing_amount) || 0;
-
-    const message = buildReminderMessage(
-      ownerName,
-      center.name as string,
-      center.plan as string,
-      amount,
-      daysUntilDue
-    );
-
-    const success = await sendWhatsAppMessage(phone, message);
-    if (success) sent++;
-    else failed++;
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-
-  return NextResponse.json({ sent, failed, total: centers.length });
+export async function GET(request: Request) {
+  return POST(request);
 }

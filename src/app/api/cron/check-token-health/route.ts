@@ -2,81 +2,125 @@
  * Cron: Meta debug_token for WHATSAPP_TOKEN — alert CEO if expiring within 7 days.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
 const SEVEN_DAYS_SEC = 7 * 24 * 60 * 60;
 
-export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+export async function POST(request: Request) {
+  const cronStart = Date.now();
+  const CRON_NAME = 'check-token-health';
+
+  const auth = request.headers.get('authorization');
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const inputToken = process.env.WHATSAPP_TOKEN;
-  const appId = process.env.WHATSAPP_APP_ID;
-  const appSecret = process.env.WHATSAPP_APP_SECRET;
-
-  if (!inputToken || !appId || !appSecret) {
-    return NextResponse.json({ error: 'Missing WhatsApp/Meta configuration' }, { status: 500 });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    return NextResponse.json({ success: false }, { status: 200 });
   }
 
-  const accessToken = `${appId}|${appSecret}`;
-  const url = new URL('https://graph.facebook.com/debug_token');
-  url.searchParams.set('input_token', inputToken);
-  url.searchParams.set('access_token', accessToken);
-
-  let json: unknown;
-  try {
-    const res = await fetch(url.toString(), { cache: 'no-store' });
-    json = await res.json();
-  } catch (e) {
-    console.error('[check-token-health] fetch debug_token:', e);
-    return NextResponse.json({ error: 'Failed to reach Meta API' }, { status: 502 });
-  }
-
-  const root = json as { error?: { message?: string }; data?: { expires_at?: number | null } };
-  if (root.error) {
-    console.error('[check-token-health] Meta error:', root.error);
-    return NextResponse.json(
-      { error: root.error.message ?? 'Meta debug_token error' },
-      { status: 502 },
-    );
-  }
-
-  const expiresAt = root.data?.expires_at;
-
-  if (expiresAt == null || expiresAt === 0) {
-    return NextResponse.json({ status: 'permanent', skipped: true }, { status: 200 });
-  }
-
-  const nowSec = Date.now() / 1000;
-  const thresholdSec = nowSec + SEVEN_DAYS_SEC;
-
-  if (expiresAt >= thresholdSec) {
-    return NextResponse.json({ status: 'ok', expires_at: expiresAt }, { status: 200 });
-  }
-
-  const dateAr = new Date(expiresAt * 1000).toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'Africa/Cairo',
+  const supabase = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const message = `⚠️ تنبيه: رمز WhatsApp سينتهي قريباً
+  const { data: pausedRow } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'cron_paused')
+    .maybeSingle();
+  if (pausedRow?.value === true) {
+    return NextResponse.json({ skipped: 'cron_paused' }, { status: 200 });
+  }
+
+  try {
+    const inputToken = process.env.WHATSAPP_TOKEN;
+    const appId = process.env.WHATSAPP_APP_ID;
+    const appSecret = process.env.WHATSAPP_APP_SECRET;
+
+    if (!inputToken || !appId || !appSecret) {
+      throw new Error('Missing WhatsApp/Meta configuration');
+    }
+
+    const accessToken = `${appId}|${appSecret}`;
+    const metaUrl = new URL('https://graph.facebook.com/debug_token');
+    metaUrl.searchParams.set('input_token', inputToken);
+    metaUrl.searchParams.set('access_token', accessToken);
+
+    let json: unknown;
+    const res = await fetch(metaUrl.toString(), { cache: 'no-store' });
+    json = await res.json();
+
+    const root = json as { error?: { message?: string }; data?: { expires_at?: number | null } };
+    if (root.error) {
+      throw new Error(root.error.message ?? 'Meta debug_token error');
+    }
+
+    const expiresAt = root.data?.expires_at;
+    let recordsProcessed = 0;
+    let extra: Record<string, unknown> = {};
+
+    if (expiresAt == null || expiresAt === 0) {
+      extra = { status: 'permanent', skipped: true };
+    } else {
+      const nowSec = Date.now() / 1000;
+      const thresholdSec = nowSec + SEVEN_DAYS_SEC;
+
+      if (expiresAt >= thresholdSec) {
+        extra = { status: 'ok', expires_at: expiresAt };
+        recordsProcessed = 1;
+      } else {
+        const dateAr = new Date(expiresAt * 1000).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'Africa/Cairo',
+        });
+
+        const message = `⚠️ تنبيه: رمز WhatsApp سينتهي قريباً
 ينتهي في: ${dateAr}
 يرجى تجديده قبل انتهاء الصلاحية لتجنب انقطاع الخدمة.`;
 
-  const ceoRaw = process.env.CEO_PHONE;
-  const digits = ceoRaw?.replace(/\D/g, '') ?? '';
-  const alertSent = digits ? await sendWhatsAppMessage(digits, message) : false;
+        const ceoRaw = process.env.CEO_PHONE;
+        const digits = ceoRaw?.replace(/\D/g, '') ?? '';
+        const alertSent = digits ? await sendWhatsAppMessage(digits, message) : false;
 
-  return NextResponse.json(
-    { status: 'expiring_soon', expires_at: expiresAt, alert_sent: alertSent },
-    { status: 200 },
-  );
+        extra = { status: 'expiring_soon', expires_at: expiresAt, alert_sent: alertSent };
+        recordsProcessed = 1;
+      }
+    }
+
+    await supabase.from('cron_log').insert({
+      cron_name: CRON_NAME,
+      status: 'success',
+      duration_ms: Date.now() - cronStart,
+      records_processed: recordsProcessed,
+      metadata: extra,
+    });
+
+    return NextResponse.json({ success: true, ...extra });
+  } catch (error) {
+    console.error(`[${CRON_NAME}] Error:`, error);
+    try {
+      await supabase.from('cron_log').insert({
+        cron_name: CRON_NAME,
+        status: 'failure',
+        duration_ms: Date.now() - cronStart,
+        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown',
+      });
+    } catch (logErr) {
+      console.error(`[${CRON_NAME}] cron_log:`, logErr);
+    }
+    return NextResponse.json({ success: false }, { status: 200 });
+  }
+}
+
+export async function GET(request: Request) {
+  return POST(request);
 }

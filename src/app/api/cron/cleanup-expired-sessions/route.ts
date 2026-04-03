@@ -5,8 +5,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-async function runCleanupExpiredSessions(request: Request): Promise<Response> {
+export async function POST(request: Request) {
   const cronStart = Date.now();
+  const CRON_NAME = 'cleanup-expired-sessions';
 
   const auth = request.headers.get('authorization');
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -16,12 +17,21 @@ async function runCleanupExpiredSessions(request: Request): Promise<Response> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
-    return NextResponse.json({ success: false, error: 'Server misconfigured' }, { status: 200 });
+    return NextResponse.json({ success: false }, { status: 200 });
   }
 
   const supabase = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  const { data: pausedRow } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'cron_paused')
+    .maybeSingle();
+  if (pausedRow?.value === true) {
+    return NextResponse.json({ skipped: 'cron_paused' }, { status: 200 });
+  }
 
   try {
     const now = new Date().toISOString();
@@ -67,7 +77,7 @@ async function runCleanupExpiredSessions(request: Request): Promise<Response> {
     }
 
     await supabase.from('cron_log').insert({
-      cron_name: 'cleanup-expired-sessions',
+      cron_name: CRON_NAME,
       status: 'success',
       duration_ms: Date.now() - cronStart,
       records_processed: expired,
@@ -76,24 +86,21 @@ async function runCleanupExpiredSessions(request: Request): Promise<Response> {
 
     return NextResponse.json({ success: true, expired, candidates: list.length });
   } catch (error) {
+    console.error(`[${CRON_NAME}] Error:`, error);
     try {
       await supabase.from('cron_log').insert({
-        cron_name: 'cleanup-expired-sessions',
+        cron_name: CRON_NAME,
         status: 'failure',
         duration_ms: Date.now() - cronStart,
-        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown error',
+        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown',
       });
     } catch (logErr) {
-      console.error('[cleanup-expired-sessions] cron_log', logErr);
+      console.error(`[${CRON_NAME}] cron_log:`, logErr);
     }
     return NextResponse.json({ success: false }, { status: 200 });
   }
 }
 
 export async function GET(request: Request) {
-  return runCleanupExpiredSessions(request);
-}
-
-export async function POST(request: Request) {
-  return runCleanupExpiredSessions(request);
+  return POST(request);
 }
