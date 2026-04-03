@@ -305,9 +305,6 @@ export default function AdminPage() {
   const [showAddLead, setShowAddLead] = useState(false);
   const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
   const [addLeadForm, setAddLeadForm] = useState<{ name: string; contactPerson: string; phone: string; area: string; source: string; stage: SalesLead['stage']; notes: string }>({ name: '', contactPerson: '', phone: '', area: '', source: '', stage: 'prospect', notes: '' });
-  const [adminReferrals, setAdminReferrals] = useState<Array<{ id: string; referrer_name: string; referred_name: string; referral_code: string; status: string; created_at: string }>>([]);
-  const [adminPendingPayouts, setAdminPendingPayouts] = useState<Array<{ center_id: string; center_name: string; code: string; amount: number }>>([]);
-
   useEffect(() => {
     setHideShell(true);
     return () => setHideShell(false);
@@ -454,22 +451,6 @@ export default function AdminPage() {
     }
   }, [getSession]);
 
-  const loadAdminReferrals = useCallback(async () => {
-    const session = await getSession();
-    if (!session) return;
-    try {
-      const res = await fetch('/api/admin/referrals', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setAdminReferrals(data.referrals || []);
-      setAdminPendingPayouts(data.pendingPayouts || []);
-    } catch {
-      // ignore
-    }
-  }, [getSession]);
-
   const playNewOrderChime = useCallback(() => {
     try {
       const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
@@ -515,9 +496,6 @@ export default function AdminPage() {
   useEffect(() => {
     if (tab === 'internalTeam') loadInternalTeam();
   }, [tab, loadInternalTeam]);
-  useEffect(() => {
-    if (tab === 'referrals') loadAdminReferrals();
-  }, [tab, loadAdminReferrals]);
   useEffect(() => {
     if (tab === 'cardOrders') {
       loadCardOrders();
@@ -1553,103 +1531,6 @@ export default function AdminPage() {
                     ))}
                     {pendingSignups.length === 0 && (
                       <tr><td colSpan={8} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">{tAdmin('noPending')}</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Referrals */}
-        {tab === 'referrals' && (
-          <>
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('referrals', { defaultValue: 'الإحالات' })}</h2>
-
-            <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">{tAdmin('allReferrals', { defaultValue: 'جميع الإحالات' })}</h3>
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('referrer', { defaultValue: 'المُحيل' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('referredCenter', { defaultValue: 'السنتر المُحال' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('date', { defaultValue: 'التاريخ' })}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                    {adminReferrals.map((r) => (
-                      <tr key={r.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{r.referrer_name}</td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{r.referred_name}</td>
-                        <td className="py-3.5 px-4 font-mono text-sm text-[var(--color-text-primary)]">{r.referral_code}</td>
-                        <td className="py-3.5 px-4">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${r.status === 'active' ? STATUS_STYLES.active : r.status === 'pending' ? STATUS_STYLES.pending : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'}`}>
-                            {r.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
-                      </tr>
-                    ))}
-                    {adminReferrals.length === 0 && (
-                      <tr><td colSpan={5} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">{tAdmin('noReferrals', { defaultValue: 'لا توجد إحالات' })}</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">{tAdmin('pendingPayouts', { defaultValue: 'المدفوعات المعلقة' })}</h3>
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('centerName', { defaultValue: 'السنتر' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('code', { defaultValue: 'الكود' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('amountAvailable', { defaultValue: 'المبلغ المتاح' })}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                    {adminPendingPayouts.map((p) => (
-                      <tr key={p.center_id} className="hover:bg-[var(--color-surface-0)] transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.center_name}</td>
-                        <td className="py-3.5 px-4 font-mono text-sm text-[var(--color-text-primary)]">{p.code}</td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-teal-600">{p.amount.toLocaleString('en-US')} {tCommon('egp')}</td>
-                        <td className="py-3.5 px-4">
-                          <button
-                            onClick={async () => {
-                              const headers = await getAuthHeaders();
-                              if (!headers) return;
-                              setActionLoading(true);
-                              try {
-                                const res = await fetch('/api/admin/referrals', {
-                                  method: 'POST',
-                                  headers,
-                                  body: JSON.stringify({ action: 'mark_paid', referrer_center_id: p.center_id }),
-                                });
-                                if (res.ok) loadAdminReferrals();
-                                else alert((await res.json())?.error || 'Failed');
-                              } catch (e) {
-                                alert(e instanceof Error ? e.message : 'Failed');
-                              } finally {
-                                setActionLoading(false);
-                              }
-                            }}
-                            disabled={actionLoading}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            {tAdmin('markAsPaid')}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {adminPendingPayouts.length === 0 && (
-                      <tr><td colSpan={4} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">{tAdmin('noPendingPayouts', { defaultValue: 'لا توجد مدفوعات معلقة' })}</td></tr>
                     )}
                   </tbody>
                 </table>

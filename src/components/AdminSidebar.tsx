@@ -123,6 +123,7 @@ export function AdminSidebar({
   const isPlatformConfig = activeRoute?.includes('admin/platform-config');
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
   const isWithdrawals = activeRoute?.includes('admin/withdrawals');
+  const isReferrals = activeRoute?.includes('admin/referrals');
 
   const allowedKeys =
     adminRole === 'super_admin' ? null : adminRole ? getAdminPermissions(adminRole, customPermissions) : null;
@@ -367,7 +368,13 @@ export function AdminSidebar({
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {ADMIN_NAV.filter(({ permissionKey }) => canSee(permissionKey)).map(({ key, icon: Icon, labelKey }) => {
             const isActive =
-              key === 'ceoDashboard' ? isCeo : key === 'withdrawals' ? isWithdrawals : activeTab === key;
+              key === 'ceoDashboard'
+                ? isCeo
+                : key === 'withdrawals'
+                  ? isWithdrawals
+                  : key === 'referrals'
+                    ? isReferrals
+                    : activeTab === key;
             const items: React.ReactNode[] = [
               <button
                 key={key}
@@ -509,7 +516,13 @@ export function AdminSidebar({
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {ADMIN_NAV.filter(({ permissionKey }) => canSee(permissionKey)).map(({ key, icon: Icon, labelKey }) => {
             const isActive =
-              key === 'ceoDashboard' ? isCeo : key === 'withdrawals' ? isWithdrawals : activeTab === key;
+              key === 'ceoDashboard'
+                ? isCeo
+                : key === 'withdrawals'
+                  ? isWithdrawals
+                  : key === 'referrals'
+                    ? isReferrals
+                    : activeTab === key;
             const items: React.ReactNode[] = [
               <button
                 key={key}
@@ -522,6 +535,10 @@ export function AdminSidebar({
                   }
                   if (key === 'withdrawals') {
                     router.push('/admin/withdrawals');
+                    return;
+                  }
+                  if (key === 'referrals') {
+                    router.push('/admin/referrals');
                     return;
                   }
                   if (isCeo || isOrders) router.push('/admin');
