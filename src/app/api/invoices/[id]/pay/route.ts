@@ -86,11 +86,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    if (row.invoice_type !== 'subscription' && row.invoice_type !== 'plan_upgrade_difference') {
+    const payableTypes = ['subscription', 'plan_upgrade_difference', 'pack_billing', 'announcement_settlement'];
+    if (!row.invoice_type || !payableTypes.includes(row.invoice_type)) {
       return NextResponse.json({ error: 'This invoice cannot be paid online' }, { status: 400 });
     }
 
-    if (row.status !== 'pending') {
+    if (row.status !== 'pending' && row.status !== 'overdue') {
       return NextResponse.json({ error: 'Invoice is not payable' }, { status: 400 });
     }
 

@@ -99,22 +99,34 @@ export async function GET(request: Request) {
       payment_due_date?: string;
       auto_suspend_at?: string;
       billing_status?: string;
+      subscription_status?: string;
+      status?: string;
       plan?: string;
       delivery_address?: Record<string, unknown>;
       card_color?: string;
       parent_pack_enabled?: boolean;
       parent_pack_active_parents?: number;
       announcement_balance?: string | number;
+      subscription_billing_period?: string | null;
+      billing_period?: string | null;
+      next_payment_due?: string | null;
+      billing_amount?: number | null;
+      all_in_price?: number | null;
+      credit_balance?: number | null;
+      instapay_number?: string | null;
+      upgrade_count_this_period?: number | null;
+      suspended_at?: string | null;
     } | null = null;
     if (userRecord.center_id) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
         .select(
-          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, announcement_balance',
+          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, instapay_number, upgrade_count_this_period, suspended_at',
         )
         .eq('id', userRecord.center_id)
         .single();
       if (centerRow) {
+        const cr = centerRow as Record<string, unknown>;
         center = {
           logo_url: centerRow.logo_url ?? undefined,
           name: centerRow.name ?? undefined,
@@ -123,6 +135,8 @@ export async function GET(request: Request) {
           payment_due_date: centerRow.payment_due_date ?? undefined,
           auto_suspend_at: centerRow.auto_suspend_at ?? undefined,
           billing_status: centerRow.billing_status ?? undefined,
+          subscription_status: (cr.subscription_status as string | null) ?? undefined,
+          status: (cr.status as string | null) ?? undefined,
           plan: centerRow.plan ?? undefined,
           delivery_address: centerRow.delivery_address ?? undefined,
           card_color: centerRow.card_color ?? undefined,
@@ -132,6 +146,16 @@ export async function GET(request: Request) {
               ? Number(centerRow.parent_pack_active_parents)
               : undefined,
           announcement_balance: centerRow.announcement_balance ?? undefined,
+          subscription_billing_period: (cr.subscription_billing_period as string | null) ?? undefined,
+          billing_period: (cr.billing_period as string | null) ?? undefined,
+          next_payment_due: (cr.next_payment_due as string | null) ?? undefined,
+          billing_amount: cr.billing_amount != null ? Number(cr.billing_amount) : undefined,
+          all_in_price: cr.all_in_price != null ? Number(cr.all_in_price) : undefined,
+          credit_balance: cr.credit_balance != null ? Number(cr.credit_balance) : undefined,
+          instapay_number: (cr.instapay_number as string | null) ?? undefined,
+          upgrade_count_this_period:
+            cr.upgrade_count_this_period != null ? Number(cr.upgrade_count_this_period) : undefined,
+          suspended_at: (cr.suspended_at as string | null) ?? undefined,
         };
       }
     }

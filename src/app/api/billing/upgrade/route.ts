@@ -235,6 +235,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       paymobUrl: checkout.iframeUrl,
+      paymobOrderId: checkout.paymobOrderId,
       sessionId,
       invoiceId,
       breakdown: {
