@@ -63,6 +63,7 @@ export async function runSubscriptionBillingCron(
     .update({ billing_status: 'active' })
     .lte('next_payment_due', today)
     .eq('billing_status', 'paid')
+    .in('status', ['active', 'pending_cancellation'])
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
     .select('id');
@@ -83,7 +84,7 @@ export async function runSubscriptionBillingCron(
       'id, name, phone, next_payment_due, billing_amount, center_code, referral_code, status',
     )
     .eq('next_payment_due', in7)
-    .eq('status', 'active')
+    .in('status', ['active', 'pending_cancellation'])
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
     .not('next_payment_due', 'is', null);
@@ -158,7 +159,7 @@ export async function runSubscriptionBillingCron(
     .from('centers')
     .select('id, name, phone, next_payment_due, billing_amount, billing_status')
     .eq('next_payment_due', dueMinus3)
-    .eq('status', 'active')
+    .in('status', ['active', 'pending_cancellation'])
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
     .neq('billing_status', 'paid')
@@ -220,7 +221,7 @@ export async function runSubscriptionBillingCron(
     .from('centers')
     .select('id, name, phone, next_payment_due, billing_amount, billing_status')
     .eq('next_payment_due', dueMinus7)
-    .eq('status', 'active')
+    .in('status', ['active', 'pending_cancellation'])
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
     .neq('billing_status', 'paid')
