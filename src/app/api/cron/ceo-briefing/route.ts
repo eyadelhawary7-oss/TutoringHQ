@@ -1,10 +1,11 @@
 /**
- * CEO daily briefing — 7am UTC (9am Cairo)
+ * CEO daily briefing — 7:15am UTC (after renewal cron at 7:00)
  * Sends chq_ceo_briefing template to CEO_PHONE
  */
 
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { createAction } from '@/lib/ceo';
 import { sendCeoBriefing, fetchCeoBriefingData } from '@/lib/whatsapp/flows/ceoBriefing';
 
 export const dynamic = 'force-dynamic';
@@ -43,9 +44,24 @@ export async function POST(request: Request) {
       throw new Error('CEO_PHONE not set');
     }
     const data = await fetchCeoBriefingData();
-    const result = await sendCeoBriefing(data);
-    if (!result.success) {
-      throw new Error(result.error || 'Send failed');
+
+    let waSent = true;
+    try { const result = await sendCeoBriefing(data); if (!result.success) throw new Error(result.error || 'Send failed'); } catch (waError) {
+      console.error('[ceo-briefing] WA send failed:', waError);
+      waSent = false;
+      const msg = waError instanceof Error ? waError.message : 'Unknown';
+      try {
+        await createAction(supabase, {
+          type: 'ops',
+          priority: 'amber',
+          title: 'CEO Briefing WA delivery failed',
+          subtitle: `briefing_failed: ${msg}`,
+          revenue_at_risk: 0,
+          auto_generated: true,
+        });
+      } catch (queueErr) {
+        console.error('[ceo-briefing] ceo_action_queue insert failed:', queueErr);
+      }
     }
 
     const recordsProcessed = 1;
@@ -54,9 +70,10 @@ export async function POST(request: Request) {
       status: 'success',
       duration_ms: Date.now() - cronStart,
       records_processed: recordsProcessed,
+      metadata: { waSent },
     });
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data, waSent });
   } catch (error) {
     console.error(`[${CRON_NAME}] Error:`, error);
     try {

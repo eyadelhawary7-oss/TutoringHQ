@@ -2,7 +2,7 @@
  * WhatsApp Cloud API webhook (Direct Meta API)
  * GET: verify token
  * POST: handle statuses + inbound messages (signature-verified, fast 200)
- * Env: WHATSAPP_WEBHOOK_VERIFY_TOKEN, WHATSAPP_APP_SECRET
+ * Env: WHATSAPP_VERIFY_TOKEN or WHATSAPP_WEBHOOK_VERIFY_TOKEN, WHATSAPP_APP_SECRET
  */
 
 import * as Sentry from '@sentry/nextjs';
@@ -19,9 +19,22 @@ import { handleVendorReadySignal, isVendorInboundPhone } from '@/lib/vendorWebho
 
 const HOLDING_HOURS = 4;
 
+/** Meta sends sha256=<hex> (64 hex chars), not base64. */
+function hexSignatureToBytes(hex: string): Uint8Array {
+  const clean = hex.trim().toLowerCase();
+  if (clean.length % 2 !== 0 || !/^[0-9a-f]+$/.test(clean)) {
+    throw new Error('Invalid X-Hub-Signature-256 format');
+  }
+  const out = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
+
 /**
  * Verify X-Hub-Signature-256 using HMAC-SHA256 (Edge-compatible crypto.subtle).
- * Throws on mismatch. Uses timing-safe comparison.
+ * Meta: prefix sha256= then HMAC-SHA256(body) as lowercase hex. Timing-safe compare.
  */
 async function verifySignature(
   rawBody: string,
@@ -31,8 +44,8 @@ async function verifySignature(
   if (!secret || !signatureHeader) {
     throw new Error('Missing signature or WHATSAPP_APP_SECRET');
   }
-  const expectedB64 = signatureHeader.replace(/^sha256=/i, '').trim();
-  if (!expectedB64) throw new Error('Invalid X-Hub-Signature-256 format');
+  const expectedHex = signatureHeader.replace(/^sha256=/i, '').trim();
+  if (!expectedHex) throw new Error('Invalid X-Hub-Signature-256 format');
 
   const key = await crypto.subtle.importKey(
     'raw',
@@ -44,10 +57,8 @@ async function verifySignature(
 
   const rawBytes = new TextEncoder().encode(rawBody);
   const signature = await crypto.subtle.sign('HMAC', key, rawBytes);
-  const computed = btoa(String.fromCharCode(...new Uint8Array(signature)));
-
-  const expectedBytes = Uint8Array.from(atob(expectedB64), (c) => c.charCodeAt(0));
-  const computedBytes = Uint8Array.from(atob(computed), (c) => c.charCodeAt(0));
+  const computedBytes = new Uint8Array(signature);
+  const expectedBytes = hexSignatureToBytes(expectedHex);
 
   if (expectedBytes.length !== computedBytes.length) {
     throw new Error('Signature mismatch');
@@ -241,24 +252,22 @@ async function processInboundMessage(
 }
 
 export async function GET(request: Request) {
-  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
-  if (!verifyToken) {
-    return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
-  }
-
+  // Webhook verification request from Meta (must respond before POST events).
+  const verifyToken =
+    process.env.WHATSAPP_VERIFY_TOKEN ?? process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('hub.mode');
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  if (mode === 'subscribe' && token === verifyToken) {
+  if (mode === 'subscribe' && verifyToken && token === verifyToken) {
     return new NextResponse(challenge ?? '', {
       status: 200,
       headers: { 'Content-Type': 'text/plain' },
     });
   }
 
-  return NextResponse.json({ error: 'Invalid verification' }, { status: 403 });
+  return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 }
 
 /** Process webhook payload (runs async after 200 response) */
@@ -424,6 +433,13 @@ export async function POST(request: Request) {
   const signatureHeader = request.headers.get('x-hub-signature-256');
   const secret = process.env.WHATSAPP_APP_SECRET;
 
+  console.log('[WA webhook] Verifying signature...');
+  console.log(
+    '[WA webhook] x-hub-signature-256 header present:',
+    !!request.headers.get('x-hub-signature-256'),
+  );
+  console.log('[WA webhook] WHATSAPP_APP_SECRET set:', !!process.env.WHATSAPP_APP_SECRET);
+
   if (!secret) {
     console.error('[WhatsApp webhook] WHATSAPP_APP_SECRET not configured');
     return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
@@ -432,6 +448,9 @@ export async function POST(request: Request) {
   try {
     await verifySignature(body, signatureHeader, secret);
   } catch (err) {
+    console.error('[WA webhook] Signature mismatch');
+    console.error('[WA webhook] Expected prefix: sha256=<64-hex-chars> (Meta HMAC-SHA256 of raw body)');
+    console.error('[WA webhook] Header received:', signatureHeader?.slice(0, 20));
     console.error('[WhatsApp webhook] Signature verification failed:', err);
     Sentry.captureException(err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
