@@ -1,0 +1,46 @@
+{
+  "billing.status.paid": { "en": "Paid", "ar": "مدفوع" },
+  "billing.status.pending": { "en": "Pending", "ar": "قيد الانتظار" },
+  "billing.status.overdue": { "en": "Overdue", "ar": "متأخر" },
+  "billing.status.cancelled": { "en": "Cancelled", "ar": "ملغى" },
+  "billing.status.active": { "en": "Active", "ar": "نشط" },
+  "billing.status.suspended": { "en": "Suspended", "ar": "موقوف" },
+  "billing.status.due_soon": { "en": "Due Soon", "ar": "مستحق قريباً" },
+  "billing.period.monthly": { "en": "Monthly", "ar": "شهري" },
+  "billing.period.quarterly": { "en": "Quarterly", "ar": "ربع سنوي" },
+  "billing.period.annual": { "en": "Annual", "ar": "سنوي" },
+  "billing.credits.applyInfo": {
+    "en": "Credits are automatically applied at your next renewal if your balance is sufficient.",
+    "ar": "يتم تطبيق الرصيد تلقائياً عند تجديد اشتراكك إذا كان رصيدك كافياً."
+  },
+  "billing.credits.applyToInvoice": { "en": "Apply to Next Invoice", "ar": "تطبيق على الفاتورة القادمة" },
+  "billing.withdrawal.insufficient": { "en": "Insufficient available credits", "ar": "رصيد النقاط غير كافٍ" },
+  "billing.withdrawal.reservationFailed": {
+    "en": "Could not reserve credits. Please try again.",
+    "ar": "تعذر حجز الرصيد. حاول مجدداً."
+  },
+  "billing.cancel.reason.moving_competitor": { "en": "Switching to another platform", "ar": "التحول لمنصة أخرى" },
+  "billing.cancel.reason.too_expensive": { "en": "Too expensive", "ar": "السعر مرتفع" },
+  "billing.cancel.reason.center_closing": { "en": "Center is closing", "ar": "السنتر هيغلق" },
+  "billing.cancel.reason.not_using": { "en": "Not using the platform enough", "ar": "مش بنستخدم المنصة كفاية" },
+  "billing.cancel.reason.other": { "en": "Other reason", "ar": "سبب تاني" },
+  "settings.instapay.title": { "en": "InstaPay Number", "ar": "رقم الإنستاباي" },
+  "settings.instapay.description": { "en": "Required for credit withdrawals", "ar": "مطلوب لسحب الرصيد" },
+  "settings.instapay.placeholder": { "en": "01XXXXXXXXX", "ar": "01XXXXXXXXX" },
+  "settings.instapay.saved": { "en": "InstaPay number saved", "ar": "تم حفظ رقم الإنستاباي" },
+  "settings.instapay.invalid": { "en": "Must be 11 digits starting with 01", "ar": "لازم يكون ١١ رقم ويبدأ بـ ٠١" },
+  "settings.financial.title": { "en": "Financial Settings", "ar": "الإعدادات المالية" },
+  "admin.health.title": { "en": "Platform Health", "ar": "صحة المنصة" },
+  "admin.health.subtitle": {
+    "en": "Live platform status — refreshes every 60 seconds",
+    "ar": "حالة المنصة المباشرة — بتتحدث كل ٦٠ ثانية"
+  },
+  "admin.platformConfig.title": { "en": "Platform Configuration", "ar": "إعدادات المنصة" },
+  "admin.withdrawals.title": { "en": "Withdrawal Requests", "ar": "طلبات السحب" },
+  "common.retry": { "en": "Try Again", "ar": "حاول تاني" },
+  "common.close": { "en": "Close", "ar": "إغلاق" },
+  "common.done": { "en": "Done", "ar": "تم" },
+  "common.yes": { "en": "Yes", "ar": "أيوه" },
+  "common.no": { "en": "No", "ar": "لأ" },
+  "common.month": { "en": "month", "ar": "شهر" }
+}

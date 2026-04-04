@@ -70,7 +70,7 @@ export default function StatusPage() {
   }, [fetchStatus]);
 
   const isRTL = locale === 'ar';
-  const t = (ar: string, en: string) => (locale === 'ar' ? ar : en);
+  const pickLocale = (ar: string, en: string) => (locale === 'ar' ? ar : en);
 
   if (loading && !data) {
     return (
@@ -93,7 +93,7 @@ export default function StatusPage() {
     <div className="min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] px-6 py-4">
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          CenterHQ — {t('حالة المنصة', 'Platform Status')}
+          CenterHQ — {pickLocale('حالة المنصة', 'Platform Status')}
         </h1>
         <div className="flex items-center gap-3 mt-2">
           <StatusIcon status={d.overall as Status} />
@@ -120,7 +120,7 @@ export default function StatusPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-            {t('خدمات النظام', 'System Services')}
+            {pickLocale('خدمات النظام', 'System Services')}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {SERVICES.map(({ key, labelAr, labelEn }) => {
@@ -184,15 +184,15 @@ export default function StatusPage() {
             <div className="flex gap-4 mt-3 text-xs text-[var(--color-text-secondary)]">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-sm bg-green-500" />
-                {t('يعمل', 'Operational')}
+                {pickLocale('يعمل', 'Operational')}
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-sm bg-amber-500" />
-                {t('تدهور', 'Degraded')}
+                {pickLocale('تدهور', 'Degraded')}
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-sm bg-red-500" />
-                {t('تعطل', 'Outage')}
+                {pickLocale('تعطل', 'Outage')}
               </span>
             </div>
           </div>
@@ -205,7 +205,7 @@ export default function StatusPage() {
           <div className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] divide-y divide-slate-100">
             {d.incidents.length === 0 ? (
               <p className="p-6 text-[var(--color-text-secondary)] text-center">
-                {t('لا توجد حوادث مسجلة', 'No incidents recorded')}
+                {pickLocale('لا توجد حوادث مسجلة', 'No incidents recorded')}
               </p>
             ) : (
               d.incidents.map((inc) => (
@@ -215,7 +215,7 @@ export default function StatusPage() {
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       {new Date(inc.started_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}
                       {inc.resolved_at && (
-                        <> — {t('تم الحل', 'Resolved')} {new Date(inc.resolved_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}</>
+                        <> — {pickLocale('تم الحل', 'Resolved')} {new Date(inc.resolved_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}</>
                       )}
                     </p>
                   </div>
