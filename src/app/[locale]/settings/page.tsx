@@ -1236,7 +1236,7 @@ function SettingsPageContent() {
                           <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('invitePhone')}</th>
                           <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('role')}</th>
                           <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('permissions')}</th>
-                          <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('status')}</th>
+                          <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{tCommon('status')}</th>
                           <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{tCommon('actions')}</th>
                         </tr>
                       </thead>
