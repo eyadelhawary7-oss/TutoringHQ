@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyCardOrderPaymobHmac } from '@/lib/paymob';
 import { triggerT1Eligible, resumeCommissionClocks } from '@/lib/commissions';
 
-const paymentFailedEnabled = false; // TODO: set to true when chq_payment_failed is Active
+const paymentFailedEnabled = true; // TODO: set to true when chq_payment_failed is Active
 
 export async function POST(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

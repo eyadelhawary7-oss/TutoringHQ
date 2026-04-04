@@ -14,7 +14,7 @@ import {
 import { sendChqPackInvoiceTemplate } from '@/lib/centerNotify';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
-const packInvoiceEnabled = false; // TODO: set to true when chq_pack_invoice is Active
+const packInvoiceEnabled = true; // TODO: set to true when chq_pack_invoice is Active
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
