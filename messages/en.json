@@ -511,7 +511,7 @@
     "pricingActive": "Pricing Active",
     "pricingAnnualDerived": "Pricing Annual Derived",
     "pricingLoadError": "Pricing Load Error",
-    "pricingMinimumEgp": "Pricing Minimum Egp",
+    "pricingMinimumEgp": "Pricing Minimum EGP",
     "pricingMonthlyList": "Pricing Monthly List",
     "pricingMonthlyPremiumDerived": "Pricing Monthly Premium Derived",
     "pricingPackMinimumsNote": "Pricing Pack Minimums Note",
@@ -1246,7 +1246,10 @@
     "swipe_delete": "Delete",
     "studentName": "Student Name",
     "parentSection": "Parent Information",
-    "autoGenerateNumber": "Auto-generate student number"
+    "autoGenerateNumber": "Auto-generate student number",
+    "cardOrderCart": "Card Order Cart",
+    "addParentPhone": "Add Parent Phone",
+    "viewQR": "View QR Code"
   },
   "print": {
     "title": "Print Student Cards",
@@ -1476,7 +1479,8 @@
     "action_payments_subtitle": "Review and collect balances",
     "action_print_subtitle": "Generate QR cards for students",
     "view_student": "View",
-    "trend_up_suffix": "vs yesterday"
+    "trend_up_suffix": "vs yesterday",
+    "noRevenueData": "No revenue data yet"
   },
   "analytics": {
     "title": "Financial Intelligence",
@@ -2383,7 +2387,7 @@
     "creating": "Creating",
     "daysOverdue": "Days Overdue",
     "daysRemaining": "Days Remaining",
-    "filterAll": "Filter All",
+    "filterAll": "All",
     "filterOverdue": "Filter Overdue",
     "filterThisMonth": "Filter This Month",
     "filterThisWeek": "Filter This Week",
@@ -2866,6 +2870,8 @@
       "healthPendingSignupsLink": "Pending Signups"
     },
     "sidebarTitle": "Admin Panel",
+    "sidebarHr": "HR & Commissions",
+    "darkMode": "Dark Mode",
     "referralsNav": "Referrals",
     "referralsPageTitle": "Referrals",
     "referralsTabReferrals": "Referrals",
@@ -3034,6 +3040,11 @@
         "badAction": "Action must be confirm, mark_paid, or adjust."
       }
     }
+  },
+  "notFound": {
+    "heading": "Page Not Found",
+    "subtitle": "The page you are looking for does not exist.",
+    "backHome": "Back to Home"
   },
   "suspended": {
     "title": "Your subscription has been suspended",
