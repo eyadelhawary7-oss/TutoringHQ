@@ -17,91 +17,24 @@ import {
 import { pauseOnboardingFlow } from '@/lib/whatsapp/flows/onboarding';
 import { handleVendorReadySignal, isVendorInboundPhone } from '@/lib/vendorWebhook';
 
-/*
- * ⚠️ WHATSAPP_APP_SECRET SETUP
- *
- * Current Vercel env var WHATSAPP_APP_SECRET is incorrect.
- * To fix:
- *   1. Go to Meta Developer Console:
- *      https://developers.facebook.com/apps/258060157715714098/settings/basic/
- *   2. Copy "App Secret" (click Show)
- *   3. Run: vercel env rm WHATSAPP_APP_SECRET production
- *      Then: vercel env add WHATSAPP_APP_SECRET production
- *      Paste the correct value
- *   4. Redeploy: vercel --prod
- *
- * Until fixed: all incoming WA messages return 403
- * This does NOT block outgoing messages
- */
-
 const HOLDING_HOURS = 4;
 
-/** Meta sends sha256=<hex> (64 hex chars), not base64. */
-function hexSignatureToBytes(hex: string): Uint8Array {
-  const clean = hex.trim().toLowerCase();
-  if (clean.length % 2 !== 0 || !/^[0-9a-f]+$/.test(clean)) {
-    throw new Error('Invalid X-Hub-Signature-256 format');
-  }
-  const out = new Uint8Array(clean.length / 2);
-  for (let i = 0; i < out.length; i++) {
-    out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
-  }
-  return out;
-}
+/** HMAC-SHA256(raw body) as lowercase hex (Web Crypto — Edge + Node on Vercel). */
+async function computeHmacSha256(rawBody: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const msgData = encoder.encode(rawBody);
 
-/**
- * Verify X-Hub-Signature-256 using HMAC-SHA256 (Edge-compatible crypto.subtle).
- * Meta: prefix sha256= then HMAC-SHA256(body) as lowercase hex. Timing-safe compare.
- */
-async function verifySignature(
-  rawBody: string,
-  signatureHeader: string | null,
-  secret: string
-): Promise<void> {
-  if (!secret || !signatureHeader) {
-    throw new Error('Missing signature or WHATSAPP_APP_SECRET');
-  }
-  const expectedHex = signatureHeader.replace(/^sha256=/i, '').trim();
-  if (!expectedHex) throw new Error('Invalid X-Hub-Signature-256 format');
-
-  const key = await crypto.subtle.importKey(
+  const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const rawBytes = new TextEncoder().encode(rawBody);
-  const signature = await crypto.subtle.sign('HMAC', key, rawBytes);
-  const computedBytes = new Uint8Array(signature);
-  const expectedBytes = hexSignatureToBytes(expectedHex);
-
-  if (expectedBytes.length !== computedBytes.length) {
-    throw new Error('Signature mismatch');
-  }
-  let diff = 0;
-  for (let i = 0; i < expectedBytes.length; i++) {
-    diff |= expectedBytes[i] ^ computedBytes[i];
-  }
-  if (diff !== 0) {
-    throw new Error('Signature mismatch');
-  }
-}
-
-/** Lowercase hex HMAC-SHA256 of raw body (for dev logging vs X-Hub-Signature-256). */
-async function computeExpectedSignatureHex(rawBody: string, secret: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
+    keyData,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],
   );
-  const rawBytes = new TextEncoder().encode(rawBody);
-  const signature = await crypto.subtle.sign('HMAC', key, rawBytes);
-  const computedBytes = new Uint8Array(signature);
-  return Array.from(computedBytes)
+
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  return Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
@@ -463,49 +396,50 @@ async function processWebhookPayload(body: Record<string, unknown>): Promise<voi
 }
 
 export async function POST(request: Request) {
-  const body = await request.text();
-  const signatureHeader = request.headers.get('x-hub-signature-256');
-  const secret = process.env.WHATSAPP_APP_SECRET;
-  const receivedSignature = signatureHeader?.replace(/^sha256=/i, '').trim() ?? '';
+  const rawBody = await request.text();
 
-  if (!secret) {
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (!appSecret) {
     console.error('[WA webhook] WHATSAPP_APP_SECRET not set');
-    return NextResponse.json({ error: 'Configuration error' }, { status: 500 });
+    return NextResponse.json({ received: true });
   }
 
+  const signatureHeader = request.headers.get('x-hub-signature-256');
+  if (!signatureHeader) {
+    console.error('[WA webhook] Missing x-hub-signature-256 header');
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const expectedHex = await computeHmacSha256(rawBody, appSecret);
+  const expectedSignature = `sha256=${expectedHex}`;
+  const receivedNorm = signatureHeader.trim().toLowerCase();
+  const expectedNorm = expectedSignature.toLowerCase();
+  const isValid =
+    receivedNorm.length === expectedNorm.length &&
+    receivedNorm.split('').every((c, i) => c === expectedNorm[i]);
+
   if (process.env.NODE_ENV !== 'production') {
-    const expectedSignature = await computeExpectedSignatureHex(body, secret);
+    const receivedHex = receivedNorm.replace(/^sha256=/i, '').trim();
     console.log('[WA webhook] Signature check:', {
-      expected: expectedSignature?.slice(0, 10),
-      received: receivedSignature?.slice(0, 10),
+      expectedHex: expectedHex.slice(0, 10),
+      receivedHex: receivedHex.slice(0, 10),
     });
   }
 
-  console.log('[WA webhook] Verifying signature...');
-  console.log(
-    '[WA webhook] x-hub-signature-256 header present:',
-    !!request.headers.get('x-hub-signature-256'),
-  );
-  console.log('[WA webhook] WHATSAPP_APP_SECRET set:', !!process.env.WHATSAPP_APP_SECRET);
-
-  try {
-    await verifySignature(body, signatureHeader, secret);
-  } catch (err) {
-    console.error('[WA webhook] Signature mismatch');
-    console.error('[WA webhook] Expected prefix: sha256=<64-hex-chars> (Meta HMAC-SHA256 of raw body)');
-    console.error('[WA webhook] Header received:', signatureHeader?.slice(0, 20));
-    console.error('[WhatsApp webhook] Signature verification failed:', err);
-    Sentry.captureException(err);
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
+  if (!isValid) {
+    console.error('[WA webhook] Signature mismatch', {
+      expected: `${expectedNorm.slice(0, 20)}...`,
+      received: `${receivedNorm.slice(0, 20)}...`,
+    });
+    Sentry.captureMessage('WhatsApp webhook signature mismatch', { level: 'warning' });
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-
-  const response = NextResponse.json({ status: 'ok' });
 
   let payload: Record<string, unknown>;
   try {
-    payload = JSON.parse(body) as Record<string, unknown>;
+    payload = JSON.parse(rawBody) as Record<string, unknown>;
   } catch {
-    return response;
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   processWebhookPayload(payload).catch((err) => {
@@ -513,5 +447,5 @@ export async function POST(request: Request) {
     Sentry.captureException(err);
   });
 
-  return response;
+  return NextResponse.json({ received: true });
 }
