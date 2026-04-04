@@ -41,29 +41,7 @@ export async function GET(request: NextRequest) {
   const monthStartDateStr = monthStart.slice(0, 10);
   const thirtyDaysAgoStr = thirtyDaysAgo.slice(0, 10);
 
-  const [
-    activeCentersRes,
-    mrrSnapshotRes,
-    newYesterdayRes,
-    churnedRes,
-    paymentsRes,
-    referralsRes,
-    cohortRes,
-    cohortTableFilteredRes,
-    healthRes,
-    centersResult,
-    cashMtdResult,
-    cashQtdResult,
-    trialsCountResult,
-    alertsCountResult,
-    waQueueResult,
-    platformConfigResult,
-    lastStatusResult,
-    packRevenueResult,
-    scansTodayResult,
-    hasScannedResult,
-    hasPaymentResult,
-  ] = await Promise.all([
+  const results = await Promise.all([
     supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active'),
     supabase.from('mrr_snapshots').select('mrr, active_centers').order('snapshot_date', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('centers').select('id').eq('status', 'active').gte('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()).lt('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()),
@@ -93,7 +71,71 @@ export async function GET(request: NextRequest) {
     supabase.from('attendance_scans').select('center_id').eq('session_date', todayIso),
     supabase.from('attendance_scans').select('center_id'),
     supabase.from('payments').select('center_id'),
-  ]);
+  ]).catch((err: unknown) => {
+    console.error('[CEO Dashboard] Parallel query failed:', err);
+    return null;
+  });
+
+  if (!results) {
+    return NextResponse.json(
+      { error: 'Dashboard data unavailable' },
+      { status: 503 },
+    );
+  }
+
+  const [
+    activeCentersRes,
+    mrrSnapshotRes,
+    newYesterdayRes,
+    churnedRes,
+    paymentsRes,
+    referralsRes,
+    cohortRes,
+    cohortTableFilteredRes,
+    healthRes,
+    centersResult,
+    cashMtdResult,
+    cashQtdResult,
+    trialsCountResult,
+    alertsCountResult,
+    waQueueResult,
+    platformConfigResult,
+    lastStatusResult,
+    packRevenueResult,
+    scansTodayResult,
+    hasScannedResult,
+    hasPaymentResult,
+  ] = results;
+
+  const dashboardQueryLabels = [
+    'activeCenters',
+    'mrrSnapshot',
+    'newYesterday',
+    'churned',
+    'payments',
+    'referrals',
+    'cohort',
+    'cohortTableFiltered',
+    'healthBands',
+    'centersHealthList',
+    'cashMtd',
+    'cashQtd',
+    'trialsCount',
+    'alertsCount',
+    'waQueue',
+    'platformConfig',
+    'lastStatus',
+    'packRevenue',
+    'scansToday',
+    'hasScanned',
+    'hasPayment',
+  ] as const;
+  for (let i = 0; i < results.length; i++) {
+    const { error } = results[i];
+    if (error) {
+      console.error('[CEO Dashboard]', dashboardQueryLabels[i] ?? `q${i}`, error.message);
+    }
+  }
 
   const centers = (activeCentersRes.data ?? []) as { id: string; subscription_monthly_fee: number | null; early_adopter_price: number | null; billing_amount: number | null; billing_period?: string | null; all_in_price?: number | null; plan: string | null }[];
   const mrrSnapshot = mrrSnapshotRes.data as { mrr?: number; active_centers?: number } | null;

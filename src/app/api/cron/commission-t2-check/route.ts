@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   let forfeited = 0;
   let skipped = 0;
 
-  const { data: candidates } = await supabase
+  const { data: candidates, error: candidatesError } = await supabase
     .from('commissions')
     .select(
       `
@@ -41,6 +41,9 @@ export async function GET(request: Request) {
     .eq('t2_status', 'locked')
     .not('center_first_payment_date', 'is', null)
     .not('staff_id', 'is', null);
+  if (candidatesError) {
+    console.error('[commission-t2-check]', candidatesError.message);
+  }
 
   for (const commission of candidates ?? []) {
     const c = commission as {
@@ -73,19 +76,25 @@ export async function GET(request: Request) {
       continue;
     }
 
-    const { data: activeDays } = await supabase.rpc('compute_active_days', {
+    const { data: activeDays, error: activeDaysErr } = await supabase.rpc('compute_active_days', {
       p_commission_id: c.id,
     });
+    if (activeDaysErr) {
+      console.error('[commission-t2-check] compute_active_days', activeDaysErr.message);
+    }
     if ((activeDays ?? 0) < 180) {
       skipped++;
       continue;
     }
 
-    const { data: staffMember } = await supabase
+    const { data: staffMember, error: staffErr } = await supabase
       .from('staff')
       .select('status, termination_type')
       .eq('id', c.staff_id)
       .single();
+    if (staffErr) {
+      console.error('[commission-t2-check] staff', staffErr.message);
+    }
 
     if (staffMember?.status === 'terminated' && staffMember.termination_type !== 'completed') {
       await supabase.from('commissions').update({ t2_status: 'forfeited' }).eq('id', c.id);

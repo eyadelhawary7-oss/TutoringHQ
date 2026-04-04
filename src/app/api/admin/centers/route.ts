@@ -130,7 +130,7 @@ export async function GET(request: Request) {
 
     let query = adminClient
       .from('centers')
-      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, next_billing_date, referral_code, referred_by, referral_code_used_at, billing_status, billing_type, is_early_adopter, early_adopter_price, is_blacklisted, blacklisted_at, blacklist_reason')
+      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, referral_code, referred_by, referral_code_used_at, billing_status, billing_type, is_early_adopter, early_adopter_price, is_blacklisted, blacklisted_at, blacklist_reason')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
@@ -279,7 +279,7 @@ export async function GET(request: Request) {
         limit_status: limitStatus,
         owner: ownerMap.get(c.id as string) ?? null,
         last_payment: lastPaymentByCenter[c.id as string] ?? null,
-        next_due: (c as { next_payment_due?: string }).next_payment_due || (c as { next_billing_date?: string }).next_billing_date,
+        next_due: (c as { next_payment_due?: string }).next_payment_due,
         referring_center_name: referring?.name ?? null,
         referral_code_used: referring?.referral_code ?? null,
         last_active: lastActive,
@@ -689,7 +689,6 @@ export async function PUT(request: Request) {
       if (billing_period) updates.billing_period = billing_period;
       if (next_payment_due) {
         updates.next_payment_due = next_payment_due;
-        updates.next_billing_date = next_payment_due;
       }
       if (Object.keys(updates).length === 0) {
         return NextResponse.json({ error: 'No billing updates provided' }, { status: 400 });

@@ -254,15 +254,15 @@ export default function AdminWithdrawalsPage() {
                         <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
                           {r.requested_at
                             ? new Date(r.requested_at).toLocaleString(
-                                locale === 'ar' ? 'ar-EG' : 'en-US',
+                                'en-US',
                               )
                             : '—'}
                         </td>
                         <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
                           {st === 'paid' && r.processed_at
-                            ? `${t('statusPaid')} · ${new Date(r.processed_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')}`
+                            ? `${t('statusPaid')} · ${new Date(r.processed_at).toLocaleString('en-US')}`
                             : st === 'rejected' && r.processed_at
-                              ? `${t('statusRejected')} · ${new Date(r.processed_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')}`
+                              ? `${t('statusRejected')} · ${new Date(r.processed_at).toLocaleString('en-US')}`
                               : t('statusPending')}
                         </td>
                         <td className="px-3 py-2">

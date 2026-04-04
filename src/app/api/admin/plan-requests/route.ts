@@ -38,7 +38,10 @@ function calendarAddDays(baseYmd: string, delta: number): string {
 export async function GET(request: Request) {
   try {
     const ctx = await getAdminContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (ctx.internalRole === 'internal_viewer') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const { supabaseAdmin } = ctx;
 
@@ -100,7 +103,10 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const ctx = await getAdminContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (ctx.internalRole === 'internal_viewer') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     if (!validateCSRFRequest(request, ctx.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }

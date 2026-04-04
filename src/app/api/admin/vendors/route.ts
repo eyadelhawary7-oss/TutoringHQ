@@ -1,8 +1,8 @@
-import { requireSuperAdminApi } from '@/lib/admin-auth';
+import { requireInternalAdminApi } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-  const auth = await requireSuperAdminApi(request);
+  const auth = await requireInternalAdminApi(request);
   if (!auth.ok) {
     return auth.response;
   }
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireSuperAdminApi(request);
+  const auth = await requireInternalAdminApi(request);
   if (!auth.ok) {
     return auth.response;
   }
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const auth = await requireSuperAdminApi(request);
+  const auth = await requireInternalAdminApi(request);
   if (!auth.ok) {
     return auth.response;
   }

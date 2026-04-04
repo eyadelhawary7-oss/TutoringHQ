@@ -33,7 +33,7 @@ interface RenewalRow {
 export async function GET(request: Request) {
   try {
     const ctx = await getAdminContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { supabaseAdmin, userId } = ctx;
     const { data: au } = await supabaseAdmin
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const ctx = await getAdminContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!validateCSRFRequest(request, ctx.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
@@ -178,7 +178,6 @@ export async function POST(request: Request) {
         subscription_renewal_date: nextRenewalStr,
         subscription_status: 'active',
         subscription_start_date: baseDate.toISOString().slice(0, 10),
-        next_billing_date: nextRenewalStr,
         next_payment_due: nextRenewalStr,
         payment_due_date: nextRenewalStr,
         last_payment_date: new Date().toISOString().slice(0, 10),

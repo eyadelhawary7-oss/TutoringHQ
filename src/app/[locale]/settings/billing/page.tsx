@@ -386,7 +386,7 @@ function PaygTab({
     const d = new Date(`${effectiveYmd}T12:00:00`);
     return Number.isNaN(d.getTime())
       ? effectiveYmd
-      : d.toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US');
+      : d.toLocaleDateString('en-US');
   })();
   const { tier, cappedAmount, isCapped, capAmount } = calculatePaygBill(paygStudentCount);
   const pk = isPlanKey(tier.plan) ? tier.plan : 'starter';
@@ -426,7 +426,7 @@ function PaygTab({
             {t('payg.switch.pending', {
               date: pendingDate
                 ? new Date(`${pendingDate}T12:00:00`).toLocaleDateString(
-                    locale === 'ar' ? 'ar-EG' : 'en-US',
+                    'en-US',
                   )
                 : effectiveLabel,
             })}
@@ -980,7 +980,7 @@ export default function BillingPage() {
     const d = new Date(`${ymd}T12:00:00`);
     return Number.isNaN(d.getTime())
       ? ymd
-      : d.toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US');
+      : d.toLocaleDateString('en-US');
   }, [center?.current_period_end, center?.next_payment_due, locale]);
 
   const showCancelDanger =
@@ -1499,7 +1499,7 @@ export default function BillingPage() {
         '';
       const pe =
         ymd && !Number.isNaN(new Date(`${ymd}T12:00:00`).getTime())
-          ? new Date(`${ymd}T12:00:00`).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US')
+          ? new Date(`${ymd}T12:00:00`).toLocaleDateString('en-US')
           : billingPeriodEndLabel;
       toast.success(t('cancel.success', { date: pe }));
       setShowCancelModal(false);

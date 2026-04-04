@@ -43,7 +43,7 @@ function formatRanAt(iso: string | null, locale: string): string {
   if (!iso) return '—';
   try {
     const d = new Date(iso);
-    return d.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-GB', {
+    return d.toLocaleString('en-US', {
       dateStyle: 'short',
       timeStyle: 'medium',
     });
@@ -189,7 +189,7 @@ export default function AdminHealthPage() {
             {updatedAt ? (
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono" suppressHydrationWarning>
                 {t('healthLastUpdated')}{' '}
-                {updatedAt.toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-GB', {
+                {updatedAt.toLocaleTimeString('en-US', {
                   timeStyle: 'medium',
                 })}
               </p>

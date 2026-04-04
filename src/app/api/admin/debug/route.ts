@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getAdminContext } from '@/lib/admin-auth';
 import { getImpliedMonthlyMrr, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Check environment variables
+    const ctx = await getAdminContext(request);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (ctx.internalRole === 'internal_viewer') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -21,8 +28,7 @@ export async function GET() {
       );
     }
 
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = ctx.supabaseAdmin;
 
     // Query centers
     const { data: centers, error: centersError } = await supabase

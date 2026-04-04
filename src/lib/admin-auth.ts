@@ -1,4 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { isSuperAdminPhone } from '@/lib/admin-access';
 
@@ -18,18 +20,49 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     return null;
   }
 
+  let user: { id: string } | null = null;
+
   const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) {
-    return null;
+  const accessToken = authHeader?.replace(/^Bearer\s+/i, '')?.trim();
+  if (accessToken) {
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    });
+    const {
+      data: { user: bearerUser },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
+    if (!authError && bearerUser) {
+      user = bearerUser;
+    }
   }
 
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-  if (authError || !user) {
+  if (!user) {
+    const cookieStore = await cookies();
+    const supabaseCookie = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            /* read-only cookie context */
+          }
+        },
+      },
+    });
+    const {
+      data: { user: cookieUser },
+    } = await supabaseCookie.auth.getUser();
+    user = cookieUser ?? null;
+  }
+
+  if (!user) {
     return null;
   }
 
@@ -86,6 +119,22 @@ export async function requireSuperAdminApi(request: Request): Promise<RequireSup
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }
   if (ctx.internalRole !== 'super_admin') {
+    return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+  }
+  return { ok: true, supabaseAdmin: ctx.supabaseAdmin, userId: ctx.userId };
+}
+
+export type RequireInternalAdminResult =
+  | { ok: true; supabaseAdmin: SupabaseClient; userId: string }
+  | { ok: false; response: NextResponse };
+
+/** Cookie or Bearer JWT + admin context; allows `super_admin` and `internal_admin`, not `internal_viewer`. */
+export async function requireInternalAdminApi(request: Request): Promise<RequireInternalAdminResult> {
+  const ctx = await getAdminContext(request);
+  if (!ctx) {
+    return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+  if (ctx.internalRole === 'internal_viewer') {
     return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
   return { ok: true, supabaseAdmin: ctx.supabaseAdmin, userId: ctx.userId };

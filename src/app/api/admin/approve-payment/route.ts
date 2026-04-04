@@ -14,7 +14,7 @@ function addMonths(date: Date, months: number): Date {
 export async function POST(request: Request) {
   try {
     const ctx = await getAdminContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (ctx.internalRole !== 'super_admin' && ctx.internalRole !== 'internal_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -82,7 +82,6 @@ export async function POST(request: Request) {
           billing_status: 'paid',
           last_payment_date: new Date().toISOString().split('T')[0],
           next_payment_due: nextDue.toISOString().split('T')[0],
-          next_billing_date: nextDue.toISOString().split('T')[0],
           payment_due_date: nextDue.toISOString().split('T')[0],
         })
         .eq('id', centerId);

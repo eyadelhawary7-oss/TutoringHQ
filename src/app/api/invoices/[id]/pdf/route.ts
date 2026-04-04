@@ -87,6 +87,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 
     const auth = await requireCenterAuth(request);
     if (!auth.ok) return auth.response;
+    if (auth.role !== 'owner') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const { data: invoice, error: invErr } = await auth.supabaseAdmin
       .from('invoices')

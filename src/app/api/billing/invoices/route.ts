@@ -6,6 +6,9 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  if (auth.role !== 'owner') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   const { data, error } = await auth.supabaseAdmin
     .from('invoices')

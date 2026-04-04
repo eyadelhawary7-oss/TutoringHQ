@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   let eligible = 0;
   let forfeited = 0;
 
-  const { data: candidates } = await supabase
+  const { data: candidates, error: candidatesError } = await supabase
     .from('commissions')
     .select(
       `
@@ -40,6 +40,9 @@ export async function GET(request: Request) {
     .eq('loyalty_bonus_status', 'locked')
     .not('center_first_payment_date', 'is', null)
     .not('staff_id', 'is', null);
+  if (candidatesError) {
+    console.error('[loyalty-bonus-check]', candidatesError.message);
+  }
 
   for (const commission of candidates ?? []) {
     const c = commission as {
@@ -60,16 +63,22 @@ export async function GET(request: Request) {
     cutoff.setDate(cutoff.getDate() - 14);
     if (nextDue < cutoff) continue;
 
-    const { data: activeDays } = await supabase.rpc('compute_active_days', {
+    const { data: activeDays, error: activeDaysErr } = await supabase.rpc('compute_active_days', {
       p_commission_id: c.id,
     });
+    if (activeDaysErr) {
+      console.error('[loyalty-bonus-check] compute_active_days', activeDaysErr.message);
+    }
     if ((activeDays ?? 0) < 365) continue;
 
-    const { data: staffMember } = await supabase
+    const { data: staffMember, error: staffErr } = await supabase
       .from('staff')
       .select('status, termination_type')
       .eq('id', c.staff_id)
       .single();
+    if (staffErr) {
+      console.error('[loyalty-bonus-check] staff', staffErr.message);
+    }
 
     if (staffMember?.status === 'terminated' && staffMember.termination_type !== 'completed') {
       await supabase.from('commissions').update({ loyalty_bonus_status: 'forfeited' }).eq('id', c.id);

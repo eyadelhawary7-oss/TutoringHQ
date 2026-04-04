@@ -102,8 +102,8 @@ export async function POST(request: Request) {
 
     const { data: centers, error } = await supabase
       .from('centers')
-      .select('id, name, phone, owner_name, plan, billing_amount, next_billing_date, subscription_status')
-      .in('next_billing_date', [in7Days, tomorrow])
+      .select('id, name, phone, owner_name, plan, billing_amount, next_payment_due, subscription_status')
+      .in('next_payment_due', [in7Days, tomorrow])
       .eq('subscription_status', 'active')
       .not('phone', 'is', null);
 
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
     let failed = 0;
 
     for (const center of centers) {
-      const daysUntilDue = center.next_billing_date === in7Days ? 7 : 1;
+      const daysUntilDue = center.next_payment_due === in7Days ? 7 : 1;
       const phone = normalizePhoneForMeta(center.phone as string);
       const ownerName = (center.owner_name || center.name) as string;
       const amount = Number(center.billing_amount) || 0;

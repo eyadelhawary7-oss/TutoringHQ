@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSuperAdminApi } from '@/lib/admin-auth';
+import { requireInternalAdminApi } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,7 @@ type Row = {
 };
 
 export async function GET(request: NextRequest) {
-  const auth = await requireSuperAdminApi(request);
+  const auth = await requireInternalAdminApi(request);
   if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(request.url);

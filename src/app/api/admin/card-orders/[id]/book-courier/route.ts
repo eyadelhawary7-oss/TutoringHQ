@@ -1,4 +1,4 @@
-import { requireSuperAdminApi } from '@/lib/admin-auth';
+import { requireInternalAdminApi } from '@/lib/admin-auth';
 import { autoBookBosta } from '@/lib/autoBookBosta';
 import { NextResponse } from 'next/server';
 
@@ -7,7 +7,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const auth = await requireSuperAdminApi(req);
+  const auth = await requireInternalAdminApi(req);
   if (!auth.ok) {
     return auth.response;
   }

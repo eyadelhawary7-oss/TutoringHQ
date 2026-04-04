@@ -10,7 +10,16 @@
     { "path": "/api/cron/ceo-briefing", "schedule": "15 7 * * *" },
     { "path": "/api/cron/payg-billing", "schedule": "0 21 28-31 * *" },
     { "path": "/api/cron/commission-t2-check", "schedule": "0 9 * * *" },
-    { "path": "/api/cron/loyalty-bonus-check", "schedule": "0 9 * * *" }
+    { "path": "/api/cron/loyalty-bonus-check", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/process-renewals", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/detect-churn", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/daily-summary", "schedule": "55 5 * * *" },
+    { "path": "/api/cron/compute-benchmarks", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/recompute-health-scores", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/status-ping", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/mrr-snapshot", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/check-token-health", "schedule": "0 8 * * 1" },
+    { "path": "/api/cron/renewal-reminders", "schedule": "0 7 * * *" }
   ],
   "functions": {
     "src/app/api/login/route.ts": { "maxDuration": 30 },

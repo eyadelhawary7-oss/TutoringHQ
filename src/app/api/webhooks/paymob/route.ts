@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           subscription_status: 'active',
           billing_status: 'paid',
           last_payment_date: new Date().toISOString(),
-          next_billing_date: nextBillingDate.toISOString().split('T')[0],
+          next_payment_due: nextBillingDate.toISOString().split('T')[0],
         })
         .eq('id', centerId);
 

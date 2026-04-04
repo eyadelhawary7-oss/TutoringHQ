@@ -261,7 +261,7 @@ export default function AdminReferralsPage() {
   const statusLabel = (row: CommissionRow): string => {
     const st = (row.status ?? '').toLowerCase();
     if (st === 'paid' && row.paid_at) {
-      return `${t('statusPaidRow')} · ${new Date(row.paid_at).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')}`;
+      return `${t('statusPaidRow')} · ${new Date(row.paid_at).toLocaleString('en-US')}`;
     }
     if (st === 'hold') return t('statusHold');
     if (st === 'withdrawable') return t('statusWithdrawable');

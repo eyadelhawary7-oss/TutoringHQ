@@ -56,7 +56,7 @@ function addMonths(date: Date, months: number): Date {
 export async function GET(request: Request) {
   try {
     const ctx = await getAdminContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { supabaseAdmin } = ctx;
 
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 
     const { data: centers, error: centersError } = await supabaseAdmin
       .from('centers')
-      .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, next_billing_date, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type')
+      .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type')
       .in('status', ['active', 'suspended']);
 
     if (centersError) {
@@ -89,8 +89,7 @@ export async function GET(request: Request) {
 
     for (const row of billingRows) {
       const bp = (row as { billing_period?: string }).billing_period || 'quarterly';
-      const nextDue = (row as { next_payment_due?: string }).next_payment_due
-        || (row as { next_billing_date?: string }).next_billing_date;
+      const nextDue = (row as { next_payment_due?: string }).next_payment_due;
       const billingType = (row as { billing_type?: string }).billing_type || 'fixed';
 
       if (billingType === 'payg') {
@@ -264,7 +263,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const ctx = await getAdminContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!validateCSRFRequest(request, ctx.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
@@ -313,7 +312,6 @@ export async function POST(request: Request) {
       .from('centers')
       .update({
         next_payment_due: nextDueStr,
-        next_billing_date: nextDueStr,
         payment_due_date: nextDueStr,
         auto_suspend_at: nextSuspend.toISOString(),
         billing_status: 'paid',
@@ -346,7 +344,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const ctx = await getAdminContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!validateCSRFRequest(request, ctx.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
@@ -427,7 +425,6 @@ export async function PUT(request: Request) {
         billing_status: 'paid',
         last_payment_date: new Date().toISOString().slice(0, 10),
         next_payment_due: nextDue.toISOString().slice(0, 10),
-        next_billing_date: nextDue.toISOString().slice(0, 10),
         payment_due_date: nextDue.toISOString().slice(0, 10),
       };
       if (centerStatus === 'suspended') {
