@@ -2425,7 +2425,7 @@
     "platformConfigBreakevenInvalid": "Platform Config Breakeven Invalid",
     "platformConfigGroupBusiness": "Platform Config Group Business",
     "platformConfigLoadError": "Platform Config Load Error",
-    "platformConfigNav": "Platform Config Nav",
+    "platformConfigNav": "Platform Config",
     "platformConfigSaved": "Platform Config Saved",
     "platformConfigSubtitle": "All changes take effect immediately. No code changes needed.",
     "platformConfigTitle": "Platform Configuration",
@@ -2464,12 +2464,21 @@
     "status": "Status",
     "statusPending": "Status Pending",
     "statusRejected": "Status Rejected",
-    "title": "Title",
+    "title": "Admin Panel",
     "vendorActive": "Vendor Active",
     "vendorAddress": "Vendor Address",
     "vendorCity": "Vendor City",
     "vendorName": "Vendor Name",
-    "vendors": "Vendors",
+    "vendors": {
+      "vendorsTitle": "Vendors",
+      "noVendorYet": "No vendors added yet",
+      "vendorName": "Vendor Name",
+      "vendorWhatsapp": "WhatsApp Number",
+      "vendorAddress": "Address",
+      "vendorCity": "City",
+      "vendorActive": "Active",
+      "saveVendor": "Save Vendor"
+    },
     "vendorSaved": "Vendor Saved",
     "vendorsTitle": "Vendors Title",
     "vendorWhatsapp": "Vendor Whatsapp",
@@ -2668,12 +2677,17 @@
         "status": "Status",
         "dueDate": "Due Date",
         "created": "Created",
-        "notes": "Notes"
+        "notes": "Notes",
+        "noInvoices": "No invoices yet"
       },
       "section5": {
         "title": "Payment History",
         "recordPayment": "Record Payment",
-        "noPayments": "No payments recorded yet"
+        "noPayments": "No payments recorded yet",
+        "date": "Date",
+        "amount": "Amount",
+        "method": "Method",
+        "recordedBy": "Recorded By"
       },
       "section6": {
         "title": "WhatsApp Pack",
@@ -2716,7 +2730,8 @@
         "currentPlan": "Current Plan",
         "requestedPlan": "Requested Plan",
         "approve": "Approve",
-        "reject": "Reject"
+        "reject": "Reject",
+        "noRequests": "No plan change requests"
       },
       "section10": {
         "title": "Referrals",
@@ -2729,7 +2744,8 @@
         "rewardStatus": "Reward Status",
         "rewardAmount": "Reward Amount",
         "payoutRequests": "Payout Requests",
-        "noPayouts": "No payout requests"
+        "noPayouts": "No payout requests",
+        "noReferrals": "No referrals yet"
       },
       "section11": {
         "title": "Danger Zone",
@@ -2803,7 +2819,49 @@
     "approved": "Approved",
     "addLead": "Add Lead",
     "addAdmin": "Add Admin",
-    "joinedDate": "Joined"
+    "joinedDate": "Joined",
+    "vendorsNav": "Vendors",
+    "pricingControlPanel": "Pricing Control Panel",
+    "pricing": {
+      "pricingControlPanel": "Pricing Control Panel",
+      "pricingSectionSubscriptions": "Subscription Plans",
+      "pricingPlanName": "Plan Name",
+      "pricingStudentLimit": "Student Limit",
+      "pricingMonthlyList": "Monthly (List)",
+      "pricingQuarterlyAllIn": "Quarterly (All-In)",
+      "pricingAnnualDerived": "Annual (Derived)",
+      "pricingMonthlyPremiumDerived": "Monthly +15% (Derived)",
+      "pricingActive": "Active",
+      "pricingSave": "Save",
+      "pricingSectionPack": "Parent WhatsApp Pack",
+      "pricingPackPriceLabel": "Price per Parent / Month",
+      "pricingPackMinimumsTitle": "Plan Invoice Minimums",
+      "pricingPackMinimumsNote": "Minimum invoice amount charged per plan regardless of active parents",
+      "pricingPlanKey": "Plan",
+      "pricingMinimumEgp": "Minimum (EGP)"
+    },
+    "health": {
+      "healthBack": "Back",
+      "healthLastUpdated": "Last Updated",
+      "healthPaymob": "Paymob",
+      "healthWhatsApp": "WhatsApp",
+      "healthQuickStats": "Quick Stats",
+      "healthActiveCenters": "Active Centers",
+      "healthPendingSignups": "Pending Signups",
+      "healthStuckPayments": "Stuck Payments",
+      "healthZeroBilling": "Zero Billing",
+      "healthCronStatus": "Cron Status",
+      "healthColCron": "Cron Job",
+      "healthColLastRun": "Last Run",
+      "healthColStatus": "Status",
+      "healthColDuration": "Duration",
+      "healthColError": "Last Error",
+      "healthPendingActions": "Pending Actions",
+      "healthPendingCancellations": "Pending Cancellations",
+      "healthPendingWithdrawals": "Pending Withdrawals",
+      "healthPendingSignupsLink": "Pending Signups"
+    },
+    "sidebarTitle": "Admin Panel"
   },
   "suspended": {
     "title": "Your subscription has been suspended",

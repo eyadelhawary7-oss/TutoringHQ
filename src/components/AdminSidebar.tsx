@@ -484,7 +484,7 @@ export function AdminSidebar({
                     className={drawerBtn(!!isVendors)}
                   >
                     <Truck size={18} className="shrink-0" />
-                    <span>{t('vendors')}</span>
+                    <span>{t('vendorsNav')}</span>
                   </button>,
                 );
               }
@@ -685,7 +685,7 @@ export function AdminSidebar({
                     )}
                   >
                     <Truck size={18} />
-                    <span>{t('vendors')}</span>
+                    <span>{t('vendorsNav')}</span>
                   </button>,
                 );
               }

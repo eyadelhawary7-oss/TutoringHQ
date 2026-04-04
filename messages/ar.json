@@ -1398,7 +1398,7 @@
     "platformConfigBreakevenInvalid": "المنصة إعدادات Breakeven Invalid",
     "platformConfigGroupBusiness": "المنصة إعدادات مجموعة Business",
     "platformConfigLoadError": "المنصة إعدادات تحميل خطأ",
-    "platformConfigNav": "المنصة إعدادات التنقل",
+    "platformConfigNav": "إعدادات المنصة",
     "platformConfigSaved": "المنصة إعدادات Saved",
     "platformConfigSubtitle": "جميع التغييرات فورية. لا تحتاج لتغيير كود.",
     "platformConfigTitle": "إعدادات المنصة",
@@ -1437,12 +1437,21 @@
     "status": "الحالة",
     "statusPending": "الحالة معلق",
     "statusRejected": "الحالة مرفوض",
-    "title": "عنوان",
+    "title": "لوحة الإدارة",
     "vendorActive": "المورد نشط",
     "vendorAddress": "المورد العنوان",
     "vendorCity": "المورد المدينة",
     "vendorName": "المورد الاسم",
-    "vendors": "الموردون",
+    "vendors": {
+      "vendorsTitle": "الموردون",
+      "noVendorYet": "لا يوجد موردون بعد",
+      "vendorName": "اسم المورد",
+      "vendorWhatsapp": "رقم واتساب",
+      "vendorAddress": "العنوان",
+      "vendorCity": "المدينة",
+      "vendorActive": "نشط",
+      "saveVendor": "حفظ المورد"
+    },
     "vendorSaved": "المورد Saved",
     "vendorsTitle": "الموردون عنوان",
     "vendorWhatsapp": "المورد واتساب",
@@ -1641,12 +1650,17 @@
         "status": "الحالة",
         "dueDate": "تاريخ الاستحقاق",
         "created": "تاريخ الإنشاء",
-        "notes": "ملاحظات"
+        "notes": "ملاحظات",
+        "noInvoices": "لا توجد فواتير بعد"
       },
       "section5": {
         "title": "سجل المدفوعات",
         "recordPayment": "تسجيل دفعة",
-        "noPayments": "لا توجد مدفوعات مسجلة بعد"
+        "noPayments": "لا توجد مدفوعات مسجلة بعد",
+        "date": "التاريخ",
+        "amount": "المبلغ",
+        "method": "طريقة الدفع",
+        "recordedBy": "سُجّل بواسطة"
       },
       "section6": {
         "title": "باقة واتساب",
@@ -1689,7 +1703,8 @@
         "currentPlan": "الخطة الحالية",
         "requestedPlan": "الخطة المطلوبة",
         "approve": "قبول",
-        "reject": "رفض"
+        "reject": "رفض",
+        "noRequests": "لا توجد طلبات تغيير خطة"
       },
       "section10": {
         "title": "الإحالات",
@@ -1702,7 +1717,8 @@
         "rewardStatus": "حالة المكافأة",
         "rewardAmount": "مبلغ المكافأة",
         "payoutRequests": "طلبات الصرف",
-        "noPayouts": "لا توجد طلبات صرف"
+        "noPayouts": "لا توجد طلبات صرف",
+        "noReferrals": "لا توجد إحالات بعد"
       },
       "section11": {
         "title": "منطقة الخطر",
@@ -1776,7 +1792,49 @@
     "approved": "مقبول",
     "addLead": "إضافة عميل",
     "addAdmin": "إضافة مشرف",
-    "joinedDate": "تاريخ الانضمام"
+    "joinedDate": "تاريخ الانضمام",
+    "vendorsNav": "الموردون",
+    "pricingControlPanel": "لوحة التحكم بالأسعار",
+    "pricing": {
+      "pricingControlPanel": "لوحة التحكم بالأسعار",
+      "pricingSectionSubscriptions": "خطط الاشتراك",
+      "pricingPlanName": "اسم الخطة",
+      "pricingStudentLimit": "حد الطلاب",
+      "pricingMonthlyList": "شهري (سعر القائمة)",
+      "pricingQuarterlyAllIn": "ربع سنوي (شامل)",
+      "pricingAnnualDerived": "سنوي (محسوب)",
+      "pricingMonthlyPremiumDerived": "شهري +15% (محسوب)",
+      "pricingActive": "نشط",
+      "pricingSave": "حفظ",
+      "pricingSectionPack": "باقة واتساب للأولياء",
+      "pricingPackPriceLabel": "السعر لكل ولي أمر / شهر",
+      "pricingPackMinimumsTitle": "الحد الأدنى للفاتورة لكل خطة",
+      "pricingPackMinimumsNote": "الحد الأدنى للفاتورة المحصّلة لكل خطة بغض النظر عن عدد الأولياء النشطين",
+      "pricingPlanKey": "الخطة",
+      "pricingMinimumEgp": "الحد الأدنى (جنيه)"
+    },
+    "health": {
+      "healthBack": "رجوع",
+      "healthLastUpdated": "آخر تحديث",
+      "healthPaymob": "بيموب",
+      "healthWhatsApp": "واتساب",
+      "healthQuickStats": "إحصائيات سريعة",
+      "healthActiveCenters": "السناتر النشطة",
+      "healthPendingSignups": "التسجيلات المعلقة",
+      "healthStuckPayments": "المدفوعات العالقة",
+      "healthZeroBilling": "فوترة صفرية",
+      "healthCronStatus": "حالة المهام المجدولة",
+      "healthColCron": "المهمة المجدولة",
+      "healthColLastRun": "آخر تشغيل",
+      "healthColStatus": "الحالة",
+      "healthColDuration": "المدة",
+      "healthColError": "آخر خطأ",
+      "healthPendingActions": "الإجراءات المعلقة",
+      "healthPendingCancellations": "الإلغاءات المعلقة",
+      "healthPendingWithdrawals": "السحوبات المعلقة",
+      "healthPendingSignupsLink": "التسجيلات المعلقة"
+    },
+    "sidebarTitle": "لوحة الإدارة"
   },
   "ceo": {
     "brandTitle": "CenterHQ",
