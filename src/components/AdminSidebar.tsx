@@ -468,7 +468,7 @@ export function AdminSidebar({
                     className={drawerBtn(!!isPlatformConfig)}
                   >
                     <Settings size={18} className="shrink-0" />
-                    <span>{t('platformConfig')}</span>
+                    <span>{t('platformConfigNav')}</span>
                   </button>,
                 );
               }
@@ -664,7 +664,7 @@ export function AdminSidebar({
                     )}
                   >
                     <Settings size={18} />
-                    <span>{t('platformConfig')}</span>
+                    <span>{t('platformConfigNav')}</span>
                   </button>,
                 );
               }
