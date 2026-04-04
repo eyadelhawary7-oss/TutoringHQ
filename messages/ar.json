@@ -2107,6 +2107,43 @@
         "whatsappNotConfigured": "الواتساب غير مُعد.",
         "invalidAction": "إجراء غير صالح. استخدم اعتماد أو تعليق أو إعادة تفعيل أو واتساب."
       }
+    },
+    "referralRewards": {
+      "title": "مكافآت الإحالة",
+      "subtitle": "سجلات المكافآت الشهرية لجميع الإحالات النشطة",
+      "col_referrer": "المُحيل",
+      "col_referred": "السنتر المُحال",
+      "col_month": "الشهر #",
+      "col_rate": "النسبة",
+      "col_base": "المبلغ الأساسي",
+      "col_reward": "المكافأة",
+      "col_period": "الفترة",
+      "col_status": "الحالة",
+      "col_held_until": "قابلة للسحب بعد",
+      "status_pending": "في الانتظار",
+      "status_held": "محجوزة",
+      "status_available": "متاحة",
+      "status_paid": "مدفوعة",
+      "mark_paid": "تأكيد دفع المحدد",
+      "marking": "جاري التأكيد...",
+      "totals_heading": "إجماليات المُحيلين",
+      "col_total_pending": "إجمالي المعلق",
+      "col_total_paid": "إجمالي المدفوع",
+      "col_total_records": "السجلات",
+      "no_records": "لا توجد سجلات مكافآت بعد — يعمل الكرون في الثاني من كل شهر",
+      "filter_all": "الكل",
+      "filter_pending": "معلق",
+      "filter_held": "محجوز",
+      "filter_paid": "مدفوع",
+      "select_payable": "اختر الصفوف القابلة للدفع (معلق أو متاح) لتأكيد الدفع.",
+      "errors": {
+        "unauthorized": "غير مصرح",
+        "config": "خطأ في إعداد الخادم",
+        "listFailed": "تعذر تحميل سجلات المكافآت",
+        "superAdminOnly": "للمشرف الأعلى فقط",
+        "invalidBody": "محتوى الطلب غير صالح",
+        "recordIdsRequired": "معرفات السجلات مطلوبة"
+      }
     }
   },
   "ceo": {

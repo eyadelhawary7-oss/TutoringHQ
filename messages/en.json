@@ -3138,6 +3138,43 @@
         "whatsappNotConfigured": "WhatsApp is not configured.",
         "invalidAction": "Invalid action. Use approve, suspend, reactivate, or send_wa."
       }
+    },
+    "referralRewards": {
+      "title": "Referral Rewards",
+      "subtitle": "Monthly reward records for all active referrals",
+      "col_referrer": "Referrer",
+      "col_referred": "Referred Center",
+      "col_month": "Month #",
+      "col_rate": "Rate",
+      "col_base": "Base Amount",
+      "col_reward": "Reward",
+      "col_period": "Period",
+      "col_status": "Status",
+      "col_held_until": "Payable After",
+      "status_pending": "Pending",
+      "status_held": "Held",
+      "status_available": "Available",
+      "status_paid": "Paid",
+      "mark_paid": "Mark Selected as Paid",
+      "marking": "Marking...",
+      "totals_heading": "Referrer Totals",
+      "col_total_pending": "Total Pending",
+      "col_total_paid": "Total Paid",
+      "col_total_records": "Records",
+      "no_records": "No reward records yet — cron runs on the 2nd of each month",
+      "filter_all": "All",
+      "filter_pending": "Pending",
+      "filter_held": "Held",
+      "filter_paid": "Paid",
+      "select_payable": "Select payable rows (pending or available) to mark paid.",
+      "errors": {
+        "unauthorized": "Unauthorized",
+        "config": "Server configuration error",
+        "listFailed": "Failed to load reward records",
+        "superAdminOnly": "Super admin only",
+        "invalidBody": "Invalid request body",
+        "recordIdsRequired": "Record IDs are required"
+      }
     }
   },
   "notFound": {

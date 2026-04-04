@@ -134,6 +134,7 @@ export function AdminSidebar({
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
   const isWithdrawals = activeRoute?.includes('admin/withdrawals');
   const isReferrals = activeRoute?.includes('admin/referrals');
+  const isReferralRewards = activeRoute?.includes('admin/referral-rewards');
   const isHealth = activeRoute?.includes('admin/health');
   const isStaff = activeRoute?.includes('admin/staff');
   const isCenterAssignments = activeRoute?.includes('admin/center-assignments');
@@ -408,7 +409,7 @@ export function AdminSidebar({
                 : key === 'withdrawals'
                   ? isWithdrawals
                   : key === 'referrals'
-                    ? isReferrals
+                    ? isReferrals || isReferralRewards
                     : key === 'renewals'
                       ? isRenewals
                       : key === 'cardOrders'
@@ -430,6 +431,24 @@ export function AdminSidebar({
                 ) : null}
               </button>,
             ];
+            if (key === 'referrals') {
+              items.push(
+                <Link
+                  key="referral-rewards"
+                  href="/admin/referral-rewards"
+                  onClick={afterNavigate}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                    isReferralRewards
+                      ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                  )}
+                >
+                  <Gift size={18} className="shrink-0" />
+                  <span>{t('referralRewards.title')}</span>
+                </Link>,
+              );
+            }
             if (key === 'billing') {
               if (adminRole === 'super_admin' && canSee('renewals')) {
                 items.push(
@@ -620,7 +639,7 @@ export function AdminSidebar({
                 : key === 'withdrawals'
                   ? isWithdrawals
                   : key === 'referrals'
-                    ? isReferrals
+                    ? isReferrals || isReferralRewards
                     : key === 'renewals'
                       ? isRenewals
                       : key === 'cardOrders'
@@ -671,6 +690,24 @@ export function AdminSidebar({
                 ) : null}
               </button>,
             ];
+            if (key === 'referrals') {
+              items.push(
+                <Link
+                  key="referral-rewards"
+                  href="/admin/referral-rewards"
+                  onClick={() => closeMainSidebar?.()}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                    isReferralRewards
+                      ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                  )}
+                >
+                  <Gift size={18} className="shrink-0" />
+                  <span>{t('referralRewards.title')}</span>
+                </Link>,
+              );
+            }
             if (key === 'billing') {
               if (adminRole === 'super_admin' && canSee('renewals')) {
                 items.push(

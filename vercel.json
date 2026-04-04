@@ -22,7 +22,8 @@
     { "path": "/api/cron/renewal-reminders", "schedule": "0 7 * * *" },
     { "path": "/api/cron/weekly-backup", "schedule": "0 3 * * 0" },
     { "path": "/api/cron/monthly-backup", "schedule": "0 2 1 * *" },
-    { "path": "/api/cron/cleanup-status-checks", "schedule": "0 1 * * 1" }
+    { "path": "/api/cron/cleanup-status-checks", "schedule": "0 1 * * 1" },
+    { "path": "/api/cron/referral-rewards", "schedule": "0 3 2 * *" }
   ],
   "functions": {
     "src/app/api/login/route.ts": { "maxDuration": 30 },
@@ -58,6 +59,9 @@
     },
     "src/app/api/cron/parent-pack-billing/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/cron/referral-rewards/route.ts": {
+      "maxDuration": 120
     }
   }
 }
