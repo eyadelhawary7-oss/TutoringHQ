@@ -5687,5 +5687,23 @@
     "tabLabel": "Tab تسمية"
   },
   "platformConfig": "المنصة إعدادات",
-  "platformHealth": "المنصة الصحة"
+  "platformHealth": "المنصة الصحة",
+  "cronBackup": {
+    "errorUnauthorized": "غير مصرح",
+    "errorMissingDriveFolder": "لم يتم تعيين BACKUP_DRIVE_FOLDER_ID",
+    "errorMissingGoogleCredentials": "لم يتم تعيين GOOGLE_SERVICE_ACCOUNT_JSON",
+    "logWaFailed": "[نسخ احتياطي] فشل إشعار واتساب",
+    "waTitleSuccess": "✅ *اكتمل النسخ الاحتياطي لـ CenterHQ*",
+    "waTitlePartial": "⚠️ *اكتمل النسخ الاحتياطي لـ CenterHQ*",
+    "waTypeWeekly": "أسبوعي",
+    "waTypeMonthly": "شهري",
+    "waLineType": "النوع: {type}",
+    "waLineDate": "التاريخ: {date}",
+    "waLineFiles": "الملفات: {count} جداول",
+    "waLineRows": "إجمالي الصفوف: {total}",
+    "waLineDuration": "المدة: {seconds} ث",
+    "waLineErrors": "⚠️ أخطاء ({count}): {list}",
+    "waLineDrive": "مجلد Drive: {folderId}",
+    "cleanupFailed": "فشل التنظيف: {message}"
+  }
 }

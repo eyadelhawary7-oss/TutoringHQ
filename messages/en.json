@@ -5687,5 +5687,23 @@
     "tabLabel": "Tab Label"
   },
   "platformConfig": "Platform Config",
-  "platformHealth": "Platform Health"
+  "platformHealth": "Platform Health",
+  "cronBackup": {
+    "errorUnauthorized": "Unauthorized",
+    "errorMissingDriveFolder": "BACKUP_DRIVE_FOLDER_ID not set",
+    "errorMissingGoogleCredentials": "GOOGLE_SERVICE_ACCOUNT_JSON not set",
+    "logWaFailed": "[Backup] WA notification failed",
+    "waTitleSuccess": "✅ *CenterHQ Backup Complete*",
+    "waTitlePartial": "⚠️ *CenterHQ Backup Complete*",
+    "waTypeWeekly": "Weekly",
+    "waTypeMonthly": "Monthly",
+    "waLineType": "Type: {type}",
+    "waLineDate": "Date: {date}",
+    "waLineFiles": "Files: {count} tables",
+    "waLineRows": "Total rows: {total}",
+    "waLineDuration": "Duration: {seconds}s",
+    "waLineErrors": "⚠️ Errors ({count}): {list}",
+    "waLineDrive": "Drive folder: {folderId}",
+    "cleanupFailed": "Cleanup failed: {message}"
+  }
 }
