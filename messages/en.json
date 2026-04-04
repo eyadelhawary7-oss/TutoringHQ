@@ -2625,6 +2625,57 @@
     "title": "Title",
     "upgrade": {
       "useDowngrade": "This would not increase your plan cost. Use the Downgrade tab."
+    },
+    "payg": {
+      "tabLabel": "Pay As You Go",
+      "intro": {
+        "title": "Fully flexible — pay for actual usage",
+        "subtitle": "Billed monthly based on active student count. No commitment."
+      },
+      "pill": {
+        "noCommitment": "No commitment",
+        "cancelAnytime": "Cancel anytime",
+        "endOfMonth": "Billed end of month"
+      },
+      "slider": {
+        "label": "How many students do you expect?",
+        "students": "{count} students"
+      },
+      "estimate": {
+        "students": "Students this month",
+        "rate": "Rate per student",
+        "tier": "Current tier",
+        "total": "Estimated monthly bill",
+        "capped": "Capped at plan maximum ({amount} EGP)",
+        "vsMonthly": "vs Monthly plan",
+        "vsQuarterly": "vs Quarterly (monthly equiv.)"
+      },
+      "switch": {
+        "enable": "Switch to Pay As You Go",
+        "effectiveDate": "Takes effect on {date}",
+        "active": "✓ You are on Pay As You Go",
+        "disable": "Switch back to fixed billing",
+        "pending": "PAYG switch scheduled for {date}",
+        "cancel": "Cancel switch",
+        "scheduled": "PAYG switch scheduled for {date}",
+        "fixedScheduled": "Fixed billing resumes on {date}"
+      },
+      "hero": {
+        "badge": "Pay As You Go",
+        "rate": "Rate per Student",
+        "billingDate": "Billing Date",
+        "billingDateValue": "End of month",
+        "activeStudents": "Active students",
+        "estimate": "This month's estimate"
+      },
+      "tierRange": {
+        "nano": "0–100",
+        "starter": "101–250",
+        "pro": "251–500",
+        "business": "501–1,000",
+        "enterprise": "1,001–2,000"
+      },
+      "perStudent": "{rate} EGP/student"
     }
   },
   "cardOrders": {

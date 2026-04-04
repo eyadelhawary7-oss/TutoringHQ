@@ -2130,6 +2130,57 @@
     "title": "عنوان",
     "upgrade": {
       "useDowngrade": "هذا لن يزيد تكلفة خطتك. استخدم تبويب التخفيض."
+    },
+    "payg": {
+      "tabLabel": "الدفع حسب الاستخدام",
+      "intro": {
+        "title": "مرن تماماً — ادفع على حسب استخدامك الفعلي",
+        "subtitle": "الفاتورة شهرية حسب عدد الطلاب الفعليين. بدون التزام."
+      },
+      "pill": {
+        "noCommitment": "بدون التزام",
+        "cancelAnytime": "إلغاء في أي وقت",
+        "endOfMonth": "الفاتورة آخر الشهر"
+      },
+      "slider": {
+        "label": "كم عدد الطلاب المتوقع؟",
+        "students": "{count} طالب"
+      },
+      "estimate": {
+        "students": "الطلاب هذا الشهر",
+        "rate": "السعر لكل طالب",
+        "tier": "الخطة الحالية",
+        "total": "الفاتورة الشهرية التقديرية",
+        "capped": "بحد أقصى {amount} جنيه",
+        "vsMonthly": "مقارنة بالشهري",
+        "vsQuarterly": "مقارنة بالربع سنوي"
+      },
+      "switch": {
+        "enable": "التحويل للدفع حسب الاستخدام",
+        "effectiveDate": "يبدأ في {date}",
+        "active": "✓ أنت على خطة الدفع حسب الاستخدام",
+        "disable": "العودة للدفع الثابت",
+        "pending": "تحويل مجدول في {date}",
+        "cancel": "إلغاء التحويل",
+        "scheduled": "تم جدولة التحويل في {date}",
+        "fixedScheduled": "يستأنف الدفع الثابت في {date}"
+      },
+      "hero": {
+        "badge": "حسب الاستخدام",
+        "rate": "السعر لكل طالب",
+        "billingDate": "تاريخ الفاتورة",
+        "billingDateValue": "آخر الشهر",
+        "activeStudents": "الطلاب النشطون",
+        "estimate": "تقدير هذا الشهر"
+      },
+      "tierRange": {
+        "nano": "0–100",
+        "starter": "101–250",
+        "pro": "251–500",
+        "business": "501–1,000",
+        "enterprise": "1,001–2,000"
+      },
+      "perStudent": "{rate} ج.م/طالب"
     }
   },
   "branches": {

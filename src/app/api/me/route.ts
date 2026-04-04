@@ -92,6 +92,7 @@ export async function GET(request: Request) {
 
     // Fetch center logo/name and billing when user has center
     let center: {
+      id?: string;
       logo_url?: string;
       name?: string;
       phone?: string;
@@ -123,18 +124,24 @@ export async function GET(request: Request) {
       instapay_number?: string | null;
       upgrade_count_this_period?: number | null;
       suspended_at?: string | null;
+      billing_type?: string | null;
+      pricing_type?: string | null;
+      payg_pending_switch?: string | null;
+      payg_switch_effective_date?: string | null;
+      payg_pending_target_period?: string | null;
     } | null = null;
     if (userRecord.center_id) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
         .select(
-          'logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, current_period_end, cancellation_reason, cancellation_requested_at, cancellation_approved_at, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, credit_reserved, instapay_number, upgrade_count_this_period, suspended_at',
+          'id, logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, current_period_end, cancellation_reason, cancellation_requested_at, cancellation_approved_at, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, credit_reserved, instapay_number, upgrade_count_this_period, suspended_at, billing_type, pricing_type, payg_pending_switch, payg_switch_effective_date, payg_pending_target_period',
         )
         .eq('id', userRecord.center_id)
         .single();
       if (centerRow) {
         const cr = centerRow as Record<string, unknown>;
         center = {
+          id: String(cr.id ?? userRecord.center_id),
           logo_url: centerRow.logo_url ?? undefined,
           name: centerRow.name ?? undefined,
           phone: centerRow.phone ?? undefined,
@@ -171,6 +178,11 @@ export async function GET(request: Request) {
           upgrade_count_this_period:
             cr.upgrade_count_this_period != null ? Number(cr.upgrade_count_this_period) : undefined,
           suspended_at: (cr.suspended_at as string | null) ?? undefined,
+          billing_type: (cr.billing_type as string | null) ?? undefined,
+          pricing_type: (cr.pricing_type as string | null) ?? undefined,
+          payg_pending_switch: (cr.payg_pending_switch as string | null) ?? undefined,
+          payg_switch_effective_date: (cr.payg_switch_effective_date as string | null) ?? undefined,
+          payg_pending_target_period: (cr.payg_pending_target_period as string | null) ?? undefined,
         };
       }
     }

@@ -39,10 +39,21 @@ export function getPeriodDays(period: 'monthly' | 'quarterly' | 'annual'): numbe
  * @param periodChargeAmount — full amount for one billing cycle (e.g. from getChargeFromQuarterlyAllIn).
  * Annual discount is applied in pricing before this call, not inside getDailyRate.
  */
+export function isPaygCenter(center: {
+  billing_type?: string | null;
+  pricing_type?: string | null;
+}): boolean {
+  return center.billing_type === 'payg' || center.pricing_type === 'payg';
+}
+
 export function getDailyRate(
   periodChargeAmount: number,
   billingPeriod: 'monthly' | 'quarterly' | 'annual',
+  billingContext?: { billing_type?: string | null; pricing_type?: string | null },
 ): number {
+  if (billingContext && isPaygCenter(billingContext)) {
+    throw new Error('getDailyRate called on PAYG center — use calculatePaygBill');
+  }
   const days = getPeriodDays(billingPeriod);
   if (days <= 0) return 0;
   return periodChargeAmount / days;
@@ -134,7 +145,12 @@ export function canUpgrade(params: {
   requestedPlanRank: number;
   upgradeCountThisPeriod: number;
   billingPeriod: 'monthly' | 'quarterly' | 'annual';
+  /** When true, fixed-plan upgrades are not allowed — tier follows student count. */
+  isPaygCenter?: boolean;
 }): { allowed: boolean; reason?: string } {
+  if (params.isPaygCenter) {
+    return { allowed: false, reason: 'Pay As You Go plans scale automatically with student count' };
+  }
   if (params.requestedPlanRank <= params.currentPlanRank) {
     return { allowed: false, reason: 'Use the downgrade flow for lower plans' };
   }
@@ -196,3 +212,5 @@ export async function earnCredits(params: {
   if (error) throw new Error(`earnCredits failed: ${error.message}`);
   return Number(data);
 }
+
+export { getPaygTier, calculatePaygBill } from '@/lib/paygBilling';

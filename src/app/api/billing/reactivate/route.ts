@@ -6,6 +6,7 @@ import {
   getDailyRate,
   getReactivationAmount,
   getReactivationTier,
+  isPaygCenter,
   spendCredits,
 } from '@/lib/billingEngine';
 import { reactivateCenterFromSession } from '@/lib/combinedPaymentFinalize';
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
   const { data: center, error: cErr } = await supabaseAdmin
     .from('centers')
     .select(
-      'id, name, status, billing_status, suspended_at, subscription_billing_period, billing_period, billing_amount, next_payment_due, phone, center_code',
+      'id, name, status, billing_status, suspended_at, subscription_billing_period, billing_period, billing_amount, next_payment_due, phone, center_code, billing_type, pricing_type',
     )
     .eq('id', centerId)
     .maybeSingle();
@@ -54,7 +55,16 @@ export async function POST(request: NextRequest) {
     name?: string;
     phone?: string | null;
     center_code?: string | null;
+    billing_type?: string | null;
+    pricing_type?: string | null;
   };
+
+  if (isPaygCenter(c)) {
+    return NextResponse.json(
+      { error: 'Pay As You Go reactivation uses your monthly invoice flow' },
+      { status: 400 },
+    );
+  }
 
   if (c.status !== 'suspended') {
     return NextResponse.json({ error: 'Center is not suspended' }, { status: 400 });
@@ -72,7 +82,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid billing amount' }, { status: 400 });
   }
 
-  const dailyRate = getDailyRate(nextPeriodAmount, period);
+  const dailyRate = getDailyRate(nextPeriodAmount, period, {
+    billing_type: c.billing_type,
+    pricing_type: c.pricing_type,
+  });
   const calc = getReactivationAmount({ tier, nextPeriodAmount, dailyRate });
 
   const availableCredits = useCredits ? await getCreditBalance(centerId, supabaseAdmin) : 0;

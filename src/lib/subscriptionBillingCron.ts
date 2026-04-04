@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { todayISO } from '@/lib/parentPack';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
+import { isPaygCenter } from '@/lib/billingEngine';
 
 function calendarAddDays(baseYmd: string, delta: number): string {
   const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
@@ -22,11 +23,20 @@ function centerCodeForInvoice(c: { center_code?: string | null; referral_code?: 
 }
 
 function filterCentersWithPaymentDue<
-  T extends { id: string; name?: string | null; next_payment_due?: string | null },
+  T extends {
+    id: string;
+    name?: string | null;
+    next_payment_due?: string | null;
+    billing_type?: string | null;
+    pricing_type?: string | null;
+  },
 >(rows: T[] | null | undefined): { validCenters: T[]; skippedNullDue: number } {
   const raw = rows ?? [];
   const validCenters: T[] = [];
   for (const center of raw) {
+    if (isPaygCenter(center)) {
+      continue;
+    }
     if (!center.next_payment_due) {
       console.warn(
         `[subscriptionBillingCron] Skipping center ${center.id}`,
@@ -103,13 +113,15 @@ export async function runSubscriptionBillingCron(
   const { data: dueIn7, error: q7err } = await supabase
     .from('centers')
     .select(
-      'id, name, phone, next_payment_due, billing_amount, center_code, referral_code, status',
+      'id, name, phone, next_payment_due, billing_amount, center_code, referral_code, status, billing_type, pricing_type',
     )
     .eq('next_payment_due', in7)
     .in('status', ['active', 'pending_cancellation'])
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
-    .not('next_payment_due', 'is', null);
+    .not('next_payment_due', 'is', null)
+    .or('billing_type.is.null,billing_type.neq.payg')
+    .or('pricing_type.is.null,pricing_type.neq.payg');
 
   if (q7err) {
     console.error('[subscriptionBillingCron] dueIn7:', q7err);
@@ -182,13 +194,15 @@ export async function runSubscriptionBillingCron(
 
   const { data: plus3Rows, error: p3err } = await supabase
     .from('centers')
-    .select('id, name, phone, next_payment_due, billing_amount, billing_status')
+    .select('id, name, phone, next_payment_due, billing_amount, billing_status, billing_type, pricing_type')
     .eq('next_payment_due', dueMinus3)
     .in('status', ['active', 'pending_cancellation'])
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
     .neq('billing_status', 'paid')
-    .not('next_payment_due', 'is', null);
+    .not('next_payment_due', 'is', null)
+    .or('billing_type.is.null,billing_type.neq.payg')
+    .or('pricing_type.is.null,pricing_type.neq.payg');
 
   if (p3err) {
     console.error('[subscriptionBillingCron] day+3:', p3err);
@@ -247,13 +261,15 @@ export async function runSubscriptionBillingCron(
 
   const { data: plus7Rows, error: p7err } = await supabase
     .from('centers')
-    .select('id, name, phone, next_payment_due, billing_amount, billing_status')
+    .select('id, name, phone, next_payment_due, billing_amount, billing_status, billing_type, pricing_type')
     .eq('next_payment_due', dueMinus7)
     .in('status', ['active', 'pending_cancellation'])
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
     .neq('billing_status', 'paid')
-    .not('next_payment_due', 'is', null);
+    .not('next_payment_due', 'is', null)
+    .or('billing_type.is.null,billing_type.neq.payg')
+    .or('pricing_type.is.null,pricing_type.neq.payg');
 
   if (p7err) {
     console.error('[subscriptionBillingCron] day+7:', p7err);

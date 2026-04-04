@@ -10,6 +10,7 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
+import { isPaygCenter } from '@/lib/billingEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
   const { data: center, error: cErr } = await supabaseAdmin
     .from('centers')
     .select(
-      'id, name, phone, status, billing_status, plan, subscription_billing_period, billing_period, all_in_price, next_payment_due, upgrade_count_this_period, center_code',
+      'id, name, phone, status, billing_status, plan, subscription_billing_period, billing_period, all_in_price, next_payment_due, upgrade_count_this_period, center_code, billing_type, pricing_type',
     )
     .eq('id', centerId)
     .maybeSingle();
@@ -79,7 +80,16 @@ export async function POST(request: NextRequest) {
     name?: string;
     phone?: string | null;
     center_code?: string | null;
+    billing_type?: string | null;
+    pricing_type?: string | null;
   };
+
+  if (isPaygCenter(c)) {
+    return NextResponse.json(
+      { error: 'Pay As You Go plans scale automatically with student count' },
+      { status: 400 },
+    );
+  }
 
   if (c.status !== 'active') {
     return NextResponse.json({ error: 'Center must be active' }, { status: 400 });
@@ -103,6 +113,7 @@ export async function POST(request: NextRequest) {
     requestedPlanRank: requestedRank,
     upgradeCountThisPeriod: Number(c.upgrade_count_this_period ?? 0),
     billingPeriod: periodForLimit,
+    isPaygCenter: isPaygCenter(c),
   });
 
   if (!gate.allowed) {

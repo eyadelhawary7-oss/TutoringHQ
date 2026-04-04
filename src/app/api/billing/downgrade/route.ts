@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { earnCredits, getCreditBalance, getDailyRate } from '@/lib/billingEngine';
+import { earnCredits, getCreditBalance, getDailyRate, isPaygCenter } from '@/lib/billingEngine';
 import {
   getChargeFromQuarterlyAllIn,
   isPlanKey,
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   const { data: center, error: cErr } = await supabaseAdmin
     .from('centers')
     .select(
-      'id, plan, status, subscription_status, billing_status, subscription_billing_period, billing_period, all_in_price, next_payment_due',
+      'id, plan, status, subscription_status, billing_status, subscription_billing_period, billing_period, all_in_price, next_payment_due, billing_type, pricing_type',
     )
     .eq('id', centerId)
     .maybeSingle();
@@ -73,7 +73,16 @@ export async function POST(request: NextRequest) {
     billing_period?: string | null;
     all_in_price?: number | null;
     next_payment_due?: string | null;
+    billing_type?: string | null;
+    pricing_type?: string | null;
   };
+
+  if (isPaygCenter(c)) {
+    return NextResponse.json(
+      { error: 'Pay As You Go uses the billing settings tab to change plans' },
+      { status: 400 },
+    );
+  }
 
   if (
     c.status !== 'active' ||
@@ -148,8 +157,9 @@ export async function POST(request: NextRequest) {
   );
   const newPeriodPrice = getChargeFromQuarterlyAllIn(newAllIn, newBp, newPlan as PlanKey);
 
-  const currentDailyRate = getDailyRate(currentPeriodPrice, currentBp);
-  const newDailyRate = getDailyRate(newPeriodPrice, newBp);
+  const rateCtx = { billing_type: c.billing_type, pricing_type: c.pricing_type };
+  const currentDailyRate = getDailyRate(currentPeriodPrice, currentBp, rateCtx);
+  const newDailyRate = getDailyRate(newPeriodPrice, newBp, rateCtx);
   const creditAmount = Math.max(0, (currentDailyRate - newDailyRate) * remainingDays);
   const creditRounded = Math.round(creditAmount * 100) / 100;
 
