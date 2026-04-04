@@ -511,7 +511,7 @@
     "pricingActive": "الأسعار نشط",
     "pricingAnnualDerived": "الأسعار سنوي Derived",
     "pricingLoadError": "الأسعار تحميل خطأ",
-    "pricingMinimumEgp": "الأسعار Minimum Egp",
+    "pricingMinimumEgp": "الأسعار Minimum EGP",
     "pricingMonthlyList": "الأسعار شهري List",
     "pricingMonthlyPremiumDerived": "الأسعار شهري Premium Derived",
     "pricingPackMinimumsNote": "الأسعار باقة Minimums ملاحظة",
@@ -1351,12 +1351,12 @@
       "tab_rejected": "مرفوضة"
     },
     "actions": "إجراءات",
-    "backToMyCenter": "رجوع إلى My سنتر",
+    "backToMyCenter": "العودة لمركزي",
     "confirmReject": "تأكيد رفض",
     "creating": "Creating",
     "daysOverdue": "أيام متأخر",
     "daysRemaining": "أيام Remaining",
-    "filterAll": "تصفية كل",
+    "filterAll": "الكل",
     "filterOverdue": "تصفية متأخر",
     "filterThisMonth": "تصفية ده شهر",
     "filterThisWeek": "تصفية ده أسبوع",
@@ -1839,6 +1839,8 @@
       "healthPendingSignupsLink": "التسجيلات المعلقة"
     },
     "sidebarTitle": "لوحة الإدارة",
+    "sidebarHr": "الموارد البشرية والعمولات",
+    "darkMode": "الوضع الداكن",
     "referralsNav": "الإحالات",
     "referralsPageTitle": "الإحالات",
     "referralsTabReferrals": "الإحالات",
@@ -3266,7 +3268,8 @@
     "action_payments_subtitle": "راجع المتحصلات والأرصدة",
     "action_print_subtitle": "إنشاء بطاقات QR للطلاب",
     "view_student": "عرض",
-    "trend_up_suffix": "مقارنة بالأمس"
+    "trend_up_suffix": "مقارنة بالأمس",
+    "noRevenueData": "لا توجد بيانات إيرادات بعد"
   },
   "forgotPassword": {
     "title": "إعادة تعيين كلمة المرور",
@@ -4260,7 +4263,15 @@
     "swipe_delete": "حذف",
     "studentName": "اسم الطالب",
     "parentSection": "معلومات ولي الأمر",
-    "autoGenerateNumber": "توليد رقم الطالب تلقائياً"
+    "autoGenerateNumber": "توليد رقم الطالب تلقائياً",
+    "cardOrderCart": "سلة طلبات البطاقات",
+    "addParentPhone": "إضافة رقم ولي الأمر",
+    "viewQR": "عرض رمز QR"
+  },
+  "notFound": {
+    "heading": "الصفحة غير موجودة",
+    "subtitle": "الصفحة التي تبحث عنها غير موجودة.",
+    "backHome": "العودة للرئيسية"
   },
   "suspended": {
     "title": "تم تعليق اشتراكك ",

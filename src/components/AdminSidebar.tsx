@@ -26,6 +26,7 @@ import {
   Banknote,
   Settings,
   Activity,
+  TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -36,6 +37,7 @@ import { useTheme } from 'next-themes';
 
 function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
+  const t = useTranslations('admin');
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
@@ -49,7 +51,7 @@ function ThemeToggle() {
       title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
     >
       <span style={{ fontSize: 16 }}>{isDark ? '☀️' : '🌙'}</span>
-      <span className="hidden xl:block">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+      <span className="hidden xl:block">{isDark ? 'Light Mode' : t('darkMode')}</span>
     </button>
   );
 }
@@ -132,6 +134,9 @@ export function AdminSidebar({
   const isWithdrawals = activeRoute?.includes('admin/withdrawals');
   const isReferrals = activeRoute?.includes('admin/referrals');
   const isHealth = activeRoute?.includes('admin/health');
+  const isStaff = activeRoute?.includes('admin/staff');
+  const isCommissions = activeRoute?.includes('admin/commissions');
+  const isPayouts = activeRoute?.includes('admin/payouts');
 
   const allowedKeys =
     adminRole === 'super_admin' ? null : adminRole ? getAdminPermissions(adminRole, customPermissions) : null;
@@ -523,6 +528,53 @@ export function AdminSidebar({
               <span>{t('platformHealth')}</span>
             </Link>
           ) : null}
+          {/* HR & Commissions group */}
+          {adminRole === 'super_admin' ? (
+            <>
+              <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                {t('sidebarHr')}
+              </p>
+              <Link
+                href="/admin/staff"
+                onClick={afterNavigate}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                  isStaff
+                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                )}
+              >
+                <Users size={18} className="shrink-0" />
+                <span>{t('staff.title')}</span>
+              </Link>
+              <Link
+                href="/admin/commissions"
+                onClick={afterNavigate}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                  isCommissions
+                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                )}
+              >
+                <TrendingUp size={18} className="shrink-0" />
+                <span>{t('commissions.title')}</span>
+              </Link>
+              <Link
+                href="/admin/payouts"
+                onClick={afterNavigate}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                  isPayouts
+                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                )}
+              >
+                <CreditCard size={18} className="shrink-0" />
+                <span>{t('payouts.title')}</span>
+              </Link>
+            </>
+          ) : null}
         </nav>
         <div className="shrink-0 p-2 border-t border-gray-200 dark:border-slate-800">
           <ThemeToggle />
@@ -728,6 +780,53 @@ export function AdminSidebar({
               <Activity size={18} />
               <span>{t('platformHealth')}</span>
             </Link>
+          ) : null}
+          {/* HR & Commissions group */}
+          {adminRole === 'super_admin' ? (
+            <>
+              <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                {t('sidebarHr')}
+              </p>
+              <Link
+                href="/admin/staff"
+                onClick={() => closeMainSidebar?.()}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                  isStaff
+                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                )}
+              >
+                <Users size={18} />
+                <span>{t('staff.title')}</span>
+              </Link>
+              <Link
+                href="/admin/commissions"
+                onClick={() => closeMainSidebar?.()}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                  isCommissions
+                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                )}
+              >
+                <TrendingUp size={18} />
+                <span>{t('commissions.title')}</span>
+              </Link>
+              <Link
+                href="/admin/payouts"
+                onClick={() => closeMainSidebar?.()}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                  isPayouts
+                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                )}
+              >
+                <CreditCard size={18} />
+                <span>{t('payouts.title')}</span>
+              </Link>
+            </>
           ) : null}
         </nav>
         <div className="shrink-0 p-2 border-t border-gray-200 dark:border-slate-700">

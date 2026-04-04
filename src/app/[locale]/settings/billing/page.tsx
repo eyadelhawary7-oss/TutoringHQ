@@ -1662,9 +1662,11 @@ export default function BillingPage() {
                 <p id="billing-hero-heading" className="text-2xl font-bold leading-tight md:text-3xl" style={cairoFont}>
                   {t(`planNames.${planKey}` as 'billing.planNames.starter')}
                 </p>
-                <p className="mt-1 text-sm opacity-70" style={cairoFont}>
-                  {secondaryPlanName}
-                </p>
+                {locale === 'ar' && (
+                  <p className="mt-1 text-sm opacity-70" style={cairoFont}>
+                    {secondaryPlanName}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span
