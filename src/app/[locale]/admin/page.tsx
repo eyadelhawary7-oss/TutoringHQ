@@ -40,6 +40,7 @@ import {
   ChevronDown,
   IdCard,
   ChevronUp,
+  Download,
 } from 'lucide-react';
 import {
   LineChart,
@@ -267,6 +268,10 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [filterPlan, setFilterPlan] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
+  const [centersPage, setCentersPage] = useState(1);
+  const [centersTotalPages, setCentersTotalPages] = useState(1);
+  const [analyticsCenters, setAnalyticsCenters] = useState<CenterRow[]>([]);
+  const [analyticsCentersLoading, setAnalyticsCentersLoading] = useState(false);
 
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [centers, setCenters] = useState<CenterRow[]>([]);
@@ -359,20 +364,55 @@ export default function AdminPage() {
   const loadCenters = useCallback(async () => {
     const session = await getSession();
     if (!session) return;
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({
+      page: String(centersPage),
+      limit: '50',
+    });
     if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (filterPlan !== 'all') params.set('plan', filterPlan);
     if (centerSearch.trim()) params.set('search', centerSearch.trim());
+    if (sortBy === 'oldest') params.set('sort', 'oldest');
     try {
       const res = await fetch(`/api/admin/centers?${params}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) return;
       const data = await res.json();
-      setCenters(data.centers || data);
+      setCenters(data.centers ?? []);
+      const tp = data.pagination?.total_pages ?? 0;
+      setCentersTotalPages(Math.max(1, tp || 1));
     } catch {
       // ignore
     }
-  }, [getSession, statusFilter, centerSearch]);
+  }, [getSession, centersPage, statusFilter, filterPlan, centerSearch, sortBy]);
+
+  const loadAnalyticsCenters = useCallback(async () => {
+    const session = await getSession();
+    if (!session) return;
+    setAnalyticsCentersLoading(true);
+    try {
+      const all: CenterRow[] = [];
+      let pageNum = 1;
+      let hasNext = true;
+      while (hasNext && pageNum <= 200) {
+        const params = new URLSearchParams({ page: String(pageNum), limit: '100' });
+        const res = await fetch(`/api/admin/centers?${params}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) break;
+        const data = await res.json();
+        const batch = (data.centers ?? []) as CenterRow[];
+        all.push(...batch);
+        hasNext = Boolean(data.pagination?.has_next);
+        pageNum += 1;
+      }
+      setAnalyticsCenters(all);
+    } catch {
+      setAnalyticsCenters([]);
+    } finally {
+      setAnalyticsCentersLoading(false);
+    }
+  }, [getSession]);
 
   const loadBilling = useCallback(async () => {
     const session = await getSession();
@@ -482,8 +522,16 @@ export default function AdminPage() {
   }, [loadOverview]);
 
   useEffect(() => {
-    if (tab === 'centers' || tab === 'analytics') loadCenters();
+    if (tab === 'centers') loadCenters();
   }, [tab, loadCenters]);
+
+  useEffect(() => {
+    if (tab === 'analytics') loadAnalyticsCenters();
+  }, [tab, loadAnalyticsCenters]);
+
+  useEffect(() => {
+    setCentersPage(1);
+  }, [statusFilter, filterPlan]);
   useEffect(() => {
     if (tab === 'billing') loadBilling();
   }, [tab, loadBilling]);
@@ -539,44 +587,20 @@ export default function AdminPage() {
   };
 
   const displayedCenters = useMemo(() => {
-    let result = centers.filter((c) => {
-      const matchSearch = !centerSearch.trim() ||
-        c.name?.toLowerCase().includes(centerSearch.toLowerCase()) ||
-        c.phone?.includes(centerSearch) ||
-        (c.owner?.name ?? c.owner_name ?? '').toLowerCase().includes(centerSearch.toLowerCase());
-      const isAtRisk = (c.last_active?.includes('days') || c.last_active === 'Never') ?? false;
-      const matchStatus = statusFilter === 'all'
-        ? true
-        : statusFilter === 'at_risk'
-          ? isAtRisk
-          : (c.status ?? 'active') === statusFilter;
-      return matchSearch && matchStatus;
-    });
-
-    if (filterPlan !== 'all') {
-      result = result.filter((c) => (c.plan ?? '') === filterPlan);
-    }
-
-    if (sortBy === 'newest') {
-      result = [...result].sort((a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    } else if (sortBy === 'oldest') {
-      result = [...result].sort((a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-    } else if (sortBy === 'plan_high') {
-      result = [...result].sort((a, b) =>
-        (PLAN_SORT_ORDER[canonicalPlanId(b.plan)] ?? 0) - (PLAN_SORT_ORDER[canonicalPlanId(a.plan)] ?? 0)
+    let result = [...centers];
+    if (sortBy === 'plan_high') {
+      result.sort(
+        (a, b) =>
+          (PLAN_SORT_ORDER[canonicalPlanId(b.plan)] ?? 0) - (PLAN_SORT_ORDER[canonicalPlanId(a.plan)] ?? 0),
       );
     } else if (sortBy === 'plan_low') {
-      result = [...result].sort((a, b) =>
-        (PLAN_SORT_ORDER[canonicalPlanId(a.plan)] ?? 0) - (PLAN_SORT_ORDER[canonicalPlanId(b.plan)] ?? 0)
+      result.sort(
+        (a, b) =>
+          (PLAN_SORT_ORDER[canonicalPlanId(a.plan)] ?? 0) - (PLAN_SORT_ORDER[canonicalPlanId(b.plan)] ?? 0),
       );
     }
-
     return result;
-  }, [centers, centerSearch, statusFilter, filterPlan, sortBy]);
+  }, [centers, sortBy]);
 
   // Aggregate signupsChart (daily) to weekly for "New Centers per Week"
   const signupsWeekly = useMemo(() => {
@@ -1108,10 +1132,36 @@ export default function AdminPage() {
         {/* Centers */}
         {tab === 'centers' && (
           <>
+            <div className="flex flex-wrap gap-2 items-center justify-end mb-3">
+              <a
+                href="/api/admin/export/centers"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] rounded-lg text-sm transition-colors"
+              >
+                <Download className="w-4 h-4 shrink-0" />
+                {tAdmin('exportCenters')}
+              </a>
+              <a
+                href="/api/admin/export/invoices"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] rounded-lg text-sm transition-colors"
+              >
+                <Download className="w-4 h-4 shrink-0" />
+                {tAdmin('exportInvoices')}
+              </a>
+              <a
+                href="/api/admin/export/commissions"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] rounded-lg text-sm transition-colors"
+              >
+                <Download className="w-4 h-4 shrink-0" />
+                {tAdmin('exportCommissions')}
+              </a>
+            </div>
             <div className="flex gap-3 flex-wrap mb-3">
               <select
                 value={filterPlan}
-                onChange={(e) => setFilterPlan(e.target.value)}
+                onChange={(e) => {
+                  setFilterPlan(e.target.value);
+                  setCentersPage(1);
+                }}
                 className="px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-1)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">كل الخطط</option>
@@ -1124,7 +1174,10 @@ export default function AdminPage() {
               </select>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setCentersPage(1);
+                }}
                 className="px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-1)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="newest">الأحدث أولاً</option>
@@ -1137,9 +1190,13 @@ export default function AdminPage() {
               <div className="relative flex-1 min-w-[200px]">
                 <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)]" />
                 <input
+                  type="search"
                   value={centerSearch}
-                  onChange={(e) => setCenterSearch(e.target.value)}
-                  placeholder={tAdmin('search', { defaultValue: 'Search centers...' })}
+                  onChange={(e) => {
+                    setCenterSearch(e.target.value);
+                    setCentersPage(1);
+                  }}
+                  placeholder={tAdmin('searchCenters')}
                   className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
                 />
               </div>
@@ -1147,7 +1204,10 @@ export default function AdminPage() {
                 {['all', 'active', 'pending', 'suspended', 'at_risk'].map((s) => (
                   <button
                     key={s}
-                    onClick={() => setStatusFilter(s)}
+                    onClick={() => {
+                      setStatusFilter(s);
+                      setCentersPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary/20 text-primary' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'}`}
                   >
                     {s === 'all' ? tCommon('all') : s === 'at_risk' ? (tAdmin('atRisk') ?? 'At Risk') : s === 'active' ? tCommon('active') : s === 'pending' ? tAdmin('pending') : tAdmin('suspended')}
@@ -1261,6 +1321,31 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              {centersTotalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border-subtle)]">
+                  <span className="text-sm text-[var(--color-text-secondary)]">
+                    {tAdmin('pageOf', { page: centersPage, total: centersTotalPages })}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCentersPage((p) => Math.max(1, p - 1))}
+                      disabled={centersPage === 1}
+                      className="px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] disabled:opacity-40 text-[var(--color-text-primary)] rounded-lg text-sm transition-colors border border-[var(--color-border-subtle)]"
+                    >
+                      {tAdmin('prevPage')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCentersPage((p) => Math.min(centersTotalPages, p + 1))}
+                      disabled={centersPage === centersTotalPages}
+                      className="px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] disabled:opacity-40 text-[var(--color-text-primary)] rounded-lg text-sm transition-colors border border-[var(--color-border-subtle)]"
+                    >
+                      {tAdmin('nextPage')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -1780,6 +1865,9 @@ export default function AdminPage() {
         {tab === 'analytics' && (
           <>
             <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('analytics') ?? 'Analytics'}</h2>
+            {analyticsCentersLoading ? (
+              <p className="text-sm text-[var(--color-text-secondary)] mb-6">{tCommon('loading')}</p>
+            ) : null}
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Centers by Plan</h3>
@@ -1788,12 +1876,12 @@ export default function AdminPage() {
                     <PieChart>
                       <Pie
                         data={[
-                          { name: 'Nano', value: centers.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
-                          { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
-                          { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
-                          { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
-                          { name: 'Enterprise', value: centers.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
-                          { name: 'Top Centers', value: centers.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
+                          { name: 'Nano', value: analyticsCenters.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
+                          { name: 'Starter', value: analyticsCenters.filter(c => c.plan === 'starter').length, color: '#6B7280' },
+                          { name: 'Pro', value: analyticsCenters.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
+                          { name: 'Business', value: analyticsCenters.filter(c => c.plan === 'business').length, color: '#0D9488' },
+                          { name: 'Enterprise', value: analyticsCenters.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
+                          { name: 'Top Centers', value: analyticsCenters.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
                         ]}
                         cx="50%"
                         cy="50%"
@@ -1803,12 +1891,12 @@ export default function AdminPage() {
                         dataKey="value"
                       >
                         {[
-                          { name: 'Nano', value: centers.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
-                          { name: 'Starter', value: centers.filter(c => c.plan === 'starter').length, color: '#6B7280' },
-                          { name: 'Pro', value: centers.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
-                          { name: 'Business', value: centers.filter(c => c.plan === 'business').length, color: '#0D9488' },
-                          { name: 'Enterprise', value: centers.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
-                          { name: 'Top Centers', value: centers.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
+                          { name: 'Nano', value: analyticsCenters.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
+                          { name: 'Starter', value: analyticsCenters.filter(c => c.plan === 'starter').length, color: '#6B7280' },
+                          { name: 'Pro', value: analyticsCenters.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
+                          { name: 'Business', value: analyticsCenters.filter(c => c.plan === 'business').length, color: '#0D9488' },
+                          { name: 'Enterprise', value: analyticsCenters.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
+                          { name: 'Top Centers', value: analyticsCenters.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
                         ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
                       </Pie>
                       <Tooltip />
@@ -1817,7 +1905,7 @@ export default function AdminPage() {
                   <div className="space-y-2 flex-1">
                     {['Nano', 'Starter', 'Pro', 'Business', 'Enterprise', 'Top Centers'].map((name, i) => {
                       const planKey = name === 'Top Centers' ? 'top_centers' : name.toLowerCase();
-                      const val = centers.filter(c => c.plan === planKey).length;
+                      const val = analyticsCenters.filter(c => c.plan === planKey).length;
                       const colors = ['#94A3B8', '#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'];
                       return (
                         <div key={name} className="flex items-center gap-2">
@@ -1837,9 +1925,9 @@ export default function AdminPage() {
                     <PieChart>
                       <Pie
                         data={[
-                          { name: 'Active', value: centers.filter(c => (c.status ?? 'active') === 'active').length, color: '#16A34A' },
-                          { name: 'Pending', value: centers.filter(c => c.status === 'pending').length, color: '#F59E0B' },
-                          { name: 'Suspended', value: centers.filter(c => c.status === 'suspended').length, color: '#DC2626' },
+                          { name: 'Active', value: analyticsCenters.filter(c => (c.status ?? 'active') === 'active').length, color: '#16A34A' },
+                          { name: 'Pending', value: analyticsCenters.filter(c => c.status === 'pending').length, color: '#F59E0B' },
+                          { name: 'Suspended', value: analyticsCenters.filter(c => c.status === 'suspended').length, color: '#DC2626' },
                         ]}
                         cx="50%"
                         cy="50%"
@@ -1860,7 +1948,7 @@ export default function AdminPage() {
                   <div className="space-y-2 flex-1">
                     {['Active', 'Pending', 'Suspended'].map((name, i) => {
                       const statusKey = name.toLowerCase();
-                      const val = centers.filter(c => (c.status ?? 'active') === statusKey).length;
+                      const val = analyticsCenters.filter(c => (c.status ?? 'active') === statusKey).length;
                       const colors = ['#16A34A', '#F59E0B', '#DC2626'];
                       return (
                         <div key={name} className="flex items-center gap-2">
@@ -1878,7 +1966,7 @@ export default function AdminPage() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Top 5 Centers by Students</h3>
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={[...centers].sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
+                  <BarChart data={[...analyticsCenters].sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis type="number" tick={{ fontSize: 11 }} />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
@@ -1890,7 +1978,7 @@ export default function AdminPage() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Top 5 Centers by Revenue</h3>
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={[...centers].filter(c => (c.status ?? 'active') === 'active').sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
+                  <BarChart data={[...analyticsCenters].filter(c => (c.status ?? 'active') === 'active').sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis type="number" tick={{ fontSize: 11 }} />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
@@ -1902,10 +1990,10 @@ export default function AdminPage() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { label: 'Avg Students/Center', value: centers.length > 0 ? Math.round(centers.reduce((s, c) => s + (c.students_count ?? 0), 0) / centers.length) : 0 },
-                { label: 'Avg Revenue/Center', value: centers.filter(c => (c.status ?? 'active') === 'active').length > 0 ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, centers.filter(c => (c.status ?? 'active') === 'active').length)).toLocaleString('en-US')} ${tCommon('egp')}` : '—' },
-                { label: 'Centers with 0 Students', value: centers.filter(c => (c.students_count ?? 0) === 0).length },
-                { label: 'Centers at Risk', value: centers.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
+                { label: 'Avg Students/Center', value: analyticsCenters.length > 0 ? Math.round(analyticsCenters.reduce((s, c) => s + (c.students_count ?? 0), 0) / analyticsCenters.length) : 0 },
+                { label: 'Avg Revenue/Center', value: analyticsCenters.filter(c => (c.status ?? 'active') === 'active').length > 0 ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, analyticsCenters.filter(c => (c.status ?? 'active') === 'active').length)).toLocaleString('en-US')} ${tCommon('egp')}` : '—' },
+                { label: 'Centers with 0 Students', value: analyticsCenters.filter(c => (c.students_count ?? 0) === 0).length },
+                { label: 'Centers at Risk', value: analyticsCenters.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                   <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>

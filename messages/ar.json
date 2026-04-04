@@ -1533,7 +1533,7 @@
       "bosta_auto_reship_on_lost_desc": "فعّل فقط بعد تأكيد تغطية بوسطة للطرود الضائعة"
     },
     "allCenters": "كل السناتر",
-    "searchCenters": "بحث عن سنتر...",
+    "searchCenters": "بحث بالاسم أو الهاتف أو الكود...",
     "noResults": "لا توجد سناتر",
     "plan": "الخطة",
     "amount": "المبلغ",
@@ -2030,20 +2030,20 @@
       "col_actions": "إجراءات",
       "sourced_eyad": "عياد (مباشر)",
       "sourced_sm": "مدير المبيعات",
-    "sourced_sr": "مندوب المبيعات",
-    "staff_role_sm": "مدير مبيعات",
-    "staff_role_sr": "مندوب مبيعات",
-    "staff_display_eyad": "عياد",
+      "sourced_sr": "مندوب المبيعات",
+      "staff_role_sm": "مدير مبيعات",
+      "staff_role_sr": "مندوب مبيعات",
+      "staff_display_eyad": "عياد",
       "status_approved": "معتمد",
       "status_pending_sm_approval": "في انتظار موافقة المدير",
       "status_disputed": "متنازع عليه",
-    "status_unknown": "{status}",
-    "value_empty": "—",
+      "status_unknown": "{status}",
+      "value_empty": "—",
       "referred_badge": "إحالة — بدون عمولة",
       "dispute_flag": "الإبلاغ عن نزاع",
       "resolve_dispute": "حل النزاع",
       "dispute_notes_label": "ملاحظات النزاع",
-    "dispute_notes_min": "أدخل 5 أحرف على الأقل.",
+      "dispute_notes_min": "أدخل 5 أحرف على الأقل.",
       "center_label": "السنتر",
       "center_placeholder": "اختر السنتر",
       "staff_label": "الموظف",
@@ -2070,6 +2070,16 @@
         "invalid_json": "طلب غير صالح",
         "not_found": "التخصيص غير موجود"
       }
+    },
+    "pageOf": "صفحة {page} من {total}",
+    "prevPage": "السابق",
+    "nextPage": "التالي",
+    "exportCenters": "تصدير السناتر",
+    "exportInvoices": "تصدير الفواتير",
+    "exportCommissions": "تصدير العمولات",
+    "export": {
+      "unauthorized": "غير مصرح",
+      "configError": "خطأ في إعداد الخادم"
     }
   },
   "ceo": {

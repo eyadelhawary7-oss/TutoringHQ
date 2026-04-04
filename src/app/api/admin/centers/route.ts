@@ -35,6 +35,158 @@ async function isAdminUser(supabaseAdmin: SupabaseClient, userId: string): Promi
   return !!data;
 }
 
+function isCenterRowAtRisk(lastActive: unknown): boolean {
+  if (lastActive === 'Never') return true;
+  return typeof lastActive === 'string' && lastActive.includes('days');
+}
+
+async function enrichCentersList(
+  adminClient: SupabaseClient,
+  centers: Record<string, unknown>[],
+): Promise<Record<string, unknown>[]> {
+  const centerIds = centers.map((c) => c.id as string);
+  if (centerIds.length === 0) return [];
+
+  const { data: counts } = await adminClient
+    .from('students')
+    .select('center_id')
+    .in('center_id', centerIds);
+  const studentCounts: Record<string, number> = {};
+  for (const row of counts || []) {
+    const cid = (row as { center_id: string }).center_id;
+    studentCounts[cid] = (studentCounts[cid] ?? 0) + 1;
+  }
+
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const { data: weeklyScans } = await adminClient
+    .from('attendance_scans')
+    .select('center_id, student_id, scanned_at')
+    .in('center_id', centerIds)
+    .gte('scanned_at', weekAgo.toISOString());
+  const weeklyUniqueByCenter: Record<string, Set<string>> = {};
+  const lastScanByCenter: Record<string, string> = {};
+  for (const row of (weeklyScans || []) as { center_id: string; student_id: string; scanned_at?: string }[]) {
+    if (!weeklyUniqueByCenter[row.center_id]) weeklyUniqueByCenter[row.center_id] = new Set();
+    weeklyUniqueByCenter[row.center_id].add(row.student_id);
+    if (row.scanned_at && (!lastScanByCenter[row.center_id] || row.scanned_at > lastScanByCenter[row.center_id])) {
+      lastScanByCenter[row.center_id] = row.scanned_at;
+    }
+  }
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const { data: allScansForLast } = await adminClient
+    .from('attendance_scans')
+    .select('center_id, scanned_at')
+    .in('center_id', centerIds)
+    .gte('scanned_at', ninetyDaysAgo.toISOString())
+    .order('scanned_at', { ascending: false })
+    .limit(1000);
+  for (const row of (allScansForLast || []) as { center_id: string; scanned_at: string }[]) {
+    if (!lastScanByCenter[row.center_id]) lastScanByCenter[row.center_id] = row.scanned_at;
+  }
+  const { data: monthScans } = await adminClient
+    .from('attendance_scans')
+    .select('center_id')
+    .in('center_id', centerIds)
+    .gte('scanned_at', monthStart.toISOString());
+  const usageScansByCenter: Record<string, number> = {};
+  for (const row of (monthScans || []) as { center_id: string }[]) {
+    usageScansByCenter[row.center_id] = (usageScansByCenter[row.center_id] ?? 0) + 1;
+  }
+
+  const { data: owners } = await adminClient
+    .from('users')
+    .select('center_id, phone')
+    .eq('role', 'owner')
+    .in('center_id', centerIds);
+  const ownerMap = new Map(
+    (owners || []).map((o: { center_id: string; phone?: string }) => [o.center_id, { name: o.phone, phone: o.phone }]),
+  );
+
+  const lastPaymentByCenter: Record<string, string> = {};
+  const { data: latestPayments } = await adminClient
+    .from('admin_payments')
+    .select('center_id, paid_at')
+    .in('center_id', centerIds)
+    .order('paid_at', { ascending: false });
+  if (latestPayments) {
+    for (const p of latestPayments) {
+      const cid = (p as { center_id: string; paid_at: string }).center_id;
+      if (!lastPaymentByCenter[cid]) lastPaymentByCenter[cid] = (p as { paid_at: string }).paid_at;
+    }
+  }
+
+  const referredByIds = [...new Set(centers.map((c) => c.referred_by as string | undefined).filter(Boolean))];
+  const { data: referringCenters } =
+    referredByIds.length > 0
+      ? await adminClient.from('centers').select('id, name, referral_code').in('id', referredByIds)
+      : { data: [] };
+  const referringMap = new Map(
+    (referringCenters || []).map((r: { id: string; name: string; referral_code: string }) => [
+      r.id,
+      { name: r.name, referral_code: r.referral_code },
+    ]),
+  );
+
+  const PLAN_LIMITS: Record<string, number> = {
+    nano: 100,
+    starter: 250,
+    pro: 500,
+    business: 1000,
+    enterprise: 2000,
+    top_centers: 999999,
+    payg: 999999,
+  };
+
+  return centers.map((c) => {
+    const referredBy = (c as { referred_by?: string }).referred_by;
+    const referring = referredBy ? referringMap.get(referredBy) : null;
+    const plan = (c as { plan?: string }).plan || 'starter';
+    const maxStudents = PLAN_LIMITS[plan] ?? 250;
+    const weeklyUnique = weeklyUniqueByCenter[c.id as string]?.size ?? 0;
+    const limitStatus =
+      maxStudents < 999999
+        ? weeklyUnique >= maxStudents
+          ? 'over'
+          : weeklyUnique >= maxStudents * 0.9
+            ? 'approaching'
+            : 'ok'
+        : 'unlimited';
+    const lastScan = lastScanByCenter[c.id as string];
+    const now = new Date();
+    let lastActive = 'Never';
+    if (lastScan) {
+      const d = new Date(lastScan);
+      const diffMs = now.getTime() - d.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      if (diffMins < 60) lastActive = `${diffMins}m ago`;
+      else if (diffHours < 24) lastActive = `${diffHours}h ago`;
+      else if (diffDays < 7) lastActive = `${diffDays}d ago`;
+      else lastActive = `${diffDays} days ago`;
+    }
+    return {
+      ...c,
+      students_count: studentCounts[c.id as string] ?? 0,
+      weekly_unique_students: weeklyUnique,
+      max_students: maxStudents,
+      limit_status: limitStatus,
+      owner: ownerMap.get(c.id as string) ?? null,
+      last_payment: lastPaymentByCenter[c.id as string] ?? null,
+      next_due: (c as { next_payment_due?: string }).next_payment_due,
+      referring_center_name: referring?.name ?? null,
+      referral_code_used: referring?.referral_code ?? null,
+      last_active: lastActive,
+      usage_scans: usageScansByCenter[c.id as string] ?? 0,
+    };
+  });
+}
+
 function generatePin(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -124,172 +276,94 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const statusFilter = searchParams.get('status') || 'all';
-    const planFilter = searchParams.get('plan') || 'all';
-    const search = searchParams.get('search') || '';
+    const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10) || 50));
+    const searchRaw = searchParams.get('search')?.trim() ?? '';
+    const searchSanitized = searchRaw.replace(/[%_\\,]/g, ' ').replace(/\s+/g, ' ').trim();
+    const statusParam = searchParams.get('status') ?? '';
+    const planParam = searchParams.get('plan') ?? '';
+    const billingFilter = searchParams.get('billing_status') ?? '';
+    const cityFilter = searchParams.get('city') ?? '';
+    const govFilter = searchParams.get('governorate') ?? '';
+    const sortParam = searchParams.get('sort') ?? 'newest';
+    const offset = (page - 1) * limit;
+    const isAtRisk = statusParam === 'at_risk';
+    const sortOldest = sortParam === 'oldest';
 
-    let query = adminClient
-      .from('centers')
-      .select('id, name, created_at, status, phone, email, plan, requested_at, billing_period, next_payment_due, referral_code, referred_by, referral_code_used_at, billing_status, billing_type, is_early_adopter, early_adopter_price, is_blacklisted, blacklisted_at, blacklist_reason')
-      .neq('status', 'deleted')
-      .order('created_at', { ascending: false });
+    const buildFilteredQuery = (withCount: boolean) => {
+      let q = withCount
+        ? adminClient.from('centers').select('*', { count: 'exact' }).neq('status', 'deleted')
+        : adminClient.from('centers').select('*').neq('status', 'deleted');
+      q = q.order('created_at', { ascending: sortOldest });
 
-    if (statusFilter !== 'all') {
-      query = query.eq('status', statusFilter);
-    }
-    if (planFilter !== 'all') {
-      query = query.eq('plan', planFilter);
-    }
-    if (search.trim()) {
-      const term = `%${search.trim()}%`;
-      query = query.or(`name.ilike.${term},phone.ilike.${term}`);
-    }
-
-    const { data: centersData, error } = await query;
-
-    if (error) {
-      console.error('[admin/centers] ❌ Query error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    const centers = centersData || [];
-
-    const centerIds = centers.map((c: { id: string }) => c.id);
-    const { data: counts } = await adminClient
-      .from('students')
-      .select('center_id')
-      .in('center_id', centerIds);
-    const studentCounts: Record<string, number> = {};
-    for (const row of counts || []) {
-      const cid = (row as { center_id: string }).center_id;
-      studentCounts[cid] = (studentCounts[cid] ?? 0) + 1;
-    }
-
-    // Weekly unique students (past 7 days) per center for limit display
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-    const { data: weeklyScans } = centerIds.length > 0
-      ? await adminClient
-          .from('attendance_scans')
-          .select('center_id, student_id, scanned_at')
-          .in('center_id', centerIds)
-          .gte('scanned_at', weekAgo.toISOString())
-      : { data: [] };
-    const weeklyUniqueByCenter: Record<string, Set<string>> = {};
-    const lastScanByCenter: Record<string, string> = {};
-    for (const row of (weeklyScans || []) as { center_id: string; student_id: string; scanned_at?: string }[]) {
-      if (!weeklyUniqueByCenter[row.center_id]) weeklyUniqueByCenter[row.center_id] = new Set();
-      weeklyUniqueByCenter[row.center_id].add(row.student_id);
-      if (row.scanned_at && (!lastScanByCenter[row.center_id] || row.scanned_at > lastScanByCenter[row.center_id])) {
-        lastScanByCenter[row.center_id] = row.scanned_at;
+      if (!isAtRisk && statusParam && statusParam !== 'all') {
+        q = q.eq('status', statusParam);
       }
-    }
-    const ninetyDaysAgo = new Date();
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    const { data: allScansForLast } = centerIds.length > 0
-      ? await adminClient
-          .from('attendance_scans')
-          .select('center_id, scanned_at')
-          .in('center_id', centerIds)
-          .gte('scanned_at', ninetyDaysAgo.toISOString())
-          .order('scanned_at', { ascending: false })
-          .limit(1000)
-      : { data: [] };
-    for (const row of (allScansForLast || []) as { center_id: string; scanned_at: string }[]) {
-      if (!lastScanByCenter[row.center_id]) lastScanByCenter[row.center_id] = row.scanned_at;
-    }
-    const { data: monthScans } = centerIds.length > 0
-      ? await adminClient
-          .from('attendance_scans')
-          .select('center_id')
-          .in('center_id', centerIds)
-          .gte('scanned_at', monthStart.toISOString())
-      : { data: [] };
-    const usageScansByCenter: Record<string, number> = {};
-    for (const row of (monthScans || []) as { center_id: string }[]) {
-      usageScansByCenter[row.center_id] = (usageScansByCenter[row.center_id] ?? 0) + 1;
-    }
-
-    const { data: owners } = await adminClient
-      .from('users')
-      .select('center_id, phone')
-      .eq('role', 'owner')
-      .in('center_id', centerIds);
-    const ownerMap = new Map((owners || []).map((o: { center_id: string; phone?: string }) => [o.center_id, { name: o.phone, phone: o.phone }]));
-
-    const lastPaymentByCenter: Record<string, string> = {};
-    const { data: latestPayments } = await adminClient
-      .from('admin_payments')
-      .select('center_id, paid_at')
-      .in('center_id', centerIds)
-      .order('paid_at', { ascending: false });
-    if (latestPayments) {
-      for (const p of latestPayments) {
-        const cid = (p as { center_id: string; paid_at: string }).center_id;
-        if (!lastPaymentByCenter[cid]) lastPaymentByCenter[cid] = (p as { paid_at: string }).paid_at;
+      if (planParam && planParam !== 'all') {
+        q = q.eq('plan', planParam);
       }
-    }
-
-    const referredByIds = [...new Set((centers || []).map((c: { referred_by?: string }) => c.referred_by).filter(Boolean))];
-    const { data: referringCenters } = referredByIds.length > 0
-      ? await adminClient.from('centers').select('id, name, referral_code').in('id', referredByIds)
-      : { data: [] };
-    const referringMap = new Map((referringCenters || []).map((r: { id: string; name: string; referral_code: string }) => [r.id, { name: r.name, referral_code: r.referral_code }]));
-
-    const PLAN_LIMITS: Record<string, number> = {
-      nano: 100,
-      starter: 250,
-      pro: 500,
-      business: 1000,
-      enterprise: 2000,
-      top_centers: 999999,
-      payg: 999999,
+      if (billingFilter) {
+        q = q.eq('billing_status', billingFilter);
+      }
+      if (cityFilter) {
+        q = q.eq('city', cityFilter);
+      }
+      if (govFilter) {
+        q = q.eq('governorate', govFilter);
+      }
+      if (searchSanitized) {
+        const term = `%${searchSanitized}%`;
+        q = q.or(
+          `name.ilike.${term},phone.ilike.${term},owner_name.ilike.${term},center_code.ilike.${term}`,
+        );
+      }
+      return q;
     };
-    const rows = centers.map((c: Record<string, unknown>) => {
-      const referredBy = (c as { referred_by?: string }).referred_by;
-      const referring = referredBy ? referringMap.get(referredBy) : null;
-      const plan = (c as { plan?: string }).plan || 'starter';
-      const maxStudents = PLAN_LIMITS[plan] ?? 250;
-      const weeklyUnique = weeklyUniqueByCenter[c.id as string]?.size ?? 0;
-      const limitStatus = maxStudents < 999999
-        ? (weeklyUnique >= maxStudents ? 'over' : weeklyUnique >= maxStudents * 0.9 ? 'approaching' : 'ok')
-        : 'unlimited';
-      const lastScan = lastScanByCenter[c.id as string];
-      const now = new Date();
-      let lastActive = 'Never';
-      if (lastScan) {
-        const d = new Date(lastScan);
-        const diffMs = now.getTime() - d.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-        if (diffMins < 60) lastActive = `${diffMins}m ago`;
-        else if (diffHours < 24) lastActive = `${diffHours}h ago`;
-        else if (diffDays < 7) lastActive = `${diffDays}d ago`;
-        else lastActive = `${diffDays} days ago`;
+
+    let rows: Record<string, unknown>[] = [];
+    let totalCount = 0;
+
+    if (isAtRisk) {
+      let query = buildFilteredQuery(false).limit(2500);
+      const { data: centersData, error } = await query;
+      if (error) {
+        console.error('[admin/centers] ❌ Query error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
       }
-      return {
-        ...c,
-        students_count: studentCounts[c.id as string] ?? 0,
-        weekly_unique_students: weeklyUnique,
-        max_students: maxStudents,
-        limit_status: limitStatus,
-        owner: ownerMap.get(c.id as string) ?? null,
-        last_payment: lastPaymentByCenter[c.id as string] ?? null,
-        next_due: (c as { next_payment_due?: string }).next_payment_due,
-        referring_center_name: referring?.name ?? null,
-        referral_code_used: referring?.referral_code ?? null,
-        last_active: lastActive,
-        usage_scans: usageScansByCenter[c.id as string] ?? 0,
-      };
-    });
+      const enriched = await enrichCentersList(adminClient, (centersData || []) as Record<string, unknown>[]);
+      const atRiskRows = enriched.filter((c) => isCenterRowAtRisk(c.last_active));
+      totalCount = atRiskRows.length;
+      rows = atRiskRows.slice(offset, offset + limit);
+    } else {
+      let query = buildFilteredQuery(true).range(offset, offset + limit - 1);
+      const { data: centersData, error, count } = await query;
+      if (error) {
+        console.error('[admin/centers] ❌ Query error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      totalCount = count ?? 0;
+      rows = await enrichCentersList(adminClient, (centersData || []) as Record<string, unknown>[]);
+    }
 
-    const pendingCenters = rows.filter((c: Record<string, unknown>) => c.status === 'pending');
+    const { data: pendingRaw } = await adminClient
+      .from('centers')
+      .select('*')
+      .eq('status', 'pending')
+      .neq('status', 'deleted')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    const pendingCenters = await enrichCentersList(adminClient, (pendingRaw || []) as Record<string, unknown>[]);
 
-    return NextResponse.json({ centers: rows, pendingCenters });
+    const pagination = {
+      page,
+      limit,
+      total: totalCount,
+      total_pages: Math.ceil(totalCount / limit),
+      has_next: offset + limit < totalCount,
+      has_prev: page > 1,
+    };
+
+    return NextResponse.json({ centers: rows, pendingCenters, pagination });
   } catch (error) {
     console.error('[admin/centers] Error:', error instanceof Error ? error.message : error);
 

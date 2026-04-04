@@ -2564,7 +2564,7 @@
       "bosta_auto_reship_on_lost_desc": "Enable only after confirming Bosta covers lost packages"
     },
     "allCenters": "All Centers",
-    "searchCenters": "Search centers...",
+    "searchCenters": "Search by name, phone, code...",
     "noResults": "No centers found",
     "plan": "Plan",
     "amount": "Amount",
@@ -3061,20 +3061,20 @@
       "col_actions": "Actions",
       "sourced_eyad": "Eyad (direct)",
       "sourced_sm": "SM",
-    "sourced_sr": "SR",
-    "staff_role_sm": "SM",
-    "staff_role_sr": "SR",
-    "staff_display_eyad": "Eyad",
+      "sourced_sr": "SR",
+      "staff_role_sm": "SM",
+      "staff_role_sr": "SR",
+      "staff_display_eyad": "Eyad",
       "status_approved": "Approved",
       "status_pending_sm_approval": "Pending SM Approval",
       "status_disputed": "Disputed",
-    "status_unknown": "{status}",
-    "value_empty": "—",
+      "status_unknown": "{status}",
+      "value_empty": "—",
       "referred_badge": "Referral — no commission",
       "dispute_flag": "Flag Dispute",
       "resolve_dispute": "Resolve",
       "dispute_notes_label": "Dispute Notes",
-    "dispute_notes_min": "Enter at least 5 characters.",
+      "dispute_notes_min": "Enter at least 5 characters.",
       "center_label": "Center",
       "center_placeholder": "Select center",
       "staff_label": "Staff Member",
@@ -3101,6 +3101,16 @@
         "invalid_json": "Invalid request body",
         "not_found": "Assignment not found"
       }
+    },
+    "pageOf": "Page {page} of {total}",
+    "prevPage": "Previous",
+    "nextPage": "Next",
+    "exportCenters": "Export Centers",
+    "exportInvoices": "Export Invoices",
+    "exportCommissions": "Export Commissions",
+    "export": {
+      "unauthorized": "Unauthorized",
+      "configError": "Server configuration error"
     }
   },
   "notFound": {
