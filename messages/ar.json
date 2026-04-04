@@ -2080,6 +2080,33 @@
     "export": {
       "unauthorized": "غير مصرح",
       "configError": "خطأ في إعداد الخادم"
+    },
+    "selected": "سنتر محدد",
+    "bulkSelectAction": "اختر إجراء...",
+    "bulkApprove": "اعتماد الكل",
+    "bulkSuspend": "تعليق الكل",
+    "bulkReactivate": "إعادة تفعيل الكل",
+    "bulkSendWA": "إرسال واتساب",
+    "bulkWAMessage": "اكتب الرسالة...",
+    "applyAction": "تطبيق",
+    "applying": "جاري التطبيق...",
+    "clearSelection": "إلغاء التحديد",
+    "bulk": {
+      "completedWithErrors": "اكتمل مع {count} خطأ. راجع سجلات الخادم.",
+      "errors": {
+        "unknown": "حدث خطأ ما.",
+        "config": "خطأ في إعداد الخادم.",
+        "unauthorized": "غير مصرح.",
+        "superAdminOnly": "للمشرف الأعلى فقط.",
+        "csrf": "رمز أمان غير صالح. حدّث الصفحة وحاول مرة أخرى.",
+        "invalidBody": "محتوى الطلب غير صالح.",
+        "actionAndIdsRequired": "الإجراء ومعرفات السناتر مطلوبة.",
+        "maxCenters": "حد أقصى 200 سنتر لكل إجراء جماعي.",
+        "noPendingInSelection": "لا توجد سناتر قيد الانتظار في التحديد.",
+        "messageRequired": "الرسالة مطلوبة للواتساب.",
+        "whatsappNotConfigured": "الواتساب غير مُعد.",
+        "invalidAction": "إجراء غير صالح. استخدم اعتماد أو تعليق أو إعادة تفعيل أو واتساب."
+      }
     }
   },
   "ceo": {

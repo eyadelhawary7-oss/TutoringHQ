@@ -272,6 +272,11 @@ export default function AdminPage() {
   const [centersTotalPages, setCentersTotalPages] = useState(1);
   const [analyticsCenters, setAnalyticsCenters] = useState<CenterRow[]>([]);
   const [analyticsCentersLoading, setAnalyticsCentersLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [bulkAction, setBulkAction] = useState('');
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [centers, setCenters] = useState<CenterRow[]>([]);
@@ -385,6 +390,86 @@ export default function AdminPage() {
       // ignore
     }
   }, [getSession, centersPage, statusFilter, filterPlan, centerSearch, sortBy]);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [centersPage, statusFilter, filterPlan, centerSearch]);
+
+  const toggleAllCenterSelection = useCallback(() => {
+    setSelectedIds((prev) => {
+      const pageIds = centers.map((c) => c.id);
+      if (pageIds.length === 0) return prev;
+      const allOnPageSelected = pageIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      if (allOnPageSelected) {
+        for (const id of pageIds) next.delete(id);
+      } else {
+        for (const id of pageIds) next.add(id);
+      }
+      return next;
+    });
+  }, [centers]);
+
+  const toggleOneCenterSelection = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const executeBulkAction = useCallback(async () => {
+    if (!bulkAction || selectedIds.size === 0) return;
+    setBulkLoading(true);
+    setBulkError(null);
+    const headers = await getAuthHeaders(true);
+    if (!headers) {
+      setBulkLoading(false);
+      setBulkError(tAdmin('bulk.errors.unauthorized'));
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/centers/bulk', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: bulkAction,
+          center_ids: Array.from(selectedIds),
+          ...(bulkAction === 'send_wa' && { message: bulkMessage }),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        errorKey?: string;
+        error?: string;
+        errors?: string[];
+      };
+      if (!res.ok) {
+        setBulkError(
+          data.errorKey
+            ? tAdmin(data.errorKey)
+            : (data.error ?? tAdmin('bulk.errors.unknown')),
+        );
+        setBulkLoading(false);
+        return;
+      }
+      if (Array.isArray(data.errors) && data.errors.length > 0) {
+        setBulkError(
+          tAdmin('bulk.completedWithErrors', {
+            count: data.errors.length.toLocaleString('en-US'),
+          }),
+        );
+      }
+      setBulkLoading(false);
+      setSelectedIds(new Set());
+      setBulkAction('');
+      setBulkMessage('');
+      await loadCenters();
+    } catch {
+      setBulkError(tAdmin('bulk.errors.unknown'));
+      setBulkLoading(false);
+    }
+  }, [bulkAction, bulkMessage, getAuthHeaders, loadCenters, selectedIds, tAdmin]);
 
   const loadAnalyticsCenters = useCallback(async () => {
     const session = await getSession();
@@ -1216,11 +1301,72 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-3 flex-wrap bg-primary/10 border border-primary/25 rounded-xl p-4 mb-4">
+                <span className="text-primary text-sm font-medium">
+                  {selectedIds.size.toLocaleString('en-US')} {tAdmin('selected')}
+                </span>
+                <select
+                  value={bulkAction}
+                  onChange={(e) => setBulkAction(e.target.value)}
+                  className="px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">{tAdmin('bulkSelectAction')}</option>
+                  <option value="approve">{tAdmin('bulkApprove')}</option>
+                  <option value="suspend">{tAdmin('bulkSuspend')}</option>
+                  <option value="reactivate">{tAdmin('bulkReactivate')}</option>
+                  <option value="send_wa">{tAdmin('bulkSendWA')}</option>
+                </select>
+                {bulkAction === 'send_wa' && (
+                  <input
+                    type="text"
+                    value={bulkMessage}
+                    onChange={(e) => setBulkMessage(e.target.value)}
+                    placeholder={tAdmin('bulkWAMessage')}
+                    className="flex-1 min-w-[12rem] px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                )}
+                {bulkError ? (
+                  <span className="text-red-600 text-xs">{bulkError}</span>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void executeBulkAction()}
+                  disabled={
+                    bulkLoading ||
+                    !bulkAction ||
+                    (bulkAction === 'send_wa' && !bulkMessage.trim())
+                  }
+                  className="px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-lg text-sm font-medium transition-colors"
+                >
+                  {bulkLoading ? tAdmin('applying') : tAdmin('applyAction')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedIds(new Set());
+                    setBulkError(null);
+                  }}
+                  className="px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] rounded-lg text-sm transition-colors border border-[var(--color-border-subtle)]"
+                >
+                  {tAdmin('clearSelection')}
+                </button>
+              </div>
+            )}
+
             <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="py-3 px-4 w-10" aria-label={tAdmin('bulkSelectAction')}>
+                        <input
+                          type="checkbox"
+                          checked={centers.length > 0 && centers.every((c) => selectedIds.has(c.id))}
+                          onChange={toggleAllCenterSelection}
+                          className="rounded border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] text-primary focus:ring-primary"
+                        />
+                      </th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">Owner</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tCommon('phone')}</th>
@@ -1236,6 +1382,14 @@ export default function AdminPage() {
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {displayedCenters.map((c) => (
                       <tr key={c.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                        <td className="py-3.5 px-4 w-10 align-middle">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(c.id)}
+                            onChange={() => toggleOneCenterSelection(c.id)}
+                            className="rounded border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] text-primary focus:ring-primary"
+                          />
+                        </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">
                           <span className="inline-flex flex-wrap items-center gap-2">
                             {c.name}

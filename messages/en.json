@@ -3111,6 +3111,33 @@
     "export": {
       "unauthorized": "Unauthorized",
       "configError": "Server configuration error"
+    },
+    "selected": "centers selected",
+    "bulkSelectAction": "Select action...",
+    "bulkApprove": "Approve all",
+    "bulkSuspend": "Suspend all",
+    "bulkReactivate": "Reactivate all",
+    "bulkSendWA": "Send WhatsApp",
+    "bulkWAMessage": "Type message to send...",
+    "applyAction": "Apply",
+    "applying": "Applying...",
+    "clearSelection": "Clear",
+    "bulk": {
+      "completedWithErrors": "Completed with {count} error(s). Check server logs for details.",
+      "errors": {
+        "unknown": "Something went wrong.",
+        "config": "Server configuration error.",
+        "unauthorized": "Unauthorized.",
+        "superAdminOnly": "Super admin only.",
+        "csrf": "Invalid security token. Please refresh and try again.",
+        "invalidBody": "Invalid request body.",
+        "actionAndIdsRequired": "Action and center IDs are required.",
+        "maxCenters": "Maximum 200 centers per bulk action.",
+        "noPendingInSelection": "No pending centers found in selection.",
+        "messageRequired": "Message is required for WhatsApp.",
+        "whatsappNotConfigured": "WhatsApp is not configured.",
+        "invalidAction": "Invalid action. Use approve, suspend, reactivate, or send_wa."
+      }
     }
   },
   "notFound": {
