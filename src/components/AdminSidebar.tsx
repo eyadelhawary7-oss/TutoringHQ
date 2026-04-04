@@ -27,6 +27,7 @@ import {
   Settings,
   Activity,
   TrendingUp,
+  MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -135,6 +136,7 @@ export function AdminSidebar({
   const isReferrals = activeRoute?.includes('admin/referrals');
   const isHealth = activeRoute?.includes('admin/health');
   const isStaff = activeRoute?.includes('admin/staff');
+  const isCenterAssignments = activeRoute?.includes('admin/center-assignments');
   const isCommissions = activeRoute?.includes('admin/commissions');
   const isPayouts = activeRoute?.includes('admin/payouts');
 
@@ -548,6 +550,19 @@ export function AdminSidebar({
                 <span>{t('staff.title')}</span>
               </Link>
               <Link
+                href="/admin/center-assignments"
+                onClick={afterNavigate}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                  isCenterAssignments
+                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                )}
+              >
+                <MapPin size={18} className="shrink-0" />
+                <span>{t('centerAssignments.title')}</span>
+              </Link>
+              <Link
                 href="/admin/commissions"
                 onClick={afterNavigate}
                 className={cn(
@@ -799,6 +814,19 @@ export function AdminSidebar({
               >
                 <Users size={18} />
                 <span>{t('staff.title')}</span>
+              </Link>
+              <Link
+                href="/admin/center-assignments"
+                onClick={() => closeMainSidebar?.()}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
+                  isCenterAssignments
+                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                )}
+              >
+                <MapPin size={18} />
+                <span>{t('centerAssignments.title')}</span>
               </Link>
               <Link
                 href="/admin/commissions"
