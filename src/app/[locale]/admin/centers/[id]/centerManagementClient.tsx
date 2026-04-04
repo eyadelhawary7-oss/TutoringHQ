@@ -10,6 +10,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useToast } from '@/hooks/useToast';
+import { Pin, Trash2 } from 'lucide-react';
 
 type CenterData = {
   center: Record<string, unknown>;
@@ -334,6 +335,17 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s11ShowUnblacklist, setS11ShowUnblacklist] = useState(false);
   const [s11Loading, setS11Loading] = useState(false);
 
+  const [opsNotes, setOpsNotes] = useState<Record<string, unknown>[]>([]);
+  const [opsNotesLoading, setOpsNotesLoading] = useState(false);
+  const [opsNewNote, setOpsNewNote] = useState('');
+  const [opsAddingNote, setOpsAddingNote] = useState(false);
+  const [opsPinBusyId, setOpsPinBusyId] = useState<string | null>(null);
+  const [opsDeleteBusyId, setOpsDeleteBusyId] = useState<string | null>(null);
+  const [opsWaText, setOpsWaText] = useState('');
+  const [opsSendingWa, setOpsSendingWa] = useState(false);
+  const [opsAuditLogs, setOpsAuditLogs] = useState<Record<string, unknown>[]>([]);
+  const [opsAuditLoading, setOpsAuditLoading] = useState(false);
+
   const getSession = useCallback(async () => {
     const {
       data: { session },
@@ -352,6 +364,49 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     Object.assign(headers, csrf);
     return headers;
   }, [getSession]);
+
+  const showApiError = useCallback(
+    (j: Record<string, unknown>) => {
+      const ek = typeof j.errorKey === 'string' ? j.errorKey : '';
+      if (ek) {
+        const base = t(ek as never);
+        const detail = typeof j.errorDetail === 'string' ? j.errorDetail : '';
+        toast.error(
+          detail && ek === 'manualWA.errors.sendFailed' ? `${base}: ${detail}` : base,
+        );
+        return;
+      }
+      toast.error(typeof j.error === 'string' ? j.error : t('centerManagement.error'));
+    },
+    [t, toast],
+  );
+
+  const refreshOpsPanels = useCallback(async () => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    setOpsNotesLoading(true);
+    setOpsAuditLoading(true);
+    try {
+      const [nRes, aRes] = await Promise.all([
+        fetch(`/api/admin/centers/${centerId}/notes`, { headers }),
+        fetch(`/api/admin/centers/${centerId}/audit-log`, { headers }),
+      ]);
+      const nj = (await nRes.json().catch(() => ({}))) as { notes?: Record<string, unknown>[] };
+      const aj = (await aRes.json().catch(() => ({}))) as { logs?: Record<string, unknown>[] };
+      if (nRes.ok && Array.isArray(nj.notes)) setOpsNotes(nj.notes);
+      else if (!nRes.ok) toast.error(t('centerNotes.loadError'));
+      if (aRes.ok && Array.isArray(aj.logs)) setOpsAuditLogs(aj.logs);
+      else if (!aRes.ok) toast.error(t('auditLog.loadError'));
+    } finally {
+      setOpsNotesLoading(false);
+      setOpsAuditLoading(false);
+    }
+  }, [centerId, getAuthHeaders, t, toast]);
+
+  useEffect(() => {
+    if (loading || !data?.center) return;
+    void refreshOpsPanels();
+  }, [loading, data?.center, dataFetchedAt, refreshOpsPanels]);
 
   const handlePlanChange = (newPlan: string) => {
     setS2Plan(newPlan);
@@ -3218,6 +3273,250 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   </div>
                 </div>
               ) : null}
+
+              <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-6 mb-6">
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerNotes.title')}</h2>
+                {opsNotesLoading ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.loading')}</p>
+                ) : opsNotes.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t('centerNotes.no_notes')}</p>
+                ) : (
+                  <ul className="space-y-3 mb-4">
+                    {opsNotes.map((note) => {
+                      const nid = String(note.id ?? '');
+                      const pinned = Boolean(note.is_pinned);
+                      const author = note.author as { name?: string } | null | undefined;
+                      const authorName = author?.name ?? '—';
+                      return (
+                        <li
+                          key={nid}
+                          className="rounded-lg border border-gray-200 dark:border-slate-600 p-3 bg-gray-50 dark:bg-slate-900/50"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                              <span className="font-medium text-slate-700 dark:text-slate-200">{authorName}</span>
+                              {' · '}
+                              {note.created_at
+                                ? new Date(String(note.created_at)).toLocaleString('en-US', {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short',
+                                  })
+                                : '—'}
+                              {pinned ? (
+                                <span className="ms-2 text-amber-600 dark:text-amber-400 font-medium">
+                                  {t('centerNotes.pinned_badge')}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                disabled={opsPinBusyId === nid}
+                                onClick={() => {
+                                  void (async () => {
+                                    const headers = await getAuthHeaders();
+                                    if (!headers) return;
+                                    setOpsPinBusyId(nid);
+                                    try {
+                                      const res = await fetch(`/api/admin/centers/${centerId}/notes`, {
+                                        method: 'PATCH',
+                                        headers,
+                                        body: JSON.stringify({ note_id: nid, is_pinned: !pinned }),
+                                      });
+                                      const j = await res.json().catch(() => ({}));
+                                      if (!res.ok) {
+                                        showApiError(j as Record<string, unknown>);
+                                        return;
+                                      }
+                                      await refreshOpsPanels();
+                                    } finally {
+                                      setOpsPinBusyId(null);
+                                    }
+                                  })();
+                                }}
+                                className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-50"
+                                aria-label={pinned ? t('centerNotes.unpin') : t('centerNotes.pin')}
+                                title={pinned ? t('centerNotes.unpin') : t('centerNotes.pin')}
+                              >
+                                <Pin className={`w-4 h-4 ${pinned ? 'text-amber-500 fill-amber-500/30' : ''}`} />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={opsDeleteBusyId === nid}
+                                onClick={() => {
+                                  void (async () => {
+                                    const headers = await getAuthHeaders();
+                                    if (!headers) return;
+                                    setOpsDeleteBusyId(nid);
+                                    try {
+                                      const res = await fetch(`/api/admin/centers/${centerId}/notes`, {
+                                        method: 'DELETE',
+                                        headers,
+                                        body: JSON.stringify({ note_id: nid }),
+                                      });
+                                      const j = await res.json().catch(() => ({}));
+                                      if (!res.ok) {
+                                        showApiError(j as Record<string, unknown>);
+                                        return;
+                                      }
+                                      toast.success(t('centerNotes.deletedToast'));
+                                      await refreshOpsPanels();
+                                    } finally {
+                                      setOpsDeleteBusyId(null);
+                                    }
+                                  })();
+                                }}
+                                className="p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                                aria-label={t('centerNotes.delete')}
+                                title={t('centerNotes.delete')}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{String(note.body ?? '')}</p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <div className="space-y-2">
+                  <textarea
+                    rows={3}
+                    value={opsNewNote}
+                    onChange={(e) => setOpsNewNote(e.target.value)}
+                    placeholder={t('centerNotes.placeholder')}
+                    className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm resize-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={opsAddingNote || !opsNewNote.trim()}
+                    onClick={() => {
+                      void (async () => {
+                        const headers = await getAuthHeaders();
+                        if (!headers) return;
+                        setOpsAddingNote(true);
+                        try {
+                          const res = await fetch(`/api/admin/centers/${centerId}/notes`, {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify({ body: opsNewNote.trim(), is_pinned: false }),
+                          });
+                          const j = await res.json().catch(() => ({}));
+                          if (!res.ok) {
+                            showApiError(j as Record<string, unknown>);
+                            return;
+                          }
+                          setOpsNewNote('');
+                          await refreshOpsPanels();
+                        } finally {
+                          setOpsAddingNote(false);
+                        }
+                      })();
+                    }}
+                    className="rounded-lg bg-teal-700 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-600 disabled:opacity-50"
+                  >
+                    {opsAddingNote ? t('centerNotes.adding') : t('centerNotes.add')}
+                  </button>
+                </div>
+              </section>
+
+              <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-6 mb-6">
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('manualWA.title')}</h2>
+                <textarea
+                  rows={4}
+                  value={opsWaText}
+                  onChange={(e) => setOpsWaText(e.target.value)}
+                  placeholder={t('manualWA.placeholder')}
+                  className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm resize-none mb-2"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                  {t('manualWA.char_count', { count: opsWaText.length.toLocaleString('en-US') })}
+                </p>
+                <button
+                  type="button"
+                  disabled={opsSendingWa || opsWaText.trim().length < 5}
+                  onClick={() => {
+                    void (async () => {
+                      const headers = await getAuthHeaders();
+                      if (!headers) return;
+                      setOpsSendingWa(true);
+                      try {
+                        const res = await fetch(`/api/admin/centers/${centerId}/send-wa`, {
+                          method: 'POST',
+                          headers,
+                          body: JSON.stringify({ message: opsWaText.trim() }),
+                        });
+                        const j = (await res.json().catch(() => ({}))) as {
+                          error?: string;
+                          errorKey?: string;
+                          errorDetail?: string;
+                          center_name?: string;
+                          sent_to?: string;
+                        };
+                        if (!res.ok) {
+                          showApiError(j as Record<string, unknown>);
+                          return;
+                        }
+                        toast.success(
+                          t('manualWA.success', {
+                            name: j.center_name ?? '',
+                            phone: j.sent_to ?? '',
+                          }),
+                        );
+                        setOpsWaText('');
+                        await refreshOpsPanels();
+                      } finally {
+                        setOpsSendingWa(false);
+                      }
+                    })();
+                  }}
+                  className="rounded-lg bg-[#25D366] text-white px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+                >
+                  {opsSendingWa ? t('manualWA.sending') : t('manualWA.send')}
+                </button>
+              </section>
+
+              <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-6 mb-6">
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('auditLog.title')}</h2>
+                {opsAuditLoading ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.loading')}</p>
+                ) : opsAuditLogs.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditLog.no_logs')}</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
+                    <table className="w-full text-sm text-slate-800 dark:text-slate-200 min-w-[640px]">
+                      <thead className="bg-gray-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400">
+                        <tr>
+                          <th className="text-start p-2 font-medium">{t('auditLog.col_date')}</th>
+                          <th className="text-start p-2 font-medium">{t('auditLog.col_action')}</th>
+                          <th className="text-start p-2 font-medium">{t('auditLog.col_user')}</th>
+                          <th className="text-start p-2 font-medium">{t('auditLog.col_details')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {opsAuditLogs.map((log) => (
+                          <tr key={String(log.id)} className="border-t border-gray-200 dark:border-t-slate-700">
+                            <td className="p-2 whitespace-nowrap tabular-nums">
+                              {log.created_at
+                                ? new Date(String(log.created_at)).toLocaleString('en-US', {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short',
+                                  })
+                                : '—'}
+                            </td>
+                            <td className="p-2 font-mono text-xs">{String(log.action ?? '—')}</td>
+                            <td className="p-2">{String(log.actor_label ?? '—')}</td>
+                            <td className="p-2 text-xs break-all max-w-md">
+                              {JSON.stringify(log.details ?? {}, null, 0)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
 
               <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section12.title')}</h2>

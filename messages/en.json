@@ -3175,6 +3175,55 @@
         "invalidBody": "Invalid request body",
         "recordIdsRequired": "Record IDs are required"
       }
+    },
+    "centerNotes": {
+      "title": "Internal Notes",
+      "placeholder": "Add a note about this center...",
+      "add": "Add Note",
+      "adding": "Adding...",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "delete": "Delete",
+      "no_notes": "No notes yet",
+      "pinned_badge": "Pinned",
+      "loadError": "Could not load notes",
+      "deletedToast": "Note deleted",
+      "errors": {
+        "bodyRequired": "Note text is required",
+        "noteIdRequired": "Note id is required",
+        "noChanges": "No changes to apply",
+        "superAdminOnly": "Only super admins can delete notes",
+        "authorNotRegistered": "Your account must be in the admin team table to add notes",
+        "csrf": "Security check failed. Refresh and try again.",
+        "invalidJson": "Invalid request body"
+      }
+    },
+    "manualWA": {
+      "title": "Send WhatsApp",
+      "placeholder": "Type your message to this center owner...",
+      "send": "Send Message",
+      "sending": "Sending...",
+      "success": "Message sent to {name} ({phone})",
+      "no_phone": "No phone number on file",
+      "char_count": "{count} characters",
+      "loadError": "Could not load audit log",
+      "errors": {
+        "minLength": "Message must be at least 5 characters",
+        "noPhone": "Center has no phone number on file",
+        "notConfigured": "WhatsApp is not configured for this environment",
+        "sendFailed": "WhatsApp send failed",
+        "csrf": "Security check failed. Refresh and try again.",
+        "invalidJson": "Invalid request body"
+      }
+    },
+    "auditLog": {
+      "title": "Audit Log",
+      "col_date": "Date",
+      "col_action": "Action",
+      "col_user": "By",
+      "col_details": "Details",
+      "no_logs": "No audit log entries",
+      "loadError": "Could not load audit log"
     }
   },
   "notFound": {
