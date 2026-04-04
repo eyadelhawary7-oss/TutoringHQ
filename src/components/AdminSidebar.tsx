@@ -468,7 +468,7 @@ export function AdminSidebar({
                     className={drawerBtn(!!isPlatformConfig)}
                   >
                     <Settings size={18} className="shrink-0" />
-                    <span>{t('platformConfigNav')}</span>
+                    <span>{t('platformConfig')}</span>
                   </button>,
                 );
               }
@@ -520,7 +520,7 @@ export function AdminSidebar({
               )}
             >
               <Activity size={18} className="shrink-0" />
-              <span>{t('platformHealthNav')}</span>
+              <span>{t('platformHealth')}</span>
             </Link>
           ) : null}
         </nav>
@@ -664,7 +664,7 @@ export function AdminSidebar({
                     )}
                   >
                     <Settings size={18} />
-                    <span>{t('platformConfigNav')}</span>
+                    <span>{t('platformConfig')}</span>
                   </button>,
                 );
               }
@@ -726,7 +726,7 @@ export function AdminSidebar({
               )}
             >
               <Activity size={18} />
-              <span>{t('platformHealthNav')}</span>
+              <span>{t('platformHealth')}</span>
             </Link>
           ) : null}
         </nav>

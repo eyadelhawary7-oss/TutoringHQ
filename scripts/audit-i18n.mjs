@@ -26,7 +26,9 @@ for (const file of srcFiles) {
 
   // Extract namespace declarations
   const nsMatches = [
-    ...src.matchAll(/useTranslations\(['"]([^'"]+)['"]\)/g),
+    ...src.matchAll(
+      /(?:useTranslations|getTranslations)\(\s*['"]([^'"]+)['"]\s*\)/g,
+    ),
   ]
   const namespaces = nsMatches.map((m) => m[1])
   nsMap[file] = namespaces
