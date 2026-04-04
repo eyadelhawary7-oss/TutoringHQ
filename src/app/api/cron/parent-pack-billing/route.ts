@@ -144,13 +144,17 @@ export async function POST(request: Request) {
               .eq('id', centerId);
             if (balErr) console.error('[cron/parent-pack-billing] reset pack_pending_balance', centerId, balErr);
 
-            await sendChqPackInvoiceTemplate(supabaseAdmin, packInvoiceEnabled, {
-              name: (center as { name?: string }).name ?? '—',
-              phone: (center as { phone?: string | null }).phone ?? null,
-              monthArabic: billingPeriodArabicMonthYear(prevPeriod),
-              parentCountStr: String(rolling),
-              amountStr: String(totalAmount),
-            });
+            try {
+              await sendChqPackInvoiceTemplate(supabaseAdmin, packInvoiceEnabled, {
+                name: (center as { name?: string }).name ?? '—',
+                phone: (center as { phone?: string | null }).phone ?? null,
+                monthArabic: billingPeriodArabicMonthYear(prevPeriod),
+                parentCountStr: String(rolling),
+                amountStr: String(totalAmount),
+              });
+            } catch (waErr) {
+              console.error('[cron/parent-pack-billing] WA send error:', waErr);
+            }
           }
         }
       }
@@ -307,10 +311,14 @@ export async function POST(request: Request) {
           const phone = (cen as { phone?: string | null } | null)?.phone ?? null;
           const digits = (phone ?? '').replace(/\D/g, '');
           if (digits) {
-            await sendWhatsAppMessage(
-              digits,
-              `تم إيقاف باقة واتساب الآباء لـ ${name} بسبب عدم السداد. يرجى الدفع من المنصة لإعادة التفعيل.`,
-            );
+            try {
+              await sendWhatsAppMessage(
+                digits,
+                `تم إيقاف باقة واتساب الآباء لـ ${name} بسبب عدم السداد. يرجى الدفع من المنصة لإعادة التفعيل.`,
+              );
+            } catch (waErr) {
+              console.error('[cron/parent-pack-billing] WA send error:', waErr);
+            }
           }
         }
       }

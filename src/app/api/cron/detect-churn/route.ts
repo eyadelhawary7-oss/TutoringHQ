@@ -106,22 +106,34 @@ export async function POST(request: Request) {
 
       try {
         if (action === 'day3') {
-          const r = await sendDay3InactivityAlert({
-            centerId,
-            centerName,
-            toPhone: phone,
-            daysInactive,
-          });
+          let r: { success: boolean; error?: string };
+          try {
+            r = await sendDay3InactivityAlert({
+              centerId,
+              centerName,
+              toPhone: phone,
+              daysInactive,
+            });
+          } catch (waErr) {
+            console.error('[detect-churn] WA send error:', waErr);
+            r = { success: false, error: 'exception' };
+          }
           results.push({ centerId, action: 'day3', success: r.success, error: r.error });
         } else if (action === 'day7') {
-          const r = await sendDay7SalesManagerAlert({
-            centerId,
-            centerName,
-            lastScanAt,
-            monthlyFee,
-            daysInactive,
-            alertType: 'day7',
-          });
+          let r: { success: boolean; error?: string };
+          try {
+            r = await sendDay7SalesManagerAlert({
+              centerId,
+              centerName,
+              lastScanAt,
+              monthlyFee,
+              daysInactive,
+              alertType: 'day7',
+            });
+          } catch (waErr) {
+            console.error('[detect-churn] WA send error:', waErr);
+            r = { success: false, error: 'exception' };
+          }
           results.push({ centerId, action: 'day7', success: r.success, error: r.error });
         } else if (action === 'day14') {
           const r = await flagDay14InAdminPanel({
@@ -132,14 +144,20 @@ export async function POST(request: Request) {
           });
           results.push({ centerId, action: 'flag14', success: r.success, error: r.error });
 
-          const r2 = await sendDay7SalesManagerAlert({
-            centerId,
-            centerName,
-            lastScanAt,
-            monthlyFee,
-            daysInactive,
-            alertType: 'day14',
-          });
+          let r2: { success: boolean; error?: string };
+          try {
+            r2 = await sendDay7SalesManagerAlert({
+              centerId,
+              centerName,
+              lastScanAt,
+              monthlyFee,
+              daysInactive,
+              alertType: 'day14',
+            });
+          } catch (waErr) {
+            console.error('[detect-churn] WA send error:', waErr);
+            r2 = { success: false, error: 'exception' };
+          }
           results.push({ centerId, action: 'day14', success: r2.success, error: r2.error });
         }
       } catch (err) {

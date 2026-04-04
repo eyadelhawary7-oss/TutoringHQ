@@ -41,12 +41,23 @@ export async function POST(request: Request) {
 
   try {
     if (!process.env.CEO_PHONE) {
-      throw new Error('CEO_PHONE not set');
+      console.warn('[ceo-briefing] CEO_PHONE not set — skipping WA');
+      await supabase.from('cron_log').insert({
+        cron_name: CRON_NAME,
+        status: 'success',
+        duration_ms: Date.now() - cronStart,
+        records_processed: 0,
+        metadata: { skipped: 'no_ceo_phone' },
+      });
+      return NextResponse.json({ success: true, skipped: 'no_ceo_phone' });
     }
     const data = await fetchCeoBriefingData();
 
     let waSent = true;
-    try { const result = await sendCeoBriefing(data); if (!result.success) throw new Error(result.error || 'Send failed'); } catch (waError) {
+    try {
+      const result = await sendCeoBriefing(data);
+      if (!result.success) throw new Error(result.error || 'Send failed');
+    } catch (waError) {
       console.error('[ceo-briefing] WA send failed:', waError);
       waSent = false;
       const msg = waError instanceof Error ? waError.message : 'Unknown';

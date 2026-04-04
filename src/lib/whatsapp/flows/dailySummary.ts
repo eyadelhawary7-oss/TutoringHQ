@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '../client';
 
 const TEMPLATE = 'chq_daily_summary';
@@ -70,6 +71,12 @@ export interface DailySummaryData {
 }
 
 export async function sendDailySummary(data: DailySummaryData): Promise<{ success: boolean; error?: string }> {
+  const admin = getSupabaseAdmin();
+  const approved = await isTemplateApproved(TEMPLATE, admin);
+  if (!approved) {
+    return { success: true };
+  }
+
   const dashboardUrl = `${APP_URL}/ar/dashboard`;
   const variables: Record<string, string> = {
     '1': data.centerName,

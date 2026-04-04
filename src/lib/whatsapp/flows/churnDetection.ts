@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '../client';
 
 const TEMPLATE_DAY3 = 'chq_inactivity_day3';
@@ -67,6 +68,11 @@ export async function sendDay7SalesManagerAlert(params: SalesManagerParams): Pro
     ? new Date(lastScanAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
     : 'لا يوجد';
   const mrrStr = `${Number(monthlyFee).toLocaleString('en-US')} ج.م`;
+
+  const admin = getSupabaseAdmin();
+  if (!(await isTemplateApproved(TEMPLATE_SALES_ALERT, admin))) {
+    return { success: true };
+  }
 
   const variables: Record<string, string> = {
     center_name: centerName,

@@ -3,6 +3,25 @@ import { dateInNDays } from '@/lib/parentPack';
 
 const PLATFORM_URL = 'https://center-hq.vercel.app';
 
+/** Result for all exported WA helpers — never throws to callers. */
+export type CenterNotifyResult = {
+  success?: boolean;
+  skipped?: boolean;
+  error?: boolean;
+};
+
+export async function isTemplateApproved(
+  templateName: string,
+  supabase: SupabaseClient,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('wa_meta_templates')
+    .select('status')
+    .eq('template_name', templateName)
+    .maybeSingle();
+  return data?.status === 'APPROVED';
+}
+
 function waPhoneNumberId(): string | null {
   return process.env.PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_ID || null;
 }
@@ -68,43 +87,81 @@ async function postWhatsappTemplate(opts: {
 }
 
 /** chq_renewal_overdue — used by subscription billing cron (Items 2–3). */
-export async function sendChqRenewalOverdueTemplate(opts: {
-  name: string;
-  phone: string | null;
-  daysLate: string;
-  amountStr: string;
-}): Promise<boolean> {
+export async function sendChqRenewalOverdueTemplate(
+  supabase: SupabaseClient,
+  opts: {
+    name: string;
+    phone: string | null;
+    daysLate: string;
+    amountStr: string;
+  },
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_renewal_overdue';
   const to = digitsOnly(opts.phone ?? '');
-  if (!to) return false;
-  return postWhatsappTemplate({
-    templateName: 'chq_renewal_overdue',
-    languageCode: 'ar_EG',
-    toDigits: to,
-    bodyParameters: [opts.name ?? '—', opts.daysLate, opts.amountStr],
-  });
+  if (!to) return { skipped: true };
+
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+
+  try {
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [opts.name ?? '—', opts.daysLate, opts.amountStr],
+    });
+    if (!ok) {
+      console.error(`[centerNotify] ${TEMPLATE} send failed:`, opts.name);
+      return { error: true };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE} send failed:`, err);
+    return { error: true };
+  }
 }
 
 /** chq_payment_confirmed — Paymob subscription / renewal success (Item 7). */
 export async function sendChqPaymentConfirmedTemplate(
   supabase: SupabaseClient,
   opts: { name: string; phone: string | null; billingPeriodLabel: string; billingAmountStr: string },
-): Promise<boolean> {
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_payment_confirmed';
   const { data: cfg } = await supabase
     .from('platform_config')
     .select('value')
     .eq('key', 'wa_sending_enabled')
     .maybeSingle();
-  if (cfg?.value === false) return false;
+  if (cfg?.value === false) return { skipped: true };
 
   const to = digitsOnly(opts.phone ?? '');
-  if (!to) return false;
+  if (!to) return { skipped: true };
 
-  return postWhatsappTemplate({
-    templateName: 'chq_payment_confirmed',
-    languageCode: 'ar_EG',
-    toDigits: to,
-    bodyParameters: [opts.name, opts.billingPeriodLabel, opts.billingAmountStr],
-  });
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+
+  try {
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [opts.name, opts.billingPeriodLabel, opts.billingAmountStr],
+    });
+    if (!ok) {
+      console.error(`[centerNotify] ${TEMPLATE} send failed:`, opts.name);
+      return { error: true };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE} send failed:`, err);
+    return { error: true };
+  }
 }
 
 /** chq_pack_invoice — Parent Pack monthly or partial invoice (Session D). Pass `templateEnabled` from route flag. */
@@ -118,25 +175,42 @@ export async function sendChqPackInvoiceTemplate(
     parentCountStr: string;
     amountStr: string;
   },
-): Promise<boolean> {
-  if (!templateEnabled) return false;
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_pack_invoice';
+  if (!templateEnabled) return { skipped: true };
 
   const { data: cfg } = await supabase
     .from('platform_config')
     .select('value')
     .eq('key', 'wa_sending_enabled')
     .maybeSingle();
-  if (cfg?.value === false) return false;
+  if (cfg?.value === false) return { skipped: true };
 
   const to = digitsOnly(opts.phone ?? '');
-  if (!to) return false;
+  if (!to) return { skipped: true };
 
-  return postWhatsappTemplate({
-    templateName: 'chq_pack_invoice',
-    languageCode: 'ar_EG',
-    toDigits: to,
-    bodyParameters: [opts.name, opts.monthArabic, opts.parentCountStr, opts.amountStr],
-  });
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+
+  try {
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [opts.name, opts.monthArabic, opts.parentCountStr, opts.amountStr],
+    });
+    if (!ok) {
+      console.error(`[centerNotify] ${TEMPLATE} send failed:`, opts.name);
+      return { error: true };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE} send failed:`, err);
+    return { error: true };
+  }
 }
 
 /** chq_credit_expiry — credits expiring within 30 days (billing engine). Enable when template is Active in Meta. */
@@ -144,25 +218,42 @@ export async function sendChqCreditExpiryTemplate(
   supabase: SupabaseClient,
   templateEnabled: boolean,
   opts: { name: string; phone: string | null; amountStr: string; expiresOnStr: string },
-): Promise<boolean> {
-  if (!templateEnabled) return false;
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_credit_expiry';
+  if (!templateEnabled) return { skipped: true };
 
   const { data: cfg } = await supabase
     .from('platform_config')
     .select('value')
     .eq('key', 'wa_sending_enabled')
     .maybeSingle();
-  if (cfg?.value === false) return false;
+  if (cfg?.value === false) return { skipped: true };
 
   const to = digitsOnly(opts.phone ?? '');
-  if (!to) return false;
+  if (!to) return { skipped: true };
 
-  return postWhatsappTemplate({
-    templateName: 'chq_credit_expiry',
-    languageCode: 'ar_EG',
-    toDigits: to,
-    bodyParameters: [opts.name, opts.amountStr, opts.expiresOnStr],
-  });
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+
+  try {
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [opts.name, opts.amountStr, opts.expiresOnStr],
+    });
+    if (!ok) {
+      console.error(`[centerNotify] ${TEMPLATE} send failed:`, opts.name);
+      return { error: true };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE} send failed:`, err);
+    return { error: true };
+  }
 }
 
 /** chq_payment_failed — subscription Paymob failure (Session E). Pass `templateEnabled` from route flag. */
@@ -170,74 +261,119 @@ export async function sendChqPaymentFailedTemplate(
   supabase: SupabaseClient,
   templateEnabled: boolean,
   opts: { name: string; phone: string | null; amountStr: string },
-): Promise<boolean> {
-  if (!templateEnabled) return false;
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_payment_failed';
+  if (!templateEnabled) return { skipped: true };
 
   const { data: cfg } = await supabase
     .from('platform_config')
     .select('value')
     .eq('key', 'wa_sending_enabled')
     .maybeSingle();
-  if (cfg?.value === false) return false;
+  if (cfg?.value === false) return { skipped: true };
 
   const to = digitsOnly(opts.phone ?? '');
-  if (!to) return false;
+  if (!to) return { skipped: true };
 
-  return postWhatsappTemplate({
-    templateName: 'chq_payment_failed',
-    languageCode: 'ar_EG',
-    toDigits: to,
-    bodyParameters: [opts.name, opts.amountStr],
-  });
-}
-
-export async function sendWelcomeTemplate(center: {
-  id: string;
-  name: string;
-  phone: string | null;
-}): Promise<void> {
-  if (!center.phone || !digitsOnly(center.phone)) {
-    console.warn('[centerNotify] Welcome skipped — no phone', center.id);
-    return;
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
   }
+
   try {
     const ok = await postWhatsappTemplate({
-      templateName: 'chq_welcome',
+      templateName: TEMPLATE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [opts.name, opts.amountStr],
+    });
+    if (!ok) {
+      console.error(`[centerNotify] ${TEMPLATE} send failed:`, opts.name);
+      return { error: true };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE} send failed:`, err);
+    return { error: true };
+  }
+}
+
+export async function sendWelcomeTemplate(
+  supabase: SupabaseClient,
+  center: {
+    id: string;
+    name: string;
+    phone: string | null;
+  },
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_welcome';
+  if (!center.phone || !digitsOnly(center.phone)) {
+    console.warn('[centerNotify] Welcome skipped — no phone', center.id);
+    return { skipped: true };
+  }
+
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+
+  try {
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: digitsOnly(center.phone),
       bodyParameters: [center.name, PLATFORM_URL, center.phone],
     });
     if (ok) {
       console.log('[centerNotify] Welcome sent to', center.name);
+      return { success: true };
     }
+    console.error(`[centerNotify] ${TEMPLATE} send failed:`, center.name);
+    return { error: true };
   } catch (err) {
-    console.error('[centerNotify] Welcome send failed:', err);
+    console.error(`[centerNotify] ${TEMPLATE} send failed:`, err);
+    return { error: true };
   }
 }
 
-export async function sendOnboardingStep1Template(center: {
-  id: string;
-  name: string;
-  phone: string | null;
-}): Promise<boolean> {
+export async function sendOnboardingStep1Template(
+  supabase: SupabaseClient,
+  center: {
+    id: string;
+    name: string;
+    phone: string | null;
+  },
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_onboarding_step1';
   if (!center.phone || !digitsOnly(center.phone)) {
     console.warn('[centerNotify] Onboarding step1 skipped — no phone', center.id);
-    return false;
+    return { skipped: true };
   }
+
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+
   try {
     const ok = await postWhatsappTemplate({
-      templateName: 'chq_onboarding_step1',
+      templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: digitsOnly(center.phone),
       bodyParameters: [center.name, PLATFORM_URL],
     });
     if (ok) {
       console.log('[centerNotify] Onboarding step1 sent to', center.name);
+      return { success: true };
     }
-    return ok;
+    console.error(`[centerNotify] ${TEMPLATE} send failed:`, center.name);
+    return { error: true };
   } catch (err) {
-    console.error('[centerNotify] Onboarding step1 send failed:', err);
-    return false;
+    console.error(`[centerNotify] ${TEMPLATE} send failed:`, err);
+    return { error: true };
   }
 }
 
@@ -245,9 +381,7 @@ export async function sendOnboardingStep1Template(center: {
  * Renewal reminder (7 days before due), overdue template + optional suspend,
  * onboarding step 1 (24h after approval). Called from process-renewals cron.
  */
-export async function runProcessRenewalWhatsappTemplates(
-  supabase: SupabaseClient,
-): Promise<{
+export async function runProcessRenewalWhatsappTemplates(supabase: SupabaseClient): Promise<{
   renewalReminders: number;
   overdueReminders: number;
   suspended: number;
@@ -273,21 +407,25 @@ export async function runProcessRenewalWhatsappTemplates(
     console.error('[centerNotify] onboarding step1 query:', onboardErr);
   } else {
     for (const raw of onboardRows ?? []) {
-      const r = raw as {
-        id: string;
-        name: string;
-        phone: string | null;
-      };
-      const sentOk = await sendOnboardingStep1Template(r);
-      if (!sentOk) continue;
-      const { error: upErr } = await supabase
-        .from('centers')
-        .update({ onboarding_step1_sent_at: new Date().toISOString() })
-        .eq('id', r.id);
-      if (upErr) {
-        console.error('[centerNotify] onboarding_step1_sent_at update failed:', r.id, upErr);
-      } else {
-        onboardingStep1 += 1;
+      try {
+        const r = raw as {
+          id: string;
+          name: string;
+          phone: string | null;
+        };
+        const sentRes = await sendOnboardingStep1Template(supabase, r);
+        if (!sentRes.success) continue;
+        const { error: upErr } = await supabase
+          .from('centers')
+          .update({ onboarding_step1_sent_at: new Date().toISOString() })
+          .eq('id', r.id);
+        if (upErr) {
+          console.error('[centerNotify] onboarding_step1_sent_at update failed:', r.id, upErr);
+        } else {
+          onboardingStep1 += 1;
+        }
+      } catch (loopErr) {
+        console.error('[centerNotify] onboarding step1 loop:', loopErr);
       }
     }
   }
@@ -313,6 +451,7 @@ function canSendInactivityAlert(row: CenterChurnRow, thresholdDateStr: string): 
 export async function runChqInactivityAlertTemplates(supabase: SupabaseClient): Promise<number> {
   let sent = 0;
   const thresholdDateStr = sixDaysAgoCairoSafe();
+  const TEMPLATE = 'chq_inactivity_alert';
 
   const { data: centers, error: cErr } = await supabase
     .from('centers')
@@ -325,50 +464,68 @@ export async function runChqInactivityAlertTemplates(supabase: SupabaseClient): 
     return 0;
   }
 
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return 0;
+  }
+
   for (const raw of centers ?? []) {
-    const row = raw as CenterChurnRow;
-    if (!canSendInactivityAlert(row, thresholdDateStr)) continue;
+    try {
+      const row = raw as CenterChurnRow;
+      if (!canSendInactivityAlert(row, thresholdDateStr)) continue;
 
-    const { data: lastRow } = await supabase
-      .from('attendance_scans')
-      .select('scanned_at')
-      .eq('center_id', row.id)
-      .order('scanned_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      const { data: lastRow } = await supabase
+        .from('attendance_scans')
+        .select('scanned_at')
+        .eq('center_id', row.id)
+        .order('scanned_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    const lastScan = (lastRow as { scanned_at?: string } | null)?.scanned_at ?? null;
-    const lastScanAt = lastScan ? new Date(lastScan) : null;
-    const daysInactive = lastScanAt
-      ? Math.floor((Date.now() - lastScanAt.getTime()) / (24 * 60 * 60 * 1000))
-      : 999;
+      const lastScan = (lastRow as { scanned_at?: string } | null)?.scanned_at ?? null;
+      const lastScanAt = lastScan ? new Date(lastScan) : null;
+      const daysInactive = lastScanAt
+        ? Math.floor((Date.now() - lastScanAt.getTime()) / (24 * 60 * 60 * 1000))
+        : 999;
 
-    if (daysInactive <= 5) continue;
+      if (daysInactive <= 5) continue;
 
-    const to = digitsOnly(row.phone ?? '');
-    if (!to) {
-      console.warn('[centerNotify] inactivity skip invalid phone', row.id);
-      continue;
-    }
-
-    const daysStr = String(lastScan ? daysInactive : 999);
-    const ok = await postWhatsappTemplate({
-      templateName: 'chq_inactivity_alert',
-      languageCode: 'ar',
-      toDigits: to,
-      bodyParameters: [row.name ?? '—', daysStr],
-    });
-
-    if (ok) {
-      const { error: upErr } = await supabase
-        .from('centers')
-        .update({ inactivity_alert_sent_at: new Date().toISOString() })
-        .eq('id', row.id);
-      if (upErr) {
-        console.error('[centerNotify] inactivity_alert_sent_at update failed:', row.id, upErr);
-      } else {
-        sent += 1;
+      const to = digitsOnly(row.phone ?? '');
+      if (!to) {
+        console.warn('[centerNotify] inactivity skip invalid phone', row.id);
+        continue;
       }
+
+      const daysStr = String(lastScan ? daysInactive : 999);
+      let ok = false;
+      try {
+        ok = await postWhatsappTemplate({
+          templateName: TEMPLATE,
+          languageCode: 'ar',
+          toDigits: to,
+          bodyParameters: [row.name ?? '—', daysStr],
+        });
+      } catch (sendErr) {
+        console.error(`[centerNotify] ${TEMPLATE} send failed:`, sendErr);
+        continue;
+      }
+
+      if (ok) {
+        const { error: upErr } = await supabase
+          .from('centers')
+          .update({ inactivity_alert_sent_at: new Date().toISOString() })
+          .eq('id', row.id);
+        if (upErr) {
+          console.error('[centerNotify] inactivity_alert_sent_at update failed:', row.id, upErr);
+        } else {
+          sent += 1;
+        }
+      } else {
+        console.error(`[centerNotify] ${TEMPLATE} send failed for center`, row.id);
+      }
+    } catch (rowErr) {
+      console.error('[centerNotify] inactivity row error:', rowErr);
     }
   }
 

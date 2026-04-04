@@ -151,12 +151,17 @@ export async function POST(request: Request) {
         const exp = new Date(row.expires_at);
         const expiresOnStr = exp.toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
 
-        const sent = await sendChqCreditExpiryTemplate(supabase, creditExpiryWaEnabled, {
-          name: meta?.name ?? '—',
-          phone: meta?.phone ?? null,
-          amountStr: String(row.amount ?? 0),
-          expiresOnStr,
-        });
+        let sent: Awaited<ReturnType<typeof sendChqCreditExpiryTemplate>> = { skipped: true };
+        try {
+          sent = await sendChqCreditExpiryTemplate(supabase, creditExpiryWaEnabled, {
+            name: meta?.name ?? '—',
+            phone: meta?.phone ?? null,
+            amountStr: String(row.amount ?? 0),
+            expiresOnStr,
+          });
+        } catch (waErr) {
+          console.error('[cron/expire-credits] WA send error:', waErr);
+        }
 
         if (!creditExpiryWaEnabled) {
           console.log('[cron/expire-credits] WA template queue chq_credit_expiry', {
@@ -164,7 +169,7 @@ export async function POST(request: Request) {
             amount: row.amount,
             expiresOnStr,
           });
-        } else if (!sent) {
+        } else if (sent?.error) {
           console.warn('[cron/expire-credits] chq_credit_expiry send failed', row.center_id);
         }
       }

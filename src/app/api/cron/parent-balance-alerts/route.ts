@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import { toArabicNumerals, WA_TEMPLATES } from '@/lib/parentPack';
 
@@ -85,12 +86,21 @@ export async function POST(request: Request) {
 
       if (!recentAlert) {
         const centerName = centerNameMap.get(student.center_id) ?? '';
-        await sendTemplateMessage(student.center_id as string, student.parent_phone as string, WA_TEMPLATES.PARENT_BALANCE_DUE, {
-          '1': student.name,
-          '2': centerName,
-          '3': toArabicNumerals(Math.round(feeAmount)),
-        });
-        sent += 1;
+        const tmpl = WA_TEMPLATES.PARENT_BALANCE_DUE;
+        if (!(await isTemplateApproved(tmpl, supabaseAdmin))) {
+          skipped += 1;
+          continue;
+        }
+        try {
+          await sendTemplateMessage(student.center_id as string, student.parent_phone as string, tmpl, {
+            '1': student.name,
+            '2': centerName,
+            '3': toArabicNumerals(Math.round(feeAmount)),
+          });
+          sent += 1;
+        } catch (waErr) {
+          console.error('[parent-balance-alerts] WA send error:', waErr);
+        }
       } else {
         skipped += 1;
       }

@@ -259,7 +259,11 @@ export async function processSignupAutoApprovalAfterPaymobSuccess(
       .eq('key', 'wa_sending_enabled')
       .maybeSingle();
     if (waCfg?.value !== false) {
-      await sendWelcomeTemplate({ id: centerId, name: c.name, phone: c.phone ?? null });
+      try {
+        await sendWelcomeTemplate(supabase, { id: centerId, name: c.name, phone: c.phone ?? null });
+      } catch (waErr) {
+        console.error('[signupAutoApprove] WA send error:', waErr);
+      }
     }
   } catch (e) {
     console.error('[signupAutoApprove] chq_welcome', e);

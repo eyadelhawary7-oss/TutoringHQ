@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import {
   getCurrentCairoTime,
@@ -100,16 +101,22 @@ export async function POST(request: Request) {
             .maybeSingle();
 
           if (!scan) {
+            const tmpl = WA_TEMPLATES.PARENT_ABSENCE;
+            if (!(await isTemplateApproved(tmpl, supabaseAdmin))) continue;
             sentToday.add(s.id);
             const rawG = slot.student_groups as unknown;
             const gObj = (Array.isArray(rawG) ? rawG[0] : rawG) as { name?: string } | null;
             const groupName = gObj?.name ?? '';
             const dateDisplay = toArabicNumerals(todayCairo.split('-').reverse().join('/'));
-            await sendTemplateMessage(center.id, s.parent_phone, WA_TEMPLATES.PARENT_ABSENCE, {
-              '1': s.name,
-              '2': groupName,
-              '3': dateDisplay,
-            });
+            try {
+              await sendTemplateMessage(center.id, s.parent_phone, tmpl, {
+                '1': s.name,
+                '2': groupName,
+                '3': dateDisplay,
+              });
+            } catch (waErr) {
+              console.error('[parent-absence-alerts] WA send error:', waErr);
+            }
           }
         }
       }

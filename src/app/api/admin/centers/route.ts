@@ -824,11 +824,15 @@ export async function PUT(request: Request) {
       .update(centerUpdates)
       .eq('id', centerId);
 
-    await sendWelcomeTemplate({
-      id: centerId,
-      name: (center.name as string) ?? '',
-      phone: (center.phone as string | null) ?? (phone as string | null) ?? null,
-    });
+    try {
+      await sendWelcomeTemplate(supabaseAdmin, {
+        id: centerId,
+        name: (center.name as string) ?? '',
+        phone: (center.phone as string | null) ?? (phone as string | null) ?? null,
+      });
+    } catch (waErr) {
+      console.error('[admin/centers] WA send error:', waErr);
+    }
 
     await logAdminAction(user.id, 'approve_signup', { centerId, centerName: center.name }, centerId);
 

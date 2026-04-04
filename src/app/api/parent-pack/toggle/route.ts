@@ -158,13 +158,17 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: updateErr.message }, { status: 500 })
       }
 
-      await sendChqPackInvoiceTemplate(ctx.supabaseAdmin, packInvoiceEnabled, {
-        name: (centerRow as { name?: string }).name ?? '—',
-        phone: (centerRow as { phone?: string | null }).phone ?? null,
-        monthArabic: billingPeriodArabicMonthYear(ym),
-        parentCountStr: String(rolling),
-        amountStr: String(proratedTotal),
-      })
+      try {
+        await sendChqPackInvoiceTemplate(ctx.supabaseAdmin, packInvoiceEnabled, {
+          name: (centerRow as { name?: string }).name ?? '—',
+          phone: (centerRow as { phone?: string | null }).phone ?? null,
+          monthArabic: billingPeriodArabicMonthYear(ym),
+          parentCountStr: String(rolling),
+          amountStr: String(proratedTotal),
+        })
+      } catch (waErr) {
+        console.error('[parent-pack/toggle] WA send error:', waErr)
+      }
 
       return NextResponse.json({
         pack_enabled: false,

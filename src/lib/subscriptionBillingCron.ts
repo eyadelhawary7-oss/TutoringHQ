@@ -190,13 +190,13 @@ export async function runSubscriptionBillingCron(
         .maybeSingle();
       if (dup) continue;
 
-      const ok = await sendChqRenewalOverdueTemplate({
+      const waRes = await sendChqRenewalOverdueTemplate(supabase, {
         name: c.name,
         phone: c.phone,
         daysLate: '3',
         amountStr: String(c.billing_amount ?? 0),
       });
-      if (!ok) continue;
+      if (!waRes.success) continue;
 
       await supabase.from('renewal_reminders_sent').upsert(
         {
@@ -261,13 +261,13 @@ export async function runSubscriptionBillingCron(
         .maybeSingle();
       if (dup7) continue;
 
-      const ok = await sendChqRenewalOverdueTemplate({
+      const waRes = await sendChqRenewalOverdueTemplate(supabase, {
         name: c.name,
         phone: c.phone,
         daysLate: '7',
         amountStr: String(c.billing_amount ?? 0),
       });
-      if (!ok) continue;
+      if (!waRes.success) continue;
 
       await supabase.from('renewal_reminders_sent').upsert(
         {

@@ -104,7 +104,13 @@ export async function POST(request: Request) {
 
     for (const a of actions) {
       try {
-        const r = await sendRenewalReminder({ center: a.center, stage: a.stage });
+        let r: { success: boolean; error?: string };
+        try {
+          r = await sendRenewalReminder({ center: a.center, stage: a.stage });
+        } catch (waErr) {
+          console.error('[process-renewals] WA send error:', waErr);
+          r = { success: false, error: 'exception' };
+        }
         if (!r.success) {
           console.error(`[process-renewals] sendRenewalReminder failed: ${a.centerId} ${a.stage}: ${r.error}`);
           continue;
@@ -131,13 +137,17 @@ export async function POST(request: Request) {
           const daysOverdue = renewal
             ? Math.round((today.getTime() - renewal.getTime()) / (24 * 60 * 60 * 1000))
             : 9;
-          await sendRenewalSalesManagerAlert({
-            centerId: a.centerId,
-            centerName: a.center.name,
-            renewalDate: a.center.subscription_renewal_date,
-            monthlyFee: a.center.subscription_monthly_fee,
-            daysOverdue,
-          });
+          try {
+            await sendRenewalSalesManagerAlert({
+              centerId: a.centerId,
+              centerName: a.center.name,
+              renewalDate: a.center.subscription_renewal_date,
+              monthlyFee: a.center.subscription_monthly_fee,
+              daysOverdue,
+            });
+          } catch (waErr) {
+            console.error('[process-renewals] WA sales alert error:', waErr);
+          }
         }
 
         const { data: centerRow } = await supabase

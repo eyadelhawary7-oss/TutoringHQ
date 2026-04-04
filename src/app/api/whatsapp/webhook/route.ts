@@ -17,6 +17,23 @@ import {
 import { pauseOnboardingFlow } from '@/lib/whatsapp/flows/onboarding';
 import { handleVendorReadySignal, isVendorInboundPhone } from '@/lib/vendorWebhook';
 
+/*
+ * ⚠️ WHATSAPP_APP_SECRET SETUP
+ *
+ * Current Vercel env var WHATSAPP_APP_SECRET is incorrect.
+ * To fix:
+ *   1. Go to Meta Developer Console:
+ *      https://developers.facebook.com/apps/258060157715714098/settings/basic/
+ *   2. Copy "App Secret" (click Show)
+ *   3. Run: vercel env rm WHATSAPP_APP_SECRET production
+ *      Then: vercel env add WHATSAPP_APP_SECRET production
+ *      Paste the correct value
+ *   4. Redeploy: vercel --prod
+ *
+ * Until fixed: all incoming WA messages return 403
+ * This does NOT block outgoing messages
+ */
+
 const HOLDING_HOURS = 4;
 
 /** Meta sends sha256=<hex> (64 hex chars), not base64. */
@@ -70,6 +87,23 @@ async function verifySignature(
   if (diff !== 0) {
     throw new Error('Signature mismatch');
   }
+}
+
+/** Lowercase hex HMAC-SHA256 of raw body (for dev logging vs X-Hub-Signature-256). */
+async function computeExpectedSignatureHex(rawBody: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const rawBytes = new TextEncoder().encode(rawBody);
+  const signature = await crypto.subtle.sign('HMAC', key, rawBytes);
+  const computedBytes = new Uint8Array(signature);
+  return Array.from(computedBytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 /** Minimal type for wa_* table access (not in generated schema) */
@@ -432,6 +466,20 @@ export async function POST(request: Request) {
   const body = await request.text();
   const signatureHeader = request.headers.get('x-hub-signature-256');
   const secret = process.env.WHATSAPP_APP_SECRET;
+  const receivedSignature = signatureHeader?.replace(/^sha256=/i, '').trim() ?? '';
+
+  if (!secret) {
+    console.error('[WA webhook] WHATSAPP_APP_SECRET not set');
+    return NextResponse.json({ error: 'Configuration error' }, { status: 500 });
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    const expectedSignature = await computeExpectedSignatureHex(body, secret);
+    console.log('[WA webhook] Signature check:', {
+      expected: expectedSignature?.slice(0, 10),
+      received: receivedSignature?.slice(0, 10),
+    });
+  }
 
   console.log('[WA webhook] Verifying signature...');
   console.log(
@@ -439,11 +487,6 @@ export async function POST(request: Request) {
     !!request.headers.get('x-hub-signature-256'),
   );
   console.log('[WA webhook] WHATSAPP_APP_SECRET set:', !!process.env.WHATSAPP_APP_SECRET);
-
-  if (!secret) {
-    console.error('[WhatsApp webhook] WHATSAPP_APP_SECRET not configured');
-    return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
-  }
 
   try {
     await verifySignature(body, signatureHeader, secret);

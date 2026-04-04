@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '../client';
 import { getImpliedMonthlyMrr, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 
@@ -49,6 +50,10 @@ export async function sendCeoBriefing(data: CeoBriefingData): Promise<{ success:
   const centerId = (firstCenter as { id: string } | null)?.id;
   if (!centerId) {
     return { success: false, error: 'No center found for logging' };
+  }
+
+  if (!(await isTemplateApproved(TEMPLATE, supabase))) {
+    return { success: true };
   }
 
   const variables: Record<string, string> = {

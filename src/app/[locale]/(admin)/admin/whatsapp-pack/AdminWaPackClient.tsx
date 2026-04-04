@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { Loader2, MessageCircle } from 'lucide-react'
+import { Loader2, MessageCircle, RefreshCw } from 'lucide-react'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { AdminSidebar } from '@/components/AdminSidebar'
 import { useLayout } from '@/contexts/LayoutContext'
@@ -288,6 +288,41 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   }
 
   const pendingCenters = localCenters.filter((c) => c.pack_request_status === 'pending')
+  const [syncingTemplates, setSyncingTemplates] = useState(false)
+
+  async function syncMetaTemplates() {
+    if (syncingTemplates) return
+    setSyncingTemplates(true)
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) {
+        toast.error('Not signed in')
+        return
+      }
+      const res = await fetch('/api/admin/whatsapp/sync-templates', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const body = (await res.json().catch(() => ({}))) as {
+        ok?: boolean
+        upserted?: number
+        fetched?: number
+        error?: string
+      }
+      if (!res.ok) {
+        toast.error(body.error || 'Sync failed')
+        return
+      }
+      toast.success(`Synced ${body.upserted ?? 0} templates (${body.fetched ?? 0} from Meta)`)
+    } catch {
+      toast.error('Sync request failed')
+    } finally {
+      setSyncingTemplates(false)
+    }
+  }
 
   return (
     <>
@@ -296,10 +331,23 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
         <AdminSidebar activeRoute="/admin/whatsapp-pack" />
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:ms-56">
         <div className="mx-auto max-w-6xl space-y-8">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <MessageCircle className="h-8 w-8 text-teal-600" aria-hidden />
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
             {savingConfig ? <Loader2 className="h-5 w-5 animate-spin text-teal-600" aria-hidden /> : null}
+            <button
+              type="button"
+              onClick={() => void syncMetaTemplates()}
+              disabled={syncingTemplates}
+              className="ms-auto inline-flex items-center gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] disabled:opacity-50"
+            >
+              {syncingTemplates ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <RefreshCw className="h-4 w-4" aria-hidden />
+              )}
+              Sync Templates
+            </button>
           </div>
 
           <section className="grid gap-4 sm:grid-cols-3">

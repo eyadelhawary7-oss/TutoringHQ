@@ -161,9 +161,14 @@ export async function POST(request: Request) {
           pendingBalanceTotal,
         };
 
-        const r = await sendDailySummary(payload);
+        let r: { success: boolean; error?: string } = { success: false };
+        try {
+          r = await sendDailySummary(payload);
+        } catch (waErr) {
+          console.error('[daily-summary] WA send error:', waErr);
+        }
         if (r.success) processed++;
-        else console.error(`[daily-summary] ${centerId}: ${r.error}`);
+        else if (r.error) console.error(`[daily-summary] ${centerId}: ${r.error}`);
       } catch (err) {
         console.error(`[daily-summary] Error for ${center.id}:`, err);
       }

@@ -78,12 +78,16 @@ async function handlePlanUpgradeInvoicePaid(
     .maybeSingle();
 
   const c = center as { name?: string; phone?: string | null; billing_amount?: number | null } | null;
-  await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
-    name: c?.name ?? '—',
-    phone: c?.phone ?? null,
-    billingPeriodLabel: QUARTERLY_LABEL_AR,
-    billingAmountStr: String(c?.billing_amount ?? newAmt),
-  });
+  try {
+    await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
+      name: c?.name ?? '—',
+      phone: c?.phone ?? null,
+      billingPeriodLabel: QUARTERLY_LABEL_AR,
+      billingAmountStr: String(c?.billing_amount ?? newAmt),
+    });
+  } catch (waErr) {
+    console.error('[invoicePaymob] WA send error:', waErr);
+  }
 }
 
 async function handleSubscriptionInvoicePaid(
@@ -151,12 +155,16 @@ async function handleSubscriptionInvoicePaid(
     console.error('[invoicePaymob] center update subscription paid', cErr);
   }
 
-  await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
-    name: c.name ?? '—',
-    phone: c.phone ?? null,
-    billingPeriodLabel: QUARTERLY_LABEL_AR,
-    billingAmountStr: String(c.billing_amount ?? totalAmt),
-  });
+  try {
+    await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
+      name: c.name ?? '—',
+      phone: c.phone ?? null,
+      billingPeriodLabel: QUARTERLY_LABEL_AR,
+      billingAmountStr: String(c.billing_amount ?? totalAmt),
+    });
+  } catch (waErr) {
+    console.error('[invoicePaymob] WA send error:', waErr);
+  }
 }
 
 async function handlePackBillingInvoicePaid(
@@ -315,11 +323,15 @@ export async function notifySubscriptionInvoicePaymentFailed(
     .maybeSingle();
 
   const c = center as { name?: string; phone?: string | null } | null;
-  await sendChqPaymentFailedTemplate(supabaseAdmin, templateEnabled, {
-    name: c?.name ?? '—',
-    phone: c?.phone ?? null,
-    amountStr: String(row.total_amount ?? ''),
-  });
+  try {
+    await sendChqPaymentFailedTemplate(supabaseAdmin, templateEnabled, {
+      name: c?.name ?? '—',
+      phone: c?.phone ?? null,
+      amountStr: String(row.total_amount ?? ''),
+    });
+  } catch (waErr) {
+    console.error('[invoicePaymob] WA send error:', waErr);
+  }
 }
 
 /**
