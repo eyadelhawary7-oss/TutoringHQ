@@ -1,0 +1,283 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+const supabaseAdmin =
+  supabaseUrl && supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      })
+    : null
+
+async function getAdminUser(request: Request) {
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseAdmin) return null
+
+  const cookieStore = await cookies()
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
+        } catch {
+          /* read-only cookie context */
+        }
+      },
+    },
+  })
+
+  let userId: string | null = null
+  const {
+    data: { user: cookieUser },
+  } = await supabase.auth.getUser()
+  if (cookieUser) userId = cookieUser.id
+  else {
+    const authHeader = request.headers.get('Authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      const {
+        data: { user: bearerUser },
+        error,
+      } = await supabase.auth.getUser(token)
+      if (bearerUser && !error) userId = bearerUser.id
+    }
+  }
+
+  if (!userId) return null
+  const { data: adminUser } = await supabaseAdmin
+    .from('admin_users')
+    .select('id, role')
+    .eq('id', userId)
+    .single()
+  return adminUser
+}
+
+const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/
+
+// GET /api/admin/payouts — list all payouts
+export async function GET(request: Request) {
+  if (!supabaseAdmin) {
+    return NextResponse.json({ errorKey: 'payouts.errors.listFailed' }, { status: 500 })
+  }
+
+  const admin = await getAdminUser(request)
+  if (!admin) {
+    return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
+  }
+  if (admin.role !== 'super_admin') {
+    return NextResponse.json({ errorKey: 'payouts.errors.forbidden' }, { status: 403 })
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('commission_payouts')
+    .select(`*, staff(id, name, role, base_salary)`)
+    .order('period', { ascending: false })
+
+  if (error) {
+    return NextResponse.json(
+      { errorKey: 'payouts.errors.listFailed', error: error.message },
+      { status: 500 },
+    )
+  }
+  return NextResponse.json({ payouts: data ?? [] })
+}
+
+// POST — generate payout for a period (super_admin only)
+export async function POST(request: Request) {
+  if (!supabaseAdmin) {
+    return NextResponse.json({ errorKey: 'payouts.errors.saveFailed' }, { status: 500 })
+  }
+
+  const admin = await getAdminUser(request)
+  if (!admin) {
+    return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
+  }
+  if (admin.role !== 'super_admin') {
+    return NextResponse.json({ errorKey: 'payouts.errors.forbidden' }, { status: 403 })
+  }
+
+  const body = await request.json()
+  const { period, staff_id } = body
+
+  if (!period || !PERIOD_RE.test(period)) {
+    return NextResponse.json({ errorKey: 'payouts.errors.invalidPeriod' }, { status: 400 })
+  }
+  if (!staff_id) {
+    return NextResponse.json({ errorKey: 'payouts.errors.staffRequired' }, { status: 400 })
+  }
+
+  const { data: existing } = await supabaseAdmin
+    .from('commission_payouts')
+    .select('id, status')
+    .eq('staff_id', staff_id)
+    .eq('period', period)
+    .maybeSingle()
+
+  if (existing) {
+    return NextResponse.json(
+      {
+        errorKey: 'payouts.errors.exists',
+        existing_status: existing.status,
+        payout_id: existing.id,
+      },
+      { status: 409 },
+    )
+  }
+
+  const { data: staffMember, error: staffErr } = await supabaseAdmin
+    .from('staff')
+    .select('*')
+    .eq('id', staff_id)
+    .single()
+  if (staffErr || !staffMember) {
+    return NextResponse.json({ errorKey: 'payouts.errors.staffNotFound' }, { status: 404 })
+  }
+
+  const [year, month] = period.split('-').map(Number)
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const hireDate = new Date(staffMember.hire_date as string)
+  let baseSalary = Number(staffMember.base_salary)
+
+  if (
+    hireDate.getFullYear() === year &&
+    hireDate.getMonth() + 1 === month &&
+    hireDate.getDate() > 1
+  ) {
+    const daysWorked = daysInMonth - hireDate.getDate() + 1
+    baseSalary = Math.round(baseSalary * (daysWorked / daysInMonth))
+  }
+
+  const { data: t1Commissions } = await supabaseAdmin
+    .from('commissions')
+    .select('id, t1_amount, commission_type, plan_at_signing, center_id')
+    .eq('staff_id', staff_id)
+    .eq('t1_status', 'eligible')
+    .neq('commission_type', 'override')
+
+  const { data: t2Commissions } = await supabaseAdmin
+    .from('commissions')
+    .select('id, t2_amount, commission_type, plan_at_signing, center_id')
+    .eq('staff_id', staff_id)
+    .eq('t2_status', 'eligible')
+    .neq('commission_type', 'override')
+
+  const { data: loyaltyCommissions } = await supabaseAdmin
+    .from('commissions')
+    .select('id, loyalty_bonus_amount, center_id')
+    .eq('staff_id', staff_id)
+    .eq('loyalty_bonus_status', 'eligible')
+    .neq('commission_type', 'override')
+
+  const { data: overrideCommissions } = await supabaseAdmin
+    .from('commissions')
+    .select('id, t1_amount, t2_amount, t1_status, t2_status, center_id')
+    .eq('staff_id', staff_id)
+    .eq('commission_type', 'override')
+
+  const t1Total = (t1Commissions ?? []).reduce((s, c) => s + Number(c.t1_amount), 0)
+  const t2Total = (t2Commissions ?? []).reduce((s, c) => s + Number(c.t2_amount), 0)
+  const loyaltyTotal = (loyaltyCommissions ?? []).reduce(
+    (s, c) => s + Number(c.loyalty_bonus_amount),
+    0,
+  )
+  const overrideT1 = (overrideCommissions ?? [])
+    .filter((c) => c.t1_status === 'eligible')
+    .reduce((s, c) => s + Number(c.t1_amount), 0)
+  const overrideT2 = (overrideCommissions ?? [])
+    .filter((c) => c.t2_status === 'eligible')
+    .reduce((s, c) => s + Number(c.t2_amount), 0)
+  const overrideTotal = overrideT1 + overrideT2
+
+  const { data: prevPayout } = await supabaseAdmin
+    .from('commission_payouts')
+    .select('adjustment_amount')
+    .eq('staff_id', staff_id)
+    .in('status', ['confirmed', 'paid'])
+    .order('period', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const carryover = Number(prevPayout?.adjustment_amount ?? 0)
+  const commissionIds = new Set<string>()
+  for (const c of t1Commissions ?? []) commissionIds.add(c.id)
+  for (const c of t2Commissions ?? []) commissionIds.add(c.id)
+  for (const c of loyaltyCommissions ?? []) commissionIds.add(c.id)
+  for (const c of overrideCommissions ?? []) commissionIds.add(c.id)
+  const commissionCount = commissionIds.size
+
+  const totalAmount =
+    baseSalary + t1Total + t2Total + loyaltyTotal + overrideTotal + carryover
+  const requiresReview = totalAmount > Number(staffMember.base_salary) * 5
+
+  const breakdown = {
+    t1_details: (t1Commissions ?? []).map((c) => ({
+      id: c.id,
+      amount: Number(c.t1_amount),
+      plan: c.plan_at_signing,
+    })),
+    t2_details: (t2Commissions ?? []).map((c) => ({
+      id: c.id,
+      amount: Number(c.t2_amount),
+      plan: c.plan_at_signing,
+    })),
+    loyalty_details: (loyaltyCommissions ?? []).map((c) => ({
+      id: c.id,
+      amount: Number(c.loyalty_bonus_amount),
+    })),
+    override_detail: { t1: overrideT1, t2: overrideT2 },
+    override_details: (overrideCommissions ?? []).map((c) => ({
+      id: c.id,
+      t1_status: c.t1_status,
+      t2_status: c.t2_status,
+    })),
+    carryover_from_prev: carryover,
+  }
+
+  const { data: payout, error } = await supabaseAdmin
+    .from('commission_payouts')
+    .insert({
+      staff_id,
+      period,
+      total_amount: totalAmount,
+      base_salary: baseSalary,
+      t1_commissions: t1Total,
+      t2_commissions: t2Total,
+      loyalty_bonuses: loyaltyTotal,
+      override_commissions: overrideTotal,
+      commission_count: commissionCount,
+      breakdown,
+      requires_review: requiresReview,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json(
+      { errorKey: 'payouts.errors.saveFailed', error: error.message },
+      { status: 500 },
+    )
+  }
+
+  const firstCommissionId =
+    t1Commissions?.[0]?.id ?? t2Commissions?.[0]?.id ?? loyaltyCommissions?.[0]?.id ?? null
+
+  await supabaseAdmin.from('commission_audit_log').insert({
+    payout_id: payout.id,
+    commission_id: firstCommissionId,
+    action: 'payout_confirmed',
+    triggered_by: 'system',
+    performed_by: admin.id,
+    new_value: { period, total: totalAmount, requires_review: requiresReview, status: 'draft' },
+  })
+
+  return NextResponse.json({ payout }, { status: 201 })
+}
