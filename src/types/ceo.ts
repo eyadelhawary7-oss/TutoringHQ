@@ -10,6 +10,7 @@ export type ActionType =
   | 'ops'
   | 'renewal'
   | 'cancellation_request'
+  | 'pack_billing_blocked'
 
 export interface SalesLead {
   id: string

@@ -9,7 +9,7 @@ import {
 import {
   billingPeriodArabicMonthYear,
   computeRollingParentCount,
-  getPackPlanMinimumEgp,
+  resolvePackBillingMinimumEgp,
 } from '@/lib/packBilling';
 import { sendChqPackInvoiceTemplate } from '@/lib/centerNotify';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
@@ -89,12 +89,24 @@ export async function POST(request: Request) {
     }
 
     const list = centers ?? [];
+    let skippedTopCentersPack = 0;
 
     for (const center of list) {
       const centerId = center.id as string;
       const plan = String(center.plan ?? '');
       const sessionD =
         center.parent_pack_enabled === true && String(center.pack_request_status ?? '') === 'approved';
+
+      const packBillingMin = await resolvePackBillingMinimumEgp(supabaseAdmin, {
+        id: centerId,
+        name: String((center as { name?: string }).name ?? ''),
+        plan,
+        pack_custom_invoice_minimum: (center as { pack_custom_invoice_minimum?: number | null })
+          .pack_custom_invoice_minimum,
+      });
+      if (packBillingMin === null) {
+        skippedTopCentersPack += 1;
+      }
 
       if (sessionD) {
         const [billingYear, billingMonth] = prevPeriod.split('-');
@@ -108,14 +120,10 @@ export async function POST(request: Request) {
           .eq('invoice_number', invoiceNumber)
           .maybeSingle();
 
-        if (!existsPackInv) {
+        if (!existsPackInv && packBillingMin !== null) {
           const rolling = await computeRollingParentCount(supabaseAdmin, centerId, prevPeriod);
           const pricePer = Number((center as { pack_price_per_parent?: number }).pack_price_per_parent ?? 12);
-          const planMin = getPackPlanMinimumEgp(
-            plan,
-            (center as { pack_custom_invoice_minimum?: number | null }).pack_custom_invoice_minimum,
-          );
-          const baseLine = Math.max(rolling * pricePer, planMin);
+          const baseLine = Math.max(rolling * pricePer, packBillingMin);
           const pending = Number((center as { pack_pending_balance?: number }).pack_pending_balance ?? 0);
           const totalAmount = baseLine + (pending > 0 ? pending : 0);
 
@@ -179,13 +187,15 @@ export async function POST(request: Request) {
         const newPendingBalance = prevBal + monthlyCharge;
         const newMonthsWithoutInvoice = billedStudents === 0 ? prevMonths : prevMonths + 1;
 
-        const issue = shouldIssueInvoice({
-          plan,
-          customMinimum: center.pack_custom_invoice_minimum as number | null | undefined,
-          pendingBalance: newPendingBalance,
-          monthsWithoutInvoice: newMonthsWithoutInvoice,
-          isFinalInvoice: false,
-        });
+        const issue =
+          packBillingMin !== null &&
+          shouldIssueInvoice({
+            plan,
+            customMinimum: center.pack_custom_invoice_minimum as number | null | undefined,
+            pendingBalance: newPendingBalance,
+            monthsWithoutInvoice: newMonthsWithoutInvoice,
+            isFinalInvoice: false,
+          });
 
         if (issue && newPendingBalance > 0) {
           const periodStart = `${prevPeriod}-01`;
@@ -331,6 +341,7 @@ export async function POST(request: Request) {
       status: 'success',
       duration_ms: Date.now() - cronStart,
       records_processed: recordsProcessed,
+      metadata: { skipped_top_centers_pack: skippedTopCentersPack },
     });
 
     return NextResponse.json({ success: true, processed: recordsProcessed });

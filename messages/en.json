@@ -2622,7 +2622,10 @@
     "status": "Status",
     "studentsLimit": "Students Limit",
     "submitRequest": "Submit Request",
-    "title": "Title"
+    "title": "Title",
+    "upgrade": {
+      "useDowngrade": "This would not increase your plan cost. Use the Downgrade tab."
+    }
   },
   "cardOrders": {
     "orderIdCards": "Order ID Cards",

@@ -2127,7 +2127,10 @@
     "status": "الحالة",
     "studentsLimit": "طلاب الحد",
     "submitRequest": "إرسال طلب",
-    "title": "عنوان"
+    "title": "عنوان",
+    "upgrade": {
+      "useDowngrade": "هذا لن يزيد تكلفة خطتك. استخدم تبويب التخفيض."
+    }
   },
   "branches": {
     "title": "الفروع",

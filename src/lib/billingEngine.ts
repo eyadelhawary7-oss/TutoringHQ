@@ -6,12 +6,46 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+/** Months covered by one invoice for the billing period (not used for proration day-count). */
+export function getPeriodMultiplier(period: 'monthly' | 'quarterly' | 'annual'): number {
+  switch (period) {
+    case 'monthly':
+      return 1;
+    case 'quarterly':
+      return 3;
+    case 'annual':
+      return 12;
+    default:
+      throw new Error(`Unknown billing period: ${String(period)}`);
+  }
+}
+
+/** Calendar-day span used for daily rate / proration (annual = 365). */
+export function getPeriodDays(period: 'monthly' | 'quarterly' | 'annual'): number {
+  switch (period) {
+    case 'monthly':
+      return 30;
+    case 'quarterly':
+      return 90;
+    case 'annual':
+      return 365;
+    default:
+      throw new Error(`Unknown billing period: ${String(period)}`);
+  }
+}
+
+/**
+ * EGP per day for the current billing period.
+ * @param periodChargeAmount — full amount for one billing cycle (e.g. from getChargeFromQuarterlyAllIn).
+ * Annual discount is applied in pricing before this call, not inside getDailyRate.
+ */
 export function getDailyRate(
-  planPrice: number,
+  periodChargeAmount: number,
   billingPeriod: 'monthly' | 'quarterly' | 'annual',
 ): number {
-  const days = { monthly: 30, quarterly: 90, annual: 365 };
-  return planPrice / days[billingPeriod];
+  const days = getPeriodDays(billingPeriod);
+  if (days <= 0) return 0;
+  return periodChargeAmount / days;
 }
 
 export function getReactivationTier(suspendedAt: Date): 'tier1' | 'tier2' | 'tier3' {

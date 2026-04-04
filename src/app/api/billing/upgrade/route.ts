@@ -116,12 +116,17 @@ export async function POST(request: NextRequest) {
 
   const { data: newPriceRow } = await supabaseAdmin
     .from('pricing_plans')
-    .select('all_in_price, plan_key')
+    .select('all_in_price, plan_key, monthly_fee')
     .eq('plan_key', newPlan)
     .eq('is_active', true)
     .maybeSingle();
 
-  const newAllIn = Number((newPriceRow as { all_in_price?: number } | null)?.all_in_price ?? 0);
+  const newPlanData = (newPriceRow ?? {}) as {
+    all_in_price?: number;
+    plan_key?: string;
+    monthly_fee?: number;
+  };
+  const newAllIn = Number(newPlanData.all_in_price ?? 0);
   if (!Number.isFinite(newAllIn) || newAllIn <= 0) {
     return NextResponse.json({ error: 'Plan pricing unavailable' }, { status: 400 });
   }
@@ -145,9 +150,38 @@ export async function POST(request: NextRequest) {
     nextPaymentDue: new Date(`${npd}T12:00:00`),
   });
 
-  const amountDue = Math.round(cost.amountDue * 100) / 100;
-  if (amountDue <= 0) {
-    return NextResponse.json({ error: 'No amount due for upgrade' }, { status: 400 });
+  const proratedCost = cost.amountDue;
+
+  const newPlanFullPeriodPrice = (() => {
+    switch (newBp) {
+      case 'monthly':
+        return Number(newPlanData.monthly_fee);
+      case 'quarterly':
+        return Number(newPlanData.all_in_price) * 3;
+      case 'annual':
+        return Number(newPlanData.all_in_price) * 12 * 0.85;
+      default:
+        return Number(newPlanData.monthly_fee);
+    }
+  })();
+
+  const cappedProratedCost = Math.min(
+    Math.max(0, proratedCost),
+    Number.isFinite(newPlanFullPeriodPrice) && newPlanFullPeriodPrice > 0
+      ? newPlanFullPeriodPrice
+      : newPeriodPrice,
+  );
+
+  const amountDue = Math.round(cappedProratedCost * 100) / 100;
+  if (cappedProratedCost <= 0 || amountDue <= 0) {
+    return NextResponse.json(
+      {
+        error: 'This would not increase your plan cost. Use the Downgrade tab.',
+        code: 'USE_DOWNGRADE',
+        i18nKey: 'billing.upgrade.useDowngrade',
+      },
+      { status: 400 },
+    );
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -197,6 +231,9 @@ export async function POST(request: NextRequest) {
         daysRemaining: cost.daysRemaining,
         dailyRateDifference: cost.dailyRateDifference,
         amountCharged: amountDue,
+        proratedCostRaw: proratedCost,
+        cappedProratedCost,
+        newPlanFullPeriodPrice,
         billingAnchorYmd: npd,
       },
     })

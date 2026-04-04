@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createAction } from '@/lib/ceo';
 
 /** EGP minimums per plan for Parent Pack monthly / partial invoices (Session D). */
 export const PACK_PLAN_MINIMUMS: Record<string, number> = {
@@ -18,6 +19,55 @@ export function getPackPlanMinimumEgp(
   }
   const tier = plan === ['pro', '_plus'].join('') ? 'business' : plan;
   return PACK_PLAN_MINIMUMS[tier] ?? PACK_PLAN_MINIMUMS.starter;
+}
+
+export type PackBillingCenterInput = {
+  id: string;
+  name: string;
+  plan: string;
+  pack_custom_invoice_minimum?: number | null;
+  /** Optional; included in CEO queue payload when set */
+  parent_pack_active_parents?: number | null;
+};
+
+/**
+ * Resolves the EGP floor for pack invoicing. For `top_centers`, returns null (and enqueues CEO)
+ * when `pack_custom_invoice_minimum` is missing or zero — callers must skip billing for that center.
+ */
+export async function resolvePackBillingMinimumEgp(
+  supabase: SupabaseClient,
+  center: PackBillingCenterInput,
+): Promise<number | null> {
+  const plan = String(center.plan ?? '');
+  if (plan === 'top_centers') {
+    const minimum = Number(center.pack_custom_invoice_minimum ?? 0);
+    if (minimum <= 0) {
+      try {
+        await createAction(supabase, {
+          type: 'pack_billing_blocked',
+          priority: 'red',
+          center_id: center.id,
+          title: `Pack billing skipped — ${center.name}`,
+          subtitle: JSON.stringify({
+            centerId: center.id,
+            reason: 'top_centers plan missing pack_custom_invoice_minimum',
+            activeParents: center.parent_pack_active_parents ?? null,
+          }),
+          revenue_at_risk: 0,
+          auto_generated: true,
+        });
+      } catch (e) {
+        console.error('[packBilling] ceo_action_queue pack_billing_blocked:', e);
+      }
+      console.warn(
+        `[packBilling] Skipping top_centers ${center.id}`,
+        '— pack_custom_invoice_minimum is null or 0',
+      );
+      return null;
+    }
+    return minimum;
+  }
+  return getPackPlanMinimumEgp(plan, center.pack_custom_invoice_minimum);
 }
 
 function parseBillingPeriodYm(ym: string): { y: number; m: number } | null {

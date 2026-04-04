@@ -21,6 +21,24 @@ function centerCodeForInvoice(c: { center_code?: string | null; referral_code?: 
   return 'UNK';
 }
 
+function filterCentersWithPaymentDue<
+  T extends { id: string; name?: string | null; next_payment_due?: string | null },
+>(rows: T[] | null | undefined): { validCenters: T[]; skippedNullDue: number } {
+  const raw = rows ?? [];
+  const validCenters: T[] = [];
+  for (const center of raw) {
+    if (!center.next_payment_due) {
+      console.warn(
+        `[subscriptionBillingCron] Skipping center ${center.id}`,
+        `(${center.name ?? ''}) — next_payment_due is null`,
+      );
+      continue;
+    }
+    validCenters.push(center);
+  }
+  return { validCenters, skippedNullDue: raw.length - validCenters.length };
+}
+
 export type SubscriptionBillingCronResult = {
   staleBillingReset: number;
   invoicesCreated: number;
@@ -33,6 +51,10 @@ export type SubscriptionBillingCronResult = {
 export async function runSubscriptionBillingCron(
   supabase: SupabaseClient,
 ): Promise<SubscriptionBillingCronResult> {
+  const cronStart = Date.now();
+  let skippedNullDueTotal = 0;
+  let subscriptionRowsProcessed = 0;
+
   const out: SubscriptionBillingCronResult = {
     staleBillingReset: 0,
     invoicesCreated: 0,
@@ -92,8 +114,11 @@ export async function runSubscriptionBillingCron(
   if (q7err) {
     console.error('[subscriptionBillingCron] dueIn7:', q7err);
   } else {
-    out.centersDueIn7 = dueIn7?.length ?? 0;
-    for (const raw of dueIn7 ?? []) {
+    const { validCenters, skippedNullDue } = filterCentersWithPaymentDue(dueIn7);
+    skippedNullDueTotal += skippedNullDue;
+    out.centersDueIn7 = validCenters.length;
+    subscriptionRowsProcessed += validCenters.length;
+    for (const raw of validCenters) {
       const c = raw as {
         id: string;
         name: string;
@@ -168,7 +193,10 @@ export async function runSubscriptionBillingCron(
   if (p3err) {
     console.error('[subscriptionBillingCron] day+3:', p3err);
   } else {
-    for (const raw of plus3Rows ?? []) {
+    const { validCenters, skippedNullDue } = filterCentersWithPaymentDue(plus3Rows);
+    skippedNullDueTotal += skippedNullDue;
+    subscriptionRowsProcessed += validCenters.length;
+    for (const raw of validCenters) {
       const c = raw as {
         id: string;
         name: string;
@@ -230,7 +258,10 @@ export async function runSubscriptionBillingCron(
   if (p7err) {
     console.error('[subscriptionBillingCron] day+7:', p7err);
   } else {
-    for (const raw of plus7Rows ?? []) {
+    const { validCenters, skippedNullDue } = filterCentersWithPaymentDue(plus7Rows);
+    skippedNullDueTotal += skippedNullDue;
+    subscriptionRowsProcessed += validCenters.length;
+    for (const raw of validCenters) {
       const c = raw as {
         id: string;
         name: string;
@@ -305,6 +336,21 @@ export async function runSubscriptionBillingCron(
     console.error('[subscriptionBillingCron] auto-suspend:', susErr);
   } else {
     out.autoSuspended = suspendRows?.length ?? 0;
+  }
+
+  try {
+    await supabase.from('cron_log').insert({
+      cron_name: 'subscription-billing-cron',
+      status: 'success',
+      duration_ms: Date.now() - cronStart,
+      records_processed: subscriptionRowsProcessed,
+      metadata: {
+        processed: subscriptionRowsProcessed,
+        skipped_null_due: skippedNullDueTotal,
+      },
+    });
+  } catch (logErr) {
+    console.error('[subscriptionBillingCron] cron_log:', logErr);
   }
 
   return out;
