@@ -895,7 +895,7 @@ export default function DashboardPage() {
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             {canViewRevenue && (
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+              <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow shadow-sm hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
@@ -923,7 +923,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+            <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow shadow-sm hover:shadow-md transition-shadow duration-200">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
@@ -941,7 +941,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+            <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow shadow-sm hover:shadow-md transition-shadow duration-200">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
@@ -967,7 +967,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+            <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow shadow-sm hover:shadow-md transition-shadow duration-200">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">

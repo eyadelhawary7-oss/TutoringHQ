@@ -37,6 +37,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    // RPC uses compute_center_health_score(); onboarding bonus uses centers.onboarding_completed.
     const { data, error } = await supabase.rpc('recompute_all_health_scores');
 
     if (error) {

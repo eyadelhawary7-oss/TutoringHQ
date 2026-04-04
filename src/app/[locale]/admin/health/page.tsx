@@ -165,7 +165,7 @@ export default function AdminHealthPage() {
 
   return (
     <div
-      className="min-h-screen bg-slate-950 text-slate-100"
+      className="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <AdminHeader />
@@ -175,19 +175,19 @@ export default function AdminHealthPage() {
         <button
           type="button"
           onClick={() => router.push('/admin')}
-          className="inline-flex items-center gap-2 text-sm text-teal-400 hover:underline mb-4"
+          className="inline-flex items-center gap-2 text-sm text-teal-600 dark:text-teal-400 hover:underline mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           {t('healthBack')}
         </button>
 
         <div className="flex items-start gap-3 mb-1">
-          <Activity className="h-8 w-8 text-teal-400 shrink-0 mt-0.5" />
+          <Activity className="h-8 w-8 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
           <div>
-            <h1 className="text-2xl font-bold text-white">{t('healthTitle')}</h1>
-            <p className="text-sm text-slate-400 mt-1">{t('healthSubtitle')}</p>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{t('healthTitle')}</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('healthSubtitle')}</p>
             {updatedAt ? (
-              <p className="text-xs text-slate-500 mt-2 font-mono" suppressHydrationWarning>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono" suppressHydrationWarning>
                 {t('healthLastUpdated')}{' '}
                 {updatedAt.toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-GB', {
                   timeStyle: 'medium',
@@ -198,17 +198,17 @@ export default function AdminHealthPage() {
         </div>
 
         {loading && !data ? (
-          <p className="text-slate-500 mt-10">{tCommon('loading')}</p>
+          <p className="text-slate-500 dark:text-slate-400 mt-10">{tCommon('loading')}</p>
         ) : error && !data ? (
-          <p className="text-red-400 mt-10">{error}</p>
+          <p className="text-red-600 dark:text-red-400 mt-10">{error}</p>
         ) : data ? (
           <div className="mt-8 space-y-10">
             <section className="flex flex-wrap gap-3">
               <span
                 className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-wide ${
                   data.paymob_mode === 'live'
-                    ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40'
-                    : 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-500/40'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
                 }`}
               >
                 {t('healthPaymob')}: {data.paymob_mode === 'live' ? 'LIVE' : 'SANDBOX'}
@@ -216,8 +216,8 @@ export default function AdminHealthPage() {
               <span
                 className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-wide ${
                   data.wa_mode === 'live'
-                    ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40'
-                    : 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-500/40'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
                 }`}
               >
                 {t('healthWhatsApp')}: {data.wa_mode === 'live' ? 'LIVE' : 'TEST'}
@@ -225,7 +225,7 @@ export default function AdminHealthPage() {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
                 {t('healthQuickStats')}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -258,18 +258,22 @@ export default function AdminHealthPage() {
                   return (
                     <div
                       key={c.label}
-                      className={`rounded-xl border p-4 ${
+                      className={`rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 ${
                         bad
-                          ? 'border-red-500/50 bg-red-950/30'
+                          ? 'border-red-200 dark:border-red-500/40 bg-red-50 dark:bg-red-950/20'
                           : ok
-                            ? 'border-emerald-500/40 bg-emerald-950/20'
-                            : 'border-slate-700 bg-slate-900/80'
+                            ? 'border-green-200 dark:border-emerald-500/40 bg-green-50 dark:bg-emerald-950/20'
+                            : ''
                       }`}
                     >
-                      <p className="text-xs text-slate-400 font-medium">{c.label}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{c.label}</p>
                       <p
                         className={`text-2xl font-bold font-mono mt-2 ${
-                          bad ? 'text-red-300' : ok ? 'text-emerald-400' : 'text-slate-100'
+                          bad
+                            ? 'text-red-600 dark:text-red-400'
+                            : ok
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-slate-800 dark:text-white'
                         }`}
                       >
                         {c.value}
@@ -281,18 +285,18 @@ export default function AdminHealthPage() {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
                 {t('healthCronStatus')}
               </h2>
-              <div className="rounded-xl border border-slate-700 bg-slate-900/80 overflow-x-auto">
-                <table className="w-full text-sm text-left">
+              <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto">
+                <table className="w-full text-sm text-start">
                   <thead>
-                    <tr className="border-b border-slate-700 text-slate-400">
-                      <th className="p-3 font-medium">{t('healthColCron')}</th>
-                      <th className="p-3 font-medium">{t('healthColLastRun')}</th>
-                      <th className="p-3 font-medium">{t('healthColStatus')}</th>
-                      <th className="p-3 font-medium">{t('healthColDuration')}</th>
-                      <th className="p-3 font-medium">{t('healthColError')}</th>
+                    <tr className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColCron')}</th>
+                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColLastRun')}</th>
+                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColStatus')}</th>
+                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColDuration')}</th>
+                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColError')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -302,39 +306,45 @@ export default function AdminHealthPage() {
                       return (
                         <tr
                           key={row.name}
-                          className={`border-b border-slate-800 last:border-0 ${
-                            errRow ? 'bg-red-950/35' : stale ? 'bg-amber-950/20' : ''
+                          className={`border-b border-gray-100 dark:border-slate-700 last:border-0 text-slate-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 ${
+                            errRow ? 'bg-red-50 dark:bg-red-950/35' : stale ? 'bg-amber-50 dark:bg-amber-950/20' : ''
                           }`}
                         >
-                          <td className="p-3 font-mono text-slate-200 whitespace-nowrap">
+                          <td className="p-3 font-mono whitespace-nowrap">
                             <span className="inline-flex items-center gap-1.5">
                               {row.name}
                               {stale ? (
                                 <AlertTriangle
-                                  className="h-4 w-4 text-amber-400 shrink-0"
+                                  className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0"
                                   aria-label={t('healthStaleCron')}
                                 />
                               ) : null}
                             </span>
                           </td>
-                          <td className="p-3 text-slate-300 whitespace-nowrap">
+                          <td className="p-3 whitespace-nowrap">
                             {formatRanAt(row.last_ran, locale)}
                           </td>
                           <td className="p-3">
                             {!row.last_status ? (
-                              <span className="text-slate-500">—</span>
+                              <span className="text-slate-500 dark:text-slate-400">—</span>
                             ) : row.last_status === 'success' ? (
-                              <span className="text-emerald-400 font-medium">✓ success</span>
+                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                ✓ success
+                              </span>
                             ) : row.last_status === 'failure' ? (
-                              <span className="text-red-400 font-medium">✗ failure</span>
+                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                ✗ failure
+                              </span>
                             ) : (
-                              <span className="text-amber-400 font-medium">⚠ partial</span>
+                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                ⚠ partial
+                              </span>
                             )}
                           </td>
-                          <td className="p-3 text-slate-400 font-mono">
+                          <td className="p-3 text-slate-500 dark:text-slate-400 font-mono">
                             {formatDuration(row.last_duration_ms)}
                           </td>
-                          <td className="p-3 text-red-300/90 max-w-xs truncate" title={row.last_error ?? ''}>
+                          <td className="p-3 text-red-600 dark:text-red-400 max-w-xs truncate" title={row.last_error ?? ''}>
                             {row.last_error ?? '—'}
                           </td>
                         </tr>
@@ -346,35 +356,35 @@ export default function AdminHealthPage() {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
                 {t('healthPendingActions')}
               </h2>
-              <ul className="space-y-2 text-slate-300">
+              <ul className="space-y-2 text-slate-700 dark:text-slate-300">
                 <li>
                   <Link
                     href="/admin"
-                    className="text-teal-400 hover:underline inline-flex items-center gap-2"
+                    className="text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-2"
                   >
                     {t('healthPendingCancellations')}{' '}
-                    <span className="font-mono text-slate-400">({data.pending_cancellations})</span>
+                    <span className="font-mono text-slate-500 dark:text-slate-400">({data.pending_cancellations})</span>
                   </Link>
                 </li>
                 <li>
                   <Link
                     href="/admin/withdrawals"
-                    className="text-teal-400 hover:underline inline-flex items-center gap-2"
+                    className="text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-2"
                   >
                     {t('healthPendingWithdrawals')}{' '}
-                    <span className="font-mono text-slate-400">({data.pending_withdrawals})</span>
+                    <span className="font-mono text-slate-500 dark:text-slate-400">({data.pending_withdrawals})</span>
                   </Link>
                 </li>
                 <li>
                   <Link
                     href="/admin"
-                    className="text-teal-400 hover:underline inline-flex items-center gap-2"
+                    className="text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-2"
                   >
                     {t('healthPendingSignupsLink')}{' '}
-                    <span className="font-mono text-slate-400">({data.pending_signups})</span>
+                    <span className="font-mono text-slate-500 dark:text-slate-400">({data.pending_signups})</span>
                   </Link>
                 </li>
               </ul>

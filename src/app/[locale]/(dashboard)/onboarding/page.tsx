@@ -298,7 +298,7 @@ export default function OnboardingPage() {
     try {
       await dbUpdate({
         table: 'centers',
-        data: { onboarding_step: 5, onboarding_completed: true, onboarded: true },
+        data: { onboarding_step: 5, onboarding_completed: true },
         filters: [{ column: 'id', op: 'eq', value: centerId }],
       });
       await auditLog({ centerId, userId, action: 'onboarding_complete', entityType: 'centers', details: {} });
