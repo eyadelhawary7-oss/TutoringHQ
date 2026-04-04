@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createCommissionsForCenter, triggerT1Eligible, resumeCommissionClocks } from '@/lib/commissions';
 import { getAdminContext } from '@/lib/admin-auth';
 import { adminApprovePaymentSchema } from '@/lib/validations';
 import { logAdminAction } from '@/lib/audit';
@@ -85,6 +86,10 @@ export async function POST(request: Request) {
           payment_due_date: nextDue.toISOString().split('T')[0],
         })
         .eq('id', centerId);
+
+      await createCommissionsForCenter(centerId);
+      await triggerT1Eligible(centerId);
+      await resumeCommissionClocks(centerId);
 
       const amount = Number((pendingInv as { payment_amount?: number }).payment_amount ?? 0);
       const ref = (pendingInv as { payment_reference?: string }).payment_reference ?? '';

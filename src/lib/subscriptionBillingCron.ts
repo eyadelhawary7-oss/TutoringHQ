@@ -4,6 +4,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { pauseCommissionClocks } from '@/lib/commissions';
 import { todayISO } from '@/lib/parentPack';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
@@ -352,6 +353,14 @@ export async function runSubscriptionBillingCron(
     console.error('[subscriptionBillingCron] auto-suspend:', susErr);
   } else {
     out.autoSuspended = suspendRows?.length ?? 0;
+    for (const row of suspendRows ?? []) {
+      const center = row as { id: string };
+      try {
+        await pauseCommissionClocks(center.id);
+      } catch (e) {
+        console.error('[subscriptionBillingCron] pauseCommissionClocks', center.id, e);
+      }
+    }
   }
 
   try {

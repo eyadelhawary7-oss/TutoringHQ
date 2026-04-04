@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyCardOrderPaymobHmac } from '@/lib/paymob';
+import { triggerT1Eligible, resumeCommissionClocks } from '@/lib/commissions';
 
 const paymentFailedEnabled = false; // TODO: set to true when chq_payment_failed is Active
 
@@ -103,6 +104,28 @@ export async function POST(request: NextRequest) {
       // Signup flow: platform_config keys auto_approve_signups, pause_new_signups (see signupPaymobAutoApprove).
       const { processSignupAutoApprovalAfterPaymobSuccess } = await import('@/lib/signupPaymobAutoApprove');
       await processSignupAutoApprovalAfterPaymobSuccess(supabaseAdmin, orderId, transactionId);
+
+      const { data: paidInv } = await supabaseAdmin
+        .from('invoices')
+        .select('center_id')
+        .eq('paymob_order_id', orderId)
+        .eq('status', 'paid')
+        .maybeSingle();
+      let centerId: string | null =
+        (paidInv as { center_id?: string } | null)?.center_id ?? null;
+      if (!centerId) {
+        const { data: paidSess } = await supabaseAdmin
+          .from('combined_payment_sessions')
+          .select('center_id')
+          .eq('paymob_order_id', orderId)
+          .eq('status', 'paid')
+          .maybeSingle();
+        centerId = (paidSess as { center_id?: string } | null)?.center_id ?? null;
+      }
+      if (centerId) {
+        await triggerT1Eligible(centerId);
+        await resumeCommissionClocks(centerId);
+      }
     } else {
       const { finalizeCardOrderPaymentFailure } = await import('@/lib/cardOrderPayment');
       await finalizeCardOrderPaymentFailure(supabaseAdmin, orderId);

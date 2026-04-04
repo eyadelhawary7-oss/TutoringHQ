@@ -6,6 +6,7 @@ import { getAdminPermissions } from '@/lib/admin-roles';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
+import { createCommissionsForCenter, clawbackCommissions } from '@/lib/commissions';
 
 const STRIP = [
   'action',
@@ -521,6 +522,13 @@ export async function PATCH(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    await clawbackCommissions(
+      centerId,
+      ctx.userId,
+      typeof body.reason === 'string' && body.reason.trim()
+        ? body.reason.trim()
+        : 'Blacklisted by admin',
+    );
     return NextResponse.json({ center: updatedRow });
   }
 
@@ -668,6 +676,10 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  const activated = (updatedRow as { status?: string | null }).status === 'active';
+  if (activated) {
+    await createCommissionsForCenter(centerId);
   }
   return NextResponse.json({ center: updatedRow });
 }
