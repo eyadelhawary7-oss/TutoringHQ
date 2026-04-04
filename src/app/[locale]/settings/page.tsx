@@ -10,11 +10,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import { PageHeader, RoleBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
-import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Smartphone, Package, Wallet } from 'lucide-react';
-import { calculatePackCharge } from '@/lib/parent-pack';
-import { getAnnouncementCap, PACK_PRICE_PER_PARENT } from '@/lib/parentPack';
-import { PARENT_PACK, type PackStatusResponse } from '@/types/parent-pack';
-import { useToast } from '@/hooks/useToast';
+import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Package, Wallet } from 'lucide-react';
 import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
 
 type TabType = 'general' | 'team';
@@ -118,7 +114,6 @@ function SettingsPageContent() {
   const isRTL = locale === 'ar';
   const dailySummarySwitchId = useId();
   const summerSwitchId = useId();
-  const parentPackSwitchId = useId();
 
   // Tab from URL or default
   const tabParam = searchParams?.get('tab');
@@ -194,11 +189,6 @@ function SettingsPageContent() {
   });
   const [inviteTeacherGroupIds, setInviteTeacherGroupIds] = useState<string[]>([]);
   const [inviteGroups, setInviteGroups] = useState<{ id: string; name: string; subject?: string }[]>([]);
-
-  const [packStatus, setPackStatus] = useState<PackStatusResponse | null>(null);
-  const [packLoading, setPackLoading] = useState(false);
-  const [packConfirmOpen, setPackConfirmOpen] = useState(false);
-  const toast = useToast();
 
   // Redirect assistants/teachers without can_view_settings
   useEffect(() => {
@@ -337,30 +327,6 @@ function SettingsPageContent() {
   useEffect(() => {
     if (activeTab === 'team' && centerId) loadTeamData();
   }, [activeTab, centerId, loadTeamData]);
-
-  const refreshPackStatus = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      setPackStatus(null);
-      return;
-    }
-    try {
-      const res = await fetch('/api/parent-pack/status', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (res.ok) {
-        setPackStatus((await res.json()) as PackStatusResponse);
-      } else {
-        setPackStatus(null);
-      }
-    } catch {
-      setPackStatus(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refreshPackStatus();
-  }, [refreshPackStatus]);
 
   const showSaved = () => {
     setSavedMessage(t('saved'));
@@ -717,11 +683,6 @@ function SettingsPageContent() {
 
   const isOwner = (member: TeamMember) => member.role === 'owner' || member.role === 'admin';
   const canEditPermissions = (member: TeamMember) => !isOwner(member) && member.id !== userId;
-
-  const canEnablePack = (center?.status ?? '') === 'active';
-  const isPackEnabled = packStatus?.pack_enabled ?? false;
-  const activeParentsCount = packStatus?.active_parents ?? 0;
-  const monthlyPackCharge = calculatePackCharge(isPackEnabled, activeParentsCount);
 
   if (isLoading) {
     return (
@@ -1211,7 +1172,7 @@ function SettingsPageContent() {
                   href={`https://wa.me/${ADMIN_NOTIFICATION_PHONE}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                  className="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors btn-lift"
                 >
                   <MessageCircle className="w-4 h-4 shrink-0" aria-hidden />
                   {t('chatOnWhatsapp')}
@@ -1241,182 +1202,6 @@ function SettingsPageContent() {
                 </div>
               </div>
             </div>
-
-            {/* 9. Parent WA Pack */}
-            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-              <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
-                <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                  <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                    <Smartphone className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-[var(--color-text-primary)]">{t('parentPack.packCardTitle')}</h3>
-                      <span
-                        className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                          isPackEnabled ? 'bg-teal-100 text-teal-800' : 'bg-slate-200 text-slate-600'
-                        }`}
-                      >
-                        {isPackEnabled ? t('parentPack.packStatusActive') : t('parentPack.packStatusInactive')}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('parentPack.enableDescription')}</p>
-                    <div className="mt-2 flex flex-wrap gap-3 text-sm text-[var(--color-text-primary)]">
-                      <span>
-                        {t('parentPack.activeParents')}:{' '}
-                        <span className="font-mono font-semibold">{activeParentsCount.toLocaleString('en-US')}</span>
-                      </span>
-                      <span>
-                        {t('parentPack.packMonthlyCostLabel')}:{' '}
-                        <span className="font-mono font-semibold" dir="ltr">
-                          {(activeParentsCount * PACK_PRICE_PER_PARENT).toLocaleString('en-US')} {tCommon('egp')}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <div id={parentPackSwitchId} className="min-w-0">
-                      <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('parentPack.enableTitle')}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('parentPack.enableDescription')}</p>
-                    </div>
-                    <SettingsSwitch
-                      checked={isPackEnabled}
-                      onCheckedChange={() => setPackConfirmOpen(true)}
-                      disabled={!canEnablePack || packLoading}
-                      aria-labelledby={parentPackSwitchId}
-                    />
-                  </div>
-                  {!canEnablePack && (
-                    <p className="text-sm text-amber-600">{t('parentPack.notActive')}</p>
-                  )}
-                  {isPackEnabled && (
-                    <>
-                      <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-4 space-y-2 text-sm">
-                        <div className="flex justify-between gap-2">
-                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.pricePerParent')}</span>
-                          <span className="font-mono text-[var(--color-text-primary)]" dir="ltr">
-                            EGP {PARENT_PACK.ALL_IN_PRICE.toLocaleString('en-US')} / {tCommon('perMonth')}
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.suggestedPrice')}</span>
-                          <span className="font-mono text-[var(--color-text-primary)]" dir="ltr">
-                            EGP {PARENT_PACK.CENTER_CHARGE_TO_PARENT.toLocaleString('en-US')}
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.yourProfit')}</span>
-                          <span className="font-mono text-[var(--color-text-primary)]" dir="ltr">
-                            EGP {PARENT_PACK.CENTER_PROFIT_PER_PARENT.toLocaleString('en-US')}
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.activeParents')}</span>
-                          <span className="font-mono text-[var(--color-text-primary)]">
-                            {activeParentsCount.toLocaleString('en-US')}
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <span className="text-[var(--color-text-secondary)]">{t('parentPack.monthlyCharge')}</span>
-                          <span className="font-mono text-[var(--color-text-primary)]" dir="ltr">
-                            EGP {monthlyPackCharge.toLocaleString('en-US')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-4">
-                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">{t('parentPack.messagesTitle')}</p>
-                        <p className="text-xs text-[var(--color-text-secondary)] mt-1 mb-3">{t('parentPack.messagesSubtitle')}</p>
-                        <ul className="space-y-2 text-sm text-[var(--color-text-primary)]">
-                          <li>
-                            <span className="font-medium">{t('parentPack.messages.absence_alert')}</span>
-                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.absence_alert_timing')}</span>
-                          </li>
-                          <li>
-                            <span className="font-medium">{t('parentPack.messages.balance_statement')}</span>
-                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.balance_statement_timing')}</span>
-                          </li>
-                          <li>
-                            <span className="font-medium">{t('parentPack.messages.payment_confirmation')}</span>
-                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.payment_confirmation_timing')}</span>
-                          </li>
-                          <li>
-                            <span className="font-medium">{t('parentPack.messages.term_report')}</span>
-                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.term_report_timing')}</span>
-                          </li>
-                          <li>
-                            <span className="font-medium">{t('parentPack.messages.announcement')}</span>
-                            <span className="text-[var(--color-text-secondary)]"> — {t('parentPack.messages.announcement_timing')}</span>
-                          </li>
-                        </ul>
-                        <p className="text-xs text-[var(--color-text-tertiary)] mt-4">{t('parentPack.platformControls')}</p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {packConfirmOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 max-w-sm w-full shadow-lg">
-                  <p className="text-sm text-[var(--color-text-primary)] mb-4">
-                    {isPackEnabled ? t('parentPack.confirmDisable') : t('parentPack.confirmEnable')}
-                  </p>
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setPackConfirmOpen(false)}
-                      className="rounded-lg border border-[var(--color-border-default)] px-3 py-1.5 text-sm text-[var(--color-text-primary)]"
-                    >
-                      {tCommon('cancel')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setPackLoading(true);
-                        setPackConfirmOpen(false);
-                        try {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          if (!session?.access_token) return;
-                          const res = await fetch('/api/settings/parent-pack', {
-                            method: 'PATCH',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              Authorization: `Bearer ${session.access_token}`,
-                            },
-                            body: JSON.stringify({ enabled: !isPackEnabled }),
-                          });
-                          if (!res.ok) {
-                            alert(t('parentPack.toggleError'));
-                            return;
-                          }
-                          const packJson = (await res.json()) as { activeParents?: number };
-                          await refreshPackStatus();
-                          await refreshUser();
-                          if (!isPackEnabled) {
-                            toast.success(
-                              t('parentPack.packEnabledToast', { count: packJson.activeParents ?? 0 }),
-                            );
-                          } else {
-                            toast.success(t('parentPack.packDisabledToast'));
-                          }
-                          showSaved();
-                        } catch {
-                          alert(t('parentPack.toggleError'));
-                        } finally {
-                          setPackLoading(false);
-                        }
-                      }}
-                      className="rounded-lg bg-teal-600 text-white px-3 py-1.5 text-sm font-medium"
-                    >
-                      {tCommon('confirm')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 

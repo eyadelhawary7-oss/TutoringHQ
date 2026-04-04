@@ -1479,9 +1479,9 @@
     "parentPack": {
       "sectionTitle": "Parent WhatsApp pack",
       "enableTitle": "Enable pack",
-      "enableDescription": "EGP 10 per active parent per month — taxes and fees included",
+      "enableDescription": "EGP 12 per active parent per month — taxes and fees included",
       "notActive": "Your center account must be active first",
-      "confirmEnable": "The pack will be enabled. EGP 10 per month will be charged for each subscribed parent.",
+      "confirmEnable": "The pack will be enabled. EGP 12 per month will be charged for each subscribed parent.",
       "confirmDisable": "The pack will be disabled. No messages will be sent to parents until you enable it again.",
       "pricePerParent": "Price per parent",
       "suggestedPrice": "Suggested price to parents",

@@ -554,7 +554,12 @@ export default function BillingPage() {
     [invoices],
   );
 
-  const packPrice = Number(center?.pack_price_per_parent ?? 0) || 0;
+  const packPrice = (() => {
+    const r = center?.pack_price_per_parent;
+    if (r === null || r === undefined || r === '') return 12;
+    const n = Number(r);
+    return Number.isFinite(n) ? n : 12;
+  })();
   const packParents = Number(center?.parent_pack_active_parents ?? 0) || 0;
   const announcementBal = Number(center?.announcement_balance ?? 0) || 0;
   const packEnabled = center?.parent_pack_enabled === true;
