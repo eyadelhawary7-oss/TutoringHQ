@@ -57,7 +57,11 @@ export function BottomTabBar() {
     : TABS;
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 print:hidden bg-surface-1 border-t border-[var(--color-border-subtle)] shadow-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} aria-label={tm('tab_bar_label')}>
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 print:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 shadow-[0_-1px_0_rgba(0,0,0,0.06)] dark:shadow-none transition-colors duration-150"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      aria-label={tm('tab_bar_label')}
+    >
       <div className="flex items-stretch min-h-14 h-14">
         {visibleTabs.map(({ navKey, path, segment, icon: Icon }) => {
           const active = isTabActive(cleanPath, segment);
@@ -65,14 +69,13 @@ export function BottomTabBar() {
             <Link
               key={path}
               href={path}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-1 py-1 min-w-0 transition-colors duration-fast ease-out ${active ? 'text-brand-500' : 'text-[var(--color-text-tertiary)]'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-1 py-1 min-w-0 transition-colors duration-150 ${active ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`}
             >
-              <span className={`flex flex-col items-center gap-1 transition-transform duration-fast ease-spring ${active ? 'scale-110' : ''}`}>
-                <Icon size={22} strokeWidth={active ? 2.25 : 1.75} className="shrink-0" />
-                <span className={`text-[0.625rem] font-semibold leading-none truncate max-w-full ${active ? 'text-brand-500' : 'text-[var(--color-text-tertiary)]'}`}>
-                  {t(navKey)}
-                </span>
-                <span className={`h-1 w-1 rounded-full shrink-0 transition-opacity duration-fast ${active ? 'bg-brand-500 opacity-100' : 'opacity-0'}`} aria-hidden />
+              <Icon size={22} strokeWidth={active ? 2.25 : 1.75} className="shrink-0" />
+              <span
+                className={`text-[0.625rem] font-semibold leading-none truncate max-w-full transition-colors duration-150 ${active ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`}
+              >
+                {t(navKey)}
               </span>
             </Link>
           );

@@ -245,6 +245,151 @@ html:not(.light) {
   transform: translateY(0);
 }
 
+/* ── 13C: Design system buttons (unlayered — single source of truth) ── */
+.btn-primary {
+  background-color: #0d9488;
+  color: white;
+  border-radius: var(--radius-inner);
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border: none;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: #0f766e;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-outline {
+  border: 1px solid currentColor;
+  border-radius: var(--radius-inner);
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+.btn-outline:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+html:not(.light) .btn-outline:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.3);
+}
+
+/* ── 13C: Page enter ── */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.page-enter {
+  animation: page-fade-in 200ms ease forwards;
+}
+
+/* CEO / Recharts — grid lines follow theme */
+html.light {
+  --ceo-chart-grid: #e2e8f0;
+  --ceo-chart-total-line: #0f766e;
+}
+html:not(.light) {
+  --ceo-chart-grid: #334155;
+  --ceo-chart-total-line: #99f6e4;
+}
+
+/* ── 13C: Toast container (RTL-safe inline-end) ── */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  inset-inline-end: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+  max-width: min(100vw - 2rem, 22rem);
+  pointer-events: none;
+}
+@media (max-width: 768px) {
+  .toast-container {
+    inset-inline-end: 0;
+    inset-inline-start: 0;
+    top: auto;
+    bottom: 5rem;
+    max-width: none;
+    align-items: stretch;
+    padding: 0 1rem;
+    flex-direction: column-reverse;
+  }
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes toast-enter-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.toast-enter {
+  animation: toast-enter 220ms ease forwards;
+}
+[dir='rtl'] .toast-enter {
+  animation-name: toast-enter-rtl;
+}
+
+/* ── 13C: Skeleton wave ── */
+@keyframes skeleton-wave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 /* ── Global theme enforcement ───────────────────────────────
    Forces ALL pages to respect dark/light tokens regardless of
    hardcoded Tailwind classes on pages not yet redesigned.
@@ -452,12 +597,12 @@ html.light .page-bg {
 html.light .skeleton {
   background: linear-gradient(
     90deg,
-    #e2e8f0 25%,
-    #f1f5f9 50%,
-    #e2e8f0 75%
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
   );
   background-size: 200% 100%;
-  animation: skeleton-sweep 700ms linear infinite;
+  animation: skeleton-wave 1.5s infinite;
 }
 
 @keyframes fade-in {
@@ -641,14 +786,6 @@ html.light .skeleton {
   .ch-card {
     @apply bg-card rounded-xl border border-border/60;
     box-shadow: var(--shadow-card);
-  }
-
-  .btn-primary {
-    @apply text-white font-semibold;
-    background-color: hsl(var(--primary));
-  }
-  .btn-primary:hover:not(:disabled) {
-    opacity: 0.9;
   }
 
   .scanner-green { background-color: hsl(var(--scanner-green)); }
@@ -965,15 +1102,6 @@ samp {
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  .btn-primary {
-    background-color: var(--color-brand-500);
-    color: #fff;
-    box-shadow: var(--shadow-brand-sm);
-  }
-  .btn-primary:hover {
-    background-color: var(--color-brand-600);
-    box-shadow: var(--shadow-brand-md);
-  }
   .btn-ghost {
     background-color: transparent;
     border: 1px solid var(--color-border-default);
@@ -1019,30 +1147,23 @@ samp {
     text-shadow: 0 0 20px rgba(245,158,11,0.50);
   }
 
-  /* ── Skeleton loading pulse ──────────────────────── */
+  /* ── Skeleton loading (13C wave) ──────────────────────── */
   .skeleton {
     background: linear-gradient(
       90deg,
-      var(--color-surface-2) 25%,
-      var(--color-surface-3) 50%,
-      var(--color-surface-2) 75%
+      #1e293b 25%,
+      #334155 50%,
+      #1e293b 75%
     );
     background-size: 200% 100%;
-    animation: var(--animate-skeleton);
-    border-radius: var(--radius-sm);
+    animation: skeleton-wave 1.5s infinite;
+    border-radius: 6px;
   }
 
   /* ── Page background ─────────────────────────────── */
   .page-bg {
     background: var(--color-surface-0);
     min-height: 100dvh;
-  }
-
-  /* ── Focus ring (keyboard nav) ───────────────────── */
-  .focus-ring:focus-visible {
-    outline: 2px solid var(--color-brand-500);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
   }
 
   /* ── QR scanner demo classes ─────────────────────── */

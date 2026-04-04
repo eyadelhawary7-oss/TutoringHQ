@@ -22,7 +22,7 @@ export default async function CeoDashboardPage({
       rangeSelector={
         <Suspense
           fallback={
-            <div className="h-12 w-full animate-pulse rounded-xl bg-slate-800 mb-6" />
+            <div className="h-12 w-full skeleton rounded-xl mb-6" />
           }
         >
           <TimeRangeSelector />

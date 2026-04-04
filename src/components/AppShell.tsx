@@ -13,7 +13,7 @@ import { MobileNavDrawer } from '@/components/MobileNavDrawer';
 import { BottomTabBar } from '@/components/shell/BottomTabBar';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import { SidebarProvider } from '@/contexts/SidebarContext';
-import { Globe, Menu } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
@@ -56,8 +56,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const locale = useLocale();
   const router = useRouter();
   const { user } = useUser();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarMounted, setSidebarMounted] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
 
   useEffect(() => {
@@ -76,20 +74,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [openMenu]);
 
-  useEffect(() => {
-    setSidebarMounted(true);
-    const stored = localStorage.getItem('centerhq_sidebar_open');
-    if (stored !== null) {
-      setSidebarOpen(stored === 'true');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!sidebarMounted) return;
-    localStorage.setItem('centerhq_sidebar_open', String(sidebarOpen));
-  }, [sidebarOpen, sidebarMounted]);
-
-  const closeMainSidebar = useCallback(() => setSidebarOpen(false), []);
+  const closeMainSidebar = useCallback(() => {}, []);
   const { hideShell } = useLayout();
   const [isPending, startTransition] = useTransition();
 
@@ -136,23 +121,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider closeMainSidebar={closeMainSidebar}>
     <div className="flex min-h-screen w-full bg-[var(--color-surface-0)]">
-      {!isAdminRoute && <Sidebar open={sidebarOpen} onClose={closeMainSidebar} />}
+      {!isAdminRoute && <Sidebar onClose={closeMainSidebar} />}
 
       <div
-        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute ? '' : `${sidebarOpen ? 'lg:ms-64' : 'lg:ms-16'} transition-[margin] duration-300`}`}
+        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute ? '' : 'lg:ms-60 transition-[margin] duration-300'}`}
       >
         {/* Desktop topbar */}
         <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            {!isAdminRoute && (
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                aria-label="Open menu"
-              >
-                <Menu size={20} />
-              </button>
-            )}
             <span className="font-bold text-[var(--color-text-primary)] text-lg">CenterHQ</span>
           </div>
           <div className="flex items-center gap-3">

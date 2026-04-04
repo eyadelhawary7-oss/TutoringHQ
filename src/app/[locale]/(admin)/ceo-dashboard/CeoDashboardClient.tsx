@@ -66,17 +66,17 @@ function FinancialSkeletons() {
   return (
     <div className="space-y-6 mt-10">
       <div className="grid grid-cols-1 gap-4 max-w-xl">
-        <div className="h-24 animate-pulse bg-slate-800 rounded-xl" />
+        <div className="h-24 skeleton rounded-xl" />
       </div>
-      <div className="h-48 w-full animate-pulse bg-slate-800 rounded-xl" />
-      <div className="h-72 w-full animate-pulse bg-slate-800 rounded-xl" />
+      <div className="h-48 w-full skeleton rounded-xl" />
+      <div className="h-72 w-full skeleton rounded-xl" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="h-32 animate-pulse bg-slate-800 rounded-xl" />
-        <div className="h-32 animate-pulse bg-slate-800 rounded-xl" />
+        <div className="h-32 skeleton rounded-xl" />
+        <div className="h-32 skeleton rounded-xl" />
       </div>
-      <div className="h-16 w-full animate-pulse bg-slate-800 rounded-xl" />
-      <div className="h-16 w-full animate-pulse bg-slate-800 rounded-xl" />
-      <div className="h-32 w-full animate-pulse bg-slate-800 rounded-xl" />
+      <div className="h-16 w-full skeleton rounded-xl" />
+      <div className="h-16 w-full skeleton rounded-xl" />
+      <div className="h-32 w-full skeleton rounded-xl" />
     </div>
   );
 }
@@ -84,8 +84,8 @@ function FinancialSkeletons() {
 function FinancialErrorCard({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations('ceo');
   return (
-    <div className="rounded-xl bg-slate-800 p-6 mt-10">
-      <p className="text-red-400 text-sm mb-3">{t('financials.fetchError')}</p>
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-6 mt-10">
+      <p className="text-red-600 dark:text-red-400 text-sm mb-3">{t('financials.fetchError')}</p>
       <button
         type="button"
         onClick={onRetry}
@@ -156,16 +156,16 @@ function CeoFinancialsBody({
 
   return (
     <>
-      <section className="mt-12 space-y-6 border-t border-slate-800 pt-10">
-        <h2 className="text-lg font-semibold text-slate-100">{tFinancials('financials.sectionTitle')}</h2>
+      <section className="mt-12 space-y-6 border-t border-[var(--color-border-subtle)] pt-10">
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-white">{tFinancials('financials.sectionTitle')}</h2>
 
         <div className="grid grid-cols-1 gap-4 max-w-xl">
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 border-l-4 border-teal-500">
-            <p className="text-xs text-slate-400">{tFinancials('financials.cardTotalTitle')}</p>
-            <p className="text-xl font-mono font-bold text-slate-100 mt-1">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4 border-s-4 border-teal-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">{tFinancials('financials.cardTotalTitle')}</p>
+            <p className="text-xl font-mono font-bold text-slate-800 dark:text-white mt-1">
               {nf(financials.currentMonth?.totalRevenue).toLocaleString('en-US')} EGP
             </p>
-            <div className="mt-2 space-y-0.5 text-[11px] text-slate-500">
+            <div className="mt-2 space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
               <p>
                 {tFinancials('financials.cardTotalSubSubscriptions', {
                   amount: nf(financials.currentMonth?.subscriptionRevenue).toLocaleString('en-US'),
@@ -185,14 +185,14 @@ function CeoFinancialsBody({
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <h3 className="text-sm font-medium text-slate-200 mb-3">{tFinancials('financials.chart12MonthTitle')}</h3>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4">
+          <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.chart12MonthTitle')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={monthly}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--ceo-chart-grid)" />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} />
               <YAxis
-                tick={{ fill: '#94a3b8' }}
+                tick={{ fill: '#64748b' }}
                 tickFormatter={(value: number | string) =>
                   Number(value ?? 0).toLocaleString('en-US')
                 }
@@ -230,7 +230,7 @@ function CeoFinancialsBody({
               <Line
                 name={tFinancials('financials.totalRevenue')}
                 dataKey="totalRevenue"
-                stroke="#FFFFFF"
+                stroke="var(--ceo-chart-total-line, #0f766e)"
                 strokeWidth={2}
                 dot={false}
               />
@@ -238,31 +238,31 @@ function CeoFinancialsBody({
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <h3 className="text-sm font-medium text-slate-200 mb-3">{tFinancials('financials.cardOrdersPanelTitle')}</h3>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4">
+          <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.cardOrdersPanelTitle')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3 text-sm">
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelTotalCardsSold')}</p>
-                <p className="font-mono text-slate-100">
+                <p className="font-mono text-slate-800 dark:text-white">
                   {nf(financials.cardOrders?.totalCardsSold).toLocaleString('en-US')}
                 </p>
               </div>
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelRevenueAllTime')}</p>
-                <p className="font-mono text-slate-100">
+                <p className="font-mono text-slate-800 dark:text-white">
                   {nf(financials.cardOrders?.revenueAllTime).toLocaleString('en-US')} EGP
                 </p>
               </div>
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelRevenueThisMonth')}</p>
-                <p className="font-mono text-slate-100">
+                <p className="font-mono text-slate-800 dark:text-white">
                   {nf(financials.cardOrders?.revenueThisMonth).toLocaleString('en-US')} EGP
                 </p>
               </div>
               <div>
                 <p className="text-slate-500 text-xs">{tFinancials('financials.labelAverageOrderValue')}</p>
-                <p className="font-mono text-slate-100">
+                <p className="font-mono text-slate-800 dark:text-white">
                   {nf(financials.cardOrders?.averageOrderValue).toLocaleString('en-US')} EGP
                 </p>
               </div>
@@ -280,18 +280,18 @@ function CeoFinancialsBody({
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <h3 className="text-sm font-medium text-slate-200 mb-3">{tFinancials('financials.whatsappPanelTitle')}</h3>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4">
+          <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.whatsappPanelTitle')}</h3>
           <div className="flex flex-wrap gap-6 items-baseline text-sm">
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelActiveParents')}</p>
-              <p className="font-mono text-slate-100">
+              <p className="font-mono text-slate-800 dark:text-white">
                 {nf(financials.whatsappPack?.activeParents).toLocaleString('en-US')}
               </p>
             </div>
             <div>
               <p className="text-slate-500 text-xs">{tFinancials('financials.labelPackMrr')}</p>
-              <p className="font-mono text-slate-100">
+              <p className="font-mono text-slate-800 dark:text-white">
                 {nf(financials.whatsappPack?.packMRR).toLocaleString('en-US')} EGP
               </p>
             </div>
@@ -502,7 +502,7 @@ export default function CeoDashboardClient({
   return (
     <div className="flex min-h-screen bg-[var(--color-surface-0)] pt-14 lg:pt-0" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminSidebar activeTab="ceoDashboard" activeRoute="/ceo-dashboard" />
-      <main className="flex-1 overflow-auto p-6 lg:ms-56">
+      <main className="flex-1 overflow-auto p-6 lg:ms-56 page-enter">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
           <button

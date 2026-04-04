@@ -45,14 +45,17 @@ const PROGRESS_COLORS: Record<ToastVariant, string> = {
 function ToastItem({
   toast: t,
   onDismiss,
-  enterClass,
 }: {
   toast: Toast;
   onDismiss: (id: string) => void;
-  enterClass: 'toast-enter-top' | 'toast-enter-bottom';
 }) {
   return (
-    <div role="alert" aria-live="polite" onClick={() => onDismiss(t.id)} className={`relative overflow-hidden rounded-[var(--radius-card)] shadow-lg px-4 py-3 min-w-[260px] max-w-[360px] cursor-pointer select-none ${VARIANT_STYLES[t.variant]} ${t.exiting ? 'toast-exit' : enterClass}`}>
+    <div
+      role="alert"
+      aria-live="polite"
+      onClick={() => onDismiss(t.id)}
+      className={`relative overflow-hidden rounded-[var(--radius-card)] shadow-lg px-4 py-3 min-w-[260px] max-w-[360px] w-full cursor-pointer select-none ${VARIANT_STYLES[t.variant]} ${t.exiting ? 'toast-exit' : 'toast-enter'}`}
+    >
       <p className="text-sm font-medium pe-4">{t.message}</p>
       <div
         className="toast-progress-bar"
@@ -112,19 +115,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toasts, toast, dismiss }}>
       {children}
 
-      {/* Outer wrappers must stay pointer-events-none so fixed layers do not steal clicks from sidebar / nav (toasts use pointer-events-auto on items only). */}
-      <div className="fixed bottom-[calc(56px_+_env(safe-area-inset-bottom,0px)_+_8px)] inset-x-0 flex flex-col-reverse items-center gap-2 px-4 z-[9998] lg:hidden pointer-events-none">
+      {/* Single RTL-safe container — position from globals.css `.toast-container` */}
+      <div className="toast-container">
         {toasts.map((t) => (
-          <div key={t.id} className="pointer-events-auto w-full max-w-sm">
-            <ToastItem toast={t} onDismiss={dismiss} enterClass="toast-enter-bottom" />
-          </div>
-        ))}
-      </div>
-
-      <div className="fixed top-4 end-4 flex flex-col items-end gap-2 z-[9998] hidden lg:flex pointer-events-none">
-        {toasts.map((t) => (
-          <div key={t.id} className="pointer-events-auto">
-            <ToastItem toast={t} onDismiss={dismiss} enterClass="toast-enter-top" />
+          <div key={t.id} className="pointer-events-auto w-full sm:w-auto flex justify-center sm:justify-end">
+            <ToastItem toast={t} onDismiss={dismiss} />
           </div>
         ))}
       </div>

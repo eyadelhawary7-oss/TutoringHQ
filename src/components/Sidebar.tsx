@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { useBranchStore } from '@/stores/branchStore';
-import type { PermissionKey, UserRole } from '@/contexts/UserContext';
+import type { PermissionKey } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import {
   LayoutDashboard,
@@ -21,19 +20,20 @@ import {
   Settings,
   Shield,
   LogOut,
-  X,
-  Gift,
   KeyRound,
   BarChart3,
   GraduationCap,
   Building2,
   Gauge,
   MessageCircle,
+  Gift,
 } from 'lucide-react';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
+import { cn } from '@/lib/utils';
 
-const SIDEBAR_EXPANDED = 256;
+/** Desktop sidebar width in px (Tailwind w-60) */
+const SIDEBAR_EXPANDED = 240;
 const SIDEBAR_COLLAPSED = 64;
 
 interface SidebarProps {
@@ -41,22 +41,29 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export default function Sidebar({ open = false, onClose }: SidebarProps) {
+function navLinkClass(isActive: boolean) {
+  return cn(
+    'flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors duration-150 border-solid border-s-4',
+    isActive
+      ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400'
+      : 'border-transparent text-slate-400 hover:bg-slate-800 hover:text-white dark:text-slate-400 dark:hover:bg-slate-700',
+  );
+}
+
+export default function Sidebar({ onClose }: SidebarProps) {
   const t = useTranslations('nav');
-  const tSettings = useTranslations('settings');
   const pathname = usePathname();
   const router = useRouter();
-  const locale = useLocale();
   const { user, hasPermission } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
 
-  const isRTL = locale === 'ar';
-
   useEffect(() => {
     const checkAdmin = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (!session) return;
         const res = await fetch('/api/admin/check', {
           headers: { Authorization: `Bearer ${session.access_token}` },
@@ -79,7 +86,15 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
   const BENCHMARKS_LAUNCH = new Date('2025-03-15');
   const showBenchmarksNewBadge = (Date.now() - BENCHMARKS_LAUNCH.getTime()) / (24 * 60 * 60 * 1000) < 30;
 
-  const allNavItems: { key: string; href: string; icon: React.ElementType; permission?: PermissionKey; ownerAdminOnly?: boolean; ownerOnly?: boolean; showNewBadge?: boolean }[] = [
+  const allNavItems: {
+    key: string;
+    href: string;
+    icon: React.ElementType;
+    permission?: PermissionKey;
+    ownerAdminOnly?: boolean;
+    ownerOnly?: boolean;
+    showNewBadge?: boolean;
+  }[] = [
     { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
     { key: 'analytics', href: '/analytics', icon: BarChart3, permission: 'can_view_revenue' },
     { key: 'benchmarks', href: '/benchmarks', icon: Gauge, permission: 'can_view_dashboard', showNewBadge: true },
@@ -110,133 +125,123 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         })
       : [];
 
-  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : isSuperAdminOnly ? 'roleAdmin' : null;
+  const roleLabelKey =
+    user?.role === 'owner'
+      ? 'roleOwner'
+      : user?.role === 'admin'
+        ? 'roleAdmin'
+        : user?.role === 'assistant'
+          ? 'roleAssistant'
+          : user?.role === 'teacher'
+            ? 'roleTeacher'
+            : isSuperAdminOnly
+              ? 'roleAdmin'
+              : null;
   const { branches, activeCenterId } = useBranchStore();
   const activeBranch = branches.find((b) => b.id === activeCenterId);
   const centerName = activeBranch?.name || user?.center?.name || user?.name || user?.phone || 'User';
 
   return (
     <>
-      {/* Desktop-only rail; mobile nav uses MobileNavDrawer from AppShell */}
       <aside
-        className={`hidden lg:flex flex-col fixed top-0 bottom-0 h-screen z-[100] print:hidden bg-slate-900 transition-all duration-300 isolate ${open ? 'w-64' : 'w-16'} ${isRTL ? 'right-0' : 'left-0'}`}
+        className="hidden lg:flex flex-col fixed top-0 bottom-0 start-0 h-screen w-60 z-[100] print:hidden bg-slate-900 border-e border-slate-800 isolate"
       >
-      {/* Logo; collapse (X) only when expanded — icon rail uses header ≡ as sole opener */}
-      <div
-        className={`relative z-10 flex items-center gap-3 px-4 h-16 border-b border-slate-800 pointer-events-auto ${open ? 'justify-between' : 'justify-center'}`}
-      >
-        <Link
-          href={isSuperAdminOnly ? '/admin' : '/dashboard'}
-          className={`flex items-center shrink-0 ${open ? 'gap-3' : 'justify-center'}`}
-        >
-          {user?.center?.logo_url ? (
-            <img src={user.center.logo_url} alt={centerName} className="w-9 h-9 rounded-lg shrink-0 object-contain" />
-          ) : (
-            <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-sm">CH</span>
+        <div className="relative z-10 flex items-center gap-3 px-4 h-16 border-b border-slate-800 pointer-events-auto justify-between">
+          <Link
+            href={isSuperAdminOnly ? '/admin' : '/dashboard'}
+            className="flex items-center shrink-0 gap-3 min-w-0"
+            onClick={() => onClose?.()}
+          >
+            {user?.center?.logo_url ? (
+              <img src={user.center.logo_url} alt={centerName} className="w-9 h-9 rounded-lg shrink-0 object-contain" />
+            ) : (
+              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center shrink-0">
+                <span className="text-white font-bold text-sm">CH</span>
+              </div>
+            )}
+            <span className="font-bold text-white text-lg tracking-tight truncate">CenterHQ</span>
+          </Link>
+        </div>
+
+        {user ? (
+          <div className="border-b border-slate-800">
+            <BranchSwitcher />
+          </div>
+        ) : null}
+
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+          {isSuperAdminOnly && (
+            <Link
+              href="/admin"
+              className={navLinkClass(!!pathname?.startsWith('/admin'))}
+              onClick={() => onClose?.()}
+            >
+              <Shield size={18} className="shrink-0" />
+              <span>{t('admin')}</span>
+            </Link>
+          )}
+          {navItems.map(({ key, href, icon: Icon, showNewBadge }) => {
+            const isActive = pathname === href || pathname.startsWith(href + '/');
+            const showBadge = showNewBadge && showBenchmarksNewBadge;
+            return (
+              <Link key={href} href={href} className={navLinkClass(isActive)} onClick={() => onClose?.()}>
+                <Icon size={18} className="shrink-0" />
+                <span className="truncate">{t(key)}</span>
+                {showBadge ? (
+                  <span className="ms-auto px-1.5 py-0.5 text-[10px] font-semibold bg-teal-500/20 text-teal-400 rounded shrink-0">
+                    {t('newBadge')}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
+          {isAdmin && !isSuperAdminOnly && (
+            <Link
+              href="/admin"
+              className={navLinkClass(!!pathname?.startsWith('/admin'))}
+              onClick={() => onClose?.()}
+            >
+              <Shield size={18} className="shrink-0" />
+              <span>{t('admin')}</span>
+            </Link>
+          )}
+        </nav>
+
+        <div className="border-t border-slate-800 p-4 bg-slate-800/50">
+          {user && (
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center shrink-0">
+                <span className="text-white text-sm font-bold">{(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{centerName}</p>
+                <p className="text-xs text-slate-400">{roleLabelKey ? t(roleLabelKey) : ''}</p>
+              </div>
             </div>
           )}
-          <span className={`font-bold text-white text-lg tracking-tight ${open ? 'block' : 'hidden'}`}>CenterHQ</span>
-        </Link>
-        {open ? (
-          <button
-            type="button"
-            onClick={() => onClose?.()}
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors pointer-events-auto shrink-0"
-            aria-label="Collapse sidebar"
-          >
-            <X size={20} />
-          </button>
-        ) : null}
-      </div>
-
-      {/* Center name / Branch switcher — hidden in collapsed desktop rail (no BranchSwitcher API change) */}
-      {user && (
-        <div className={open ? 'block' : 'hidden lg:hidden'}>
-          <BranchSwitcher />
+          {user && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsPinModalOpen(true)}
+                className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors duration-150 w-full"
+              >
+                <KeyRound size={16} className="shrink-0" />
+                <span className="truncate">تغيير الرمز السري</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors duration-150 w-full mt-2"
+              >
+                <LogOut size={16} className="shrink-0" />
+                <span>{t('logout')}</span>
+              </button>
+            </>
+          )}
         </div>
-      )}
-
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-        {isSuperAdminOnly && (
-          <Link
-            href="/admin"
-            className={`flex items-center py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${open ? 'gap-3 px-3' : 'justify-center px-2'} ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-            onClick={onClose}
-          >
-            <Shield size={18} className="shrink-0" />
-            <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>{t('admin')}</span>
-          </Link>
-        )}
-        {navItems.map(({ key, href, icon: Icon, showNewBadge }) => {
-          const isActive = pathname === href || pathname.startsWith(href + '/');
-          const showBadge = showNewBadge && showBenchmarksNewBadge;
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${open ? 'gap-3 px-3' : 'justify-center px-2'} ${isActive ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-              onClick={onClose}
-            >
-              <Icon size={18} className="shrink-0" />
-              <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>{t(key)}</span>
-              {showBadge && open && (
-                <span className="ms-auto px-1.5 py-0.5 text-[10px] font-semibold bg-teal-500/20 text-teal-400 rounded">
-                  {t('newBadge')}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-        {isAdmin && !isSuperAdminOnly && (
-          <Link
-            href="/admin"
-            className={`flex items-center py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${open ? 'gap-3 px-3' : 'justify-center px-2'} ${pathname?.startsWith('/admin') ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-            onClick={onClose}
-          >
-            <Shield size={18} className="shrink-0" />
-            <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>{t('admin')}</span>
-          </Link>
-        )}
-      </nav>
-
-      {/* Bottom */}
-      <div className="border-t border-slate-800 p-4 bg-slate-800/50">
-        {user && (
-          <div className={`flex items-center mb-3 ${open ? 'gap-3' : 'justify-center'}`}>
-            <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center shrink-0">
-              <span className="text-white text-sm font-bold">{(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}</span>
-            </div>
-            <div className={`flex-1 min-w-0 ${open ? 'block' : 'hidden'}`}>
-              <p className="text-sm font-semibold text-white truncate">{centerName}</p>
-              <p className="text-xs text-slate-400">{roleLabelKey ? t(roleLabelKey) : ''}</p>
-            </div>
-          </div>
-        )}
-        {user && (
-          <>
-            <button
-              type="button"
-              onClick={() => setIsPinModalOpen(true)}
-              className={`flex items-center text-slate-400 hover:text-white text-sm transition-colors w-full ${open ? 'gap-2' : 'justify-center'}`}
-            >
-              <KeyRound size={16} className="shrink-0" />
-              <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>تغيير الرمز السري</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className={`flex items-center text-slate-400 hover:text-white text-sm transition-colors w-full ${open ? 'gap-2' : 'justify-center'}`}
-            >
-              <LogOut size={16} className="shrink-0" />
-              <span className={open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}>{t('logout')}</span>
-            </button>
-          </>
-        )}
-      </div>
-      <ChangePinModal isOpen={isPinModalOpen} onClose={() => setIsPinModalOpen(false)} />
-    </aside>
+        <ChangePinModal isOpen={isPinModalOpen} onClose={() => setIsPinModalOpen(false)} />
+      </aside>
     </>
   );
 }

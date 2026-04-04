@@ -726,20 +726,18 @@ function SettingsPageContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[var(--color-surface-0)]">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-          <div className="h-8 bg-muted rounded-xl w-48 mb-6 animate-pulse" />
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-[var(--color-surface-1)] rounded-xl animate-pulse" />
-            ))}
-          </div>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-4" aria-busy>
+          <div className="skeleton h-8 rounded-xl w-48" />
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton h-28 rounded-2xl w-full" />
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-[var(--color-surface-0)] page-enter" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <PageHeader title={t('title')} />
 

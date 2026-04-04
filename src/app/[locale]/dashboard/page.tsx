@@ -804,7 +804,7 @@ export default function DashboardPage() {
   const egpSuffix = tCommon('egp');
 
   return (
-    <div className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6">
+    <div className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 page-enter max-md:pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6">
       {showSurgeAlert && statsData?.surge_message && (
         <div
           className="card mb-4 p-4 border-[var(--color-border-brand)] flex items-center justify-between gap-4"

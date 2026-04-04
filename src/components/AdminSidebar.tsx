@@ -288,8 +288,8 @@ export function AdminSidebar({
   return (
     <>
       {/* Mobile top bar — matches center shell pattern */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] min-h-14 flex items-center justify-center print:hidden relative px-4">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 lg:hidden">
+      <header className="lg:hidden fixed top-0 start-0 end-0 z-40 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] min-h-14 flex items-center justify-center print:hidden relative px-4">
+        <div className="absolute start-4 top-1/2 -translate-y-1/2 z-10 lg:hidden">
           {openMenu ? (
             <X
               className="h-6 w-6 cursor-pointer text-[var(--color-text-primary)]"
@@ -315,7 +315,7 @@ export function AdminSidebar({
         </Link>
 
         <div
-          className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2"
+          className="absolute end-4 top-1/2 -translate-y-1/2 flex items-center gap-2"
           data-admin-mobile-user-menu
         >
           <button
@@ -336,7 +336,7 @@ export function AdminSidebar({
               {(userName || userPhone || 'U').charAt(0).toUpperCase()}
             </button>
             {isUserMenuOpen ? (
-              <div className="absolute top-12 left-0 bg-[var(--color-surface-1)] rounded-xl shadow-lg border border-[var(--color-border-subtle)] py-1 z-50 min-w-[200px]">
+              <div className="absolute top-12 start-0 bg-[var(--color-surface-1)] rounded-xl shadow-lg border border-[var(--color-border-subtle)] py-1 z-50 min-w-[200px]">
                 <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
                   <p className="text-sm font-semibold text-[var(--color-text-primary)]">{userName || '—'}</p>
                   <p className="text-xs text-[var(--color-text-secondary)]" dir="ltr">
@@ -378,8 +378,8 @@ export function AdminSidebar({
 
       {/* Mobile drawer */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 transition-transform duration-[250ms] ease-in-out ${
-          openMenu ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 start-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-white dark:bg-slate-900 border-e border-gray-200 dark:border-slate-800 transition-transform duration-[250ms] ease-in-out ${
+          openMenu ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
         }`}
         aria-hidden={!openMenu}
       >
@@ -532,7 +532,7 @@ export function AdminSidebar({
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex flex-col fixed left-0 w-56 z-20 bg-white dark:bg-slate-900 border-e border-gray-200 dark:border-slate-700 bottom-0',
+          'hidden lg:flex flex-col fixed start-0 w-56 z-20 bg-white dark:bg-slate-900 border-e border-gray-200 dark:border-slate-700 bottom-0',
           desktopAsideTop,
         )}
       >

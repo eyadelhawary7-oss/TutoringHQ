@@ -12,7 +12,7 @@ import { RevenueAreaChart } from '@/components/analytics/RevenueAreaChart';
 import { PaymentDonutChart } from '@/components/analytics/PaymentDonutChart';
 import { AttendanceHeatmap } from '@/components/analytics/AttendanceHeatmap';
 import { chartColors, colors } from '@/lib/tokens';
-import { Loader2, TrendingUp, Percent, Users, Wallet } from 'lucide-react';
+import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 
 interface AnalyticsData {
   mrr: number;
@@ -143,8 +143,15 @@ export default function AnalyticsPage() {
 
   if (loading && !data) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[300px]">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--color-text-secondary)]" />
+      <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto" aria-busy>
+        <div className="skeleton h-8 w-48 rounded-md" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton h-24 rounded-xl" />
+          ))}
+        </div>
+        <div className="skeleton h-40 w-full rounded-xl" />
+        <div className="skeleton h-56 w-full rounded-xl" />
       </div>
     );
   }
@@ -160,7 +167,7 @@ export default function AnalyticsPage() {
   const egp = tCommon('egp');
 
   return (
-    <div className="bg-[var(--color-surface-0)] min-h-screen pb-[calc(56px+env(safe-area-inset-bottom,0px)+5rem)] md:pb-28">
+    <div className="bg-[var(--color-surface-0)] min-h-screen page-enter max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px)+0.5rem)] md:pb-28">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-4 pt-4 pb-4 no-print border-b border-slate-200/80 dark:border-slate-800">
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-white">{ta('title')}</h1>
