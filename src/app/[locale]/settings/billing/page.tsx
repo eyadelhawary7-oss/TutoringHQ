@@ -31,6 +31,7 @@ import {
 } from '@/lib/billingEngine';
 import {
   calculatePaygBill,
+  getWeeklyDisplayRate,
   PAYG_TIER_BREAKPOINTS,
   firstDayNextMonthCairoYmd,
 } from '@/lib/paygBilling';
@@ -129,6 +130,8 @@ type CenterRow = {
   cancellation_requested_at?: string | null;
   billing_type?: string | null;
   pricing_type?: string | null;
+  /** Monthly EGP per active student (billing); UI shows weekly via getWeeklyDisplayRate. */
+  payg_rate?: number | string | null;
   payg_pending_switch?: string | null;
   payg_switch_effective_date?: string | null;
   payg_pending_target_period?: string | null;
@@ -515,7 +518,7 @@ function PaygTab({
                 {t(`payg.tierRange.${b.plan}` as 'billing.payg.tierRange.nano')}
               </p>
               <p className="mt-1 text-xs tabular-nums text-slate-700 dark:text-slate-200" style={numFont}>
-                {t('payg.perStudent', { rate: String(b.ratePerStudent) })}
+                {b.weeklyDisplayRate.toLocaleString('en-US')} {t('payg.tier.rateUnit')}
               </p>
             </div>
           );
@@ -537,7 +540,8 @@ function PaygTab({
               {t('payg.estimate.rate')}
             </dt>
             <dd className="tabular-nums" style={numFont}>
-              {tier.ratePerStudent} {t('egp')}
+              {getWeeklyDisplayRate(tier.ratePerStudent).toLocaleString('en-US')}{' '}
+              {t('payg.estimate.rateUnit')}
             </dd>
           </div>
           <div className="flex justify-between gap-2">
@@ -950,9 +954,22 @@ export default function BillingPage() {
     [activeStudentCount, paygStudentCount],
   );
 
-  const paygHeroRate = useMemo(
-    () => calculatePaygBill(Math.max(1, activeStudentCount || paygStudentCount)).tier.ratePerStudent,
-    [activeStudentCount, paygStudentCount],
+  const paygMonthlyRateForHero = useMemo(() => {
+    const fromDb = Number(center?.payg_rate);
+    if (billingIsPayg && Number.isFinite(fromDb) && fromDb > 0) {
+      return fromDb;
+    }
+    return calculatePaygBill(Math.max(1, activeStudentCount || paygStudentCount)).tier.ratePerStudent;
+  }, [
+    billingIsPayg,
+    center?.payg_rate,
+    activeStudentCount,
+    paygStudentCount,
+  ]);
+
+  const paygHeroWeeklyDisplay = useMemo(
+    () => getWeeklyDisplayRate(paygMonthlyRateForHero),
+    [paygMonthlyRateForHero],
   );
 
   const billingPeriodEndLabel = useMemo(() => {
@@ -1681,7 +1698,7 @@ export default function BillingPage() {
               </span>
               <span className="text-lg font-semibold tabular-nums text-white" style={numFont}>
                 {billingIsPayg
-                  ? `${formatNum(paygHeroRate)} ${t('egp')}`
+                  ? `${formatNum(paygHeroWeeklyDisplay)} ${t('payg.estimate.rateUnit')}`
                   : `${formatNum(Number(center?.all_in_price ?? 0))} ${t('egp')}`}
               </span>
             </div>

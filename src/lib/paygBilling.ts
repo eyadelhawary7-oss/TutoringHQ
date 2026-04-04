@@ -12,6 +12,27 @@ export const PAYG_RATES = {
 
 export type PaygTierPlan = keyof typeof PAYG_RATES;
 
+/**
+ * Converts a monthly per-student rate to the weekly display rate shown in the UI.
+ * Billing math always uses the monthly rate. Display only.
+ */
+export function getWeeklyDisplayRate(monthlyRate: number): number {
+  return Math.round((monthlyRate / 4) * 100) / 100;
+}
+
+/** Weekly display rates (monthly ÷ 4, rounded) — convenience for UI. */
+export const PAYG_WEEKLY_DISPLAY_RATES = {
+  nano: getWeeklyDisplayRate(PAYG_RATES.nano.ratePerStudent),
+  starter: getWeeklyDisplayRate(PAYG_RATES.starter.ratePerStudent),
+  pro: getWeeklyDisplayRate(PAYG_RATES.pro.ratePerStudent),
+  business: getWeeklyDisplayRate(PAYG_RATES.business.ratePerStudent),
+  enterprise: getWeeklyDisplayRate(PAYG_RATES.enterprise.ratePerStudent),
+} as const;
+
+export function formatWeeklyRate(monthlyRate: number): string {
+  return getWeeklyDisplayRate(monthlyRate).toLocaleString('en-US');
+}
+
 export function getPaygTier(studentCount: number) {
   if (studentCount <= 100)
     return { plan: 'nano' as const, ratePerStudent: 27.5, maxStudents: 100 };
@@ -60,11 +81,41 @@ export function getPaygEstimate(studentCount: number): string {
 
 /** Tier breakpoints for sliders (labels are AR defaults; UI may override via i18n). */
 export const PAYG_TIER_BREAKPOINTS = [
-  { plan: 'nano' as const, label: 'ناشئ', maxStudents: 100, ratePerStudent: 27.5 },
-  { plan: 'starter' as const, label: 'أساسي', maxStudents: 250, ratePerStudent: 22.88 },
-  { plan: 'pro' as const, label: 'محترف', maxStudents: 500, ratePerStudent: 20.24 },
-  { plan: 'business' as const, label: 'أعمال', maxStudents: 1000, ratePerStudent: 16.5 },
-  { plan: 'enterprise' as const, label: 'مؤسسات', maxStudents: 2000, ratePerStudent: 11.72 },
+  {
+    plan: 'nano' as const,
+    label: 'ناشئ',
+    maxStudents: 100,
+    ratePerStudent: 27.5,
+    weeklyDisplayRate: PAYG_WEEKLY_DISPLAY_RATES.nano,
+  },
+  {
+    plan: 'starter' as const,
+    label: 'أساسي',
+    maxStudents: 250,
+    ratePerStudent: 22.88,
+    weeklyDisplayRate: PAYG_WEEKLY_DISPLAY_RATES.starter,
+  },
+  {
+    plan: 'pro' as const,
+    label: 'محترف',
+    maxStudents: 500,
+    ratePerStudent: 20.24,
+    weeklyDisplayRate: PAYG_WEEKLY_DISPLAY_RATES.pro,
+  },
+  {
+    plan: 'business' as const,
+    label: 'أعمال',
+    maxStudents: 1000,
+    ratePerStudent: 16.5,
+    weeklyDisplayRate: PAYG_WEEKLY_DISPLAY_RATES.business,
+  },
+  {
+    plan: 'enterprise' as const,
+    label: 'مؤسسات',
+    maxStudents: 2000,
+    ratePerStudent: 11.72,
+    weeklyDisplayRate: PAYG_WEEKLY_DISPLAY_RATES.enterprise,
+  },
 ];
 
 /** First calendar day of next month in Africa/Cairo (YYYY-MM-DD). */

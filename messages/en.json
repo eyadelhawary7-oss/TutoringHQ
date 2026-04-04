@@ -2790,7 +2790,7 @@
       "tabLabel": "Pay As You Go",
       "intro": {
         "title": "Fully flexible — pay for actual usage",
-        "subtitle": "Billed monthly based on active student count. No commitment."
+        "subtitle": "Billed monthly based on active student count. Rate shown per student per week. No commitment."
       },
       "pill": {
         "noCommitment": "No commitment",
@@ -2803,7 +2803,8 @@
       },
       "estimate": {
         "students": "Students this month",
-        "rate": "Rate per student",
+        "rate": "Rate per Student/Week",
+        "rateUnit": "EGP/student/week",
         "tier": "Current tier",
         "total": "Estimated monthly bill",
         "capped": "Capped at plan maximum ({amount} EGP)",
@@ -2822,7 +2823,7 @@
       },
       "hero": {
         "badge": "Pay As You Go",
-        "rate": "Rate per Student",
+        "rate": "Rate per Student/Week",
         "billingDate": "Billing Date",
         "billingDateValue": "End of month",
         "activeStudents": "Active students",
@@ -2835,7 +2836,10 @@
         "business": "501–1,000",
         "enterprise": "1,001–2,000"
       },
-      "perStudent": "{rate} EGP/student"
+      "tier": {
+        "rateUnit": "EGP/week"
+      },
+      "perStudent": "{rate} EGP/student/week"
     }
   },
   "cardOrders": {
