@@ -81,7 +81,7 @@ const ADMIN_NAV: { key: AdminTab; icon: React.ElementType; labelKey: string; per
   { key: 'cardOrders', icon: IdCard, labelKey: 'cardOrders', permissionKey: 'card_orders' },
   { key: 'planRequests', icon: FileText, labelKey: 'planRequests', permissionKey: 'plan_requests' },
   { key: 'renewals', icon: CalendarCheck, labelKey: 'renewals', permissionKey: 'renewals' },
-  { key: 'referrals', icon: Gift, labelKey: 'referrals', permissionKey: 'referrals' },
+  { key: 'referrals', icon: Gift, labelKey: 'referralsNav', permissionKey: 'referrals' },
   { key: 'withdrawals', icon: Wallet, labelKey: 'withdrawals', permissionKey: 'withdrawals' },
   { key: 'internalTeam', icon: Users, labelKey: 'internalTeam', permissionKey: 'internal_team' },
   { key: 'salesPipeline', icon: Target, labelKey: 'salesPipeline', permissionKey: 'sales_pipeline' },
