@@ -1216,7 +1216,37 @@
     "sendReminderToParent": "Send Reminder To Parent",
     "studentId": "Student Id",
     "subject": "Subject",
-    "title": "Title"
+    "title": "Title",
+    "subtitle": "Manage your enrolled students",
+    "import": "Import",
+    "order_cards": "Order Cards",
+    "sendAnnouncement": "Send Announcement",
+    "add_student": "Add Student",
+    "total_students": "Total Students",
+    "active_students": "Active Students",
+    "search_placeholder": "Search students...",
+    "filter_all": "All",
+    "filter_active": "Active",
+    "filter_at_risk": "At Risk",
+    "filter_inactive": "Inactive",
+    "filter_enrolled": "Enrolled",
+    "filter_churned": "Churned",
+    "sort": "Sort",
+    "sortName": "Sort by Name",
+    "sortBalance": "Sort by Balance",
+    "status_at_risk": "At Risk",
+    "status_enrolled": "Enrolled",
+    "no_balance": "No balance",
+    "last_sessions": "Last Sessions",
+    "balance_due": "Balance Due",
+    "parentPackOptIn": "WhatsApp Pack",
+    "addToCardOrder": "Add to Card Order",
+    "swipe_edit": "Edit",
+    "swipe_scan": "Scan",
+    "swipe_delete": "Delete",
+    "studentName": "Student Name",
+    "parentSection": "Parent Information",
+    "autoGenerateNumber": "Auto-generate student number"
   },
   "print": {
     "title": "Print Student Cards",
@@ -1526,7 +1556,8 @@
         "Which students have overdue balances?",
         "How many payments were recorded today?"
       ]
-    }
+    },
+    "aiChat_fabLabel": "Ask AI"
   },
   "ceoRange": {
     "thisMonth": "This Month",
@@ -2562,7 +2593,148 @@
     "packApprovedAt": "Approved",
     "approvePack": "Approve Pack",
     "rejectPack": "Reject Pack",
-    "suspendPack": "Suspend Pack"
+    "suspendPack": "Suspend Pack",
+    "centerManagement": {
+      "backToList": "Back to Centers",
+      "title": "Center Management",
+      "saveSection": "Save Changes",
+      "section1": {
+        "title": "Center Identity",
+        "name": "Center Name",
+        "ownerName": "Owner Name",
+        "phone": "Phone Number",
+        "email": "Email",
+        "city": "City",
+        "district": "District",
+        "governorate": "Governorate",
+        "centerCode": "Center Code",
+        "centerCodeWarning": "Center code cannot be changed after assignment",
+        "cardColor": "QR Card Color",
+        "signupNotes": "Signup Notes"
+      },
+      "section2": {
+        "title": "Status & Plan",
+        "status": "Account Status",
+        "subscriptionStatus": "Subscription Status",
+        "billingStatus": "Billing Status",
+        "plan": "Plan",
+        "pricingType": "Pricing Type",
+        "billingType": "Billing Type",
+        "billingPeriod": "Billing Period",
+        "weeklyStudentLimit": "Weekly Student Limit"
+      },
+      "section3": {
+        "title": "Billing Details",
+        "effectiveMonthly": "Effective Monthly Price",
+        "annualEquivalent": "Annual Equivalent",
+        "billingAmount": "Billing Amount",
+        "allInPrice": "All-In Price",
+        "nextPaymentDue": "Next Payment Due",
+        "autoSuspendAt": "Auto-Suspend Date",
+        "autoSuspendWarning": "Center will be suspended on this date if unpaid",
+        "subscriptionStartDate": "Subscription Start Date",
+        "isEarlyAdopter": "Early Adopter"
+      },
+      "section4": {
+        "title": "Invoices",
+        "createInvoice": "Create Invoice",
+        "invoiceNumber": "Invoice #",
+        "type": "Type",
+        "amount": "Amount",
+        "status": "Status",
+        "dueDate": "Due Date",
+        "created": "Created",
+        "notes": "Notes"
+      },
+      "section5": {
+        "title": "Payment History",
+        "recordPayment": "Record Payment",
+        "noPayments": "No payments recorded yet"
+      },
+      "section6": {
+        "title": "WhatsApp Pack",
+        "packApprovedAt": "Pack Approved",
+        "packRequestedAt": "Pack Requested",
+        "packDisabledAt": "Pack Disabled",
+        "activeParents": "Active Parents",
+        "packEnabled": "Pack Enabled",
+        "packRequestStatus": "Request Status",
+        "packPrice": "Price per Parent",
+        "packCustomMin": "Custom Invoice Minimum",
+        "packPendingBalance": "Pending Balance",
+        "packBalanceNote": "Balance carried to next invoice",
+        "packMonths": "Months Without Invoice"
+      },
+      "section7": {
+        "title": "Announcements",
+        "balance": "Announcement Balance",
+        "balanceNote": "Used for center announcements",
+        "balanceUpdated": "Balance Last Updated",
+        "pricePerBlast": "Price per Blast",
+        "cap": "Monthly Cap"
+      },
+      "section8": {
+        "title": "Configuration",
+        "individualAlerts": "Individual Attendance Alerts",
+        "dailySummary": "Daily Summary",
+        "summerMode": "Summer Mode",
+        "whatsappOptedIn": "WhatsApp Opted In",
+        "summerModeWarning": "Summer mode pauses billing reminders",
+        "scheduleStart": "Schedule Start Hour",
+        "scheduleEnd": "Schedule End Hour",
+        "instapayNumber": "InstaPay Number",
+        "instapayNote": "Used for credit withdrawals"
+      },
+      "section9": {
+        "title": "Plan Requests",
+        "overridePlan": "Override Plan",
+        "overrideWarning": "Manually overriding the plan bypasses payment",
+        "currentPlan": "Current Plan",
+        "requestedPlan": "Requested Plan",
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "section10": {
+        "title": "Referrals",
+        "referralCode": "Referral Code",
+        "copy": "Copy",
+        "referredBy": "Referred By",
+        "centersReferred": "Centers Referred",
+        "commissions": "Commissions",
+        "noCommissions": "No commissions yet",
+        "rewardStatus": "Reward Status",
+        "rewardAmount": "Reward Amount",
+        "payoutRequests": "Payout Requests",
+        "noPayouts": "No payout requests"
+      },
+      "section11": {
+        "title": "Danger Zone",
+        "blacklistBtn": "Blacklist Center",
+        "blacklistWarning": "Blacklisting permanently blocks this center from the platform"
+      },
+      "section12": {
+        "title": "System Information",
+        "id": "Center ID",
+        "createdAt": "Created At",
+        "approvedAt": "Approved At",
+        "approvedBy": "Approved By",
+        "healthScore": "Health Score",
+        "healthBand": "Health Band",
+        "onboardingStep": "Onboarding Step",
+        "onboardingCompleted": "Onboarding Completed",
+        "onboardingStarted": "Onboarding Started",
+        "lastPayment": "Last Payment",
+        "studentSequence": "Student Sequence",
+        "packActivatedAt": "Pack Activated",
+        "packDisabledAt": "Pack Disabled",
+        "renewalReminder": "Renewal Reminder Sent",
+        "overdueReminder": "Overdue Reminder Sent"
+      }
+    },
+    "search": "Search centers...",
+    "studentsCount": "Students",
+    "lastActive": "Last Active",
+    "usage": "Usage"
   },
   "suspended": {
     "title": "Your subscription has been suspended",
@@ -2979,7 +3151,10 @@
         "rateUnit": "EGP/week"
       },
       "perStudent": "{rate} EGP/student/week"
-    }
+    },
+    "whatsappSupport": "WhatsApp Support",
+    "contactSupportViaWhatsapp": "Contact support via WhatsApp",
+    "securityAndSignOut": "Security & Sign Out"
   },
   "cardOrders": {
     "orderIdCards": "Order ID Cards",

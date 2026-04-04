@@ -1566,7 +1566,148 @@
     "packApprovedAt": "تاريخ القبول",
     "approvePack": "قبول الباقة",
     "rejectPack": "رفض الباقة",
-    "suspendPack": "إيقاف الباقة"
+    "suspendPack": "إيقاف الباقة",
+    "centerManagement": {
+      "backToList": "العودة للسناتر",
+      "title": "إدارة السنتر",
+      "saveSection": "حفظ التغييرات",
+      "section1": {
+        "title": "هوية السنتر",
+        "name": "اسم السنتر",
+        "ownerName": "اسم المالك",
+        "phone": "رقم الهاتف",
+        "email": "البريد الإلكتروني",
+        "city": "المدينة",
+        "district": "الحي",
+        "governorate": "المحافظة",
+        "centerCode": "كود السنتر",
+        "centerCodeWarning": "لا يمكن تغيير الكود بعد التعيين",
+        "cardColor": "لون بطاقة QR",
+        "signupNotes": "ملاحظات التسجيل"
+      },
+      "section2": {
+        "title": "الحالة والخطة",
+        "status": "حالة الحساب",
+        "subscriptionStatus": "حالة الاشتراك",
+        "billingStatus": "حالة الفوترة",
+        "plan": "الخطة",
+        "pricingType": "نوع التسعير",
+        "billingType": "نوع الفوترة",
+        "billingPeriod": "فترة الفوترة",
+        "weeklyStudentLimit": "حد الطلاب الأسبوعي"
+      },
+      "section3": {
+        "title": "تفاصيل الفوترة",
+        "effectiveMonthly": "السعر الشهري الفعلي",
+        "annualEquivalent": "المكافئ السنوي",
+        "billingAmount": "مبلغ الفاتورة",
+        "allInPrice": "السعر الشامل",
+        "nextPaymentDue": "الدفعة القادمة",
+        "autoSuspendAt": "تاريخ الإيقاف التلقائي",
+        "autoSuspendWarning": "سيتم إيقاف السنتر في هذا التاريخ إذا لم يُسدَّد",
+        "subscriptionStartDate": "تاريخ بداية الاشتراك",
+        "isEarlyAdopter": "مبكر التبني"
+      },
+      "section4": {
+        "title": "الفواتير",
+        "createInvoice": "إنشاء فاتورة",
+        "invoiceNumber": "رقم الفاتورة",
+        "type": "النوع",
+        "amount": "المبلغ",
+        "status": "الحالة",
+        "dueDate": "تاريخ الاستحقاق",
+        "created": "تاريخ الإنشاء",
+        "notes": "ملاحظات"
+      },
+      "section5": {
+        "title": "سجل المدفوعات",
+        "recordPayment": "تسجيل دفعة",
+        "noPayments": "لا توجد مدفوعات مسجلة بعد"
+      },
+      "section6": {
+        "title": "باقة واتساب",
+        "packApprovedAt": "تاريخ القبول",
+        "packRequestedAt": "تاريخ الطلب",
+        "packDisabledAt": "تاريخ التعطيل",
+        "activeParents": "الأولياء النشطون",
+        "packEnabled": "الباقة مفعّلة",
+        "packRequestStatus": "حالة الطلب",
+        "packPrice": "السعر لكل ولي أمر",
+        "packCustomMin": "الحد الأدنى المخصص للفاتورة",
+        "packPendingBalance": "الرصيد المعلق",
+        "packBalanceNote": "الرصيد يُضاف للفاتورة القادمة",
+        "packMonths": "أشهر بدون فاتورة"
+      },
+      "section7": {
+        "title": "الإعلانات",
+        "balance": "رصيد الإعلانات",
+        "balanceNote": "يستخدم لإعلانات السنتر",
+        "balanceUpdated": "آخر تحديث للرصيد",
+        "pricePerBlast": "سعر الإرسال",
+        "cap": "الحد الأقصى الشهري"
+      },
+      "section8": {
+        "title": "الإعدادات",
+        "individualAlerts": "تنبيهات الحضور الفردية",
+        "dailySummary": "الملخص اليومي",
+        "summerMode": "وضع الصيف",
+        "whatsappOptedIn": "اشتراك واتساب",
+        "summerModeWarning": "وضع الصيف يوقف تذكيرات الفوترة",
+        "scheduleStart": "ساعة بداية الجدول",
+        "scheduleEnd": "ساعة نهاية الجدول",
+        "instapayNumber": "رقم الإنستاباي",
+        "instapayNote": "يستخدم لسحب الرصيد"
+      },
+      "section9": {
+        "title": "طلبات الخطة",
+        "overridePlan": "تجاوز الخطة",
+        "overrideWarning": "التجاوز اليدوي للخطة يتخطى الدفع",
+        "currentPlan": "الخطة الحالية",
+        "requestedPlan": "الخطة المطلوبة",
+        "approve": "قبول",
+        "reject": "رفض"
+      },
+      "section10": {
+        "title": "الإحالات",
+        "referralCode": "كود الإحالة",
+        "copy": "نسخ",
+        "referredBy": "محال من",
+        "centersReferred": "السناتر المُحالة",
+        "commissions": "العمولات",
+        "noCommissions": "لا توجد عمولات بعد",
+        "rewardStatus": "حالة المكافأة",
+        "rewardAmount": "مبلغ المكافأة",
+        "payoutRequests": "طلبات الصرف",
+        "noPayouts": "لا توجد طلبات صرف"
+      },
+      "section11": {
+        "title": "منطقة الخطر",
+        "blacklistBtn": "حظر السنتر",
+        "blacklistWarning": "الحظر يمنع هذا السنتر نهائياً من المنصة"
+      },
+      "section12": {
+        "title": "معلومات النظام",
+        "id": "معرّف السنتر",
+        "createdAt": "تاريخ الإنشاء",
+        "approvedAt": "تاريخ القبول",
+        "approvedBy": "قبله",
+        "healthScore": "درجة الصحة",
+        "healthBand": "نطاق الصحة",
+        "onboardingStep": "خطوة الإعداد",
+        "onboardingCompleted": "اكتمل الإعداد",
+        "onboardingStarted": "بدأ الإعداد",
+        "lastPayment": "آخر دفعة",
+        "studentSequence": "تسلسل الطلاب",
+        "packActivatedAt": "تفعيل الباقة",
+        "packDisabledAt": "تعطيل الباقة",
+        "renewalReminder": "إرسال تذكير التجديد",
+        "overdueReminder": "إرسال تذكير التأخر"
+      }
+    },
+    "search": "بحث عن سنتر...",
+    "studentsCount": "الطلاب",
+    "lastActive": "آخر نشاط",
+    "usage": "الاستخدام"
   },
   "ceo": {
     "brandTitle": "CenterHQ",
@@ -2049,7 +2190,8 @@
         "مين الطلاب اللي عندهم رصيد متأخر؟",
         "كام مدفوعات اتسجلت النهارده؟"
       ]
-    }
+    },
+    "aiChat_fabLabel": "اسأل الذكاء الاصطناعي"
   },
   "attendance": {
     "title": "سجل الحضور لـ",
@@ -2484,7 +2626,10 @@
         "rateUnit": "جنيه/أسبوع"
       },
       "perStudent": "{rate} ج.م/طالب/أسبوع"
-    }
+    },
+    "whatsappSupport": "دعم واتساب",
+    "contactSupportViaWhatsapp": "تواصل مع الدعم عبر واتساب",
+    "securityAndSignOut": "الأمان وتسجيل الخروج"
   },
   "branches": {
     "title": "الفروع",
@@ -3782,7 +3927,37 @@
     "sendReminderToParent": "Send تذكير إلى ولي أمر",
     "studentId": "طالب Id",
     "subject": "مادة",
-    "title": "عنوان"
+    "title": "عنوان",
+    "subtitle": "إدارة الطلاب المسجلين",
+    "import": "استيراد",
+    "order_cards": "طلب بطاقات",
+    "sendAnnouncement": "إرسال إعلان",
+    "add_student": "إضافة طالب",
+    "total_students": "إجمالي الطلاب",
+    "active_students": "الطلاب النشطون",
+    "search_placeholder": "بحث عن طالب...",
+    "filter_all": "الكل",
+    "filter_active": "نشط",
+    "filter_at_risk": "في خطر",
+    "filter_inactive": "غير نشط",
+    "filter_enrolled": "مسجل",
+    "filter_churned": "منسحب",
+    "sort": "ترتيب",
+    "sortName": "ترتيب بالاسم",
+    "sortBalance": "ترتيب بالرصيد",
+    "status_at_risk": "في خطر",
+    "status_enrolled": "مسجل",
+    "no_balance": "لا يوجد رصيد",
+    "last_sessions": "الجلسات الأخيرة",
+    "balance_due": "الرصيد المستحق",
+    "parentPackOptIn": "باقة واتساب",
+    "addToCardOrder": "إضافة لطلب البطاقات",
+    "swipe_edit": "تعديل",
+    "swipe_scan": "مسح",
+    "swipe_delete": "حذف",
+    "studentName": "اسم الطالب",
+    "parentSection": "معلومات ولي الأمر",
+    "autoGenerateNumber": "توليد رقم الطالب تلقائياً"
   },
   "suspended": {
     "title": "تم تعليق اشتراكك ",
