@@ -57,3 +57,4 @@ public/fonts/*.woff2
 public/fonts/*.woff
 supabase/.temp/.claude/
 *.code-workspace
+.claude/\n.cursor/
