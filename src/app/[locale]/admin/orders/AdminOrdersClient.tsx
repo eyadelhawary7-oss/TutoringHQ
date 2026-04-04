@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CardTemplatePreview from '@/components/CardTemplatePreview';
+import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { useSidebar } from '@/contexts/SidebarContext';
 import type { AdminCardOrderRow, CardOrderFulfillmentStatus } from '@/types/admin-card-orders';
@@ -208,9 +209,11 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
     Math.round(o.quantity * o.price_per_card * 100) / 100;
 
   return (
-    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen pt-14 lg:pt-0">
-      <AdminSidebar activeRoute={pathname} />
-      <div className="w-full flex-1 p-6 space-y-5 overflow-auto animate-fade-in min-w-0 lg:ms-56">
+    <>
+      <AdminHeader />
+      <div className="flex flex-1 min-h-0 min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100dvh-3.5rem)]">
+        <AdminSidebar activeRoute={pathname} />
+        <div className="w-full flex-1 p-6 space-y-5 overflow-auto animate-fade-in min-w-0 lg:ms-56">
         <div>
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{tIdCards('adminTitle')}</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tIdCards('adminSubtitle')}</p>
@@ -634,7 +637,8 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
           to { transform: translateX(0); opacity: 1; }
         }
       `}</style>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -270,9 +270,9 @@ export default function AdminReferralsPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex flex-1 min-h-0 min-h-screen flex-col">
       <AdminHeader />
-      <div className="flex flex-1 pt-14">
+      <div className="flex flex-1">
         <AdminSidebar activeRoute="/admin/referrals" />
         <main className="min-w-0 flex-1 overflow-auto p-4 md:p-6 lg:ms-56">
           <div className="mb-4 flex items-center gap-2">

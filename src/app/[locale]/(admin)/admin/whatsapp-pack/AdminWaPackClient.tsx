@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Loader2, MessageCircle } from 'lucide-react'
+import { AdminHeader } from '@/components/admin/AdminHeader'
 import { AdminSidebar } from '@/components/AdminSidebar'
 import { useLayout } from '@/contexts/LayoutContext'
 import { supabase } from '@/lib/supabase'
@@ -289,9 +290,11 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   const pendingCenters = localCenters.filter((c) => c.pack_request_status === 'pending')
 
   return (
-    <div className="flex min-h-screen bg-[var(--color-surface-0)] pt-14 lg:pt-0" dir={isRTL ? 'rtl' : 'ltr'}>
-      <AdminSidebar activeRoute="/admin/whatsapp-pack" desktopSidebarFullHeight />
-      <main className="flex-1 overflow-auto p-4 md:p-6 lg:ms-56">
+    <>
+      <AdminHeader />
+      <div className="flex flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
+        <AdminSidebar activeRoute="/admin/whatsapp-pack" />
+        <main className="flex-1 overflow-auto p-4 md:p-6 lg:ms-56">
         <div className="mx-auto max-w-6xl space-y-8">
           <div className="flex items-center gap-2">
             <MessageCircle className="h-8 w-8 text-teal-600" aria-hidden />
@@ -887,7 +890,8 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
             </section>
           )}
         </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   )
 }

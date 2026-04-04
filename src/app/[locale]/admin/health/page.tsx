@@ -165,13 +165,13 @@ export default function AdminHealthPage() {
 
   return (
     <div
-      className="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+      className="flex flex-col flex-1 min-h-0 min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <AdminHeader />
       <AdminSidebar activeTab="billing" activeRoute="/admin/health" />
 
-      <main className="lg:ms-56 pt-14 lg:pt-0 px-4 py-6 max-w-5xl mx-auto">
+      <main className="lg:ms-56 px-4 py-6 max-w-5xl mx-auto">
         <button
           type="button"
           onClick={() => router.push('/admin')}

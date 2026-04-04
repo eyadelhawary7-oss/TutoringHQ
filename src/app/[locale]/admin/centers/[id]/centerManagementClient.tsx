@@ -1474,11 +1474,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
   return (
     <div
-      className="flex flex-col min-h-screen bg-[var(--color-surface-0)]"
+      className="flex flex-col flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)]"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <AdminHeader />
-      <div className="flex flex-1 pt-14">
+      <div className="flex flex-1">
         <AdminSidebar activeRoute={`/admin/centers/${centerId}`} />
         <main className="flex-1 flex flex-col min-w-0 p-4 md:p-6 overflow-auto lg:ms-56">
           {loading ? (

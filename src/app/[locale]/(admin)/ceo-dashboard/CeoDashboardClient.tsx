@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { useLayout } from '@/contexts/LayoutContext';
+import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import {
   Building2,
@@ -461,12 +462,15 @@ export default function CeoDashboardClient({
 
   if (loading && !data) {
     return (
-      <div className="flex min-h-screen bg-[var(--color-surface-0)] pt-14 lg:pt-0" dir={isRTL ? 'rtl' : 'ltr'}>
-        <AdminSidebar activeTab="ceoDashboard" activeRoute="/ceo-dashboard" />
-        <main className="flex-1 flex items-center justify-center lg:ms-56">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-        </main>
-      </div>
+      <>
+        <AdminHeader />
+        <div className="flex flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
+          <AdminSidebar activeTab="ceoDashboard" activeRoute="/ceo-dashboard" />
+          <main className="flex-1 flex items-center justify-center lg:ms-56">
+            <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          </main>
+        </div>
+      </>
     );
   }
 
@@ -500,9 +504,11 @@ export default function CeoDashboardClient({
   ];
 
   return (
-    <div className="flex min-h-screen bg-[var(--color-surface-0)] pt-14 lg:pt-0" dir={isRTL ? 'rtl' : 'ltr'}>
-      <AdminSidebar activeTab="ceoDashboard" activeRoute="/ceo-dashboard" />
-      <main className="flex-1 overflow-auto p-6 lg:ms-56 page-enter">
+    <>
+      <AdminHeader />
+      <div className="flex flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
+        <AdminSidebar activeTab="ceoDashboard" activeRoute="/ceo-dashboard" />
+        <main className="flex-1 overflow-auto p-6 lg:ms-56 page-enter">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
           <button
@@ -598,7 +604,8 @@ export default function CeoDashboardClient({
             <p className="text-[var(--color-text-secondary)] text-center py-8">{t('noCohortData')}</p>
           )}
         </section>
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   );
 }

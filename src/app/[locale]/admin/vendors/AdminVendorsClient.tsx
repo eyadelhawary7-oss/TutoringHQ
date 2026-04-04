@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
+import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { supabase } from '@/lib/supabase';
@@ -93,9 +94,11 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
   }, [vendor, name, whatsapp, address, city, isActive, toast, t, tCommon]);
 
   return (
-    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen pt-14 lg:pt-0">
-      <AdminSidebar activeRoute={pathname} />
-      <div className="w-full flex-1 p-6 space-y-6 overflow-auto min-w-0 lg:ms-56">
+    <>
+      <AdminHeader />
+      <div className="flex flex-1 min-h-0 min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100dvh-3.5rem)]">
+        <AdminSidebar activeRoute={pathname} />
+        <div className="w-full flex-1 p-6 space-y-6 overflow-auto min-w-0 lg:ms-56">
         <div>
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('vendorsTitle')}</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
@@ -164,7 +167,8 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
             {saving ? t('creating') : t('saveVendor')}
           </button>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
