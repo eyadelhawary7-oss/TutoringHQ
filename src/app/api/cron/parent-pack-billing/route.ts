@@ -13,8 +13,11 @@ import {
 } from '@/lib/packBilling';
 import { sendChqPackInvoiceTemplate } from '@/lib/centerNotify';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
+import { tCronBackup, tCronWaAr } from '@/lib/cronBackupI18n';
 
 const packInvoiceEnabled = true; // TODO: set to true when chq_pack_invoice is Active
+
+const CENTER_CHUNK_SIZE = 50;
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -40,7 +43,7 @@ export async function POST(request: Request) {
 
   const auth = request.headers.get('authorization');
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -91,133 +94,203 @@ export async function POST(request: Request) {
     const list = centers ?? [];
     let skippedTopCentersPack = 0;
 
-    for (const center of list) {
-      const centerId = center.id as string;
-      const plan = String(center.plan ?? '');
-      const sessionD =
-        center.parent_pack_enabled === true && String(center.pack_request_status ?? '') === 'approved';
+    for (let offset = 0; offset < list.length; offset += CENTER_CHUNK_SIZE) {
+      const chunk = list.slice(offset, offset + CENTER_CHUNK_SIZE);
+      const chunkIds = chunk.map((c) => c.id as string);
 
-      const packBillingMin = await resolvePackBillingMinimumEgp(supabaseAdmin, {
-        id: centerId,
-        name: String((center as { name?: string }).name ?? ''),
-        plan,
-        pack_custom_invoice_minimum: (center as { pack_custom_invoice_minimum?: number | null })
-          .pack_custom_invoice_minimum,
-      });
-      if (packBillingMin === null) {
-        skippedTopCentersPack += 1;
+      const packMinsEntries = await Promise.all(
+        chunk.map(async (center) => {
+          const centerId = center.id as string;
+          const plan = String(center.plan ?? '');
+          const min = await resolvePackBillingMinimumEgp(supabaseAdmin, {
+            id: centerId,
+            name: String((center as { name?: string }).name ?? ''),
+            plan,
+            pack_custom_invoice_minimum: (center as { pack_custom_invoice_minimum?: number | null })
+              .pack_custom_invoice_minimum,
+          });
+          return [centerId, min] as const;
+        }),
+      );
+      const packMinByCenter = new Map(packMinsEntries);
+      for (const [, min] of packMinsEntries) {
+        if (min === null) skippedTopCentersPack += 1;
       }
 
-      if (sessionD) {
-        const [billingYear, billingMonth] = prevPeriod.split('-');
-        const code = centerCodeForPack(center as { center_code?: string; referral_code?: string; id: string });
-        const invoiceNumber = `PACK-${code}-${billingYear}-${billingMonth}`;
+      const { data: invRows } = await supabaseAdmin
+        .from('invoices')
+        .select('center_id, invoice_number')
+        .in('center_id', chunkIds);
 
-        const { data: existsPackInv } = await supabaseAdmin
-          .from('invoices')
-          .select('id')
-          .eq('center_id', centerId)
-          .eq('invoice_number', invoiceNumber)
-          .maybeSingle();
+      const invoiceKeySet = new Set<string>();
+      for (const inv of invRows ?? []) {
+        const row = inv as { center_id: string; invoice_number: string };
+        invoiceKeySet.add(`${row.center_id}|${row.invoice_number}`);
+      }
 
-        if (!existsPackInv && packBillingMin !== null) {
-          const rolling = await computeRollingParentCount(supabaseAdmin, centerId, prevPeriod);
-          const pricePer = Number((center as { pack_price_per_parent?: number }).pack_price_per_parent ?? 12);
-          const baseLine = Math.max(rolling * pricePer, packBillingMin);
-          const pending = Number((center as { pack_pending_balance?: number }).pack_pending_balance ?? 0);
-          const totalAmount = baseLine + (pending > 0 ? pending : 0);
+      const { data: countRows, error: countRowsErr } = await supabaseAdmin
+        .from('parent_pack_monthly_counts')
+        .select('center_id')
+        .in('center_id', chunkIds)
+        .eq('billing_period', prevPeriod);
+      if (countRowsErr) {
+        console.error('[cron/parent-pack-billing] bulk count', countRowsErr);
+      }
+      const billedCountByCenter = new Map<string, number>();
+      for (const r of countRows ?? []) {
+        const cid = (r as { center_id: string }).center_id;
+        billedCountByCenter.set(cid, (billedCountByCenter.get(cid) ?? 0) + 1);
+      }
 
-          const periodStart = `${prevPeriod}-01`;
-          const periodEnd = billingMonthEndYmd(prevPeriod);
+      const { data: packStudents, error: stBulkErr } = await supabaseAdmin
+        .from('students')
+        .select('id, parent_phone, center_id')
+        .in('center_id', chunkIds)
+        .eq('parent_pack_opted_in', true)
+        .eq('is_active', true)
+        .not('parent_phone', 'is', null);
+      if (stBulkErr) {
+        console.error('[cron/parent-pack-billing] bulk students', stBulkErr);
+      }
+      const packStudentsByCenter = new Map<
+        string,
+        { id: string; center_id: string; parent_phone: string }[]
+      >();
+      for (const s of packStudents ?? []) {
+        const row = s as { id: string; center_id: string; parent_phone: string };
+        const arr = packStudentsByCenter.get(row.center_id) ?? [];
+        arr.push(row);
+        packStudentsByCenter.set(row.center_id, arr);
+      }
 
-          const { error: packInvErr } = await supabaseAdmin.from('invoices').insert({
-            center_id: centerId,
-            invoice_number: invoiceNumber,
-            invoice_type: 'pack_billing',
-            base_amount: totalAmount,
-            total_amount: totalAmount,
-            billing_period_start: periodStart,
-            billing_period_end: periodEnd,
-            due_date: dateInNDays(7),
-            status: 'pending',
-            payment_reference: `Parent Pack — ${prevPeriod} (${rolling} parents)`,
-          });
+      const rollingEntries = await Promise.all(
+        chunk.map(async (center) => {
+          const centerId = center.id as string;
+          const n = await computeRollingParentCount(supabaseAdmin, centerId, prevPeriod);
+          return [centerId, n] as const;
+        }),
+      );
+      const rollingByCenter = new Map(rollingEntries);
 
-          if (packInvErr) {
-            console.error('[cron/parent-pack-billing] pack_billing invoice', centerId, packInvErr);
-          } else {
-            const { error: balErr } = await supabaseAdmin
-              .from('centers')
-              .update({ pack_pending_balance: 0 })
-              .eq('id', centerId);
-            if (balErr) console.error('[cron/parent-pack-billing] reset pack_pending_balance', centerId, balErr);
+      for (const center of chunk) {
+        const centerId = center.id as string;
+        const plan = String(center.plan ?? '');
+        const sessionD =
+          center.parent_pack_enabled === true && String(center.pack_request_status ?? '') === 'approved';
 
-            try {
-              await sendChqPackInvoiceTemplate(supabaseAdmin, packInvoiceEnabled, {
+        const packBillingMin = packMinByCenter.get(centerId) ?? null;
+
+        if (sessionD) {
+          const [billingYear, billingMonth] = prevPeriod.split('-');
+          const code = centerCodeForPack(center as { center_code?: string; referral_code?: string; id: string });
+          const invoiceNumber = `PACK-${code}-${billingYear}-${billingMonth}`;
+
+          const existsPackInv = invoiceKeySet.has(`${centerId}|${invoiceNumber}`);
+
+          if (!existsPackInv && packBillingMin !== null) {
+            const rolling = rollingByCenter.get(centerId) ?? 0;
+            const pricePer = Number((center as { pack_price_per_parent?: number }).pack_price_per_parent ?? 12);
+            const baseLine = Math.max(rolling * pricePer, packBillingMin);
+            const pending = Number((center as { pack_pending_balance?: number }).pack_pending_balance ?? 0);
+            const totalAmount = baseLine + (pending > 0 ? pending : 0);
+
+            const periodStart = `${prevPeriod}-01`;
+            const periodEnd = billingMonthEndYmd(prevPeriod);
+
+            const { error: packInvErr } = await supabaseAdmin.from('invoices').insert({
+              center_id: centerId,
+              invoice_number: invoiceNumber,
+              invoice_type: 'pack_billing',
+              base_amount: totalAmount,
+              total_amount: totalAmount,
+              billing_period_start: periodStart,
+              billing_period_end: periodEnd,
+              due_date: dateInNDays(7),
+              status: 'pending',
+              payment_reference: `Parent Pack — ${prevPeriod} (${rolling} parents)`,
+            });
+
+            if (packInvErr) {
+              console.error('[cron/parent-pack-billing] pack_billing invoice', centerId, packInvErr);
+            } else {
+              invoiceKeySet.add(`${centerId}|${invoiceNumber}`);
+              const { error: balErr } = await supabaseAdmin
+                .from('centers')
+                .update({ pack_pending_balance: 0 })
+                .eq('id', centerId);
+              if (balErr) console.error('[cron/parent-pack-billing] reset pack_pending_balance', centerId, balErr);
+
+              void sendChqPackInvoiceTemplate(supabaseAdmin, packInvoiceEnabled, {
                 name: (center as { name?: string }).name ?? '—',
                 phone: (center as { phone?: string | null }).phone ?? null,
                 monthArabic: billingPeriodArabicMonthYear(prevPeriod),
                 parentCountStr: String(rolling),
                 amountStr: String(totalAmount),
-              });
-            } catch (waErr) {
-              console.error('[cron/parent-pack-billing] WA send error:', waErr);
+              }).catch((waErr) => console.error('[cron/parent-pack-billing] WA send error:', waErr));
             }
           }
         }
-      }
 
-      if (!sessionD) {
-        const { count, error: countErr } = await supabaseAdmin
-          .from('parent_pack_monthly_counts')
-          .select('id', { count: 'exact', head: true })
-          .eq('center_id', centerId)
-          .eq('billing_period', prevPeriod);
+        if (!sessionD) {
+          const billedStudents = countRowsErr ? 0 : (billedCountByCenter.get(centerId) ?? 0);
+          const monthlyCharge = billedStudents * 12;
 
-        if (countErr) {
-          console.error('[cron/parent-pack-billing] count', centerId, countErr);
-          continue;
-        }
+          const prevBal = Number(center.pack_pending_balance ?? 0);
+          const prevMonths = Number(center.pack_months_without_invoice ?? 0);
+          const newPendingBalance = prevBal + monthlyCharge;
+          const newMonthsWithoutInvoice = billedStudents === 0 ? prevMonths : prevMonths + 1;
 
-        const billedStudents = Number(count ?? 0);
-        const monthlyCharge = billedStudents * 12;
+          const issue =
+            packBillingMin !== null &&
+            shouldIssueInvoice({
+              plan,
+              customMinimum: center.pack_custom_invoice_minimum as number | null | undefined,
+              pendingBalance: newPendingBalance,
+              monthsWithoutInvoice: newMonthsWithoutInvoice,
+              isFinalInvoice: false,
+            });
 
-        const prevBal = Number(center.pack_pending_balance ?? 0);
-        const prevMonths = Number(center.pack_months_without_invoice ?? 0);
-        const newPendingBalance = prevBal + monthlyCharge;
-        const newMonthsWithoutInvoice = billedStudents === 0 ? prevMonths : prevMonths + 1;
+          if (issue && newPendingBalance > 0) {
+            const periodStart = `${prevPeriod}-01`;
+            const periodEnd = billingMonthEndYmd(prevPeriod);
+            const descCount = billedStudents;
+            const invoiceNumber = `WAPACK-${prevPeriod}-${descCount}st-${Date.now()}`;
 
-        const issue =
-          packBillingMin !== null &&
-          shouldIssueInvoice({
-            plan,
-            customMinimum: center.pack_custom_invoice_minimum as number | null | undefined,
-            pendingBalance: newPendingBalance,
-            monthsWithoutInvoice: newMonthsWithoutInvoice,
-            isFinalInvoice: false,
-          });
+            const { error: invErr } = await supabaseAdmin.from('invoices').insert({
+              center_id: centerId,
+              invoice_number: invoiceNumber,
+              invoice_type: 'whatsapp_addon',
+              base_amount: newPendingBalance,
+              total_amount: newPendingBalance,
+              billing_period_start: periodStart,
+              billing_period_end: periodEnd,
+              due_date: dateInNDays(7),
+              status: 'pending',
+              payment_reference: `WhatsApp Pack — ${prevPeriod} (${descCount} students)`,
+            });
 
-        if (issue && newPendingBalance > 0) {
-          const periodStart = `${prevPeriod}-01`;
-          const periodEnd = billingMonthEndYmd(prevPeriod);
-          const descCount = billedStudents;
-          const invoiceNumber = `WAPACK-${prevPeriod}-${descCount}st-${Date.now()}`;
+            if (invErr) {
+              console.error('[cron/parent-pack-billing] invoice', centerId, invErr);
+              const { error: rollErr } = await supabaseAdmin
+                .from('centers')
+                .update({
+                  pack_pending_balance: newPendingBalance,
+                  pack_months_without_invoice: newMonthsWithoutInvoice,
+                })
+                .eq('id', centerId);
+              if (rollErr) console.error('[cron/parent-pack-billing] rollover after invoice fail', rollErr);
+              continue;
+            }
 
-          const { error: invErr } = await supabaseAdmin.from('invoices').insert({
-            center_id: centerId,
-            invoice_number: invoiceNumber,
-            invoice_type: 'whatsapp_addon',
-            base_amount: newPendingBalance,
-            total_amount: newPendingBalance,
-            billing_period_start: periodStart,
-            billing_period_end: periodEnd,
-            due_date: dateInNDays(7),
-            status: 'pending',
-            payment_reference: `WhatsApp Pack — ${prevPeriod} (${descCount} students)`,
-          });
-
-          if (invErr) {
-            console.error('[cron/parent-pack-billing] invoice', centerId, invErr);
+            const { error: resetErr } = await supabaseAdmin
+              .from('centers')
+              .update({
+                pack_pending_balance: 0,
+                pack_months_without_invoice: 0,
+              })
+              .eq('id', centerId);
+            if (resetErr) console.error('[cron/parent-pack-billing] reset balance', centerId, resetErr);
+          } else {
             const { error: rollErr } = await supabaseAdmin
               .from('centers')
               .update({
@@ -225,58 +298,28 @@ export async function POST(request: Request) {
                 pack_months_without_invoice: newMonthsWithoutInvoice,
               })
               .eq('id', centerId);
-            if (rollErr) console.error('[cron/parent-pack-billing] rollover after invoice fail', rollErr);
-            continue;
+            if (rollErr) console.error('[cron/parent-pack-billing] rollover', centerId, rollErr);
           }
-
-          const { error: resetErr } = await supabaseAdmin
-            .from('centers')
-            .update({
-              pack_pending_balance: 0,
-              pack_months_without_invoice: 0,
-            })
-            .eq('id', centerId);
-          if (resetErr) console.error('[cron/parent-pack-billing] reset balance', centerId, resetErr);
-        } else {
-          const { error: rollErr } = await supabaseAdmin
-            .from('centers')
-            .update({
-              pack_pending_balance: newPendingBalance,
-              pack_months_without_invoice: newMonthsWithoutInvoice,
-            })
-            .eq('id', centerId);
-          if (rollErr) console.error('[cron/parent-pack-billing] rollover', centerId, rollErr);
-        }
-      }
-
-      if (center.parent_pack_enabled === true) {
-        const { data: activeStudents, error: stErr } = await supabaseAdmin
-          .from('students')
-          .select('id, parent_phone, center_id')
-          .eq('center_id', centerId)
-          .eq('parent_pack_opted_in', true)
-          .eq('is_active', true)
-          .not('parent_phone', 'is', null);
-
-        if (stErr) {
-          console.error('[cron/parent-pack-billing] students', centerId, stErr);
-          continue;
         }
 
-        if (activeStudents?.length) {
-          const rows = activeStudents.map((s) => ({
-            center_id: s.center_id as string,
-            billing_period: newPeriod,
-            student_id: s.id as string,
-            parent_phone: s.parent_phone as string,
-            opted_in_at: new Date().toISOString(),
-          }));
+        if (center.parent_pack_enabled === true) {
+          const activeStudents = packStudentsByCenter.get(centerId);
 
-          const { error: upErr } = await supabaseAdmin.from('parent_pack_monthly_counts').upsert(rows, {
-            onConflict: 'center_id,billing_period,student_id',
-            ignoreDuplicates: true,
-          });
-          if (upErr) console.error('[cron/parent-pack-billing] upsert counts', centerId, upErr);
+          if (activeStudents?.length) {
+            const rows = activeStudents.map((s) => ({
+              center_id: s.center_id as string,
+              billing_period: newPeriod,
+              student_id: s.id as string,
+              parent_phone: s.parent_phone as string,
+              opted_in_at: new Date().toISOString(),
+            }));
+
+            const { error: upErr } = await supabaseAdmin.from('parent_pack_monthly_counts').upsert(rows, {
+              onConflict: 'center_id,billing_period,student_id',
+              ignoreDuplicates: true,
+            });
+            if (upErr) console.error('[cron/parent-pack-billing] upsert counts', centerId, upErr);
+          }
         }
       }
     }
@@ -297,37 +340,37 @@ export async function POST(request: Request) {
         const cid = (row as { center_id: string }).center_id;
         if (seenSuspend.has(cid)) continue;
         seenSuspend.add(cid);
+      }
 
-        const { error: susErr } = await supabaseAdmin
+      const suspendIds = [...seenSuspend];
+      if (suspendIds.length > 0) {
+        const { error: bulkSusErr } = await supabaseAdmin
           .from('centers')
           .update({
             pack_request_status: 'suspended',
             parent_pack_enabled: false,
           })
-          .eq('id', cid);
-
-        if (susErr) {
-          console.error('[cron/parent-pack-billing] suspend center', cid, susErr);
-          continue;
-        }
-
-        if (waSendingOn) {
-          const { data: cen } = await supabaseAdmin
+          .in('id', suspendIds);
+        if (bulkSusErr) {
+          console.error('[cron/parent-pack-billing] bulk suspend', bulkSusErr);
+        } else if (waSendingOn) {
+          const { data: cenRows } = await supabaseAdmin
             .from('centers')
-            .select('name, phone')
-            .eq('id', cid)
-            .maybeSingle();
-          const name = (cen as { name?: string } | null)?.name ?? '—';
-          const phone = (cen as { phone?: string | null } | null)?.phone ?? null;
-          const digits = (phone ?? '').replace(/\D/g, '');
-          if (digits) {
-            try {
-              await sendWhatsAppMessage(
+            .select('id, name, phone')
+            .in('id', suspendIds);
+          const cenById = new Map(
+            (cenRows ?? []).map((c) => [c.id as string, c as { name?: string; phone?: string | null }]),
+          );
+          for (const cid of suspendIds) {
+            const cen = cenById.get(cid);
+            const name = cen?.name ?? '—';
+            const phone = cen?.phone ?? null;
+            const digits = (phone ?? '').replace(/\D/g, '');
+            if (digits) {
+              void sendWhatsAppMessage(
                 digits,
-                `تم إيقاف باقة واتساب الآباء لـ ${name} بسبب عدم السداد. يرجى الدفع من المنصة لإعادة التفعيل.`,
-              );
-            } catch (waErr) {
-              console.error('[cron/parent-pack-billing] WA send error:', waErr);
+                tCronWaAr('waParentPackSuspended', { name }),
+              ).catch((waErr) => console.error('[cron/parent-pack-billing] WA send error:', waErr));
             }
           }
         }

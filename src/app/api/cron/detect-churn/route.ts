@@ -11,9 +11,10 @@ import {
   flagDay14InAdminPanel,
 } from '@/lib/whatsapp/flows/churnDetection';
 import { runChqInactivityAlertTemplates } from '@/lib/centerNotify';
+import { tCronBackup } from '@/lib/cronBackupI18n';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   const cronStart = Date.now();
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
 
   const auth = request.headers.get('authorization');
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
       try {
         body = await request.json();
       } catch {
-        throw new Error('Invalid JSON');
+        throw new Error(tCronBackup('errorInvalidJson'));
       }
     }
 
@@ -95,6 +96,8 @@ export async function POST(request: Request) {
 
     const results: { centerId: string; action: string; success: boolean; error?: string }[] = [];
 
+    const waPromises: Promise<void>[] = [];
+
     for (const a of actions) {
       const centerId = a.centerId ?? '';
       const centerName = a.centerName ?? '';
@@ -106,35 +109,39 @@ export async function POST(request: Request) {
 
       try {
         if (action === 'day3') {
-          let r: { success: boolean; error?: string };
-          try {
-            r = await sendDay3InactivityAlert({
+          waPromises.push(
+            sendDay3InactivityAlert({
               centerId,
               centerName,
               toPhone: phone,
               daysInactive,
-            });
-          } catch (waErr) {
-            console.error('[detect-churn] WA send error:', waErr);
-            r = { success: false, error: 'exception' };
-          }
-          results.push({ centerId, action: 'day3', success: r.success, error: r.error });
+            })
+              .then((r) => {
+                results.push({ centerId, action: 'day3', success: r.success, error: r.error });
+              })
+              .catch((waErr) => {
+                console.error('[detect-churn] WA send error:', waErr);
+                results.push({ centerId, action: 'day3', success: false, error: 'exception' });
+              }),
+          );
         } else if (action === 'day7') {
-          let r: { success: boolean; error?: string };
-          try {
-            r = await sendDay7SalesManagerAlert({
+          waPromises.push(
+            sendDay7SalesManagerAlert({
               centerId,
               centerName,
               lastScanAt,
               monthlyFee,
               daysInactive,
               alertType: 'day7',
-            });
-          } catch (waErr) {
-            console.error('[detect-churn] WA send error:', waErr);
-            r = { success: false, error: 'exception' };
-          }
-          results.push({ centerId, action: 'day7', success: r.success, error: r.error });
+            })
+              .then((r) => {
+                results.push({ centerId, action: 'day7', success: r.success, error: r.error });
+              })
+              .catch((waErr) => {
+                console.error('[detect-churn] WA send error:', waErr);
+                results.push({ centerId, action: 'day7', success: false, error: 'exception' });
+              }),
+          );
         } else if (action === 'day14') {
           const r = await flagDay14InAdminPanel({
             centerId,
@@ -144,21 +151,23 @@ export async function POST(request: Request) {
           });
           results.push({ centerId, action: 'flag14', success: r.success, error: r.error });
 
-          let r2: { success: boolean; error?: string };
-          try {
-            r2 = await sendDay7SalesManagerAlert({
+          waPromises.push(
+            sendDay7SalesManagerAlert({
               centerId,
               centerName,
               lastScanAt,
               monthlyFee,
               daysInactive,
               alertType: 'day14',
-            });
-          } catch (waErr) {
-            console.error('[detect-churn] WA send error:', waErr);
-            r2 = { success: false, error: 'exception' };
-          }
-          results.push({ centerId, action: 'day14', success: r2.success, error: r2.error });
+            })
+              .then((r2) => {
+                results.push({ centerId, action: 'day14', success: r2.success, error: r2.error });
+              })
+              .catch((waErr) => {
+                console.error('[detect-churn] WA send error:', waErr);
+                results.push({ centerId, action: 'day14', success: false, error: 'exception' });
+              }),
+          );
         }
       } catch (err) {
         results.push({
@@ -168,6 +177,10 @@ export async function POST(request: Request) {
           error: err instanceof Error ? err.message : String(err),
         });
       }
+    }
+
+    if (waPromises.length > 0) {
+      await Promise.allSettled(waPromises);
     }
 
     const processed = results.filter((r) => r.success).length;

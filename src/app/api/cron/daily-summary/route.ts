@@ -11,9 +11,10 @@ import {
   getYesterdayCairoUtcRange,
   type DailySummaryData,
 } from '@/lib/whatsapp/flows/dailySummary';
+import { tCronBackup } from '@/lib/cronBackupI18n';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 /** Egypt week: Sat=0, Sun=1, Mon=2, Tue=3, Wed=4, Thu=5, Fri=6. JS getDay: Sun=0..Sat=6. */
 function getEgyptDayOfWeek(dateStr: string): number {
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
   const auth = request.headers.get('authorization');
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -77,102 +78,159 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, processed: 0, message: 'No centers' });
     }
 
-    let processed = 0;
+    const centerList = centers as { id: string; name: string; phone: string }[];
+    const centerIds = centerList.map((c) => c.id);
 
-    for (const center of centers as { id: string; name: string; phone: string }[]) {
-      try {
-        const centerId = center.id;
+    const dayNames = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
+    const dayName = dayNames[egyptDay];
 
-        const attendedRes = await supabase
-          .from('attendance_scans')
-          .select('student_id', { count: 'exact', head: true })
-          .eq('center_id', centerId)
-          .gte('scanned_at', rangeStart)
-          .lte('scanned_at', rangeEnd);
+    const [scansRangeRes, paymentsRes, studentsRes, slotsRes, sessionScansRes] = await Promise.all([
+      supabase
+        .from('attendance_scans')
+        .select('center_id')
+        .in('center_id', centerIds)
+        .gte('scanned_at', rangeStart)
+        .lte('scanned_at', rangeEnd),
+      supabase
+        .from('payments')
+        .select('center_id, amount, confirmed')
+        .in('center_id', centerIds)
+        .gte('paid_at', rangeStart)
+        .lte('paid_at', rangeEnd),
+      supabase
+        .from('students')
+        .select('center_id, balance_due')
+        .in('center_id', centerIds)
+        .eq('is_active', true),
+      supabase
+        .from('schedule_slots')
+        .select('id, group_id, center_id')
+        .in('center_id', centerIds)
+        .or(`day_of_week.eq.${egyptDay},day_of_week.eq.${dayName}`),
+      supabase
+        .from('attendance_scans')
+        .select('center_id, student_id')
+        .in('center_id', centerIds)
+        .eq('session_date', yesterdayStr),
+    ]);
 
-        const attendedCount = attendedRes.count ?? 0;
+    const attendedInRangeByCenter = new Map<string, number>();
+    for (const row of scansRangeRes.data ?? []) {
+      const cid = (row as { center_id: string }).center_id;
+      attendedInRangeByCenter.set(cid, (attendedInRangeByCenter.get(cid) ?? 0) + 1);
+    }
 
-        const paymentsRes = await supabase
-          .from('payments')
-          .select('amount, confirmed')
-          .eq('center_id', centerId)
-          .gte('paid_at', rangeStart)
-          .lte('paid_at', rangeEnd);
+    const paymentsByCenter = new Map<string, { amount: number; confirmed: boolean }[]>();
+    for (const row of paymentsRes.data ?? []) {
+      const p = row as { center_id: string; amount: number; confirmed: boolean };
+      const list = paymentsByCenter.get(p.center_id) ?? [];
+      list.push({ amount: p.amount, confirmed: p.confirmed });
+      paymentsByCenter.set(p.center_id, list);
+    }
 
-        const payments = (paymentsRes.data || []) as { amount: number; confirmed: boolean }[];
-        const paymentsCollected = payments
-          .filter((p) => p.confirmed === true)
-          .reduce((s, p) => s + Number(p.amount || 0), 0);
-        const pendingPayments = payments
-          .filter((p) => p.confirmed === false)
-          .reduce((s, p) => s + Number(p.amount || 0), 0);
+    const balanceByCenter = new Map<string, number>();
+    for (const row of studentsRes.data ?? []) {
+      const s = row as { center_id: string; balance_due?: number | null };
+      balanceByCenter.set(s.center_id, (balanceByCenter.get(s.center_id) ?? 0) + (Number(s.balance_due) || 0));
+    }
 
-        const balanceRes = await supabase
-          .from('students')
-          .select('balance_due')
-          .eq('center_id', centerId)
-          .eq('is_active', true);
+    const slotsByCenter = new Map<string, { id: string; group_id: string | null }[]>();
+    for (const row of slotsRes.data ?? []) {
+      const sl = row as { id: string; group_id: string | null; center_id: string };
+      const list = slotsByCenter.get(sl.center_id) ?? [];
+      list.push({ id: sl.id, group_id: sl.group_id });
+      slotsByCenter.set(sl.center_id, list);
+    }
 
-        const students = (balanceRes.data || []) as { balance_due?: number }[];
-        const pendingBalanceTotal = students.reduce((s, st) => s + (Number(st.balance_due) || 0), 0);
+    const sessionAttendedByCenter = new Map<string, Set<string>>();
+    for (const row of sessionScansRes.data ?? []) {
+      const a = row as { center_id: string; student_id: string };
+      if (!sessionAttendedByCenter.has(a.center_id)) {
+        sessionAttendedByCenter.set(a.center_id, new Set());
+      }
+      sessionAttendedByCenter.get(a.center_id)!.add(a.student_id);
+    }
 
-        let absentCount = 0;
-        const dayNames = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
-        const dayName = dayNames[egyptDay];
-        const slotsRes = await supabase
-          .from('schedule_slots')
-          .select('id, group_id')
-          .eq('center_id', centerId)
-          .or(`day_of_week.eq.${egyptDay},day_of_week.eq.${dayName}`);
+    const allGroupIds = [
+      ...new Set(
+        [...slotsByCenter.values()]
+          .flat()
+          .map((s) => s.group_id)
+          .filter(Boolean),
+      ),
+    ] as string[];
 
-        const slots = (slotsRes.data || []) as { id: string; group_id: string | null }[];
-        const groupIds = [...new Set(slots.map((s) => s.group_id).filter(Boolean))] as string[];
-
-        if (groupIds.length > 0) {
-          const membersRes = await supabase
-            .from('student_group_members')
-            .select('student_id')
-            .in('group_id', groupIds);
-
-          const expectedStudentIds = [
-            ...new Set((membersRes.data || []).map((m: { student_id: string }) => m.student_id)),
-          ];
-
-          const attendedRes2 = await supabase
-            .from('attendance_scans')
-            .select('student_id')
-            .eq('center_id', centerId)
-            .eq('session_date', yesterdayStr);
-
-          const attendedIds = new Set((attendedRes2.data || []).map((a: { student_id: string }) => a.student_id));
-          absentCount = expectedStudentIds.filter((id) => !attendedIds.has(id)).length;
-        }
-
-        if (attendedCount === 0 && paymentsCollected === 0) continue;
-
-        const payload: DailySummaryData = {
-          centerId,
-          centerName: center.name,
-          phone: center.phone,
-          attendedCount,
-          absentCount,
-          paymentsCollected,
-          pendingPayments,
-          pendingBalanceTotal,
-        };
-
-        let r: { success: boolean; error?: string } = { success: false };
-        try {
-          r = await sendDailySummary(payload);
-        } catch (waErr) {
-          console.error('[daily-summary] WA send error:', waErr);
-        }
-        if (r.success) processed++;
-        else if (r.error) console.error(`[daily-summary] ${centerId}: ${r.error}`);
-      } catch (err) {
-        console.error(`[daily-summary] Error for ${center.id}:`, err);
+    const membersByGroup = new Map<string, string[]>();
+    if (allGroupIds.length > 0) {
+      const { data: membersData } = await supabase
+        .from('student_group_members')
+        .select('student_id, group_id')
+        .in('group_id', allGroupIds);
+      for (const m of membersData ?? []) {
+        const row = m as { student_id: string; group_id: string };
+        const list = membersByGroup.get(row.group_id) ?? [];
+        list.push(row.student_id);
+        membersByGroup.set(row.group_id, list);
       }
     }
+
+    const summaryResults = await Promise.all(
+      centerList.map(async (center) => {
+        try {
+          const centerId = center.id;
+          const attendedCount = attendedInRangeByCenter.get(centerId) ?? 0;
+
+          const payments = paymentsByCenter.get(centerId) ?? [];
+          const paymentsCollected = payments
+            .filter((p) => p.confirmed === true)
+            .reduce((s, p) => s + Number(p.amount || 0), 0);
+          const pendingPayments = payments
+            .filter((p) => p.confirmed === false)
+            .reduce((s, p) => s + Number(p.amount || 0), 0);
+
+          const pendingBalanceTotal = balanceByCenter.get(centerId) ?? 0;
+
+          let absentCount = 0;
+          const slots = slotsByCenter.get(centerId) ?? [];
+          const groupIds = [...new Set(slots.map((s) => s.group_id).filter(Boolean))] as string[];
+
+          if (groupIds.length > 0) {
+            const expectedStudentIds = [
+              ...new Set(groupIds.flatMap((gid) => membersByGroup.get(gid) ?? [])),
+            ];
+            const attendedIds = sessionAttendedByCenter.get(centerId) ?? new Set();
+            absentCount = expectedStudentIds.filter((id) => !attendedIds.has(id)).length;
+          }
+
+          if (attendedCount === 0 && paymentsCollected === 0) return 0;
+
+          const payload: DailySummaryData = {
+            centerId,
+            centerName: center.name,
+            phone: center.phone,
+            attendedCount,
+            absentCount,
+            paymentsCollected,
+            pendingPayments,
+            pendingBalanceTotal,
+          };
+
+          let r: { success: boolean; error?: string } = { success: false };
+          try {
+            r = await sendDailySummary(payload);
+          } catch (waErr) {
+            console.error('[daily-summary] WA send error:', waErr);
+          }
+          if (r.error) console.error(`[daily-summary] ${centerId}: ${r.error}`);
+          return r.success ? 1 : 0;
+        } catch (err) {
+          console.error(`[daily-summary] Error for ${center.id}:`, err);
+          return 0;
+        }
+      }),
+    );
+
+    const processed = summaryResults.reduce<number>((a, b) => a + b, 0);
 
     await supabase.from('cron_log').insert({
       cron_name: CRON_NAME,

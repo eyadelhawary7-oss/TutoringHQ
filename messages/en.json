@@ -5704,6 +5704,9 @@
     "waLineDuration": "Duration: {seconds}s",
     "waLineErrors": "⚠️ Errors ({count}): {list}",
     "waLineDrive": "Drive folder: {folderId}",
-    "cleanupFailed": "Cleanup failed: {message}"
+    "cleanupFailed": "Cleanup failed: {message}",
+    "errorServerMisconfigured": "Server misconfigured",
+    "errorInvalidJson": "Invalid JSON",
+    "waParentPackSuspended": "Parent WhatsApp pack for {name} has been suspended due to non-payment. Please pay on the platform to reactivate."
   }
 }

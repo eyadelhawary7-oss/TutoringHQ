@@ -18,9 +18,10 @@ import {
 } from '@/lib/whatsapp/flows/renewalReminders';
 import { runProcessRenewalWhatsappTemplates } from '@/lib/centerNotify';
 import { runSubscriptionBillingCron } from '@/lib/subscriptionBillingCron';
+import { tCronBackup } from '@/lib/cronBackupI18n';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   const cronStart = Date.now();
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
   const auth = request.headers.get('authorization');
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
       try {
         body = await request.json();
       } catch {
-        throw new Error('Invalid JSON');
+        throw new Error(tCronBackup('errorInvalidJson'));
       }
     }
 
@@ -100,9 +101,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, processed: 0, waTemplates, billingCron });
     }
 
-    let processed = 0;
+    const uniqueIds = [...new Set(actions.map((x) => x.centerId))];
 
-    for (const a of actions) {
+    const { data: centerRows } = await supabase
+      .from('centers')
+      .select('id, announcement_balance, current_period_start, current_period_end')
+      .in('id', uniqueIds);
+    const centerMap = new Map(
+      (centerRows ?? []).map((r) => [r.id, r] as const),
+    );
+
+    const { data: allPendingInvoices } = await supabase
+      .from('invoices')
+      .select('id, center_id, total_amount, created_at')
+      .in('center_id', uniqueIds)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    const latestPendingByCenter = new Map<
+      string,
+      { id: string; center_id: string; total_amount: number | string | null }
+    >();
+    for (const inv of allPendingInvoices ?? []) {
+      if (!latestPendingByCenter.has(inv.center_id)) {
+        latestPendingByCenter.set(inv.center_id, inv);
+      }
+    }
+
+    const { data: allPackBilling } = await supabase
+      .from('parent_pack_billing')
+      .select('id, total_amount, center_id')
+      .in('center_id', uniqueIds)
+      .eq('status', 'pending');
+
+    const packBillingByCenter = new Map<
+      string,
+      { id: string; total_amount: number | string | null; center_id: string }[]
+    >();
+    for (const row of allPackBilling ?? []) {
+      const list = packBillingByCenter.get(row.center_id) ?? [];
+      list.push(row);
+      packBillingByCenter.set(row.center_id, list);
+    }
+
+    const overdueCenterIds: string[] = [];
+
+    const processAction = async (a: (typeof actions)[number]): Promise<boolean> => {
       try {
         let r: { success: boolean; error?: string };
         try {
@@ -113,7 +157,7 @@ export async function POST(request: Request) {
         }
         if (!r.success) {
           console.error(`[process-renewals] sendRenewalReminder failed: ${a.centerId} ${a.stage}: ${r.error}`);
-          continue;
+          return false;
         }
 
         await supabase.from('renewal_reminders_sent').insert({
@@ -124,10 +168,7 @@ export async function POST(request: Request) {
         });
 
         if (a.updateStatus) {
-          await supabase
-            .from('centers')
-            .update({ subscription_status: 'overdue' })
-            .eq('id', a.centerId);
+          overdueCenterIds.push(a.centerId);
         }
 
         if (a.alertSales) {
@@ -137,25 +178,16 @@ export async function POST(request: Request) {
           const daysOverdue = renewal
             ? Math.round((today.getTime() - renewal.getTime()) / (24 * 60 * 60 * 1000))
             : 9;
-          try {
-            await sendRenewalSalesManagerAlert({
-              centerId: a.centerId,
-              centerName: a.center.name,
-              renewalDate: a.center.subscription_renewal_date,
-              monthlyFee: a.center.subscription_monthly_fee,
-              daysOverdue,
-            });
-          } catch (waErr) {
-            console.error('[process-renewals] WA sales alert error:', waErr);
-          }
+          void sendRenewalSalesManagerAlert({
+            centerId: a.centerId,
+            centerName: a.center.name,
+            renewalDate: a.center.subscription_renewal_date,
+            monthlyFee: a.center.subscription_monthly_fee,
+            daysOverdue,
+          }).catch((waErr) => console.error('[process-renewals] WA sales alert error:', waErr));
         }
 
-        const { data: centerRow } = await supabase
-          .from('centers')
-          .select('id, announcement_balance, current_period_start, current_period_end')
-          .eq('id', a.centerId)
-          .maybeSingle();
-
+        const centerRow = centerMap.get(a.centerId);
         if (centerRow) {
           const announcementBalance = Number(centerRow.announcement_balance ?? 0);
           if (announcementBalance > 0) {
@@ -185,24 +217,11 @@ export async function POST(request: Request) {
               .eq('id', centerRow.id);
           }
 
-          const { data: packBilling } = await supabase
-            .from('parent_pack_billing')
-            .select('id, total_amount')
-            .eq('center_id', centerRow.id)
-            .eq('status', 'pending');
-
-          const packTotal =
-            packBilling?.reduce((sum, r) => sum + Number(r.total_amount ?? 0), 0) ?? 0;
+          const packBilling = packBillingByCenter.get(centerRow.id) ?? [];
+          const packTotal = packBilling.reduce((sum, row) => sum + Number(row.total_amount ?? 0), 0);
 
           if (packTotal > 0) {
-            const { data: renewalInvoice } = await supabase
-              .from('invoices')
-              .select('id, total_amount')
-              .eq('center_id', centerRow.id)
-              .eq('status', 'pending')
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
+            const renewalInvoice = latestPendingByCenter.get(centerRow.id);
 
             if (renewalInvoice) {
               await supabase
@@ -223,10 +242,19 @@ export async function POST(request: Request) {
           }
         }
 
-        processed++;
+        return true;
       } catch (err) {
         console.error(`[process-renewals] Error for ${a.centerId}:`, err);
+        return false;
       }
+    };
+
+    const settled = await Promise.allSettled(actions.map((a) => processAction(a)));
+    const processed = settled.filter((s) => s.status === 'fulfilled' && s.value === true).length;
+
+    const uniqueOverdue = [...new Set(overdueCenterIds)];
+    if (uniqueOverdue.length > 0) {
+      await supabase.from('centers').update({ subscription_status: 'overdue' }).in('id', uniqueOverdue);
     }
 
     await supabase.from('cron_log').insert({

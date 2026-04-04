@@ -40,6 +40,24 @@
     },
     "src/app/api/cron/monthly-backup/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/cron/process-renewals/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/cron/daily-summary/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/cron/detect-churn/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/cron/commission-t2-check/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/cron/loyalty-bonus-check/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/cron/parent-pack-billing/route.ts": {
+      "maxDuration": 300
     }
   }
 }

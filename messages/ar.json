@@ -5704,6 +5704,9 @@
     "waLineDuration": "المدة: {seconds} ث",
     "waLineErrors": "⚠️ أخطاء ({count}): {list}",
     "waLineDrive": "مجلد Drive: {folderId}",
-    "cleanupFailed": "فشل التنظيف: {message}"
+    "cleanupFailed": "فشل التنظيف: {message}",
+    "errorServerMisconfigured": "الخادم غير مُهيأ بشكل صحيح",
+    "errorInvalidJson": "JSON غير صالح",
+    "waParentPackSuspended": "تم إيقاف باقة واتساب الآباء لـ {name} بسبب عدم السداد. يرجى الدفع من المنصة لإعادة التفعيل."
   }
 }

@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import {
+  computeActiveDaysFromFirstPayment,
+  parseClockPauseLog,
+} from '@/lib/commissionActiveDays';
+import { tCronBackup } from '@/lib/cronBackupI18n';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -17,11 +22,11 @@ const supabase =
 /** Runs at 9am UTC daily. Loyalty unlocks after 365 actual active days (paused intervals excluded). */
 export async function GET(request: Request) {
   if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
   }
 
   if (!supabase) {
-    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    return NextResponse.json({ error: tCronBackup('errorServerMisconfigured') }, { status: 500 });
   }
 
   const today = new Date().toISOString().split('T')[0];
@@ -33,7 +38,7 @@ export async function GET(request: Request) {
     .select(
       `
       id, staff_id, loyalty_bonus_amount,
-      center_first_payment_date,
+      center_first_payment_date, clock_pause_log,
       centers!inner(billing_status, next_payment_due)
     `,
     )
@@ -44,14 +49,20 @@ export async function GET(request: Request) {
     console.error('[loyalty-bonus-check]', candidatesError.message);
   }
 
+  type CandidateRow = {
+    id: string;
+    staff_id: string;
+    center_first_payment_date: string;
+    clock_pause_log: unknown;
+    centers:
+      | { billing_status: string; next_payment_due: string | null }
+      | { billing_status: string; next_payment_due: string | null }[];
+  };
+
+  const eligibleForDays: { id: string; staff_id: string; activeDays: number }[] = [];
+
   for (const commission of candidates ?? []) {
-    const c = commission as {
-      id: string;
-      staff_id: string;
-      centers:
-        | { billing_status: string; next_payment_due: string | null }
-        | { billing_status: string; next_payment_due: string | null }[];
-    };
+    const c = commission as CandidateRow;
     const center = Array.isArray(c.centers) ? c.centers[0] : c.centers;
     if (!center) continue;
 
@@ -63,40 +74,62 @@ export async function GET(request: Request) {
     cutoff.setDate(cutoff.getDate() - 14);
     if (nextDue < cutoff) continue;
 
-    const { data: activeDays, error: activeDaysErr } = await supabase.rpc('compute_active_days', {
-      p_commission_id: c.id,
-    });
-    if (activeDaysErr) {
-      console.error('[loyalty-bonus-check] compute_active_days', activeDaysErr.message);
-    }
-    if ((activeDays ?? 0) < 365) continue;
+    const activeDays = computeActiveDaysFromFirstPayment(
+      c.center_first_payment_date,
+      parseClockPauseLog(c.clock_pause_log),
+    );
+    if (activeDays < 365) continue;
 
-    const { data: staffMember, error: staffErr } = await supabase
-      .from('staff')
-      .select('status, termination_type')
-      .eq('id', c.staff_id)
-      .single();
-    if (staffErr) {
-      console.error('[loyalty-bonus-check] staff', staffErr.message);
-    }
+    eligibleForDays.push({ id: c.id, staff_id: c.staff_id, activeDays });
+  }
 
+  const staffIds = [...new Set(eligibleForDays.map((e) => e.staff_id))];
+  const { data: staffRows, error: staffBulkErr } = await supabase
+    .from('staff')
+    .select('id, status, termination_type')
+    .in('id', staffIds);
+  if (staffBulkErr) {
+    console.error('[loyalty-bonus-check] staff bulk', staffBulkErr.message);
+  }
+
+  const staffMap = new Map(
+    (staffRows ?? []).map((s) => [s.id as string, s as { status?: string; termination_type?: string | null }]),
+  );
+
+  const forfeitIds: string[] = [];
+  const unlockPayload: { id: string; activeDays: number }[] = [];
+
+  for (const row of eligibleForDays) {
+    const staffMember = staffMap.get(row.staff_id);
     if (staffMember?.status === 'terminated' && staffMember.termination_type !== 'completed') {
-      await supabase.from('commissions').update({ loyalty_bonus_status: 'forfeited' }).eq('id', c.id);
-      forfeited++;
-      continue;
+      forfeitIds.push(row.id);
+    } else {
+      unlockPayload.push({ id: row.id, activeDays: row.activeDays });
     }
+  }
 
+  if (forfeitIds.length > 0) {
+    await supabase.from('commissions').update({ loyalty_bonus_status: 'forfeited' }).in('id', forfeitIds);
+    forfeited = forfeitIds.length;
+  }
+
+  if (unlockPayload.length > 0) {
     await supabase
       .from('commissions')
       .update({ loyalty_bonus_status: 'eligible', loyalty_bonus_eligible_at: today })
-      .eq('id', c.id);
-    await supabase.from('commission_audit_log').insert({
-      commission_id: c.id,
-      action: 'loyalty_eligible_set',
-      triggered_by: 'cron',
-      new_value: { loyalty_bonus_status: 'eligible', active_days: activeDays, eligible_at: today },
-    });
-    eligible++;
+      .in(
+        'id',
+        unlockPayload.map((x) => x.id),
+      );
+    await supabase.from('commission_audit_log').insert(
+      unlockPayload.map((x) => ({
+        commission_id: x.id,
+        action: 'loyalty_eligible_set',
+        triggered_by: 'cron',
+        new_value: { loyalty_bonus_status: 'eligible', active_days: x.activeDays, eligible_at: today },
+      })),
+    );
+    eligible = unlockPayload.length;
   }
 
   return NextResponse.json({
