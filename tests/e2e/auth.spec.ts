@@ -83,25 +83,24 @@ test.describe('Authentication', () => {
     expect(errors).toHaveLength(0)
   })
 
-  test('logout clears session and redirects to login', async ({ page }) => {
-    test.skip(!TEST_PHONE || !TEST_PIN, 'Set TEST_PHONE and TEST_PIN for this test')
+  test.describe('session from global setup', () => {
+    test.use({ storageState: 'playwright/.auth/user.json' })
 
-    const errors: string[] = []
-    page.on('pageerror', (err) => errors.push(err.message))
-    await page.goto('/ar/login')
-    await page.waitForLoadState('networkidle')
+    test('logout clears session and redirects to login', async ({ page }) => {
+      test.skip(!TEST_PHONE || !TEST_PIN, 'Set TEST_PHONE and TEST_PIN for this test')
 
-    await fillLoginForm(page, TEST_PHONE, TEST_PIN)
-    await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
+      const errors: string[] = []
+      page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.evaluate(() => {
-      localStorage.clear()
-      sessionStorage.clear()
+      await page.goto('/ar/dashboard')
+      await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
+
+      await page.context().clearCookies()
+      await page.goto('/ar/login')
+      await page.waitForLoadState('networkidle')
+
+      await expect(page).toHaveURL(/\/(ar|en)\/login/)
+      expect(errors).toHaveLength(0)
     })
-    await page.goto('/ar/login')
-    await page.waitForLoadState('networkidle')
-
-    await expect(page).toHaveURL(/\/(ar|en)\/login/)
-    expect(errors).toHaveLength(0)
   })
 })

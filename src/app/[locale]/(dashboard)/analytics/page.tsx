@@ -287,8 +287,12 @@ export default function AnalyticsPage() {
           loading={loading && !data}
           minHeight={260}
         >
-          {revenueData.length > 0 ? (
-            <RevenueAreaChart data={revenueData} />
+          {revenueData.length >= 2 ? (
+            <div className="min-w-0 w-full">
+              <RevenueAreaChart data={revenueData} />
+            </div>
+          ) : revenueData.length === 1 ? (
+            <div className="chq-skeleton h-48 w-full rounded-xl" aria-hidden />
           ) : (
             <p className="text-sm text-slate-400 py-8 text-center">{ta('no_data')}</p>
           )}
@@ -300,7 +304,9 @@ export default function AnalyticsPage() {
           <ChartCard title={tCharts('paymentMethods')} loading={loading && !data} minHeight={280}>
             {donutData.length > 0 ? (
               <>
-                <PaymentDonutChart data={donutData} />
+                <div className="min-w-0 w-full">
+                  <PaymentDonutChart data={donutData} />
+                </div>
                 <ChartLegend
                   direction="vertical"
                   items={donutData.map((slice) => ({
@@ -328,7 +334,15 @@ export default function AnalyticsPage() {
 
       <section className="px-4 mb-6">
         <ChartCard title={ta('revenueByGroup')} loading={loading && !data} minHeight={260}>
-          <RevenueByGroup data={d.revenue_by_group} />
+          {d.revenue_by_group.length >= 2 ? (
+            <div className="min-w-0 w-full">
+              <RevenueByGroup data={d.revenue_by_group} />
+            </div>
+          ) : d.revenue_by_group.length === 1 ? (
+            <div className="chq-skeleton h-48 w-full rounded-xl" aria-hidden />
+          ) : (
+            <RevenueByGroup data={d.revenue_by_group} />
+          )}
         </ChartCard>
       </section>
 
