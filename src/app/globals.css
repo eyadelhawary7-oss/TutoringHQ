@@ -1234,15 +1234,32 @@ samp {
 /* ── Light mode — white text readability fix ────────────────
    S5 dashboard uses text-white hardcoded on headings and numbers.
    In light mode these become invisible. Override to dark text.
+   Exception: public marketing landing (data-chq-landing on #080D14) must
+   keep real white — otherwise html.light users see dark text on dark hero.
 ──────────────────────────────────────────────────────────── */
 html.light .text-white {
   color: var(--color-text-primary) !important;
+}
+
+html.light [data-chq-landing] .text-white,
+html.light [data-chq-landing].text-white {
+  color: #ffffff !important;
 }
 
 html.light .text-white\/90,
 html.light .text-white\/80,
 html.light .text-white\/70 {
   color: var(--color-text-secondary) !important;
+}
+
+html.light [data-chq-landing] .text-white\/90 {
+  color: rgb(248 250 252 / 0.9) !important;
+}
+html.light [data-chq-landing] .text-white\/80 {
+  color: rgb(248 250 252 / 0.8) !important;
+}
+html.light [data-chq-landing] .text-white\/70 {
+  color: rgb(248 250 252 / 0.7) !important;
 }
 
 /* ── S6 Scanner ──────────────────────────────────────────── */

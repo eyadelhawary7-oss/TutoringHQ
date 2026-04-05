@@ -242,7 +242,10 @@ export default function LocaleHomePage() {
     });
 
   return (
-    <main className="min-h-screen bg-[#080D14] text-white">
+    <main
+      data-chq-landing
+      className="min-h-screen bg-[#080D14] text-white dark:bg-[#080D14] [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-slate-300"
+    >
       <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-[#080D14]/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 md:h-16 md:px-6">
           <Link
@@ -581,26 +584,35 @@ export default function LocaleHomePage() {
             {m('pricingSubtitle')}
           </p>
           <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
-            <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-start">
-              <span className="inline-block rounded-full border border-slate-600 bg-slate-900/50 px-2 py-0.5 text-xs text-slate-400">
+            <div
+              className="rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-start !text-white"
+              style={{ color: '#ffffff' }}
+            >
+              <span className="inline-block rounded-full border border-slate-600 bg-slate-900/50 px-2 py-0.5 text-xs !text-slate-400">
                 {m('nanoBadge')}
               </span>
-              <p className="mt-3 text-base font-bold text-white">{m('nanoName')}</p>
-              <p className="mt-2 text-2xl font-bold text-white">{m('nanoPrice')}</p>
+              <p className="mt-3 text-base font-bold !text-white">{m('nanoName')}</p>
+              <p className="mt-2 text-2xl font-bold !text-white">{m('nanoPrice')}</p>
               <p className="text-xs text-slate-400">{m('nanoPeriod')}</p>
               <p className="mt-3 text-xs text-slate-400">{m('nanoStudents')}</p>
             </div>
-            <div className="rounded-2xl border border-teal-600/60 bg-slate-800 p-6 text-start ring-1 ring-teal-600/30">
-              <span className="inline-block rounded-full border border-teal-700/50 bg-teal-900/30 px-2 py-0.5 text-xs font-medium text-teal-400">
+            <div
+              className="rounded-2xl border border-teal-600/60 bg-slate-800 p-6 text-start !text-white ring-1 ring-teal-600/30"
+              style={{ color: '#ffffff' }}
+            >
+              <span className="inline-block rounded-full border border-teal-700/50 bg-teal-900/30 px-2 py-0.5 text-xs font-medium !text-teal-400">
                 {m('popularBadge')}
               </span>
-              <p className="mt-3 text-base font-bold text-white">{m('starterName')}</p>
-              <p className="mt-2 text-2xl font-bold text-white">{m('starterPrice')}</p>
+              <p className="mt-3 text-base font-bold !text-white">{m('starterName')}</p>
+              <p className="mt-2 text-2xl font-bold !text-white">{m('starterPrice')}</p>
               <p className="mt-3 text-xs text-slate-400">{m('starterStudents')}</p>
             </div>
-            <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-start">
-              <p className="mt-3 text-base font-bold text-white">{m('proName')}</p>
-              <p className="mt-2 text-2xl font-bold text-white">{m('proPrice')}</p>
+            <div
+              className="rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-start !text-white"
+              style={{ color: '#ffffff' }}
+            >
+              <p className="mt-3 text-base font-bold !text-white">{m('proName')}</p>
+              <p className="mt-2 text-2xl font-bold !text-white">{m('proPrice')}</p>
               <p className="mt-3 text-xs text-slate-400">{m('proStudents')}</p>
             </div>
           </div>
