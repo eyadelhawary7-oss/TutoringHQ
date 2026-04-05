@@ -209,8 +209,37 @@ export default function LocaleHomePage() {
     return () => clearTimeout(timer);
   }, [demoScreen, screenIndex]);
 
-  const heroLines = t('heroTitle').split('\n');
+  const heroLines = t('heroTitle').split('\n').filter((line) => line.length > 0);
   const featureKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] as const;
+
+  const renderHeroTitleLines = () =>
+    heroLines.map((line, i) => {
+      const isLast = i === heroLines.length - 1;
+      if (!isLast) {
+        return (
+          <span key={i} className="block text-white">
+            {line}
+          </span>
+        );
+      }
+      const trimmed = line.trim();
+      const words = trimmed.split(/\s+/).filter(Boolean);
+      if (words.length <= 1) {
+        return (
+          <span key={i} className="block text-teal-400">
+            {line}
+          </span>
+        );
+      }
+      const lastWord = words[words.length - 1];
+      const beforeLast = words.slice(0, -1).join(' ');
+      return (
+        <span key={i} className="block text-white">
+          {beforeLast}{' '}
+          <span className="text-teal-400">{lastWord}</span>
+        </span>
+      );
+    });
 
   return (
     <main className="min-h-screen bg-[#080D14] text-white">
@@ -341,17 +370,8 @@ export default function LocaleHomePage() {
             <span className="mb-6 inline-flex items-center rounded-full border border-teal-600/50 bg-teal-950/30 px-3 py-1 text-xs text-teal-400">
               {m('heroBadge')}
             </span>
-            <h1 className="text-4xl font-bold leading-tight md:text-5xl">
-              {heroLines.map((line, i) => (
-                <span
-                  key={i}
-                  className={
-                    heroLines.length > 1 && i === heroLines.length - 1 ? 'block text-teal-400' : 'block text-white'
-                  }
-                >
-                  {line}
-                </span>
-              ))}
+            <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl">
+              {renderHeroTitleLines()}
             </h1>
             <p className="mx-auto mt-6 max-w-md text-lg text-slate-300 md:mx-0">{t('heroSub')}</p>
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center md:justify-start">
@@ -484,22 +504,22 @@ export default function LocaleHomePage() {
         className="chq-fade-in scroll-mt-20 px-4 py-16 md:px-6 md:py-24"
       >
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-10 text-center text-2xl font-bold text-white md:mb-14 md:text-3xl">
+          <h2 className="mb-10 text-center text-2xl font-bold !text-white md:mb-14 md:text-3xl">
             {m('howTitle')}
           </h2>
           <div className="flex flex-col items-center gap-10 md:flex-row md:items-start md:justify-center md:gap-0">
             {[
-              { n: '١', title: m('step1Title'), desc: m('step1Desc') },
-              { n: '٢', title: m('step2Title'), desc: m('step2Desc') },
-              { n: '٣', title: m('step3Title'), desc: m('step3Desc') },
+              { title: m('step1Title'), desc: m('step1Desc') },
+              { title: m('step2Title'), desc: m('step2Desc') },
+              { title: m('step3Title'), desc: m('step3Desc') },
             ].flatMap((step, idx) => {
               const block = (
                 <div
                   key={`step-${idx}`}
                   className="flex max-w-xs flex-col items-center text-center md:max-w-[220px] md:shrink-0"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-teal-700 bg-teal-900/40 text-lg font-bold text-teal-400">
-                    {step.n}
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal-700 bg-teal-900/40 text-lg font-bold text-teal-400">
+                    {idx + 1}
                   </div>
                   <h3 className="mt-4 text-base font-semibold text-white">{step.title}</h3>
                   <p className="mt-1 text-sm text-slate-300">{step.desc}</p>
@@ -526,7 +546,7 @@ export default function LocaleHomePage() {
         className="chq-fade-in scroll-mt-20 border-t border-slate-800/40 px-4 py-16 md:px-6 md:py-24"
       >
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-10 text-center text-2xl font-bold text-white md:mb-14 md:text-3xl">
+          <h2 className="mb-10 text-center text-2xl font-bold !text-white md:mb-14 md:text-3xl">
             {t('featuresTitle')}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
@@ -535,11 +555,16 @@ export default function LocaleHomePage() {
                 key={k}
                 className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-5"
               >
-                <div className="h-10 w-10 rounded-lg bg-teal-600/25 ring-1 ring-teal-600/30" aria-hidden />
-                <h3 className="mt-3 text-base font-semibold text-white">
+                <div
+                  className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg border border-teal-700/50 bg-teal-900/40"
+                  aria-hidden
+                >
+                  <div className="h-3 w-3 rounded-sm bg-teal-500" />
+                </div>
+                <h3 className="mb-1 text-sm font-semibold text-white">
                   {m(`${k}Title` as 'f1Title')}
                 </h3>
-                <p className="mt-1 text-sm text-slate-400">{m(`${k}Desc` as 'f1Desc')}</p>
+                <p className="text-xs leading-relaxed text-slate-400">{m(`${k}Desc` as 'f1Desc')}</p>
               </div>
             ))}
           </div>
@@ -551,32 +576,32 @@ export default function LocaleHomePage() {
         className="chq-fade-in scroll-mt-20 px-4 py-16 md:px-6 md:py-24"
       >
         <div className="mx-auto max-w-5xl text-center">
-          <h2 className="text-2xl font-bold text-white md:text-3xl">{t('pricingTitle')}</h2>
+          <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('pricingTitle')}</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-slate-400 md:text-base">
             {m('pricingSubtitle')}
           </p>
           <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
-            <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 text-start">
+            <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-start">
               <span className="inline-block rounded-full border border-slate-600 bg-slate-900/50 px-2 py-0.5 text-xs text-slate-400">
                 {m('nanoBadge')}
               </span>
-              <p className="mt-3 text-lg font-semibold text-white">{m('nanoName')}</p>
+              <p className="mt-3 text-base font-bold text-white">{m('nanoName')}</p>
               <p className="mt-2 text-2xl font-bold text-white">{m('nanoPrice')}</p>
-              <p className="text-xs text-slate-500">{m('nanoPeriod')}</p>
-              <p className="mt-3 text-sm text-slate-400">{m('nanoStudents')}</p>
+              <p className="text-xs text-slate-400">{m('nanoPeriod')}</p>
+              <p className="mt-3 text-xs text-slate-400">{m('nanoStudents')}</p>
             </div>
-            <div className="rounded-2xl border border-teal-600/60 bg-slate-800/40 p-6 text-start ring-1 ring-teal-600/30">
+            <div className="rounded-2xl border border-teal-600/60 bg-slate-800 p-6 text-start ring-1 ring-teal-600/30">
               <span className="inline-block rounded-full border border-teal-700/50 bg-teal-900/30 px-2 py-0.5 text-xs font-medium text-teal-400">
                 {m('popularBadge')}
               </span>
-              <p className="mt-3 text-lg font-semibold text-white">{m('starterName')}</p>
+              <p className="mt-3 text-base font-bold text-white">{m('starterName')}</p>
               <p className="mt-2 text-2xl font-bold text-white">{m('starterPrice')}</p>
-              <p className="mt-3 text-sm text-slate-400">{m('starterStudents')}</p>
+              <p className="mt-3 text-xs text-slate-400">{m('starterStudents')}</p>
             </div>
-            <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 text-start">
-              <p className="mt-3 text-lg font-semibold text-white">{m('proName')}</p>
+            <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-start">
+              <p className="mt-3 text-base font-bold text-white">{m('proName')}</p>
               <p className="mt-2 text-2xl font-bold text-white">{m('proPrice')}</p>
-              <p className="mt-3 text-sm text-slate-400">{m('proStudents')}</p>
+              <p className="mt-3 text-xs text-slate-400">{m('proStudents')}</p>
             </div>
           </div>
           <Link
@@ -588,9 +613,9 @@ export default function LocaleHomePage() {
         </div>
       </section>
 
-      <section className="chq-fade-in bg-gradient-to-b from-transparent to-teal-900/20 px-4 py-16 md:px-6 md:py-24">
+      <section className="chq-fade-in bg-gradient-to-b from-[#080D14] via-[#0a1620] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold text-white md:text-3xl">{t('finalCtaTitle')}</h2>
+          <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('finalCtaTitle')}</h2>
           <p className="mt-3 text-sm text-slate-300 md:text-base">{t('finalCtaDesc')}</p>
           <Link
             href="/signup"
