@@ -235,7 +235,7 @@ export default function StudentsPage() {
         filters: [{ column: 'id', op: 'eq', value: studentId }],
       });
       if (error) {
-        toast.error(tCommon('error'));
+        toast.error(tToast('error'));
         return;
       }
       setStudents((prev) =>
@@ -1884,7 +1884,7 @@ export default function StudentsPage() {
                     }),
                   });
                   if (!res.ok) {
-                    toast.error(tCommon('error'));
+                    toast.error(tToast('error'));
                     return;
                   }
                   const j = (await res.json()) as { sent?: number; totalCost?: number };
