@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -42,13 +43,20 @@ import {
   ChevronUp,
   Download,
 } from 'lucide-react';
-import {
-  AreaChartComponent,
-  BarChartComponent,
-  ChartCard,
-  ChartLegend,
-  DonutChart,
-} from '@/components/charts';
+import { ChartCard, ChartLegend } from '@/components/charts';
+
+const AreaChartComponent = dynamic(
+  () => import('@/components/charts').then((m) => ({ default: m.AreaChartComponent })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+);
+const BarChartComponent = dynamic(
+  () => import('@/components/charts').then((m) => ({ default: m.BarChartComponent })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+);
+const DonutChart = dynamic(
+  () => import('@/components/charts').then((m) => ({ default: m.DonutChart })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+);
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { AdminSidebar, type AdminTab } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';

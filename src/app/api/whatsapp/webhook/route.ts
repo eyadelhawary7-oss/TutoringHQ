@@ -418,14 +418,6 @@ export async function POST(request: Request) {
     receivedNorm.length === expectedNorm.length &&
     receivedNorm.split('').every((c, i) => c === expectedNorm[i]);
 
-  if (process.env.NODE_ENV !== 'production') {
-    const receivedHex = receivedNorm.replace(/^sha256=/i, '').trim();
-    console.log('[WA webhook] Signature check:', {
-      expectedHex: expectedHex.slice(0, 10),
-      receivedHex: receivedHex.slice(0, 10),
-    });
-  }
-
   if (!isValid) {
     console.error('[WA webhook] Signature mismatch', {
       expected: `${expectedNorm.slice(0, 20)}...`,

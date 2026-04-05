@@ -10,6 +10,13 @@
     "dismiss": "Dismiss",
     "notificationsRegion": "Notifications"
   },
+  "pwa": {
+    "installTitle": "Install the app",
+    "installSubtitle": "Add CenterHQ to your home screen for quick access",
+    "install": "Install",
+    "later": "Later",
+    "dismissAria": "Dismiss"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "analytics": "Financial Intelligence",

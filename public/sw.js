@@ -9,7 +9,7 @@ const PRECACHE_URLS = [
   '/en/scanner',
   '/ar/offline',
   '/en/offline',
-  '/manifest.json',
+  '/manifest.webmanifest',
   '/icons/icon.svg',
 ];
 

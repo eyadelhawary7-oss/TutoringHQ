@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
@@ -10,7 +11,16 @@ import { hasPlanFeature } from '@/lib/plans';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
-import { AreaChartComponent, ChartCard, DonutChart, SparklineChart } from '@/components/charts';
+import { ChartCard, SparklineChart } from '@/components/charts';
+
+const AreaChartComponent = dynamic(
+  () => import('@/components/charts').then((m) => ({ default: m.AreaChartComponent })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+);
+const DonutChart = dynamic(
+  () => import('@/components/charts').then((m) => ({ default: m.DonutChart })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+);
 import { useToast } from '@/components/ui/ToastProvider';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import {

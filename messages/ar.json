@@ -10,6 +10,13 @@
     "dismiss": "إغلاق",
     "notificationsRegion": "الإشعارات"
   },
+  "pwa": {
+    "installTitle": "ثبّت التطبيق",
+    "installSubtitle": "أضف CenterHQ للشاشة الرئيسية للوصول السريع",
+    "install": "تثبيت",
+    "later": "لاحقاً",
+    "dismissAria": "إغلاق"
+  },
   "nav": {
     "dashboard": "لوحة التحكم",
     "analytics": "الذكاء المالي",

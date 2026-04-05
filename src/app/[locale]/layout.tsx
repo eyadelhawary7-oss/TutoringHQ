@@ -26,8 +26,7 @@ import { UserProvider } from '@/contexts/UserContext';
 import { LayoutProvider } from '@/contexts/LayoutContext';
 import AppShell from '@/components/AppShell';
 import ServiceWorkerRegistrarWrapper from '@/components/ServiceWorkerRegistrarWrapper';
-import PwaInstallBanner from '@/components/PwaInstallBanner';
-import { ToastProvider } from '@/components/ui/ToastProvider';
+import { ToastProvider, PWAInstallBanner } from '@/components/ui';
 import { SwUpdateBanner } from '@/components/ui/SwUpdateBanner';
 import { PostHogProvider } from '@/components/PostHogProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -42,12 +41,25 @@ export const metadata: Metadata = {
     default: 'CenterHQ',
   },
   description: 'إدارة السناتر التعليمية — حضور QR، مدفوعات، تقارير',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'CenterHQ',
+  },
+  icons: {
+    apple: '/icons/icon-192.png',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  themeColor: '#0D9488',
 };
 
 export default async function LocaleLayout({
@@ -96,13 +108,7 @@ export default async function LocaleLayout({
           }}
         />
         <link rel="icon" href="/logo-icon-64.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0D9488" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="CenterHQ" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body
         className="antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] font-cairo"
@@ -119,8 +125,8 @@ export default async function LocaleLayout({
                 </AppShell>
               </LayoutProvider>
             </UserProvider>
+            <PWAInstallBanner />
           </ToastProvider>
-          <PwaInstallBanner />
         </NextIntlClientProvider>
         </ThemeProvider>
         <ServiceWorkerRegistrarWrapper />

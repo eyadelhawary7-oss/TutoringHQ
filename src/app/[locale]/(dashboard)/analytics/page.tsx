@@ -1,19 +1,33 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
-import RevenueByGroup from '@/components/charts/RevenueByGroup';
 import AgingReport from '@/components/analytics/AgingReport';
 import PnLCard from '@/components/analytics/PnLCard';
 import AnalyticsAiChatWidget from '@/components/analytics/AnalyticsAiChatWidget';
-import { RevenueAreaChart } from '@/components/analytics/RevenueAreaChart';
-import { PaymentDonutChart } from '@/components/analytics/PaymentDonutChart';
-import { AttendanceHeatmap } from '@/components/analytics/AttendanceHeatmap';
 import { chartColors, colors } from '@/lib/tokens';
 import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 import { ChartCard, ChartLegend } from '@/components/charts';
+
+const RevenueByGroup = dynamic(() => import('@/components/charts/RevenueByGroup'), {
+  ssr: false,
+  loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" />,
+});
+const RevenueAreaChart = dynamic(
+  () => import('@/components/analytics/RevenueAreaChart').then((m) => ({ default: m.RevenueAreaChart })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+);
+const PaymentDonutChart = dynamic(
+  () => import('@/components/analytics/PaymentDonutChart').then((m) => ({ default: m.PaymentDonutChart })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+);
+const AttendanceHeatmap = dynamic(
+  () => import('@/components/analytics/AttendanceHeatmap').then((m) => ({ default: m.AttendanceHeatmap })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+);
 
 interface AnalyticsData {
   mrr: number;
