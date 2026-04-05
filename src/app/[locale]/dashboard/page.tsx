@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { exportDashboardToExcel } from '@/lib/excel-export';
@@ -10,10 +10,8 @@ import { hasPlanFeature } from '@/lib/plans';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
-import { AreaChartComponent, ChartCard, SparklineChart } from '@/components/charts';
-import AttendanceTrend from '@/components/dashboard/AttendanceTrend';
-import { AttendanceRing } from '@/components/dashboard/AttendanceRing';
-import PaymentDonut from '@/components/dashboard/PaymentDonut';
+import { AreaChartComponent, ChartCard, DonutChart, SparklineChart } from '@/components/charts';
+import { useToast } from '@/components/ui/ToastProvider';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import {
   SkeletonStat,
@@ -27,20 +25,16 @@ import {
 import {
   QrCode,
   TrendingUp,
+  TrendingDown,
   Users,
   CreditCard,
   UserPlus,
-  Printer,
   X,
   ArrowUpRight,
   CalendarCheck,
+  Send,
+  type LucideIcon,
 } from 'lucide-react';
-
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
-  return (name.slice(0, 2) || '?').toUpperCase();
-}
 
 const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -84,6 +78,9 @@ interface DashboardData {
   inactiveStudents: InactiveStudent[];
   scanDeltaPct: number;
   revenueDeltaPct: number;
+  pendingInvoicesCount: number;
+  latePaymentCount: number;
+  studentSparkline7d: number[];
 }
 
 type AtRiskRow = {
@@ -93,13 +90,75 @@ type AtRiskRow = {
   days_since_last_scan: number;
 };
 
+function atRiskAttendanceIndicator(daysSinceLastScan: number): number {
+  return Math.max(5, Math.min(59, 100 - Math.min(30, daysSinceLastScan) * 3));
+}
+
+function KpiCommandCard({
+  label,
+  valueDisplay,
+  trendPct,
+  icon: Icon,
+  delayMs,
+  sparkline,
+}: {
+  label: string;
+  valueDisplay: ReactNode;
+  trendPct?: number;
+  icon: LucideIcon;
+  delayMs: number;
+  sparkline: { value: number }[];
+}) {
+  const showTrend = trendPct !== undefined && trendPct !== 0 && Number.isFinite(trendPct);
+  return (
+    <div
+      className="relative chq-fade-in rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4"
+      style={{ animationDelay: `${delayMs}ms` }}
+    >
+      <div className="absolute top-4 end-4 text-teal-500" aria-hidden>
+        <Icon className="h-4 w-4" strokeWidth={2} />
+      </div>
+      <p className="pe-8 text-xs uppercase tracking-wider text-slate-400">{label}</p>
+      <div
+        className="mt-1 text-2xl font-bold text-white tabular-nums"
+        style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+      >
+        {valueDisplay}
+      </div>
+      {showTrend ? (
+        <span
+          className={`mt-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+            (trendPct ?? 0) >= 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+          }`}
+        >
+          {(trendPct ?? 0) >= 0 ? (
+            <TrendingUp className="h-3 w-3" aria-hidden />
+          ) : (
+            <TrendingDown className="h-3 w-3" aria-hidden />
+          )}
+          {`${(trendPct ?? 0) >= 0 ? '+' : ''}${(trendPct ?? 0).toLocaleString('en-US')}%`}
+        </span>
+      ) : null}
+      <div className="mt-3 h-8 w-full opacity-95" aria-hidden>
+        {sparkline.length >= 2 ? (
+          <SparklineChart data={sparkline} color="teal" height={32} />
+        ) : (
+          <div className="h-8" />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
-  const tCharts = useTranslations('charts');
   const tSettings = useTranslations('settings');
   const tCommon = useTranslations('common');
+  const tBilling = useTranslations('billing');
+  const tToast = useTranslations('toasts');
   const locale = useLocale();
   const router = useRouter();
+  const { toast } = useToast();
   const { user } = useUser();
   const canViewRevenue = user?.role === 'owner' || user?.role === 'admin' || user?.can_view_revenue === true;
 
@@ -128,6 +187,9 @@ export default function DashboardPage() {
     inactiveStudents: [],
     scanDeltaPct: 0,
     revenueDeltaPct: 0,
+    pendingInvoicesCount: 0,
+    latePaymentCount: 0,
+    studentSparkline7d: [],
   });
   const [inactivePeriod, setInactivePeriod] = useState<InactivePeriod>('7d');
   const [timeRange, setTimeRange] = useState<'7' | '30'>('7');
@@ -146,6 +208,8 @@ export default function DashboardPage() {
   } | null>(null);
   const [surgeDismissed, setSurgeDismissed] = useState(false);
   const [atRiskStudents, setAtRiskStudents] = useState<AtRiskRow[]>([]);
+  const [sendingReport, setSendingReport] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const startOfToday = () => {
     const now = new Date();
@@ -391,6 +455,16 @@ export default function DashboardPage() {
         .filter((s): s is InactiveStudent => s !== null);
       inactiveStudents.sort((a, b) => (b.days_absent || 0) - (a.days_absent || 0));
 
+      const pendingInvoicesCount = allPending.length;
+      const latePaymentCount = monthPmts.filter((p) => p.status === 'late').length;
+      const studentSparkline7d: number[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const end = new Date();
+        end.setDate(end.getDate() - i);
+        end.setHours(23, 59, 59, 999);
+        studentSparkline7d.push(students.filter((s) => new Date(s.created_at) <= end).length);
+      }
+
       setData({
         todayAttendance: attendanceCount || 0,
         totalStudents: students.length,
@@ -414,6 +488,9 @@ export default function DashboardPage() {
         inactiveStudents,
         scanDeltaPct,
         revenueDeltaPct,
+        pendingInvoicesCount,
+        latePaymentCount,
+        studentSparkline7d,
       });
     } catch (err) {
       console.error('Dashboard load error:', err);
@@ -589,7 +666,6 @@ export default function DashboardPage() {
   }, [centerId, inactivePeriod, timeRange, loadDashboard]);
 
   const canExportExcel = hasPlanFeature(centerBilling?.plan, 'excel_export');
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleExport = useCallback(async () => {
     if (!centerId) return;
@@ -654,39 +730,95 @@ export default function DashboardPage() {
     }
   }, [centerId, canExportExcel]);
 
-  if (user?.role === 'assistant' && !isLoading) {
-    return (
-      <div className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6">
-        <h1 className="text-2xl font-bold text-white mb-6">{t('title')}</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link
-            href="/scan"
-            className="card p-8 text-center transition-all duration-fast ease-out hover:shadow-brand-sm hover:border-[var(--color-border-brand)] active:scale-[0.99]"
-          >
-            <QrCode className="w-16 h-16 mx-auto text-brand-400 mb-4" strokeWidth={1.5} />
-            <h2 className="text-xl font-bold text-white">{t('action_scan')}</h2>
-            <p className="text-[var(--color-text-secondary)] text-sm mt-2">{t('scanSubtitle')}</p>
-          </Link>
-          <Link
-            href="/payments"
-            className="card p-6 transition-all duration-fast ease-out hover:shadow-brand-sm hover:border-[var(--color-border-brand)]"
-          >
-            <p className="text-sm text-[var(--color-text-secondary)]">{t('unpaidCount')}</p>
-            <p className="text-3xl font-bold text-white mt-1">
-              {Number(data.unpaidCount).toLocaleString('en-US')}
-            </p>
-            <p className="text-brand-400 text-sm mt-2">{t('goToPayments')}</p>
-          </Link>
-        </div>
-        <div className="card p-5 mt-6">
-          <p className="text-sm text-[var(--color-text-secondary)] mb-1">{t('stats.attendance_today')}</p>
-          <p className="text-2xl font-bold text-white">
-            {Number(data.todayAttendance).toLocaleString('en-US')}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const monthlyRevenueRaw = statsData?.monthlyRevenue ?? [];
+  const monthlyRevenueData = monthlyRevenueRaw.map((r) => ({
+    month: formatMonthLabel(r.month, locale),
+    revenue: Number(r.amount) || 0,
+  }));
+
+  const attendanceChart7 = useMemo(() => {
+    const td = data.trendData;
+    if (td.length <= 7) return td.map((d) => ({ date: d.date, count: d.count }));
+    return td.slice(-7).map((d) => ({ date: d.date, count: d.count }));
+  }, [data.trendData]);
+
+  const attendanceWeekTotal = useMemo(
+    () => attendanceChart7.reduce((s, d) => s + d.count, 0),
+    [attendanceChart7],
+  );
+
+  const monthTrendPct = useMemo(() => {
+    if (monthlyRevenueRaw.length < 2) return undefined;
+    const last = Number(monthlyRevenueRaw[monthlyRevenueRaw.length - 1]?.amount) || 0;
+    const prev = Number(monthlyRevenueRaw[monthlyRevenueRaw.length - 2]?.amount) || 0;
+    if (prev <= 0) return undefined;
+    return Math.round(((last - prev) / prev) * 10000) / 100;
+  }, [monthlyRevenueRaw]);
+
+  const studentTrendPct = useMemo(() => {
+    const s = data.studentSparkline7d;
+    if (!s.length || s.length < 2) return undefined;
+    const a = s[0] ?? 0;
+    const b = s[s.length - 1] ?? 0;
+    if (a <= 0) return b > 0 ? 100 : undefined;
+    return Math.round(((b - a) / a) * 10000) / 100;
+  }, [data.studentSparkline7d]);
+
+  const studentSparklinePoints = useMemo(
+    () => data.studentSparkline7d.map((n) => ({ value: n })),
+    [data.studentSparkline7d],
+  );
+
+  const attendanceSparklinePoints = useMemo(
+    () => attendanceChart7.map((d) => ({ value: d.count })),
+    [attendanceChart7],
+  );
+
+  const revenueMonthlySpark7 = useMemo(() => {
+    const slice = monthlyRevenueData.slice(-7);
+    return slice.map((r) => ({ value: r.revenue }));
+  }, [monthlyRevenueData]);
+
+  const pendingInvoicesSpark7 = useMemo(() => {
+    const c = data.pendingInvoicesCount;
+    return Array.from({ length: 7 }, () => ({ value: c }));
+  }, [data.pendingInvoicesCount]);
+
+  const onSendReport = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error(tToast('error'), tCommon('error'));
+        return;
+      }
+      setSendingReport(true);
+      const res = await fetch('/api/dashboard/send-daily-summary', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        const code = j.error ?? '';
+        if (code === 'daily_summary_disabled') toast.error(tToast('error'), t('dailySummaryDisabled'));
+        else if (code === 'no_center_phone') toast.error(tToast('error'), t('dailySummaryNoPhone'));
+        else if (code === 'no_activity_yesterday') toast.info(t('dailySummaryNoActivity'));
+        else toast.error(tToast('error'), code || tCommon('error'));
+        return;
+      }
+      toast.success(t('dailySummarySent'));
+    } catch {
+      toast.error(tToast('error'), tCommon('error'));
+    } finally {
+      setSendingReport(false);
+    }
+  }, [toast, t, tToast, tCommon]);
+
+  const attendanceTodayCount = Number(statsData?.attendanceToday ?? data.todayAttendance ?? 0);
+  const attendancePctOfTotal =
+    data.totalStudents > 0
+      ? Math.min(100, Math.round((attendanceTodayCount / data.totalStudents) * 10000) / 100)
+      : 0;
+  const egpSuffix = tCommon('egp');
 
   const paymentDueBanner = (() => {
     if (!centerBilling?.payment_due_date || centerBilling.billing_status === 'paid') return null;
@@ -767,44 +899,49 @@ export default function DashboardPage() {
     }
   };
 
-  const revenueTodayKpi = Number(statsData?.revenueToday ?? data.todayRevenue ?? 0);
-  const activeStudentsThisWeek = Number(statsData?.activeStudentsThisWeek ?? 0);
-  const attendanceTodayCount = Number(statsData?.attendanceToday ?? data.todayAttendance ?? 0);
-  const pendingBalanceKpi = Number(statsData?.pendingBalance ?? data.totalPending ?? 0);
-  const attendanceRate =
-    activeStudentsThisWeek > 0
-      ? Math.min(100, (attendanceTodayCount / activeStudentsThisWeek) * 100)
-      : 0;
-  const monthlyRevenueData = (statsData?.monthlyRevenue ?? []).map((r) => ({
-    month: formatMonthLabel(r.month, locale),
-    revenue: Number(r.amount) || 0,
-  }));
-  const sparklineData = useMemo(() => {
-    const daily = data.revenueChartData.map((d) => ({
-      month: d.day,
-      revenue:
-        d.cash +
-        d.instapay +
-        d.vodafone +
-        d.orange +
-        d.fawry +
-        d.bank +
-        d.other,
-    }));
-    if (daily.length > 0) return daily;
-    return monthlyRevenueData;
-  }, [data.revenueChartData, monthlyRevenueData]);
-  const collectionRate = Number(data.collectionRatePct ?? 0);
-  const avgRevenue =
-    data.totalStudents > 0
-      ? Math.round(Number(data.monthConfirmed) / data.totalStudents)
-      : 0;
-  const unpaidBalance = Number(data.totalPending ?? 0);
-  const topGroup: string | null = null;
-  const egpSuffix = tCommon('egp');
+  const planKeyRaw = (centerBilling?.plan ?? 'starter').toLowerCase();
+  const CENTER_PLAN_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise'] as const;
+  const planKeyForI18n = CENTER_PLAN_KEYS.includes(planKeyRaw as (typeof CENTER_PLAN_KEYS)[number])
+    ? planKeyRaw
+    : 'starter';
+  const planLabel = tBilling(`planNames.${planKeyForI18n}` as 'billing.planNames.starter');
+
+  if (user?.role === 'assistant' && !isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] p-4 pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
+        <h1 className="mb-6 text-xl font-semibold text-white">{t('title')}</h1>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Link
+            href="/scan"
+            className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 text-center transition-colors hover:bg-slate-800/60 btn-press chq-focus"
+          >
+            <QrCode className="mx-auto mb-3 h-14 w-14 text-teal-500" strokeWidth={1.5} />
+            <h2 className="text-lg font-bold text-white">{t('action_scan')}</h2>
+            <p className="mt-1 text-sm text-slate-400">{t('scanSubtitle')}</p>
+          </Link>
+          <Link
+            href="/payments"
+            className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 transition-colors hover:bg-slate-800/60 btn-press chq-focus"
+          >
+            <p className="text-xs uppercase tracking-wider text-slate-400">{t('unpaidCount')}</p>
+            <p className="mt-1 text-3xl font-bold text-white tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
+              {Number(data.unpaidCount).toLocaleString('en-US')}
+            </p>
+            <p className="mt-2 text-sm text-teal-400">{t('goToPayments')}</p>
+          </Link>
+        </div>
+        <div className="mt-4 rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4">
+          <p className="text-xs uppercase tracking-wider text-slate-400">{t('stats.attendance_today')}</p>
+          <p className="mt-1 text-2xl font-bold text-white tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
+            {Number(data.todayAttendance).toLocaleString('en-US')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-[var(--color-surface-0)] min-h-screen p-4 md:p-6 page-enter max-md:pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-6">
+    <div className="min-h-screen bg-[#0f172a] p-4 page-enter pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
       {showSurgeAlert && statsData?.surge_message && (
         <div
           className="card mb-4 p-4 border-[var(--color-border-brand)] flex items-center justify-between gap-4"
@@ -822,25 +959,37 @@ export default function DashboardPage() {
       )}
       {paymentDueBanner}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('subtitle')}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={isExporting || isLoading}
-            className="px-4 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm font-semibold text-white bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] transition-colors disabled:opacity-50 btn-press chq-focus"
+      <header className="mb-6 flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 text-end">
+          <h1 className="text-xl font-semibold text-white">
+            {t('greeting')}، {centerBilling?.name ?? 'CenterHQ'}
+          </h1>
+          <p className="mt-1 text-sm text-slate-400">
+            {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+            })}
+          </p>
+          <span
+            className="mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-teal-300"
+            style={{ backgroundColor: 'rgba(13,148,136,0.2)' }}
           >
-            {isExporting ? t('exporting') : t('exportData')}
-          </button>
+            {planLabel}
+          </span>
         </div>
-      </div>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={isExporting || isLoading}
+          className="shrink-0 rounded-lg border border-slate-600 bg-slate-800/60 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50 btn-press chq-focus"
+        >
+          {isExporting ? t('exporting') : t('exportData')}
+        </button>
+      </header>
 
       {planUsage && planUsage.studentLimit < 999999 && (
-        <div className="mb-4">
+        <div className="mb-4 max-w-6xl">
           <PlanUsageCard
             plan={planUsage.plan}
             weeklyUniqueStudents={planUsage.weeklyUniqueStudents}
@@ -850,375 +999,225 @@ export default function DashboardPage() {
       )}
 
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="max-w-6xl space-y-4">
           <SkeletonPageHeader />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
               <SkeletonStat key={i} />
             ))}
           </div>
-          {canViewRevenue && (
-            <div className="card p-4">
-              <SkeletonText className="w-32 h-5 mb-3" />
-              <SkeletonBlock className="w-full h-14 rounded-lg" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+            <div className="md:col-span-3">
+              <SkeletonChart className="[&_.skeleton]:h-48" />
             </div>
-          )}
-          <div>
-            <SkeletonText className="w-28 h-4 mb-3 uppercase" />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="md:col-span-2">
+              <SkeletonBlock className="h-52 w-full rounded-2xl" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="card p-5">
+              <SkeletonText className="mb-4 h-5 w-40" />
+              <SkeletonRow />
+              <SkeletonRow />
+            </div>
+            <div className="card p-5">
+              <SkeletonText className="mb-4 h-5 w-32" />
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="card p-4 flex flex-col items-center gap-2">
-                  <SkeletonCircle className="w-10 h-10" />
-                  <SkeletonText className="w-20 h-3" />
-                </div>
+                <SkeletonBlock key={i} className="mb-2 h-14 w-full rounded-xl" />
               ))}
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="card p-5">
-              <SkeletonText className="w-36 h-5 mb-4" />
-              <SkeletonBlock className="w-full h-28 rounded-lg" />
-            </div>
-            <div className="card p-5">
-              <SkeletonText className="w-36 h-5 mb-4" />
-              <SkeletonBlock className="w-full h-16 rounded-lg" />
-            </div>
-          </div>
-          <SkeletonChart className="[&_.skeleton]:h-32" />
-          <div className="card p-5">
-            <SkeletonText className="w-40 h-5 mb-4" />
-            <SkeletonRow />
-            <SkeletonRow />
           </div>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            {canViewRevenue && (
-              <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow shadow-sm hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
-                      {t('stats.revenue_today')}
-                    </p>
-                    <p className="text-2xl font-bold text-slate-800 dark:text-white mt-1 tabular-nums">
-                      {Number(revenueTodayKpi).toLocaleString('en-US')}
-                      <span className="text-sm font-normal text-slate-500 dark:text-slate-400 ms-1">{egpSuffix}</span>
-                    </p>
-                    {data.revenueDeltaPct > 0 && (
-                      <p className="text-xs text-teal-600 dark:text-teal-400 mt-1 flex items-center gap-0.5 font-medium">
-                        <TrendingUp className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                        <span>
-                          {Number(data.revenueDeltaPct).toLocaleString('en-US')}% {t('trend_up_suffix')}
-                        </span>
-                      </p>
-                    )}
-                    {sparklineData.length >= 2 ? (
-                      <div className="mt-3 h-12 w-full opacity-90">
-                        <SparklineChart
-                          data={sparklineData.map((d) => ({ value: d.revenue }))}
-                          color="teal"
-                          height={48}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/30 border border-teal-100/80 dark:border-teal-800/40"
-                    aria-hidden
-                  >
-                    <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" strokeWidth={2} />
-                  </div>
-                </div>
-              </div>
+          <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3 lg:grid-cols-4">
+            <KpiCommandCard
+              label={t('totalStudents')}
+              valueDisplay={Number(data.totalStudents).toLocaleString('en-US')}
+              trendPct={studentTrendPct}
+              icon={Users}
+              delayMs={0}
+              sparkline={studentSparklinePoints}
+            />
+            <KpiCommandCard
+              label={t('todayAttendance')}
+              valueDisplay={
+                <>
+                  {Number(attendanceTodayCount).toLocaleString('en-US')}
+                  <span className="ms-1 text-base font-semibold text-slate-400">
+                    ({Number(attendancePctOfTotal).toLocaleString('en-US')}%)
+                  </span>
+                </>
+              }
+              trendPct={data.scanDeltaPct !== 0 ? data.scanDeltaPct : undefined}
+              icon={CalendarCheck}
+              delayMs={100}
+              sparkline={attendanceSparklinePoints}
+            />
+            {canViewRevenue ? (
+              <KpiCommandCard
+                label={t('monthlyRevenue')}
+                valueDisplay={
+                  <>
+                    {Number(data.monthConfirmed).toLocaleString('en-US')}
+                    <span className="ms-1 text-base font-normal text-slate-400">{egpSuffix}</span>
+                  </>
+                }
+                trendPct={monthlyRevenueRaw.length >= 2 ? monthTrendPct : undefined}
+                icon={TrendingUp}
+                delayMs={200}
+                sparkline={revenueMonthlySpark7}
+              />
+            ) : (
+              <KpiCommandCard
+                label={t('monthlyRevenue')}
+                valueDisplay={<span className="text-slate-500">—</span>}
+                icon={TrendingUp}
+                delayMs={200}
+                sparkline={[]}
+              />
             )}
-            <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow shadow-sm hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
-                    {t('stats.active_students')}
-                  </p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-white mt-1 tabular-nums">
-                    {Number(activeStudentsThisWeek).toLocaleString('en-US')}
-                  </p>
-                </div>
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100/80 dark:border-blue-800/40"
-                  aria-hidden
-                >
-                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" strokeWidth={2} />
-                </div>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow shadow-sm hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
-                    {t('stats.attendance_today')}
-                  </p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-white mt-1 tabular-nums">
-                    {Number(attendanceTodayCount).toLocaleString('en-US')}
-                  </p>
-                  {data.scanDeltaPct > 0 && (
-                    <p className="text-xs text-teal-600 dark:text-teal-400 mt-1 flex items-center gap-0.5 font-medium">
-                      <TrendingUp className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                      <span>
-                        {Number(data.scanDeltaPct).toLocaleString('en-US')}% {t('trend_up_suffix')}
-                      </span>
-                    </p>
-                  )}
-                </div>
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-100/80 dark:border-purple-800/40"
-                  aria-hidden
-                >
-                  <CalendarCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" strokeWidth={2} />
-                </div>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow shadow-sm hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
-                    {t('stats.pending_payments')}
-                  </p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-white mt-1 tabular-nums">
-                    {Number(pendingBalanceKpi).toLocaleString('en-US')}
-                    <span className="text-sm font-normal text-slate-500 dark:text-slate-400 ms-1">{egpSuffix}</span>
-                  </p>
-                </div>
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-100/80 dark:border-amber-800/40"
-                  aria-hidden
-                >
-                  <CreditCard className="w-5 h-5 text-amber-600 dark:text-amber-500" strokeWidth={2} />
-                </div>
-              </div>
-            </div>
+            <KpiCommandCard
+              label={t('pendingPayments')}
+              valueDisplay={Number(data.pendingInvoicesCount).toLocaleString('en-US')}
+              icon={CreditCard}
+              delayMs={300}
+              sparkline={pendingInvoicesSpark7}
+            />
           </div>
 
-          {canViewRevenue && sparklineData.length > 0 && (
-            <div className="mb-4">
+          <div className="mb-6 grid max-w-6xl grid-cols-1 gap-4 md:grid-cols-5">
+            <div className="md:col-span-3">
               <ChartCard
-                title={tCharts('monthlyRevenue')}
-                value={Number(
-                  sparklineData.reduce((s, d) => s + d.revenue, 0) / Math.max(1, sparklineData.length),
-                ).toLocaleString('en-US')}
-                valueSuffix={` ${egpSuffix}`}
-                subtitle={t('sparkline_title')}
-                trend={
-                  sparklineData.length >= 2
-                    ? (() => {
-                        const last = sparklineData[sparklineData.length - 1]?.revenue ?? 0;
-                        const prev = sparklineData[sparklineData.length - 2]?.revenue ?? 0;
-                        if (prev <= 0) return undefined;
-                        return Math.round(((last - prev) / prev) * 10000) / 100;
-                      })()
-                    : undefined
-                }
-                trendLabel={tCharts('vsLastWeek')}
+                title={t('attendanceChart')}
+                value={Number(attendanceWeekTotal).toLocaleString('en-US')}
+                trend={data.weeklyTrendPct !== 0 ? data.weeklyTrendPct : undefined}
+                trendLabel={t('vsLastWeek')}
                 minHeight={200}
-                actions={
-                  <div
-                    className="flex items-center gap-1 p-1 rounded-xl border border-slate-600 bg-slate-900/50 w-fit"
-                    role="group"
-                    aria-label={t('sparkline_title')}
-                  >
-                    {(['7', '30'] as const).map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => setTimeRange(r)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          timeRange === r
-                            ? 'bg-slate-800 text-white border border-slate-600'
-                            : 'text-slate-400'
-                        } btn-press chq-focus`}
-                      >
-                        {r === '7' ? t('last7Days') : t('last30Days')}
-                      </button>
-                    ))}
-                  </div>
-                }
               >
                 <AreaChartComponent
-                  data={sparklineData as Record<string, string | number>[]}
-                  dataKey="revenue"
-                  xKey="month"
+                  data={attendanceChart7 as Record<string, string | number>[]}
+                  dataKey="count"
+                  xKey="date"
                   color="teal"
                   height={200}
-                  prefix={`${egpSuffix} `}
+                  xTickFormatter={(v) => String(v)}
                 />
               </ChartCard>
             </div>
-          )}
-
-          <div className="mb-6">
-            <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wide">
-              {t('quick_actions')}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Link
-                href="/scan"
-                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow btn-lift flex items-center gap-4 text-start"
-              >
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/30">
-                  <QrCode className="w-8 h-8 text-teal-600 dark:text-teal-400" strokeWidth={2} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-800 dark:text-white">{t('action_scan')}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('action_scan_subtitle')}</p>
+            <div className="flex flex-col md:col-span-2">
+              <div className="flex h-full min-h-[240px] flex-col rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">{t('paymentStatus')}</p>
+                <div className="min-h-0 flex-1">
+                  <DonutChart
+                    data={[
+                      { name: t('paid'), value: data.paidCount, color: '#0D9488' },
+                      { name: t('pending'), value: data.pendingCount, color: '#F59E0B' },
+                      { name: t('overdue'), value: data.latePaymentCount, color: '#EF4444' },
+                    ]}
+                    height={200}
+                    centerLabel={t('collected')}
+                    centerValue={
+                      canViewRevenue
+                        ? Number(data.monthConfirmed).toLocaleString('en-US')
+                        : '—'
+                    }
+                    suffix={canViewRevenue ? ` ${egpSuffix}` : ''}
+                  />
                 </div>
-                <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 rtl:rotate-180" aria-hidden />
-              </Link>
-              <Link
-                href="/students"
-                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow btn-lift flex items-center gap-4 text-start"
-              >
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30">
-                  <UserPlus className="w-8 h-8 text-blue-600 dark:text-blue-400" strokeWidth={2} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-800 dark:text-white">{t('action_add_student')}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('action_add_student_subtitle')}</p>
-                </div>
-                <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 rtl:rotate-180" aria-hidden />
-              </Link>
-              <Link
-                href="/payments"
-                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow btn-lift flex items-center gap-4 text-start"
-              >
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30">
-                  <CreditCard className="w-8 h-8 text-amber-600 dark:text-amber-500" strokeWidth={2} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-800 dark:text-white">{t('action_payments')}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('action_payments_subtitle')}</p>
-                </div>
-                <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 rtl:rotate-180" aria-hidden />
-              </Link>
-              <Link
-                href="/students/print"
-                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow btn-lift flex items-center gap-4 text-start"
-              >
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/30">
-                  <Printer className="w-8 h-8 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-800 dark:text-white">{t('action_print')}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('action_print_subtitle')}</p>
-                </div>
-                <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 rtl:rotate-180" aria-hidden />
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="card p-5">
-              <h2 className="text-sm font-semibold text-white mb-4">{t('attendance_title')}</h2>
-              <AttendanceRing
-                rate={attendanceRate}
-                todayCount={attendanceTodayCount}
-                label={t('attendance_title')}
-              />
-            </div>
-            <div className="card p-5 space-y-4">
-              <h2 className="text-sm font-semibold text-white">{tCharts('weeklyAttendance')}</h2>
-              <AttendanceTrend data={data.trendData} />
-              <h2 className="text-sm font-semibold text-white pt-2">{tCharts('paymentStatus')}</h2>
-              <PaymentDonut paid={data.paidCount} unpaid={data.unpaidCount} pending={data.pendingCount} />
-            </div>
-          </div>
-
-          <div className="card p-5 mb-4">
-            <h2 className="text-sm font-semibold text-white mb-4">{t('performance_title')}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-[var(--color-text-secondary)]">{t('collection_rate')}</span>
-                <span className="text-xl font-bold text-white">
-                  {Number(collectionRate).toLocaleString('en-US')}%
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-[var(--color-text-secondary)]">{t('avg_revenue')}</span>
-                <span className="text-xl font-bold text-white">
-                  {Number(avgRevenue).toLocaleString('en-US')}
-                  <span className="text-xs text-[var(--color-text-tertiary)] ms-1">{egpSuffix}</span>
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-[var(--color-text-secondary)]">{t('unpaid_balance')}</span>
-                <span className="text-xl font-bold text-[var(--color-warning)]">
-                  {Number(unpaidBalance).toLocaleString('en-US')}
-                  <span className="text-xs ms-1">{egpSuffix}</span>
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-[var(--color-text-secondary)]">{t('top_group')}</span>
-                <span className="text-base font-bold text-white truncate">
-                  {topGroup ?? t('no_data')}
-                </span>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 card-shadow">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-white">{t('at_risk_title')}</h2>
-              <Link
-                href="/students"
-                className="text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 inline-flex items-center gap-1"
-              >
-                {t('view_all')}
-                <ArrowUpRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden />
-              </Link>
-            </div>
-
-            {atRiskStudents.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-6">{t('at_risk_empty')}</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {atRiskStudents.slice(0, 5).map((student) => {
-                  const high = student.days_since_last_scan >= 14;
-                  return (
-                    <li
-                      key={student.id}
-                      className="flex items-center gap-3 rounded-xl border border-slate-100 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-900/30 px-3 py-3"
-                    >
-                      <div
-                        className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center bg-teal-100 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200 font-semibold text-xs border border-teal-200/60 dark:border-teal-800/50"
-                        aria-hidden
+          <div className="mb-6 grid max-w-6xl grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4">
+              <div className="mb-1 flex items-start justify-between gap-2">
+                <div>
+                  <h2 className="text-sm font-semibold text-white">{t('atRisk')}</h2>
+                  <p className="text-xs text-slate-500">{t('atRiskDesc')}</p>
+                </div>
+                <Link
+                  href="/students?filter=atrisk"
+                  className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-teal-400 hover:text-teal-300 btn-press chq-focus"
+                >
+                  {t('viewAll')}
+                  <ArrowUpRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
+                </Link>
+              </div>
+              {atRiskStudents.length === 0 ? (
+                <p className="py-8 text-center text-sm text-teal-400">{t('allGood')}</p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {atRiskStudents.slice(0, 5).map((student) => {
+                    const pct = atRiskAttendanceIndicator(student.days_since_last_scan);
+                    const barColor = pct < 40 ? 'bg-red-500' : 'bg-amber-500';
+                    return (
+                      <li
+                        key={student.id}
+                        className="rounded-xl border border-slate-700/50 bg-slate-900/30 px-3 py-2.5"
                       >
-                        {initialsFromName(student.name ?? '')}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-800 dark:text-white truncate">{student.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate">
-                          {student.student_number ?? '\u2014'}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        <span
-                          className={`text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full ${
-                            high
-                              ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
-                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
-                          }`}
-                        >
-                          {Number(student.days_since_last_scan).toLocaleString('en-US')} {t('at_risk_days')}
-                        </span>
-                        <Link
-                          href="/students"
-                          className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline px-2 py-1 rounded-lg border border-transparent hover:border-teal-200 dark:hover:border-teal-800"
-                        >
-                          {t('view_student')}
-                        </Link>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1 text-end">
+                            <p className="truncate text-sm font-medium text-white">{student.name}</p>
+                            <p className="truncate font-mono text-xs text-slate-400" dir="ltr">
+                              {student.student_number ?? '\u2014'}
+                            </p>
+                          </div>
+                          <span
+                            className="shrink-0 tabular-nums text-xs font-semibold text-slate-300"
+                            style={{ fontFamily: 'Georgia, serif' }}
+                          >
+                            {pct.toLocaleString('en-US')}%
+                          </span>
+                        </div>
+                        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-slate-700/80">
+                          <div
+                            className={`h-full rounded-full transition-all ${barColor}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4">
+              <h2 className="mb-3 text-sm font-semibold text-white">{t('quickActions')}</h2>
+              <div className="flex flex-col gap-2">
+                <Link
+                  href="/students?action=add"
+                  className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-end text-sm font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
+                >
+                  <UserPlus className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
+                  <span className="flex-1">{t('addStudent')}</span>
+                </Link>
+                <Link
+                  href="/scan"
+                  className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-end text-sm font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
+                >
+                  <QrCode className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
+                  <span className="flex-1">{t('recordAttendance')}</span>
+                </Link>
+                <Link
+                  href="/payments?action=collect"
+                  className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-end text-sm font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
+                >
+                  <CreditCard className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
+                  <span className="flex-1">{t('collectPayment')}</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void onSendReport()}
+                  disabled={sendingReport}
+                  className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-end text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50 btn-press chq-focus"
+                >
+                  <Send className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
+                  <span className="flex-1">{t('sendReport')}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </>
       )}
