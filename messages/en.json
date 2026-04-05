@@ -3919,11 +3919,11 @@
         },
         "payments": {
           "title": "Egyptian Payments",
-          "desc": "Cash, InstaPay, Vodafone Cash, Orange Cash, Fawry, Bank Transfer — all built in."
+          "desc": "Cash, InstaPay, Vodafone Cash, Orange Cash, Fawry, bank transfer, all built in."
         },
         "whatsapp": {
           "title": "WhatsApp Automation",
-          "desc": "Payment reminders, attendance alerts, and daily summaries — sent automatically."
+          "desc": "Payment reminders, attendance alerts, and daily summaries, sent automatically."
         },
         "analytics": {
           "title": "Financial Intelligence",
@@ -3931,7 +3931,7 @@
         },
         "students": {
           "title": "Student Management",
-          "desc": "Profiles, groups, schedules, and QR cards — all organized."
+          "desc": "Profiles, groups, schedules, and QR cards, all organized."
         },
         "branches": {
           "title": "Multi-Branch",
@@ -4059,7 +4059,7 @@
     "studentLimitLabel": "Student limit",
     "studentsShort": "students",
     "egpSetup": "EGP setup",
-    "copyright": "© 2026 CenterHQ — EHG Intelligence",
+    "copyright": "© 2026 CenterHQ, EHG Intelligence",
     "contactWhatsapp": "Contact via WhatsApp",
     "ctaStartNow": "Start Now",
     "ctaExploreDashboard": "Explore Dashboard",
@@ -4204,21 +4204,21 @@
     "pricingTopCenters7": "On-site training & dedicated development support",
     "footer": {
       "tagline": "Made in Egypt 🇪🇬 for Egypt's centers",
-      "rights": "© 2026 CenterHQ — EHG Intelligence. All rights reserved."
+      "rights": "© 2026 CenterHQ, EHG Intelligence. All rights reserved."
     },
     "backToHome": "Back to Home",
     "annualPriceMo": "{amount} EGP/mo",
     "billedAnnually": "billed annually",
     "nav": {
       "login": "Login",
-      "signup": "Get Started Free"
+      "signup": "Get started free"
     },
     "hero": {
-      "badge": "Founders Offer — 40% Off",
+      "badge": "Founders Offer, 40% Off",
       "headline_1": "Run your center",
       "headline_2": "smarter",
       "subheadline": "The all-in-one management platform built for Egyptian tutoring centers. QR attendance, Egyptian payments, WhatsApp automation, and instant reports.",
-      "cta_primary": "Get Started Free",
+      "cta_primary": "Get started free",
       "cta_secondary": "See how it works",
       "demo_attendance": "Mohamed Ahmed ✓"
     },
@@ -4234,7 +4234,7 @@
     },
     "cta": {
       "title": "Ready to start?",
-      "subtitle": "First 10 centers get 40% off for life. No credit card required.",
+      "subtitle": "First 10 centers get 40% off for life.",
       "button": "Register your center now",
       "note": "Free setup · Direct WhatsApp support"
     },
@@ -4265,11 +4265,11 @@
     "submitting": "Submitting",
     "terms": "Terms",
     "navSignup": "Get started free",
-    "heroSub": "From QR attendance to fee collection — everything in one place",
-    "heroCta": "Start free — no credit card",
+    "heroSub": "From QR attendance to fee collection, everything in one place",
+    "heroCta": "Get started free",
     "watchDemo": "See how it works",
     "featuresTitle": "Everything you need to run your center",
-    "pricingTitle": "Transparent pricing — no surprises",
+    "pricingTitle": "Transparent pricing, no surprises",
     "finalCtaTitle": "Start managing your center today",
     "finalCtaDesc": "First 10 centers get 40% off for life",
     "marketing": {
@@ -4291,7 +4291,7 @@
       "step2Title": "Add your students",
       "step2Desc": "Import from Excel or add them manually",
       "step3Title": "Start managing",
-      "step3Desc": "QR attendance, invoices, WhatsApp — automated",
+      "step3Desc": "QR attendance, invoices, WhatsApp, all automated",
       "f1Title": "QR attendance",
       "f1Desc": "Scan a student card and record attendance in a second",
       "f2Title": "Invoices & fees",
@@ -4318,8 +4318,8 @@
       "proPrice": "EGP 8,000/mo",
       "proStudents": "Up to 500 students",
       "pricingCta": "View all plans & comparison",
-      "finalCtaButton": "Start free now",
-      "footerTagline": "CenterHQ — tutoring center management platform",
+      "finalCtaButton": "Get started free",
+      "footerTagline": "CenterHQ, tutoring center management platform",
       "footerEhgi": "An EHG Intelligence Product",
       "footerSupportLabel": "WhatsApp support",
       "footerRights": "© 2026 EHG Intelligence. All rights reserved."
