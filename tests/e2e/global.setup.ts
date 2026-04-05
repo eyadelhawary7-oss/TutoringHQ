@@ -8,8 +8,8 @@ setup('authenticate once for all tests', async ({ page }) => {
   const base = process.env.PLAYWRIGHT_BASE_URL || 'https://center-hq.vercel.app'
 
   await page.goto(`${base}/ar/login`)
-  await page.getByPlaceholder('+20 1XXXXXXXXX').fill(process.env.TEST_PHONE!)
-  await page.getByPlaceholder('••••••').fill(process.env.TEST_PIN!)
+  await page.getByPlaceholder('رقم الهاتف').fill(process.env.TEST_PHONE!)
+  await page.getByPlaceholder('الرقم السري').fill(process.env.TEST_PIN!)
   await page.getByRole('button', { name: 'تسجيل الدخول' }).click()
   await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
 
