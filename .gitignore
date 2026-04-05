@@ -58,3 +58,7 @@ public/fonts/*.woff
 supabase/.temp/.claude/
 *.code-workspace
 .claude/\n.cursor/
+
+# Local tool noise
+.cursor/
+.claude/
