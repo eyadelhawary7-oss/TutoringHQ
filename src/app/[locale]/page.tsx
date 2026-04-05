@@ -1,381 +1,328 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import {
-  PLANS,
-  getPlanPrice,
-  getAnnualMonthlyEquivalent,
-  getPerStudentWeeklyCost,
-  formatPrice,
-  type BillingPeriod,
-  type PlanKey,
-} from '@/lib/pricing';
+import { Menu, X } from 'lucide-react';
 
-const LANDING_PLAN_ORDER: PlanKey[] = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'];
+const WA_SUPPORT = 'https://wa.me/201220601410';
 
 export default function LocaleHomePage() {
   const t = useTranslations('landing');
-  const tBilling = useTranslations('billing');
+  const m = useTranslations('landing.marketing');
   const locale = useLocale();
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('quarterly');
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const featureItems: { key: string; icon: ReactNode }[] = [
-    {
-      key: 'qr',
-      icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="3" height="3" rx="0.5" />
-          <rect x="18" y="14" width="3" height="3" rx="0.5" />
-          <rect x="14" y="18" width="3" height="3" rx="0.5" />
-          <rect x="18" y="18" width="3" height="3" rx="0.5" />
-        </svg>
-      ),
-    },
-    {
-      key: 'payments',
-      icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <rect x="2" y="5" width="20" height="14" rx="2" />
-          <line x1="2" y1="10" x2="22" y2="10" />
-        </svg>
-      ),
-    },
-    {
-      key: 'whatsapp',
-      icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          <polyline points="9 11 12 14 15 11" />
-        </svg>
-      ),
-    },
-    {
-      key: 'analytics',
-      icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      ),
-    },
-    {
-      key: 'students',
-      icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-    },
-    {
-      key: 'branches',
-      icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <line x1="6" y1="3" x2="6" y2="15" />
-          <circle cx="18" cy="6" r="3" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="6" cy="6" r="3" />
-          <path d="M18 9a9 9 0 0 1-9 9" />
-        </svg>
-      ),
-    },
-  ];
-
-  const stats = [
-    { value: t('stats.centers_value'), label: t('stats.centers_label') },
-    { value: t('stats.methods_value'), label: t('stats.methods_label') },
-    { value: t('stats.uptime_value'), label: t('stats.uptime_label') },
-    { value: t('stats.support_value'), label: t('stats.support_label') },
-  ];
+  const heroLines = t('heroTitle').split('\n');
+  const featureKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] as const;
 
   return (
-    <main className="bg-surface-0 min-h-screen">
-      <nav className="fixed top-0 inset-x-0 z-50 h-16 md:h-18 bg-surface-1/90 backdrop-blur-md border-b border-[var(--color-border-subtle)]">
-        <div className="container mx-auto px-4 md:px-8 h-full flex items-center justify-between">
-          <span className="font-bold text-xl text-white tracking-tight">
-            Center<span className="text-brand-500">HQ</span>
-          </span>
-          <div className="flex items-center gap-3">
+    <main className="min-h-screen bg-[#080D14] text-white">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-[#080D14]/90 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 md:h-16 md:px-6">
+          <Link
+            href="/"
+            locale={locale}
+            className="flex items-center gap-2 btn-press chq-focus rounded-lg"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-600 text-xs font-bold text-white">
+              CH
+            </span>
+            <span className="text-lg font-bold tracking-tight">
+              Center<span className="text-teal-400">HQ</span>
+            </span>
+          </Link>
+
+          <nav className="hidden items-center gap-8 md:flex" aria-label="Main">
+            <a
+              href="#features"
+              className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
+            >
+              {m('navFeatures')}
+            </a>
+            <a
+              href="#pricing-preview"
+              className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
+            >
+              {m('navPricing')}
+            </a>
+            <a
+              href={WA_SUPPORT}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
+            >
+              {m('navContact')}
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-2">
             <Link
               href="/"
               locale={locale === 'ar' ? 'en' : 'ar'}
-              className="btn btn-ghost text-sm px-3 py-2 font-mono"
+              className="hidden rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-400 hover:text-white md:inline-flex btn-press chq-focus"
             >
               {locale === 'ar' ? 'EN' : 'عر'}
             </Link>
-            <Link href="/login" className="btn btn-ghost text-sm px-4 py-2">
-              {t('nav.login')}
+            <Link
+              href="/login"
+              className="hidden text-sm text-slate-300 hover:text-white md:inline btn-press chq-focus rounded-lg px-2 py-1"
+            >
+              {m('login')}
             </Link>
-            <Link href="/signup" className="btn btn-primary text-sm px-4 py-2">
-              {t('nav.signup')}
+            <Link
+              href="/signup"
+              className="hidden rounded-xl bg-teal-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-500 md:inline-flex btn-press chq-focus"
+            >
+              {t('navSignup')}
             </Link>
+            <button
+              type="button"
+              className="inline-flex rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white md:hidden btn-press chq-focus"
+              aria-expanded={mobileOpen}
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMobileOpen((o) => !o)}
+            >
+              {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
         </div>
-      </nav>
+
+        {mobileOpen ? (
+          <div className="border-t border-slate-800/60 bg-[#080D14]/95 px-4 py-4 md:hidden">
+            <div className="flex flex-col gap-1">
+              <a
+                href="#features"
+                className="rounded-xl px-3 py-3 text-slate-200 btn-press chq-focus"
+                onClick={() => setMobileOpen(false)}
+              >
+                {m('navFeatures')}
+              </a>
+              <a
+                href="#pricing-preview"
+                className="rounded-xl px-3 py-3 text-slate-200 btn-press chq-focus"
+                onClick={() => setMobileOpen(false)}
+              >
+                {m('navPricing')}
+              </a>
+              <a
+                href={WA_SUPPORT}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl px-3 py-3 text-slate-200 btn-press chq-focus"
+                onClick={() => setMobileOpen(false)}
+              >
+                {m('navContact')}
+              </a>
+              <Link
+                href="/login"
+                className="rounded-xl px-3 py-3 text-slate-200 btn-press chq-focus"
+                onClick={() => setMobileOpen(false)}
+              >
+                {m('login')}
+              </Link>
+              <Link
+                href="/signup"
+                className="mt-2 rounded-xl bg-teal-600 py-3 text-center font-semibold text-white btn-press chq-focus"
+                onClick={() => setMobileOpen(false)}
+              >
+                {t('navSignup')}
+              </Link>
+            </div>
+          </div>
+        ) : null}
+      </header>
 
       <section
-        className="min-h-[100svh] pt-24"
+        className="chq-fade-in px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28"
         style={{
-          background: `radial-gradient(ellipse 80% 60% at 60% 20%, rgba(13,148,136,0.12) 0%, transparent 60%), var(--color-surface-0)`,
+          background:
+            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), #080D14',
         }}
       >
-        <div className="container mx-auto px-4 md:px-8 flex flex-col lg:flex-row items-center gap-12 py-16 lg:py-24">
-          <div className="flex-1 flex flex-col items-start">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-badge bg-[rgba(13,148,136,0.12)] border border-[var(--color-border-brand)] text-brand-400 text-xs font-semibold mb-6 animate-fade-in">
-              {t('hero.badge')}
-            </span>
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="mb-6 inline-flex items-center rounded-full border border-teal-600/50 bg-teal-950/30 px-3 py-1 text-xs text-teal-400">
+            {m('heroBadge')}
+          </span>
+          <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl">
+            {heroLines.map((line, i) => (
+              <span key={i} className="block">
+                {line}
+              </span>
+            ))}
+          </h1>
+          <p className="mx-auto mt-6 max-w-md text-lg text-slate-400">{t('heroSub')}</p>
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+            <Link
+              href="/signup"
+              className="rounded-xl bg-teal-600 px-8 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+            >
+              {t('heroCta')}
+            </Link>
+            <a
+              href="#how-it-works"
+              className="rounded-xl border border-slate-700 bg-slate-800 px-8 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
+            >
+              {t('watchDemo')}
+            </a>
+          </div>
+          <p className="mt-8 text-sm text-slate-500">{m('socialProof')}</p>
+        </div>
+      </section>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 animate-fade-in [animation-delay:80ms]">
-              <span className="block text-white">{t('hero.headline_1')}</span>
-              <span className="block text-brand-400 text-glow-brand">{t('hero.headline_2')}</span>
-            </h1>
-
-            <p className="text-base md:text-lg text-[var(--color-text-secondary)] max-w-xl mb-8 leading-relaxed animate-fade-in [animation-delay:160ms]">
-              {t('hero.subheadline')}
-            </p>
-
-            <div className="flex flex-wrap gap-3 animate-fade-in [animation-delay:240ms]">
-              <Link href="/signup" className="btn btn-primary px-6 py-3 text-base">
-                {t('hero.cta_primary')}
-              </Link>
-              <a href="#features" className="btn btn-ghost px-6 py-3 text-base">
-                {t('hero.cta_secondary')}
-              </a>
+      <section className="chq-fade-in border-y border-slate-800/40 bg-[#080D14] px-4 py-12 md:px-6">
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+          {[
+            { v: m('stat1Value'), l: m('stat1Label') },
+            { v: m('stat2Value'), l: m('stat2Label') },
+            { v: m('stat3Value'), l: m('stat3Label') },
+          ].map((s, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 text-center"
+            >
+              <p className="text-3xl font-bold text-teal-400">{s.v}</p>
+              <p className="mt-1 text-sm text-slate-400">{s.l}</p>
             </div>
-          </div>
-
-          <div className="flex-shrink-0 w-56 md:w-64 animate-fade-in [animation-delay:120ms]">
-            <div className="relative mx-auto bg-surface-2 rounded-[2rem] p-2 border border-[var(--color-border-default)] shadow-brand-sm">
-              <div className="bg-surface-0 rounded-[1.6rem] overflow-hidden aspect-[9/16] relative flex flex-col items-center justify-center gap-4 p-6">
-                <div className="absolute top-0 inset-x-0 h-10 bg-surface-1 flex items-center justify-center border-b border-[var(--color-border-subtle)]">
-                  <span className="text-brand-400 text-xs font-semibold">CenterHQ</span>
-                </div>
-
-                <div className="relative w-36 h-36 md:w-40 md:h-40">
-                  <div className="absolute top-0 start-0 w-10 h-10 border-2 border-brand-500 rounded-sm" />
-                  <div className="absolute top-0 end-0 w-10 h-10 border-2 border-brand-500 rounded-sm" />
-                  <div className="absolute bottom-0 start-0 w-10 h-10 border-2 border-brand-500 rounded-sm" />
-                  <div className="absolute inset-3 grid grid-cols-6 gap-0.5">
-                    {Array.from({ length: 36 }).map((_, i) => (
-                      <div key={i} className="bg-[var(--color-navy-700)] rounded-[1px]" />
-                    ))}
-                  </div>
-                  <div className="qr-scan-line" />
-                </div>
-
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-badge bg-[rgba(16,185,129,0.15)] border border-[rgba(16,185,129,0.30)]">
-                  <span className="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse" />
-                  <span className="text-[var(--color-success)] text-xs font-medium">
-                    {t('hero.demo_attendance')}
-                  </span>
-                </div>
-
-                <div className="absolute bottom-0 inset-x-0 h-12 bg-surface-1 border-t border-[var(--color-border-subtle)] flex items-center justify-center">
-                  <div className="flex gap-3">
-                    {[0, 1, 2].map((i) => (
-                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-brand-500' : 'bg-[var(--color-surface-4)]'}`} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      <section className="bg-surface-1 border-y border-[var(--color-border-subtle)] py-8">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
-              <div key={i} className="flex flex-col items-center text-center gap-1">
-                <span className="text-2xl md:text-3xl font-bold text-white">{stat.value}</span>
-                <span className="text-sm text-[var(--color-text-secondary)]">{stat.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="features" className="bg-surface-0 py-20 md:py-28">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('features.title')}</h2>
-            <p className="text-[var(--color-text-secondary)] text-lg">{t('features.subtitle')}</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featureItems.map(({ key, icon }) => (
-              <div
-                key={key}
-                className="card p-6 flex flex-col gap-4 transition-all duration-normal ease-out hover:shadow-brand-sm hover:border-[var(--color-border-brand)] group cursor-default"
-              >
-                <div className="w-11 h-11 rounded-lg flex items-center justify-center bg-[rgba(13,148,136,0.12)] text-brand-400 group-hover:bg-[rgba(13,148,136,0.18)] transition-colors duration-fast">
-                  {icon}
-                </div>
-                <h3 className="text-lg font-semibold text-white">{t(`features.items.${key}.title`)}</h3>
-                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                  {t(`features.items.${key}.desc`)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-surface-1 py-20 md:py-28">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('pricing.title')}</h2>
-            <p className="text-[var(--color-text-secondary)] text-lg">{t('pricing.subtitle')}</p>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-2 mb-12">
-            {(['monthly', 'quarterly', 'annual'] as const).map((period) => (
-              <button
-                key={period}
-                type="button"
-                onClick={() => setBillingPeriod(period)}
-                className={`relative rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
-                  billingPeriod === period
-                    ? 'bg-[var(--color-brand-500)] text-white'
-                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-brand)] border border-transparent'
-                }`}
-              >
-                {tBilling(`period.${period}`)}
-                {period === 'quarterly' && (
-                  <span className="absolute -top-2 start-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400 text-teal-950 whitespace-nowrap">
-                    {tBilling('period.recommended')}
-                  </span>
-                )}
-                {period === 'monthly' && (
-                  <span className="absolute -top-2 end-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-surface-3)] text-[var(--color-text-primary)] whitespace-nowrap">
-                    {tBilling('period.monthlyPremium')}
-                  </span>
-                )}
-                {period === 'annual' && (
-                  <span className="absolute -top-2 end-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400 text-teal-950 whitespace-nowrap">
-                    {tBilling('period.twoMonthsFree')}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {LANDING_PLAN_ORDER.map((planKey) => {
-              const plan = PLANS[planKey];
-              const isTop = planKey === 'top_centers';
-              const isEnterprise = planKey === 'enterprise';
-              const isPro = planKey === 'pro';
-              const displayName = locale === 'ar' ? plan.arabicName : plan.englishName;
-              const perWeek = getPerStudentWeeklyCost(planKey);
-              const price = !isTop ? getPlanPrice(planKey, billingPeriod) : 0;
-              const annualEq = !isTop ? getAnnualMonthlyEquivalent(planKey) : 0;
-              return (
+      <section
+        id="how-it-works"
+        className="chq-fade-in scroll-mt-20 px-4 py-16 md:px-6 md:py-24"
+      >
+        <div className="mx-auto max-w-5xl">
+          <h2 className="mb-10 text-center text-2xl font-bold text-white md:mb-14 md:text-3xl">
+            {m('howTitle')}
+          </h2>
+          <div className="flex flex-col items-center gap-10 md:flex-row md:items-start md:justify-center md:gap-0">
+            {[
+              { n: '١', title: m('step1Title'), desc: m('step1Desc') },
+              { n: '٢', title: m('step2Title'), desc: m('step2Desc') },
+              { n: '٣', title: m('step3Title'), desc: m('step3Desc') },
+            ].flatMap((step, idx) => {
+              const block = (
                 <div
-                  key={planKey}
-                  className={[
-                    'card p-6 flex flex-col gap-5 relative',
-                    'transition-all duration-normal ease-out',
-                    isPro ? 'border-[var(--color-brand-500)] shadow-brand-md ring-1 ring-[var(--color-brand-500)]' : '',
-                    isEnterprise || isTop ? 'border-[var(--color-gold-500)] shadow-gold-sm ring-1 ring-[var(--color-gold-500)]' : '',
-                  ].join(' ')}
+                  key={`step-${idx}`}
+                  className="flex max-w-xs flex-col items-center text-center md:max-w-[220px] md:shrink-0"
                 >
-                  {isPro && (
-                    <span className="absolute -top-3 start-1/2 -translate-x-1/2 badge badge-brand text-xs whitespace-nowrap">
-                      {t('pricingRecommendedBadge')}
-                    </span>
-                  )}
-
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <span
-                      className={`text-xl font-bold text-white ${locale === 'ar' ? "font-['Cairo',sans-serif]" : ''}`}
-                    >
-                      {displayName}
-                    </span>
-                    <span className="badge badge-neutral text-xs self-start sm:self-auto">
-                      {isTop
-                        ? t('topCentersLimit')
-                        : t('studentsLimit', { count: formatPrice(plan.weeklyStudentLimit ?? 0) })}
-                    </span>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-600 text-lg font-bold text-white">
+                    {step.n}
                   </div>
-
-                  {isTop ? (
-                    <span className="text-2xl font-bold text-gold-400">{t('pricing.plans.top_centers.price_month')}</span>
-                  ) : (
-                    <div className="flex flex-col gap-1">
-                      {billingPeriod === 'annual' ? (
-                        <>
-                          <span className="line-through font-mono text-base text-[var(--color-text-tertiary)]" dir="ltr">
-                            {t('annualPriceMo', { amount: formatPrice(plan.monthlyListPrice) })}
-                          </span>
-                          <span className="text-3xl font-bold text-white font-mono" dir="ltr">
-                            {t('annualPriceMo', { amount: formatPrice(annualEq) })}
-                          </span>
-                          <span className="text-xs text-[var(--color-text-tertiary)]">{t('billedAnnually')}</span>
-                        </>
-                      ) : (
-                        <span className="text-3xl font-bold text-white font-mono" dir="ltr">
-                          {t('pricingPerPeriod', { amount: formatPrice(price) })}
-                        </span>
-                      )}
-                      <span className="text-xs text-[var(--color-text-tertiary)]">{t('allInclusiveBadge')}</span>
-                      {perWeek != null && (
-                        <span className="text-sm text-[var(--color-text-secondary)]">
-                          {tBilling('perStudentWeekly', { price: formatPrice(perWeek) })}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="divider" />
-
-                  {isTop ? (
-                    <Link
-                      href="/signup"
-                      className="btn btn-ghost w-full py-2.5 mt-auto border-[var(--color-gold-500)] text-gold-400"
-                    >
-                      {t('pricing.enterprise_cta')}
-                    </Link>
-                  ) : (
-                    <Link href="/signup" className="btn btn-primary w-full py-2.5 mt-auto">
-                      {t('pricing.cta')}
-                    </Link>
-                  )}
+                  <h3 className="mt-4 text-base font-semibold text-white">{step.title}</h3>
+                  <p className="mt-1 text-sm text-slate-400">{step.desc}</p>
                 </div>
               );
+              if (idx < 2) {
+                return [
+                  block,
+                  <div
+                    key={`line-${idx}`}
+                    className="hidden h-0 w-12 shrink-0 self-center border-t border-dashed border-teal-600/50 md:mx-4 md:mt-6 md:block md:w-16 lg:w-24"
+                    aria-hidden
+                  />,
+                ];
+              }
+              return [block];
             })}
           </div>
         </div>
       </section>
 
-      <section className="bg-surface-2 border-y border-[var(--color-border-default)] py-20">
-        <div className="container mx-auto px-4 md:px-8 text-center max-w-2xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('cta.title')}</h2>
-          <p className="text-[var(--color-text-secondary)] text-lg mb-8">{t('cta.subtitle')}</p>
-          <Link href="/signup" className="btn btn-primary px-8 py-4 text-lg shadow-brand-md">
-            {t('cta.button')}
-          </Link>
-          <p className="text-[var(--color-text-tertiary)] text-sm mt-4">{t('cta.note')}</p>
+      <section
+        id="features"
+        className="chq-fade-in scroll-mt-20 border-t border-slate-800/40 px-4 py-16 md:px-6 md:py-24"
+      >
+        <div className="mx-auto max-w-6xl">
+          <h2 className="mb-10 text-center text-2xl font-bold text-white md:mb-14 md:text-3xl">
+            {t('featuresTitle')}
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+            {featureKeys.map((k) => (
+              <div
+                key={k}
+                className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-5"
+              >
+                <div className="h-10 w-10 rounded-lg bg-teal-600/25 ring-1 ring-teal-600/30" aria-hidden />
+                <h3 className="mt-3 text-base font-semibold text-white">
+                  {m(`${k}Title` as 'f1Title')}
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">{m(`${k}Desc` as 'f1Desc')}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <footer className="bg-surface-0 border-t border-[var(--color-border-subtle)] py-8">
-        <div className="container mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <span className="text-[var(--color-text-secondary)] text-sm">{t('footer.tagline')}</span>
-          <span className="font-bold text-white">
-            Center<span className="text-brand-500">HQ</span>
-          </span>
-          <span className="text-[var(--color-text-tertiary)] text-xs">{t('footer.rights')}</span>
+      <section
+        id="pricing-preview"
+        className="chq-fade-in scroll-mt-20 px-4 py-16 md:px-6 md:py-24"
+      >
+        <div className="mx-auto max-w-5xl text-center">
+          <h2 className="text-2xl font-bold text-white md:text-3xl">{t('pricingTitle')}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-slate-400 md:text-base">
+            {m('pricingSubtitle')}
+          </p>
+          <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+            <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 text-start">
+              <span className="inline-block rounded-full border border-slate-600 bg-slate-900/50 px-2 py-0.5 text-xs text-slate-400">
+                {m('nanoBadge')}
+              </span>
+              <p className="mt-3 text-lg font-semibold text-white">{m('nanoName')}</p>
+              <p className="mt-2 text-2xl font-bold text-teal-400">{m('nanoPrice')}</p>
+              <p className="text-xs text-slate-500">{m('nanoPeriod')}</p>
+              <p className="mt-3 text-sm text-slate-400">{m('nanoStudents')}</p>
+            </div>
+            <div className="rounded-2xl border border-teal-600/60 bg-slate-800/40 p-6 text-start ring-1 ring-teal-600/30">
+              <span className="inline-block rounded-full border border-teal-600/50 bg-teal-950/40 px-2 py-0.5 text-xs text-teal-400">
+                {m('popularBadge')}
+              </span>
+              <p className="mt-3 text-lg font-semibold text-white">{m('starterName')}</p>
+              <p className="mt-2 text-2xl font-bold text-teal-400">{m('starterPrice')}</p>
+              <p className="mt-3 text-sm text-slate-400">{m('starterStudents')}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 text-start">
+              <p className="mt-3 text-lg font-semibold text-white">{m('proName')}</p>
+              <p className="mt-2 text-2xl font-bold text-teal-400">{m('proPrice')}</p>
+              <p className="mt-3 text-sm text-slate-400">{m('proStudents')}</p>
+            </div>
+          </div>
+          <Link
+            href="/signup"
+            className="mt-10 inline-flex rounded-xl bg-slate-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-600 btn-press chq-focus"
+          >
+            {m('pricingCta')}
+          </Link>
+        </div>
+      </section>
+
+      <section className="chq-fade-in bg-gradient-to-b from-transparent to-teal-900/20 px-4 py-16 md:px-6 md:py-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-2xl font-bold text-white md:text-3xl">{t('finalCtaTitle')}</h2>
+          <p className="mt-3 text-sm text-slate-400 md:text-base">{t('finalCtaDesc')}</p>
+          <Link
+            href="/signup"
+            className="mt-8 inline-flex rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+          >
+            {m('finalCtaButton')}
+          </Link>
+        </div>
+      </section>
+
+      <footer className="chq-fade-in border-t border-slate-800/60 px-4 py-10 md:px-6">
+        <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center text-sm text-slate-400">
+          <p className="text-slate-300">{m('footerTagline')}</p>
+          <p className="text-xs text-slate-500">{m('footerEhgi')}</p>
+          <a
+            href={WA_SUPPORT}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-400 transition-colors hover:text-teal-300 btn-press chq-focus rounded-lg px-2 py-1"
+          >
+            {m('footerSupportLabel')}: +20 122 060 1410
+          </a>
+          <p className="text-xs text-slate-600">{m('footerRights')}</p>
         </div>
       </footer>
     </main>
