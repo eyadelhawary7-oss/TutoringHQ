@@ -1360,6 +1360,8 @@
     "amountAddedToBalance": "{amount} added to balance"
   },
   "scanner": {
+    "offline": "Offline — attendance saved locally",
+    "scansToday": "recorded today",
     "checkIn": "Check In",
     "loadingRetry": "Loading Retry",
     "manualIdPlaceholder": "Manual Id Placeholder",

@@ -4156,6 +4156,8 @@
     "amountAddedToBalance": "تمت إضافة {amount} إلى الرصيد"
   },
   "scanner": {
+    "offline": "وضع عدم الاتصال — الحضور محفوظ محلياً",
+    "scansToday": "حضور مسجل اليوم",
     "checkIn": "فحص في",
     "loadingRetry": "جاري التحميل إعادة",
     "manualIdPlaceholder": "Manual Id Placeholder",

@@ -113,6 +113,8 @@ export default function ScanPage() {
   const [scanFrameState, setScanFrameState] = useState<'idle' | 'success' | 'error'>('idle');
   const [lastSuccessStudentName, setLastSuccessStudentName] = useState('');
   const [successFlashTick, setSuccessFlashTick] = useState(0);
+  const [showFlash, setShowFlash] = useState(false);
+  const [scanCount, setScanCount] = useState(0);
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
     if (scanFrameState !== 'success') return;
@@ -291,6 +293,15 @@ export default function ScanPage() {
     }
   }, []);
 
+  const triggerAttendanceRecordedFeedback = useCallback(() => {
+    setShowFlash(true);
+    window.setTimeout(() => setShowFlash(false), 300);
+    setScanCount((c) => c + 1);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  }, []);
+
   const normalizeForLookup = (input: string): { byId: boolean; value: string } => {
     const trimmed = input.trim();
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -389,7 +400,7 @@ export default function ScanPage() {
       if (!student) {
         setError(t('studentNotFound'));
         playBeep(false);
-        vibrate([100, 50, 100]);
+        vibrate([50, 50, 50]);
         setScanFrameState('error');
         if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
         resultTimeoutRef.current = setTimeout(() => {
@@ -500,7 +511,7 @@ export default function ScanPage() {
         }
         setLastSuccessStudentName(studentForDisplay.name);
         playBeep(true);
-        vibrate(100);
+        triggerAttendanceRecordedFeedback();
         if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
         resultTimeoutRef.current = setTimeout(() => {
           setScanFrameState('idle');
@@ -536,7 +547,7 @@ export default function ScanPage() {
     } catch {
       setError(t('scanError'));
       playBeep(false);
-      vibrate([100, 50, 100]);
+      vibrate([50, 50, 50]);
       setScanFrameState('error');
       if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
       resultTimeoutRef.current = setTimeout(() => {
@@ -556,7 +567,7 @@ export default function ScanPage() {
       );
       isProcessingRef.current = false;
     }
-  }, [centerId, userId, t, ts, playBeep, vibrate]);
+  }, [centerId, userId, t, ts, playBeep, vibrate, triggerAttendanceRecordedFeedback]);
 
   const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee: number }) => {
     if (!scannedStudent || !centerId || !userId) return;
@@ -636,7 +647,7 @@ export default function ScanPage() {
       }
       setLastSuccessStudentName(studentForDisplay.name);
       playBeep(true);
-      vibrate(100);
+      triggerAttendanceRecordedFeedback();
       if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
       resultTimeoutRef.current = setTimeout(() => {
         setScanFrameState('idle');
@@ -668,7 +679,7 @@ export default function ScanPage() {
       setManualIdInput('');
       manualInputRef.current?.focus();
     }
-  }, [scannedStudent, centerId, userId, mode, playBeep, vibrate]);
+  }, [scannedStudent, centerId, userId, mode, playBeep, vibrate, triggerAttendanceRecordedFeedback]);
 
   const handleAllowLateEntry = async () => {
     if (!scannedStudent || !centerId || !userId || !canAllowLateEntry) return;
@@ -717,6 +728,7 @@ export default function ScanPage() {
         payment_status: 'late_entry_granted',
         last_payment_method: null,
       });
+      triggerAttendanceRecordedFeedback();
     } catch {
       setError(t('scanError'));
     } finally {
@@ -815,6 +827,7 @@ export default function ScanPage() {
       setAddedAmountToBalance(isCash ? 0 : paymentAmount);
       setScannedStudent({ ...scannedStudent, payment_status: isCash ? 'paid' : 'pending', last_payment_method: method });
       setIsProcessing(false);
+      triggerAttendanceRecordedFeedback();
 
       dismissTimerRef.current = setTimeout(() => {
         setScannedStudent(null);
@@ -854,14 +867,12 @@ export default function ScanPage() {
 
   return (
     <>
+      {showFlash && <div className="chq-flash-success" aria-hidden />}
       <div className="bg-[var(--color-surface-0)] min-h-screen flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         {!isOnline && (
-          <div className="bg-[var(--color-warning)] text-white text-xs font-medium px-4 py-2 flex items-center gap-2 justify-center">
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <line x1="1" y1="1" x2="23" y2="23" />
-              <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" />
-            </svg>
-            {ts('offline_banner')}
+          <div className="chq-fade-in mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-amber-800/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-300 sm:mx-0">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+            <span>{ts('offline')}</span>
           </div>
         )}
 
@@ -952,8 +963,15 @@ export default function ScanPage() {
           )}
 
           <div className="flex flex-col items-center gap-4 flex-1">
+            {scanCount > 0 ? (
+              <div className="mb-2 w-full max-w-sm text-center text-xs text-slate-400">
+                <span className="rounded-full border border-teal-800/40 bg-teal-900/40 px-2 py-0.5 text-xs text-teal-400">
+                  {scanCount.toLocaleString('en-US')} {ts('scansToday')}
+                </span>
+              </div>
+            ) : null}
             <div
-              className={`scanner-frame w-full max-w-sm aspect-square bg-[var(--color-surface-2)] ${scannerFrameTone} ${mode !== 'camera' ? 'hidden' : ''}`}
+              className={`scanner-frame chq-scanner-frame w-full max-w-sm aspect-square bg-[var(--color-surface-2)] ${scannerFrameTone} ${mode !== 'camera' ? 'hidden' : ''}`}
               aria-hidden={mode !== 'camera'}
             >
               <div className="absolute inset-0 z-0 min-h-0">
@@ -964,12 +982,12 @@ export default function ScanPage() {
                   fillContainer
                 />
               </div>
-              <div className="scan-corner scan-corner-tl z-10 pointer-events-none" />
-              <div className="scan-corner scan-corner-tr z-10 pointer-events-none" />
-              <div className="scan-corner scan-corner-bl z-10 pointer-events-none" />
-              <div className="scan-corner scan-corner-br z-10 pointer-events-none" />
+              <div className="chq-scanner-corner chq-scanner-corner-tl z-10 pointer-events-none" />
+              <div className="chq-scanner-corner chq-scanner-corner-tr z-10 pointer-events-none" />
+              <div className="chq-scanner-corner chq-scanner-corner-bl z-10 pointer-events-none" />
+              <div className="chq-scanner-corner chq-scanner-corner-br z-10 pointer-events-none" />
               {scanFrameState !== 'success' && scanFrameState !== 'error' && (
-                <div className="scan-line z-20 pointer-events-none" />
+                <div className="chq-scan-line z-20 pointer-events-none" />
               )}
               {scanFrameState === 'success' && (
                 <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[rgba(16,185,129,0.08)] scan-result">

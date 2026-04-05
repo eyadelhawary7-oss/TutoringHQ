@@ -95,7 +95,7 @@ export default function ScanResultScreen({
   // ─── GREEN (paid) ───
   if (isPaid) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6" style={{ backgroundColor: GREEN }}>
+      <div className="chq-spring-in fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6" style={{ backgroundColor: GREEN }}>
         <div className="relative w-28 h-28 flex items-center justify-center mb-6">
           {/* Radial pulse: 3 repeats, 600ms each */}
           {[0, 1, 2].map((i) => (
@@ -131,7 +131,7 @@ export default function ScanResultScreen({
   // ─── YELLOW (late entry) ───
   if (isLateEntryGranted) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6" style={{ backgroundColor: YELLOW }}>
+      <div className="chq-spring-in fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6" style={{ backgroundColor: YELLOW }}>
         <div
           className="w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center mb-6"
           style={{ animation: 'scanner-yellow-glow 800ms ease-in-out 2' }}
@@ -159,7 +159,7 @@ export default function ScanResultScreen({
       : 'instapay';
     return (
       <div
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6"
+        className="chq-spring-in fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6"
         style={{ backgroundColor: PURPLE, animation: 'scanner-purple-fade 400ms ease-out forwards' }}
       >
         <div className="w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center mb-6" style={{ animation: 'scanner-purple-fade 400ms ease-out forwards' }}>
@@ -184,7 +184,7 @@ export default function ScanResultScreen({
   const fee = selectedGroup?.fee ?? student.fee ?? 0;
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center text-white p-6 overflow-y-auto"
+      className="chq-spring-in fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto p-6 text-white"
       style={{ backgroundColor: RED, animation: 'scanner-red-shake 400ms ease-in-out' }}
     >
       <div className="w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center mb-6">
