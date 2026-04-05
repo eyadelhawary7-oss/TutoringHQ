@@ -53,8 +53,8 @@ export default function Step3QR({
               <QrCode className="w-8 h-8 text-[var(--color-text-secondary)]" />
             )}
           </div>
-          <div className="text-sm font-bold text-center truncate w-full">{studentName || '—'}</div>
-          <div className="text-xs font-mono opacity-80">{studentNumber || '—'}</div>
+          <div className="text-sm font-bold text-center truncate w-full">{studentName || '-'}</div>
+          <div className="text-xs font-mono opacity-80">{studentNumber || '-'}</div>
           <div className="text-[10px] opacity-60 mt-1">{centerName || 'CenterHQ'}</div>
         </div>
       </div>

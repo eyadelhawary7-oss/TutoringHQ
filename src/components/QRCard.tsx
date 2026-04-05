@@ -96,7 +96,7 @@ export function QRCard({
             fontFamily: 'Georgia, "Times New Roman", serif',
           }}
         >
-          {student.student_number || '—'}
+          {student.student_number || '-'}
         </div>
       </div>
 

@@ -13,5 +13,5 @@ export default function BalanceBadge({ amount, currency = 'EGP' }: BalanceBadgeP
       </span>
     );
   }
-  return <span className="text-slate-400">—</span>;
+  return <span className="text-slate-400">-</span>;
 }

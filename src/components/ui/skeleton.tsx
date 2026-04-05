@@ -1,5 +1,5 @@
 // Reusable skeleton primitives built on the S1 .skeleton class.
-// All components are server-safe — no 'use client' needed.
+// All components are server-safe - no 'use client' needed.
 
 type SkeletonProps = {
   className?: string
@@ -15,7 +15,7 @@ export function SkeletonText({ className = '' }: SkeletonProps) {
   )
 }
 
-// Circle — for avatars, icons
+// Circle - for avatars, icons
 export function SkeletonCircle({ className = '' }: SkeletonProps) {
   return (
     <div
@@ -25,7 +25,7 @@ export function SkeletonCircle({ className = '' }: SkeletonProps) {
   )
 }
 
-// Generic block — for images, charts, any rectangle
+// Generic block - for images, charts, any rectangle
 export function SkeletonBlock({ className = '' }: SkeletonProps) {
   return (
     <div
@@ -35,7 +35,7 @@ export function SkeletonBlock({ className = '' }: SkeletonProps) {
   )
 }
 
-// Stat card — matches the 4-up stat card layout on dashboard
+// Stat card - matches the 4-up stat card layout on dashboard
 export function SkeletonStat() {
   return (
     <div className="card p-5 flex flex-col gap-3" aria-hidden="true">
@@ -49,7 +49,7 @@ export function SkeletonStat() {
   )
 }
 
-// List row — matches student/payment list item shape
+// List row - matches student/payment list item shape
 export function SkeletonRow() {
   return (
     <div
@@ -66,7 +66,7 @@ export function SkeletonRow() {
   )
 }
 
-// Page header — title + optional action button
+// Page header - title + optional action button
 export function SkeletonPageHeader() {
   return (
     <div

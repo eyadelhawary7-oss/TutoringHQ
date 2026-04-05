@@ -130,7 +130,7 @@ export default function RoomsPage() {
                 <button className="p-1.5 hover:bg-[var(--color-surface-2)] rounded-lg text-slate-400" aria-label="More"><MoreVertical className="w-4 h-4" /></button>
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)]">{r.name}</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('maxCapacity')}: {r.capacity ?? '—'} {tCommon('students')}</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('maxCapacity')}: {r.capacity ?? '-'} {tCommon('students')}</p>
             </div>
           ))}
         </div>
@@ -168,7 +168,7 @@ export default function RoomsPage() {
                   min={1}
                   value={addCapacity}
                   onChange={e => setAddCapacity(e.target.value)}
-                  placeholder="—"
+                  placeholder="-"
                   className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>

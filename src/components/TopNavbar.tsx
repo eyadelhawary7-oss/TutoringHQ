@@ -128,7 +128,7 @@ export default function TopNavbar() {
         </Link>
       </div>
 
-      {/* Center: Nav items (hidden on mobile) — admin-only for super admins */}
+      {/* Center: Nav items (hidden on mobile) - admin-only for super admins */}
       <div className="hidden md:flex flex-1 items-center justify-center gap-0.5 overflow-x-auto scrollbar-hide min-w-0">
         {isSuperAdminOnly && (
           <Link

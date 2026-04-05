@@ -39,6 +39,7 @@ function formatDistrictLabel(raw: string): string {
 
 export default function FounderGrowthPanel(props: GrowthPanelResponse) {
   const t = useTranslations('founderDash');
+  const tCommon = useTranslations('common');
 
   const stages = Array.isArray(props.pipeline?.stages) ? props.pipeline.stages : [];
   const totalActive = n(props.pipeline?.totalActive);
@@ -58,7 +59,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
     if (centerCount >= 2) return t('geoGrowing');
     if (centerCount === 1) return t('geoSeeding');
     if (leadCount > 0) return t('geoOpportunity');
-    return '—';
+    return tCommon('notSet');
   };
 
   const convRate = (from: number, to: number): string =>

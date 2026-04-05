@@ -110,7 +110,7 @@ export default function ParentPortalPage({ params }: { params: Promise<{ token: 
             <ul className="space-y-2">
               {data.next_sessions.map((s, i) => (
                 <li key={i} className="flex justify-between text-sm">
-                  <span>{s.day} — {s.time}</span>
+                  <span>{s.day} - {s.time}</span>
                   <span className="text-[var(--color-text-secondary)]">{s.group}</span>
                 </li>
               ))}

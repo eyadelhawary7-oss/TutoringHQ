@@ -36,7 +36,7 @@ function formatRatePct(row: {
   const fee = row.referred_plan_fee != null ? Number(row.referred_plan_fee) : 0;
   const amt = row.commission_amount;
   if (fee > 0 && amt >= 0) return `${((amt / fee) * 100).toFixed(1)}%`;
-  return '—';
+  return '-';
 }
 
 type ReferralRow = {
@@ -266,7 +266,7 @@ export default function AdminReferralsPage() {
     if (st === 'hold') return t('statusHold');
     if (st === 'withdrawable') return t('statusWithdrawable');
     if (st === 'forfeited') return t('statusForfeited');
-    return row.status ?? '—';
+    return row.status ?? '-';
   };
 
   return (
@@ -370,7 +370,7 @@ export default function AdminReferralsPage() {
                                 </span>
                               </td>
                               <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
-                                {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
+                                {r.created_at ? new Date(r.created_at).toLocaleDateString() : '-'}
                               </td>
                             </tr>
                           ))}
@@ -602,7 +602,7 @@ export default function AdminReferralsPage() {
                                     {markingId === row.id ? tCommon('loading') : tAdmin('markAsPaid')}
                                   </button>
                                 ) : (
-                                  <span className="text-slate-400">—</span>
+                                  <span className="text-slate-400">-</span>
                                 )}
                               </td>
                             </tr>

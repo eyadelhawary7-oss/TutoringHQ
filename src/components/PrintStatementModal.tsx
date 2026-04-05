@@ -120,14 +120,14 @@ export function PrintStatementModal({
           .select('id, phone')
           .in('id', uniqueIds);
         for (const u of users || []) {
-          nameMap[u.id] = (u as { id: string; phone?: string }).phone ?? '—';
+          nameMap[u.id] = (u as { id: string; phone?: string }).phone ?? '-';
         }
       }
 
       const payments = (rawPayments || []).map((p) => ({
         paid_at: p.paid_at,
         amount: Number(p.amount ?? 0),
-        method: p.method ?? '—',
+        method: p.method ?? '-',
         status: (p.status === 'confirmed' || p.status === 'pending' ? p.status : 'pending') as 'confirmed' | 'pending',
         recorded_by_name: p.recorded_by ? (nameMap[p.recorded_by] ?? null) : null,
       }));
@@ -166,7 +166,7 @@ export function PrintStatementModal({
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-[var(--color-text-primary)]">
-              طباعة كشف الحساب — {studentName}
+              طباعة كشف الحساب - {studentName}
             </h3>
             <button
               onClick={onClose}

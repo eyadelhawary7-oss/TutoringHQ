@@ -93,7 +93,7 @@ export default function StatusPage() {
     <div className="min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] px-6 py-4">
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          CenterHQ — {pickLocale('حالة المنصة', 'Platform Status')}
+          CenterHQ - {pickLocale('حالة المنصة', 'Platform Status')}
         </h1>
         <div className="flex items-center gap-3 mt-2">
           <StatusIcon status={d.overall as Status} />
@@ -215,7 +215,7 @@ export default function StatusPage() {
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       {new Date(inc.started_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}
                       {inc.resolved_at && (
-                        <> — {pickLocale('تم الحل', 'Resolved')} {new Date(inc.resolved_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}</>
+                        <> - {pickLocale('تم الحل', 'Resolved')} {new Date(inc.resolved_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}</>
                       )}
                     </p>
                   </div>

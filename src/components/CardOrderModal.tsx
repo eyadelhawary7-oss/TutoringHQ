@@ -637,10 +637,10 @@ export function CardOrderModal({
                             )}
                           </div>
                           <div className="mt-2 text-center font-bold text-[var(--color-text-primary)] text-sm">
-                            {selectedStudents[0]?.name ?? '—'}
+                            {selectedStudents[0]?.name ?? '-'}
                           </div>
                           <div className="text-[10px] font-mono text-teal-600">
-                            {selectedStudents[0]?.student_number ?? '—'}
+                            {selectedStudents[0]?.student_number ?? '-'}
                           </div>
                         </div>
                       </div>
@@ -772,7 +772,7 @@ export function CardOrderModal({
                   {selectedStudents.map((s) => (
                     <div key={s.id} className="flex justify-between text-sm py-1 border-b border-border last:border-0">
                       <span className="font-medium">{s.name}</span>
-                      <span className="font-mono text-[var(--color-text-secondary)]">{s.student_number || '—'}</span>
+                      <span className="font-mono text-[var(--color-text-secondary)]">{s.student_number || '-'}</span>
                     </div>
                   ))}
                 </div>
@@ -814,7 +814,7 @@ export function CardOrderModal({
                       className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 flex items-center justify-center gap-2"
                     >
                       <CreditCard size={18} aria-hidden />
-                      {t('payNow')} — {totalAmount.toLocaleString('en-US')} EGP
+                      {t('payNow')} - {totalAmount.toLocaleString('en-US')} EGP
                     </button>
                   )}
                   {paymentStatus === 'loading' && (

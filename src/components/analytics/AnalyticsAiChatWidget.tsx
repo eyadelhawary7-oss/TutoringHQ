@@ -148,7 +148,7 @@ export default function AnalyticsAiChatWidget() {
                             <tr key={i} className="border-b border-slate-100 dark:border-slate-700/80 last:border-0">
                               {Object.keys(m.rows![0]).map((col) => (
                                 <td key={col} className="px-2 py-1.5 text-start">
-                                  {String((row as Record<string, unknown>)[col] ?? '—')}
+                                  {String((row as Record<string, unknown>)[col] ?? '-')}
                                 </td>
                               ))}
                             </tr>

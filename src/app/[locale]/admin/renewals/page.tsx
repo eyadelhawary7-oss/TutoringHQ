@@ -316,7 +316,7 @@ export default function AdminRenewalsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-[var(--color-surface-1)] rounded-xl shadow-xl max-w-md w-full p-6 border border-border">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-lg">{t('recordPayment')} — {recordModal.name}</h3>
+              <h3 className="font-semibold text-lg">{t('recordPayment')} - {recordModal.name}</h3>
               <button onClick={() => setRecordModal(null)} className="p-1 rounded hover:bg-muted">
                 <X size={20} />
               </button>

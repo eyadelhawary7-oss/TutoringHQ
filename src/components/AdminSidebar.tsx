@@ -295,7 +295,7 @@ export function AdminSidebar({
 
   return (
     <>
-      {/* Mobile top bar — matches center shell pattern */}
+      {/* Mobile top bar - matches center shell pattern */}
       <header className="lg:hidden fixed top-0 start-0 end-0 z-40 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] min-h-14 flex items-center justify-center print:hidden relative px-4">
         <div className="absolute start-4 top-1/2 -translate-y-1/2 z-10 lg:hidden">
           {openMenu ? (
@@ -346,9 +346,9 @@ export function AdminSidebar({
             {isUserMenuOpen ? (
               <div className="absolute top-12 start-0 bg-[var(--color-surface-1)] rounded-xl shadow-lg border border-[var(--color-border-subtle)] py-1 z-50 min-w-[200px]">
                 <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
-                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{userName || '—'}</p>
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{userName || '-'}</p>
                   <p className="text-xs text-[var(--color-text-secondary)]" dir="ltr">
-                    {userPhone || '—'}
+                    {userPhone || '-'}
                   </p>
                 </div>
                 <button

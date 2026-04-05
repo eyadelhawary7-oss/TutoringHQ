@@ -33,7 +33,7 @@ type PlanDraft = {
 };
 
 function fmtMoney(n: number): string {
-  if (!Number.isFinite(n)) return '—';
+  if (!Number.isFinite(n)) return '-';
   return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 

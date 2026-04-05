@@ -36,7 +36,7 @@ function stripLocale(p: string) {
   return p.replace(/^\/(ar|en)(\/|$)/, '$2') || '/';
 }
 
-/** Exact path segment match — e.g. ceo-dashboard does not activate dashboard tab */
+/** Exact path segment match - e.g. ceo-dashboard does not activate dashboard tab */
 function isTabActive(cleanPath: string, segment: string) {
   return cleanPath.split('/').filter(Boolean).includes(segment);
 }

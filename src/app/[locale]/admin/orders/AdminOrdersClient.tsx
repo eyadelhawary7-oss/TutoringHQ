@@ -417,8 +417,8 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     <CardTemplatePreview
                       centerName={slideOrder.center_name}
                       centerLogo={slideOrder.center_logo_url}
-                      studentName={slideOrder.students[0]?.name || '—'}
-                      studentNumber={slideOrder.students[0]?.student_number || '—'}
+                      studentName={slideOrder.students[0]?.name || '-'}
+                      studentNumber={slideOrder.students[0]?.student_number || '-'}
                       qrCode={slideOrder.students[0]?.qr_code}
                       color={slideOrder.card_color}
                       className="scale-[0.85] origin-top"
@@ -459,7 +459,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     {tIdCards('deliveryAddress')}
                   </h4>
                   <p className="text-sm text-[var(--color-text-primary)]">
-                    {slideOrder.delivery_address || '—'}
+                    {slideOrder.delivery_address || '-'}
                   </p>
                 </div>
                 {slideOrder.notes && (
@@ -531,7 +531,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                   </select>
                   {slideOrder.vendor_sent_at ? (
                     <p className="text-xs text-teal-600 dark:text-teal-400 mt-2">
-                      ✓ {tIdCards('sentToVendor')} —{' '}
+                      ✓ {tIdCards('sentToVendor')} -{' '}
                       {new Date(slideOrder.vendor_sent_at).toLocaleString(
                         locale === 'ar' ? 'en-US' : 'en-US',
                         { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },

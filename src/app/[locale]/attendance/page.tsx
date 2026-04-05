@@ -314,7 +314,7 @@ export default function AttendancePage() {
             r.group.subject || '',
             sb.date,
             String(sb.present),
-            r.sessionsCount > 0 ? `${Math.round((sb.present / r.avgAttendance) * 100)}%` : '—',
+            r.sessionsCount > 0 ? `${Math.round((sb.present / r.avgAttendance) * 100)}%` : tCommon('notSet'),
           ]);
         });
       });
@@ -437,7 +437,7 @@ export default function AttendancePage() {
                             </div>
                           ) : null}
                           {!r.student.student_number && !r.student.phone ? (
-                            <div className="text-xs text-[var(--color-text-secondary)]">—</div>
+                            <div className="text-xs text-[var(--color-text-secondary)]">-</div>
                           ) : null}
                         </td>
                         <td className="py-3.5 px-4 text-sm font-mono font-bold text-[var(--color-text-primary)] text-end">{r.totalScans}</td>
@@ -471,7 +471,7 @@ export default function AttendancePage() {
                           <td colSpan={5} className="bg-[var(--color-surface-0)] p-4">
                             <div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden">
                               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-subtle)]">
-                                <h4 className="font-semibold text-[var(--color-text-primary)]">{r.student.name} — {t('scanLog')}</h4>
+                                <h4 className="font-semibold text-[var(--color-text-primary)]">{r.student.name} - {t('scanLog')}</h4>
                                 <button onClick={() => setExpandedStudent(null)} className="p-1 hover:bg-[var(--color-surface-2)] rounded">
                                   <X size={18} />
                                 </button>
@@ -493,13 +493,24 @@ export default function AttendancePage() {
                                       return (
                                         <tr key={sc.id} className="border-b border-[var(--color-border-subtle)]">
                                           <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end" dir="ltr">
-                                            {sc.scanned_at ? new Date(sc.scanned_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                                            {sc.scanned_at
+                                              ? new Date(sc.scanned_at).toLocaleString(
+                                                  locale === 'ar' ? 'en-US' : 'en-GB',
+                                                  { dateStyle: 'short', timeStyle: 'short' },
+                                                )
+                                              : tCommon('notSet')}
                                           </td>
-                                          <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end">{grp?.name ?? '—'}</td>
+                                          <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end">
+                                            {grp?.name ?? tCommon('notAvailable')}
+                                          </td>
                                           <td className="py-2 px-4 text-end">
                                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>{badge.label}</span>
                                           </td>
-                                          <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end">—</td>
+                                          <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end">
+                                            <span className="text-slate-600 text-xs" aria-hidden>
+                                              -
+                                            </span>
+                                          </td>
                                         </tr>
                                       );
                                     })}
@@ -563,7 +574,9 @@ export default function AttendancePage() {
                         <td className="py-3.5 px-4 text-sm font-mono font-bold text-[var(--color-text-primary)] text-end">{r.sessionsCount}</td>
                         <td className="py-3.5 px-4 text-sm font-mono text-[var(--color-text-primary)] text-end">{r.avgAttendance}</td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] text-end" dir="ltr">
-                          {r.lastSession ? new Date(r.lastSession).toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB') : '—'}
+                          {r.lastSession
+                            ? new Date(r.lastSession).toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB')
+                            : tCommon('notSet')}
                         </td>
                         <td className="py-3.5 px-4 text-end">
                           <button
@@ -579,7 +592,7 @@ export default function AttendancePage() {
                           <td colSpan={5} className="bg-[var(--color-surface-0)] p-4">
                             <div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden">
                               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-subtle)]">
-                                <h4 className="font-semibold text-[var(--color-text-primary)]">{r.group.name} — {t('sessionBreakdown')}</h4>
+                                <h4 className="font-semibold text-[var(--color-text-primary)]">{r.group.name} - {t('sessionBreakdown')}</h4>
                                 <button onClick={() => setExpandedGroup(null)} className="p-1 hover:bg-[var(--color-surface-2)] rounded">
                                   <X size={18} />
                                 </button>
@@ -608,7 +621,9 @@ export default function AttendancePage() {
                                         </td>
                                         <td className="py-2 px-4 text-[var(--color-text-primary)] font-mono text-end">{sb.present}</td>
                                         <td className="py-2 px-4 text-end">
-                                          {r.avgAttendance > 0 ? `${Math.round((sb.present / r.avgAttendance) * 100)}%` : '—'}
+                                          {r.avgAttendance > 0
+                                            ? `${Math.round((sb.present / r.avgAttendance) * 100)}%`
+                                            : tCommon('notSet')}
                                         </td>
                                       </tr>
                                     ))}

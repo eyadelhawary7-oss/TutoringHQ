@@ -335,8 +335,12 @@ export default function SchedulePage() {
                             className={`relative rounded-lg p-2 cursor-pointer transition-colors group ${isConflict ? 'bg-red-50 border border-red-300 text-red-800' : 'bg-teal-50 border border-teal-200 hover:bg-teal-100'}`}
                           >
                             {isConflict && <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />}
-                            <p className={`text-xs font-semibold truncate pe-5 ${isConflict ? 'text-red-800' : 'text-teal-800'}`}>{slot.group_name || '—'}</p>
-                            <p className={`text-xs truncate ${isConflict ? 'text-red-700' : 'text-teal-600'}`}>{slot.room_name || '—'}</p>
+                            <p className={`text-xs font-semibold truncate pe-5 ${isConflict ? 'text-red-800' : 'text-teal-800'}`}>
+                              {slot.group_name || tCommon('notAvailable')}
+                            </p>
+                            <p className={`text-xs truncate ${isConflict ? 'text-red-700' : 'text-teal-600'}`}>
+                              {slot.room_name || tCommon('notAvailable')}
+                            </p>
                             <p className={`text-xs ${isConflict ? 'text-red-600' : 'text-teal-500'}`}>
                               <span dir="ltr">{formatTimeForDisplay(slot.start_time)} – {formatTimeForDisplay(slot.end_time)}</span>
                             </p>
@@ -381,9 +385,9 @@ export default function SchedulePage() {
                       <div className="font-mono text-teal-600 text-sm">
                         <span dir="ltr">{formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}</span>
                       </div>
-                      <div className="font-bold text-sm mt-0.5">{session.group_name || '—'}</div>
+                      <div className="font-bold text-sm mt-0.5">{session.group_name || tCommon('notAvailable')}</div>
                       <div className="text-xs text-slate-400 mt-0.5">
-                        {session.room_name || '—'} • {session.member_count ?? 0} طالب
+                        {session.room_name || tCommon('notAvailable')} • {session.member_count ?? 0} طالب
                       </div>
                     </div>
                   ))}
@@ -397,9 +401,9 @@ export default function SchedulePage() {
                       <div className="font-mono text-teal-600 text-sm">
                         <span dir="ltr">{formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}</span>
                       </div>
-                      <div className="font-bold text-sm mt-0.5">{session.group_name || '—'}</div>
+                      <div className="font-bold text-sm mt-0.5">{session.group_name || tCommon('notAvailable')}</div>
                       <div className="text-xs text-slate-400 mt-0.5">
-                        {session.room_name || '—'} • {session.member_count ?? 0} طالب
+                        {session.room_name || tCommon('notAvailable')} • {session.member_count ?? 0} طالب
                       </div>
                     </div>
                   ))}

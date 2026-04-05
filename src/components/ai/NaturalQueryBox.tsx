@@ -52,13 +52,13 @@ export default function NaturalQueryBox() {
       const json = await res.json();
 
       if (!res.ok) {
-        setError(json?.message ?? json?.error ?? 'تعذر فهم السؤال — حاول بطريقة مختلفة');
+        setError(json?.message ?? json?.error ?? 'تعذر فهم السؤال - حاول بطريقة مختلفة');
         return;
       }
 
       setResult(json as QueryResponse);
     } catch {
-      setError('تعذر فهم السؤال — حاول بطريقة مختلفة');
+      setError('تعذر فهم السؤال - حاول بطريقة مختلفة');
     } finally {
       setLoading(false);
     }
@@ -171,7 +171,7 @@ export default function NaturalQueryBox() {
                         <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
                           {columns.map((col) => (
                             <td key={col} className="px-4 py-2 text-right">
-                              {String((row as Record<string, unknown>)[col] ?? '—')}
+                              {String((row as Record<string, unknown>)[col] ?? '-')}
                             </td>
                           ))}
                         </tr>

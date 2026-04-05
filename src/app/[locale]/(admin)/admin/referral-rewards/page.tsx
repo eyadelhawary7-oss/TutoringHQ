@@ -325,7 +325,7 @@ export default function ReferralRewardsPage() {
                   {totals.map((row) => (
                     <tr key={row.center_id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
                       <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
-                        {row.center_name || '—'}
+                        {row.center_name || '-'}
                       </td>
                       <td className="px-4 py-3 text-teal-600 dark:text-teal-400 font-mono">
                         {Number(row.pending).toLocaleString('en-US')} {t('staff.currency_suffix')}
@@ -391,11 +391,11 @@ export default function ReferralRewardsPage() {
                         </td>
                       ) : null}
                       <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900 dark:text-white">{ref?.name ?? '—'}</div>
+                        <div className="font-medium text-slate-900 dark:text-white">{ref?.name ?? '-'}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">{ref?.center_code ?? ''}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900 dark:text-white">{rec?.name ?? '—'}</div>
+                        <div className="font-medium text-slate-900 dark:text-white">{rec?.name ?? '-'}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">
                           {rec?.plan ?? ''} {rec?.center_code ? `· ${rec.center_code}` : ''}
                         </div>
@@ -424,7 +424,7 @@ export default function ReferralRewardsPage() {
                               dateStyle: 'short',
                               timeStyle: 'short',
                             })
-                          : '—'}
+                          : '-'}
                       </td>
                     </tr>
                   );

@@ -968,7 +968,7 @@ function SettingsPageContent() {
               </div>
             </div>
 
-            {/* Financial Settings (owner — InstaPay for withdrawals) */}
+            {/* Financial Settings (owner - InstaPay for withdrawals) */}
             {currentUser?.role === 'owner' ? (
               <div className="bg-[var(--color-surface-1)] dark:bg-slate-800 rounded-2xl border border-[var(--color-border-subtle)] p-6 mb-4 card-shadow">
                 <div className="flex items-center gap-4 mb-6">
@@ -1070,7 +1070,7 @@ function SettingsPageContent() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tReferral('yourCode')}</p>
                       <p className="text-2xl font-bold text-teal-600 dark:text-teal-400 font-mono tracking-widest break-all">
-                        {referralData.referralCode || '—'}
+                        {referralData.referralCode || tCommon('notAvailable')}
                       </p>
                     </div>
                     <button
@@ -1255,7 +1255,12 @@ function SettingsPageContent() {
                           ];
                           return (
                             <tr key={member.id} className={member.is_active === false ? 'opacity-60' : ''}>
-                              <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{member.name || '—'}{isSelf && <span className="text-xs text-[var(--color-text-secondary)] ms-1">({t('you')})</span>}</td>
+                              <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">
+                                {member.name || tCommon('notAvailable')}
+                                {isSelf && (
+                                  <span className="text-xs text-[var(--color-text-secondary)] ms-1">({t('you')})</span>
+                                )}
+                              </td>
                               <td className="px-4 py-3 text-[var(--color-text-secondary)] font-mono" dir="ltr">{member.phone}</td>
                               <td className="px-4 py-3"><RoleBadge role={member.role} /></td>
                               <td className="px-4 py-3">
@@ -1304,12 +1309,12 @@ function SettingsPageContent() {
                         })}
                         {pendingInvites.map((inv, idx) => (
                           <tr key={`pending-${idx}`} className="border-b border-[var(--color-border-subtle)]">
-                            <td className="px-4 py-3 text-[var(--color-text-secondary)]">—</td>
+                            <td className="px-4 py-3 text-[var(--color-text-secondary)]">-</td>
                             <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]" dir="ltr">{inv.phone}</td>
                             <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
-                            <td className="px-4 py-3">—</td>
+                            <td className="px-4 py-3">-</td>
                             <td className="px-4 py-3"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">{t('pendingInvite')}</span></td>
-                            <td className="px-4 py-3">—</td>
+                            <td className="px-4 py-3">-</td>
                           </tr>
                         ))}
                       </tbody>

@@ -455,7 +455,7 @@ export default function AcademicPage() {
               <div>
                 <p className="text-xl font-semibold text-[var(--color-text-primary)]">{currentYear.name}</p>
                 <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                  {formatDateAr(currentYear.start_date)} — {formatDateAr(currentYear.end_date)}
+                  {formatDateAr(currentYear.start_date)} - {formatDateAr(currentYear.end_date)}
                 </p>
               </div>
               <button
@@ -544,7 +544,7 @@ export default function AcademicPage() {
                   <span className={`w-3 h-3 rounded ${PERIOD_COLORS[p.period_type]}`} />
                   <span className="font-medium">{p.name}</span>
                   <span className="text-[var(--color-text-secondary)] text-sm">
-                    {formatDateShort(p.start_date)} — {formatDateShort(p.end_date)}
+                    {formatDateShort(p.start_date)} - {formatDateShort(p.end_date)}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -592,7 +592,7 @@ export default function AcademicPage() {
                   key={h.id}
                   className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border-subtle)]"
                 >
-                  <span>{h.name} — {formatHolidayDate(h.date, locale)}</span>
+                  <span>{h.name} - {formatHolidayDate(h.date, locale)}</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
@@ -838,7 +838,7 @@ export default function AcademicPage() {
                   ))}
                 </select>
                 <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-                  {termPreview != null ? t('termSummaryPreviewCount', { count: termPreview }) : '—'}
+                  {termPreview != null ? t('termSummaryPreviewCount', { count: termPreview }) : '-'}
                 </p>
                 <button
                   type="button"

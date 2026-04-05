@@ -179,7 +179,7 @@ export default function WhatsAppPackClient({
   const lastAlertLabel = useCallback(
     (phone: string | null) => {
       const ts = lastAlertMap[phone ?? ''];
-      if (!ts) return '—';
+      if (!ts) return '-';
       const days = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
       if (days === 0) return t('whatsapp.today');
       if (days === 1) return t('whatsapp.yesterday');
@@ -242,7 +242,7 @@ export default function WhatsAppPackClient({
   if (packEnabled) {
     return (
       <div className="min-h-screen bg-[var(--color-surface-0)] px-4 py-6 pb-24 md:pb-8 max-w-5xl mx-auto space-y-8">
-        {/* Section 1 — Status */}
+        {/* Section 1 - Status */}
         <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 sm:p-6 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-teal-600/15 px-3 py-1 text-sm font-medium text-teal-600">
@@ -331,7 +331,7 @@ export default function WhatsAppPackClient({
           </div>
         </section>
 
-        {/* Section 2 — Parents */}
+        {/* Section 2 - Parents */}
         <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-6">
             <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
@@ -415,7 +415,7 @@ export default function WhatsAppPackClient({
                             <tr key={student.id} className="border-b border-[var(--color-border-subtle)]">
                               <td className="px-3 py-2 font-medium">{student.name}</td>
                               <td className="px-3 py-2 text-xs text-slate-400 tabular-nums">
-                                #{student.student_number ?? '—'}
+                                #{student.student_number ?? '-'}
                               </td>
                               <td className="px-3 py-2">
                                 <button
@@ -528,7 +528,7 @@ export default function WhatsAppPackClient({
           )}
         </section>
 
-        {/* Section 3 — Announcement blast (parent_pack_enabled only; composer max 160 chars; sendAnnouncementBlast POST) */}
+        {/* Section 3 - Announcement blast (parent_pack_enabled only; composer max 160 chars; sendAnnouncementBlast POST) */}
         <section
           className={cn(
             'rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 space-y-4 shadow-sm',
@@ -727,7 +727,7 @@ export default function WhatsAppPackClient({
           ) : null}
         </section>
 
-        {/* Section 4 — History */}
+        {/* Section 4 - History */}
         <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('whatsapp.blastHistory')}</h2>
           {blastList.length === 0 ? (
@@ -850,7 +850,7 @@ export default function WhatsAppPackClient({
     );
   }
 
-  /* STATE 1 — none (or other): request pack */
+  /* STATE 1 - none (or other): request pack */
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-8 text-center shadow-sm">

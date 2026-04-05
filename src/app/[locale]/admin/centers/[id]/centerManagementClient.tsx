@@ -106,33 +106,33 @@ const CANCELLATION_REASON_LABELS: Record<string, string> = {
 };
 
 const GOVERNORATE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'cairo', label: 'Cairo — القاهرة' },
-  { value: 'giza', label: 'Giza — الجيزة' },
-  { value: 'alexandria', label: 'Alexandria — الإسكندرية' },
-  { value: 'dakahlia', label: 'Dakahlia — الدقهلية' },
-  { value: 'red_sea', label: 'Red Sea — البحر الأحمر' },
-  { value: 'beheira', label: 'Beheira — البحيرة' },
-  { value: 'fayoum', label: 'Fayoum — الفيوم' },
-  { value: 'gharbia', label: 'Gharbia — الغربية' },
-  { value: 'ismailia', label: 'Ismailia — الإسماعيلية' },
-  { value: 'menofia', label: 'Menofia — المنوفية' },
-  { value: 'minya', label: 'Minya — المنيا' },
-  { value: 'qaliubiya', label: 'Qaliubiya — القليوبية' },
-  { value: 'new_valley', label: 'New Valley — الوادي الجديد' },
-  { value: 'suez', label: 'Suez — السويس' },
-  { value: 'aswan', label: 'Aswan — أسوان' },
-  { value: 'assiut', label: 'Assiut — أسيوط' },
-  { value: 'beni_suef', label: 'Beni Suef — بني سويف' },
-  { value: 'port_said', label: 'Port Said — بورسعيد' },
-  { value: 'damietta', label: 'Damietta — دمياط' },
-  { value: 'sharqia', label: 'Sharqia — الشرقية' },
-  { value: 'south_sinai', label: 'South Sinai — جنوب سيناء' },
-  { value: 'kafr_el_sheikh', label: 'Kafr El Sheikh — كفر الشيخ' },
-  { value: 'matrouh', label: 'Matrouh — مطروح' },
-  { value: 'luxor', label: 'Luxor — الأقصر' },
-  { value: 'qena', label: 'Qena — قنا' },
-  { value: 'north_sinai', label: 'North Sinai — شمال سيناء' },
-  { value: 'sohag', label: 'Sohag — سوهاج' },
+  { value: 'cairo', label: 'Cairo - القاهرة' },
+  { value: 'giza', label: 'Giza - الجيزة' },
+  { value: 'alexandria', label: 'Alexandria - الإسكندرية' },
+  { value: 'dakahlia', label: 'Dakahlia - الدقهلية' },
+  { value: 'red_sea', label: 'Red Sea - البحر الأحمر' },
+  { value: 'beheira', label: 'Beheira - البحيرة' },
+  { value: 'fayoum', label: 'Fayoum - الفيوم' },
+  { value: 'gharbia', label: 'Gharbia - الغربية' },
+  { value: 'ismailia', label: 'Ismailia - الإسماعيلية' },
+  { value: 'menofia', label: 'Menofia - المنوفية' },
+  { value: 'minya', label: 'Minya - المنيا' },
+  { value: 'qaliubiya', label: 'Qaliubiya - القليوبية' },
+  { value: 'new_valley', label: 'New Valley - الوادي الجديد' },
+  { value: 'suez', label: 'Suez - السويس' },
+  { value: 'aswan', label: 'Aswan - أسوان' },
+  { value: 'assiut', label: 'Assiut - أسيوط' },
+  { value: 'beni_suef', label: 'Beni Suef - بني سويف' },
+  { value: 'port_said', label: 'Port Said - بورسعيد' },
+  { value: 'damietta', label: 'Damietta - دمياط' },
+  { value: 'sharqia', label: 'Sharqia - الشرقية' },
+  { value: 'south_sinai', label: 'South Sinai - جنوب سيناء' },
+  { value: 'kafr_el_sheikh', label: 'Kafr El Sheikh - كفر الشيخ' },
+  { value: 'matrouh', label: 'Matrouh - مطروح' },
+  { value: 'luxor', label: 'Luxor - الأقصر' },
+  { value: 'qena', label: 'Qena - قنا' },
+  { value: 'north_sinai', label: 'North Sinai - شمال سيناء' },
+  { value: 'sohag', label: 'Sohag - سوهاج' },
 ];
 
 function statusBadgeClass(status: string | undefined): string {
@@ -238,7 +238,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s2Saving, setS2Saving] = useState(false);
   const [s2CancellationBusy, setS2CancellationBusy] = useState(false);
 
-  // Section 3 — MUST precede handlePlanChange (which calls setS3AllInPrice, setS3BillingAmount)
+  // Section 3 - MUST precede handlePlanChange (which calls setS3AllInPrice, setS3BillingAmount)
   const [s3BillingAmount, setS3BillingAmount] = useState('');
   const [s3AllInPrice, setS3AllInPrice] = useState('');
   const [s3NextPaymentDue, setS3NextPaymentDue] = useState('');
@@ -509,7 +509,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   };
 
   const formatDate = (val: unknown): string => {
-    if (!val) return '—';
+    if (!val) return tCommon('notSet');
     const d = new Date(val as string);
     return isNaN(d.getTime())
       ? String(val)
@@ -519,9 +519,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
           day: 'numeric',
         });
   };
-  const shortUuid = (val: unknown): string => (val ? String(val).slice(0, 8) + '...' : '—');
+  const shortUuid = (val: unknown): string => (val ? String(val).slice(0, 8) + '...' : tCommon('notSet'));
   const getAdminName = (id: unknown): string => {
-    if (!id) return '—';
+    if (!id) return tCommon('notSet');
     const found = data?.adminUsers?.find((u: Record<string, unknown>) => String(u.id) === String(id));
     return (found?.name as string) ?? shortUuid(id);
   };
@@ -1574,7 +1574,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
                     <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-                      {(data.center.name as string) ?? '—'}
+                      {(data.center.name as string) ?? tCommon('notAvailable')}
                     </h1>
                     {data.center.center_code ? (
                       <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-gray-300 dark:border-slate-600">
@@ -1586,7 +1586,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         data.center.status as string | undefined,
                       )}`}
                     >
-                      {String(data.center.status ?? '—')}
+                      {String(data.center.status ?? tCommon('notSet'))}
                     </span>
                   </div>
                 </div>
@@ -1664,7 +1664,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       onChange={(e) => setS1Governorate(e.target.value)}
                       className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
                     >
-                      <option value="">— Select —</option>
+                      <option value="">{tCommon('select')}</option>
                       {GOVERNORATE_OPTIONS.map((o) => (
                         <option key={o.value} value={o.value}>
                           {o.label}
@@ -1746,7 +1746,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <p className="mt-2 text-slate-800 dark:text-amber-50/95">
                       {t('centerManagement.cancellation.reason')}:{' '}
                       {CANCELLATION_REASON_LABELS[String(data.center?.cancellation_reason)] ??
-                        String(data.center?.cancellation_reason ?? '—')}
+                        String(data.center?.cancellation_reason ?? tCommon('notSet'))}
                     </p>
                     <p className="mt-1 text-slate-700 dark:text-amber-50/90">
                       {t('centerManagement.cancellation.requested')}: {formatDate(data.center?.cancellation_requested_at)}
@@ -1936,13 +1936,17 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   <div>
                     {t('centerManagement.section3.effectiveMonthly')}:{' '}
                     <span className="text-slate-900 dark:text-white font-medium tabular-nums">
-                      {!isNaN(billingNum) ? effectiveMonthly.toLocaleString(locale) : '—'}
+                      {!isNaN(billingNum)
+                        ? effectiveMonthly.toLocaleString('en-US')
+                        : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`}
                     </span>
                   </div>
                   <div>
                     {t('centerManagement.section3.annualEquivalent')}:{' '}
                     <span className="text-slate-900 dark:text-white font-medium tabular-nums">
-                      {!isNaN(allInNum) ? Math.round(annualEquivalent).toLocaleString(locale) : '—'}
+                      {!isNaN(allInNum)
+                        ? Math.round(annualEquivalent).toLocaleString('en-US')
+                        : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`}
                     </span>
                   </div>
                 </div>
@@ -2085,10 +2089,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           return (
                             <Fragment key={rowKey}>
                               <tr className="border-t border-gray-200 dark:border-t-slate-700 align-top">
-                                <td className="p-2 font-mono text-xs">{String(inv.invoice_number ?? '—')}</td>
-                                <td className="p-2">{String(inv.invoice_type ?? '—')}</td>
+                                <td className="p-2 font-mono text-xs">{String(inv.invoice_number ?? tCommon('notSet'))}</td>
+                                <td className="p-2">{String(inv.invoice_type ?? tCommon('notSet'))}</td>
                                 <td className="p-2 tabular-nums">
-                                  {inv.total_amount != null ? String(inv.total_amount) : '—'}
+                                  {inv.total_amount != null
+                                    ? String(inv.total_amount)
+                                    : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`}
                                 </td>
                                 <td className="p-2">
                                   <span
@@ -2100,10 +2106,14 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                   </span>
                                 </td>
                                 <td className="p-2 text-xs whitespace-nowrap">
-                                  {inv.due_date != null ? String(inv.due_date).slice(0, 10) : '—'}
+                                  {inv.due_date != null
+                                    ? String(inv.due_date).slice(0, 10)
+                                    : tCommon('notSet')}
                                 </td>
                                 <td className="p-2 text-xs whitespace-nowrap">
-                                  {inv.created_at != null ? String(inv.created_at).slice(0, 10) : '—'}
+                                  {inv.created_at != null
+                                    ? String(inv.created_at).slice(0, 10)
+                                    : tCommon('notSet')}
                                 </td>
                                 <td className="p-2">
                                   <button
@@ -2388,18 +2398,20 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           const ap = row.amount_paid;
                           const amt =
                             ap != null && !isNaN(Number(ap))
-                              ? `${Number(ap).toLocaleString('en-US')} EGP`
-                              : '—';
+                              ? `${Number(ap).toLocaleString('en-US')} ${tCommon('egp')}`
+                              : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`;
                           return (
                             <tr key={rk} className="border-t border-gray-200 dark:border-t-slate-700">
                               <td className="p-2 whitespace-nowrap">
-                                {row.renewal_date != null ? String(row.renewal_date).slice(0, 10) : '—'}
+                                {row.renewal_date != null
+                                  ? String(row.renewal_date).slice(0, 10)
+                                  : tCommon('notSet')}
                               </td>
                               <td className="p-2 tabular-nums">{amt}</td>
-                              <td className="p-2">{String(row.payment_method ?? '—')}</td>
+                              <td className="p-2">{String(row.payment_method ?? tCommon('notSet'))}</td>
                               <td className="p-2">{getRecordedByName(row.recorded_by)}</td>
                               <td className="p-2 max-w-xs truncate" title={String(row.notes ?? '')}>
-                                {row.notes != null ? String(row.notes) : '—'}
+                                {row.notes != null ? String(row.notes) : tCommon('notSet')}
                               </td>
                             </tr>
                           );
@@ -2492,7 +2504,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <span className="text-slate-800 dark:text-slate-200">
                       {data.center.pack_approved_at != null
                         ? String(data.center.pack_approved_at).slice(0, 19)
-                        : '—'}
+                        : tCommon('notSet')}
                     </span>
                   </div>
                   <div>
@@ -2500,7 +2512,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <span className="text-slate-800 dark:text-slate-200">
                       {data.center.pack_requested_at != null
                         ? String(data.center.pack_requested_at).slice(0, 19)
-                        : '—'}
+                        : tCommon('notSet')}
                     </span>
                   </div>
                   <div>
@@ -2508,7 +2520,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <span className="text-slate-800 dark:text-slate-200">
                       {data.center.pack_disabled_at != null
                         ? String(data.center.pack_disabled_at).slice(0, 19)
-                        : '—'}
+                        : tCommon('notSet')}
                     </span>
                   </div>
                   <div>
@@ -2516,7 +2528,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <span className="text-slate-800 dark:text-slate-200">
                       {data.center.parent_pack_active_parents != null
                         ? String(data.center.parent_pack_active_parents)
-                        : '—'}
+                        : tCommon('notSet')}
                     </span>
                   </div>
                 </div>
@@ -2650,7 +2662,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       {t('centerManagement.section7.balanceUpdated')}:{' '}
                       {data.center.announcement_balance_updated_at != null
                         ? String(data.center.announcement_balance_updated_at).slice(0, 19)
-                        : '—'}
+                        : tCommon('notSet')}
                     </p>
                   </div>
                   <div>
@@ -2808,14 +2820,14 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           const canAct = st === 'pending' || st === 'pending_payment';
                           return (
                             <tr key={rid} className="border-t border-gray-200 dark:border-t-slate-700">
-                              <td className="p-2">{String(data.center.plan ?? '—')}</td>
-                              <td className="p-2">{String(req.requested_plan ?? '—')}</td>
-                              <td className="p-2 capitalize">{st || '—'}</td>
+                              <td className="p-2">{String(data.center.plan ?? tCommon('notSet'))}</td>
+                              <td className="p-2">{String(req.requested_plan ?? tCommon('notSet'))}</td>
+                              <td className="p-2 capitalize">{st || tCommon('notSet')}</td>
                               <td className="p-2 whitespace-nowrap text-xs">
                                 {formatDate(req.requested_at)}
                               </td>
                               <td className="p-2 max-w-[200px] truncate" title={String(req.notes ?? '')}>
-                                {req.notes != null ? String(req.notes) : '—'}
+                                {req.notes != null ? String(req.notes) : tCommon('notSet')}
                               </td>
                               <td className="p-2 flex flex-wrap gap-1">
                                 {canAct ? (
@@ -2842,7 +2854,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     </button>
                                   </>
                                 ) : (
-                                  '—'
+                                  <span className="text-slate-600 text-xs" aria-hidden>
+                                    -
+                                  </span>
                                 )}
                               </td>
                             </tr>
@@ -3032,7 +3046,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <span className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.section10.referralCode')}:</span>
                   <code className="text-teal-300 font-mono text-sm">
-                    {String(data.center.referral_code ?? '—')}
+                    {String(data.center.referral_code ?? tCommon('notSet'))}
                   </code>
                   <button
                     type="button"
@@ -3063,7 +3077,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 text-sm mb-6 space-y-1">
                     {(data.referralsMade ?? []).map((ref, j) => (
                       <li key={String(ref.id ?? j)}>
-                        {String((ref as { name?: string }).name ?? '—')} — {String((ref as { plan?: string }).plan ?? '')}
+                        {String((ref as { name?: string }).name ?? tCommon('notAvailable'))}{' '}
+                        <span className="text-slate-500">·</span>{' '}
+                        {String((ref as { plan?: string }).plan ?? '')}
                       </li>
                     ))}
                   </ul>
@@ -3090,7 +3106,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                               ? String(com.amount)
                               : com.commission_amount != null
                                 ? String(com.commission_amount)
-                                : '—';
+                                : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`;
                           return (
                             <tr key={cid} className="border-t border-gray-200 dark:border-t-slate-700">
                               <td className="p-2 tabular-nums">{amt}</td>
@@ -3106,7 +3122,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     {t('centerManagement.section10.markPaid')}
                                   </button>
                                 ) : (
-                                  '—'
+                                  <span className="text-slate-600 text-xs" aria-hidden>
+                                    -
+                                  </span>
                                 )}
                               </td>
                             </tr>
@@ -3167,13 +3185,21 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         </tr>
                       </thead>
                       <tbody>
-                        {(data.payoutRequests ?? []).map((p, m) => (
-                          <tr key={String((p as { id?: string }).id ?? m)} className="border-t border-gray-200 dark:border-t-slate-700">
-                            <td className="p-2 font-mono text-xs">{shortUuid((p as { id?: string }).id)}</td>
-                            <td className="p-2">{String((p as { status?: string }).status ?? '—')}</td>
-                            <td className="p-2 tabular-nums">{String((p as { amount?: unknown }).amount ?? '—')}</td>
-                          </tr>
-                        ))}
+                        {(data.payoutRequests ?? []).map((p, m) => {
+                          const pr = p as { id?: string; status?: string; amount?: unknown };
+                          const amtNum = Number(pr.amount);
+                          const payoutAmt =
+                            pr.amount != null && !Number.isNaN(amtNum)
+                              ? `${amtNum.toLocaleString('en-US')} ${tCommon('egp')}`
+                              : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`;
+                          return (
+                            <tr key={String(pr.id ?? m)} className="border-t border-gray-200 dark:border-t-slate-700">
+                              <td className="p-2 font-mono text-xs">{shortUuid(pr.id)}</td>
+                              <td className="p-2">{String(pr.status ?? tCommon('notSet'))}</td>
+                              <td className="p-2 tabular-nums">{payoutAmt}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -3286,7 +3312,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       const nid = String(note.id ?? '');
                       const pinned = Boolean(note.is_pinned);
                       const author = note.author as { name?: string } | null | undefined;
-                      const authorName = author?.name ?? '—';
+                      const authorName = author?.name ?? tCommon('notAvailable');
                       return (
                         <li
                           key={nid}
@@ -3301,7 +3327,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     dateStyle: 'medium',
                                     timeStyle: 'short',
                                   })
-                                : '—'}
+                                : tCommon('notSet')}
                               {pinned ? (
                                 <span className="ms-2 text-amber-600 dark:text-amber-400 font-medium">
                                   {t('centerNotes.pinned_badge')}
@@ -3503,12 +3529,54 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     dateStyle: 'medium',
                                     timeStyle: 'short',
                                   })
-                                : '—'}
+                                : tCommon('notSet')}
                             </td>
-                            <td className="p-2 font-mono text-xs">{String(log.action ?? '—')}</td>
-                            <td className="p-2">{String(log.actor_label ?? '—')}</td>
+                            <td className="p-2 font-mono text-xs">
+                              {log.action != null && String(log.action) !== ''
+                                ? String(log.action)
+                                : (
+                                    <span className="text-slate-600 text-xs" aria-hidden>
+                                      -
+                                    </span>
+                                  )}
+                            </td>
+                            <td className="p-2">
+                              {log.actor_label != null && String(log.actor_label) !== ''
+                                ? String(log.actor_label)
+                                : (
+                                    <span className="text-slate-600 text-xs" aria-hidden>
+                                      -
+                                    </span>
+                                  )}
+                            </td>
                             <td className="p-2 text-xs break-all max-w-md">
-                              {JSON.stringify(log.details ?? {}, null, 0)}
+                              {(() => {
+                                const raw = log.details;
+                                const d =
+                                  raw &&
+                                  typeof raw === 'object' &&
+                                  !Array.isArray(raw) &&
+                                  raw !== null
+                                    ? (raw as Record<string, unknown>)
+                                    : null;
+                                if (!d || Object.keys(d).length === 0) {
+                                  return (
+                                    <span className="text-slate-600 text-xs" aria-hidden>
+                                      -
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <div className="text-xs text-slate-400 space-y-0.5">
+                                    {Object.entries(d).map(([k, v]) => (
+                                      <div key={k}>
+                                        <span className="text-slate-500">{k}:</span>{' '}
+                                        <span className="text-slate-300">{String(v)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
                             </td>
                           </tr>
                         ))}
@@ -3542,19 +3610,23 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <div className="text-sm font-medium text-slate-900 dark:text-white">
                       {data.center.health_score != null && !isNaN(Number(data.center.health_score))
                         ? Number(data.center.health_score).toLocaleString('en-US')
-                        : '—'}
+                        : tCommon('notSet')}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.healthBand')}</div>
                     <div className="text-sm font-medium text-slate-900 dark:text-white">
-                      {data.center.health_score_band != null ? String(data.center.health_score_band) : '—'}
+                      {data.center.health_score_band != null
+                        ? String(data.center.health_score_band)
+                        : tCommon('notSet')}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.onboardingStep')}</div>
                     <div className="text-sm font-medium text-slate-900 dark:text-white">
-                      {data.center.onboarding_step != null ? String(data.center.onboarding_step) : '—'}
+                      {data.center.onboarding_step != null
+                        ? String(data.center.onboarding_step)
+                        : tCommon('notSet')}
                     </div>
                   </div>
                   <div>
@@ -3564,7 +3636,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         ? '✅'
                         : data.center.onboarding_completed === false
                           ? '❌'
-                          : '—'}
+                          : tCommon('notSet')}
                     </div>
                   </div>
                   <div>
@@ -3580,7 +3652,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <div className="text-sm font-medium text-slate-900 dark:text-white">
                       {data.center.student_sequence != null && !isNaN(Number(data.center.student_sequence))
                         ? Number(data.center.student_sequence).toLocaleString('en-US')
-                        : '—'}
+                        : tCommon('notSet')}
                     </div>
                   </div>
                   <div>

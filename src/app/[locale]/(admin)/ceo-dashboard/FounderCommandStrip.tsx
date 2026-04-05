@@ -14,6 +14,7 @@ function n(v: unknown): number {
 
 export default function FounderCommandStrip(props: CommandStripResponse) {
   const t = useTranslations('founderDash');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const tPlans = useTranslations('landing.pricing.plans');
 
@@ -250,18 +251,18 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                 <tbody>
                   {pendingCenters.map((center) => {
                     const location =
-                      [center.city, center.district].filter(Boolean).join(', ') || '—';
+                      [center.city, center.district].filter(Boolean).join(', ') || tCommon('notAvailable');
                     const notesPreview = center.signup_notes
                       ? center.signup_notes.slice(0, 60) +
                         (center.signup_notes.length > 60 ? '...' : '')
-                      : '—';
+                      : tCommon('notSet');
                     return (
                       <tr key={center.id} className="border-b border-[var(--color-border-subtle)]">
                         <td className="py-2 pe-3 font-semibold text-[var(--color-text-primary)]">
                           {center.name}
                         </td>
                         <td className="py-2 pe-3 text-[var(--color-text-secondary)]">
-                          {center.owner_name ?? '—'}
+                          {center.owner_name ?? tCommon('notAvailable')}
                         </td>
                         <td className="py-2 pe-3 text-[var(--color-text-secondary)]">{location}</td>
                         <td className="py-2 pe-3">
@@ -293,11 +294,11 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             <div className="md:hidden space-y-4">
               {pendingCenters.map((center) => {
                 const location =
-                  [center.city, center.district].filter(Boolean).join(', ') || '—';
+                  [center.city, center.district].filter(Boolean).join(', ') || tCommon('notAvailable');
                 const notesPreview = center.signup_notes
                   ? center.signup_notes.slice(0, 60) +
                     (center.signup_notes.length > 60 ? '...' : '')
-                  : '—';
+                  : tCommon('notSet');
                 return (
                   <div
                     key={center.id}
@@ -306,7 +307,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                     <p className="font-semibold text-[var(--color-text-primary)]">{center.name}</p>
                     <div className="text-sm text-[var(--color-text-secondary)]">
                       <span className="text-[var(--color-text-tertiary)]">{t('colOwner')}: </span>
-                      {center.owner_name ?? '—'}
+                      {center.owner_name ?? tCommon('notAvailable')}
                     </div>
                     <div className="text-sm text-[var(--color-text-secondary)]">
                       <span className="text-[var(--color-text-tertiary)]">{t('colLocation')}: </span>

@@ -398,7 +398,7 @@ export default function PayoutsPage() {
                     {Number(payout.adjustment_amount).toLocaleString('en-US')}{' '}
                     {t('staff.currency_suffix')}
                     {payout.adjustment_reason
-                      ? ` — ${payout.adjustment_reason}`
+                      ? ` - ${payout.adjustment_reason}`
                       : ''}
                   </div>
                 ) : null}
@@ -480,7 +480,7 @@ export default function PayoutsPage() {
                     <option value="">{t('payouts.staff_placeholder')}</option>
                     {staffList.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name} — {s.role === 'sm' ? t('staff.role_sm') : t('staff.role_sr')}
+                        {s.name} - {s.role === 'sm' ? t('staff.role_sm') : t('staff.role_sr')}
                       </option>
                     ))}
                   </select>

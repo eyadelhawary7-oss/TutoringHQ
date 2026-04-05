@@ -138,7 +138,7 @@ export function FamilyLinkingSection({
             onChange={(e) => onFamilyChange(e.target.value || null)}
             className="flex-1 px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
           >
-            <option value="">{t('noFamily', { defaultValue: '— لا أسرة —' })}</option>
+            <option value="">{t('noFamily', { defaultValue: '- لا أسرة -' })}</option>
             {families.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.family_name || f.parent_name || f.parent_phone || f.id.slice(0, 8)}

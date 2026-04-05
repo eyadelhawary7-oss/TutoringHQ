@@ -19,7 +19,7 @@ const PLAN_LABELS_AR: Record<string, string> = {
 };
 
 function planToLabel(plan: string | undefined, locale: string): string {
-  if (!plan) return '—';
+  if (!plan) return '-';
   return locale === 'ar' ? (PLAN_LABELS_AR[plan] ?? plan) : plan;
 }
 
@@ -110,8 +110,8 @@ export default function SettingsReferralsPage() {
               const existing = byCenter.get(key);
               const total = (existing?.total ?? 0) + Number(c.commission_amount || 0);
               byCenter.set(key, {
-                name: c.referred_center_name ?? '—',
-                plan: c.referred_center_plan ?? '—',
+                name: c.referred_center_name ?? '-',
+                plan: c.referred_center_plan ?? '-',
                 total,
                 created_at: c.period_month ? `${c.period_month}-01` : new Date().toISOString(),
                 status: c.status === 'paid' || c.status === 'withdrawable' ? 'active' : c.status === 'hold' ? 'hold' : 'inactive',
@@ -192,7 +192,7 @@ export default function SettingsReferralsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('yourCode')}</p>
-                <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">{referralCode || '—'}</p>
+                <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">{referralCode || '-'}</p>
               </div>
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-1">{locale === 'ar' ? 'عدد السناتر المُحالة' : 'Referred Centers'}</p>
@@ -246,7 +246,7 @@ export default function SettingsReferralsPage() {
                     {referrals.map((r) => (
                       <tr key={r.id} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]">
                         <td className="py-3 px-4 font-medium text-[var(--color-text-primary)]">
-                          {(r.referred_center as { name?: string })?.name ?? '—'}
+                          {(r.referred_center as { name?: string })?.name ?? '-'}
                         </td>
                         <td className="py-3 px-4 text-[var(--color-text-secondary)]">{formatDate(r.created_at)}</td>
                         <td className="py-3 px-4 text-[var(--color-text-secondary)]">

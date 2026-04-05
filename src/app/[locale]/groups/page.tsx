@@ -525,7 +525,7 @@ export default function GroupsPage() {
                             ) : w.parent_phone ? (
                               <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">{w.parent_phone}</div>
                             ) : (
-                              <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">—</div>
+                              <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">-</div>
                             )}
                           </div>
                         </div>
@@ -561,7 +561,7 @@ export default function GroupsPage() {
                         {m.student_number ? (
                           <div className="text-xs text-slate-400 mt-0.5" dir="ltr">#{m.student_number}</div>
                         ) : (
-                          <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">—</div>
+                          <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">-</div>
                         )}
                       </div>
                       <button type="button" onClick={() => handleRemoveMember(m.student_id)} className="text-xs text-red-600 hover:text-red-700 font-medium">

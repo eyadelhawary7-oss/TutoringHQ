@@ -924,7 +924,7 @@ export default function AdminPage() {
     amount: number,
     nextDue: string
   ) => {
-    // Normalize phone — strip everything except digits
+    // Normalize phone - strip everything except digits
     let phone = centerPhone.replace(/\D/g, '');
     // Ensure Egyptian country code
     if (phone.startsWith('0')) phone = '2' + phone; // 01x -> 201x
@@ -1312,7 +1312,7 @@ export default function AdminPage() {
                       <span className="text-sm text-[var(--color-text-primary)]">
                         {activityActionLabel[a.action ?? ''] ?? formatActivitySummary(a.action || '', a.details)}
                         {a.details && typeof (a.details as { center_name?: string }).center_name === 'string' ? (
-                          <> — {(a.details as { center_name: string }).center_name}</>
+                          <> - {(a.details as { center_name: string }).center_name}</>
                         ) : null}
                       </span>
                       <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap ms-3">
@@ -2671,12 +2671,12 @@ export default function AdminPage() {
                   className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
                 >
                   <option value="">Select a plan...</option>
-                  <option value="nano">Nano — ≤100 students — EGP 2,500/mo</option>
-                  <option value="starter">Starter — ≤250 students — EGP 5,200/mo</option>
-                  <option value="pro">Pro — ≤500 students — EGP 9,200/mo</option>
-                  <option value="business">Business — ≤1,000 students — EGP 15,000/mo</option>
-                  <option value="enterprise">Enterprise — ≤2,000 students — EGP 21,300/mo</option>
-                  <option value="top_centers">Top Centers — Custom</option>
+                  <option value="nano">Nano - ≤100 students - EGP 2,500/mo</option>
+                  <option value="starter">Starter - ≤250 students - EGP 5,200/mo</option>
+                  <option value="pro">Pro - ≤500 students - EGP 9,200/mo</option>
+                  <option value="business">Business - ≤1,000 students - EGP 15,000/mo</option>
+                  <option value="enterprise">Enterprise - ≤2,000 students - EGP 21,300/mo</option>
+                  <option value="top_centers">Top Centers - Custom</option>
                 </select>
               </div>
             </div>

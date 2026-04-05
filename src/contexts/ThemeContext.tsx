@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 
-// Light-only app — ThemeContext is a no-op kept for import compatibility
+// Light-only app - ThemeContext is a no-op kept for import compatibility
 const ThemeContext = createContext<{
   theme: 'light';
   setTheme: (t: string) => void;

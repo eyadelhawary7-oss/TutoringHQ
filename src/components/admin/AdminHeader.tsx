@@ -22,7 +22,7 @@ export function AdminHeader() {
     const loadUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      // Auth email format: {phoneDigits}@centerhq.local — derive phone without querying users (RLS blocks client)
+      // Auth email format: {phoneDigits}@centerhq.local - derive phone without querying users (RLS blocks client)
       const phone = user.email?.replace('@centerhq.local', '') ?? '';
       const displayPhone = phone ? `+${phone}` : 'Admin';
       setUserName(user.user_metadata?.name ?? displayPhone);
@@ -88,8 +88,8 @@ export function AdminHeader() {
             {isUserMenuOpen && (
               <div className="absolute top-12 end-0 bg-[var(--color-surface-1)] rounded-xl shadow-lg border border-[var(--color-border-subtle)] py-1 z-50 min-w-[200px]">
                 <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
-                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{userName || '—'}</p>
-                  <p className="text-xs text-[var(--color-text-secondary)]" dir="ltr">{userPhone || '—'}</p>
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{userName || '-'}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]" dir="ltr">{userPhone || '-'}</p>
                 </div>
                 <button
                   onClick={() => {

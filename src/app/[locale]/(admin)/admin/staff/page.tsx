@@ -659,7 +659,7 @@ export default function StaffPage() {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/50 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-xl">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {t('staff.deactivate')} — {showTerminateModal.name}
+                {t('staff.deactivate')} - {showTerminateModal.name}
               </h2>
               {error ? (
                 <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 rounded-lg p-3">

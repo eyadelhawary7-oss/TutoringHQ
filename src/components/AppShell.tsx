@@ -104,7 +104,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     })();
   };
 
-  // Public pages (landing, login, signup, etc) — render children only
+  // Public pages (landing, login, signup, etc) - render children only
   if (!showShell && isPublic) {
     return <>{children}</>;
   }
@@ -151,7 +151,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Mobile TopBar — hamburger opens left drawer (not desktop sidebar) */}
+        {/* Mobile TopBar - hamburger opens left drawer (not desktop sidebar) */}
         {!isAdminRoute && <MobileTopBar openMenu={openMenu} setOpenMenu={setOpenMenu} />}
 
         {openMenu && (
@@ -163,7 +163,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         )}
         {!isAdminRoute && <MobileNavDrawer open={openMenu} onClose={() => setOpenMenu(false)} />}
 
-        {/* Page content — scroll + safe-area padding on inner wrapper (MobileWrapper) */}
+        {/* Page content - scroll + safe-area padding on inner wrapper (MobileWrapper) */}
         <main className="flex-1 flex flex-col min-h-0">
           <MobileWrapper fullWidth={isAdminRoute}>{children}</MobileWrapper>
         </main>

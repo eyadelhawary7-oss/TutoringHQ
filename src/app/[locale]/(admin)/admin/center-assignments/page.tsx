@@ -590,7 +590,7 @@ export default function CenterAssignmentsPage() {
                     <option value="">{t('centerAssignments.center_placeholder')}</option>
                     {allCenters.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name} — {c.center_code} ({c.plan})
+                        {c.name} - {c.center_code} ({c.plan})
                       </option>
                     ))}
                   </select>
@@ -630,7 +630,7 @@ export default function CenterAssignmentsPage() {
                       <option value="">{t('centerAssignments.staff_placeholder')}</option>
                       {(form.sourced_by === 'sm' ? staffOptionsSm : staffOptionsSr).map((s) => (
                         <option key={s.id} value={s.id}>
-                          {s.name} — {s.city}
+                          {s.name} - {s.city}
                         </option>
                       ))}
                     </select>
@@ -701,7 +701,7 @@ export default function CenterAssignmentsPage() {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {t('centerAssignments.dispute_flag')} — {relCenters(disputeModal)?.name}
+                {t('centerAssignments.dispute_flag')} - {relCenters(disputeModal)?.name}
               </h2>
               {error ? (
                 <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 rounded-lg p-3">

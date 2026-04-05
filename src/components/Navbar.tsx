@@ -109,7 +109,7 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Center: Desktop nav items (no overflow, no scrollbar) — hidden for super admins */}
+          {/* Center: Desktop nav items (no overflow, no scrollbar) - hidden for super admins */}
           <div className="hidden md:flex md:flex-1 md:items-center md:justify-center md:gap-1 md:flex-nowrap">
             {navItems.map(item => navLink(item, false))}
             {isSuperAdminOnly && (

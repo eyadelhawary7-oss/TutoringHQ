@@ -34,13 +34,13 @@ const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 const FREQUENT_CRONS = new Set(['check-stuck-payments']);
 
 function formatDuration(ms: number | null): string {
-  if (ms === null || !Number.isFinite(ms)) return '—';
+  if (ms === null || !Number.isFinite(ms)) return '-';
   if (ms < 1000) return `${Math.round(ms)} ms`;
   return `${(ms / 1000).toFixed(1)} s`;
 }
 
 function formatRanAt(iso: string | null, locale: string): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   try {
     const d = new Date(iso);
     return d.toLocaleString('en-US', {
@@ -326,7 +326,7 @@ export default function AdminHealthPage() {
                           </td>
                           <td className="p-3">
                             {!row.last_status ? (
-                              <span className="text-slate-500 dark:text-slate-400">—</span>
+                              <span className="text-slate-500 dark:text-slate-400">-</span>
                             ) : row.last_status === 'success' ? (
                               <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                                 ✓ success
@@ -345,7 +345,7 @@ export default function AdminHealthPage() {
                             {formatDuration(row.last_duration_ms)}
                           </td>
                           <td className="p-3 text-red-600 dark:text-red-400 max-w-xs truncate" title={row.last_error ?? ''}>
-                            {row.last_error ?? '—'}
+                            {row.last_error ?? '-'}
                           </td>
                         </tr>
                       );

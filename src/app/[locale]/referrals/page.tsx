@@ -18,7 +18,7 @@ function fmt(n: number): string {
 
 function formatPeriodMonth(periodMonth: string, loc: string): string {
   const [y, m] = (periodMonth || '').split('-');
-  if (!y || !m) return '—';
+  if (!y || !m) return '-';
   const d = new Date(Number(y), Number(m) - 1, 1);
   return d.toLocaleDateString(loc === 'ar' ? 'ar' : 'en-US', { month: 'short', year: 'numeric' });
 }
@@ -386,7 +386,7 @@ export default function ReferralsPage() {
             {t('yourCode')}
           </h2>
           <p className="font-mono text-3xl md:text-4xl font-bold text-teal-600 dark:text-teal-400 tracking-wider mb-6 break-all">
-            {data?.referralCode || '—'}
+            {data?.referralCode || '-'}
           </p>
           <div className="flex flex-col sm:flex-row flex-wrap gap-2">
             <a

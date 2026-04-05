@@ -503,7 +503,7 @@ export default function CommissionsPage() {
               <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300">
                 <div>{relCenters(unlockModal)?.name ?? t('staff.dash')}</div>
                 <div className="text-slate-500 dark:text-slate-400">
-                  {staffDisplayName(unlockModal)} —{' '}
+                  {staffDisplayName(unlockModal)} -{' '}
                   {Number(unlockModal.t2_amount).toLocaleString('en-US')}{' '}
                   {t('staff.currency_suffix')}
                 </div>

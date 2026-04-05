@@ -197,10 +197,10 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                   {centers.map((center) => {
                     const districtDisplay = center.district
                       ? formatDistrictLabel(center.district)
-                      : '—';
+                      : '-';
                     const scan = scanDisplay(center.last_scan_at);
                     const band = center.health_score_band;
-                    const bandText = band != null ? (bandLabels[band] ?? '—') : '—';
+                    const bandText = band != null ? (bandLabels[band] ?? '-') : '-';
                     const healthScore = n(center.health_score);
                     return (
                       <tr key={center.id} className="border-b border-[var(--color-border-subtle)]">
@@ -217,7 +217,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                         </td>
                         <td className="py-2 pe-3">
                           {center.health_score == null ? (
-                            <span className="text-[var(--color-text-tertiary)]">—</span>
+                            <span className="text-[var(--color-text-tertiary)]">-</span>
                           ) : (
                             <div className="flex items-center gap-2 flex-wrap">
                               <div className="w-16 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden shrink-0">
@@ -268,10 +268,10 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
               {centers.map((center) => {
                 const districtDisplay = center.district
                   ? formatDistrictLabel(center.district)
-                  : '—';
+                  : '-';
                 const scan = scanDisplay(center.last_scan_at);
                 const band = center.health_score_band;
-                const bandText = band != null ? (bandLabels[band] ?? '—') : '—';
+                const bandText = band != null ? (bandLabels[band] ?? '-') : '-';
                 const healthScore = n(center.health_score);
                 return (
                   <div
@@ -288,7 +288,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                       </span>
                     </div>
                     {center.health_score == null ? (
-                      <span className="text-[var(--color-text-tertiary)]">—</span>
+                      <span className="text-[var(--color-text-tertiary)]">-</span>
                     ) : (
                       <div className="space-y-1">
                         <div className="w-full max-w-[200px] h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">

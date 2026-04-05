@@ -49,7 +49,7 @@ function parseStudentLines(studentsJson: unknown): string[] {
     return (studentsJson as string[]).map((id) => `Student ${id}`);
   }
   if (typeof first === 'object' && first !== null && 'name' in first) {
-    return (studentsJson as { name?: string }[]).map((s) => (s.name?.trim() ? s.name : '—'));
+    return (studentsJson as { name?: string }[]).map((s) => (s.name?.trim() ? s.name : '-'));
   }
   return [];
 }
@@ -261,7 +261,7 @@ export default function OrdersPage() {
                               <li key={i}>{line}</li>
                             ))
                           ) : (
-                            <li>—</li>
+                            <li>-</li>
                           )}
                         </ul>
                       </div>

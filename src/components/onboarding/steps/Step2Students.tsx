@@ -153,7 +153,7 @@ export default function Step2Students({ students, groups, onAdd, canProceed, onS
               <div>
                 <div className="font-medium text-[var(--color-text-primary)] text-sm">{s.name}</div>
                 <div className="text-xs text-[var(--color-text-secondary)] font-mono" dir="ltr">
-                  {s.phone || '—'}
+                  {s.phone || '-'}
                 </div>
               </div>
             </div>

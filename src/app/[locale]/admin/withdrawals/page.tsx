@@ -240,7 +240,7 @@ export default function AdminWithdrawalsPage() {
                         className="border-b border-slate-100 dark:border-slate-700/80"
                       >
                         <td className="px-3 py-2 text-slate-900 dark:text-slate-100">
-                          {r.center_name ?? '—'}
+                          {r.center_name ?? '-'}
                         </td>
                         <td className="px-3 py-2 tabular-nums text-slate-800 dark:text-slate-200">
                           {r.credits_deducted.toLocaleString('en-US')}
@@ -249,14 +249,14 @@ export default function AdminWithdrawalsPage() {
                           {r.cash_amount.toLocaleString('en-US')} {tCommon('egp')}
                         </td>
                         <td className="px-3 py-2 font-mono text-slate-700 dark:text-slate-300" dir="ltr">
-                          {r.instapay_number ?? '—'}
+                          {r.instapay_number ?? '-'}
                         </td>
                         <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
                           {r.requested_at
                             ? new Date(r.requested_at).toLocaleString(
                                 'en-US',
                               )
-                            : '—'}
+                            : '-'}
                         </td>
                         <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
                           {st === 'paid' && r.processed_at
@@ -292,7 +292,7 @@ export default function AdminWithdrawalsPage() {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-slate-400">—</span>
+                            <span className="text-slate-400">-</span>
                           )}
                         </td>
                       </tr>

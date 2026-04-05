@@ -30,7 +30,7 @@ export default function MethodBadge({ method }: { method: string }) {
     <span
       className={`px-2 py-0.5 rounded text-xs font-medium ${colors[key] ?? 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'}`}
     >
-      {labels[key] ?? method ?? '—'}
+      {labels[key] ?? method ?? '-'}
     </span>
   );
 }

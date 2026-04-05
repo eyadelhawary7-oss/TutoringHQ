@@ -91,9 +91,9 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
       month: 'short',
     });
     if (present === undefined || present === 0) {
-      return `${arabicDate} — ${t('legend.none')}`;
+      return `${arabicDate} - ${t('legend.none')}`;
     }
-    return `${arabicDate} — ${present} طالب حضر`;
+    return `${arabicDate} - ${present} طالب حضر`;
   }
 
   const dayHeaders = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
@@ -137,7 +137,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
   return (
     <div className="p-2 space-y-2" dir="ltr">
       <p className="text-xs font-medium text-[var(--color-text-secondary)] text-right" dir="rtl">
-        الحضور — آخر {weeks} أسابيع
+        الحضور - آخر {weeks} أسابيع
       </p>
 
       <div className="flex gap-1">

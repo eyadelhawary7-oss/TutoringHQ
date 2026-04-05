@@ -650,6 +650,7 @@ function PaygTab({
 export default function BillingPage() {
   const t = useTranslations('billing');
   const tToast = useTranslations('toasts');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const { toast } = useToast();
 
@@ -980,12 +981,12 @@ export default function BillingPage() {
     const ymd =
       (center?.current_period_end && String(center.current_period_end).slice(0, 10)) ||
       (center?.next_payment_due ? center.next_payment_due.slice(0, 10) : '');
-    if (!ymd) return '—';
+    if (!ymd) return tCommon('notSet');
     const d = new Date(`${ymd}T12:00:00`);
     return Number.isNaN(d.getTime())
       ? ymd
       : d.toLocaleDateString('en-US');
-  }, [center?.current_period_end, center?.next_payment_due, locale]);
+  }, [center?.current_period_end, center?.next_payment_due, locale, tCommon]);
 
   const showCancelDanger =
     ownerOk &&
@@ -1345,7 +1346,7 @@ export default function BillingPage() {
     if (v === 'pending') return t('status.pending');
     if (v === 'overdue') return t('status.overdue');
     if (v === 'cancelled' || v === 'canceled') return t('status.cancelled');
-    return raw || '—';
+    return raw || tCommon('notSet');
   };
 
   const planRequestStatusBadge = (st: string) => {
@@ -1561,7 +1562,7 @@ export default function BillingPage() {
     }
     return (
       <span className={`${base} bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300`} style={cairoFont}>
-        {st || '—'}
+        {st || tCommon('notSet')}
       </span>
     );
   };
@@ -1582,7 +1583,11 @@ export default function BillingPage() {
     }
     if (st === 'paid' || st === 'approved') {
       if (!ownerOk) {
-        return <span className="text-slate-400">—</span>;
+        return (
+          <span className="text-slate-600 text-xs" aria-hidden>
+            -
+          </span>
+        );
       }
       return (
         <a
@@ -1597,9 +1602,17 @@ export default function BillingPage() {
       );
     }
     if (st === 'cancelled' || st === 'canceled') {
-      return <span className="text-slate-400">—</span>;
+      return (
+        <span className="text-slate-600 text-xs" aria-hidden>
+          -
+        </span>
+      );
     }
-    return <span className="text-slate-400">—</span>;
+    return (
+      <span className="text-slate-600 text-xs" aria-hidden>
+        -
+      </span>
+    );
   };
 
   if (loading) {
@@ -1708,7 +1721,7 @@ export default function BillingPage() {
                   ? t('payg.hero.billingDateValue')
                   : npdYmd
                     ? new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US')
-                    : '—'}
+                    : tCommon('notSet')}
               </span>
             </div>
             <div className="flex flex-col gap-1 py-4 md:py-3 md:ps-4">
@@ -1853,13 +1866,13 @@ export default function BillingPage() {
 
             {activeTab === 'upgrade' && billingIsPayg ? (
               <p className="mt-6 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
-                {t('payg.switch.active')} — {t('payg.tabLabel')}
+                {t('payg.switch.active')} - {t('payg.tabLabel')}
               </p>
             ) : null}
 
             {activeTab === 'downgrade' && billingIsPayg ? (
               <p className="mt-6 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
-                {t('payg.switch.disable')} — {t('payg.tabLabel')}
+                {t('payg.switch.disable')} - {t('payg.tabLabel')}
               </p>
             ) : null}
 
@@ -1881,7 +1894,7 @@ export default function BillingPage() {
                     <p className="mt-2 text-sm text-amber-700 dark:text-amber-300" style={cairoFont}>
                       {t('upgrade.limitReached')}
                       {npdYmd
-                        ? ` — ${new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US')}`
+                        ? ` - ${new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US')}`
                         : ''}
                     </p>
                   ) : null}
@@ -2030,7 +2043,9 @@ export default function BillingPage() {
                       {t('upgrade.nextRenewal')}
                     </p>
                     <p className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
-                      {npdYmd ? new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US') : '—'}
+                      {npdYmd
+                        ? new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US')
+                        : tCommon('notSet')}
                     </p>
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
                       {t('upgrade.newMonthlyRate')}
@@ -2701,7 +2716,7 @@ export default function BillingPage() {
                   const periodStr =
                     inv.billing_period_start && inv.billing_period_end
                       ? `${inv.billing_period_start} → ${inv.billing_period_end}`
-                      : '—';
+                      : tCommon('notSet');
                   const ref = inv.invoice_number ?? inv.id.slice(0, 8);
                   return (
                     <div
@@ -2711,7 +2726,9 @@ export default function BillingPage() {
                       <div className="flex justify-between gap-2 text-sm">
                         <span className="text-slate-500">{t('history.date')}</span>
                         <span className="tabular-nums text-slate-900 dark:text-white" style={numFont}>
-                          {inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-US') : '—'}
+                          {inv.created_at
+                            ? new Date(inv.created_at).toLocaleDateString('en-US')
+                            : tCommon('notSet')}
                         </span>
                       </div>
                       <div className="mt-2 flex justify-between gap-2 text-sm">
@@ -2762,12 +2779,14 @@ export default function BillingPage() {
                       const periodStr =
                         inv.billing_period_start && inv.billing_period_end
                           ? `${inv.billing_period_start} → ${inv.billing_period_end}`
-                          : '—';
+                          : tCommon('notSet');
                       const ref = inv.invoice_number ?? inv.id.slice(0, 8);
                       return (
                         <tr key={inv.id} className="border-b border-slate-100 dark:border-slate-700/80">
                           <td className="py-3 pe-4 tabular-nums text-slate-900 dark:text-white" style={numFont}>
-                            {inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-US') : '—'}
+                            {inv.created_at
+                              ? new Date(inv.created_at).toLocaleDateString('en-US')
+                              : tCommon('notSet')}
                           </td>
                           <td className="py-3 pe-4 font-mono text-slate-800 dark:text-slate-200">{ref}</td>
                           <td className="py-3 pe-4 tabular-nums text-slate-900 dark:text-white" style={numFont}>
@@ -2818,7 +2837,9 @@ export default function BillingPage() {
                   {planRequests.map((req) => (
                     <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700/80">
                       <td className="py-3 pe-4 tabular-nums text-slate-700 dark:text-slate-300" style={numFont}>
-                        {req.requested_at ? new Date(req.requested_at).toLocaleDateString('en-US') : '—'}
+                        {req.requested_at
+                          ? new Date(req.requested_at).toLocaleDateString('en-US')
+                          : tCommon('notSet')}
                       </td>
                       <td className="py-3 pe-4 text-slate-900 dark:text-white">
                         {isPlanKey(req.current_plan)

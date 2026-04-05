@@ -100,7 +100,7 @@ export default function LoginPage() {
               targetLocale = userData.preferred_locale;
             }
           } catch {
-            // Fallback silently — never block login
+            // Fallback silently - never block login
           }
           const targetPath = result.needsOnboarding ? '/onboarding' : '/dashboard';
           router.push(`/${targetLocale}${targetPath}`);
@@ -119,7 +119,7 @@ export default function LoginPage() {
               targetLocale = userData.preferred_locale;
             }
           } catch {
-            // Fallback silently — never block login
+            // Fallback silently - never block login
           }
           router.push(`/${targetLocale}/onboarding`);
         }

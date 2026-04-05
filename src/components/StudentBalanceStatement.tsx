@@ -107,7 +107,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
                 <td className="py-1">
                   {p.status === 'confirmed' ? 'مؤكد ✓' : 'معلق'}
                 </td>
-                <td className="py-1">{p.recorded_by_name ?? '—'}</td>
+                <td className="py-1">{p.recorded_by_name ?? '-'}</td>
               </tr>
             ))
           )}
@@ -123,7 +123,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
 
       {/* Footer */}
       <div className="mt-8 text-center text-xs text-[var(--color-text-tertiary)]">
-        <div>CenterHQ — centerhq.com</div>
+        <div>CenterHQ - centerhq.com</div>
         <div>
           تاريخ الإصدار:{' '}
           {new Date().toLocaleDateString('en-US', {

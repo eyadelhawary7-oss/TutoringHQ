@@ -643,7 +643,7 @@ export default function CeoDashboardClient({
                       <td className="py-2">{row.total}</td>
                       {[0, 1, 2, 3, 4, 5, 6].map((m) => (
                         <td key={m} className="text-center py-2">
-                          {(row[`m${m}`] as number) ?? '—'}%
+                          {nf(row[`m${m}`])}%
                         </td>
                       ))}
                     </tr>

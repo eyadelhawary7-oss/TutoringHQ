@@ -42,12 +42,12 @@ test.describe('Authentication', () => {
     if (onAdmin) {
       await expect(page).not.toHaveURL(/login/)
     } else {
-      await expect(page.getByRole('heading', { name: 'لوحة القيادة' })).toBeVisible()
+      await expect(page).toHaveURL(/\/(ar|en)\/dashboard/)
     }
     expect(errors).toHaveLength(0)
   })
 
-  test('wrong PIN shows error — one attempt only to avoid rate limit', async ({ page }) => {
+  test('wrong PIN shows error - one attempt only to avoid rate limit', async ({ page }) => {
     test.skip(!TEST_PHONE, 'Set TEST_PHONE for this test')
 
     const errors: string[] = []

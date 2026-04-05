@@ -203,7 +203,7 @@ export default function PrintClient({
                   <div className="min-w-0 flex-1">
                     <div className="font-medium text-[var(--color-text-primary)] truncate">{student.name}</div>
                     <div className="text-xs font-mono text-[var(--color-text-secondary)] truncate" dir="ltr">
-                      {student.student_number ? `#${student.student_number}` : '—'}
+                      {student.student_number ? `#${student.student_number}` : '-'}
                     </div>
                   </div>
                 </label>

@@ -60,7 +60,7 @@ export default function InactiveList({ students, period, onPeriodChange }: Inact
                   <td className="px-3 py-3 text-[var(--text-secondary)]">
                     {s.last_scanned_at
                       ? new Date(s.last_scanned_at).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })
-                      : '—'}
+                      : '-'}
                   </td>
                   <td className="px-3 py-3 text-end font-mono italic font-medium text-[var(--text-primary)]">{s.days_absent}</td>
                 </tr>

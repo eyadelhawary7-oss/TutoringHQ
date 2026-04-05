@@ -55,7 +55,7 @@ export function BranchSwitcher() {
     return (
       <div className="px-4 py-3 border-b border-slate-800">
         <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">{t('centerName')}</p>
-        <p className="text-sm font-semibold text-slate-300 truncate">{user?.center?.name ?? '—'}</p>
+        <p className="text-sm font-semibold text-slate-300 truncate">{user?.center?.name ?? '-'}</p>
       </div>
     );
   }
@@ -64,7 +64,7 @@ export function BranchSwitcher() {
     return (
       <div className="px-4 py-3 border-b border-slate-800">
         <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">{t('centerName')}</p>
-        <p className="text-sm font-semibold text-slate-300 truncate">{activeBranch?.name ?? user?.center?.name ?? '—'}</p>
+        <p className="text-sm font-semibold text-slate-300 truncate">{activeBranch?.name ?? user?.center?.name ?? '-'}</p>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export function BranchSwitcher() {
             <Building2 size={12} className="text-white" />
           </div>
         )}
-        <span className="flex-1 text-sm font-semibold text-slate-300 truncate">{activeBranch?.name ?? '—'}</span>
+        <span className="flex-1 text-sm font-semibold text-slate-300 truncate">{activeBranch?.name ?? '-'}</span>
         <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-600/20 text-teal-400 font-medium shrink-0">
           {branches.length} branches
         </span>

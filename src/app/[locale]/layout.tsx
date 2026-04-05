@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     template: '%s | CenterHQ',
     default: 'CenterHQ',
   },
-  description: 'إدارة السناتر التعليمية — حضور QR، مدفوعات، تقارير',
+  description: 'إدارة السناتر التعليمية - حضور QR، مدفوعات، تقارير',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,

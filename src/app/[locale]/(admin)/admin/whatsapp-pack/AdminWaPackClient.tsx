@@ -214,7 +214,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
         </span>
       )
     }
-    return <span className="text-[var(--color-text-tertiary)]">—</span>
+    return <span className="text-[var(--color-text-tertiary)]">-</span>
   }
 
   async function toggleCenter(centerId: string, newValue: boolean) {
@@ -243,7 +243,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
         totalEnabled: asNum(prev.totalEnabled) + (newValue ? 1 : -1),
       }))
     } catch {
-      // no-op — UI reverts on next refresh
+      // no-op - UI reverts on next refresh
     } finally {
       setTogglingId(null)
     }
@@ -514,7 +514,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                 </p>
                               </>
                             ) : (
-                              <span className="text-[var(--color-text-tertiary)]">—</span>
+                              <span className="text-[var(--color-text-tertiary)]">-</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -619,7 +619,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                             </p>
                           </>
                         ) : (
-                          <p className="text-xs text-[var(--color-text-tertiary)]">—</p>
+                          <p className="text-xs text-[var(--color-text-tertiary)]">-</p>
                         )}
                       </div>
                       <div className="flex items-center justify-between">
@@ -680,7 +680,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                               </span>
                             </td>
                             <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                              {c.phone ?? '—'}
+                              {c.phone ?? '-'}
                             </td>
                             <td className="px-4 py-3 text-[var(--color-text-primary)]">
                               {c.pack_requested_at
@@ -688,7 +688,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                     locale === 'ar' ? 'en-US' : 'en-US',
                                     { day: 'numeric', month: 'long', year: 'numeric' },
                                   )
-                                : '—'}
+                                : '-'}
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex flex-wrap gap-2">
@@ -724,7 +724,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                               <td colSpan={5} className="px-4 py-4">
                                 <div className="max-w-lg space-y-3 rounded-lg border border-[var(--color-border-subtle)] p-4">
                                   <h3 className="font-semibold text-[var(--color-text-primary)]">
-                                    {tRoot('admin.approvePackTitle')} — {c.name}
+                                    {tRoot('admin.approvePackTitle')} - {c.name}
                                   </h3>
                                   {c.plan === 'top_centers' ? (
                                     <div className="space-y-1">
@@ -842,7 +842,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                               <td colSpan={5} className="px-4 py-4">
                                 <div className="max-w-lg space-y-3 rounded-lg border border-[var(--color-border-subtle)] p-4">
                                   <h3 className="font-semibold text-[var(--color-text-primary)]">
-                                    {tRoot('admin.rejectPackTitle')} — {c.name}
+                                    {tRoot('admin.rejectPackTitle')} - {c.name}
                                   </h3>
                                   <textarea
                                     dir="rtl"
