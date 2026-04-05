@@ -3295,10 +3295,26 @@
     "subtitle": "The page you are looking for does not exist.",
     "backHome": "Back to Home"
   },
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundDesc": "Check the URL or return to your dashboard",
+    "goHome": "Go to dashboard",
+    "contactSupport": "Contact support",
+    "unexpectedTitle": "Something went wrong",
+    "unexpectedDesc": "The error was logged automatically. Try again or return to your dashboard.",
+    "tryAgain": "Try again",
+    "goDashboard": "Dashboard"
+  },
+  "sessionExpired": {
+    "title": "Session expired",
+    "desc": "For your security, sessions expire automatically. Please log in again.",
+    "loginAgain": "Log in again"
+  },
   "suspended": {
-    "title": "Your subscription has been suspended",
+    "title": "Account temporarily suspended",
     "suspendedHeading": "Your subscription has been suspended",
     "suspendedSubtitle": "Please contact us to resolve the issue",
+    "desc": "Your subscription payment is overdue. Please pay to restore full access.",
     "message": "Please renew to continue using the system",
     "centerSuspendedTitle": "Your Account Has Been Suspended",
     "centerSuspendedMessage": "Your account has been suspended. Contact support to renew.",
@@ -3313,7 +3329,8 @@
     "contactViaWhatsapp": "Contact via WhatsApp",
     "goToBilling": "Go to Billing",
     "contactUs": "Contact Us",
-    "payNow": "Pay Now",
+    "payNow": "Pay now",
+    "contactSupport": "Contact support",
     "logout": "Logout"
   },
   "resetPassword": {
@@ -5347,7 +5364,12 @@
   "notes": {},
   "notesLabel": {},
   "notesPlaceholder": {},
-  "offline": {},
+  "offline": {
+    "title": "No internet connection",
+    "desc": "Check your connection and try again",
+    "scannerNote": "QR scanner works offline — attendance is saved automatically",
+    "retry": "Retry"
+  },
   "online": {},
   "ops": {
     "announcementLabel": "Announcement Label",

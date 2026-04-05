@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { useLocale } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
@@ -13,6 +12,7 @@ const SUPPORT_WHATSAPP = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || '2012206014
 export default function SuspendedPage() {
   const t = useTranslations('suspended');
   const locale = useLocale();
+  const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   const [fawryCode, setFawryCode] = useState('');
   const reason = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('reason') : null;
@@ -63,44 +63,52 @@ export default function SuspendedPage() {
   const waHref = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(waMessage)}`;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-[var(--color-surface-0)]">
-      <div className="absolute top-4 end-4 z-10">
+    <div
+      className="relative flex min-h-screen items-center justify-center bg-[#080D14] p-6"
+      dir={dir}
+    >
+      <div className="absolute end-4 top-4 z-10">
         <LanguageToggle />
       </div>
 
-      <div className="text-center max-w-sm">
-        <div className="text-6xl mb-6">&#x1F512;</div>
-        <h1 className="text-2xl font-black text-[var(--color-text-primary)] mb-3">{t('title')}</h1>
-        <p className="text-[var(--color-text-secondary)] mb-8">{t('message')}</p>
+      <div className="chq-spring-in w-full max-w-md space-y-6 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/20">
+          <span className="text-3xl font-bold text-amber-400" aria-hidden>
+            !
+          </span>
+        </div>
+        <div>
+          <h1 className="text-xl font-semibold text-white">{t('title')}</h1>
+          <p className="mt-2 text-sm text-slate-400">{t('desc')}</p>
+        </div>
 
-        {fawryCode && !isPaymentOverdue && !isCenterSuspended && (
-          <div className="mb-6 p-3 rounded-lg bg-[rgba(245,158,11,0.1)] border border-[var(--color-warning)]/30">
-            <p className="text-sm text-[var(--color-warning)] font-medium">{t('fawryCode', { code: fawryCode })}</p>
+        {fawryCode && !isPaymentOverdue && !isCenterSuspended ? (
+          <div className="rounded-xl border border-amber-800/40 bg-amber-900/20 p-3 text-start">
+            <p className="text-sm font-medium text-amber-300">{t('fawryCode', { code: fawryCode })}</p>
           </div>
-        )}
+        ) : null}
 
         <div className="flex flex-col gap-3">
+          <Link
+            href="/settings/billing"
+            className="rounded-xl bg-amber-500 px-6 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-amber-400 btn-press chq-focus"
+          >
+            {t('payNow')}
+          </Link>
           <a
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-3 rounded-xl font-bold text-white text-sm"
-            style={{ background: '#25D366' }}
+            className="rounded-xl border border-teal-800/50 px-6 py-3 text-center text-sm font-semibold text-teal-400 transition-colors hover:bg-teal-900/20 btn-press chq-focus"
           >
-            &#x1F4AC; {t('contactViaWhatsapp')}
+            {t('contactSupport')}
           </a>
-          <Link
-            href="/settings/billing"
-            className="px-6 py-3 rounded-xl font-bold text-sm border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--overlay-light)] transition-colors"
-          >
-            {t('goToBilling')}
-          </Link>
         </div>
 
         <button
           type="button"
-          onClick={handleLogout}
-          className="mt-8 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
+          onClick={() => void handleLogout()}
+          className="text-sm text-slate-500 transition-colors hover:text-slate-400 btn-press chq-focus rounded-lg px-2 py-1"
         >
           {t('logout')}
         </button>

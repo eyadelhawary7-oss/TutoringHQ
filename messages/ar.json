@@ -4522,10 +4522,26 @@
     "subtitle": "الصفحة التي تبحث عنها غير موجودة.",
     "backHome": "العودة للرئيسية"
   },
+  "errors": {
+    "notFoundTitle": "الصفحة غير موجودة",
+    "notFoundDesc": "تأكد من الرابط أو عد إلى لوحة التحكم",
+    "goHome": "العودة للرئيسية",
+    "contactSupport": "تواصل مع الدعم",
+    "unexpectedTitle": "حدث خطأ غير متوقع",
+    "unexpectedDesc": "تم تسجيل الخطأ تلقائياً. اضغط إعادة المحاولة أو عد للرئيسية.",
+    "tryAgain": "إعادة المحاولة",
+    "goDashboard": "الرئيسية"
+  },
+  "sessionExpired": {
+    "title": "انتهت جلسة العمل",
+    "desc": "لأمان حسابك، تنتهي الجلسة تلقائياً. سجّل الدخول مجدداً.",
+    "loginAgain": "تسجيل الدخول مجدداً"
+  },
   "suspended": {
-    "title": "تم تعليق اشتراكك ",
+    "title": "الحساب موقوف مؤقتاً",
     "suspendedHeading": "تم تعليق اشتراكك ",
     "suspendedSubtitle": "يرجى التواصل معنا لحل المشكلة",
+    "desc": "الاشتراك متأخر. يُرجى تسديد المبلغ المستحق لاستعادة الوصول الكامل.",
     "message": "Please renew to continue using the system",
     "centerSuspendedTitle": "تم تعليق حسابك.",
     "centerSuspendedMessage": "Your account has been suspended. Contact support to renew.",
@@ -4540,7 +4556,8 @@
     "contactViaWhatsapp": "للتواصل معنا عبر واتساب",
     "goToBilling": "الانتقال إلى الفوترة",
     "contactUs": "تواصل معنا",
-    "payNow": "إدفع الآن",
+    "payNow": "تسديد الاشتراك الآن",
+    "contactSupport": "تواصل مع الدعم",
     "logout": "تسجيل الخروج"
   },
   "sync": {
@@ -5347,7 +5364,12 @@
   "notes": {},
   "notesLabel": {},
   "notesPlaceholder": {},
-  "offline": {},
+  "offline": {
+    "title": "لا يوجد اتصال بالإنترنت",
+    "desc": "تحقق من اتصالك وأعد المحاولة",
+    "scannerNote": "ماسح QR يعمل بدون إنترنت — الحضور محفوظ تلقائياً",
+    "retry": "إعادة المحاولة"
+  },
   "online": {},
   "ops": {
     "announcementLabel": "إعلان تسمية",

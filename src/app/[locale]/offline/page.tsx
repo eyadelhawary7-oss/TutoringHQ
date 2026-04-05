@@ -1,29 +1,51 @@
 'use client';
 
+import { useTranslations, useLocale } from 'next-intl';
+
 export default function OfflinePage() {
+  const t = useTranslations('offline');
+  const locale = useLocale();
+  const dir = locale === 'ar' ? 'rtl' : 'ltr';
+
   return (
-    <div className="bg-[var(--color-surface-0)] min-h-screen flex flex-col items-center justify-center gap-6 px-6">
-      <div className="w-20 h-20 rounded-full bg-[var(--color-surface-2)] flex items-center justify-center">
-        <svg
-          width="40"
-          height="40"
-          fill="none"
-          stroke="var(--color-text-tertiary)"
-          strokeWidth="1.5"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
+    <div
+      className="flex min-h-screen items-center justify-center bg-[#080D14] p-6"
+      dir={dir}
+    >
+      <div className="chq-spring-in w-full max-w-md space-y-6 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-800/40 bg-amber-900/20">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#F59E0B"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+            <path d="M1.42 9a15 15 0 0 1 21.16 0" />
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+            <line x1="2" y1="2" x2="22" y2="22" />
+          </svg>
+        </div>
+        <div>
+          <h1 className="text-xl font-semibold text-white">{t('title')}</h1>
+          <p className="mt-2 text-sm text-slate-400">{t('desc')}</p>
+        </div>
+        <div className="rounded-xl border border-teal-800/40 bg-teal-900/20 p-4 text-start text-sm text-teal-300">
+          {t('scannerNote')}
+        </div>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="rounded-xl bg-slate-700 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-600 btn-press chq-focus"
         >
-          <line x1="1" y1="1" x2="23" y2="23" />
-          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" />
-        </svg>
+          {t('retry')}
+        </button>
       </div>
-      <div className="text-center">
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">أنت غير متصل</h1>
-        <p className="text-sm text-[var(--color-text-secondary)]">تحقق من اتصالك بالإنترنت وحاول مجدداً</p>
-      </div>
-      <button type="button" onClick={() => window.location.reload()} className="btn btn-primary">
-        إعادة المحاولة
-      </button>
     </div>
   );
 }
