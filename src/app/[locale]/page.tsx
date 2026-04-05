@@ -176,68 +176,113 @@ export default function LocaleHomePage() {
                 {t('watchDemo')}
               </a>
             </div>
-            <p className="mt-8 text-sm text-slate-500">{m('socialProof')}</p>
           </div>
 
           <div className="flex justify-center md:justify-end">
-            <div
-              className="relative mx-auto flex h-[440px] w-[220px] flex-col overflow-hidden rounded-[36px] border-2 border-slate-700 bg-slate-900 shadow-2xl"
-              aria-hidden
-            >
-              <div className="flex items-center justify-center border-b border-slate-800 py-3">
-                <span className="text-xs font-semibold text-slate-300">CenterHQ</span>
-              </div>
+            <div className="relative mx-auto h-[560px] w-[280px] shrink-0" aria-hidden dir="ltr">
+              {/* Outer phone frame */}
+              <div className="absolute inset-0 rounded-[48px] border border-slate-600 bg-slate-800 shadow-[0_0_60px_rgba(13,148,136,0.15)]" />
 
-              <div className="relative flex flex-1 items-center justify-center bg-slate-950 p-4">
-                <div className="grid grid-cols-6 gap-1">
-                  {Array.from({ length: 36 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-3 w-3 rounded-sm"
-                      style={{
-                        backgroundColor: [0, 1, 6, 7, 2, 8, 14, 13, 28, 29, 34, 35, 30, 27, 21].includes(i)
-                          ? '#0D9488'
-                          : '#1e293b',
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div className="pointer-events-none absolute inset-4">
-                  <div className="absolute left-0 top-0 h-6 w-6 rounded-tl-sm border-l-2 border-t-2 border-teal-500" />
-                  <div className="absolute right-0 top-0 h-6 w-6 rounded-tr-sm border-r-2 border-t-2 border-teal-500" />
-                  <div className="absolute bottom-0 left-0 h-6 w-6 rounded-bl-sm border-b-2 border-l-2 border-teal-500" />
-                  <div className="absolute bottom-0 right-0 h-6 w-6 rounded-br-sm border-b-2 border-r-2 border-teal-500" />
-                </div>
-
-                <div
-                  className="absolute left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-teal-500 to-transparent"
-                  style={{
-                    top: scanState === 'scanning' ? '30%' : '70%',
-                    transition: 'top 2s ease-in-out',
-                    opacity: 0.8,
-                  }}
-                />
-              </div>
-
-              <div
-                className={`absolute bottom-0 left-0 right-0 border-t border-slate-700 bg-slate-800 p-4 transition-transform duration-500 ease-out ${
-                  scanState === 'success' ? 'translate-y-0' : 'translate-y-full'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-3 w-3 animate-pulse rounded-full bg-teal-500" />
-                  <div>
-                    <p className="text-sm font-semibold text-white">Mohamed Ahmed</p>
-                    <p className="text-xs text-teal-400">تم تسجيل الحضور</p>
+              {/* Inner screen */}
+              <div className="absolute inset-[3px] flex flex-col overflow-hidden rounded-[46px] bg-slate-950">
+                {/* Status bar */}
+                <div className="flex items-center justify-between bg-slate-950 px-6 pb-2 pt-4">
+                  <span className="text-[10px] font-semibold text-slate-400">9:41</span>
+                  <div className="h-5 w-16 rounded-full bg-slate-900" />
+                  <div className="flex items-center gap-1">
+                    <div className="flex items-end gap-0.5">
+                      <div className="h-1 w-0.5 rounded-full bg-slate-400" />
+                      <div className="h-1.5 w-0.5 rounded-full bg-slate-400" />
+                      <div className="h-2 w-0.5 rounded-full bg-slate-400" />
+                      <div className="h-2.5 w-0.5 rounded-full bg-teal-400" />
+                    </div>
+                    <div className="ml-1 h-1.5 w-3 rounded-sm border border-slate-400">
+                      <div className="h-full w-2/3 rounded-sm bg-teal-400" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-center gap-1.5 border-t border-slate-800 bg-slate-900 py-3">
-                <div className="h-1.5 w-1.5 rounded-full bg-teal-500" />
-                <div className="h-1.5 w-1.5 rounded-full bg-slate-600" />
-                <div className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+                {/* App header */}
+                <div className="flex items-center justify-center border-b border-slate-800 bg-slate-950 py-2">
+                  <span className="text-xs font-bold tracking-wide text-white">CenterHQ</span>
+                </div>
+
+                {/* Scanner area */}
+                <div className="relative flex flex-1 items-center justify-center bg-slate-950">
+                  {/* QR code grid 7x7 */}
+                  <div className="grid grid-cols-7 gap-[3px]">
+                    {Array.from({ length: 49 }).map((_, i) => {
+                      const teal = [
+                        0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 20, 21, 27, 28, 34, 35, 41, 42, 43, 44, 45, 46, 48, 8,
+                        15, 22, 29, 36, 10, 17, 24, 31, 38,
+                      ].includes(i);
+                      return (
+                        <div
+                          key={i}
+                          className="h-4 w-4 rounded-[3px]"
+                          style={{ backgroundColor: teal ? '#0D9488' : '#1e293b' }}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  {/* Scanner corners — larger */}
+                  <div className="pointer-events-none absolute inset-8">
+                    <div className="absolute left-0 top-0 h-8 w-8 rounded-tl border-l-[3px] border-t-[3px] border-teal-400" />
+                    <div className="absolute right-0 top-0 h-8 w-8 rounded-tr border-r-[3px] border-t-[3px] border-teal-400" />
+                    <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl border-b-[3px] border-l-[3px] border-teal-400" />
+                    <div className="absolute bottom-0 right-0 h-8 w-8 rounded-br border-b-[3px] border-r-[3px] border-teal-400" />
+                  </div>
+
+                  {/* Scan line */}
+                  <div
+                    className="absolute left-10 right-10 h-[2px] rounded-full bg-gradient-to-r from-transparent via-teal-400 to-transparent"
+                    style={{
+                      top: scanState === 'scanning' ? '25%' : '75%',
+                      transition: 'top 2s ease-in-out',
+                      boxShadow: '0 0 8px rgba(13,148,136,0.8)',
+                    }}
+                  />
+                </div>
+
+                {/* Success notification */}
+                <div
+                  className={`absolute bottom-16 left-3 right-3 rounded-2xl border border-teal-900 bg-slate-800 p-3 transition-all duration-500 ease-out ${
+                    scanState === 'success'
+                      ? 'translate-y-0 opacity-100'
+                      : 'pointer-events-none translate-y-4 opacity-0'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-900">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#0D9488"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold leading-none text-white">Mohamed Ahmed</p>
+                      <p className="mt-0.5 text-xs text-teal-400">تم تسجيل الحضور</p>
+                    </div>
+                    <div className="ml-auto text-xs text-slate-500">الآن</div>
+                  </div>
+                </div>
+
+                {/* Bottom bar */}
+                <div className="flex items-center justify-center gap-2 border-t border-slate-800 bg-slate-950 py-3">
+                  <div className="h-2 w-2 rounded-full bg-teal-500" />
+                  <div className="h-2 w-2 rounded-full bg-slate-700" />
+                  <div className="h-2 w-2 rounded-full bg-slate-700" />
+                </div>
               </div>
             </div>
           </div>
