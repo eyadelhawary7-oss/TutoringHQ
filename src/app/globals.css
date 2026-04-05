@@ -1819,3 +1819,74 @@ html.light {
   border-color: #d1d5db !important;
   color-scheme: light !important;
 }
+
+/* S9 — Micro-interactions */
+.btn-press {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+@keyframes chq-check-draw {
+  from { stroke-dashoffset: 48; }
+  to   { stroke-dashoffset: 0; }
+}
+.chq-check-path {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: chq-check-draw 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes chq-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+.chq-shake {
+  animation: chq-shake 400ms ease;
+}
+
+@keyframes chq-spring-in {
+  0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
+  70%  { transform: scale(1.02) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.chq-spring-in {
+  animation: chq-spring-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes chq-slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.chq-slide-up {
+  animation: chq-slide-up 300ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes chq-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.chq-fade-in {
+  animation: chq-fade-in 200ms ease forwards;
+}
+
+@keyframes chq-shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+.chq-skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  animation: chq-shimmer 1.5s infinite;
+  border-radius: 0.375rem;
+}
+
+.chq-focus:focus-visible {
+  outline: 2px solid #0D9488;
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}

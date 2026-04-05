@@ -861,7 +861,7 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={() => setShowCardCartModal(true)}
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow btn-press chq-focus"
                 aria-label={ts('cardOrderCart')}
               >
                 <ShoppingCart size={16} />
@@ -874,7 +874,7 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={() => setShowCardOrderModal(true)}
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow btn-press chq-focus"
               >
                 <CreditCard size={16} /> {ts('order_cards')}
               </button>
@@ -887,7 +887,7 @@ export default function StudentsPage() {
                     setAnnouncementMessage('');
                     setShowAnnouncementModal(true);
                   }}
-                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
                 >
                   {ts('sendAnnouncement')}
                 </button>
@@ -895,7 +895,7 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={() => setShowAddModal(true)}
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl transition-all duration-150 shadow-sm"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl transition-all duration-150 shadow-sm btn-press chq-focus"
               >
                 <Plus size={16} /> {ts('add_student')}
               </button>
@@ -946,7 +946,7 @@ export default function StudentsPage() {
                   subjectFilter === null
                     ? 'bg-teal-600 text-white shadow-sm'
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                }`}
+                } btn-press chq-focus`}
               >
                 {tCommon('all', { defaultValue: 'All' })}
               </button>
@@ -962,7 +962,7 @@ export default function StudentsPage() {
                     subjectFilter === sub
                       ? 'bg-teal-600 text-white shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                  }`}
+                  } btn-press chq-focus`}
                 >
                   {sub}
                 </button>
@@ -982,7 +982,7 @@ export default function StudentsPage() {
                     lifecycleFilter === f
                       ? 'bg-teal-600 text-white shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                  }`}
+                  } btn-press chq-focus`}
                 >
                   {ts(lifecycleFilterLabelKey(f))}
                 </button>
@@ -1001,7 +1001,7 @@ export default function StudentsPage() {
                   sortBy === 'name'
                     ? 'bg-teal-600 text-white shadow-sm'
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                }`}
+                } btn-press chq-focus`}
               >
                 {ts('sortName')}
               </button>
@@ -1015,7 +1015,7 @@ export default function StudentsPage() {
                   sortBy === 'balance'
                     ? 'bg-teal-600 text-white shadow-sm'
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                }`}
+                } btn-press chq-focus`}
               >
                 {ts('sortBalance')}
               </button>
@@ -1030,7 +1030,7 @@ export default function StudentsPage() {
                 {ts('addStudentSuccess', { name: addSuccess.name, studentNumber: addSuccess.studentNumber })}
               </p>
               {addSuccess.qrDataUrl && <img src={addSuccess.qrDataUrl} alt="" className="w-16 h-16" />}
-              <button type="button" onClick={() => setAddSuccess(null)} className="text-sm underline">
+              <button type="button" onClick={() => setAddSuccess(null)} className="text-sm underline btn-press chq-focus">
                 {tCommon('cancel')}
               </button>
             </div>
@@ -1126,7 +1126,7 @@ export default function StudentsPage() {
                                 <td className="px-4 py-4 align-top">
                                   <button
                                     type="button"
-                                    className="text-start"
+                                    className="text-start btn-press chq-focus"
                                     onClick={() => openQRModal(s)}
                                   >
                                     <span className="font-semibold text-[var(--color-text-primary)]">{s.name}</span>
@@ -1149,7 +1149,7 @@ export default function StudentsPage() {
                                       <button
                                         type="button"
                                         data-parent-phone-trigger
-                                        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-[var(--color-surface-2)] hover:text-slate-600"
+                                        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-[var(--color-surface-2)] hover:text-slate-600 btn-press chq-focus"
                                         aria-label={ts('addParentPhone')}
                                         onClick={() => {
                                           setOpenPopoverId(s.id);
@@ -1162,7 +1162,7 @@ export default function StudentsPage() {
                                       <button
                                         type="button"
                                         data-parent-phone-trigger
-                                        className="inline-flex items-center gap-1.5 rounded-lg p-1 text-start hover:bg-[var(--color-surface-2)]"
+                                        className="inline-flex items-center gap-1.5 rounded-lg p-1 text-start hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                                         onClick={() => {
                                           setOpenPopoverId(s.id);
                                           setParentPhoneDraft(String(s.parent_phone ?? ''));
@@ -1194,14 +1194,14 @@ export default function StudentsPage() {
                                           <button
                                             type="button"
                                             disabled={savingParentPhoneId === s.id}
-                                            className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                                            className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 btn-press chq-focus"
                                             onClick={() => void saveParentPhoneInline(s.id)}
                                           >
                                             {savingParentPhoneId === s.id ? tCommon('loading') : ts('save')}
                                           </button>
                                           <button
                                             type="button"
-                                            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+                                            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 btn-press chq-focus"
                                             onClick={() => setOpenPopoverId(null)}
                                           >
                                             {ts('cancel')}
@@ -1225,7 +1225,7 @@ export default function StudentsPage() {
                                     <button
                                       type="button"
                                       onClick={() => openEdit(s)}
-                                      className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 transition-colors duration-150"
+                                      className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 transition-colors duration-150 btn-press chq-focus"
                                       title={tCommon('edit')}
                                     >
                                       <Edit size={18} />
@@ -1233,7 +1233,7 @@ export default function StudentsPage() {
                                     <button
                                       type="button"
                                       onClick={() => openQRModal(s)}
-                                      className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 transition-colors duration-150"
+                                      className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 transition-colors duration-150 btn-press chq-focus"
                                       title={ts('viewQR')}
                                     >
                                       <Eye size={18} />
@@ -1358,7 +1358,7 @@ export default function StudentsPage() {
                                 <button
                                   type="button"
                                   data-parent-phone-trigger
-                                  className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-[var(--color-surface-2)]"
+                                  className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                                   aria-label={ts('addParentPhone')}
                                   onClick={() => {
                                     setOpenPopoverId(s.id);
@@ -1371,7 +1371,7 @@ export default function StudentsPage() {
                                 <button
                                   type="button"
                                   data-parent-phone-trigger
-                                  className="inline-flex items-center gap-1.5 rounded-lg py-1 pe-2 text-start hover:bg-[var(--color-surface-2)]"
+                                  className="inline-flex items-center gap-1.5 rounded-lg py-1 pe-2 text-start hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                                   onClick={() => {
                                     setOpenPopoverId(s.id);
                                     setParentPhoneDraft(String(s.parent_phone ?? ''));
@@ -1403,14 +1403,14 @@ export default function StudentsPage() {
                                     <button
                                       type="button"
                                       disabled={savingParentPhoneId === s.id}
-                                      className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                                      className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 btn-press chq-focus"
                                       onClick={() => void saveParentPhoneInline(s.id)}
                                     >
                                       {savingParentPhoneId === s.id ? tCommon('loading') : ts('save')}
                                     </button>
                                     <button
                                       type="button"
-                                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 btn-press chq-focus"
                                       onClick={() => setOpenPopoverId(null)}
                                     >
                                       {ts('cancel')}
@@ -1495,7 +1495,7 @@ export default function StudentsPage() {
                                     e.stopPropagation();
                                     if (canOptIn) void handlePackToggle(s);
                                   }}
-                                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${s.parent_pack_opted_in ? 'bg-teal-600' : 'bg-slate-200'}`}
+                                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${s.parent_pack_opted_in ? 'bg-teal-600' : 'bg-slate-200'} btn-press chq-focus`}
                                 >
                                   <span
                                     className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-[var(--color-surface-1)] shadow transition-transform ${s.parent_pack_opted_in ? 'translate-x-4' : 'translate-x-0.5'}`}
@@ -1517,7 +1517,7 @@ export default function StudentsPage() {
                                 toast.success(ts('addedToOrder'));
                               }
                             }}
-                            className={`p-2 rounded-lg hover:bg-[var(--color-surface-2)] active:scale-95 transition-transform ${isInCart(s.id) ? 'text-teal-500' : 'text-slate-400'}`}
+                            className={`p-2 rounded-lg hover:bg-[var(--color-surface-2)] active:scale-95 transition-transform ${isInCart(s.id) ? 'text-teal-500' : 'text-slate-400'} btn-press chq-focus`}
                             aria-label={ts('addToCardOrder')}
                             title={ts('addToCardOrder')}
                           >
@@ -1530,7 +1530,7 @@ export default function StudentsPage() {
                                 e.stopPropagation();
                                 setPrintStudent({ id: s.id, name: s.name });
                               }}
-                              className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                              className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] btn-press chq-focus"
                               title={ts('statement.printStatement')}
                             >
                               <Printer size={14} />
@@ -1542,7 +1542,7 @@ export default function StudentsPage() {
                               e.stopPropagation();
                               openEdit(s);
                             }}
-                            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] btn-press chq-focus"
                             title={tCommon('edit')}
                           >
                             <Edit size={14} />
@@ -1553,7 +1553,7 @@ export default function StudentsPage() {
                               e.stopPropagation();
                               openQRModal(s);
                             }}
-                            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] btn-press chq-focus"
                             title={ts('viewQR')}
                           >
                             <Eye size={14} />
@@ -1564,7 +1564,7 @@ export default function StudentsPage() {
                               e.stopPropagation();
                               setDeleteTarget(s);
                             }}
-                            className="p-2 rounded-lg hover:bg-[rgba(239,68,68,0.12)] text-[var(--color-danger)]"
+                            className="p-2 rounded-lg hover:bg-[rgba(239,68,68,0.12)] text-[var(--color-danger)] btn-press chq-focus"
                             title={tCommon('delete')}
                           >
                             <Trash2 size={14} />
@@ -1588,7 +1588,7 @@ export default function StudentsPage() {
           <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-[var(--color-text-primary)]">{ts('addStudent')}</h3>
-              <button onClick={() => setShowAddModal(false)}><X size={18} className="text-[var(--color-text-secondary)]" /></button>
+              <button onClick={() => setShowAddModal(false)} className="btn-press chq-focus"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             <form onSubmit={handleAddStudent} className="space-y-3">
               {addError && <p className="text-sm text-destructive">{addError}</p>}
@@ -1597,7 +1597,7 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={() => setShowParentSectionAdd((v) => !v)}
-                className="w-full text-start text-sm font-medium text-teal-700 py-2 border border-dashed border-teal-200 rounded-lg px-3 hover:bg-teal-50/50"
+                className="w-full text-start text-sm font-medium text-teal-700 py-2 border border-dashed border-teal-200 rounded-lg px-3 hover:bg-teal-50/50 btn-press chq-focus"
               >
                 {ts('parentSection')}
               </button>
@@ -1642,8 +1642,8 @@ export default function StudentsPage() {
               </div>
               <p className="text-xs text-[var(--color-text-secondary)]">{ts('autoGenerateNumber')}</p>
               <div className="flex gap-2 justify-end mt-4">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
-                <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{isAdding ? tCommon('loading') : tCommon('save')}</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
+                <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 btn-press chq-focus" style={{ background: 'hsl(var(--primary))' }}>{isAdding ? tCommon('loading') : tCommon('save')}</button>
               </div>
             </form>
           </div>
@@ -1656,7 +1656,7 @@ export default function StudentsPage() {
           <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-[var(--color-text-primary)]">{tCommon('edit')}</h3>
-              <button onClick={() => setEditStudent(null)}><X size={18} className="text-[var(--color-text-secondary)]" /></button>
+              <button onClick={() => setEditStudent(null)} className="btn-press chq-focus"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             <div className="space-y-3">
               <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
@@ -1664,7 +1664,7 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={() => setShowParentSectionEdit((v) => !v)}
-                className="w-full text-start text-sm font-medium text-teal-700 py-2 border border-dashed border-teal-200 rounded-lg px-3 hover:bg-teal-50/50"
+                className="w-full text-start text-sm font-medium text-teal-700 py-2 border border-dashed border-teal-200 rounded-lg px-3 hover:bg-teal-50/50 btn-press chq-focus"
               >
                 {ts('parentSection')}
               </button>
@@ -1720,8 +1720,8 @@ export default function StudentsPage() {
               </div>
             </div>
             <div className="flex gap-2 justify-end mt-4">
-              <button onClick={() => setEditStudent(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
-              <button onClick={saveEdit} disabled={isSavingEdit} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{isSavingEdit ? tCommon('loading') : tCommon('save')}</button>
+              <button onClick={() => setEditStudent(null)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
+              <button onClick={saveEdit} disabled={isSavingEdit} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 btn-press chq-focus" style={{ background: 'hsl(var(--primary))' }}>{isSavingEdit ? tCommon('loading') : tCommon('save')}</button>
             </div>
           </div>
         </div>
@@ -1735,8 +1735,8 @@ export default function StudentsPage() {
             <p className="text-sm text-[var(--color-text-secondary)] mb-3">{ts('deleteStudentConfirm')}</p>
             <p className="font-medium text-[var(--color-text-primary)] mb-5">{deleteTarget.name}</p>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
-              <button onClick={() => { if (deleteTarget) { handleDeleteStudent(deleteTarget); setDeleteTarget(null); } }} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-destructive hover:bg-destructive/90">{tCommon('delete')}</button>
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
+              <button onClick={() => { if (deleteTarget) { handleDeleteStudent(deleteTarget); setDeleteTarget(null); } }} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-destructive hover:bg-destructive/90 btn-press chq-focus">{tCommon('delete')}</button>
             </div>
           </div>
         </div>
@@ -1748,7 +1748,7 @@ export default function StudentsPage() {
           <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-[var(--color-text-primary)]">{ts('viewQR')}</h3>
-              <button onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
+              <button onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }} className="p-1.5 rounded-lg hover:bg-muted btn-press chq-focus"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             {/* Professional ID card */}
             <div className="flex justify-center mb-5">
@@ -1773,14 +1773,14 @@ export default function StudentsPage() {
               )}
             </div>
             <div className="flex gap-2">
-              <button onClick={downloadQR} disabled={!qrDataUrl} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors disabled:opacity-50">
+              <button onClick={downloadQR} disabled={!qrDataUrl} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors disabled:opacity-50 btn-press chq-focus">
                 <Download size={14} /> {tCommon('download')}
               </button>
-              <button onClick={printCard} disabled={!qrDataUrl} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>
+              <button onClick={printCard} disabled={!qrDataUrl} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 btn-press chq-focus" style={{ background: 'hsl(var(--primary))' }}>
                 <QrCode size={14} /> {tCommon('print')}
               </button>
             </div>
-            {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-500 hover:underline">{ts('regenerateQR')}</button>}
+            {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-500 hover:underline btn-press chq-focus">{ts('regenerateQR')}</button>}
           </div>
         </div>
       )}
@@ -1803,7 +1803,7 @@ export default function StudentsPage() {
                 type="button"
                 disabled={announcementSubmitting}
                 onClick={() => setShowAnnouncementModal(false)}
-                className="p-1 rounded-lg hover:bg-muted"
+                className="p-1 rounded-lg hover:bg-muted btn-press chq-focus"
                 aria-label={tCommon('cancel')}
               >
                 <X size={18} className="text-[var(--color-text-secondary)]" />
@@ -1817,7 +1817,7 @@ export default function StudentsPage() {
                   announcementBlastType === 'ops'
                     ? 'border-teal-600 bg-teal-50 text-teal-900'
                     : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)]'
-                }`}
+                } btn-press chq-focus`}
               >
                 {ts('announcementOps')}
               </button>
@@ -1828,7 +1828,7 @@ export default function StudentsPage() {
                   announcementBlastType === 'promo'
                     ? 'border-amber-500 bg-amber-50 text-amber-900'
                     : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)]'
-                }`}
+                } btn-press chq-focus`}
               >
                 {ts('announcementPromo')}
               </button>
@@ -1936,7 +1936,7 @@ export default function StudentsPage() {
                   setAnnouncementSubmitting(false);
                 }
               }}
-              className="mt-4 w-full py-3 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-4 w-full py-3 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
             >
               {announcementSubmitting ? tCommon('loading') : ts('announcementConfirm')}
             </button>
@@ -1957,7 +1957,7 @@ export default function StudentsPage() {
           >
             <div className="flex items-center justify-between mb-4 shrink-0">
               <h3 className="font-bold text-[var(--color-text-primary)]">{ts('cardOrderCartTitle')}</h3>
-              <button type="button" onClick={() => setShowCardCartModal(false)} aria-label={tCommon('cancel')}>
+              <button type="button" onClick={() => setShowCardCartModal(false)} aria-label={tCommon('cancel')} className="btn-press chq-focus">
                 <X size={18} className="text-[var(--color-text-secondary)]" />
               </button>
             </div>
@@ -1981,7 +1981,7 @@ export default function StudentsPage() {
                       <button
                         type="button"
                         onClick={() => removeFromCart(id)}
-                        className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] shrink-0"
+                        className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] shrink-0 btn-press chq-focus"
                         aria-label={tCommon('delete')}
                       >
                         <X size={16} />
@@ -1999,7 +1999,7 @@ export default function StudentsPage() {
                     clearCart();
                     setShowCardCartModal(false);
                   }}
-                  className="w-full py-2.5 rounded-xl text-sm font-medium border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
+                  className="w-full py-2.5 rounded-xl text-sm font-medium border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                 >
                   {ts('cardOrderCartClearAll')}
                 </button>
@@ -2017,7 +2017,7 @@ export default function StudentsPage() {
                   setShowCardCartModal(false);
                   setShowCardOrderModal(true);
                 }}
-                className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
               >
                 {ts('order_cards')}
               </button>

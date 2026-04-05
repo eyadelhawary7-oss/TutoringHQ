@@ -225,7 +225,7 @@ function PaymobModal({
           <button
             type="button"
             onClick={onClose}
-            className="ms-auto text-slate-500 hover:text-slate-800"
+            className="ms-auto text-slate-500 hover:text-slate-800 btn-press chq-focus"
             aria-label={closeLabel}
           >
             ✕
@@ -271,7 +271,7 @@ function PlanCard({
       onClick={onClick}
       className={`w-full rounded-xl border-2 p-4 text-start transition-shadow ${
         isSelected ? 'border-teal-600 ring-2 ring-teal-600/30' : 'border-slate-200 hover:border-slate-300'
-      } dark:border-slate-600`}
+      } dark:border-slate-600 btn-press chq-focus`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
@@ -326,7 +326,7 @@ function PeriodCard({
       onClick={onClick}
       className={`w-full rounded-xl border-2 p-4 text-start transition-shadow ${
         isSelected ? 'border-teal-600 ring-2 ring-teal-600/30' : 'border-slate-200 hover:border-slate-300'
-      } dark:border-slate-600`}
+      } dark:border-slate-600 btn-press chq-focus`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-semibold text-slate-900 dark:text-white" style={cairoFont}>
@@ -434,7 +434,7 @@ function PaygTab({
           {ownerOk ? (
             <button
               type="button"
-              className="mt-2 text-sm font-semibold text-amber-800 underline dark:text-amber-200"
+              className="mt-2 text-sm font-semibold text-amber-800 underline dark:text-amber-200 btn-press chq-focus"
               onClick={() => void postSwitch({ action: 'cancel' })}
             >
               {t('payg.switch.cancel')}
@@ -587,7 +587,7 @@ function PaygTab({
             <>
               <button
                 type="button"
-                className="w-full rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
+                className="w-full rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 btn-press chq-focus"
                 style={cairoFont}
                 onClick={() =>
                   void postSwitch({ action: 'enable' }).then((ok) => {
@@ -622,7 +622,7 @@ function PaygTab({
                 </select>
                 <button
                   type="button"
-                  className="w-full rounded-xl border-2 border-slate-400 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-slate-500 dark:text-slate-100 sm:flex-1"
+                  className="w-full rounded-xl border-2 border-slate-400 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-slate-500 dark:text-slate-100 sm:flex-1 btn-press chq-focus"
                   style={cairoFont}
                   onClick={() =>
                     void postSwitch({
@@ -1569,7 +1569,7 @@ export default function BillingPage() {
           type="button"
           disabled={!ownerOk || payingInvoiceId === inv.id}
           onClick={() => void handleInvoicePay(inv.id)}
-          className="rounded-lg border-2 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+          className="rounded-lg border-2 px-3 py-1.5 text-xs font-semibold disabled:opacity-50 btn-press chq-focus"
           style={{ borderColor: '#0D9488', color: '#0D9488' }}
         >
           {payingInvoiceId === inv.id ? t('loadingShort') : t('history.payNow')}
@@ -1758,7 +1758,7 @@ export default function BillingPage() {
               {ownerOk && isSuspendedCenter ? (
                 <button
                   type="button"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm md:w-auto"
+                  className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm md:w-auto btn-press chq-focus"
                   style={{ backgroundColor: '#F59E0B' }}
                   onClick={() => {
                     setReactivationError(null);
@@ -1807,7 +1807,7 @@ export default function BillingPage() {
                   activeTab === 'upgrade'
                     ? 'border-b-2 border-teal-600 font-semibold text-teal-600'
                     : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
+                } btn-press chq-focus`}
                 style={cairoFont}
               >
                 {t('upgrade.title')}
@@ -1819,7 +1819,7 @@ export default function BillingPage() {
                   activeTab === 'downgrade'
                     ? 'border-b-2 border-teal-600 font-semibold text-teal-600'
                     : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
+                } btn-press chq-focus`}
                 style={cairoFont}
               >
                 {t('downgrade.title')}
@@ -1831,7 +1831,7 @@ export default function BillingPage() {
                   activeTab === 'payg'
                     ? 'border-b-2 border-teal-600 font-semibold text-teal-600'
                     : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
+                } btn-press chq-focus`}
                 style={cairoFont}
               >
                 {t('payg.tabLabel')}
@@ -2057,7 +2057,7 @@ export default function BillingPage() {
                         !FEATURES.PAYMOB_ENABLED
                       }
                       onClick={() => void handleUpgradePay()}
-                      className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 md:w-full"
+                      className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 md:w-full btn-press chq-focus"
                       style={{ backgroundColor: '#0D9488' }}
                     >
                       {paymentLoading ? t('loadingShort') : t('upgrade.proceed')}
@@ -2220,7 +2220,7 @@ export default function BillingPage() {
                       type="button"
                       disabled={downgradeLoading}
                       onClick={() => void handleDowngradeConfirm()}
-                      className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm disabled:opacity-50"
+                      className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm disabled:opacity-50 btn-press chq-focus"
                       style={{ backgroundColor: '#F59E0B' }}
                     >
                       {downgradeLoading ? t('loadingShort') : t('downgrade.confirm')}
@@ -2279,7 +2279,7 @@ export default function BillingPage() {
                     <button
                       type="button"
                       onClick={() => toast.info(t('credits.applyInfo'))}
-                      className="w-full rounded-xl border-2 border-amber-500 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/30 sm:w-auto"
+                      className="w-full rounded-xl border-2 border-amber-500 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/30 sm:w-auto btn-press chq-focus"
                       style={cairoFont}
                     >
                       {t('credits.applyToInvoice')}
@@ -2292,7 +2292,7 @@ export default function BillingPage() {
                           block: 'start',
                         })
                       }
-                      className="w-full rounded-xl border-2 border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto"
+                      className="w-full rounded-xl border-2 border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto btn-press chq-focus"
                       style={cairoFont}
                     >
                       {t('credits.requestWithdrawal')}
@@ -2451,7 +2451,7 @@ export default function BillingPage() {
                           !String(center?.instapay_number ?? '').trim()
                         }
                         onClick={() => void handleWithdrawalSubmit()}
-                        className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                        className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 btn-press chq-focus"
                         style={{ backgroundColor: '#0D9488' }}
                       >
                         {withdrawalSubmitting ? t('loadingShort') : t('withdrawal.submit')}
@@ -2479,7 +2479,7 @@ export default function BillingPage() {
                 <button
                   type="button"
                   onClick={() => setShowReactivation(false)}
-                  className="text-slate-500 hover:text-slate-800"
+                  className="text-slate-500 hover:text-slate-800 btn-press chq-focus"
                   aria-label={t('close')}
                 >
                   ✕
@@ -2589,7 +2589,7 @@ export default function BillingPage() {
                 type="button"
                 disabled={reactivationLoading}
                 onClick={() => void handleReactivationPay()}
-                className="mt-6 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                className="mt-6 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 btn-press chq-focus"
                 style={{ backgroundColor: '#0D9488' }}
               >
                 {reactivationLoading ? t('loadingShort') : t('reactivation.proceed')}
@@ -2672,7 +2672,7 @@ export default function BillingPage() {
                   type="button"
                   disabled={!ownerOk || packRequestLoading}
                   onClick={() => void handlePackRequest()}
-                  className="mt-4 w-full rounded-xl border-2 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 md:w-auto"
+                  className="mt-4 w-full rounded-xl border-2 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 md:w-auto btn-press chq-focus"
                   style={{ borderColor: '#0D9488', backgroundColor: '#0D9488' }}
                 >
                   {packRequestLoading ? t('loadingShort') : t('pack.request')}
@@ -2893,7 +2893,7 @@ export default function BillingPage() {
                 setCancelSubmitError(null);
                 setShowCancelModal(true);
               }}
-              className="mt-3 text-sm text-red-500 underline hover:text-red-600 dark:text-red-400"
+              className="mt-3 text-sm text-red-500 underline hover:text-red-600 dark:text-red-400 btn-press chq-focus"
               style={cairoFont}
             >
               {t('cancel.link')}
@@ -2963,7 +2963,7 @@ export default function BillingPage() {
                   setCancelSubmitError(null);
                   setCancelConfirmText('');
                 }}
-                className="order-2 rounded-xl border-2 border-teal-600 px-4 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-200 dark:hover:bg-teal-950/40 sm:order-1"
+                className="order-2 rounded-xl border-2 border-teal-600 px-4 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-200 dark:hover:bg-teal-950/40 sm:order-1 btn-press chq-focus"
                 style={cairoFont}
               >
                 {t('cancel.keep')}
@@ -2974,7 +2974,7 @@ export default function BillingPage() {
                   cancelSubmitting || !cancelReason || cancelConfirmText !== 'CANCEL'
                 }
                 onClick={() => void handleCancelSubscription()}
-                className="order-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50 sm:order-2"
+                className="order-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50 sm:order-2 btn-press chq-focus"
                 style={cairoFont}
               >
                 {cancelSubmitting ? t('loadingShort') : t('cancel.submit')}

@@ -372,7 +372,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={toggleLocale}
-              className="text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-fast px-3 py-1.5 rounded-badge bg-[var(--color-surface-2)] border border-[var(--color-border-default)]"
+              className="text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-fast px-3 py-1.5 rounded-badge bg-[var(--color-surface-2)] border border-[var(--color-border-default)] btn-press chq-focus"
             >
               {locale === 'ar' ? 'English' : 'العربية'}
             </button>
@@ -507,11 +507,13 @@ export default function OnboardingPage() {
       {!completed && step < 4 && (
         <div className="px-4 pb-4 flex gap-3 max-w-lg mx-auto w-full">
           {step > 1 && (
-            <button type="button" onClick={() => void handleFooterBack()} disabled={advancing} className="btn btn-ghost flex-1">
+            <button type="button" onClick={() => void handleFooterBack()} disabled={advancing} className="btn btn-ghost flex-1 btn-press chq-focus">
               {to('back')}
             </button>
           )}
           <LoadingButton
+            type="button"
+            variant="primary"
             state={advancing || isCompleting ? 'loading' : 'idle'}
             loadingText={to('completing')}
             onClick={() => void handleFooterNext()}
@@ -525,7 +527,7 @@ export default function OnboardingPage() {
 
       {!completed && step === 4 && (
         <div className="px-4 pb-4 max-w-lg mx-auto w-full">
-          <button type="button" onClick={() => void handleFooterBack()} disabled={advancing} className="btn btn-ghost w-full">
+          <button type="button" onClick={() => void handleFooterBack()} disabled={advancing} className="btn btn-ghost w-full btn-press chq-focus">
             {to('back')}
           </button>
         </div>

@@ -5921,5 +5921,12 @@
     "topFiveByStudents": "Top 5 Centers by Students",
     "topFiveByRevenue": "Top 5 Centers by Revenue",
     "estRevenueProxy": "Est. revenue proxy"
+  },
+  "interactions": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "success": "Done",
+    "error": "Something went wrong, try again",
+    "retry": "Retry"
   }
 }

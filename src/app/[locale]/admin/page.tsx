@@ -222,8 +222,8 @@ function CardOrderPreview({
         )}
       </div>
       <div className="flex gap-1">
-        <button onClick={() => setSide('front')} className={`px-2 py-1 rounded text-xs ${side === 'front' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'}`}>Front</button>
-        <button onClick={() => setSide('back')} className={`px-2 py-1 rounded text-xs ${side === 'back' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'}`}>Back</button>
+        <button onClick={() => setSide('front')} className={`px-2 py-1 rounded text-xs ${side === 'front' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'} btn-press chq-focus`}>Front</button>
+        <button onClick={() => setSide('back')} className={`px-2 py-1 rounded text-xs ${side === 'back' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'} btn-press chq-focus`}>Back</button>
       </div>
     </div>
   );
@@ -1069,7 +1069,7 @@ export default function AdminPage() {
         <div className="text-center">
           <p className="text-red-600 font-medium mb-2">{loadError}</p>
           <div className="flex gap-3 justify-center">
-            <button onClick={loadOverview} className="px-4 py-2 bg-primary text-white rounded-lg">
+            <button onClick={loadOverview} className="px-4 py-2 bg-primary text-white rounded-lg btn-press chq-focus">
               {tAdmin('retry')}
             </button>
             <Link href="/dashboard" className="px-4 py-2 border rounded-lg">
@@ -1379,7 +1379,7 @@ export default function AdminPage() {
                       setStatusFilter(s);
                       setCentersPage(1);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary/20 text-primary' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary/20 text-primary' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'} btn-press chq-focus`}
                   >
                     {s === 'all' ? tCommon('all') : s === 'at_risk' ? (tAdmin('atRisk') ?? 'At Risk') : s === 'active' ? tCommon('active') : s === 'pending' ? tAdmin('pending') : tAdmin('suspended')}
                   </button>
@@ -1423,7 +1423,7 @@ export default function AdminPage() {
                     !bulkAction ||
                     (bulkAction === 'send_wa' && !bulkMessage.trim())
                   }
-                  className="px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-lg text-sm font-medium transition-colors btn-press chq-focus"
                 >
                   {bulkLoading ? tAdmin('applying') : tAdmin('applyAction')}
                 </button>
@@ -1433,7 +1433,7 @@ export default function AdminPage() {
                     setSelectedIds(new Set());
                     setBulkError(null);
                   }}
-                  className="px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] rounded-lg text-sm transition-colors border border-[var(--color-border-subtle)]"
+                  className="px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] rounded-lg text-sm transition-colors border border-[var(--color-border-subtle)] btn-press chq-focus"
                 >
                   {tAdmin('clearSelection')}
                 </button>
@@ -1503,7 +1503,7 @@ export default function AdminPage() {
                             <div className="relative">
                               <button
                                 onClick={() => setOpenActionsId(openActionsId === c.id ? null : c.id)}
-                                className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
+                                className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] btn-press chq-focus"
                                 title={tCommon('actions')}
                               >
                                 <MoreVertical size={16} />
@@ -1512,11 +1512,11 @@ export default function AdminPage() {
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setOpenActionsId(null)} aria-hidden="true" />
                                 <div className="absolute top-full end-0 mt-1 z-50 min-w-[180px] py-1 rounded-lg border border-border shadow-lg bg-[var(--color-surface-1)]">
-                                  <button onClick={() => { setDetailCenter(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start">
+                                  <button onClick={() => { setDetailCenter(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start btn-press chq-focus">
                                     <ExternalLink size={14} />{tAdmin('viewDetails')}
                                   </button>
                                   {c.status === 'active' && (
-                                    <button onClick={() => { setShowSuspendConfirm(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start">
+                                    <button onClick={() => { setShowSuspendConfirm(c); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start btn-press chq-focus">
                                       <AlertTriangle size={14} />{tAdmin('suspend')}
                                     </button>
                                   )}
@@ -1527,21 +1527,21 @@ export default function AdminPage() {
                                         setBlacklistReasonInput('');
                                         setOpenActionsId(null);
                                       }}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 text-start"
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 text-start btn-press chq-focus"
                                     >
                                       <ShieldAlert size={14} />
                                       Blacklist
                                     </button>
                                   )}
                                   {c.status === 'suspended' && (
-                                    <button onClick={() => { handleCenterAction(c.id, 'reactivate'); setOpenActionsId(null); }} disabled={actionLoading} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start disabled:opacity-50">
+                                    <button onClick={() => { handleCenterAction(c.id, 'reactivate'); setOpenActionsId(null); }} disabled={actionLoading} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start disabled:opacity-50 btn-press chq-focus">
                                       <Check size={14} />{tAdmin('reactivate')}
                                     </button>
                                   )}
-                                  <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start">
+                                  <button onClick={() => { setChangePlanModal({ centerId: c.id, centerName: c.name ?? '', currentPlan: c.plan ?? 'starter' }); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] text-start btn-press chq-focus">
                                     <CreditCard size={14} />{tAdmin('changePlan')}
                                   </button>
-                                  <button onClick={() => { setDeleteConfirm(c.id); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start">
+                                  <button onClick={() => { setDeleteConfirm(c.id); setOpenActionsId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600  hover:bg-red-50 text-start btn-press chq-focus">
                                     <Trash2 size={14} />{tCommon('delete')}
                                   </button>
                                 </div>
@@ -1571,7 +1571,7 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => setCentersPage((p) => Math.max(1, p - 1))}
                       disabled={centersPage === 1}
-                      className="px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] disabled:opacity-40 text-[var(--color-text-primary)] rounded-lg text-sm transition-colors border border-[var(--color-border-subtle)]"
+                      className="px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] disabled:opacity-40 text-[var(--color-text-primary)] rounded-lg text-sm transition-colors border border-[var(--color-border-subtle)] btn-press chq-focus"
                     >
                       {tAdmin('prevPage')}
                     </button>
@@ -1579,7 +1579,7 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => setCentersPage((p) => Math.min(centersTotalPages, p + 1))}
                       disabled={centersPage === centersTotalPages}
-                      className="px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] disabled:opacity-40 text-[var(--color-text-primary)] rounded-lg text-sm transition-colors border border-[var(--color-border-subtle)]"
+                      className="px-3 py-1.5 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-0)] disabled:opacity-40 text-[var(--color-text-primary)] rounded-lg text-sm transition-colors border border-[var(--color-border-subtle)] btn-press chq-focus"
                     >
                       {tAdmin('nextPage')}
                     </button>
@@ -1629,7 +1629,7 @@ export default function AdminPage() {
                                 <button
                                   onClick={() => handleMarkPaid(b.id, b.amount ?? 0, b.billing_period ?? 'monthly')}
                                   disabled={actionLoading}
-                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50"
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50 btn-press chq-focus"
                                 >
                                   <BadgeCheck className="w-4 h-4" />
                                   {tAdmin('markAsPaid')}
@@ -1638,7 +1638,7 @@ export default function AdminPage() {
                               <button
                                 onClick={() => sendWhatsAppReminder(b.phone ?? '', b.name ?? '', b.amount ?? 0, nextDueStr || '')}
                                 disabled={actionLoading}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] hover:border-[var(--color-border-strong)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg whitespace-nowrap transition-all disabled:opacity-50"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] hover:border-[var(--color-border-strong)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg whitespace-nowrap transition-all disabled:opacity-50 btn-press chq-focus"
                               >
                                 <Bell className="w-4 h-4" />
                                 {tAdmin('sendReminder')}
@@ -1676,7 +1676,7 @@ export default function AdminPage() {
                                 {inv.payment_proof_url ? (
                                   <button
                                     onClick={() => setViewingProof(inv.payment_proof_url || null)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors border border-blue-200"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors border border-blue-200 btn-press chq-focus"
                                   >
                                     <Eye className="w-3.5 h-3.5" /> View Proof
                                   </button>
@@ -1692,7 +1692,7 @@ export default function AdminPage() {
                                     }
                                   }}
                                   disabled={actionLoading}
-                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50 btn-press chq-focus"
                                 >
                                   <CheckCircle className="w-4 h-4" />
                                   {tAdmin('approvePay')}
@@ -1700,7 +1700,7 @@ export default function AdminPage() {
                                 <button
                                   onClick={() => handleInvoiceAction(inv.id, 'reject')}
                                   disabled={actionLoading}
-                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50 btn-press chq-focus"
                                 >
                                   <XCircle className="w-4 h-4" />
                                   {tAdmin('rejectPayment')}
@@ -1783,11 +1783,11 @@ export default function AdminPage() {
                         <td className="py-3.5 px-4">
                           {pr.status === 'pending' && (
                             <div className="flex items-center gap-2 flex-nowrap">
-                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50 btn-press chq-focus">
                                 <CheckCircle className="w-4 h-4" />
                                 {tAdmin('approve')}
                               </button>
-                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50">
+                              <button onClick={() => handlePlanRequestAction(pr.id, 'reject')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50 btn-press chq-focus">
                                 <XCircle className="w-4 h-4" />
                                 {tAdmin('reject')}
                               </button>
@@ -1836,17 +1836,17 @@ export default function AdminPage() {
                           <div className="flex items-center gap-2 flex-nowrap">
                             <button
                               onClick={() => contactViaWhatsApp(ps.phone ?? '', ps.name ?? '')}
-                              className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm"
+                              className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm btn-press chq-focus"
                               title="Contact on WhatsApp"
                             >
                               <MessageCircle className="w-3.5 h-3.5" />
                               <span className="hidden sm:inline">WhatsApp</span>
                             </button>
-                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50">
+                            <button onClick={() => handleCenterAction(ps.id, 'approve')} disabled={actionLoading} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm disabled:opacity-50 btn-press chq-focus">
                               <CheckCircle className="w-3.5 h-3.5" />
                               {tAdmin('approve')}
                             </button>
-                            <button onClick={() => setShowRejectReason(ps)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm">
+                            <button onClick={() => setShowRejectReason(ps)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm btn-press chq-focus">
                               <XCircle className="w-3.5 h-3.5" />
                               {tAdmin('reject')}
                             </button>
@@ -2015,7 +2015,7 @@ export default function AdminPage() {
           <>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tAdmin('internalTeam')}</h2>
-              <button onClick={() => setShowAddAdmin(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90">
+              <button onClick={() => setShowAddAdmin(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 btn-press chq-focus">
                 + {tAdmin('addAdmin', { defaultValue: 'Add Admin' })}
               </button>
             </div>
@@ -2039,7 +2039,7 @@ export default function AdminPage() {
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
                       <td className="py-3.5 px-4">
                         {!['super_admin', 'admin'].includes(m.role) && (
-                          <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50">
+                          <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50 btn-press chq-focus">
                             {tAdmin('remove')}
                           </button>
                         )}
@@ -2057,7 +2057,7 @@ export default function AdminPage() {
           <>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tAdmin('salesPipeline') ?? 'Sales Pipeline'}</h2>
-              <button onClick={() => setShowAddLead(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary">
+              <button onClick={() => setShowAddLead(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary btn-press chq-focus">
                 <Plus size={16} />{tAdmin('addLead') ?? 'Add Lead'}
               </button>
             </div>
@@ -2206,7 +2206,7 @@ export default function AdminPage() {
           <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-border flex items-center justify-between">
               <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{detailCenter.name}</h2>
-              <button onClick={() => setDetailCenter(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"><X size={18} /></button>
+              <button onClick={() => setDetailCenter(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] btn-press chq-focus"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
               {[
@@ -2240,10 +2240,10 @@ export default function AdminPage() {
             <h3 className="font-bold text-[var(--color-text-primary)] mb-2">{tAdmin('confirmSuspend')}</h3>
             <p className="text-sm text-[var(--color-text-secondary)] mb-4">Are you sure you want to suspend {showSuspendConfirm.name}?</p>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowSuspendConfirm(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button onClick={() => setShowSuspendConfirm(null)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
               <button
                 onClick={() => setPasswordConfirm({ type: 'suspend', center: showSuspendConfirm })}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 btn-press chq-focus"
               >
                 {tCommon('confirm')}
               </button>
@@ -2269,14 +2269,12 @@ export default function AdminPage() {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--color-border-default)', background: 'var(--color-surface-2)', cursor: 'pointer', fontSize: 14 }}
-              >
+                style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--color-border-default)', background: 'var(--color-surface-2)', cursor: 'pointer', fontSize: 14 }} className="btn-press chq-focus">
                 {tCommon('cancel')}
               </button>
               <button
                 onClick={() => handleDeleteCenter(deleteConfirm)}
-                style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}
-              >
+                style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 500 }} className="btn-press chq-focus">
                 {tCommon('delete')}
               </button>
             </div>
@@ -2349,8 +2347,8 @@ export default function AdminPage() {
               )}
             </div>
             <div className="flex gap-2 justify-end mt-4">
-              <button onClick={() => setShowAddAdmin(false)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
-              <button onClick={handleAddAdmin} disabled={actionLoading || !addAdminForm.name.trim() || !addAdminForm.phone.trim()} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">
+              <button onClick={() => setShowAddAdmin(false)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
+              <button onClick={handleAddAdmin} disabled={actionLoading || !addAdminForm.name.trim() || !addAdminForm.phone.trim()} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 btn-press chq-focus">
                 {tAdmin('invite')}
               </button>
             </div>
@@ -2365,10 +2363,10 @@ export default function AdminPage() {
             <h3 className="font-bold text-[var(--color-text-primary)] mb-3">Rejection Reason</h3>
             <textarea placeholder="Optional reason..." className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm h-24 resize-none mb-4" />
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowRejectReason(null)} className="px-4 py-2 rounded-lg text-sm border border-border">{tCommon('cancel')}</button>
+              <button onClick={() => setShowRejectReason(null)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
               <button
                 onClick={() => { handleCenterAction(showRejectReason.id, 'reject'); setShowRejectReason(null); }}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 btn-press chq-focus"
               >
                 {tAdmin('reject')}
               </button>
@@ -2424,7 +2422,7 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="flex gap-2 justify-end mt-4">
-              <button onClick={() => setShowAddLead(false)} className="px-4 py-2 rounded-lg text-sm border border-border">إلغاء</button>
+              <button onClick={() => setShowAddLead(false)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">إلغاء</button>
               <button
                 onClick={() => {
                   if (addLeadForm.name.trim()) {
@@ -2442,7 +2440,7 @@ export default function AdminPage() {
                     setShowAddLead(false);
                   }
                 }}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary"
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary btn-press chq-focus"
               >
                 حفظ
               </button>
@@ -2458,7 +2456,7 @@ export default function AdminPage() {
           <div className="absolute top-0 end-0 bottom-0 w-full max-w-md overflow-y-auto rounded-s-2xl border-s border-border bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-border flex items-center justify-between">
               <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{selectedLead.name}</h2>
-              <button onClick={() => setSelectedLead(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"><X size={18} /></button>
+              <button onClick={() => setSelectedLead(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] btn-press chq-focus"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
               <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Contact Person</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.contact_person}</p></div>
@@ -2483,7 +2481,7 @@ export default function AdminPage() {
                   <option value="converted">Converted</option>
                 </select>
               </div>
-              <button onClick={() => { setLeads(prev => prev.filter(l => l.id !== selectedLead.id)); setSelectedLead(null); }} className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-destructive border border-destructive/30 hover:bg-destructive/10">
+              <button onClick={() => { setLeads(prev => prev.filter(l => l.id !== selectedLead.id)); setSelectedLead(null); }} className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-destructive border border-destructive/30 hover:bg-destructive/10 btn-press chq-focus">
                 {tCommon('delete')} Lead
               </button>
             </div>
@@ -2500,7 +2498,7 @@ export default function AdminPage() {
                 <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Change Plan</h2>
                 <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{changePlanModal.centerName}</p>
               </div>
-              <button onClick={() => { setChangePlanModal(null); setNewPlan(''); }} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg">
+              <button onClick={() => { setChangePlanModal(null); setNewPlan(''); }} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg btn-press chq-focus">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2528,7 +2526,7 @@ export default function AdminPage() {
             <div className="flex justify-end gap-3 p-6 pt-0">
               <button
                 onClick={() => { setChangePlanModal(null); setNewPlan(''); }}
-                className="px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors btn-press chq-focus"
               >
                 Cancel
               </button>
@@ -2546,7 +2544,7 @@ export default function AdminPage() {
                     setChangingPlan(false);
                   }
                 }}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors btn-press chq-focus"
               >
                 {changingPlan ? 'Saving...' : 'Change Plan'}
               </button>
@@ -2570,7 +2568,7 @@ export default function AdminPage() {
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> Open Original
                 </a>
-                <button onClick={() => setViewingProof(null)} className="p-2 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-lg transition-colors">
+                <button onClick={() => setViewingProof(null)} className="p-2 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-lg transition-colors btn-press chq-focus">
                   <X className="w-4 h-4 text-white" />
                 </button>
               </div>
@@ -2597,14 +2595,14 @@ export default function AdminPage() {
               placeholder="Document why this center is blacklisted…"
             />
             <div className="flex justify-end gap-2 mt-4">
-              <button type="button" onClick={() => setBlacklistModal(null)} className="px-4 py-2 text-sm rounded-lg border border-[var(--color-border-subtle)]">
+              <button type="button" onClick={() => setBlacklistModal(null)} className="px-4 py-2 text-sm rounded-lg border border-[var(--color-border-subtle)] btn-press chq-focus">
                 Cancel
               </button>
               <button
                 type="button"
                 disabled={actionLoading}
                 onClick={() => void handleBlacklistCenter()}
-                className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white font-medium disabled:opacity-50"
+                className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white font-medium disabled:opacity-50 btn-press chq-focus"
               >
                 {actionLoading ? 'Saving…' : 'Blacklist'}
               </button>

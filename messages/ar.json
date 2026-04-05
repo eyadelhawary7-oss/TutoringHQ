@@ -5921,5 +5921,12 @@
     "topFiveByStudents": "أعلى 5 سناتر حسب الطلاب",
     "topFiveByRevenue": "أعلى 5 سناتر حسب الإيرادات",
     "estRevenueProxy": "تقدير إيراد (وكيل)"
+  },
+  "interactions": {
+    "loading": "جارٍ التحميل...",
+    "saving": "جارٍ الحفظ...",
+    "success": "تم بنجاح",
+    "error": "حدث خطأ، حاول مجدداً",
+    "retry": "إعادة المحاولة"
   }
 }

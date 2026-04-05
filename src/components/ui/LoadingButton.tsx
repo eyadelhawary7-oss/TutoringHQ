@@ -1,45 +1,67 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import type { MicroState } from '@/hooks/useMicroInteraction';
+import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { SuccessCheck } from './SuccessCheck';
 
-type Props = {
-  children: ReactNode;
-  state?: MicroState;
-  onClick?: () => void;
-  type?: 'button' | 'submit' | 'reset';
-  className?: string;
-  disabled?: boolean;
-  successIcon?: ReactNode;
+interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  state?: 'idle' | 'loading' | 'success' | 'error';
   loadingText?: string;
+  successText?: string;
+  errorText?: string;
+  children: ReactNode;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+}
+
+const VARIANT_CLASSES: Record<string, string> = {
+  primary: 'bg-teal-600 hover:bg-teal-500 text-white',
+  secondary: 'bg-slate-700 hover:bg-slate-600 text-white',
+  danger: 'bg-red-600 hover:bg-red-500 text-white',
+  ghost: 'bg-transparent hover:bg-slate-800 text-slate-300',
 };
 
 export function LoadingButton({
-  children,
   state = 'idle',
-  onClick,
-  type = 'button',
-  className = '',
-  disabled = false,
-  successIcon,
   loadingText,
-}: Props) {
+  successText,
+  errorText,
+  children,
+  variant = 'primary',
+  className = '',
+  disabled,
+  ...props
+}: LoadingButtonProps) {
   const isLoading = state === 'loading';
   const isSuccess = state === 'success';
   const isError = state === 'error';
 
-  const stateClass = isLoading ? 'is-loading' : isSuccess ? 'is-success' : isError ? 'is-error' : '';
-
   return (
     <button
-      type={type}
-      onClick={onClick}
+      {...props}
       disabled={disabled || isLoading}
-      className={`btn ${stateClass} ${className}`.trim()}
-      aria-busy={isLoading}
-      aria-label={isLoading && loadingText ? loadingText : undefined}
+      className={[
+        'btn-press chq-focus',
+        'inline-flex items-center justify-center gap-2',
+        'px-4 py-2 rounded-lg font-medium text-sm',
+        'transition-colors duration-150',
+        'disabled:opacity-60 disabled:cursor-not-allowed',
+        VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.primary,
+        className,
+      ].join(' ')}
     >
-      {isSuccess && successIcon ? successIcon : children}
+      {isLoading && (
+        <svg className="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.3" />
+          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      )}
+      {isSuccess && <SuccessCheck size={18} color="currentColor" />}
+      {isLoading
+        ? (loadingText ?? children)
+        : isSuccess
+          ? (successText ?? children)
+          : isError
+            ? (errorText ?? children)
+            : children}
     </button>
   );
 }

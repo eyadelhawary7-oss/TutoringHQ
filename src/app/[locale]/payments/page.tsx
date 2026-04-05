@@ -10,9 +10,7 @@ import { Download, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
-import type { MicroState } from '@/hooks/useMicroInteraction';
 import { LoadingButton } from '@/components/ui/LoadingButton';
-import { SuccessCheckmark } from '@/components/ui/SuccessCheckmark';
 
 interface PaymentRecord {
   id: string;
@@ -355,7 +353,7 @@ export default function PaymentsPage() {
               <button
                 type="button"
                 onClick={() => loadData()}
-                className="mt-2 px-4 py-2 bg-[var(--color-danger)] text-white text-sm font-medium rounded-lg"
+                className="mt-2 px-4 py-2 bg-[var(--color-danger)] text-white text-sm font-medium rounded-lg btn-press chq-focus"
               >
                 {tp('retry')}
               </button>
@@ -390,7 +388,7 @@ export default function PaymentsPage() {
                 setStatusFilter(f);
                 setFilterKey((k) => k + 1);
               }}
-              className={`shrink-0 px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${statusFilter === f ? 'bg-[var(--color-brand-500)] text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
+              className={`shrink-0 px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${statusFilter === f ? 'bg-[var(--color-brand-500)] text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'} btn-press chq-focus`}
             >
               {tp(STATUS_FILTER_KEYS[f])}
             </button>
@@ -409,7 +407,7 @@ export default function PaymentsPage() {
                   setMethodFilter(m);
                   setFilterKey((k) => k + 1);
                 }}
-                className="shrink-0 method-pill transition-all duration-fast ease-out"
+                className="shrink-0 method-pill transition-all duration-fast ease-out btn-press chq-focus"
                 style={
                   isActive
                     ? cfg
@@ -460,7 +458,7 @@ export default function PaymentsPage() {
             <button
               type="button"
               onClick={handleExportCSV}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-brand-500 hover:opacity-90 text-white text-sm font-semibold rounded-lg shrink-0"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-brand-500 hover:opacity-90 text-white text-sm font-semibold rounded-lg shrink-0 btn-press chq-focus"
             >
               <Download size={14} /> {tp('exportCSV')}
             </button>
@@ -540,16 +538,17 @@ export default function PaymentsPage() {
                   {isPaymentPendingAction(payment) && canViewPayments && (
                     <div className="mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
                       <LoadingButton
+                        type="button"
+                        variant="primary"
                         state={
-                          (confirmingId === payment.id
+                          confirmingId === payment.id
                             ? 'loading'
                             : confirmSuccessId === payment.id
                               ? 'success'
-                              : 'idle') satisfies MicroState
+                              : 'idle'
                         }
                         onClick={() => setConfirmModal(payment)}
                         className="btn-primary w-full py-2 text-sm"
-                        successIcon={<SuccessCheckmark size={20} />}
                       >
                         {tp('confirm_action')}
                       </LoadingButton>
@@ -579,12 +578,13 @@ export default function PaymentsPage() {
               <button
                 type="button"
                 onClick={() => setConfirmModal(null)}
-                className="px-4 py-2 border border-[var(--color-border-default)] rounded-lg text-sm text-[var(--color-text-primary)]"
+                className="px-4 py-2 border border-[var(--color-border-default)] rounded-lg text-sm text-[var(--color-text-primary)] btn-press chq-focus"
               >
                 {tCommon('cancel')}
               </button>
               <LoadingButton
                 type="button"
+                variant="primary"
                 state={confirmingId === confirmModal.id ? 'loading' : 'idle'}
                 onClick={() => handleConfirm(confirmModal.id)}
                 className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold"

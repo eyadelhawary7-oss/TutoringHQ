@@ -704,7 +704,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => router.push('/settings/billing')}
-            className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-warning)] hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-warning)] hover:opacity-90 transition-opacity btn-press chq-focus"
           >
             {t('payNow', { defaultValue: 'Pay Now' })}
           </button>
@@ -730,7 +730,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => router.push('/settings/billing')}
-              className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-danger)] hover:opacity-90 transition-opacity"
+              className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-danger)] hover:opacity-90 transition-opacity btn-press chq-focus"
             >
               {t('payNow', { defaultValue: 'Pay Now' })}
             </button>
@@ -749,7 +749,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => router.push('/settings/billing')}
-            className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-danger)] hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-danger)] hover:opacity-90 transition-opacity btn-press chq-focus"
           >
             {t('payNow', { defaultValue: 'Pay Now' })}
           </button>
@@ -813,7 +813,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={dismissSurge}
-            className="p-2 rounded-lg text-brand-400 hover:bg-[var(--color-surface-3)] transition-colors"
+            className="p-2 rounded-lg text-brand-400 hover:bg-[var(--color-surface-3)] transition-colors btn-press chq-focus"
             aria-label={tCommon('cancel')}
           >
             <X className="w-5 h-5" />
@@ -832,7 +832,7 @@ export default function DashboardPage() {
             type="button"
             onClick={handleExport}
             disabled={isExporting || isLoading}
-            className="px-4 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm font-semibold text-white bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] transition-colors disabled:opacity-50"
+            className="px-4 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm font-semibold text-white bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] transition-colors disabled:opacity-50 btn-press chq-focus"
           >
             {isExporting ? t('exporting') : t('exportData')}
           </button>
@@ -1033,7 +1033,7 @@ export default function DashboardPage() {
                           timeRange === r
                             ? 'bg-slate-800 text-white border border-slate-600'
                             : 'text-slate-400'
-                        }`}
+                        } btn-press chq-focus`}
                       >
                         {r === '7' ? t('last7Days') : t('last30Days')}
                       </button>
@@ -1254,7 +1254,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setShowUpgradeModal(false)}
-              className="ms-2 px-4 py-2 rounded-lg text-sm text-white bg-[var(--color-surface-3)]"
+              className="ms-2 px-4 py-2 rounded-lg text-sm text-white bg-[var(--color-surface-3)] btn-press chq-focus"
             >
               {tCommon('cancel')}
             </button>
