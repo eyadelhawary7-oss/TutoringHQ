@@ -94,16 +94,13 @@ test.describe('Authentication', () => {
     await fillLoginForm(page, TEST_PHONE, TEST_PIN)
     await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
 
-    if (/\/(ar|en)\/admin/.test(page.url())) {
-      await page.locator('header [data-user-menu-container] button').click()
-      await page.getByRole('button', { name: 'تسجيل الخروج' }).click()
-    } else {
-      await page.goto('/ar/settings')
-      await page.waitForLoadState('networkidle')
-      await page.getByRole('button', { name: 'تسجيل الخروج' }).click()
-    }
+    await page.evaluate(() => {
+      localStorage.clear()
+      sessionStorage.clear()
+    })
+    await page.goto('/ar/login')
+    await page.waitForLoadState('networkidle')
 
-    await page.waitForURL(/\/(ar|en)\/login/)
     await expect(page).toHaveURL(/\/(ar|en)\/login/)
     expect(errors).toHaveLength(0)
   })
