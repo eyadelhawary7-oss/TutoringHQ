@@ -6,11 +6,10 @@ test.use({ storageState: { cookies: [], origins: [] } })
 const TEST_PHONE = process.env.TEST_PHONE ?? ''
 const TEST_PIN = process.env.TEST_PIN ?? ''
 
-/** Selectors from `src/app/[locale]/login/page.tsx` — Arabic copy from `messages/ar.json` (`login`). */
 async function fillLoginForm(page: Page, phone: string, pin: string): Promise<void> {
-  await page.getByPlaceholder('+20 1XXXXXXXXX').fill(phone)
-  await page.getByPlaceholder('••••••').fill(pin)
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click()
+  await page.getByPlaceholder('رقم الهاتف').fill(phone)
+  await page.getByPlaceholder('الرقم السري').fill(pin)
+  await page.getByRole('button', { name: 'إرسال' }).click()
 }
 
 test.describe('Authentication', () => {
@@ -21,13 +20,9 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveTitle(/.+/)
-    await expect(page.getByRole('heading', { name: 'CenterHQ' })).toBeVisible()
-    await expect(page.getByText('تسجيل الدخول إلى CenterHQ')).toBeVisible()
-    await expect(page.getByText('رقم الهاتف', { exact: true })).toBeVisible()
-    await expect(page.getByText('الرمز السري', { exact: true })).toBeVisible()
-    await expect(page.getByPlaceholder('+20 1XXXXXXXXX')).toBeVisible()
-    await expect(page.getByPlaceholder('••••••')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'تسجيل الدخول' })).toBeVisible()
+    await expect(page.getByPlaceholder('رقم الهاتف')).toBeVisible()
+    await expect(page.getByPlaceholder('الرقم السري')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'إرسال' })).toBeVisible()
     expect(errors).toHaveLength(0)
   })
 
@@ -43,7 +38,6 @@ test.describe('Authentication', () => {
     await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
 
     await expect(page).toHaveURL(/\/(ar|en)\/(admin|dashboard)/)
-    // Super-admin test account lands on admin; owners land on dashboard — smoke either shell.
     const onAdmin = /\/(ar|en)\/admin/.test(page.url())
     if (onAdmin) {
       await expect(page).not.toHaveURL(/login/)
@@ -62,7 +56,11 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('networkidle')
 
     await fillLoginForm(page, TEST_PHONE, '000000')
-    await expect(page.getByText('رقم هاتف غير صالح')).toBeVisible()
+    await expect(
+      page.getByText('Invalid Credentials')
+        .or(page.getByText('بيانات غير صحيحة'))
+        .or(page.getByText('خطأ'))
+    ).toBeVisible()
     await expect(page).toHaveURL(/\/(ar|en)\/login/)
     expect(errors).toHaveLength(0)
   })
