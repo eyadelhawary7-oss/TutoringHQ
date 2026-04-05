@@ -13,6 +13,7 @@ import { PaymentDonutChart } from '@/components/analytics/PaymentDonutChart';
 import { AttendanceHeatmap } from '@/components/analytics/AttendanceHeatmap';
 import { chartColors, colors } from '@/lib/tokens';
 import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
+import { ChartCard, ChartLegend } from '@/components/charts';
 
 interface AnalyticsData {
   mrr: number;
@@ -42,6 +43,7 @@ const DONUT_PALETTE = [
 
 export default function AnalyticsPage() {
   const ta = useTranslations('analytics');
+  const tCharts = useTranslations('charts');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const { user, hasPermission } = useUser();
@@ -275,41 +277,44 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="card p-4 mx-4 mb-4 chart-animate chart-animate-delay-1">
-        <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{ta('revenue_chart')}</h2>
-        {revenueData.length > 0 ? (
-          <RevenueAreaChart data={revenueData} />
-        ) : (
-          <p className="text-sm text-[var(--color-text-secondary)] py-8 text-center">{ta('no_data')}</p>
-        )}
+      <div className="mx-4 mb-4 chart-animate chart-animate-delay-1">
+        <ChartCard
+          title={tCharts('monthlyRevenue')}
+          valuePrefix="EGP "
+          value={Number(d.mrr ?? 0)}
+          trend={mrrDelta}
+          trendLabel={tCharts('vsLastMonth')}
+          loading={loading && !data}
+          minHeight={260}
+        >
+          {revenueData.length > 0 ? (
+            <RevenueAreaChart data={revenueData} />
+          ) : (
+            <p className="text-sm text-slate-400 py-8 text-center">{ta('no_data')}</p>
+          )}
+        </ChartCard>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 mb-4">
-        <div className="card p-4 chart-animate chart-animate-delay-2">
-          <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{ta('payment_methods')}</h2>
-          {donutData.length > 0 ? (
-            <>
-              <PaymentDonutChart data={donutData} />
-              <div className="flex flex-col gap-1.5 mt-3">
-                {donutData.map((slice) => (
-                  <div key={slice.name} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ background: slice.color }}
-                      />
-                      <span className="text-[var(--color-text-secondary)]">{slice.name}</span>
-                    </div>
-                    <span className="font-medium text-[var(--color-text-primary)]">
-                      {Number(slice.value).toLocaleString('en-US')} {egp}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-[var(--color-text-secondary)] py-8 text-center">{ta('no_data')}</p>
-          )}
+        <div className="chart-animate chart-animate-delay-2">
+          <ChartCard title={tCharts('paymentMethods')} loading={loading && !data} minHeight={280}>
+            {donutData.length > 0 ? (
+              <>
+                <PaymentDonutChart data={donutData} />
+                <ChartLegend
+                  direction="vertical"
+                  items={donutData.map((slice) => ({
+                    color: slice.color ?? '#64748B',
+                    label: slice.name,
+                    value: Number(slice.value).toLocaleString('en-US'),
+                    suffix: ` ${egp}`,
+                  }))}
+                />
+              </>
+            ) : (
+              <p className="text-sm text-slate-400 py-8 text-center">{ta('no_data')}</p>
+            )}
+          </ChartCard>
         </div>
         <div className="card p-4 chart-animate chart-animate-delay-3">
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{ta('attendance_heatmap')}</h2>
@@ -322,10 +327,9 @@ export default function AnalyticsPage() {
       </div>
 
       <section className="px-4 mb-6">
-        <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{ta('revenueByGroup')}</h2>
-        <div className="card p-4">
+        <ChartCard title={ta('revenueByGroup')} loading={loading && !data} minHeight={260}>
           <RevenueByGroup data={d.revenue_by_group} />
-        </div>
+        </ChartCard>
       </section>
 
       <section className="px-4 mb-6">

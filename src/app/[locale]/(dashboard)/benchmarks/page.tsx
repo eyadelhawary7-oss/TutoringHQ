@@ -7,6 +7,7 @@ import { useBranchStore } from '@/stores/branchStore';
 import PageHeader from '@/components/shared/PageHeader';
 import { Link } from '@/i18n/routing';
 import { Loader2, Gift, TrendingUp, DollarSign, Users, BookOpen } from 'lucide-react';
+import { BarChartComponent } from '@/components/charts';
 
 interface BenchmarkMetric {
   your_value: number;
@@ -225,7 +226,29 @@ export default function BenchmarksPage() {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">{t(descKey, { percentile: pct.toFixed(0) })}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{t(descKey, { percentile: pct.toFixed(0) })}</p>
+              {(() => {
+                const isMoney = key === 'revenue';
+                const youN = isMoney ? yourVal : yourVal * 100;
+                const distN = isMoney ? avgVal : (metric.district_avg ?? 0) * 100;
+                const barData = [
+                  { label: t('comparisonYou'), v: youN },
+                  { label: t('districtAvg'), v: distN },
+                ];
+                return (
+                  <BarChartComponent
+                    data={barData}
+                    xKey="label"
+                    dataKey="v"
+                    height={160}
+                    color="teal"
+                    showGrid={false}
+                    radius={6}
+                    prefix={isMoney ? 'EGP ' : ''}
+                    suffix={isMoney ? '' : '%'}
+                  />
+                );
+              })()}
             </div>
           );
         })}

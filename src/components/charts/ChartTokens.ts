@@ -1,0 +1,53 @@
+export const CHART_COLORS = {
+  teal: '#0D9488',
+  tealLight: '#14B8A6',
+  tealDim: '#0D948820',
+  amber: '#F59E0B',
+  amberDim: '#F59E0B20',
+  red: '#EF4444',
+  redDim: '#EF444420',
+  slate: '#64748B',
+  slateDim: '#64748B20',
+  navy: '#1E293B',
+  purple: '#8B5CF6',
+  purpleDim: '#8B5CF620',
+  green: '#10B981',
+  greenDim: '#10B98120',
+  blue: '#3B82F6',
+  blueDim: '#3B82F620',
+} as const;
+
+export const CHART_STYLE = {
+  fontFamily: 'Cairo, Georgia, sans-serif',
+  fontSize: 12,
+  axisColor: '#334155',
+  tickColor: '#64748B',
+  gridColor: '#1E293B',
+  tooltipBg: '#0F172A',
+  tooltipBorder: '#334155',
+  animDuration: 600,
+  animEasing: 'ease-out' as const,
+  dotRadius: 4,
+  dotActiveRadius: 6,
+  strokeWidth: 2,
+  curveType: 'monotone' as const,
+} as const;
+
+export const CHART_MARGIN = {
+  top: 8,
+  right: 8,
+  bottom: 0,
+  left: 0,
+} as const;
+
+export type GradientKey = 'teal' | 'amber' | 'red' | 'purple' | 'green' | 'blue' | 'slate';
+
+export const LINE_BY_GRADIENT: Record<GradientKey, string> = {
+  teal: CHART_COLORS.teal,
+  amber: CHART_COLORS.amber,
+  red: CHART_COLORS.red,
+  purple: CHART_COLORS.purple,
+  green: CHART_COLORS.green,
+  blue: CHART_COLORS.blue,
+  slate: CHART_COLORS.slate,
+};

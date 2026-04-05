@@ -43,19 +43,12 @@ import {
   Download,
 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+  AreaChartComponent,
+  BarChartComponent,
+  ChartCard,
+  ChartLegend,
+  DonutChart,
+} from '@/components/charts';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { AdminSidebar, type AdminTab } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -254,6 +247,8 @@ export default function AdminPage() {
   const tAdmin = useTranslations('admin');
   const tCommon = useTranslations('common');
   const tIdCards = useTranslations('idCards');
+  const tCharts = useTranslations('charts');
+  const tSettings = useTranslations('settings');
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const router = useRouter();
@@ -705,6 +700,87 @@ export default function AdminPage() {
       .sort(([a], [b]) => Number(a) - Number(b))
       .map(([, count], i) => ({ date: `W${i + 1}`, count }));
   }, [overview?.signupsChart]);
+
+  const overviewSignupData = useMemo(() => {
+    if (signupsWeekly.length > 0) return signupsWeekly;
+    return overview?.signupsChart ?? [];
+  }, [signupsWeekly, overview?.signupsChart]);
+
+  const signupTrendPct = useMemo(() => {
+    const d = overviewSignupData;
+    if (d.length < 2) return undefined;
+    const last = Number(d[d.length - 1]?.count ?? 0);
+    const prev = Number(d[d.length - 2]?.count ?? 0);
+    if (prev === 0) return last > 0 ? 100 : 0;
+    return Math.round(((last - prev) / prev) * 10000) / 100;
+  }, [overviewSignupData]);
+
+  const monthlyRevTrendPct = useMemo(() => {
+    const m = overview?.monthlyRevenue ?? [];
+    if (m.length < 2) return undefined;
+    const last = Number(m[m.length - 1]?.revenue ?? 0);
+    const prev = Number(m[m.length - 2]?.revenue ?? 0);
+    if (prev === 0) return last > 0 ? 100 : 0;
+    return Math.round(((last - prev) / prev) * 10000) / 100;
+  }, [overview?.monthlyRevenue]);
+
+  const adminPlanDonutData = useMemo(() => {
+    const planIds = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
+    const planColors = ['#94A3B8', '#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'] as const;
+    const label: Record<(typeof planIds)[number], string> = {
+      nano: tSettings('planNames.nano'),
+      starter: tSettings('planNames.starter'),
+      pro: tSettings('planNames.pro'),
+      business: tSettings('planNames.business'),
+      enterprise: tSettings('planNames.enterprise'),
+      top_centers: tSettings('planNames.top_centers'),
+    };
+    return planIds.map((id, i) => ({
+      name: label[id],
+      value: analyticsCenters.filter((c) => c.plan === id).length,
+      color: planColors[i],
+    }));
+  }, [analyticsCenters, tSettings]);
+
+  const adminStatusDonutData = useMemo(
+    () => [
+      {
+        name: tAdmin('subActive'),
+        value: analyticsCenters.filter((c) => (c.status ?? 'active') === 'active').length,
+        color: '#16A34A',
+      },
+      {
+        name: tAdmin('subPending'),
+        value: analyticsCenters.filter((c) => c.status === 'pending').length,
+        color: '#F59E0B',
+      },
+      {
+        name: tAdmin('subSuspended'),
+        value: analyticsCenters.filter((c) => c.status === 'suspended').length,
+        color: '#DC2626',
+      },
+    ],
+    [analyticsCenters, tAdmin],
+  );
+
+  const topStudentsBarData = useMemo(
+    () =>
+      [...analyticsCenters]
+        .sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0))
+        .slice(0, 5)
+        .map((c) => ({ name: c.name, students_count: c.students_count ?? 0 })),
+    [analyticsCenters],
+  );
+
+  const topRevenueProxyBarData = useMemo(
+    () =>
+      [...analyticsCenters]
+        .filter((c) => (c.status ?? 'active') === 'active')
+        .sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0))
+        .slice(0, 5)
+        .map((c) => ({ name: c.name, students_count: c.students_count ?? 0 })),
+    [analyticsCenters],
+  );
 
   const activityActionLabel = useMemo(
     () =>
@@ -1161,33 +1237,43 @@ export default function AdminPage() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-4 mb-6">
-              {(signupsWeekly.length > 0 || (overview.signupsChart?.length ?? 0) > 0) && (
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('newCentersPerWeek', { defaultValue: 'New Centers per Week' })}</h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={signupsWeekly.length > 0 ? signupsWeekly : overview.signupsChart!}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="count" stroke="#0D9488" strokeWidth={2} dot={{ r: 3 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+              {overviewSignupData.length > 0 && (
+                <ChartCard
+                  title={tAdmin('newCentersPerWeek')}
+                  value={Number(overviewSignupData[overviewSignupData.length - 1]?.count ?? 0)}
+                  trend={signupTrendPct}
+                  trendLabel={tCharts('vsLastWeek')}
+                  minHeight={220}
+                >
+                  <AreaChartComponent
+                    data={overviewSignupData}
+                    dataKey="count"
+                    xKey="date"
+                    height={200}
+                    color="teal"
+                    showGrid={false}
+                  />
+                </ChartCard>
               )}
-              {(overview.monthlyRevenue?.length ?? 0) > 0 && (
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('monthlyRevenueChart', { defaultValue: 'Monthly Revenue' })}</h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={overview.monthlyRevenue}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Bar dataKey="revenue" fill="#0D9488" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              {(overview.monthlyRevenue?.length ?? 0) > 0 && overview.monthlyRevenue && (
+                <ChartCard
+                  title={tCharts('monthlyRevenue')}
+                  valuePrefix="EGP "
+                  value={Number(overview.monthlyRevenue[overview.monthlyRevenue.length - 1]?.revenue ?? 0)}
+                  trend={monthlyRevTrendPct}
+                  trendLabel={tCharts('vsLastMonth')}
+                  minHeight={220}
+                >
+                  <BarChartComponent
+                    data={overview.monthlyRevenue}
+                    dataKey="revenue"
+                    xKey="month"
+                    height={200}
+                    color="teal"
+                    prefix="EGP "
+                    showGrid
+                  />
+                </ChartCard>
               )}
             </div>
 
@@ -2018,129 +2104,83 @@ export default function AdminPage() {
         {/* Analytics */}
         {tab === 'analytics' && (
           <>
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('analytics') ?? 'Analytics'}</h2>
-            {analyticsCentersLoading ? (
-              <p className="text-sm text-[var(--color-text-secondary)] mb-6">{tCommon('loading')}</p>
-            ) : null}
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('analytics')}</h2>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Centers by Plan</h3>
-                <div className="flex items-center gap-6">
-                  <ResponsiveContainer width={160} height={160}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Nano', value: analyticsCenters.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
-                          { name: 'Starter', value: analyticsCenters.filter(c => c.plan === 'starter').length, color: '#6B7280' },
-                          { name: 'Pro', value: analyticsCenters.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
-                          { name: 'Business', value: analyticsCenters.filter(c => c.plan === 'business').length, color: '#0D9488' },
-                          { name: 'Enterprise', value: analyticsCenters.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
-                          { name: 'Top Centers', value: analyticsCenters.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={70}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {[
-                          { name: 'Nano', value: analyticsCenters.filter(c => c.plan === 'nano').length, color: '#94A3B8' },
-                          { name: 'Starter', value: analyticsCenters.filter(c => c.plan === 'starter').length, color: '#6B7280' },
-                          { name: 'Pro', value: analyticsCenters.filter(c => c.plan === 'pro').length, color: '#3B82F6' },
-                          { name: 'Business', value: analyticsCenters.filter(c => c.plan === 'business').length, color: '#0D9488' },
-                          { name: 'Enterprise', value: analyticsCenters.filter(c => c.plan === 'enterprise').length, color: '#7C3AED' },
-                          { name: 'Top Centers', value: analyticsCenters.filter(c => c.plan === 'top_centers').length, color: '#F59E0B' },
-                        ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="space-y-2 flex-1">
-                    {['Nano', 'Starter', 'Pro', 'Business', 'Enterprise', 'Top Centers'].map((name, i) => {
-                      const planKey = name === 'Top Centers' ? 'top_centers' : name.toLowerCase();
-                      const val = analyticsCenters.filter(c => c.plan === planKey).length;
-                      const colors = ['#94A3B8', '#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'];
-                      return (
-                        <div key={name} className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
-                          <span className="text-sm text-[var(--color-text-secondary)] flex-1">{name}</span>
-                          <span className="text-sm font-bold font-mono text-[var(--color-text-primary)]">{val}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Centers by Status</h3>
-                <div className="flex items-center gap-6">
-                  <ResponsiveContainer width={160} height={160}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Active', value: analyticsCenters.filter(c => (c.status ?? 'active') === 'active').length, color: '#16A34A' },
-                          { name: 'Pending', value: analyticsCenters.filter(c => c.status === 'pending').length, color: '#F59E0B' },
-                          { name: 'Suspended', value: analyticsCenters.filter(c => c.status === 'suspended').length, color: '#DC2626' },
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={70}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {[
-                          { color: '#16A34A' },
-                          { color: '#F59E0B' },
-                          { color: '#DC2626' },
-                        ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="space-y-2 flex-1">
-                    {['Active', 'Pending', 'Suspended'].map((name, i) => {
-                      const statusKey = name.toLowerCase();
-                      const val = analyticsCenters.filter(c => (c.status ?? 'active') === statusKey).length;
-                      const colors = ['#16A34A', '#F59E0B', '#DC2626'];
-                      return (
-                        <div key={name} className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full shrink-0" style={{ background: colors[i] }} />
-                          <span className="text-sm text-[var(--color-text-secondary)] flex-1">{name}</span>
-                          <span className="text-sm font-bold font-mono text-[var(--color-text-primary)]">{val}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+              <ChartCard
+                title={tCharts('centersByPlan')}
+                value={analyticsCenters.length}
+                loading={analyticsCentersLoading}
+                minHeight={300}
+              >
+                <DonutChart
+                  data={adminPlanDonutData}
+                  height={200}
+                  centerLabel={tAdmin('totalCenters')}
+                  centerValue={analyticsCenters.length}
+                />
+                <ChartLegend
+                  direction="vertical"
+                  items={adminPlanDonutData.map((d) => ({
+                    color: d.color ?? '#64748B',
+                    label: d.name,
+                    value: d.value,
+                  }))}
+                />
+              </ChartCard>
+              <ChartCard
+                title={tCharts('centersByStatus')}
+                value={analyticsCenters.length}
+                loading={analyticsCentersLoading}
+                minHeight={300}
+              >
+                <DonutChart
+                  data={adminStatusDonutData}
+                  height={200}
+                  centerLabel={tAdmin('totalCenters')}
+                  centerValue={analyticsCenters.length}
+                />
+                <ChartLegend
+                  direction="vertical"
+                  items={adminStatusDonutData.map((d) => ({
+                    color: d.color ?? '#64748B',
+                    label: d.name,
+                    value: d.value,
+                  }))}
+                />
+              </ChartCard>
             </div>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Top 5 Centers by Students</h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={[...analyticsCenters].sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" tick={{ fontSize: 11 }} />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
-                    <Tooltip />
-                    <Bar dataKey="students_count" fill="#0D9488" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">Top 5 Centers by Revenue</h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={[...analyticsCenters].filter(c => (c.status ?? 'active') === 'active').sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0)).slice(0, 5)} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" tick={{ fontSize: 11 }} />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={100} />
-                    <Tooltip />
-                    <Bar dataKey="students_count" fill="#3B82F6" radius={[0, 4, 4, 0]} name="Est. revenue proxy" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <ChartCard title={tCharts('topFiveByStudents')} loading={analyticsCentersLoading} minHeight={260}>
+                <BarChartComponent
+                  data={topStudentsBarData}
+                  layout="vertical"
+                  categoryKey="name"
+                  dataKey="students_count"
+                  xKey="name"
+                  height={200}
+                  color="teal"
+                  showGrid
+                  rtl={isRTL}
+                />
+              </ChartCard>
+              <ChartCard
+                title={tCharts('topFiveByRevenue')}
+                subtitle={tCharts('estRevenueProxy')}
+                loading={analyticsCentersLoading}
+                minHeight={260}
+              >
+                <BarChartComponent
+                  data={topRevenueProxyBarData}
+                  layout="vertical"
+                  categoryKey="name"
+                  dataKey="students_count"
+                  xKey="name"
+                  height={200}
+                  color="blue"
+                  showGrid
+                  rtl={isRTL}
+                />
+              </ChartCard>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[

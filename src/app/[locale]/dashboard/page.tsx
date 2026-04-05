@@ -10,9 +10,10 @@ import { hasPlanFeature } from '@/lib/plans';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
-import { RevenueSparkline } from '@/components/dashboard/RevenueSparkline';
+import { AreaChartComponent, ChartCard, SparklineChart } from '@/components/charts';
+import AttendanceTrend from '@/components/dashboard/AttendanceTrend';
 import { AttendanceRing } from '@/components/dashboard/AttendanceRing';
-import { PaymentBar } from '@/components/dashboard/PaymentBar';
+import PaymentDonut from '@/components/dashboard/PaymentDonut';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import {
   SkeletonStat,
@@ -94,6 +95,7 @@ type AtRiskRow = {
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
+  const tCharts = useTranslations('charts');
   const tSettings = useTranslations('settings');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -798,8 +800,6 @@ export default function DashboardPage() {
       ? Math.round(Number(data.monthConfirmed) / data.totalStudents)
       : 0;
   const unpaidBalance = Number(data.totalPending ?? 0);
-  const confirmedPaymentsAmount = Number(data.monthConfirmed ?? 0);
-  const pendingPaymentsAmount = Number(data.monthPending ?? 0);
   const topGroup: string | null = null;
   const egpSuffix = tCommon('egp');
 
@@ -913,6 +913,15 @@ export default function DashboardPage() {
                         </span>
                       </p>
                     )}
+                    {sparklineData.length >= 2 ? (
+                      <div className="mt-3 h-12 w-full opacity-90">
+                        <SparklineChart
+                          data={sparklineData.map((d) => ({ value: d.revenue }))}
+                          color="teal"
+                          height={48}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                   <div
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/30 border border-teal-100/80 dark:border-teal-800/40"
@@ -989,31 +998,58 @@ export default function DashboardPage() {
           </div>
 
           {canViewRevenue && sparklineData.length > 0 && (
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 border-s-4 border-s-teal-500/45 dark:border-s-teal-400/35 bg-white dark:bg-slate-800 p-6 card-shadow mb-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-                <h2 className="text-base font-semibold text-slate-800 dark:text-white">{t('sparkline_title')}</h2>
-                <div
-                  className="flex items-center gap-1 p-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 w-fit"
-                  role="group"
-                  aria-label={t('sparkline_title')}
-                >
-                  {(['7', '30'] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setTimeRange(r)}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        timeRange === r
-                          ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/80 dark:border-slate-600'
-                          : 'text-slate-500 dark:text-slate-400'
-                      }`}
-                    >
-                      {r === '7' ? t('last7Days') : t('last30Days')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <RevenueSparkline data={sparklineData} currencySuffix={egpSuffix} />
+            <div className="mb-4">
+              <ChartCard
+                title={tCharts('monthlyRevenue')}
+                value={Number(
+                  sparklineData.reduce((s, d) => s + d.revenue, 0) / Math.max(1, sparklineData.length),
+                ).toLocaleString('en-US')}
+                valueSuffix={` ${egpSuffix}`}
+                subtitle={t('sparkline_title')}
+                trend={
+                  sparklineData.length >= 2
+                    ? (() => {
+                        const last = sparklineData[sparklineData.length - 1]?.revenue ?? 0;
+                        const prev = sparklineData[sparklineData.length - 2]?.revenue ?? 0;
+                        if (prev <= 0) return undefined;
+                        return Math.round(((last - prev) / prev) * 10000) / 100;
+                      })()
+                    : undefined
+                }
+                trendLabel={tCharts('vsLastWeek')}
+                minHeight={200}
+                actions={
+                  <div
+                    className="flex items-center gap-1 p-1 rounded-xl border border-slate-600 bg-slate-900/50 w-fit"
+                    role="group"
+                    aria-label={t('sparkline_title')}
+                  >
+                    {(['7', '30'] as const).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setTimeRange(r)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          timeRange === r
+                            ? 'bg-slate-800 text-white border border-slate-600'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        {r === '7' ? t('last7Days') : t('last30Days')}
+                      </button>
+                    ))}
+                  </div>
+                }
+              >
+                <AreaChartComponent
+                  data={sparklineData as Record<string, string | number>[]}
+                  dataKey="revenue"
+                  xKey="month"
+                  color="teal"
+                  height={200}
+                  prefix={`${egpSuffix} `}
+                />
+              </ChartCard>
             </div>
           )}
 
@@ -1086,15 +1122,11 @@ export default function DashboardPage() {
                 label={t('attendance_title')}
               />
             </div>
-            <div className="card p-5">
-              <h2 className="text-sm font-semibold text-white mb-4">{t('payments_title')}</h2>
-              <PaymentBar
-                confirmed={confirmedPaymentsAmount}
-                pending={pendingPaymentsAmount}
-                confirmedLabel={t('confirmed')}
-                pendingLabel={t('pending')}
-                currencySuffix={egpSuffix}
-              />
+            <div className="card p-5 space-y-4">
+              <h2 className="text-sm font-semibold text-white">{tCharts('weeklyAttendance')}</h2>
+              <AttendanceTrend data={data.trendData} />
+              <h2 className="text-sm font-semibold text-white pt-2">{tCharts('paymentStatus')}</h2>
+              <PaymentDonut paid={data.paidCount} unpaid={data.unpaidCount} pending={data.pendingCount} />
             </div>
           </div>
 

@@ -38,6 +38,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { ChartTooltip } from '@/components/charts/ChartTooltip';
+import { CHART_STYLE } from '@/components/charts/ChartTokens';
 
 interface DashboardData {
   totalActiveCenters: number;
@@ -152,6 +154,8 @@ function CeoFinancialsBody({
   financials: FinancialsResponse;
   tFinancials: CeoFinancialsT;
 }) {
+  const tCharts = useTranslations('charts');
+  const tCommon = useTranslations('common');
   const g = nf(financials.whatsappPack?.growthVsLastMonth);
   const monthly = Array.isArray(financials.monthly) ? financials.monthly : [];
 
@@ -164,7 +168,7 @@ function CeoFinancialsBody({
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4 border-s-4 border-teal-500">
             <p className="text-xs text-slate-500 dark:text-slate-400">{tFinancials('financials.cardTotalTitle')}</p>
             <p className="text-xl font-mono font-bold text-slate-800 dark:text-white mt-1">
-              {nf(financials.currentMonth?.totalRevenue).toLocaleString('en-US')} EGP
+              {nf(financials.currentMonth?.totalRevenue).toLocaleString('en-US')} {tCommon('egp')}
             </p>
             <div className="mt-2 space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
               <p>
@@ -188,55 +192,102 @@ function CeoFinancialsBody({
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4">
           <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.chart12MonthTitle')}</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={monthly}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--ceo-chart-grid)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} />
-              <YAxis
-                tick={{ fill: '#64748b' }}
-                tickFormatter={(value: number | string) =>
-                  Number(value ?? 0).toLocaleString('en-US')
-                }
-              />
-              <Tooltip
-                formatter={(value: number | string | undefined) =>
-                  value == null ? '' : `${(Number(value) ?? 0).toLocaleString('en-US')} EGP`
-                }
-              />
-              <Legend />
-              <Bar
-                name={tFinancials('financials.subscriptions')}
-                dataKey="subscriptionRevenue"
-                stackId="revenue"
-                fill="#0D9488"
-                animationBegin={0}
-                animationDuration={800}
-              />
-              <Bar
-                name={tFinancials('financials.cardOrders')}
-                dataKey="cardOrderRevenue"
-                stackId="revenue"
-                fill="#F59E0B"
-                animationBegin={0}
-                animationDuration={800}
-              />
-              <Bar
-                name={tFinancials('financials.whatsappPack')}
-                dataKey="whatsappPackRevenue"
-                stackId="revenue"
-                fill="#6366F1"
-                animationBegin={0}
-                animationDuration={800}
-              />
-              <Line
-                name={tFinancials('financials.totalRevenue')}
-                dataKey="totalRevenue"
-                stroke="var(--ceo-chart-total-line, #0f766e)"
-                strokeWidth={2}
-                dot={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          {monthly.length >= 2 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={monthly}>
+                <CartesianGrid strokeDasharray="4 4" stroke={CHART_STYLE.gridColor} vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{
+                    fontSize: 11,
+                    fill: CHART_STYLE.tickColor,
+                    fontFamily: CHART_STYLE.fontFamily,
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{
+                    fontSize: 11,
+                    fill: CHART_STYLE.tickColor,
+                    fontFamily: CHART_STYLE.fontFamily,
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value: number | string) =>
+                    Number(value ?? 0).toLocaleString('en-US')
+                  }
+                />
+                <Tooltip
+                  cursor={{ stroke: '#334155', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  content={(props) => {
+                    const pl = props.payload?.map((p) => ({
+                      name: String(p.name ?? p.dataKey ?? ''),
+                      value: Number(p.value ?? 0),
+                      color: String(p.color ?? p.stroke ?? '#0D9488'),
+                      dataKey: String(p.dataKey ?? ''),
+                    }));
+                    return (
+                      <ChartTooltip
+                        active={props.active}
+                        payload={pl}
+                        label={props.label}
+                        prefix="EGP "
+                      />
+                    );
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: 11, color: '#94A3B8', fontFamily: CHART_STYLE.fontFamily }}
+                />
+                <Bar
+                  name={tFinancials('financials.subscriptions')}
+                  dataKey="subscriptionRevenue"
+                  stackId="revenue"
+                  fill="#0D9488"
+                  animationBegin={0}
+                  animationDuration={CHART_STYLE.animDuration}
+                  animationEasing={CHART_STYLE.animEasing}
+                />
+                <Bar
+                  name={tFinancials('financials.cardOrders')}
+                  dataKey="cardOrderRevenue"
+                  stackId="revenue"
+                  fill="#F59E0B"
+                  animationBegin={0}
+                  animationDuration={CHART_STYLE.animDuration}
+                  animationEasing={CHART_STYLE.animEasing}
+                />
+                <Bar
+                  name={tFinancials('financials.whatsappPack')}
+                  dataKey="whatsappPackRevenue"
+                  stackId="revenue"
+                  fill="#6366F1"
+                  animationBegin={0}
+                  animationDuration={CHART_STYLE.animDuration}
+                  animationEasing={CHART_STYLE.animEasing}
+                />
+                <Line
+                  name={tFinancials('financials.totalRevenue')}
+                  dataKey="totalRevenue"
+                  stroke="var(--ceo-chart-total-line, #0f766e)"
+                  strokeWidth={CHART_STYLE.strokeWidth}
+                  dot={false}
+                  activeDot={{ r: CHART_STYLE.dotActiveRadius, stroke: '#0F172A', strokeWidth: 2 }}
+                  animationDuration={CHART_STYLE.animDuration}
+                  animationEasing={CHART_STYLE.animEasing}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          ) : (
+            <div
+              className="flex flex-col items-center justify-center text-center px-4 py-16"
+              style={{ color: '#334155', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
+            >
+              <p>{tCharts('noData')}</p>
+              <p className="mt-1 text-xs opacity-80 max-w-xs">{tCharts('noDataSub')}</p>
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4">

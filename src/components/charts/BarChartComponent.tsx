@@ -1,0 +1,191 @@
+'use client';
+
+import { useMemo } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { useTranslations } from 'next-intl';
+import { CHART_MARGIN, CHART_STYLE, LINE_BY_GRADIENT, type GradientKey } from './ChartTokens';
+import { ChartTooltip } from './ChartTooltip';
+
+export type BarChartDataPoint = Record<string, string | number | undefined | null>;
+
+export interface BarChartComponentProps {
+  data: BarChartDataPoint[];
+  dataKey: string;
+  xKey?: string;
+  /** When `layout` is `vertical`, category labels come from this key (e.g. group name). */
+  categoryKey?: string;
+  layout?: 'horizontal' | 'vertical';
+  color?: GradientKey;
+  /** Per-bar colors (overrides `color` when length matches data) */
+  barColors?: string[];
+  height?: number;
+  prefix?: string;
+  suffix?: string;
+  xTickFormatter?: (v: string | number) => string;
+  yTickFormatter?: (v: number) => string;
+  tooltipLabelFormatter?: (v: string | number) => string;
+  showYAxis?: boolean;
+  radius?: number;
+  showGrid?: boolean;
+  /** Mirror category axis for Arabic RTL on vertical layout */
+  rtl?: boolean;
+}
+
+export function BarChartComponent({
+  data,
+  dataKey,
+  xKey = 'date',
+  categoryKey,
+  layout = 'horizontal',
+  color = 'teal',
+  barColors,
+  height = 200,
+  prefix = '',
+  suffix = '',
+  xTickFormatter,
+  yTickFormatter,
+  tooltipLabelFormatter,
+  showYAxis = true,
+  radius = 6,
+  showGrid = true,
+  rtl = false,
+}: BarChartComponentProps) {
+  const t = useTranslations('charts');
+  const lineColor = LINE_BY_GRADIENT[color];
+  const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+  const barSize = Math.max(8, 32 - safeData.length);
+  const cat = categoryKey ?? xKey;
+
+  if (!safeData.length) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center text-center px-4"
+        style={{ height, color: '#334155', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
+      >
+        <p>{t('noData')}</p>
+        <p className="mt-1 text-xs opacity-80 max-w-xs">{t('noDataSub')}</p>
+      </div>
+    );
+  }
+
+  const margin = {
+    ...CHART_MARGIN,
+    left: layout === 'vertical' ? 4 : showYAxis ? 4 : CHART_MARGIN.left,
+    right: layout === 'vertical' ? 16 : CHART_MARGIN.right,
+  };
+
+  const gridVert = layout === 'vertical';
+
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart
+        data={safeData}
+        layout={layout === 'vertical' ? 'vertical' : 'horizontal'}
+        barSize={barSize}
+        margin={margin}
+      >
+        {showGrid ? (
+          <CartesianGrid
+            stroke={CHART_STYLE.gridColor}
+            strokeDasharray="4 4"
+            horizontal={!gridVert}
+            vertical={gridVert}
+          />
+        ) : null}
+        {layout === 'vertical' ? (
+          <>
+            <XAxis
+              type="number"
+              reversed={rtl}
+              tick={{ fontSize: 11, fill: CHART_STYLE.tickColor, fontFamily: CHART_STYLE.fontFamily }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={
+                xTickFormatter
+                  ? (v: number | string) => String(xTickFormatter(v))
+                  : (v: number | string) => Number(v).toLocaleString('en-US')
+              }
+            />
+            <YAxis
+              type="category"
+              dataKey={cat}
+              width={layout === 'vertical' ? 120 : 44}
+              orientation={rtl ? 'right' : 'left'}
+              tick={{ fontSize: 11, fill: CHART_STYLE.tickColor, fontFamily: CHART_STYLE.fontFamily }}
+              axisLine={false}
+              tickLine={false}
+            />
+          </>
+        ) : (
+          <>
+            <XAxis
+              dataKey={xKey}
+              tick={{ fontSize: 11, fill: CHART_STYLE.tickColor, fontFamily: CHART_STYLE.fontFamily }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={
+                xTickFormatter
+                  ? (v: string | number) => String(xTickFormatter(v))
+                  : (v: string | number) => String(v)
+              }
+            />
+            {showYAxis ? (
+              <YAxis
+                width={44}
+                tick={{ fontSize: 11, fill: CHART_STYLE.tickColor, fontFamily: CHART_STYLE.fontFamily }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={
+                  yTickFormatter
+                    ? (v: number | string) => yTickFormatter(Number(v))
+                    : (v: number | string) => Number(v).toLocaleString('en-US')
+                }
+              />
+            ) : null}
+          </>
+        )}
+        <Tooltip
+          cursor={layout === 'vertical' ? { fill: '#1E293B80' } : { fill: '#1E293B80' }}
+          content={(props) => {
+            const pl = props.payload?.map((p) => ({
+              name: String(p.name ?? p.dataKey ?? ''),
+              value: Number(p.value ?? 0),
+              color: String(lineColor),
+              dataKey: String(p.dataKey ?? ''),
+            }));
+            return (
+              <ChartTooltip
+                active={props.active}
+                payload={pl}
+                label={props.label}
+                labelFormatter={tooltipLabelFormatter}
+                prefix={prefix}
+                suffix={suffix}
+              />
+            );
+          }}
+        />
+        <Bar
+          dataKey={dataKey}
+          radius={layout === 'vertical' ? [0, radius, radius, 0] : [radius, radius, 0, 0]}
+          isAnimationActive
+          animationDuration={CHART_STYLE.animDuration}
+          animationEasing={CHART_STYLE.animEasing}
+        >
+          {safeData.map((_, index) => (
+            <Cell key={index} fill={barColors?.[index] ?? lineColor} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}

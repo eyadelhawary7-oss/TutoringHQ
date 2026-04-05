@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import PageHeader from '@/components/shared/PageHeader';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChartComponent, ChartCard } from '@/components/charts';
 import { Building2, Plus, Loader2, TrendingUp, Users, DollarSign, UserCheck } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
@@ -27,6 +27,7 @@ interface ConsolidatedData {
 
 export default function BranchesPage() {
   const t = useTranslations('branches');
+  const tCharts = useTranslations('charts');
   const tCommon = useTranslations('common');
   const tNav = useTranslations('nav');
   const locale = useLocale();
@@ -231,36 +232,43 @@ export default function BranchesPage() {
 
       {branches.length >= 2 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
-            <h3 className="font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-              <Users size={18} />
-              {t('studentsByBranch')}
-            </h3>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="students" fill="#0d9488" name={t('students')} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
-            <h3 className="font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-              <DollarSign size={18} />
-              {t('revenueByBranch')}
-            </h3>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v: number | undefined) => `${(v ?? 0).toLocaleString('en-US')} ${tCommon('egp')}`} />
-                <Bar dataKey="mrr" fill="#0d9488" name={t('monthlyRevenue')} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartCard
+            title={tCharts('studentsByBranch')}
+            subtitle={t('students')}
+            minHeight={260}
+            actions={<Users size={18} className="text-teal-400" aria-hidden />}
+          >
+            <BarChartComponent
+              data={chartData}
+              layout="vertical"
+              categoryKey="name"
+              dataKey="students"
+              xKey="name"
+              height={220}
+              color="teal"
+              showGrid
+              rtl={locale === 'ar'}
+            />
+          </ChartCard>
+          <ChartCard
+            title={tCharts('revenueByBranch')}
+            subtitle={t('monthlyRevenue')}
+            minHeight={260}
+            actions={<DollarSign size={18} className="text-teal-400" aria-hidden />}
+          >
+            <BarChartComponent
+              data={chartData}
+              layout="vertical"
+              categoryKey="name"
+              dataKey="mrr"
+              xKey="name"
+              height={220}
+              color="teal"
+              prefix="EGP "
+              showGrid
+              rtl={locale === 'ar'}
+            />
+          </ChartCard>
         </div>
       )}
 
