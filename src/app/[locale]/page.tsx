@@ -224,7 +224,7 @@ export default function LocaleHomePage() {
             <span className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-600 text-xs font-bold text-white">
               CH
             </span>
-            <span className="text-lg font-bold tracking-tight">
+            <span className="text-lg font-bold tracking-tight text-white">
               Center<span className="text-teal-400">HQ</span>
             </span>
           </Link>
@@ -256,7 +256,7 @@ export default function LocaleHomePage() {
             <Link
               href="/"
               locale={locale === 'ar' ? 'en' : 'ar'}
-              className="hidden rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-400 hover:text-white md:inline-flex btn-press chq-focus"
+              className="hidden rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-300 hover:text-white md:inline-flex btn-press chq-focus"
             >
               {locale === 'ar' ? 'EN' : 'عر'}
             </Link>
@@ -274,7 +274,7 @@ export default function LocaleHomePage() {
             </Link>
             <button
               type="button"
-              className="inline-flex rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white md:hidden btn-press chq-focus"
+              className="inline-flex rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white md:hidden btn-press chq-focus [&_svg]:text-slate-300"
               aria-expanded={mobileOpen}
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               onClick={() => setMobileOpen((o) => !o)}
@@ -289,14 +289,14 @@ export default function LocaleHomePage() {
             <div className="flex flex-col gap-1">
               <a
                 href="#features"
-                className="rounded-xl px-3 py-3 text-slate-200 btn-press chq-focus"
+                className="rounded-xl px-3 py-3 text-slate-300 btn-press chq-focus"
                 onClick={() => setMobileOpen(false)}
               >
                 {m('navFeatures')}
               </a>
               <a
                 href="#pricing-preview"
-                className="rounded-xl px-3 py-3 text-slate-200 btn-press chq-focus"
+                className="rounded-xl px-3 py-3 text-slate-300 btn-press chq-focus"
                 onClick={() => setMobileOpen(false)}
               >
                 {m('navPricing')}
@@ -305,14 +305,14 @@ export default function LocaleHomePage() {
                 href={WA_SUPPORT}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-xl px-3 py-3 text-slate-200 btn-press chq-focus"
+                className="rounded-xl px-3 py-3 text-slate-300 btn-press chq-focus"
                 onClick={() => setMobileOpen(false)}
               >
                 {m('navContact')}
               </a>
               <Link
                 href="/login"
-                className="rounded-xl px-3 py-3 text-slate-200 btn-press chq-focus"
+                className="rounded-xl px-3 py-3 text-slate-300 btn-press chq-focus"
                 onClick={() => setMobileOpen(false)}
               >
                 {m('login')}
@@ -341,14 +341,19 @@ export default function LocaleHomePage() {
             <span className="mb-6 inline-flex items-center rounded-full border border-teal-600/50 bg-teal-950/30 px-3 py-1 text-xs text-teal-400">
               {m('heroBadge')}
             </span>
-            <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl">
+            <h1 className="text-4xl font-bold leading-tight md:text-5xl">
               {heroLines.map((line, i) => (
-                <span key={i} className="block">
+                <span
+                  key={i}
+                  className={
+                    heroLines.length > 1 && i === heroLines.length - 1 ? 'block text-teal-400' : 'block text-white'
+                  }
+                >
                   {line}
                 </span>
               ))}
             </h1>
-            <p className="mx-auto mt-6 max-w-md text-lg text-slate-400 md:mx-0">{t('heroSub')}</p>
+            <p className="mx-auto mt-6 max-w-md text-lg text-slate-300 md:mx-0">{t('heroSub')}</p>
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center md:justify-start">
               <Link
                 href="/signup"
@@ -358,7 +363,7 @@ export default function LocaleHomePage() {
               </Link>
               <a
                 href="#how-it-works"
-                className="rounded-xl border border-slate-700 bg-slate-800 px-8 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
+                className="rounded-xl border border-slate-700 bg-slate-800 px-8 py-4 text-center text-lg font-semibold text-slate-300 transition-colors hover:bg-slate-700 hover:text-white btn-press chq-focus"
               >
                 {t('watchDemo')}
               </a>
@@ -493,11 +498,11 @@ export default function LocaleHomePage() {
                   key={`step-${idx}`}
                   className="flex max-w-xs flex-col items-center text-center md:max-w-[220px] md:shrink-0"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-600 text-lg font-bold text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-teal-700 bg-teal-900/40 text-lg font-bold text-teal-400">
                     {step.n}
                   </div>
                   <h3 className="mt-4 text-base font-semibold text-white">{step.title}</h3>
-                  <p className="mt-1 text-sm text-slate-400">{step.desc}</p>
+                  <p className="mt-1 text-sm text-slate-300">{step.desc}</p>
                 </div>
               );
               if (idx < 2) {
@@ -556,27 +561,27 @@ export default function LocaleHomePage() {
                 {m('nanoBadge')}
               </span>
               <p className="mt-3 text-lg font-semibold text-white">{m('nanoName')}</p>
-              <p className="mt-2 text-2xl font-bold text-teal-400">{m('nanoPrice')}</p>
+              <p className="mt-2 text-2xl font-bold text-white">{m('nanoPrice')}</p>
               <p className="text-xs text-slate-500">{m('nanoPeriod')}</p>
               <p className="mt-3 text-sm text-slate-400">{m('nanoStudents')}</p>
             </div>
             <div className="rounded-2xl border border-teal-600/60 bg-slate-800/40 p-6 text-start ring-1 ring-teal-600/30">
-              <span className="inline-block rounded-full border border-teal-600/50 bg-teal-950/40 px-2 py-0.5 text-xs text-teal-400">
+              <span className="inline-block rounded-full border border-teal-700/50 bg-teal-900/30 px-2 py-0.5 text-xs font-medium text-teal-400">
                 {m('popularBadge')}
               </span>
               <p className="mt-3 text-lg font-semibold text-white">{m('starterName')}</p>
-              <p className="mt-2 text-2xl font-bold text-teal-400">{m('starterPrice')}</p>
+              <p className="mt-2 text-2xl font-bold text-white">{m('starterPrice')}</p>
               <p className="mt-3 text-sm text-slate-400">{m('starterStudents')}</p>
             </div>
             <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 text-start">
               <p className="mt-3 text-lg font-semibold text-white">{m('proName')}</p>
-              <p className="mt-2 text-2xl font-bold text-teal-400">{m('proPrice')}</p>
+              <p className="mt-2 text-2xl font-bold text-white">{m('proPrice')}</p>
               <p className="mt-3 text-sm text-slate-400">{m('proStudents')}</p>
             </div>
           </div>
           <Link
             href="/signup"
-            className="mt-10 inline-flex rounded-xl bg-slate-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-600 btn-press chq-focus"
+            className="mt-10 inline-flex rounded-xl border border-slate-600 bg-slate-800/40 px-6 py-3 text-sm font-semibold text-slate-300 transition-colors hover:border-slate-500 hover:bg-slate-800/60 hover:text-white btn-press chq-focus"
           >
             {m('pricingCta')}
           </Link>
@@ -586,7 +591,7 @@ export default function LocaleHomePage() {
       <section className="chq-fade-in bg-gradient-to-b from-transparent to-teal-900/20 px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold text-white md:text-3xl">{t('finalCtaTitle')}</h2>
-          <p className="mt-3 text-sm text-slate-400 md:text-base">{t('finalCtaDesc')}</p>
+          <p className="mt-3 text-sm text-slate-300 md:text-base">{t('finalCtaDesc')}</p>
           <Link
             href="/signup"
             className="mt-8 inline-flex rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
@@ -598,13 +603,13 @@ export default function LocaleHomePage() {
 
       <footer className="chq-fade-in border-t border-slate-800/60 px-4 py-10 md:px-6">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center text-sm text-slate-400">
-          <p className="text-slate-300">{m('footerTagline')}</p>
-          <p className="text-xs text-slate-500">{m('footerEhgi')}</p>
+          <p>{m('footerTagline')}</p>
+          <p className="text-xs">{m('footerEhgi')}</p>
           <a
             href={WA_SUPPORT}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-teal-400 transition-colors hover:text-teal-300 btn-press chq-focus rounded-lg px-2 py-1"
+            className="text-slate-400 transition-colors hover:text-white btn-press chq-focus rounded-lg px-2 py-1"
           >
             {m('footerSupportLabel')}: +20 122 060 1410
           </a>
