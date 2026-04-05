@@ -38,7 +38,7 @@ export function ChartCard({
       : '';
 
   return (
-    <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-5 hover:border-slate-600/80 transition-colors duration-200">
+    <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div className="min-w-0">
           <p className="text-xs text-slate-500 uppercase tracking-wide">{title}</p>

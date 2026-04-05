@@ -81,7 +81,7 @@ export default async function LocaleLayout({
 
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
   return (
-    <html lang={locale} dir={dir} className={`${cairo.variable}`} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={`dark ${cairo.variable}`} suppressHydrationWarning>
       <head>
         <link
           rel="preload"
@@ -111,7 +111,7 @@ export default async function LocaleLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body
-        className="antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] font-cairo"
+        className="antialiased bg-[#080D14] text-slate-100 min-h-screen w-full font-cairo"
         suppressHydrationWarning
       >
         <PostHogProvider>

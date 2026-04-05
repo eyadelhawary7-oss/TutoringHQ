@@ -210,7 +210,7 @@ export default function BenchmarksPage() {
           return (
             <div
               key={key}
-              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 card-shadow"
+              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 p-6 card-shadow"
             >
               <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
                 <Icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />

@@ -849,14 +849,14 @@ export default function StudentsPage() {
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <Link
                 href="/students/import"
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-slate-800/40 card-shadow"
               >
                 <Upload size={16} /> {ts('import')}
               </Link>
               <button
                 type="button"
                 onClick={() => setShowCardCartModal(true)}
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow btn-press chq-focus"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-slate-800/40 card-shadow btn-press chq-focus"
                 aria-label={ts('cardOrderCart')}
               >
                 <ShoppingCart size={16} />
@@ -869,7 +869,7 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={() => setShowCardOrderModal(true)}
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow btn-press chq-focus"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-slate-800/40 card-shadow btn-press chq-focus"
               >
                 <CreditCard size={16} /> {ts('order_cards')}
               </button>
@@ -882,7 +882,7 @@ export default function StudentsPage() {
                     setAnnouncementMessage('');
                     setShowAnnouncementModal(true);
                   }}
-                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-white dark:bg-slate-800 card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
+                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-slate-800/40 card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
                 >
                   {ts('sendAnnouncement')}
                 </button>
@@ -898,13 +898,13 @@ export default function StudentsPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow flex flex-col gap-1">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 p-4 card-shadow flex flex-col gap-1">
               <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{ts('total_students')}</span>
               <span className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">
                 {students.length.toLocaleString('en-US')}
               </span>
             </div>
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow flex flex-col gap-1">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 p-4 card-shadow flex flex-col gap-1">
               <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{ts('active_students')}</span>
               <span className="text-lg font-bold text-teal-600 dark:text-teal-400 tabular-nums">
                 {students.filter((s) => s.lifecycle_status === 'active').length.toLocaleString('en-US')}
@@ -912,7 +912,7 @@ export default function StudentsPage() {
             </div>
           </div>
 
-          <div className="rounded-xl bg-white dark:bg-slate-800 mb-3 ring-1 ring-slate-200 dark:ring-slate-700 border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
+          <div className="rounded-xl bg-slate-800/40 mb-3 ring-1 ring-slate-200 dark:ring-slate-700 border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
             <div className="relative">
               <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
               <input
@@ -1022,7 +1022,7 @@ export default function StudentsPage() {
           <AtRiskPanel />
 
           {isLoading ? (
-            <div className="space-y-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden card-shadow" aria-busy>
+            <div className="space-y-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 overflow-hidden card-shadow" aria-busy>
               <div className="skeleton h-12 w-full rounded-none" />
               {[1, 2, 3].map((i) => (
                 <div
@@ -1068,11 +1068,11 @@ export default function StudentsPage() {
                 </div>
               ) : (
                 <>
-                  <div className="hidden md:block rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden mb-2 card-shadow">
+                  <div className="hidden md:block rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 overflow-hidden mb-2 card-shadow">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-slate-50 dark:bg-slate-900/50">
+                          <tr className="bg-slate-900/40">
                             <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
                               {ts('name')}
                             </th>
@@ -1099,7 +1099,7 @@ export default function StudentsPage() {
                             return (
                               <tr
                                 key={s.id}
-                                className="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                                className="transition-colors duration-150 hover:bg-slate-700/50"
                               >
                                 <td className="px-4 py-4 align-top">
                                   <button
@@ -1114,7 +1114,7 @@ export default function StudentsPage() {
                                   </button>
                                 </td>
                                 <td className="px-4 py-4 align-top font-mono text-[var(--color-text-primary)]" dir="ltr">
-                                  {s.student_number ?? '—'}
+                                  {s.student_number ?? tCommon('notSet')}
                                 </td>
                                 <td className="px-4 py-4 align-top relative">
                                   <div
@@ -1179,7 +1179,7 @@ export default function StudentsPage() {
                                           </button>
                                           <button
                                             type="button"
-                                            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 btn-press chq-focus"
+                                            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-700/50 dark:border-slate-600 dark:text-slate-300 btn-press chq-focus"
                                             onClick={() => setOpenPopoverId(null)}
                                           >
                                             {ts('cancel')}
@@ -1388,7 +1388,7 @@ export default function StudentsPage() {
                                     </button>
                                     <button
                                       type="button"
-                                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 btn-press chq-focus"
+                                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-700/50 btn-press chq-focus"
                                       onClick={() => setOpenPopoverId(null)}
                                     >
                                       {ts('cancel')}
@@ -1853,7 +1853,7 @@ export default function StudentsPage() {
               </p>
             )}
             {announcementCapReached && (
-              <p className="text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg p-2 mt-2">
+              <p className="text-sm text-red-300 bg-red-950/30 border border-red-900/50 rounded-lg p-2 mt-2">
                 {ts('announcementCapReached')}
               </p>
             )}
@@ -1950,7 +1950,7 @@ export default function StudentsPage() {
                       className="flex items-center gap-2 justify-between py-2 border-b border-[var(--color-border-subtle)] last:border-0"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{st?.name ?? '—'}</p>
+                        <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{st?.name ?? tCommon('notAvailable')}</p>
                         <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
                           {st?.student_number ?? ''}
                         </p>

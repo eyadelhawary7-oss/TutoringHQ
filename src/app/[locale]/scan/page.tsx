@@ -122,7 +122,7 @@ export default function ScanPage() {
   }, [scanFrameState]);
   useEffect(() => {
     if (!lastSuccessStudentName) return;
-    toast.success(`${lastSuccessStudentName} — ${ts('attendance_toast')}`);
+    toast.success(`${lastSuccessStudentName}: ${ts('scanSuccess')}`);
   }, [lastSuccessStudentName, toast, ts]);
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { persistedMode = mode; }, [mode]);
@@ -868,7 +868,7 @@ export default function ScanPage() {
   return (
     <>
       {showFlash && <div className="chq-flash-success" aria-hidden />}
-      <div className="bg-[var(--color-surface-0)] min-h-screen flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="bg-[#080D14] min-h-screen w-full flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         {!isOnline && (
           <div className="chq-fade-in mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-amber-800/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-300 sm:mx-0">
             <div className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
@@ -890,7 +890,7 @@ export default function ScanPage() {
                 localStorage.setItem('chq-scanner-sound', String(next));
               }}
               aria-label={soundEnabled ? ts('sound_on') : ts('sound_off')}
-              className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 shadow-sm hover:border-teal-500/40 dark:hover:border-teal-400/30 transition-all duration-200 ease-out"
+              className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border border-slate-600 bg-slate-800 text-slate-100 shadow-sm hover:border-teal-500/40 transition-all duration-200 ease-out"
             >
               <span className="tabular-nums">{soundEnabled ? ts('sound_on_label') : ts('sound_off_label')}</span>
             </button>
@@ -998,7 +998,7 @@ export default function ScanPage() {
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   </div>
-                  <p className="text-sm font-semibold text-[var(--color-success)]">{ts('scan_success')}</p>
+                  <p className="text-sm font-semibold text-[var(--color-success)]">{ts('scanSuccess')}</p>
                   <p className="text-base font-bold text-[var(--color-text-primary)] px-4 text-center truncate max-w-full">
                     {lastSuccessStudentName}
                   </p>
@@ -1031,13 +1031,17 @@ export default function ScanPage() {
 
             {mode === 'manual' && !scannedStudent && (
               <div className="space-y-3 w-full max-w-sm">
+                <label htmlFor="scan-manual-student-id" className="block text-xs font-medium text-[var(--color-text-secondary)]">
+                  {ts('manualEntry')}
+                </label>
                 <input
+                  id="scan-manual-student-id"
                   ref={manualInputRef}
                   type="text"
                   inputMode="text"
                   value={manualIdInput}
                   onChange={(e) => setManualIdInput(e.target.value)}
-                  placeholder={t('manualIdPlaceholder')}
+                  placeholder={ts('manualPlaceholder')}
                   className="w-full px-4 py-3 border border-[var(--color-border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-[var(--color-surface-1)] font-mono text-center text-lg tracking-widest text-[var(--color-text-primary)]"
                   dir="ltr"
                   autoFocus
@@ -1058,7 +1062,7 @@ export default function ScanPage() {
                   disabled={!manualIdInput.trim()}
                   className="w-full py-3 bg-brand-500 hover:opacity-90 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {t('checkIn')}
+                  {ts('manualSubmit')}
                 </button>
               </div>
             )}
@@ -1159,7 +1163,10 @@ export default function ScanPage() {
                       <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{(g as { subject?: string | null }).subject}</p>
                     )}
                     <p className="text-xs font-medium text-teal-600 mt-1">
-                      {t('perLesson')} · {g.fee != null ? `${tCommon('egp')} ${g.fee.toLocaleString('en-US')}` : '\u2014'}
+                      {t('perLesson')} ·{' '}
+                      {g.fee != null
+                        ? `${tCommon('egp')} ${g.fee.toLocaleString('en-US')}`
+                        : `${tCommon('egp')} ${(0).toLocaleString('en-US')}`}
                     </p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />

@@ -1026,7 +1026,10 @@ html.light .skeleton {
 html,
 body {
   font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif;
-  color: var(--color-text-primary);
+  background-color: #080d14;
+  color: #f8fafc;
+  min-height: 100vh;
+  width: 100%;
 }
 
 /* Belt-and-suspenders for number and code elements.
@@ -1947,4 +1950,16 @@ html.light {
   animation: chq-flash-success 300ms ease-out forwards;
   pointer-events: none;
   z-index: 100;
+}
+
+@keyframes scanline {
+  0%,
+  100% {
+    top: 20%;
+    opacity: 1;
+  }
+  50% {
+    top: 80%;
+    opacity: 0.6;
+  }
 }

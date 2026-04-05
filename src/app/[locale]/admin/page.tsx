@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
@@ -200,6 +200,7 @@ function CardOrderPreview({
   centerName: string;
   centerLogo: string | null;
 }) {
+  const tCommon = useTranslations('common');
   const [side, setSide] = useState<'front' | 'back'>('front');
   const first = students[0];
   const initials = centerName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -217,8 +218,10 @@ function CardOrderPreview({
               <div className="w-16 h-16 bg-[var(--color-surface-1)] rounded flex items-center justify-center">
                 {first?.qr_code ? <img src={first.qr_code} alt="" className="w-14 h-14" /> : <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />}
               </div>
-              <div className="mt-1 text-xs font-bold text-[var(--color-text-primary)] truncate max-w-full px-1">{first?.name ?? '—'}</div>
-              <div className="text-[9px] font-mono text-teal-600">{first?.student_number ?? '—'}</div>
+              <div className="mt-1 text-xs font-bold text-[var(--color-text-primary)] truncate max-w-full px-1">
+                {first?.name ?? tCommon('notAvailable')}
+              </div>
+              <div className="text-[9px] font-mono text-teal-600">{first?.student_number ?? tCommon('notSet')}</div>
             </div>
           </>
         ) : (
@@ -1155,7 +1158,9 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('outstandingInvoices')}</p>
-                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.pendingRevenue?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
+                      {(overview.pendingRevenue ?? 0).toLocaleString('en-US')} {tCommon('egp')}
+                    </p>
                   </div>
                   <div className="p-3 rounded-full bg-red-100">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -1166,7 +1171,9 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('collectedThisMonth')}</p>
-                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.revenueThisMonth?.toLocaleString('en-US') ?? '—'} {tCommon('egp')}</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
+                      {(overview.revenueThisMonth ?? 0).toLocaleString('en-US')} {tCommon('egp')}
+                    </p>
                   </div>
                   <div className="p-3 rounded-full bg-teal-100">
                     <CreditCard className="w-5 h-5 text-teal-600" />
@@ -1177,7 +1184,18 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('collectionRate')}</p>
-                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.totalRevenueCollected != null && overview.pendingRevenue != null && overview.totalRevenueCollected + overview.pendingRevenue > 0 ? Math.round(overview.totalRevenueCollected / (overview.totalRevenueCollected + overview.pendingRevenue) * 100) : '—'}%</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
+                      {overview.totalRevenueCollected != null &&
+                      overview.pendingRevenue != null &&
+                      overview.totalRevenueCollected + overview.pendingRevenue > 0
+                        ? Math.round(
+                            (overview.totalRevenueCollected /
+                              (overview.totalRevenueCollected + overview.pendingRevenue)) *
+                              100
+                          )
+                        : 0}
+                      %
+                    </p>
                   </div>
                   <div className="p-3 rounded-full bg-blue-100">
                     <BarChart3 className="w-5 h-5 text-blue-600" />
@@ -1494,8 +1512,12 @@ export default function AdminPage() {
                             ) : null}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{c.owner?.name ?? c.owner_name ?? '—'}</td>
-                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell" dir="ltr">{c.phone ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
+                          {c.owner?.name ?? c.owner_name ?? tCommon('notAvailable')}
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell" dir="ltr">
+                          {c.phone ?? tCommon('notSet')}
+                        </td>
                         <td className="py-3.5 px-4"><PlanBadge plan={c.plan} /></td>
                         <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[c.status || 'active'] || STATUS_STYLES.active}`}>
@@ -1503,9 +1525,19 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] font-mono hidden md:table-cell">{c.students_count ?? 0}</td>
-                        <td className={`py-3.5 px-4 text-xs hidden lg:table-cell ${(c.last_active?.includes('days') || c.last_active === 'Never') ? 'text-red-600 font-semibold' : 'text-[var(--color-text-secondary)]'}`}>{c.last_active ?? '—'}</td>
+                        <td
+                          className={`py-3.5 px-4 text-xs hidden lg:table-cell ${
+                            (c.last_active?.includes('days') || c.last_active === 'Never')
+                              ? 'text-red-600 font-semibold'
+                              : 'text-[var(--color-text-secondary)]'
+                          }`}
+                        >
+                          {c.last_active ?? tCommon('never')}
+                        </td>
                         <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.usage_scans ?? 0}</td>
-                        <td className="py-3.5 px-4 text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">
+                          {c.created_at ? new Date(c.created_at).toLocaleDateString() : tCommon('notSet')}
+                        </td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center justify-end gap-3">
                             <div className="relative">
@@ -1625,9 +1657,13 @@ export default function AdminPage() {
                         <tr key={b.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                           <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{b.name}</td>
                           <td className="py-3.5 px-4"><PlanBadge plan={b.plan} /></td>
-                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{b.billing_period ?? '—'}</td>
+                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
+                            {b.billing_period ?? tCommon('notSet')}
+                          </td>
                           <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{(b.amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
-                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{nextDueStr || '—'}</td>
+                          <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
+                            {nextDueStr || tCommon('notSet')}
+                          </td>
                           <td className="py-3.5 px-4">
                             <BillingStatusBadge status={isPaid ? 'paid' : (billingStatus === 'overdue' ? 'overdue' : 'active')} nextDue={nextDueStr || new Date().toISOString()} />
                           </td>
@@ -1740,11 +1776,17 @@ export default function AdminPage() {
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {paymentHistory.map((p, i) => (
                       <tr key={i} className="hover:bg-[var(--color-surface-0)] transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
+                          {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : tCommon('notSet')}
+                        </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.centerName}</td>
                         <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{p.amount.toLocaleString('en-US')} {tCommon('egp')}</td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{p.billing_period ?? '—'}</td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden lg:table-cell">{p.recorded_by ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
+                          {p.billing_period ?? tCommon('notSet')}
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden lg:table-cell">
+                          {p.recorded_by ?? tCommon('notSet')}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1782,7 +1824,9 @@ export default function AdminPage() {
                             {pr.priceDiffFormatted && <span className="text-xs text-[var(--color-text-secondary)]">{pr.priceDiffFormatted}</span>}
                           </div>
                         </td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
+                          {pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : tCommon('notSet')}
+                        </td>
                         <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pr.status === 'pending' ? STATUS_STYLES.pending : pr.status === 'approved' ? STATUS_STYLES.active : STATUS_STYLES.rejected}`}>
                             {pr.status === 'pending' ? tAdmin('pending') : pr.status === 'approved' ? tAdmin('approved') : tAdmin('rejected')}
@@ -1834,12 +1878,22 @@ export default function AdminPage() {
                     {pendingSignups.map((ps) => (
                       <tr key={ps.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{ps.name}</td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{ps.owner_name ?? '—'}</td>
-                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{ps.phone ?? '—'}</td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">{ps.email ?? '—'}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
+                          {ps.owner_name ?? tCommon('notAvailable')}
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
+                          {ps.phone ?? tCommon('notSet')}
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
+                          {ps.email ?? tCommon('notSet')}
+                        </td>
                         <td className="py-3.5 px-4"><PlanBadge plan={ps.plan} /></td>
-                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden md:table-cell">{ps.referral_code_used ?? ps.referring_center_name ?? '—'}</td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{ps.created_at ? new Date(ps.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden md:table-cell">
+                          {ps.referral_code_used ?? ps.referring_center_name ?? tCommon('notSet')}
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
+                          {ps.created_at ? new Date(ps.created_at).toLocaleDateString() : tCommon('notSet')}
+                        </td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2 flex-nowrap">
                             <button
@@ -1933,7 +1987,9 @@ export default function AdminPage() {
                                               : order.status}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">{order.created_at ? new Date(order.created_at).toLocaleDateString() : '—'}</td>
+                            <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">
+                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : tCommon('notSet')}
+                            </td>
                             <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                               <span className="inline-flex">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
                             </td>
@@ -1955,7 +2011,7 @@ export default function AdminPage() {
                                   <div className="flex flex-wrap gap-4 items-start">
                                     <div className="flex-1 min-w-[200px]">
                                       <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tAdmin('deliveryAddress', { defaultValue: 'Delivery Address' })}</p>
-                                      <p className="text-sm">{order.delivery_address || '—'}</p>
+                                      <p className="text-sm">{order.delivery_address || tCommon('notSet')}</p>
                                       {order.notes && (
                                         <>
                                           <p className="text-xs font-medium text-[var(--color-text-secondary)] mt-2 mb-1">{tAdmin('notes', { defaultValue: 'Notes' })}</p>
@@ -2042,9 +2098,13 @@ export default function AdminPage() {
                   {internalTeam.map((m) => (
                     <tr key={m.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{m.name}</td>
-                      <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{m.phone ?? m.email ?? '—'}</td>
+                      <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
+                        {m.phone ?? m.email ?? tCommon('notSet')}
+                      </td>
                       <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">{m.role}</span></td>
-                      <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
+                      <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
+                        {m.created_at ? new Date(m.created_at).toLocaleDateString() : tCommon('notSet')}
+                      </td>
                       <td className="py-3.5 px-4">
                         {!['super_admin', 'admin'].includes(m.role) && (
                           <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50 btn-press chq-focus">
@@ -2193,7 +2253,13 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { label: 'Avg Students/Center', value: analyticsCenters.length > 0 ? Math.round(analyticsCenters.reduce((s, c) => s + (c.students_count ?? 0), 0) / analyticsCenters.length) : 0 },
-                { label: 'Avg Revenue/Center', value: analyticsCenters.filter(c => (c.status ?? 'active') === 'active').length > 0 ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, analyticsCenters.filter(c => (c.status ?? 'active') === 'active').length)).toLocaleString('en-US')} ${tCommon('egp')}` : '—' },
+                {
+                  label: 'Avg Revenue/Center',
+                  value:
+                    analyticsCenters.filter((c) => (c.status ?? 'active') === 'active').length > 0
+                      ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, analyticsCenters.filter((c) => (c.status ?? 'active') === 'active').length)).toLocaleString('en-US')} ${tCommon('egp')}`
+                      : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`,
+                },
                 { label: 'Centers with 0 Students', value: analyticsCenters.filter(c => (c.students_count ?? 0) === 0).length },
                 { label: 'Centers at Risk', value: analyticsCenters.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
               ].map(({ label, value }) => (
@@ -2217,25 +2283,108 @@ export default function AdminPage() {
               <button onClick={() => setDetailCenter(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] btn-press chq-focus"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
-              {[
-                { label: 'Owner', value: detailCenter.owner?.name ?? detailCenter.owner_name ?? '—', isPlan: false },
-                { label: tCommon('phone'), value: detailCenter.phone ?? '—', isPlan: false },
-                { label: tCommon('email'), value: detailCenter.email ?? '—', isPlan: false },
-                { label: 'Plan', value: detailCenter.plan, isPlan: true },
-                { label: tAdmin('billingPeriod'), value: detailCenter.billing_period ?? '—', isPlan: false },
-                { label: tAdmin('studentsCount'), value: String(detailCenter.students_count ?? 0), isPlan: false },
-                { label: tCommon('status'), value: detailCenter.status ?? '—', isPlan: false },
-                { label: tAdmin('nextDue'), value: detailCenter.next_due ?? '—', isPlan: false },
-                { label: tAdmin('referralCode'), value: detailCenter.referral_code ?? '—', isPlan: false },
-                { label: tAdmin('lastActive'), value: detailCenter.last_active ?? '—', isPlan: false },
-                { label: tAdmin('usage'), value: String(detailCenter.usage_scans ?? 0), isPlan: false },
-                { label: tAdmin('createdAt'), value: detailCenter.created_at ? new Date(detailCenter.created_at).toLocaleDateString() : '—', isPlan: false },
-              ].map(({ label, value, isPlan }) => (
-                <div key={label}>
-                  <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{label}</p>
-                  {isPlan ? <PlanBadge plan={value} /> : <p className="font-medium text-[var(--color-text-primary)]">{value}</p>}
-                </div>
-              ))}
+              {(
+                [
+                  {
+                    label: 'Owner',
+                    value: detailCenter.owner?.name ?? detailCenter.owner_name ?? null,
+                    isPlan: false,
+                    empty: () => (
+                      <span className="text-slate-500 text-xs italic">{tCommon('notAvailable')}</span>
+                    ),
+                  },
+                  {
+                    label: tCommon('phone'),
+                    value: detailCenter.phone ?? null,
+                    isPlan: false,
+                    empty: () => (
+                      <span className="text-slate-500 text-xs italic">{tCommon('notSet')}</span>
+                    ),
+                  },
+                  {
+                    label: tCommon('email'),
+                    value: detailCenter.email ?? null,
+                    isPlan: false,
+                    empty: () => (
+                      <span className="text-slate-500 text-xs italic">{tCommon('notSet')}</span>
+                    ),
+                  },
+                  { label: 'Plan', value: detailCenter.plan, isPlan: true },
+                  {
+                    label: tAdmin('billingPeriod'),
+                    value: detailCenter.billing_period ?? null,
+                    isPlan: false,
+                    empty: () => (
+                      <span className="text-slate-500 text-xs italic">{tCommon('notSet')}</span>
+                    ),
+                  },
+                  { label: tAdmin('studentsCount'), value: String(detailCenter.students_count ?? 0), isPlan: false },
+                  {
+                    label: tCommon('status'),
+                    value: detailCenter.status ?? null,
+                    isPlan: false,
+                    empty: () => (
+                      <span className="text-slate-500 text-xs italic">{tCommon('notSet')}</span>
+                    ),
+                  },
+                  {
+                    label: tAdmin('nextDue'),
+                    value: detailCenter.next_due ?? null,
+                    isPlan: false,
+                    empty: () => (
+                      <span className="text-slate-500 text-xs italic">{tCommon('notSet')}</span>
+                    ),
+                  },
+                  {
+                    label: tAdmin('referralCode'),
+                    value: detailCenter.referral_code ?? null,
+                    isPlan: false,
+                    empty: () => (
+                      <span className="text-slate-500 text-xs italic">{tCommon('notSet')}</span>
+                    ),
+                  },
+                  {
+                    label: tAdmin('lastActive'),
+                    value: detailCenter.last_active ?? null,
+                    isPlan: false,
+                    empty: () => (
+                      <span className="text-slate-500 text-xs italic">{tCommon('never')}</span>
+                    ),
+                  },
+                  { label: tAdmin('usage'), value: String(detailCenter.usage_scans ?? 0), isPlan: false },
+                  {
+                    label: tAdmin('createdAt'),
+                    value: detailCenter.created_at
+                      ? new Date(detailCenter.created_at).toLocaleDateString()
+                      : null,
+                    isPlan: false,
+                    empty: () => (
+                      <span className="text-slate-500 text-xs italic">{tCommon('notSet')}</span>
+                    ),
+                  },
+                ] as Array<{
+                  label: string;
+                  value: string | null;
+                  isPlan?: boolean;
+                  empty?: () => ReactNode;
+                }>
+              ).map((row) => {
+                const { label, isPlan } = row;
+                const value = row.value;
+                const showEmpty = value == null || value === '';
+                return (
+                  <div key={label}>
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{label}</p>
+                    {isPlan ? (
+                      <PlanBadge plan={value ?? ''} />
+                    ) : showEmpty && row.empty ? (
+                      row.empty()
+                    ) : (
+                      <p className="font-medium text-[var(--color-text-primary)]">{value}</p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

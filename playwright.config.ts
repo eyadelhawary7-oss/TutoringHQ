@@ -1,6 +1,7 @@
 import dotenv from 'dotenv'
 import path from 'path'
 dotenv.config({ path: path.resolve(__dirname, '.env.test') })
+dotenv.config({ path: path.resolve(__dirname, '.env.local') })
 
 import { defineConfig, devices } from '@playwright/test'
 
@@ -25,7 +26,10 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: process.env.BASE_URL ?? 'https://center-hq.vercel.app',
+    baseURL:
+      process.env.PLAYWRIGHT_BASE_URL ??
+      process.env.BASE_URL ??
+      'https://center-hq.vercel.app',
 
     // Screenshot on failure only
     screenshot: 'only-on-failure',

@@ -219,7 +219,7 @@ function PaymobModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-slate-800/90 border border-slate-700">
         <div className="flex items-center border-b border-slate-200 px-4 py-3">
           <span className="font-semibold text-slate-800">{title}</span>
           <button
@@ -507,7 +507,7 @@ function PaygTab({
               className={`rounded-xl border p-3 text-center transition-all duration-200 ${
                 active
                   ? 'scale-105 border-2 border-teal-600 bg-teal-50 dark:bg-teal-900/30'
-                  : 'border border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-900/40'
+                  : 'border border-slate-600 bg-slate-900/40'
               }`}
               style={cairoFont}
             >
@@ -525,7 +525,7 @@ function PaygTab({
         })}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
+      <div className="rounded-2xl border border-slate-600 bg-slate-800/40 p-6 shadow-sm">
         <dl className="space-y-2 text-sm">
           <div className="flex justify-between gap-2">
             <dt className="text-slate-500" style={cairoFont}>
@@ -613,7 +613,7 @@ function PaygTab({
                 <select
                   value={paygLeavePeriod}
                   onChange={(e) => setPaygLeavePeriod(e.target.value as BillingPeriod)}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
+                  className="rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100"
                   style={cairoFont}
                 >
                   <option value="monthly">{t('period.monthly')}</option>
@@ -1554,7 +1554,7 @@ export default function BillingPage() {
     }
     if (st === 'cancelled' || st === 'canceled') {
       return (
-        <span className={`${base} bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400`} style={cairoFont}>
+        <span className={`${base} bg-slate-800 text-slate-400`} style={cairoFont}>
           {t('status.cancelled')}
         </span>
       );
@@ -1604,13 +1604,13 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-4 pb-10 dark:bg-slate-950 md:p-8">
+      <div className="min-h-screen w-full bg-[#080D14] p-4 pb-10 md:p-8">
         <div className="mx-auto flex max-w-3xl flex-col gap-6">
           <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
           <div className="h-56 animate-pulse rounded-2xl bg-gradient-to-br from-teal-200 to-slate-300 dark:from-teal-900/40 dark:to-slate-800" />
-          <div className="h-48 animate-pulse rounded-2xl bg-white dark:bg-slate-800" />
-          <div className="h-64 animate-pulse rounded-2xl bg-white dark:bg-slate-800" />
-          <div className="h-48 animate-pulse rounded-2xl bg-white dark:bg-slate-800" />
+          <div className="h-48 animate-pulse rounded-2xl bg-slate-800/40" />
+          <div className="h-64 animate-pulse rounded-2xl bg-slate-800/40" />
+          <div className="h-48 animate-pulse rounded-2xl bg-slate-800/40" />
         </div>
       </div>
     );
@@ -1620,7 +1620,7 @@ export default function BillingPage() {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 p-4 pb-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100 md:p-8"
+      className="min-h-screen w-full bg-[#080D14] p-4 pb-10 text-slate-100 md:p-8"
       dir={locale === 'ar' ? 'rtl' : 'ltr'}
     >
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
@@ -1780,7 +1780,7 @@ export default function BillingPage() {
         {/* SECTION 2: UPGRADE / DOWNGRADE */}
         {canPlanChange ? (
           <section
-            className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+            className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
             aria-labelledby="billing-plan-change-heading"
           >
             <h2
@@ -1981,7 +1981,7 @@ export default function BillingPage() {
                 ) : null}
 
                 {selectedPeriod && selectedPlan && costSummary ? (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-900/50">
+                  <div className="rounded-xl border border-slate-600 bg-slate-900/40 p-4">
                     <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
                       {t('upgrade.summary')}
                     </h3>
@@ -2157,7 +2157,7 @@ export default function BillingPage() {
                 ) : null}
 
                 {selectedPlan && selectedPeriod && downgradePreview ? (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-900/50">
+                  <div className="rounded-xl border border-slate-600 bg-slate-900/40 p-4">
                     <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
                       {t('downgrade.summary')}
                     </h3>
@@ -2233,7 +2233,7 @@ export default function BillingPage() {
               <>
             {/* SECTION 3: CREDITS BALANCE */}
             <section
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+              className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
               aria-labelledby="billing-credits-heading"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2287,7 +2287,7 @@ export default function BillingPage() {
                           block: 'start',
                         })
                       }
-                      className="w-full rounded-xl border-2 border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto btn-press chq-focus"
+                      className="w-full rounded-xl border-2 border-slate-600 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-700/50 sm:w-auto btn-press chq-focus"
                       style={cairoFont}
                     >
                       {t('credits.requestWithdrawal')}
@@ -2313,7 +2313,7 @@ export default function BillingPage() {
             <section
               ref={withdrawalSectionRef}
               id="billing-withdrawal"
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+              className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
               aria-labelledby="billing-withdrawal-heading"
             >
               {availableCredits < 2000 ? (
@@ -2425,7 +2425,7 @@ export default function BillingPage() {
                           setWithdrawalSuccess(null);
                           setWithdrawAmount(Number(e.target.value));
                         }}
-                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 tabular-nums dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                        className="w-full rounded-xl border border-slate-600 bg-slate-900/80 px-4 py-2.5 text-slate-100 tabular-nums"
                       />
                       <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
                         {t('withdrawal.youReceive', {
@@ -2462,7 +2462,7 @@ export default function BillingPage() {
         {showReactivation && reactivationCalc && center?.suspended_at ? (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">
             <div
-              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800/95 p-6 shadow-xl"
               role="dialog"
               aria-modal="true"
               aria-labelledby="reactivation-title"
@@ -2497,7 +2497,7 @@ export default function BillingPage() {
                   {reactivationCalc.tier === 'tier1' ? t('reactivation.tier1') : t('reactivation.tier2')}
                 </span>
               </div>
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mt-4 rounded-xl border border-slate-600 bg-slate-900/40 p-4">
                 {reactivationCalc.tier === 'tier1' ? (
                   <dl className="space-y-2 text-sm">
                     <div className="flex justify-between gap-2">
@@ -2594,7 +2594,7 @@ export default function BillingPage() {
         ) : null}
 
         {/* SECTION 5: WA PACK */}
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <section className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white" style={cairoFont}>
               {t('pack.title')}
@@ -2654,7 +2654,7 @@ export default function BillingPage() {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 dark:border-slate-600 dark:bg-slate-900/40">
+            <div className="rounded-xl border border-dashed border-slate-600 bg-slate-900/40 p-5">
               <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
                 {t('pack.enableDescription')}
               </p>
@@ -2678,7 +2678,7 @@ export default function BillingPage() {
         </section>
 
         {/* SECTION 6: INVOICE HISTORY */}
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <section className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white" style={cairoFont}>
             {t('history.title')}
           </h2>
@@ -2787,7 +2787,7 @@ export default function BillingPage() {
         </section>
 
         {/* SECTION 7: PLAN CHANGE HISTORY */}
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <section className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white" style={cairoFont}>
             {t('planHistory.title')}
           </h2>
@@ -2869,7 +2869,7 @@ export default function BillingPage() {
 
         {showCancelDanger ? (
           <section
-            className="rounded-2xl border border-red-200 p-6 dark:border-red-900"
+            className="rounded-2xl border border-red-900/50 bg-red-950/20 p-6"
             aria-labelledby="billing-danger-heading"
           >
             <h2
@@ -2902,7 +2902,7 @@ export default function BillingPage() {
       {showCancelModal ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">
           <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"
+            className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-800/90 p-6 shadow-xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cancel-modal-title"
@@ -2923,7 +2923,7 @@ export default function BillingPage() {
             <select
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100"
             >
               <option value="">{t('cancel.reasonPlaceholder')}</option>
               {CANCEL_REASON_KEYS.map((k) => (
@@ -2941,7 +2941,7 @@ export default function BillingPage() {
               value={cancelConfirmText}
               onChange={(e) => setCancelConfirmText(e.target.value)}
               placeholder={t('cancel.confirmLabel')}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100"
               dir="ltr"
               autoComplete="off"
             />

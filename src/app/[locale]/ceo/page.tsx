@@ -239,7 +239,7 @@ export default function CeoDashboardPage() {
 
   function renewalPill(days: number | null): { className: string; text: string } {
     if (days == null) {
-      return { className: 'text-[var(--color-text-tertiary)]', text: '—' };
+      return { className: 'text-[var(--color-text-tertiary)]', text: tCommon('notSet') };
     }
     if (days === 0) {
       return { className: 'inline-flex rounded-full px-2 py-0.5 text-xs bg-red-400/10 text-red-400', text: t('health.expired') };
@@ -264,7 +264,7 @@ export default function CeoDashboardPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen bg-[var(--color-surface-0)] pt-14 lg:pt-0 page-enter">
+    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen w-full min-w-0 bg-[#080D14] pt-14 lg:pt-0 page-enter">
       <AdminSidebar activeRoute={pathname} />
       <div className="flex-1 overflow-auto flex flex-col min-w-0 lg:ms-56">
         <MobileWrapper fullWidth>
@@ -289,7 +289,8 @@ export default function CeoDashboardPage() {
                 title={isHealthy ? t('healthDotOk') : t('healthDotIssue')}
               />
               <span className="text-xs text-[var(--color-text-secondary)] ms-auto">
-                {t('lastSync')}: {minutesSinceSync != null ? t('lastSyncMinutes', { minutes: minutesSinceSync }) : '—'}
+                {t('lastSync')}:{' '}
+                {minutesSinceSync != null ? t('lastSyncMinutes', { minutes: minutesSinceSync }) : tCommon('notSet')}
               </span>
             </div>
           </div>
@@ -629,7 +630,7 @@ export default function CeoDashboardPage() {
                           <td className="px-3 py-2">
                             <span className={rp.className}>{rp.text}</span>
                           </td>
-                          <td className="px-3 py-2 text-[var(--color-text-secondary)]">{row.district ?? '—'}</td>
+                          <td className="px-3 py-2 text-[var(--color-text-secondary)]">{row.district ?? tCommon('notSet')}</td>
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-1">
                               <a

@@ -188,7 +188,7 @@ export default function ReferralsPage() {
 
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 card-shadow btn-lift">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 p-4 card-shadow btn-lift">
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">{t('totalReferrals')}</p>
             <p className="text-xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">{fmt(data?.totalReferrals ?? 0)}</p>
           </div>
@@ -209,7 +209,7 @@ export default function ReferralsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 card-shadow overflow-hidden">
           <div className="p-4 border-b border-slate-200 dark:border-slate-700">
             <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
@@ -220,7 +220,7 @@ export default function ReferralsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900/50">
+                  <tr className="bg-slate-900/40">
                     <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableCenter')}</th>
                     <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableStatus')}</th>
                     <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableMonths')}</th>
@@ -232,7 +232,7 @@ export default function ReferralsPage() {
                   {data?.activeReferrals?.map((r) => (
                     <tr
                       key={r.id}
-                      className="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                      className="transition-colors duration-150 hover:bg-slate-700/40"
                     >
                       <td className="py-3 px-4 text-slate-900 dark:text-white font-mono">{maskCenterName(r.center_name)}</td>
                       <td className="py-3 px-4">
@@ -269,7 +269,7 @@ export default function ReferralsPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 card-shadow overflow-hidden">
           <div className="p-4 border-b border-slate-200 dark:border-slate-700">
             <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-teal-600 dark:text-teal-400" />
@@ -280,7 +280,7 @@ export default function ReferralsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900/50">
+                  <tr className="bg-slate-900/40">
                     <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardMonthCol')}</th>
                     <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardCenterCol')}</th>
                     <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardAmountCol')}</th>
@@ -321,7 +321,7 @@ export default function ReferralsPage() {
                     return (
                       <tr
                         key={h.id}
-                        className="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                        className="transition-colors duration-150 hover:bg-slate-700/40"
                       >
                         <td className="py-3 px-4 text-slate-900 dark:text-white">{monthLabel}</td>
                         <td className="py-3 px-4 text-slate-900 dark:text-white font-mono">{maskCenterName(h.referred_center_name)}</td>
@@ -341,7 +341,7 @@ export default function ReferralsPage() {
         </div>
 
         {(data?.available ?? 0) > 0 && (
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-6">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 card-shadow p-6">
             <h2 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
               <Banknote className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               {t('requestWithdrawal')}
@@ -362,7 +362,7 @@ export default function ReferralsPage() {
                   value={payoutAmount}
                   onChange={(e) => setPayoutAmount(e.target.value)}
                   placeholder={fmt(data?.available ?? 0)}
-                  className="w-36 px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-mono bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  className="w-36 px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-mono bg-slate-900/80 text-slate-900 dark:text-white"
                   dir="ltr"
                 />
               </div>
@@ -380,7 +380,7 @@ export default function ReferralsPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-6 md:p-8">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 card-shadow p-6 md:p-8">
           <h2 className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
             <Gift className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             {t('yourCode')}
@@ -405,7 +405,7 @@ export default function ReferralsPage() {
                 setLinkCopied(true);
                 setTimeout(() => setLinkCopied(false), 2000);
               }}
-              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-700/50"
             >
               <Link2 className="w-4 h-4" />
               {linkCopied ? t('copyDoneCheck') : t('shareLink')}
@@ -419,7 +419,7 @@ export default function ReferralsPage() {
                   setTimeout(() => setCodeCopied(false), 2000);
                 }
               }}
-              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-700/50"
             >
               <Copy className="w-4 h-4" />
               {codeCopied ? t('copyDoneCheck') : t('copyCode')}
@@ -427,13 +427,13 @@ export default function ReferralsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-6">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 card-shadow p-6">
           <h2 className="font-bold text-slate-900 dark:text-white mb-4">{t('howItWorks')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {howSteps.map((step) => (
               <div
                 key={step.n}
-                className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 p-4 flex flex-col gap-2"
+                className="rounded-xl border border-slate-700 bg-slate-900/40 p-4 flex flex-col gap-2"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-white text-sm font-bold shrink-0">
                   {step.n}

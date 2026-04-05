@@ -179,7 +179,13 @@ export default function PaymentsPage() {
         studentMap = Object.fromEntries(
           allStudents
             .filter((s) => studentIds.includes(s.id))
-            .map((s) => [s.id, { name: s.name || '—', student_number: s.student_number || '—' }])
+            .map((s) => [
+              s.id,
+              {
+                name: s.name || tCommon('notAvailable'),
+                student_number: s.student_number || tCommon('notSet'),
+              },
+            ])
         );
       }
 
@@ -190,7 +196,7 @@ export default function PaymentsPage() {
           filters: [{ column: 'id', op: 'in', value: userIds }],
         });
         const users = (usersData || []) as { id: string; name: string | null }[];
-        userMap = Object.fromEntries(users.map((u) => [u.id, u.name || '—']));
+        userMap = Object.fromEntries(users.map((u) => [u.id, u.name || tCommon('notAvailable')]));
       }
 
       setRecords(
@@ -200,13 +206,13 @@ export default function PaymentsPage() {
             p.students?.name ??
             studentMap[p.student_id]?.name ??
             allStudents.find((s) => s.id === p.student_id)?.name ??
-            '—',
+            tCommon('notAvailable'),
           student_number:
             p.students?.student_number ??
             studentMap[p.student_id]?.student_number ??
             allStudents.find((s) => s.id === p.student_id)?.student_number ??
-            '—',
-          recorded_by_name: p.recorded_by ? (userMap[p.recorded_by] ?? '—') : null,
+            tCommon('notSet'),
+          recorded_by_name: p.recorded_by ? (userMap[p.recorded_by] ?? tCommon('notSet')) : null,
         }))
       );
     } catch (err) {
@@ -216,7 +222,7 @@ export default function PaymentsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [dateFrom, dateTo, toast, tToast]);
+  }, [dateFrom, dateTo, toast, tToast, tCommon]);
 
   useEffect(() => {
     loadData();
@@ -294,7 +300,7 @@ export default function PaymentsPage() {
       if (snapshot) {
         setConfirmedId(snapshot.id);
         setReceipt({
-          studentName: snapshot.student_name ?? '—',
+          studentName: snapshot.student_name ?? tCommon('notAvailable'),
           amount: Number(snapshot.amount),
           method: snapshot.method,
           methodLabel: tp(methodTpKey(snapshot.method)),
@@ -514,7 +520,7 @@ export default function PaymentsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <p className="text-sm text-[var(--color-text-secondary)] truncate">{payment.student_name}</p>
-                      {payment.student_number && payment.student_number !== '—' ? (
+                      {payment.student_number && payment.student_number !== tCommon('notSet') ? (
                         <p className="text-xs text-slate-400 truncate" dir="ltr">
                           #{payment.student_number}
                         </p>

@@ -396,7 +396,7 @@ export default function DashboardPage() {
 
       const recentPayments: RecentPaymentRow[] = recentPaymentsRaw.map(p => ({
         id: p.id,
-        student_name: p.students?.name ?? '—',
+        student_name: p.students?.name ?? tCommon('notAvailable'),
         student_number: p.students?.student_number,
         group_name: p.student_groups?.name,
         amount: parseFloat(String(p.amount || 0)),
@@ -460,7 +460,13 @@ export default function DashboardPage() {
           const lastDate = lastScannedAt ? new Date(lastScannedAt) : null;
           if (lastDate && lastDate >= cutoffDate) return null;
           const daysAbsent = lastDate ? Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-          return { id: st.id, name: st.name || '—', student_number: st.student_number || '—', last_scanned_at: lastScannedAt, days_absent: daysAbsent };
+          return {
+            id: st.id,
+            name: st.name || tCommon('notAvailable'),
+            student_number: st.student_number || tCommon('notSet'),
+            last_scanned_at: lastScannedAt,
+            days_absent: daysAbsent,
+          };
         })
         .filter((s): s is InactiveStudent => s !== null);
       inactiveStudents.sort((a, b) => (b.days_absent || 0) - (a.days_absent || 0));
@@ -507,7 +513,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [locale]);
+  }, [locale, tCommon]);
 
   useEffect(() => {
     const init = async () => {
@@ -1081,7 +1087,11 @@ export default function DashboardPage() {
             ) : (
               <KpiCommandCard
                 label={t('monthlyRevenue')}
-                valueDisplay={<span className="text-slate-500">—</span>}
+                valueDisplay={
+                  <span className="text-slate-600 text-xs" aria-hidden>
+                    -
+                  </span>
+                }
                 icon={TrendingUp}
                 delayMs={200}
                 sparkline={[]}
@@ -1130,7 +1140,7 @@ export default function DashboardPage() {
                     centerValue={
                       canViewRevenue
                         ? Number(data.monthConfirmed).toLocaleString('en-US')
-                        : '—'
+                        : tCommon('noData')
                     }
                     suffix={canViewRevenue ? ` ${egpSuffix}` : ''}
                   />
@@ -1170,7 +1180,11 @@ export default function DashboardPage() {
                           <div className="min-w-0 flex-1 text-end">
                             <p className="truncate text-sm font-medium text-white">{student.name}</p>
                             <p className="truncate font-mono text-xs text-slate-400" dir="ltr">
-                              {student.student_number ?? '\u2014'}
+                              {student.student_number ? (
+                                student.student_number
+                              ) : (
+                                <span className="text-slate-600 text-xs">-</span>
+                              )}
                             </p>
                           </div>
                           <span

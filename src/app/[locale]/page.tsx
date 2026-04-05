@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Menu, X } from 'lucide-react';
@@ -12,6 +12,15 @@ export default function LocaleHomePage() {
   const m = useTranslations('landing.marketing');
   const locale = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scanState, setScanState] = useState<'scanning' | 'success'>('scanning');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setScanState('success');
+      setTimeout(() => setScanState('scanning'), 1500);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const heroLines = t('heroTitle').split('\n');
   const featureKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] as const;
@@ -140,33 +149,98 @@ export default function LocaleHomePage() {
             'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), #080D14',
         }}
       >
-        <div className="mx-auto max-w-3xl text-center">
-          <span className="mb-6 inline-flex items-center rounded-full border border-teal-600/50 bg-teal-950/30 px-3 py-1 text-xs text-teal-400">
-            {m('heroBadge')}
-          </span>
-          <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl">
-            {heroLines.map((line, i) => (
-              <span key={i} className="block">
-                {line}
-              </span>
-            ))}
-          </h1>
-          <p className="mx-auto mt-6 max-w-md text-lg text-slate-400">{t('heroSub')}</p>
-          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <Link
-              href="/signup"
-              className="rounded-xl bg-teal-600 px-8 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
-            >
-              {t('heroCta')}
-            </Link>
-            <a
-              href="#how-it-works"
-              className="rounded-xl border border-slate-700 bg-slate-800 px-8 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
-            >
-              {t('watchDemo')}
-            </a>
+        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 md:grid-cols-2 md:gap-16">
+          <div className="text-center md:text-start">
+            <span className="mb-6 inline-flex items-center rounded-full border border-teal-600/50 bg-teal-950/30 px-3 py-1 text-xs text-teal-400">
+              {m('heroBadge')}
+            </span>
+            <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl">
+              {heroLines.map((line, i) => (
+                <span key={i} className="block">
+                  {line}
+                </span>
+              ))}
+            </h1>
+            <p className="mx-auto mt-6 max-w-md text-lg text-slate-400 md:mx-0">{t('heroSub')}</p>
+            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center md:justify-start">
+              <Link
+                href="/signup"
+                className="rounded-xl bg-teal-600 px-8 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+              >
+                {t('heroCta')}
+              </Link>
+              <a
+                href="#how-it-works"
+                className="rounded-xl border border-slate-700 bg-slate-800 px-8 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
+              >
+                {t('watchDemo')}
+              </a>
+            </div>
+            <p className="mt-8 text-sm text-slate-500">{m('socialProof')}</p>
           </div>
-          <p className="mt-8 text-sm text-slate-500">{m('socialProof')}</p>
+
+          <div className="flex justify-center md:justify-end">
+            <div
+              className="relative mx-auto flex h-[440px] w-[220px] flex-col overflow-hidden rounded-[36px] border-2 border-slate-700 bg-slate-900 shadow-2xl"
+              aria-hidden
+            >
+              <div className="flex items-center justify-center border-b border-slate-800 py-3">
+                <span className="text-xs font-semibold text-slate-300">CenterHQ</span>
+              </div>
+
+              <div className="relative flex flex-1 items-center justify-center bg-slate-950 p-4">
+                <div className="grid grid-cols-6 gap-1">
+                  {Array.from({ length: 36 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-3 w-3 rounded-sm"
+                      style={{
+                        backgroundColor: [0, 1, 6, 7, 2, 8, 14, 13, 28, 29, 34, 35, 30, 27, 21].includes(i)
+                          ? '#0D9488'
+                          : '#1e293b',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="pointer-events-none absolute inset-4">
+                  <div className="absolute left-0 top-0 h-6 w-6 rounded-tl-sm border-l-2 border-t-2 border-teal-500" />
+                  <div className="absolute right-0 top-0 h-6 w-6 rounded-tr-sm border-r-2 border-t-2 border-teal-500" />
+                  <div className="absolute bottom-0 left-0 h-6 w-6 rounded-bl-sm border-b-2 border-l-2 border-teal-500" />
+                  <div className="absolute bottom-0 right-0 h-6 w-6 rounded-br-sm border-b-2 border-r-2 border-teal-500" />
+                </div>
+
+                <div
+                  className="absolute left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-teal-500 to-transparent"
+                  style={{
+                    top: scanState === 'scanning' ? '30%' : '70%',
+                    transition: 'top 2s ease-in-out',
+                    opacity: 0.8,
+                  }}
+                />
+              </div>
+
+              <div
+                className={`absolute bottom-0 left-0 right-0 border-t border-slate-700 bg-slate-800 p-4 transition-transform duration-500 ease-out ${
+                  scanState === 'success' ? 'translate-y-0' : 'translate-y-full'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-3 w-3 animate-pulse rounded-full bg-teal-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">Mohamed Ahmed</p>
+                    <p className="text-xs text-teal-400">تم تسجيل الحضور</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-1.5 border-t border-slate-800 bg-slate-900 py-3">
+                <div className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+                <div className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+                <div className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
