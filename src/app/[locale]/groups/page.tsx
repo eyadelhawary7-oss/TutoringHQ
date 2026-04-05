@@ -8,6 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Plus, BookOpen, X, Users, ChevronRight, Search } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface Group {
   id: string;
@@ -35,6 +36,8 @@ export default function GroupsPage() {
   const t = useTranslations('groups');
   const tCommon = useTranslations('common');
   const tHeatmap = useTranslations('heatmap');
+  const tToast = useTranslations('toasts');
+  const { toast } = useToast();
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const { user } = useUser();
@@ -50,7 +53,6 @@ export default function GroupsPage() {
   const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee: '', studentIds: [] as string[], maxCapacity: '' });
   const [addSearch, setAddSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [addError, setAddError] = useState('');
   const [members, setMembers] = useState<{ student_id: string; student_name: string; student_number?: string }[]>([]);
   const [studentOtherGroups, setStudentOtherGroups] = useState<Record<string, string[]>>({});
   const [addMemberSearch, setAddMemberSearch] = useState('');
@@ -217,22 +219,21 @@ export default function GroupsPage() {
 
   const handleAddGroup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAddError('');
     if (!centerId || !userId) {
-      setAddError(t('pleaseWait', { defaultValue: 'Please wait, loading...' }));
+      toast.error(tToast('error'), t('pleaseWait', { defaultValue: 'Please wait, loading...' }));
       return;
     }
     if (!addForm.name.trim()) {
-      setAddError(t('groupNameRequired', { defaultValue: 'Group name is required' }));
+      toast.error(tToast('error'), t('groupNameRequired', { defaultValue: 'Group name is required' }));
       return;
     }
     if (!addForm.subjectId) {
-      setAddError(t('subjectRequired', { defaultValue: 'Subject is required' }));
+      toast.error(tToast('error'), t('subjectRequired', { defaultValue: 'Subject is required' }));
       return;
     }
     const fee = Number(addForm.fee);
     if (isNaN(fee) || fee < 0) {
-      setAddError(t('validFeeRequired', { defaultValue: 'Valid fee is required' }));
+      toast.error(tToast('error'), t('validFeeRequired', { defaultValue: 'Valid fee is required' }));
       return;
     }
     const subjectName = subjects.find(s => s.id === addForm.subjectId)?.name ?? '';
@@ -245,7 +246,10 @@ export default function GroupsPage() {
         single: true,
       });
       if (error) {
-        setAddError(typeof error === 'object' && error?.message ? String(error.message) : 'Failed to create group');
+        toast.error(
+          tToast('error'),
+          typeof error === 'object' && error?.message ? String(error.message) : t('groupCreateFailed'),
+        );
         setIsAdding(false);
         return;
       }
@@ -260,11 +264,12 @@ export default function GroupsPage() {
         setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addForm.studentIds.length, teacher_name: null, max_capacity: maxCap }]);
         setShowAddModal(false);
         setAddForm({ name: '', subjectId: '', fee: '', studentIds: [], maxCapacity: '' });
+        toast.success(tToast('saved'));
       } else {
-        setAddError(t('groupCreatedRefresh', { defaultValue: 'Group created but could not refresh.' }));
+        toast.warning(t('groupCreatedRefresh'));
       }
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : 'Failed to create group');
+      toast.error(tToast('error'), err instanceof Error ? err.message : t('groupCreateFailed'));
     } finally {
       setIsAdding(false);
     }
@@ -460,7 +465,6 @@ export default function GroupsPage() {
                   ))}
                 </div>
               </div>
-              {addError && <p className="text-sm text-red-600">{addError}</p>}
               <div className="flex gap-2 justify-end mt-4">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border text-[var(--color-text-secondary)]">{tCommon('cancel')}</button>
                 <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{tCommon('save')}</button>

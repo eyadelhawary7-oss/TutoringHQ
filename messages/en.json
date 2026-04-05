@@ -1,5 +1,15 @@
 {
   "plan": {},
+  "toasts": {
+    "saved": "Saved successfully",
+    "deleted": "Deleted",
+    "error": "Something went wrong",
+    "copied": "Copied",
+    "sent": "Sent",
+    "updated": "Updated",
+    "dismiss": "Dismiss",
+    "notificationsRegion": "Notifications"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "analytics": "Financial Intelligence",
@@ -2155,7 +2165,8 @@
     "studentCount": "Students",
     "noMembers": "No members",
     "addToWaitlist": "Add To Waitlist",
-    "groupCreatedRefresh": "Group Created Refresh",
+    "groupCreatedRefresh": "Group created but could not refresh.",
+    "groupCreateFailed": "Failed to create group",
     "groupNameRequired": "Group Name Required",
     "maxCapacity": "Max Capacity",
     "noWaitlist": "No Waitlist",

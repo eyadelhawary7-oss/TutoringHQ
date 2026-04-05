@@ -1,5 +1,15 @@
 {
   "plan": {},
+  "toasts": {
+    "saved": "تم الحفظ بنجاح",
+    "deleted": "تم الحذف",
+    "error": "حدث خطأ",
+    "copied": "تم النسخ",
+    "sent": "تم الإرسال",
+    "updated": "تم التحديث",
+    "dismiss": "إغلاق",
+    "notificationsRegion": "الإشعارات"
+  },
   "nav": {
     "dashboard": "لوحة التحكم",
     "analytics": "الذكاء المالي",
@@ -3585,7 +3595,8 @@
     "studentCount": "الطلبة",
     "noMembers": "لا يوجد أعضاء",
     "addToWaitlist": "إضافة إلى قائمة الانتظار",
-    "groupCreatedRefresh": "مجموعة أنشئ Refresh",
+    "groupCreatedRefresh": "تم إنشاء المجموعة لكن تعذر التحديث.",
+    "groupCreateFailed": "فشل إنشاء المجموعة",
     "groupNameRequired": "مجموعة الاسم مطلوب",
     "maxCapacity": "أقصى السعة",
     "noWaitlist": "لا قائمة الانتظار",

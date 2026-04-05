@@ -1,21 +1,12 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useToast as useToastFromContext } from '@/contexts/ToastContext';
+import { useToast as useToastFromProvider } from '@/components/ui/ToastProvider';
 
 /**
- * Shorthand: `toast.success('…')` etc. For full API (`dismiss`, raw `toast(msg, variant)`)
- * import `useToast` from `@/contexts/ToastContext`.
+ * Returns the toast API (`toast.success`, `toast.error`, …) for one-line usage.
+ * For `dismiss` / `show`, use `useToast` from `@/components/ui/ToastProvider`.
  */
 export function useToast() {
-  const { toast: push } = useToastFromContext();
-  return useMemo(
-    () => ({
-      success: (message: string, duration?: number) => push(message, 'success', duration),
-      error: (message: string, duration?: number) => push(message, 'error', duration),
-      warning: (message: string, duration?: number) => push(message, 'warning', duration),
-      info: (message: string, duration?: number) => push(message, 'info', duration),
-    }),
-    [push]
-  );
+  const { toast } = useToastFromProvider();
+  return toast;
 }

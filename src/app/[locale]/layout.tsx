@@ -27,7 +27,7 @@ import { LayoutProvider } from '@/contexts/LayoutContext';
 import AppShell from '@/components/AppShell';
 import ServiceWorkerRegistrarWrapper from '@/components/ServiceWorkerRegistrarWrapper';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
-import { ToastProvider } from '@/contexts/ToastContext';
+import { ToastProvider } from '@/components/ui/ToastProvider';
 import { SwUpdateBanner } from '@/components/ui/SwUpdateBanner';
 import { PostHogProvider } from '@/components/PostHogProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';

@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { LoadingButton } from '@/components/ui/LoadingButton';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface PaymentRecord {
   id: string;
@@ -104,6 +105,8 @@ function isPaymentPendingAction(p: PaymentRecord): boolean {
 export default function PaymentsPage() {
   const tp = useTranslations('payments');
   const tCommon = useTranslations('common');
+  const tToast = useTranslations('toasts');
+  const { toast } = useToast();
   const locale = useLocale();
   const router = useRouter();
   const { user, hasPermission } = useUser();
@@ -118,8 +121,7 @@ export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<PaymentRecord | null>(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [confirmedId, setConfirmedId] = useState<string | null>(null);
   const [confirmSuccessId, setConfirmSuccessId] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<{
@@ -140,7 +142,7 @@ export default function PaymentsPage() {
     if (!meData?.user?.center_id) return;
     const cid = meData.user.center_id;
 
-    setLoadError(null);
+    setLoadFailed(false);
     setIsLoading(true);
 
     try {
@@ -208,11 +210,13 @@ export default function PaymentsPage() {
         }))
       );
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(tToast('error'), msg);
+      setLoadFailed(true);
     } finally {
       setIsLoading(false);
     }
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, toast, tToast]);
 
   useEffect(() => {
     loadData();
@@ -300,10 +304,12 @@ export default function PaymentsPage() {
         setConfirmSuccessId(snapshot.id);
         setTimeout(() => setConfirmSuccessId(null), 1500);
       }
-      setSuccessMessage(tp('confirmed', { count: 1 }));
-      setTimeout(() => setSuccessMessage(''), 4000);
+      toast.success(tp('confirmed', { count: 1 }));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed');
+      toast.error(
+        tToast('error'),
+        err instanceof Error ? err.message : tCommon('error'),
+      );
     } finally {
       setConfirmingId(null);
     }
@@ -338,28 +344,17 @@ export default function PaymentsPage() {
           <p className="text-xs text-[var(--color-text-secondary)]">{tp('subtitle')}</p>
         </div>
 
-        {successMessage && (
-          <div className="px-4 max-w-3xl mx-auto w-full mb-3">
-            <div className="p-3 rounded-xl border border-[var(--color-success)] bg-[rgba(16,185,129,0.08)] text-[var(--color-success)] text-sm text-center">
-              {successMessage}
-            </div>
+        {loadFailed ? (
+          <div className="mb-3 flex justify-center px-4 max-w-3xl mx-auto w-full">
+            <button
+              type="button"
+              onClick={() => loadData()}
+              className="rounded-lg bg-[var(--color-brand-500)] px-4 py-2 text-sm font-medium text-white btn-press chq-focus"
+            >
+              {tp('retry')}
+            </button>
           </div>
-        )}
-
-        {loadError && (
-          <div className="px-4 max-w-3xl mx-auto w-full mb-3">
-            <div className="p-4 rounded-xl border border-[var(--color-danger)] bg-[rgba(239,68,68,0.08)] text-[var(--color-danger)] text-sm">
-              <p className="font-medium">{loadError}</p>
-              <button
-                type="button"
-                onClick={() => loadData()}
-                className="mt-2 px-4 py-2 bg-[var(--color-danger)] text-white text-sm font-medium rounded-lg btn-press chq-focus"
-              >
-                {tp('retry')}
-              </button>
-            </div>
-          </div>
-        )}
+        ) : null}
 
         <div className="grid grid-cols-3 gap-3 px-4 mb-4 max-w-3xl mx-auto w-full">
           <div className="card p-3 flex flex-col gap-1">

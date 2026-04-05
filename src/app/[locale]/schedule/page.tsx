@@ -9,6 +9,7 @@ import { useUser } from '@/contexts/UserContext';
 import { PageHeader } from '@/components/shared';
 import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
 import EmptyState from '@/components/empty-states/EmptyState';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface Room {
   id: string;
@@ -67,6 +68,8 @@ function formatHour(h: number): string {
 export default function SchedulePage() {
   const t = useTranslations('schedule');
   const tCommon = useTranslations('common');
+  const tToast = useTranslations('toasts');
+  const { toast } = useToast();
   const locale = useLocale();
   const router = useRouter();
   const { user, hasPermission } = useUser();
@@ -84,8 +87,7 @@ export default function SchedulePage() {
   const [formEnd, setFormEnd] = useState('11:00');
   const [formRecurring, setFormRecurring] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [slotError, setSlotError] = useState('');
-  const [slotSuccess, setSlotSuccess] = useState('');
+  const [selectedDay, setSelectedDay] = useState(0);
 
   const isReadOnly = user?.role === 'teacher' || user?.role === 'assistant';
   const isTeacher = user?.role === 'teacher';
@@ -160,13 +162,12 @@ export default function SchedulePage() {
 
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSlotError('');
     if (!centerId || !userId || !formGroupId || !formRoomId) {
-      setSlotError(t('roomGroupRequired', { defaultValue: 'Group and room are required' }));
+      toast.error(tToast('error'), t('roomGroupRequired', { defaultValue: 'Group and room are required' }));
       return;
     }
     if (hasConflict) {
-      setSlotError(t('conflictMessage'));
+      toast.error(tToast('error'), t('conflictMessage'));
       return;
     }
     setIsSubmitting(true);
@@ -190,7 +191,10 @@ export default function SchedulePage() {
         single: true,
       });
       if (error) {
-        setSlotError(typeof error === 'object' && error?.message ? String(error.message) : String(error));
+        toast.error(
+          tToast('error'),
+          typeof error === 'object' && error?.message ? String(error.message) : String(error),
+        );
         setIsSubmitting(false);
         return;
       }
@@ -200,9 +204,7 @@ export default function SchedulePage() {
         setShowAddModal(false);
         setFormGroupId('');
         setFormRoomId('');
-        setSlotError('');
-        setSlotSuccess(t('slotSaved'));
-        setTimeout(() => setSlotSuccess(''), 4000);
+        toast.success(tToast('saved'), t('slotSaved'));
         await loadData();
       }
     } finally {
@@ -228,7 +230,6 @@ export default function SchedulePage() {
     );
   }
 
-  const [selectedDay, setSelectedDay] = useState(0);
   const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
 
   const getSlotsInCell = (day: number, hour: number) =>
@@ -278,19 +279,13 @@ export default function SchedulePage() {
       >
         {!isReadOnly && canEdit && (
           <button
-            onClick={() => { setShowAddModal(true); setSlotError(''); }}
+            onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
           >
             <Plus size={16} /> {t('addSession')}
           </button>
         )}
       </PageHeader>
-
-      {slotSuccess && (
-        <div className="p-3 rounded-lg bg-green-100 border border-green-500/30 text-green-700 text-sm">
-          {slotSuccess}
-        </div>
-      )}
 
       {isLoading ? (
         <div className="text-center py-16">
@@ -506,9 +501,6 @@ export default function SchedulePage() {
                   <AlertTriangle size={16} />
                   <span>{t('conflictMessage')}</span>
                 </div>
-              )}
-              {slotError && !hasConflict && (
-                <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">{slotError}</div>
               )}
               </div>
               <div className="flex justify-end gap-3 p-6 pt-0">

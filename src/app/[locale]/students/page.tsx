@@ -17,7 +17,7 @@ import { SwipeRow } from '@/components/students/SwipeRow';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
 import { useUser } from '@/contexts/UserContext';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/components/ui/ToastProvider';
 import {
   ANNOUNCEMENT_WARN_THRESHOLD,
   BLAST_PRICE_PER_PARENT,
@@ -118,10 +118,11 @@ export default function StudentsPage() {
   const ts = useTranslations('students');
   const router = useRouter();
   const tCommon = useTranslations('common');
+  const tToast = useTranslations('toasts');
   const { user, hasPermission, refreshUser } = useUser();
   const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
   const { cart, addToCart, removeFromCart, clearCart, isInCart, cartCount } = useCardOrderCart();
-  const toast = useToast();
+  const { toast } = useToast();
 
   const [students, setStudents] = useState<Student[]>([]);
   const [printStudent, setPrintStudent] = useState<{ id: string; name: string } | null>(null);
@@ -146,10 +147,7 @@ export default function StudentsPage() {
     parentPackOptIn: false,
   });
   const [showParentSectionAdd, setShowParentSectionAdd] = useState(false);
-  const [addError, setAddError] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [addSuccess, setAddSuccess] = useState<{ name: string; studentNumber: string; qrDataUrl?: string } | null>(null);
-  const [generateSuccess, setGenerateSuccess] = useState<string | null>(null);
   const [qrModalStudent, setQrModalStudent] = useState<Student | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
@@ -482,7 +480,7 @@ export default function StudentsPage() {
         setStudents((prev) =>
           prev.map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: prevOpted } : s)),
         );
-        alert(ts('packOptInError'));
+        toast.error(ts('packOptInError'));
         return;
       }
       await refreshUser();
@@ -591,8 +589,7 @@ export default function StudentsPage() {
   const handleGenerateAllQR = async () => {
     const needQR = students.filter((s) => !s.qr_code);
     if (needQR.length === 0) {
-      setGenerateSuccess(ts('allStudentsHaveQR', { defaultValue: 'All students already have QR codes' }));
-      setTimeout(() => setGenerateSuccess(null), 3000);
+      toast.info(ts('allStudentsHaveQR', { defaultValue: 'All students already have QR codes' }));
       return;
     }
     setIsGeneratingAll(true);
@@ -615,8 +612,7 @@ export default function StudentsPage() {
           prev.map((s) => (s.id === student.id ? { ...s, qr_code: dataUrl } : s))
         );
       }
-      setGenerateSuccess(ts('qrGeneratedNew', { count: needQR.length, defaultValue: `Generating QR codes for ${needQR.length} new students...` }));
-      setTimeout(() => setGenerateSuccess(null), 4000);
+      toast.success(ts('qrGeneratedNew', { count: needQR.length, defaultValue: `Generating QR codes for ${needQR.length} new students...` }));
     } catch (err) {
       console.error('Bulk QR error:', err);
     } finally {
@@ -736,7 +732,6 @@ export default function StudentsPage() {
 
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAddError('');
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
@@ -744,11 +739,11 @@ export default function StudentsPage() {
     const centerId = meData?.user?.center_id;
     const userId = meData?.user?.id;
     if (!centerId || !userId || !addForm.name.trim()) {
-      setAddError(ts('nameRequired', { defaultValue: 'Name is required' }));
+      toast.error(ts('nameRequired', { defaultValue: 'Name is required' }));
       return;
     }
     if (!addForm.groupId) {
-      setAddError(ts('groupRequiredError'));
+      toast.error(ts('groupRequiredError'));
       return;
     }
     setIsAdding(true);
@@ -825,13 +820,13 @@ export default function StudentsPage() {
         }));
       }
       setStudents((prev) => [{ ...student, student_number: studentNumber } as Student, ...prev]);
-      setAddSuccess({ name: addForm.name.trim(), studentNumber, qrDataUrl: qrDataURL });
+      toast.success(ts('addStudentSuccess', { name: addForm.name.trim(), studentNumber }));
       setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '', parentPackOptIn: false });
       setShowParentSectionAdd(false);
       setShowAddModal(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: string }).message) : 'Failed to add student');
-      setAddError(msg);
+      toast.error(tToast('error'), msg);
     } finally {
       setIsAdding(false);
     }
@@ -1024,23 +1019,6 @@ export default function StudentsPage() {
         </div>
 
         <div className="px-4 max-w-3xl mx-auto w-full space-y-4 pb-6">
-          {addSuccess && (
-            <div className="p-4 rounded-xl border border-[var(--color-success)] bg-[rgba(16,185,129,0.08)] text-[var(--color-success)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <p className="font-medium text-sm">
-                {ts('addStudentSuccess', { name: addSuccess.name, studentNumber: addSuccess.studentNumber })}
-              </p>
-              {addSuccess.qrDataUrl && <img src={addSuccess.qrDataUrl} alt="" className="w-16 h-16" />}
-              <button type="button" onClick={() => setAddSuccess(null)} className="text-sm underline btn-press chq-focus">
-                {tCommon('cancel')}
-              </button>
-            </div>
-          )}
-          {generateSuccess && (
-            <div className="p-4 rounded-xl border border-[var(--color-success)] bg-[rgba(16,185,129,0.08)] text-[var(--color-success)]">
-              <p className="font-medium text-sm">{generateSuccess}</p>
-            </div>
-          )}
-
           <AtRiskPanel />
 
           {isLoading ? (
@@ -1591,7 +1569,6 @@ export default function StudentsPage() {
               <button onClick={() => setShowAddModal(false)} className="btn-press chq-focus"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             <form onSubmit={handleAddStudent} className="space-y-3">
-              {addError && <p className="text-sm text-destructive">{addError}</p>}
               <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" required />
               <input value={addForm.phone} onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
               <button

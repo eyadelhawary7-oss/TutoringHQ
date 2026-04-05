@@ -12,7 +12,7 @@ import {
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/components/ui/ToastProvider';
 import {
   normalizeBillingPeriod,
   PLANS,
@@ -364,7 +364,7 @@ function PaygTab({
   locale,
 }: {
   t: (key: string, values?: Record<string, string | number | Date>) => string;
-  toast: { success: (m: string) => void; error: (m: string) => void };
+  toast: { success: (title: string, description?: string) => void; error: (title: string, description?: string) => void };
   refresh: () => void | Promise<void>;
   ownerOk: boolean;
   center: CenterRow | null;
@@ -649,15 +649,15 @@ function PaygTab({
 
 export default function BillingPage() {
   const t = useTranslations('billing');
+  const tToast = useTranslations('toasts');
   const locale = useLocale();
-  const toast = useToast();
+  const { toast } = useToast();
 
   const [center, setCenter] = useState<CenterRow | null>(null);
   const [userRole, setUserRole] = useState<string>('');
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [planRequests, setPlanRequests] = useState<PlanRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [packRequestLoading, setPackRequestLoading] = useState(false);
   const [paymobUrl, setPaymobUrl] = useState<string | null>(null);
   const [paymobSessionId, setPaymobSessionId] = useState<string | null>(null);
@@ -730,13 +730,12 @@ export default function BillingPage() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      setError(null);
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const session = sessionData.session;
         if (!session) {
           if (!cancelled) {
-            setError(t('loadError'));
+            toast.error(tToast('error'), t('loadError'));
             setLoading(false);
           }
           return;
@@ -748,7 +747,12 @@ export default function BillingPage() {
         ]);
         if (!meRes.ok) {
           const j = await meRes.json().catch(() => ({}));
-          if (!cancelled) setError(typeof j.error === 'string' ? j.error : t('loadError'));
+          if (!cancelled) {
+            toast.error(
+              tToast('error'),
+              typeof j.error === 'string' ? j.error : t('loadError'),
+            );
+          }
           return;
         }
         const meJson = (await meRes.json()) as {
@@ -775,7 +779,7 @@ export default function BillingPage() {
           setPlanRequests([]);
         }
       } catch {
-        if (!cancelled) setError(t('loadError'));
+        if (!cancelled) toast.error(tToast('error'), t('loadError'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -783,7 +787,7 @@ export default function BillingPage() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [t, tToast, toast]);
 
   const closePaymob = useCallback(() => {
     setPaymobUrl(null);
@@ -1632,15 +1636,6 @@ export default function BillingPage() {
             {t('backToSettings')}
           </Link>
         </div>
-
-        {error && (
-          <div
-            className="rounded-xl border border-red-500/40 bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
-            role="alert"
-          >
-            {error}
-          </div>
-        )}
 
         {!ownerOk && (
           <div
