@@ -181,83 +181,145 @@ export default function LocaleHomePage() {
           <div className="flex justify-center md:justify-end">
             <div className="relative mx-auto h-[560px] w-[280px] shrink-0" aria-hidden dir="ltr">
               {/* Outer phone frame */}
-              <div className="absolute inset-0 rounded-[48px] border border-slate-600 bg-slate-800 shadow-[0_0_60px_rgba(13,148,136,0.15)]" />
+              <div className="absolute inset-0 rounded-[48px] border border-slate-600 bg-slate-800 shadow-[0_0_80px_rgba(13,148,136,0.2)]" />
 
               {/* Inner screen */}
-              <div className="absolute inset-[3px] flex flex-col overflow-hidden rounded-[46px] bg-slate-950">
+              <div className="absolute inset-[3px] flex flex-col overflow-hidden rounded-[46px] bg-[#0a0f1a]">
                 {/* Status bar */}
-                <div className="flex items-center justify-between bg-slate-950 px-6 pb-2 pt-4">
-                  <span className="text-[10px] font-semibold text-slate-400">9:41</span>
+                <div className="flex items-center justify-between px-6 pb-2 pt-4">
+                  <span className="text-[11px] font-semibold text-slate-300">9:41</span>
                   <div className="h-5 w-16 rounded-full bg-slate-900" />
-                  <div className="flex items-center gap-1">
-                    <div className="flex items-end gap-0.5">
-                      <div className="h-1 w-0.5 rounded-full bg-slate-400" />
-                      <div className="h-1.5 w-0.5 rounded-full bg-slate-400" />
-                      <div className="h-2 w-0.5 rounded-full bg-slate-400" />
-                      <div className="h-2.5 w-0.5 rounded-full bg-teal-400" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex h-3 items-end gap-[2px]">
+                      <div className="h-1 w-[3px] rounded-full bg-slate-500" />
+                      <div className="h-1.5 w-[3px] rounded-full bg-slate-500" />
+                      <div className="h-2 w-[3px] rounded-full bg-slate-400" />
+                      <div className="h-3 w-[3px] rounded-full bg-teal-400" />
                     </div>
-                    <div className="ml-1 h-1.5 w-3 rounded-sm border border-slate-400">
-                      <div className="h-full w-2/3 rounded-sm bg-teal-400" />
+                    <div className="relative h-2.5 w-5 rounded-[3px] border border-slate-400">
+                      <div className="absolute inset-[2px] left-[2px] right-[4px] rounded-[1px] bg-teal-400" />
+                      <div className="absolute -right-[3px] top-1/2 h-[6px] w-[3px] -translate-y-1/2 rounded-r-full bg-slate-500" />
                     </div>
                   </div>
                 </div>
 
                 {/* App header */}
-                <div className="flex items-center justify-center border-b border-slate-800 bg-slate-950 py-2">
-                  <span className="text-xs font-bold tracking-wide text-white">CenterHQ</span>
+                <div className="flex items-center justify-center border-b border-slate-800 py-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-white">CenterHQ</span>
                 </div>
 
-                {/* Scanner area */}
-                <div className="relative flex flex-1 items-center justify-center bg-slate-950">
-                  {/* QR code grid 7x7 */}
-                  <div className="grid grid-cols-7 gap-[3px]">
-                    {Array.from({ length: 49 }).map((_, i) => {
-                      const teal = [
-                        0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 20, 21, 27, 28, 34, 35, 41, 42, 43, 44, 45, 46, 48, 8,
-                        15, 22, 29, 36, 10, 17, 24, 31, 38,
-                      ].includes(i);
-                      return (
-                        <div
-                          key={i}
-                          className="h-4 w-4 rounded-[3px]"
-                          style={{ backgroundColor: teal ? '#0D9488' : '#1e293b' }}
-                        />
-                      );
-                    })}
+                {/* Camera viewfinder */}
+                <div className="relative flex-1 overflow-hidden bg-[#080c14]">
+                  {/* Camera background — subtle gradient to simulate depth */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'radial-gradient(ellipse at center, #0d1520 0%, #050810 100%)',
+                    }}
+                  />
+
+                  {/* Student ID Card */}
+                  <div
+                    className="absolute left-1/2 top-1/2 h-[108px] w-[180px] transition-all duration-700 ease-out"
+                    style={{
+                      transform:
+                        scanState === 'success'
+                          ? 'translate(-50%, -50%) rotate(-3deg) scale(1.02)'
+                          : 'translate(-50%, -55%) rotate(-3deg) scale(0.97)',
+                      opacity: scanState === 'success' ? 1 : 0.9,
+                    }}
+                  >
+                    {/* Card body */}
+                    <div className="h-full w-full overflow-hidden rounded-xl border border-slate-600 bg-gradient-to-br from-slate-700 to-slate-800 shadow-2xl">
+                      {/* Card header strip */}
+                      <div className="flex h-7 items-center gap-2 bg-teal-700 px-3">
+                        <div className="text-[8px] font-bold tracking-widest text-white">CENTERHQ</div>
+                        <div className="ml-auto text-[7px] text-teal-200">طالب</div>
+                      </div>
+
+                      {/* Card content */}
+                      <div className="flex gap-2 p-2">
+                        {/* Photo placeholder */}
+                        <div className="flex h-14 w-12 shrink-0 items-center justify-center rounded-md border border-slate-500 bg-slate-600">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5" aria-hidden>
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                        </div>
+
+                        {/* Student info */}
+                        <div className="flex flex-col justify-center gap-1">
+                          <div className="text-[9px] font-bold text-white">Mohamed Ahmed</div>
+                          <div className="text-[8px] text-slate-400">#001-0042</div>
+                          <div className="mt-0.5 text-[7px] text-teal-400">IB Year 1</div>
+                          {/* Barcode lines */}
+                          <div className="mt-1 flex gap-[2px]">
+                            {Array.from({ length: 18 }).map((_, i) => (
+                              <div
+                                key={i}
+                                className="h-3 rounded-full bg-slate-500"
+                                style={{ width: i % 3 === 0 ? '2px' : '1px' }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Scanner corners — larger */}
-                  <div className="pointer-events-none absolute inset-8">
-                    <div className="absolute left-0 top-0 h-8 w-8 rounded-tl border-l-[3px] border-t-[3px] border-teal-400" />
-                    <div className="absolute right-0 top-0 h-8 w-8 rounded-tr border-r-[3px] border-t-[3px] border-teal-400" />
-                    <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl border-b-[3px] border-l-[3px] border-teal-400" />
-                    <div className="absolute bottom-0 right-0 h-8 w-8 rounded-br border-b-[3px] border-r-[3px] border-teal-400" />
+                  {/* Scanner frame corners */}
+                  <div className="pointer-events-none absolute inset-6">
+                    <div className="absolute left-0 top-0 h-8 w-8 rounded-tl-sm border-l-[3px] border-t-[3px] border-teal-400" />
+                    <div className="absolute right-0 top-0 h-8 w-8 rounded-tr-sm border-r-[3px] border-t-[3px] border-teal-400" />
+                    <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-sm border-b-[3px] border-l-[3px] border-teal-400" />
+                    <div className="absolute bottom-0 right-0 h-8 w-8 rounded-br-sm border-b-[3px] border-r-[3px] border-teal-400" />
                   </div>
 
                   {/* Scan line */}
                   <div
-                    className="absolute left-10 right-10 h-[2px] rounded-full bg-gradient-to-r from-transparent via-teal-400 to-transparent"
+                    className="pointer-events-none absolute left-8 right-8 h-[2px] rounded-full"
                     style={{
-                      top: scanState === 'scanning' ? '25%' : '75%',
-                      transition: 'top 2s ease-in-out',
-                      boxShadow: '0 0 8px rgba(13,148,136,0.8)',
+                      top: scanState === 'scanning' ? '30%' : '70%',
+                      transition: 'top 2.5s ease-in-out',
+                      background: 'linear-gradient(90deg, transparent, #0D9488, transparent)',
+                      boxShadow: '0 0 12px 2px rgba(13,148,136,0.6)',
+                      opacity: scanState === 'success' ? 0 : 1,
                     }}
                   />
+
+                  {/* Success overlay on card */}
+                  {scanState === 'success' ? (
+                    <div className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-teal-500 shadow-[0_0_30px_rgba(13,148,136,0.8)] animate-[ping_0.3s_ease-out_1]">
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Success notification */}
                 <div
-                  className={`absolute bottom-16 left-3 right-3 rounded-2xl border border-teal-900 bg-slate-800 p-3 transition-all duration-500 ease-out ${
+                  className={`mx-3 mb-2 rounded-2xl border border-teal-900 bg-slate-800/90 p-3 transition-all duration-500 ease-out ${
                     scanState === 'success'
                       ? 'translate-y-0 opacity-100'
-                      : 'pointer-events-none translate-y-4 opacity-0'
+                      : 'pointer-events-none translate-y-2 opacity-0'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-900">
+                  <div className="flex items-center gap-3" dir="ltr">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-teal-700 bg-teal-900/60">
                       <svg
-                        width="16"
-                        height="16"
+                        width="14"
+                        height="14"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="#0D9488"
@@ -269,16 +331,16 @@ export default function LocaleHomePage() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold leading-none text-white">Mohamed Ahmed</p>
-                      <p className="mt-0.5 text-xs text-teal-400">تم تسجيل الحضور</p>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-white">Mohamed Ahmed</p>
+                      <p className="text-[10px] text-teal-400">تم تسجيل الحضور</p>
                     </div>
-                    <div className="ml-auto text-xs text-slate-500">الآن</div>
+                    <span className="text-[10px] text-slate-500">الآن</span>
                   </div>
                 </div>
 
                 {/* Bottom bar */}
-                <div className="flex items-center justify-center gap-2 border-t border-slate-800 bg-slate-950 py-3">
+                <div className="flex items-center justify-center gap-2 border-t border-slate-800 bg-[#0a0f1a] py-3">
                   <div className="h-2 w-2 rounded-full bg-teal-500" />
                   <div className="h-2 w-2 rounded-full bg-slate-700" />
                   <div className="h-2 w-2 rounded-full bg-slate-700" />
