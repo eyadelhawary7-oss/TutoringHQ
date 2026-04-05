@@ -1257,6 +1257,19 @@ html.light .text-white\/70 {
   100% { transform: translateY(100%); opacity: 0.8; }
 }
 
+/* Landing hero phone mockup — scanner sweep */
+@keyframes scanline {
+  0%,
+  100% {
+    top: 28%;
+    opacity: 0.85;
+  }
+  50% {
+    top: 72%;
+    opacity: 1;
+  }
+}
+
 @keyframes result-slide-in {
   from { transform: translateY(12px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }

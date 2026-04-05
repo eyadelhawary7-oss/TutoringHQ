@@ -7,20 +7,207 @@ import { Menu, X } from 'lucide-react';
 
 const WA_SUPPORT = 'https://wa.me/201220601410';
 
+type DemoScreen = 'scanning' | 'scanned' | 'dashboard' | 'whatsapp' | 'payment';
+
+const SCREEN_SEQUENCE: DemoScreen[] = ['scanning', 'scanned', 'dashboard', 'whatsapp', 'payment'];
+
+const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
+  <div
+    className="absolute inset-0 flex items-center justify-center bg-[#080c14]"
+    style={{ background: 'radial-gradient(ellipse at center, #0d1520 0%, #050810 100%)' }}
+  >
+    {/* Student ID Card */}
+    <div
+      className="relative h-[108px] w-[180px]"
+      style={{
+        transform: demoScreen === 'scanned' ? 'rotate(0deg) scale(1.05)' : 'rotate(-3deg) scale(0.97)',
+        transition: 'transform 0.7s ease-out',
+      }}
+    >
+      <div className="h-full w-full overflow-hidden rounded-xl border border-slate-600 bg-gradient-to-br from-slate-700 to-slate-800 shadow-2xl">
+        <div className="flex h-7 items-center gap-2 bg-teal-700 px-3">
+          <span className="text-[8px] font-bold tracking-widest text-white">CENTERHQ</span>
+          <span className="ml-auto text-[7px] text-teal-200">طالب</span>
+        </div>
+        <div className="flex gap-2 p-2">
+          <div className="flex h-14 w-12 shrink-0 items-center justify-center rounded-md border border-slate-500 bg-slate-600">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5" aria-hidden>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <div className="flex flex-col justify-center gap-1">
+            <div className="text-[9px] font-bold text-white">Mohamed Ahmed</div>
+            <div className="text-[8px] text-slate-400">#001-0042</div>
+            <div className="mt-0.5 text-[7px] text-teal-400">IB Year 1</div>
+            <div className="mt-1 flex gap-[2px]">
+              {Array.from({ length: 18 }).map((_, i) => (
+                <div key={i} className="h-3 rounded-full bg-slate-500" style={{ width: i % 3 === 0 ? '2px' : '1px' }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {demoScreen === 'scanned' ? (
+        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shadow-[0_0_30px_rgba(13,148,136,0.8)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        </div>
+      ) : null}
+    </div>
+
+    <div className="pointer-events-none absolute inset-6">
+      <div className="absolute left-0 top-0 h-8 w-8 rounded-tl-sm border-l-[3px] border-t-[3px] border-teal-400" />
+      <div className="absolute right-0 top-0 h-8 w-8 rounded-tr-sm border-r-[3px] border-t-[3px] border-teal-400" />
+      <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-sm border-b-[3px] border-l-[3px] border-teal-400" />
+      <div className="absolute bottom-0 right-0 h-8 w-8 rounded-br-sm border-b-[3px] border-r-[3px] border-teal-400" />
+    </div>
+
+    {demoScreen === 'scanning' ? (
+      <div
+        className="pointer-events-none absolute left-8 right-8 h-[2px] rounded-full"
+        style={{
+          top: '28%',
+          background: 'linear-gradient(90deg,transparent,#0D9488,transparent)',
+          boxShadow: '0 0 12px 2px rgba(13,148,136,0.6)',
+          animation: 'scanline 2s ease-in-out infinite',
+        }}
+      />
+    ) : null}
+  </div>
+);
+
+const DashboardScreen = () => (
+  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[#080D14] p-3">
+    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">لوحة التحكم</div>
+    <div className="grid grid-cols-2 gap-1.5">
+      <div className="rounded-lg bg-slate-800 p-2">
+        <div className="text-[8px] text-slate-500">الطلاب</div>
+        <div className="text-sm font-bold text-white">247</div>
+        <div className="text-[8px] text-teal-400">↑ 12 هذا الشهر</div>
+      </div>
+      <div className="rounded-lg bg-slate-800 p-2">
+        <div className="text-[8px] text-slate-500">الإيرادات</div>
+        <div className="text-sm font-bold text-white">21K</div>
+        <div className="text-[8px] text-teal-400">EGP شهرياً</div>
+      </div>
+    </div>
+    <div className="rounded-lg bg-slate-800 p-2">
+      <div className="mb-1 flex justify-between">
+        <span className="text-[8px] text-slate-500">حضور اليوم</span>
+        <span className="text-[8px] text-teal-400">87%</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-slate-700">
+        <div className="h-full w-[87%] rounded-full bg-teal-500" />
+      </div>
+    </div>
+    <div className="flex flex-1 flex-col rounded-lg bg-slate-800 p-2">
+      <div className="mb-1.5 text-[8px] text-slate-500">آخر المسحات</div>
+      {['Ahmed K.', 'Sara M.', 'Omar H.'].map((name, i) => (
+        <div key={name} className="mb-1 flex items-center gap-1.5">
+          <div className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+          <span className="text-[8px] text-slate-300">{name}</span>
+          <span className="ml-auto text-[7px] text-slate-600">الآن</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const WhatsAppScreen = () => (
+  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[#0a1628] p-3">
+    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">واتساب</div>
+    <div className="flex items-center gap-2 rounded-lg bg-[#128C7E] p-2">
+      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden>
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+        </svg>
+      </div>
+      <div>
+        <div className="text-[9px] font-bold text-white">CenterHQ</div>
+        <div className="text-[7px] text-green-200">متصل الآن</div>
+      </div>
+    </div>
+    <div className="flex flex-1 flex-col gap-1.5">
+      <div className="max-w-[85%] rounded-lg rounded-tl-sm bg-white/10 p-2">
+        <div className="text-[8px] leading-relaxed text-white">تنبيه غياب: محمد أحمد لم يحضر جلسة اليوم</div>
+        <div className="mt-0.5 text-[7px] text-white/50">10:30</div>
+      </div>
+      <div className="max-w-[85%] rounded-lg rounded-tl-sm bg-white/10 p-2">
+        <div className="text-[8px] leading-relaxed text-white">تذكير: الاشتراك الشهري مستحق يوم الجمعة</div>
+        <div className="mt-0.5 text-[7px] text-white/50">10:31</div>
+      </div>
+      <div className="max-w-[85%] self-end rounded-lg rounded-tr-sm bg-teal-600 p-2">
+        <div className="text-[8px] text-white">شكراً، سيتم الدفع غداً</div>
+        <div className="mt-0.5 text-right text-[7px] text-white/70">10:35 ✓✓</div>
+      </div>
+    </div>
+  </div>
+);
+
+const PaymentScreen = () => (
+  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[#080D14] p-3">
+    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">المدفوعات</div>
+    <div className="flex items-center gap-3 rounded-xl border border-teal-700/50 bg-teal-900/40 p-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal-500 bg-teal-500/20">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+      <div>
+        <div className="text-[9px] font-bold text-teal-300">تم استلام الدفعة</div>
+        <div className="text-xs font-bold text-white">1,500 EGP</div>
+        <div className="text-[8px] text-slate-500">سنتر النخبة للغات</div>
+      </div>
+    </div>
+    <div className="flex flex-1 flex-col rounded-xl bg-slate-800 p-2">
+      <div className="mb-2 text-[8px] text-slate-500">آخر المدفوعات</div>
+      {[
+        { name: 'Ahmed K.', amount: '500', status: 'paid' as const },
+        { name: 'Sara M.', amount: '500', status: 'paid' as const },
+        { name: 'Omar H.', amount: '500', status: 'pending' as const },
+      ].map((p, i) => (
+        <div key={`${p.name}-${i}`} className="mb-1.5 flex items-center gap-2">
+          <div className={`h-1.5 w-1.5 rounded-full ${p.status === 'paid' ? 'bg-teal-500' : 'bg-amber-500'}`} />
+          <span className="flex-1 text-[8px] text-slate-300">{p.name}</span>
+          <span className="text-[8px] font-semibold text-white">{p.amount} EGP</span>
+        </div>
+      ))}
+    </div>
+    <div className="flex items-center justify-between rounded-lg bg-slate-800 p-2">
+      <span className="text-[8px] text-slate-500">إجمالي الشهر</span>
+      <span className="text-xs font-bold text-teal-400">21,000 EGP</span>
+    </div>
+  </div>
+);
+
 export default function LocaleHomePage() {
   const t = useTranslations('landing');
   const m = useTranslations('landing.marketing');
   const locale = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scanState, setScanState] = useState<'scanning' | 'success'>('scanning');
+  const [demoScreen, setDemoScreen] = useState<DemoScreen>('scanning');
+  const [screenIndex, setScreenIndex] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setScanState('success');
-      setTimeout(() => setScanState('scanning'), 1500);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    const timings: Record<DemoScreen, number> = {
+      scanning: 2500,
+      scanned: 1800,
+      dashboard: 3000,
+      whatsapp: 3000,
+      payment: 3000,
+    };
+    const timer = setTimeout(() => {
+      const next = (screenIndex + 1) % SCREEN_SEQUENCE.length;
+      setScreenIndex(next);
+      setDemoScreen(SCREEN_SEQUENCE[next]);
+    }, timings[demoScreen]);
+    return () => clearTimeout(timer);
+  }, [demoScreen, screenIndex]);
 
   const heroLines = t('heroTitle').split('\n');
   const featureKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] as const;
@@ -208,136 +395,54 @@ export default function LocaleHomePage() {
                   <span className="text-xs font-bold uppercase tracking-widest text-white">CenterHQ</span>
                 </div>
 
-                {/* Camera viewfinder */}
-                <div className="relative flex-1 overflow-hidden bg-[#080c14]">
-                  {/* Camera background — subtle gradient to simulate depth */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background: 'radial-gradient(ellipse at center, #0d1520 0%, #050810 100%)',
-                    }}
-                  />
-
-                  {/* Student ID Card */}
-                  <div
-                    className="absolute left-1/2 top-1/2 h-[108px] w-[180px] transition-all duration-700 ease-out"
-                    style={{
-                      transform:
-                        scanState === 'success'
-                          ? 'translate(-50%, -50%) rotate(-3deg) scale(1.02)'
-                          : 'translate(-50%, -55%) rotate(-3deg) scale(0.97)',
-                      opacity: scanState === 'success' ? 1 : 0.9,
-                    }}
-                  >
-                    {/* Card body */}
-                    <div className="h-full w-full overflow-hidden rounded-xl border border-slate-600 bg-gradient-to-br from-slate-700 to-slate-800 shadow-2xl">
-                      {/* Card header strip */}
-                      <div className="flex h-7 items-center gap-2 bg-teal-700 px-3">
-                        <div className="text-[8px] font-bold tracking-widest text-white">CENTERHQ</div>
-                        <div className="ml-auto text-[7px] text-teal-200">طالب</div>
-                      </div>
-
-                      {/* Card content */}
-                      <div className="flex gap-2 p-2">
-                        {/* Photo placeholder */}
-                        <div className="flex h-14 w-12 shrink-0 items-center justify-center rounded-md border border-slate-500 bg-slate-600">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5" aria-hidden>
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
-                          </svg>
-                        </div>
-
-                        {/* Student info */}
-                        <div className="flex flex-col justify-center gap-1">
-                          <div className="text-[9px] font-bold text-white">Mohamed Ahmed</div>
-                          <div className="text-[8px] text-slate-400">#001-0042</div>
-                          <div className="mt-0.5 text-[7px] text-teal-400">IB Year 1</div>
-                          {/* Barcode lines */}
-                          <div className="mt-1 flex gap-[2px]">
-                            {Array.from({ length: 18 }).map((_, i) => (
-                              <div
-                                key={i}
-                                className="h-3 rounded-full bg-slate-500"
-                                style={{ width: i % 3 === 0 ? '2px' : '1px' }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Scanner frame corners */}
-                  <div className="pointer-events-none absolute inset-6">
-                    <div className="absolute left-0 top-0 h-8 w-8 rounded-tl-sm border-l-[3px] border-t-[3px] border-teal-400" />
-                    <div className="absolute right-0 top-0 h-8 w-8 rounded-tr-sm border-r-[3px] border-t-[3px] border-teal-400" />
-                    <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-sm border-b-[3px] border-l-[3px] border-teal-400" />
-                    <div className="absolute bottom-0 right-0 h-8 w-8 rounded-br-sm border-b-[3px] border-r-[3px] border-teal-400" />
-                  </div>
-
-                  {/* Scan line */}
-                  <div
-                    className="pointer-events-none absolute left-8 right-8 h-[2px] rounded-full"
-                    style={{
-                      top: scanState === 'scanning' ? '30%' : '70%',
-                      transition: 'top 2.5s ease-in-out',
-                      background: 'linear-gradient(90deg, transparent, #0D9488, transparent)',
-                      boxShadow: '0 0 12px 2px rgba(13,148,136,0.6)',
-                      opacity: scanState === 'success' ? 0 : 1,
-                    }}
-                  />
-
-                  {/* Success overlay on card */}
-                  {scanState === 'success' ? (
-                    <div className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-teal-500 shadow-[0_0_30px_rgba(13,148,136,0.8)] animate-[ping_0.3s_ease-out_1]">
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="white"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </div>
-                  ) : null}
+                {/* Multi-screen demo */}
+                <div className="relative flex-1 overflow-hidden bg-[#080c14] transition-all duration-500">
+                  {(demoScreen === 'scanning' || demoScreen === 'scanned') && <ScannerScreen demoScreen={demoScreen} />}
+                  {demoScreen === 'dashboard' ? <DashboardScreen /> : null}
+                  {demoScreen === 'whatsapp' ? <WhatsAppScreen /> : null}
+                  {demoScreen === 'payment' ? <PaymentScreen /> : null}
                 </div>
 
-                {/* Success notification */}
-                <div
-                  className={`mx-3 mb-2 rounded-2xl border border-teal-900 bg-slate-800/90 p-3 transition-all duration-500 ease-out ${
-                    scanState === 'success'
-                      ? 'translate-y-0 opacity-100'
-                      : 'pointer-events-none translate-y-2 opacity-0'
-                  }`}
-                >
-                  <div className="flex items-center gap-3" dir="ltr">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-teal-700 bg-teal-900/60">
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#0D9488"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
+                {demoScreen === 'scanned' ? (
+                  <div className="mx-3 mb-2 rounded-2xl border border-teal-900 bg-slate-800/90 p-3 transition-all duration-500">
+                    <div className="flex items-center gap-3" dir="ltr">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-teal-700 bg-teal-900/60">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-white">Mohamed Ahmed</p>
+                        <p className="text-[10px] text-teal-400">تم تسجيل الحضور</p>
+                      </div>
+                      <span className="text-[10px] text-slate-500">الآن</span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-semibold text-white">Mohamed Ahmed</p>
-                      <p className="text-[10px] text-teal-400">تم تسجيل الحضور</p>
-                    </div>
-                    <span className="text-[10px] text-slate-500">الآن</span>
                   </div>
-                </div>
+                ) : null}
+                {demoScreen === 'dashboard' ? (
+                  <div className="mx-3 mb-2 rounded-2xl border border-slate-700 bg-slate-800/90 p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 animate-pulse rounded-full bg-teal-500" />
+                      <p className="text-[10px] text-slate-300">247 طالب نشط اليوم</p>
+                    </div>
+                  </div>
+                ) : null}
+                {demoScreen === 'whatsapp' ? (
+                  <div className="mx-3 mb-2 rounded-2xl border border-[#128C7E]/40 bg-[#128C7E]/20 p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+                      <p className="text-[10px] text-green-300">تم إرسال 12 رسالة واتساب</p>
+                    </div>
+                  </div>
+                ) : null}
+                {demoScreen === 'payment' ? (
+                  <div className="mx-3 mb-2 rounded-2xl border border-teal-800/50 bg-teal-900/30 p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-teal-400" />
+                      <p className="text-[10px] text-teal-300">تم تحصيل 21,000 EGP هذا الشهر</p>
+                    </div>
+                  </div>
+                ) : null}
 
                 {/* Bottom bar */}
                 <div className="flex items-center justify-center gap-2 border-t border-slate-800 bg-[#0a0f1a] py-3">
