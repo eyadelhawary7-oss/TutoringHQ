@@ -1,42 +1,44 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useRouter, usePathname } from '@/i18n/routing';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useRouter, usePathname } from '@/i18n/routing';
 import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, dbUpdate, auditLog } from '@/lib/db-proxy';
-import QRCode from 'qrcode';
-import Step1Profile from '@/components/onboarding/steps/Step1Profile';
-import Step2Students from '@/components/onboarding/steps/Step2Students';
-import Step3QR from '@/components/onboarding/steps/Step3QR';
-import Step4Scanner from '@/components/onboarding/steps/Step4Scanner';
-import { Confetti } from '@/components/onboarding/Confetti';
-import { AnimatedCounter } from '@/components/onboarding/AnimatedCounter';
-import { WhatsAppConfirmation } from '@/components/onboarding/WhatsAppConfirmation';
+import { dbSelect, auditLog } from '@/lib/db-proxy';
 import { LoadingButton } from '@/components/ui/LoadingButton';
-
-const STEP_LABELS = ['step1Label', 'step2Label', 'step3Label', 'step4Label'] as const;
+import { SuccessCheck } from '@/components/ui/SuccessCheck';
+import { Lock } from 'lucide-react';
 
 const TOTAL_STEPS = 4;
+
+type WAState = 'idle' | 'sending' | 'sent' | 'confirmed' | 'support';
+
+const GOVERNORATE_KEYS = ['cairo', 'giza', 'alexandria', 'qalyubia', 'sharkia', 'other'] as const;
+
+const STEP_BADGE_KEYS = ['stepBadge1', 'stepBadge2', 'stepBadge3', 'stepBadge4'] as const;
 
 interface CenterData {
   id: string;
   name: string;
   phone?: string | null;
+  city?: string | null;
+  governorate?: string | null;
 }
 
 interface StudentRow {
   id: string;
   name: string;
   phone: string;
-  groupId: string;
   student_number?: string | null;
-  qr_code?: string | null;
 }
 
 interface Group {
   id: string;
   name: string;
+}
+
+function formatArabicIndic(n: number): string {
+  return new Intl.NumberFormat('ar-EG', { numberingSystem: 'arab' }).format(n);
 }
 
 export default function OnboardingPage() {
@@ -46,29 +48,54 @@ export default function OnboardingPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const toggleLocale = () => {
-    router.replace(pathname, { locale: locale === 'ar' ? 'en' : 'ar' });
-  };
-
   const [loading, setLoading] = useState(true);
   const [advancing, setAdvancing] = useState(false);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [center, setCenter] = useState<CenterData | null>(null);
-  const [profileName, setProfileName] = useState('');
-  const [profilePhone, setProfilePhone] = useState('');
-  const [step, setStep] = useState(0);
-  const [completed, setCompleted] = useState(false);
+  const [centerName, setCenterName] = useState('');
+  const [city, setCity] = useState('');
+  const [governorate, setGovernorate] = useState<string>('cairo');
+  const [step, setStep] = useState(1);
 
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [step3Checked, setStep3Checked] = useState(false);
+
+  const [firstStudentName, setFirstStudentName] = useState('');
+  const [firstStudentPhone, setFirstStudentPhone] = useState('');
+  const [addingStudent, setAddingStudent] = useState(false);
+
+  const [waState, setWaState] = useState<WAState>('idle');
+  const [waSentAt, setWaSentAt] = useState<number | null>(null);
 
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const [stepKey, setStepKey] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [whatsappSent, setWhatsappSent] = useState(false);
+
+  const [animatedCount, setAnimatedCount] = useState(0);
+  const rafRef = useRef<number | null>(null);
+
+  const toggleLocale = useCallback(() => {
+    router.replace(pathname, { locale: locale === 'ar' ? 'en' : 'ar' });
+  }, [router, pathname, locale]);
+
+  const patchCenter = useCallback(async (data: Record<string, unknown>) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+    const res = await fetch('/api/centers/me', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(j.error ?? 'Update failed');
+    }
+  }, []);
 
   const loadAuth = useCallback(async () => {
     const {
@@ -89,32 +116,44 @@ export default function OnboardingPage() {
       return;
     }
 
-    const cid = meData.user.center_id;
+    const cid = meData.user.center_id as string;
     setCenterId(cid);
 
     const { data: centerData } = await dbSelect({
       table: 'centers',
-      select: 'id, name, phone, onboarding_step, onboarding_completed',
+      select: 'id, name, phone, city, governorate, onboarding_step, onboarding_completed',
       filters: [{ column: 'id', op: 'eq', value: cid }],
       single: true,
     });
 
     if (centerData) {
       const c = centerData as CenterData & { onboarding_step?: number; onboarding_completed?: boolean };
-      setCenter({ id: c.id, name: c.name || '', phone: c.phone });
-      setProfileName(c.name || '');
-      setProfilePhone(c.phone || '');
+      setCenter({
+        id: c.id,
+        name: c.name || '',
+        phone: c.phone,
+        city: c.city ?? null,
+        governorate: c.governorate ?? null,
+      });
+      setCenterName((c.name || '').trim());
+      setCity((c.city || '').trim());
+      {
+        const g = (c.governorate || 'cairo').toLowerCase();
+        setGovernorate(
+          (GOVERNORATE_KEYS as readonly string[]).includes(g) ? g : 'cairo'
+        );
+      }
       if (c.onboarding_completed) {
         router.replace('/dashboard');
         return;
       }
-      setStep(Math.min(Math.max(c.onboarding_step ?? 0, 1), 4));
+      setStep(Math.min(Math.max(c.onboarding_step ?? 1, 1), 4));
     }
 
     const [{ data: studentsData }, { data: groupsData }] = await Promise.all([
       dbSelect({
         table: 'students',
-        select: 'id, name, phone, student_number, qr_code',
+        select: 'id, name, phone, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
         order: { column: 'name' },
       }),
@@ -127,27 +166,16 @@ export default function OnboardingPage() {
     ]);
 
     if (Array.isArray(studentsData)) {
-      const withGroups = await Promise.all(
-        (
-          studentsData as {
-            id: string;
-            name: string;
-            phone?: string | null;
-            student_number?: string | null;
-            qr_code?: string | null;
-          }[]
-        ).map(async (s) => {
-          const { data: members } = await dbSelect({
-            table: 'student_group_members',
-            select: 'group_id',
-            filters: [{ column: 'student_id', op: 'eq', value: s.id }],
-          });
-          const gid =
-            Array.isArray(members) && members.length > 0 ? (members[0] as { group_id: string }).group_id : '';
-          return { ...s, groupId: gid, phone: s.phone || '' };
-        })
+      setStudents(
+        (studentsData as { id: string; name: string; phone?: string | null; student_number?: string | null }[]).map(
+          (s) => ({
+            id: s.id,
+            name: s.name,
+            phone: s.phone || '',
+            student_number: s.student_number,
+          })
+        )
       );
-      setStudents(withGroups);
     }
     if (Array.isArray(groupsData)) {
       setGroups(groupsData as Group[]);
@@ -160,378 +188,643 @@ export default function OnboardingPage() {
     loadAuth();
   }, [loadAuth]);
 
-  useEffect(() => {
-    if (!completed || !centerId) return;
-    const phone = (profilePhone || center?.phone || '').trim();
-    if (!phone) return;
-
-    let cancelled = false;
-    (async () => {
+  const advanceStep = useCallback(
+    async (nextStep: number) => {
+      if (!centerId) return;
+      setAdvancing(true);
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.access_token || cancelled) return;
-        const res = await fetch('/api/whatsapp/schedule-onboarding', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ centerId, centerPhone: phone }),
-        });
-        if (!cancelled && res.ok) setWhatsappSent(true);
-      } catch {
-        /* keep pending */
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [completed, centerId, profilePhone, center?.phone]);
-
-  const advanceStep = async (nextStep: number) => {
-    if (!centerId) return;
-    setAdvancing(true);
-    try {
-      await dbUpdate({
-        table: 'centers',
-        data: {
+        const payload: Record<string, unknown> = {
           onboarding_step: nextStep,
-          onboarding_started_at: step === 1 ? new Date().toISOString() : undefined,
-        },
-        filters: [{ column: 'id', op: 'eq', value: centerId }],
-      });
-      setStep(nextStep);
-    } finally {
-      setAdvancing(false);
-    }
-  };
+        };
+        if (step === 1 && nextStep > 1) {
+          payload.onboarding_started_at = new Date().toISOString();
+        }
+        await patchCenter(payload);
+        setStep(nextStep);
+      } finally {
+        setAdvancing(false);
+      }
+    },
+    [centerId, patchCenter, step]
+  );
 
-  const retreatStep = async (prevStep: number) => {
-    if (!centerId) return;
-    setAdvancing(true);
-    try {
-      await dbUpdate({
-        table: 'centers',
-        data: { onboarding_step: prevStep },
-        filters: [{ column: 'id', op: 'eq', value: centerId }],
-      });
-      setStep(prevStep);
-    } finally {
-      setAdvancing(false);
-    }
-  };
+  const retreatStep = useCallback(
+    async (prevStep: number) => {
+      if (!centerId) return;
+      setAdvancing(true);
+      try {
+        await patchCenter({ onboarding_step: prevStep });
+        setStep(prevStep);
+      } finally {
+        setAdvancing(false);
+      }
+    },
+    [centerId, patchCenter]
+  );
 
-  const handleStep1Next = async () => {
-    if (!centerId) return;
-    await dbUpdate({
-      table: 'centers',
-      data: { name: profileName.trim(), phone: profilePhone.trim() || null },
-      filters: [{ column: 'id', op: 'eq', value: centerId }],
+  const handleStep1Next = useCallback(async () => {
+    if (!centerId || centerName.trim().length < 2) return;
+    await patchCenter({
+      name: centerName.trim(),
+      city: city.trim() || null,
+      governorate: governorate || 'cairo',
     });
-    setCenter((prev) => (prev ? { ...prev, name: profileName.trim(), phone: profilePhone.trim() || null } : null));
-    await advanceStep(2);
-  };
-
-  const handleStep2Add = async (name: string, phone: string, groupId: string) => {
-    if (!centerId || !userId) return;
-    const { data: inserted, error } = await dbInsert({
-      table: 'students',
-      data: {
-        center_id: centerId,
-        name: name.trim(),
-        phone: phone.trim() || null,
-        fee: 0,
-        payment_status: 'unpaid',
-      },
-      select: 'id, name, student_number',
-      single: true,
-    });
-    if (error || !inserted) throw new Error('Failed to add student');
-    const s = inserted as { id: string; name: string; student_number: string };
-    let qrDataURL = '';
-    try {
-      qrDataURL = await QRCode.toDataURL(s.id, { width: 300, margin: 2, errorCorrectionLevel: 'H' });
-      await dbUpdate({
-        table: 'students',
-        data: { qr_code: qrDataURL },
-        filters: [{ column: 'id', op: 'eq', value: s.id }],
-      });
-    } catch {
-      /* non-critical */
-    }
-    if (groupId) {
-      await dbInsert({
-        table: 'student_group_members',
-        data: { group_id: groupId, student_id: s.id },
-        select: false,
-      });
-    }
-    await auditLog({
-      centerId,
-      userId,
-      action: 'student_create',
-      entityType: 'students',
-      entityId: s.id,
-      details: { name: s.name },
-    });
-    setStudents((prev) => [
-      ...prev,
-      { id: s.id, name: s.name, phone, groupId, student_number: s.student_number, qr_code: qrDataURL },
-    ]);
-  };
-
-  const handleStep2Next = () => advanceStep(3);
-
-  const handleStep3Print = () => {
-    router.push('/students/print');
-  };
-
-  const handleStep3Next = () => advanceStep(4);
-
-  const handleStep4Complete = async () => {
-    if (!centerId || !userId) return;
-    setAdvancing(true);
-    setIsCompleting(true);
-    try {
-      await dbUpdate({
-        table: 'centers',
-        data: { onboarding_step: 5, onboarding_completed: true },
-        filters: [{ column: 'id', op: 'eq', value: centerId }],
-      });
-      await auditLog({ centerId, userId, action: 'onboarding_complete', entityType: 'centers', details: {} });
-      setShowConfetti(true);
-      setCompleted(true);
-    } finally {
-      setAdvancing(false);
-      setIsCompleting(false);
-    }
-  };
-
-  const handleFooterNext = async () => {
+    setCenter((prev) =>
+      prev
+        ? {
+            ...prev,
+            name: centerName.trim(),
+            city: city.trim() || null,
+            governorate,
+          }
+        : null
+    );
     setDirection('forward');
     setStepKey((k) => k + 1);
-    if (step === 1) await handleStep1Next();
-    else if (step === 2) await handleStep2Next();
-    else if (step === 3) await handleStep3Next();
-  };
+    await advanceStep(2);
+  }, [centerId, centerName, city, governorate, patchCenter, advanceStep]);
 
-  const handleFooterBack = async () => {
+  const handleAddFirstStudent = useCallback(async () => {
+    if (firstStudentName.trim().length < 2) return;
+    setAddingStudent(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch('/api/onboarding/first-student', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          name: firstStudentName.trim(),
+          phone: firstStudentPhone.trim() || null,
+        }),
+      });
+      if (!res.ok) return;
+      const json = (await res.json()) as {
+        student: { id: string; name: string; phone: string; student_number: string | null };
+      };
+      setStudents((prev) => [
+        ...prev,
+        {
+          id: json.student.id,
+          name: json.student.name,
+          phone: json.student.phone,
+          student_number: json.student.student_number,
+        },
+      ]);
+      setFirstStudentName('');
+      setFirstStudentPhone('');
+    } finally {
+      setAddingStudent(false);
+    }
+  }, [firstStudentName, firstStudentPhone]);
+
+  const handleStep2Skip = useCallback(async () => {
+    setDirection('forward');
+    setStepKey((k) => k + 1);
+    await advanceStep(3);
+  }, [advanceStep]);
+
+  const handleStep2Next = useCallback(async () => {
+    if (students.length < 1) return;
+    setDirection('forward');
+    setStepKey((k) => k + 1);
+    await advanceStep(3);
+  }, [advanceStep, students.length]);
+
+  const sendWelcomeWhatsApp = useCallback(async () => {
+    setWaState('sending');
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setWaState('idle');
+        return;
+      }
+      const res = await fetch('/api/whatsapp/send-welcome-test', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        setWaState('sent');
+        setWaSentAt(Date.now());
+      } else {
+        setWaState('idle');
+      }
+    } catch {
+      setWaState('idle');
+    }
+  }, []);
+
+  const handleStep3Next = useCallback(async () => {
+    if (waState !== 'confirmed' || !centerId || !userId) return;
+    setAdvancing(true);
+    try {
+      await patchCenter({
+        onboarding_step: 4,
+        onboarding_completed: true,
+      });
+      await auditLog({
+        centerId,
+        userId,
+        action: 'onboarding_complete',
+        entityType: 'centers',
+        details: {},
+      });
+      setDirection('forward');
+      setStepKey((k) => k + 1);
+      setStep(4);
+    } finally {
+      setAdvancing(false);
+    }
+  }, [waState, centerId, userId, patchCenter]);
+
+  const handleFooterBack = useCallback(async () => {
     if (step <= 1) return;
     setDirection('backward');
     setStepKey((k) => k + 1);
+    if (step === 3) setWaState('idle');
     await retreatStep(step - 1);
-  };
+  }, [step, retreatStep]);
 
-  const progressPct = Math.round((step / TOTAL_STEPS) * 100);
-  const currentStepIndex = Math.max(0, step - 1);
-  const firstStudent = students[0];
+  const handleGoDashboard = useCallback(() => {
+    router.push('/dashboard');
+  }, [router]);
 
-  const footerNextDisabled =
-    advancing ||
-    (step === 1 && !profileName.trim()) ||
-    (step === 2 && students.length < 1) ||
-    (step === 3 && !step3Checked);
+  useEffect(() => {
+    if (step !== 4) {
+      setAnimatedCount(0);
+      return;
+    }
+    const target = students.length;
+    let start: number | null = null;
+    const duration = 800;
+    const tick = (now: number) => {
+      if (start === null) start = now;
+      const p = Math.min(1, (now - start) / duration);
+      setAnimatedCount(Math.round(target * p));
+      if (p < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [step, students.length]);
+
+  const progressWidthPct = useMemo(() => (step / TOTAL_STEPS) * 100, [step]);
+
+  const stepCounterText = useMemo(() => {
+    if (locale === 'ar') {
+      return `${formatArabicIndic(step)} / ${formatArabicIndic(TOTAL_STEPS)}`;
+    }
+    return `${step} / ${TOTAL_STEPS}`;
+  }, [locale, step]);
+
+  const governorateOptions = useMemo(() => {
+    const labels: Record<(typeof GOVERNORATE_KEYS)[number], string> = {
+      cairo: to('gov_cairo'),
+      giza: to('gov_giza'),
+      alexandria: to('gov_alexandria'),
+      qalyubia: to('gov_qalyubia'),
+      sharkia: to('gov_sharkia'),
+      other: to('gov_other'),
+    };
+    return GOVERNORATE_KEYS.map((k) => ({ value: k, label: labels[k] }));
+  }, [to]);
+
+  const stepBadgeLabel = useMemo(() => to(STEP_BADGE_KEYS[step - 1]), [to, step]);
+
+  const nameValid = centerName.trim().length >= 2;
+  const step1NextDisabled = advancing || !nameValid;
+
+  const step2NextDisabled = advancing || students.length < 1;
+
+  const step3NextDisabled = waState !== 'confirmed' || advancing;
+
+  const stateDotClass =
+    waState === 'confirmed'
+      ? 'bg-teal-500 chq-fade-in'
+      : waState === 'idle'
+        ? 'bg-slate-600'
+        : 'bg-amber-400';
+
+  const waBoxBorderClass =
+    waState === 'confirmed' ? 'border-teal-600/40' : 'border-slate-700';
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-2 border-[var(--color-brand-500)] border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[#080D14] flex items-center justify-center">
+        <div
+          className="animate-spin h-12 w-12 border-2 border-teal-600 border-t-transparent rounded-full"
+          aria-hidden
+        />
       </div>
     );
   }
 
   if (!centerId) {
     return (
-      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center p-4">
-        <p className="text-[var(--color-text-secondary)]">{tCommon('error')}</p>
+      <div className="min-h-screen bg-[#080D14] flex items-center justify-center p-4">
+        <p className="text-slate-400">{tCommon('error')}</p>
       </div>
     );
   }
 
-  const completionCenterName = profileName.trim() || center?.name || '';
-  const completionPhone = profilePhone || center?.phone || '';
-
   return (
-    <div
-      className="bg-[var(--color-surface-0)] min-h-screen flex flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0"
-    >
-      <Confetti active={showConfetti} />
-
-      {showConfetti ? (
-        <span className="sr-only" aria-live="polite">
-          {to('confetti_alt')}
-        </span>
+    <div className="min-h-screen flex flex-col bg-[#080D14] pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-6">
+      {step < 4 ? (
+        <header className="shrink-0 bg-[#0f172a] border-b border-slate-800/80">
+          <div className="max-w-lg mx-auto w-full px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div
+                className="shrink-0 w-7 h-7 rounded-md bg-teal-600 flex items-center justify-center text-[10px] font-bold text-white"
+                aria-hidden
+              >
+                CH
+              </div>
+              <span className="text-sm font-semibold text-slate-100 truncate" style={{ fontFamily: 'Georgia, serif' }}>
+                CenterHQ
+              </span>
+            </div>
+            <span className="text-xs font-medium text-slate-400 tabular-nums shrink-0" aria-live="polite">
+              {stepCounterText}
+            </span>
+          </div>
+          <div className="max-w-lg mx-auto w-full px-4 pb-3">
+            <div className="h-[3px] rounded-full bg-slate-800 overflow-hidden" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={4}>
+              <div
+                className="h-full rounded-full bg-[#0D9488] transition-[width] duration-[400ms] ease-out"
+                style={{ width: `${progressWidthPct}%` }}
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-2.5" aria-hidden>
+              {Array.from({ length: TOTAL_STEPS }).map((_, i) => {
+                const idx = i + 1;
+                const done = step > idx;
+                const active = step === idx;
+                return (
+                  <div
+                    key={idx}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      done
+                        ? 'w-6 bg-teal-600'
+                        : active
+                          ? 'w-10 bg-teal-600/50'
+                          : 'w-6 bg-slate-700'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </header>
       ) : null}
 
-      {!completed && (
-        <>
-          <div className="px-4 pt-3 flex justify-end max-w-lg mx-auto w-full">
-            <button
-              type="button"
-              onClick={toggleLocale}
-              className="text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-fast px-3 py-1.5 rounded-badge bg-[var(--color-surface-2)] border border-[var(--color-border-default)] btn-press chq-focus"
-            >
-              {locale === 'ar' ? 'English' : 'العربية'}
-            </button>
-          </div>
-          <div className="px-4 pt-4 pb-2">
-            <div className="max-w-lg mx-auto w-full">
-              <span className="sr-only">{to('progress_label')}</span>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-[var(--color-text-secondary)]">
-                  {to('step_of', { current: step, total: TOTAL_STEPS })}
-                </span>
-                <span className="text-xs font-medium text-[var(--color-brand-500)]">{progressPct}%</span>
-              </div>
-
-              <div
-                className="onboarding-progress-bar"
-                role="progressbar"
-                aria-valuenow={progressPct}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                <div className="onboarding-progress-fill" style={{ width: `${progressPct}%` }} />
-              </div>
-
-              <div className="flex items-center justify-center gap-2 mt-3" aria-hidden="true">
-                {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-                  <div
-                    key={STEP_LABELS[i]}
-                    className={`rounded-full transition-all duration-normal ease-spring ${i < currentStepIndex ? 'w-6 h-2 bg-[var(--color-brand-500)]' : i === currentStepIndex ? 'w-4 h-2 bg-[var(--color-brand-500)]' : 'w-2 h-2 bg-[var(--color-surface-3)]'}`}
-                  />
-                ))}
-              </div>
-
-              <div className="flex justify-between gap-1 mt-2 text-[10px] sm:text-xs text-[var(--color-text-secondary)]">
-                {STEP_LABELS.map((key, i) => (
-                  <span key={key} className={i <= currentStepIndex ? 'text-[var(--color-brand-500)] font-medium' : ''}>
-                    {to(key)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      <div
-        key={stepKey}
-        className={`flex-1 px-4 py-4 max-w-lg mx-auto w-full flex flex-col ${direction === 'forward' ? 'onboarding-step-forward' : 'onboarding-step-backward'}`}
-      >
-        {completed ? (
-          <div className="flex flex-col items-center gap-6 py-8">
-            <div className="w-20 h-20 rounded-full bg-[rgba(13,148,136,0.12)] flex items-center justify-center modal-spring-in">
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--color-brand-500)"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                <path d="M4 22h16" />
-                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-                <path d="M18 2H6v7a6 6 0 0 0 12 0V2z" />
-              </svg>
-            </div>
-
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">{to('completion_title')}</h1>
-              <p className="text-sm text-[var(--color-text-secondary)]">{to('completion_subtitle')}</p>
-            </div>
-
-            <div className="card p-6 w-full text-center">
-              <AnimatedCounter
-                target={students.length}
-                className="text-4xl font-bold text-[var(--color-brand-500)] counter-pop"
-              />
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{to('completion_students')}</p>
-            </div>
-
-            <WhatsAppConfirmation
-              sent={whatsappSent}
-              centerName={completionCenterName}
-              phoneNumber={completionPhone}
-            />
-
-            <Link href="/dashboard" className="btn btn-primary w-full text-center">
-              {to('go_to_dashboard')}
-            </Link>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col">
-            {step === 1 && (
-              <Step1Profile
-                centerName={profileName}
-                centerPhone={profilePhone}
-                onNameChange={setProfileName}
-                onPhoneChange={setProfilePhone}
-              />
-            )}
-
-            {step === 2 && (
-              <Step2Students
-                students={students}
-                groups={groups}
-                onAdd={handleStep2Add}
-                canProceed={students.length >= 1}
-                onSkip={() => void handleStep2Next()}
-              />
-            )}
-
-            {step === 3 && (
-              <Step3QR
-                studentName={firstStudent?.name}
-                studentNumber={firstStudent?.student_number ?? undefined}
-                qrDataUrl={firstStudent?.qr_code ?? null}
-                centerName={center?.name ?? undefined}
-                onPrint={handleStep3Print}
-                checked={step3Checked}
-                onCheckedChange={setStep3Checked}
-              />
-            )}
-
-            {step === 4 && <Step4Scanner isActive={step === 4} onScanSuccess={handleStep4Complete} />}
-          </div>
-        )}
+      <div className="px-4 pt-3 flex justify-end max-w-lg mx-auto w-full">
+        <button
+          type="button"
+          onClick={toggleLocale}
+          className="text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 btn-press chq-focus"
+        >
+          {locale === 'ar' ? 'English' : 'العربية'}
+        </button>
       </div>
 
-      {!completed && step < 4 && (
-        <div className="px-4 pb-4 flex gap-3 max-w-lg mx-auto w-full">
-          {step > 1 && (
-            <button type="button" onClick={() => void handleFooterBack()} disabled={advancing} className="btn btn-ghost flex-1 btn-press chq-focus">
+      <main className="flex-1 flex flex-col max-w-lg mx-auto w-full px-4 py-4 min-h-0">
+        {step < 4 ? (
+          <div
+            key={stepKey}
+            className={`flex-1 flex flex-col min-h-0 ${stepKey > 0 && direction === 'forward' ? 'chq-slide-up' : ''}`}
+          >
+            <div
+              className="inline-flex items-center gap-2 rounded-full bg-teal-600/15 border border-teal-600/30 px-3 py-1 text-xs font-medium text-teal-300 w-fit chq-fade-in"
+              style={{ animationDelay: '0ms' }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500" aria-hidden />
+              {stepBadgeLabel}
+            </div>
+            {step === 1 ? (
+              <>
+                <h1
+                  className="text-xl font-bold text-slate-100 mt-3 chq-fade-in"
+                  style={{ animationDelay: '80ms' }}
+                >
+                  {to('step1Title')}
+                </h1>
+                <p
+                  className="text-sm text-slate-500 mt-1 chq-fade-in"
+                  style={{ animationDelay: '160ms' }}
+                >
+                  {to('step1Desc')}
+                </p>
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5">{to('centerName')}</label>
+                    <input
+                      type="text"
+                      value={centerName}
+                      onChange={(e) => setCenterName(e.target.value)}
+                      placeholder={to('centerNamePlaceholder')}
+                      className={`w-full bg-slate-800 border rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none transition-colors chq-focus ${
+                        nameValid ? 'border-teal-600' : 'border-slate-700'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5">{to('cityLabel')}</label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder={to('cityPlaceholder')}
+                      className={`w-full bg-slate-800 border rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none transition-colors chq-focus ${
+                        city.trim() ? 'border-teal-600' : 'border-slate-700'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5">{to('governorateLabel')}</label>
+                    <select
+                      value={governorate}
+                      onChange={(e) => setGovernorate(e.target.value)}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none focus:border-teal-600 chq-focus"
+                    >
+                      {governorateOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </>
+            ) : null}
+
+            {step === 2 ? (
+              <>
+                <h1 className="text-xl font-bold text-slate-100 mt-3 chq-fade-in" style={{ animationDelay: '80ms' }}>
+                  {to('step2Title')}
+                </h1>
+                <p className="text-sm text-slate-500 mt-1 chq-fade-in" style={{ animationDelay: '160ms' }}>
+                  {to('step2Desc')}
+                </p>
+                <p className="text-sm text-teal-400/90 mt-3">{to('firstStudentEncourage')}</p>
+                <div className="mt-4 space-y-3">
+                  <input
+                    type="text"
+                    value={firstStudentName}
+                    onChange={(e) => setFirstStudentName(e.target.value)}
+                    placeholder={to('studentNamePlaceholder')}
+                    className={`w-full bg-slate-800 border rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none chq-focus ${
+                      firstStudentName.trim().length >= 2 ? 'border-teal-600' : 'border-slate-700'
+                    }`}
+                  />
+                  <input
+                    type="tel"
+                    value={firstStudentPhone}
+                    onChange={(e) => setFirstStudentPhone(e.target.value)}
+                    placeholder={to('phoneOptional')}
+                    dir="ltr"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none focus:border-teal-600 chq-focus"
+                  />
+                  <LoadingButton
+                    type="button"
+                    variant="primary"
+                    state={addingStudent ? 'loading' : 'idle'}
+                    loadingText={to('addingStudent')}
+                    onClick={() => void handleAddFirstStudent()}
+                    disabled={firstStudentName.trim().length < 2 || addingStudent}
+                    className="w-full !bg-teal-600 hover:!bg-teal-500"
+                  >
+                    {to('addFirstStudentBtn')}
+                  </LoadingButton>
+                </div>
+              </>
+            ) : null}
+
+            {step === 3 ? (
+              <>
+                <h1 className="text-xl font-bold text-slate-100 mt-3 chq-fade-in" style={{ animationDelay: '80ms' }}>
+                  {to('waConfirmTitle')}
+                </h1>
+                <p className="text-sm text-slate-500 mt-1 chq-fade-in" style={{ animationDelay: '160ms' }}>
+                  {to('waConfirmDesc')}
+                </p>
+
+                <div className={`mt-5 rounded-xl p-3 bg-slate-800 border ${waBoxBorderClass} transition-colors`}>
+                  <p className="text-xs text-slate-500 mb-2">{to('whatsapp_preview_label')}</p>
+                  <div className="bg-[#0D9488] rounded-lg rounded-br-sm px-3 py-2 inline-block max-w-[95%]">
+                    <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">{to('waPreviewBody')}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <LoadingButton
+                    type="button"
+                    variant="primary"
+                    state={waState === 'sending' ? 'loading' : 'idle'}
+                    loadingText={to('waSending')}
+                    onClick={() => void sendWelcomeWhatsApp()}
+                    disabled={waState === 'sending' || waState === 'sent' || waState === 'confirmed'}
+                    className="w-full !bg-[#25D366] hover:!brightness-110 !text-white border-0 shadow-none disabled:!opacity-60"
+                  >
+                    {to('waSendBtn')}
+                  </LoadingButton>
+                </div>
+
+                {waState !== 'idle' && waState !== 'sending' ? (
+                  <div className="mt-4 space-y-3 chq-spring-in">
+                    <div className="bg-slate-800 rounded-lg px-3 py-2 flex items-center gap-2 border border-slate-700">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${stateDotClass}`} aria-hidden />
+                      <span className="text-sm text-slate-300">
+                        {waState === 'confirmed' ? (
+                          to('waConfirmed')
+                        ) : (
+                          <>
+                            <span aria-hidden>✓ </span>
+                            {to('waSent')}
+                          </>
+                        )}
+                        {waSentAt ? (
+                          <span className="text-slate-500 ms-2 tabular-nums">
+                            {new Date(waSentAt).toLocaleString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true,
+                            })}
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+
+                    <p className="text-sm font-medium text-slate-200">{to('waGateQuestion')}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setWaState('confirmed')}
+                        className="flex-1 min-w-[8rem] px-4 py-2.5 rounded-lg bg-teal-600 text-white text-sm font-medium btn-press chq-focus"
+                      >
+                        {to('waYes')} ✓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWaState('support')}
+                        className={`flex-1 min-w-[8rem] px-4 py-2.5 rounded-lg text-sm font-medium border bg-transparent btn-press chq-focus ${
+                          waState === 'support'
+                            ? 'border-amber-500/60 text-amber-400'
+                            : 'border-slate-700 text-slate-500'
+                        }`}
+                      >
+                        {to('waNo')}
+                      </button>
+                    </div>
+
+                    {waState === 'support' ? (
+                      <div className="rounded-xl p-4 bg-amber-950/20 border border-amber-800/30 chq-spring-in">
+                        <p className="text-amber-400 font-semibold text-sm">{to('waSupportTitle')}</p>
+                        <p className="text-slate-500 text-sm mt-2 leading-relaxed">{to('waSupportDesc')}</p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open('https://wa.me/+201220601410', '_blank', 'noopener,noreferrer')
+                          }
+                          className="mt-3 w-full py-2.5 rounded-lg bg-amber-900/20 border border-amber-700/30 text-amber-400 text-sm font-medium btn-press chq-focus"
+                        >
+                          {to('waSupportBtn')}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center py-6">
+            <div className="chq-spring-in">
+              <SuccessCheck size={64} color="#0D9488" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-100 mt-6 text-center">{to('completionTitle')}</h1>
+            <p className="text-sm text-slate-500 mt-2 text-center max-w-sm">{to('completionDesc')}</p>
+
+            <div className="grid grid-cols-3 gap-2 w-full mt-8">
+              <div
+                className="bg-slate-800 rounded-xl p-3 text-center border border-slate-700/80 chq-slide-up"
+                style={{ animationDelay: '0ms' }}
+              >
+                <p className="text-teal-400 text-xl font-medium tabular-nums">
+                  {animatedCount.toLocaleString('en-US')}
+                </p>
+                <p className="text-slate-500 text-xs mt-1">{to('statStudents')}</p>
+              </div>
+              <div
+                className="bg-slate-800 rounded-xl p-3 text-center border border-slate-700/80 chq-slide-up"
+                style={{ animationDelay: '100ms' }}
+              >
+                <p className="text-teal-400 text-xl font-medium tabular-nums">
+                  {groups.length.toLocaleString('en-US')}
+                </p>
+                <p className="text-slate-500 text-xs mt-1">{to('statGroups')}</p>
+              </div>
+              <div
+                className="bg-slate-800 rounded-xl p-3 text-center border border-slate-700/80 chq-slide-up"
+                style={{ animationDelay: '200ms' }}
+              >
+                <p className="text-teal-400 text-xl font-medium tabular-nums">100%</p>
+                <p className="text-slate-500 text-xs mt-1">{to('statComplete')}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoDashboard}
+              className="mt-10 w-full py-3 rounded-xl bg-teal-600 text-white text-sm font-semibold btn-press chq-focus"
+            >
+              {to('goToDashboard')} ←
+            </button>
+          </div>
+        )}
+      </main>
+
+      {step < 4 ? (
+        <footer className="shrink-0 px-4 pb-4 max-w-lg mx-auto w-full flex gap-3">
+          {step > 1 ? (
+            <button
+              type="button"
+              onClick={() => void handleFooterBack()}
+              disabled={advancing}
+              className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 text-sm font-medium btn-press chq-focus disabled:opacity-50"
+            >
               {to('back')}
             </button>
-          )}
-          <LoadingButton
-            type="button"
-            variant="primary"
-            state={advancing || isCompleting ? 'loading' : 'idle'}
-            loadingText={to('completing')}
-            onClick={() => void handleFooterNext()}
-            disabled={footerNextDisabled}
-            className={`btn-primary ${step > 1 ? 'flex-1' : 'w-full'}`}
-          >
-            {to('next')}
-          </LoadingButton>
-        </div>
-      )}
+          ) : null}
 
-      {!completed && step === 4 && (
-        <div className="px-4 pb-4 max-w-lg mx-auto w-full">
-          <button type="button" onClick={() => void handleFooterBack()} disabled={advancing} className="btn btn-ghost w-full btn-press chq-focus">
-            {to('back')}
-          </button>
-        </div>
-      )}
+          {step === 2 ? (
+            <button
+              type="button"
+              onClick={() => void handleStep2Skip()}
+              disabled={advancing}
+              className="py-2.5 px-3 rounded-lg border border-slate-700 bg-transparent text-slate-500 text-sm font-medium btn-press chq-focus disabled:opacity-50"
+            >
+              {to('skip')}
+            </button>
+          ) : null}
+
+          {step === 3 ? (
+            <button
+              type="button"
+              onClick={() => void handleStep3Next()}
+              disabled={step3NextDisabled}
+              className={`flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-colors btn-press chq-focus ${
+                waState === 'confirmed'
+                  ? 'bg-teal-600 border-teal-600 text-white'
+                  : 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed opacity-60'
+              }`}
+            >
+              {waState !== 'confirmed' ? <Lock className="w-4 h-4 shrink-0" aria-hidden /> : null}
+              <span>{waState === 'confirmed' ? to('nextToFinalStep') : to('waNextLocked')}</span>
+            </button>
+          ) : step === 1 && step1NextDisabled ? (
+            <button
+              type="button"
+              disabled
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed opacity-60"
+            >
+              {to('next')}
+            </button>
+          ) : step === 2 && step2NextDisabled ? (
+            <button
+              type="button"
+              disabled
+              className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed opacity-60"
+            >
+              {to('next')}
+            </button>
+          ) : (
+            <LoadingButton
+              type="button"
+              variant="primary"
+              state={advancing ? 'loading' : 'idle'}
+              loadingText={to('completing')}
+              onClick={() => {
+                if (step === 1) void handleStep1Next();
+                else if (step === 2) void handleStep2Next();
+              }}
+              disabled={false}
+              className={step > 1 ? 'flex-1' : 'w-full'}
+            >
+              {to('next')}
+            </LoadingButton>
+          )}
+        </footer>
+      ) : null}
     </div>
   );
 }
