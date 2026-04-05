@@ -10,7 +10,7 @@ setup('authenticate once for all tests', async ({ page }) => {
   await page.goto(`${base}/ar/login`)
   await page.getByPlaceholder('رقم الهاتف').fill(process.env.TEST_PHONE!)
   await page.getByPlaceholder('الرقم السري').fill(process.env.TEST_PIN!)
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click()
+  await page.getByRole('button', { name: 'إرسال' }).click()
   await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
 
   // Ensure directory exists
