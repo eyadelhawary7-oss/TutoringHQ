@@ -150,7 +150,7 @@ function UnderlineInput({
   const active = focused || value.length > 0;
 
   return (
-    <div className="group relative mb-8">
+    <div className="group relative mb-8 pt-6">
       <label
         htmlFor={id}
         style={SANS}
@@ -174,17 +174,25 @@ function UnderlineInput({
         placeholder={active ? placeholder : ''}
         inputMode={inputMode}
         dir={dir}
-        className="w-full border-0 border-b bg-transparent pt-6 pb-2 text-white outline-none transition-all duration-300 placeholder-slate-600"
+        className="w-full transition-all duration-300 placeholder-slate-600"
         style={{
           ...PLAYFAIR,
           fontSize: '15px',
-          borderBottomColor: focused ? '#0D9488' : value ? '#334155' : '#1e293b',
-          borderBottomWidth: focused ? '2px' : '1px',
+          width: '100%',
+          background: 'transparent',
+          backgroundColor: 'transparent',
+          border: 'none',
+          borderBottom: focused ? '2px solid #0D9488' : value ? '1px solid #334155' : '1px solid #1e293b',
+          padding: '3px 0 9px',
+          color: '#f8fafc',
+          outline: 'none',
+          WebkitTextFillColor: '#f8fafc',
+          WebkitBoxShadow: '0 0 0px 1000px #080D14 inset',
+          caretColor: '#f8fafc',
+          appearance: 'none',
+          boxSizing: 'border-box',
         }}
       />
-      {focused ? (
-        <div className="animate-[expandWidth_0.3s_ease-out] absolute end-0 bottom-0 start-0 h-[2px] origin-start rounded-full bg-gradient-to-r from-teal-600 to-teal-300" />
-      ) : null}
       {hint ? (
         <p className="mt-2 text-[11px] text-slate-600" style={SANS}>
           {hint}
@@ -602,17 +610,36 @@ export default function SignupPage() {
               <div style={{ textAlign: 'right' }}>
                 <div
                   style={{
-                    ...PLAYFAIR,
-                    fontSize: '26px',
-                    fontWeight: 700,
-                    color: '#f8fafc',
-                    lineHeight: '1',
-                    letterSpacing: '-0.3px',
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: '6px',
+                    justifyContent: 'flex-end',
                   }}
                 >
-                  {selectedPlan
-                    ? `${getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')} EGP`
-                    : '0 EGP'}
+                  <div
+                    style={{
+                      ...PLAYFAIR,
+                      fontSize: '26px',
+                      fontWeight: 700,
+                      color: '#f8fafc',
+                      lineHeight: '1',
+                      letterSpacing: '-0.3px',
+                    }}
+                  >
+                    {selectedPlan
+                      ? getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')
+                      : '0'}
+                  </div>
+                  <div
+                    style={{
+                      ...SANS,
+                      fontSize: '12px',
+                      color: '#64748b',
+                      marginBottom: '2px',
+                    }}
+                  >
+                    EGP
+                  </div>
                 </div>
                 <div
                   style={{
@@ -620,6 +647,7 @@ export default function SignupPage() {
                     fontSize: '10px',
                     color: '#334155',
                     marginTop: '4px',
+                    textAlign: 'right',
                   }}
                 >
                   {t('allTaxesIncluded')}
@@ -630,6 +658,7 @@ export default function SignupPage() {
                     fontSize: '10px',
                     color: '#334155',
                     marginTop: '2px',
+                    textAlign: 'right',
                   }}
                 >
                   {selectedPlan
@@ -837,7 +866,7 @@ export default function SignupPage() {
                   dir="ltr"
                 />
 
-                <div className="relative mb-8">
+                <div className="relative mb-8 pt-6">
                   <label
                     htmlFor="su-city"
                     style={SANS}
@@ -855,11 +884,21 @@ export default function SignupPage() {
                     data-chq-underline
                     value={form.city}
                     onChange={(e) => updateForm('city', e.target.value)}
-                    className="w-full cursor-pointer appearance-none border-0 border-b bg-transparent pt-6 pb-2 text-[14px] text-white outline-none transition-all duration-300"
+                    className="w-full cursor-pointer transition-all duration-300"
                     style={{
                       ...PLAYFAIR,
-                      borderBottomColor: form.city ? '#334155' : '#1e293b',
-                      borderBottomWidth: '1px',
+                      width: '100%',
+                      background: '#080D14',
+                      backgroundColor: '#080D14',
+                      border: 'none',
+                      borderBottom: form.city ? '1px solid #334155' : '1px solid #1e293b',
+                      padding: '3px 0 9px',
+                      color: form.city ? '#f8fafc' : '#475569',
+                      outline: 'none',
+                      WebkitTextFillColor: form.city ? '#f8fafc' : '#475569',
+                      appearance: 'none',
+                      cursor: 'pointer',
+                      boxSizing: 'border-box',
                     }}
                   >
                     <option value="" disabled hidden style={{ background: '#080D14' }}>
@@ -1052,17 +1091,6 @@ export default function SignupPage() {
                           </span>
                           <span className="text-[10px] text-teal-600" style={SANS}>
                             {tb('perStudentWeekly', { price: getPerStudentCost(plan, form.billingPeriod) })}
-                          </span>
-                        </div>
-                      ) : null}
-
-                      {plan.key === 'starter' ? (
-                        <div className="absolute top-5 end-0">
-                          <span
-                            className="text-[9px] font-semibold tracking-wider text-teal-400 uppercase"
-                            style={SANS}
-                          >
-                            {t('mostPopular')}
                           </span>
                         </div>
                       ) : null}

@@ -1285,40 +1285,6 @@ html.light [data-chq-signup] .text-slate-500 {
   color: #64748b !important;
 }
 
-[data-chq-signup] input:not([data-chq-underline]),
-[data-chq-signup] select:not([data-chq-underline]),
-[data-chq-signup] textarea:not([data-chq-underline]) {
-  background-color: rgba(30, 41, 59, 0.6) !important;
-  border-color: #475569 !important;
-  color: #f8fafc !important;
-}
-
-[data-chq-signup] input:not([data-chq-underline])::placeholder,
-[data-chq-signup] textarea:not([data-chq-underline])::placeholder {
-  color: #64748b !important;
-}
-
-[data-chq-signup] input:not([data-chq-underline]):focus,
-[data-chq-signup] select:not([data-chq-underline]):focus,
-[data-chq-signup] textarea:not([data-chq-underline]):focus {
-  border-color: #0D9488 !important;
-  outline: none !important;
-  box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.3) !important;
-}
-
-html.light [data-chq-signup] input:not([data-chq-underline]),
-html.light [data-chq-signup] select:not([data-chq-underline]),
-html.light [data-chq-signup] textarea:not([data-chq-underline]) {
-  background-color: rgba(30, 41, 59, 0.6) !important;
-  border-color: #475569 !important;
-  color: #f8fafc !important;
-}
-
-html.light [data-chq-signup] input:not([data-chq-underline])::placeholder,
-html.light [data-chq-signup] textarea:not([data-chq-underline])::placeholder {
-  color: #64748b !important;
-}
-
 [data-chq-signup] {
   background-color: #080D14 !important;
   min-height: 100vh;
@@ -1334,18 +1300,34 @@ html.light [data-chq-signup] {
   border-color: rgba(71, 85, 105, 0.6) !important;
 }
 
-[data-chq-signup] [data-chq-underline],
-html.light [data-chq-signup] [data-chq-underline] {
-  color: #f8fafc !important;
-  -webkit-text-fill-color: #f8fafc !important;
+[data-chq-signup] input,
+[data-chq-signup] textarea,
+html.light [data-chq-signup] input,
+html.light [data-chq-signup] textarea {
   background: transparent !important;
   background-color: transparent !important;
+  -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
+  box-shadow: 0 0 0px 1000px #080d14 inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  color: #f8fafc !important;
+  border-radius: 0 !important;
 }
 
-[data-chq-signup] [data-chq-underline]::placeholder,
-html.light [data-chq-signup] [data-chq-underline]::placeholder {
-  color: #475569 !important;
+[data-chq-signup] select,
+html.light [data-chq-signup] select {
+  background: #080d14 !important;
+  background-color: #080d14 !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+[data-chq-signup] input::placeholder,
+[data-chq-signup] textarea::placeholder,
+html.light [data-chq-signup] input::placeholder,
+html.light [data-chq-signup] textarea::placeholder {
   -webkit-text-fill-color: #475569 !important;
+  color: #475569 !important;
   opacity: 1 !important;
 }
 
@@ -1357,12 +1339,6 @@ html.light [data-chq-signup] [data-chq-underline]:-webkit-autofill {
   -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
   background-color: #080d14 !important;
   caret-color: #f8fafc;
-}
-
-[data-chq-signup] select[data-chq-underline],
-html.light [data-chq-signup] select[data-chq-underline] {
-  color: #f8fafc !important;
-  -webkit-text-fill-color: #f8fafc !important;
 }
 
 @keyframes breathe {

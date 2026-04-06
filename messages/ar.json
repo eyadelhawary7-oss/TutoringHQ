@@ -4550,7 +4550,7 @@
     "month": "شهر",
     "billedLabel": "إجمالي الدفعة",
     "totalDue": "المبلغ المستحق",
-    "thenMonthly": "ثم {price} ج.م شهرياً",
+    "thenMonthly": "يتجدد بـ {price} EGP شهرياً",
     "plan": "الخطة",
     "errorGeneric": "حدث خطأ، يرجى المحاولة مرة أخرى",
     "cityLabel": "المدينة",
@@ -4578,7 +4578,7 @@
     "serviceFee": "رسوم الخدمة 6%",
     "stampDuty": "ضريبة الدمغة 0.4%",
     "included": "مشمول",
-    "allTaxesIncluded": "EGP · شامل جميع الضرائب",
+    "allTaxesIncluded": "شامل جميع الضرائب",
     "periodLabel": "الفترة",
     "studentsLabel": "الطلاب",
     "authNote": "بالتأكيد تفوّض CenterHQ بخصم {amount} EGP {period} تلقائياً"
