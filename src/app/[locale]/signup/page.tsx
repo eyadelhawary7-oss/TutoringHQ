@@ -26,6 +26,8 @@ const SIGNUP_PLANS = SIGNUP_PLAN_ORDER.map((value) => {
     nameAr: p.arabicName,
     nameEn: p.englishName,
     limit: p.weeklyStudentLimit ?? 0,
+    student_limit: p.weeklyStudentLimit ?? 0,
+    all_in_price: p.quarterlyAllIn,
     custom: value === 'top_centers',
   };
 });
@@ -36,10 +38,20 @@ function display99Price(price: number): number {
   return price - 1;
 }
 
+const getPerStudentWeeklyCost = (monthlyPrice: number, studentLimit: number): string => {
+  if (!studentLimit || studentLimit <= 0) return '';
+  const weeklyTotal = monthlyPrice / 4.33;
+  const perStudent = weeklyTotal / studentLimit;
+  return perStudent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 const BILLING_PERIODS: BillingPeriod[] = ['monthly', 'quarterly', 'annual'];
 
-const inputClass =
-  'w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-600/50';
+const inputFieldClass =
+  'w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30 transition-colors';
+
+const selectFieldClass =
+  'w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-teal-500 appearance-none cursor-pointer';
 
 export default function SignupPage() {
   const t = useTranslations('signup');
@@ -125,7 +137,7 @@ export default function SignupPage() {
     return (
       <div
         data-chq-signup
-        className="flex min-h-screen flex-col items-center justify-center bg-[#080D14] px-4 py-12 font-['Cairo',sans-serif]"
+        className="flex min-h-screen flex-col items-center justify-center bg-[#080D14] p-4 py-10 font-['Cairo',sans-serif]"
       >
         <div className="w-full max-w-sm text-center">
           <div className="rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-xl">
@@ -176,7 +188,7 @@ export default function SignupPage() {
   return (
     <div
       data-chq-signup
-      className="relative flex min-h-screen flex-col items-center justify-center bg-[#080D14] px-4 py-12 font-['Cairo',sans-serif]"
+      className="relative flex min-h-screen flex-col items-center justify-center bg-[#080D14] p-4 py-10 font-['Cairo',sans-serif]"
     >
       <div className="absolute end-4 top-4">
         <button
@@ -190,14 +202,14 @@ export default function SignupPage() {
         </button>
       </div>
 
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-sm font-bold text-white">CH</div>
           <h1 className="text-xl font-bold text-white">CenterHQ</h1>
           <p className="mt-1 text-sm text-slate-400">{t('title')}</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
+        <div className="w-full max-w-md rounded-3xl border border-slate-700/60 bg-slate-900/80 p-6 shadow-2xl backdrop-blur">
           {error ? (
             <div className="mb-4 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2.5 text-sm font-medium text-red-300">{error}</div>
           ) : null}
@@ -213,7 +225,7 @@ export default function SignupPage() {
                 value={formData.centerName}
                 onChange={(e) => setFormData((f) => ({ ...f, centerName: e.target.value }))}
                 placeholder={t('centerNamePlaceholder')}
-                className={inputClass}
+                className={inputFieldClass}
                 required
               />
             </div>
@@ -228,7 +240,7 @@ export default function SignupPage() {
                 value={formData.ownerName}
                 onChange={(e) => setFormData((f) => ({ ...f, ownerName: e.target.value }))}
                 placeholder={t('ownerNamePlaceholder')}
-                className={inputClass}
+                className={inputFieldClass}
                 required
               />
             </div>
@@ -244,7 +256,7 @@ export default function SignupPage() {
                 value={formData.phone}
                 onChange={(e) => setFormData((f) => ({ ...f, phone: e.target.value }))}
                 placeholder={t('phonePlaceholder')}
-                className={inputClass}
+                className={inputFieldClass}
                 dir="ltr"
                 required
               />
@@ -260,7 +272,7 @@ export default function SignupPage() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData((f) => ({ ...f, email: e.target.value }))}
-                className={inputClass}
+                className={inputFieldClass}
               />
             </div>
 
@@ -273,7 +285,7 @@ export default function SignupPage() {
                 value={formData.city}
                 onChange={(e) => setFormData((f) => ({ ...f, city: e.target.value }))}
                 required
-                className={inputClass}
+                className={selectFieldClass}
               >
                 <option value="">{t('selectCity')}</option>
                 <option value="Cairo">القاهرة - Cairo</option>
@@ -381,7 +393,19 @@ export default function SignupPage() {
                         </div>
                       </div>
                       {!plan.custom ? (
-                        <p className="mt-2 !text-slate-500 text-xs">{getBillingLabel(plan.value)}</p>
+                        <>
+                          <p className="mt-2 !text-slate-500 text-xs">{getBillingLabel(plan.value)}</p>
+                          {plan.student_limit > 0 ? (
+                            <div className="mt-0.5 text-xs text-teal-500/70">
+                              {tb('perStudentWeekly', {
+                                price: getPerStudentWeeklyCost(
+                                  display99Price(Number(plan.all_in_price)),
+                                  plan.student_limit,
+                                ),
+                              })}
+                            </div>
+                          ) : null}
+                        </>
                       ) : (
                         <p className="mt-2 text-xs font-medium text-amber-400/90">{t('contactWhatsApp')}</p>
                       )}
@@ -424,7 +448,7 @@ export default function SignupPage() {
                     }
                   }}
                   placeholder={t('referralPlaceholder')}
-                  className={`${inputClass} uppercase`}
+                  className={`${inputFieldClass} uppercase`}
                   dir="ltr"
                 />
                 {referralValidation === 'valid' ? (
@@ -455,7 +479,7 @@ export default function SignupPage() {
                 onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
                 placeholder={t('notesPlaceholder')}
                 rows={2}
-                className={inputClass}
+                className={inputFieldClass}
               />
             </div>
 
