@@ -9,18 +9,19 @@ import { Globe } from 'lucide-react';
 const TOP_CENTERS_WHATSAPP =
   'https://wa.me/201220601410?text=I%20am%20interested%20in%20the%20TOP%20CENTERS%20plan';
 
-const CITIES = [
-  { id: 'cairo', ar: 'القاهرة', en: 'Cairo', emoji: '🏙️' },
-  { id: 'giza', ar: 'الجيزة', en: 'Giza', emoji: '🏛️' },
-  { id: 'alexandria', ar: 'الإسكندرية', en: 'Alexandria', emoji: '🌊' },
-  { id: 'sixth_october', ar: '6 أكتوبر', en: '6th October', emoji: '🏘️' },
-  { id: 'sheikh_zayed', ar: 'الشيخ زايد', en: 'Sheikh Zayed', emoji: '✨' },
-  { id: 'nasr_city', ar: 'مدينة نصر', en: 'Nasr City', emoji: '🌆' },
-  { id: 'new_cairo', ar: 'القاهرة الجديدة', en: 'New Cairo', emoji: '🏗️' },
-  { id: 'heliopolis', ar: 'مصر الجديدة', en: 'Heliopolis', emoji: '🌿' },
-  { id: 'maadi', ar: 'المعادي', en: 'Maadi', emoji: '🌳' },
-  { id: 'other', ar: 'أخرى', en: 'Other', emoji: '📍' },
-] as const;
+/** Bilingual labels for payment summary (must match select option values). */
+const CITY_SUMMARY_LABEL: Record<string, string> = {
+  cairo: 'القاهرة — Cairo',
+  giza: 'الجيزة — Giza',
+  alexandria: 'الإسكندرية — Alexandria',
+  sixth_october: '6 أكتوبر — 6th October',
+  sheikh_zayed: 'الشيخ زايد — Sheikh Zayed',
+  nasr_city: 'مدينة نصر — Nasr City',
+  new_cairo: 'القاهرة الجديدة — New Cairo',
+  heliopolis: 'مصر الجديدة — Heliopolis',
+  maadi: 'المعادي — Maadi',
+  other: 'أخرى — Other',
+};
 
 const SIGNUP_PLANS = [
   {
@@ -137,7 +138,7 @@ function FloatingInput({
       <label
         htmlFor={id}
         className={`pointer-events-none absolute z-10 transition-all duration-200 start-4 ${
-          active ? 'top-2 text-[10px] font-medium text-teal-400' : 'top-4 text-sm text-slate-500'
+          active ? 'top-2 text-[9px] font-medium text-teal-400' : 'top-4 text-[13px] text-slate-500'
         }`}
       >
         {label}
@@ -152,13 +153,13 @@ function FloatingInput({
         placeholder={active ? placeholder : ''}
         inputMode={inputMode}
         dir={dir}
-        className={`w-full rounded-2xl border bg-slate-900 px-4 pb-3 pt-7 text-sm text-white transition-all duration-200 outline-none ${
+        className={`w-full rounded-2xl border bg-slate-900 px-4 pb-3 pt-7 text-[13px] text-white transition-all duration-200 outline-none ${
           focused
             ? 'border-teal-500 shadow-[0_0_0_3px_rgba(13,148,136,0.15)]'
             : 'border-slate-700/60 hover:border-slate-600'
         }`}
       />
-      {hint ? <p className="mt-1.5 px-1 text-xs text-slate-500">{hint}</p> : null}
+      {hint ? <p className="mt-1.5 px-1 text-[11px] text-slate-500">{hint}</p> : null}
     </div>
   );
 }
@@ -264,11 +265,7 @@ export default function SignupPage() {
   const progressPct = stage === 'info' ? 33 : stage === 'plan' ? 66 : 100;
   const slideAnim = direction === 'forward' ? 'slideIn' : 'slideInBack';
 
-  const cityLabel = (id: string) => {
-    const c = CITIES.find((x) => x.id === id);
-    if (!c) return id;
-    return locale === 'ar' ? c.ar : c.en;
-  };
+  const cityLabel = (id: string) => CITY_SUMMARY_LABEL[id] ?? id;
 
   if (stage === 'success') {
     return (
@@ -290,9 +287,9 @@ export default function SignupPage() {
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <h2 className="mb-3 text-2xl font-bold text-white">{t('successTitle')}</h2>
-        <p className="max-w-sm leading-relaxed text-slate-400">{t('successDesc')}</p>
-        <Link href="/login" className="mt-8 text-sm font-semibold text-teal-400 hover:underline">
+        <h2 className="mb-3 text-xl font-bold text-white">{t('successTitle')}</h2>
+        <p className="max-w-sm text-xs leading-relaxed text-slate-400">{t('successDesc')}</p>
+        <Link href="/login" className="mt-8 text-[12px] font-semibold text-teal-400 hover:underline">
           {t('login')}
         </Link>
       </div>
@@ -322,7 +319,7 @@ export default function SignupPage() {
           type="button"
           onClick={handleLocaleToggle}
           disabled={isPending}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:text-white"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-[10px] font-medium text-slate-300 transition-colors hover:text-white"
         >
           <Globe size={13} />
           <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
@@ -335,7 +332,7 @@ export default function SignupPage() {
             CH
           </div>
           <div className="text-lg font-bold text-white">CenterHQ</div>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-xs text-slate-400">
             {stage === 'info'
               ? t('headlineInfo')
               : stage === 'plan'
@@ -345,7 +342,7 @@ export default function SignupPage() {
         </div>
 
         {error ? (
-          <div className="mb-4 rounded-2xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-300">
+          <div className="mb-4 rounded-2xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-[13px] font-medium text-red-300">
             {error}
           </div>
         ) : null}
@@ -361,7 +358,7 @@ export default function SignupPage() {
         >
           {stage === 'info' ? (
             <>
-              <h1 className="mb-8 text-center text-2xl font-bold text-white">{t('headlineInfo')}</h1>
+              <h1 className="mb-8 text-center text-xl font-bold text-white">{t('headlineInfo')}</h1>
               <FloatingInput
                 id="su-center"
                 label={t('centerName')}
@@ -396,38 +393,51 @@ export default function SignupPage() {
                 dir="ltr"
               />
 
-              <div className="mb-5">
-                <label className="mb-3 block text-sm text-slate-400">{t('city')}</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CITIES.map((city) => (
-                    <button
-                      key={city.id}
-                      type="button"
-                      onClick={() => updateForm('city', city.id)}
-                      className={`flex items-center gap-2.5 rounded-2xl border p-3 text-sm font-medium transition-all duration-200 ${
-                        form.city === city.id
-                          ? 'border-teal-500 bg-teal-950/40 text-white shadow-[0_0_0_3px_rgba(13,148,136,0.15)]'
-                          : 'border-slate-700/60 bg-slate-900 text-slate-400 hover:border-slate-500 hover:text-white'
-                      }`}
-                    >
-                      <span className="text-lg">{city.emoji}</span>
-                      <span>{locale === 'ar' ? city.ar : city.en}</span>
-                      {form.city === city.id ? (
-                        <svg
-                          className="ms-auto h-3.5 w-3.5 text-teal-400"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      ) : null}
-                    </button>
-                  ))}
+              <div className="relative mb-5">
+                <label
+                  htmlFor="su-city"
+                  className={`pointer-events-none absolute right-4 z-10 transition-all duration-200 ${
+                    form.city ? 'top-2 text-[9px] font-medium text-teal-400' : 'top-4 text-[13px] text-slate-500'
+                  }`}
+                >
+                  {t('city')}
+                </label>
+                <select
+                  id="su-city"
+                  value={form.city}
+                  onChange={(e) => updateForm('city', e.target.value)}
+                  className={`w-full cursor-pointer appearance-none rounded-2xl border border-slate-700/60 bg-slate-900 px-4 pt-7 pb-3 ps-10 text-[13px] transition-all duration-200 outline-none hover:border-slate-600 ${
+                    form.city ? 'text-white' : 'text-slate-500'
+                  }`}
+                >
+                  <option value="" disabled hidden>
+                    {t('selectCity')}
+                  </option>
+                  <option value="cairo">القاهرة — Cairo</option>
+                  <option value="giza">الجيزة — Giza</option>
+                  <option value="alexandria">الإسكندرية — Alexandria</option>
+                  <option value="sixth_october">6 أكتوبر — 6th October</option>
+                  <option value="sheikh_zayed">الشيخ زايد — Sheikh Zayed</option>
+                  <option value="nasr_city">مدينة نصر — Nasr City</option>
+                  <option value="new_cairo">القاهرة الجديدة — New Cairo</option>
+                  <option value="heliopolis">مصر الجديدة — Heliopolis</option>
+                  <option value="maadi">المعادي — Maadi</option>
+                  <option value="other">أخرى — Other</option>
+                </select>
+                <div className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#64748b"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </div>
               </div>
 
@@ -438,7 +448,7 @@ export default function SignupPage() {
                   setStage('plan');
                 }}
                 disabled={!form.centerName || !form.phone || !form.city}
-                className="w-full rounded-2xl bg-teal-600 py-4 text-base font-semibold text-white shadow-[0_4px_24px_rgba(13,148,136,0.3)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                className="w-full rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_24px_rgba(13,148,136,0.3)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {t('continueToPlans')} →
               </button>
@@ -447,8 +457,8 @@ export default function SignupPage() {
 
           {stage === 'plan' ? (
             <>
-              <h1 className="mb-2 text-center text-2xl font-bold text-white">{t('headlinePlan')}</h1>
-              <p className="mb-8 text-center text-sm text-slate-400">{t('subtitlePlan')}</p>
+              <h1 className="mb-2 text-center text-xl font-bold text-white">{t('headlinePlan')}</h1>
+              <p className="mb-8 text-center text-xs text-slate-400">{t('subtitlePlan')}</p>
 
               <div className="relative mb-8 flex rounded-2xl border border-slate-700/60 bg-slate-900 p-1">
                 <div
@@ -465,12 +475,12 @@ export default function SignupPage() {
                     key={p}
                     type="button"
                     onClick={() => updateForm('billingPeriod', p)}
-                    className={`relative z-10 flex-1 rounded-xl py-2.5 text-center text-xs font-semibold transition-colors duration-300 ${
+                    className={`relative z-10 flex-1 rounded-xl py-2.5 text-center text-[11px] font-semibold transition-colors duration-300 ${
                       form.billingPeriod === p ? 'text-white' : 'text-slate-400'
                     }`}
                   >
                     <div>{tb(`period.${p}.label` as 'billing.period.monthly.label')}</div>
-                    <div className="mt-0.5 text-[10px] font-normal opacity-80">
+                    <div className="mt-0.5 text-[9px] font-normal opacity-80">
                       {p === 'monthly' ? t('monthlyPremiumMark') : null}
                       {p === 'quarterly' ? tb('period.quarterly.recommended') : null}
                       {p === 'annual' ? tb('period.annual.free') : null}
@@ -484,14 +494,14 @@ export default function SignupPage() {
                   key={plan.key}
                   type="button"
                   onClick={() => updateForm('plan', plan.key)}
-                  className={`relative mb-3 w-full overflow-hidden rounded-3xl border-2 p-5 text-start transition-all duration-300 ${
+                  className={`relative mb-2 w-full overflow-hidden rounded-3xl border-2 p-4 text-start transition-all duration-300 ${
                     form.plan === plan.key
                       ? 'border-teal-500 bg-gradient-to-br from-teal-950/60 to-slate-900 shadow-[0_0_30px_rgba(13,148,136,0.2)]'
                       : 'border-slate-700/40 bg-slate-900/60 hover:border-slate-600'
                   }`}
                 >
                   {plan.key === 'starter' ? (
-                    <div className="absolute top-4 start-4 rounded-full bg-teal-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                    <div className="absolute top-3 right-3 rounded-full bg-teal-600 px-2 py-0.5 text-[9px] font-bold text-white">
                       {t('mostPopular')}
                     </div>
                   ) : null}
@@ -506,26 +516,26 @@ export default function SignupPage() {
                         {form.plan === plan.key ? <div className="h-2 w-2 rounded-full bg-white" /> : null}
                       </div>
                       <div>
-                        <div className="text-base font-bold text-white">
+                        <div className="text-[13px] font-bold text-white">
                           {locale === 'ar' ? plan.arabicName : plan.name}
                         </div>
-                        <div className="mt-0.5 text-xs text-slate-500">
+                        <div className="mt-0.5 text-[11px] text-slate-500">
                           {t('upTo')} {plan.students.toLocaleString('en-US')} {t('studentsPerWeek')}
                         </div>
                       </div>
                     </div>
                     <div className="shrink-0 text-end ms-4">
-                      <div className="text-xl font-black text-white">
+                      <div className="text-lg font-black text-white">
                         {getDisplayPrice(plan, form.billingPeriod).toLocaleString('en-US')}
                       </div>
-                      <div className="text-[10px] text-slate-500">
+                      <div className="text-[9px] text-slate-500">
                         {tc('egp')} / {t('month')}
                       </div>
                     </div>
                   </div>
 
                   {form.plan === plan.key ? (
-                    <div className="mt-3 flex items-center gap-4 border-t border-teal-900/60 pt-3 text-xs text-slate-400">
+                    <div className="mt-3 flex items-center gap-4 border-t border-teal-900/60 pt-3 text-[11px] text-slate-400">
                       <span>
                         {getBilledAmount(plan, form.billingPeriod).toLocaleString('en-US')} {tc('egp')}{' '}
                         {t('billedLabel')}
@@ -541,14 +551,14 @@ export default function SignupPage() {
               <button
                 type="button"
                 onClick={() => window.open(TOP_CENTERS_WHATSAPP, '_blank')}
-                className="mb-3 w-full rounded-3xl border-2 border-amber-600/40 bg-amber-950/20 p-5 text-start transition-all duration-300 hover:border-amber-500/60"
+                className="mb-2 w-full rounded-3xl border-2 border-amber-600/40 bg-amber-950/20 p-4 text-start transition-all duration-300 hover:border-amber-500/60"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-white">{t('topCentersTitle')}</div>
-                    <div className="mt-0.5 text-xs text-slate-500">{t('topCentersDesc')}</div>
+                    <div className="text-[13px] font-bold text-white">{t('topCentersTitle')}</div>
+                    <div className="mt-0.5 text-[11px] text-slate-500">{t('topCentersDesc')}</div>
                   </div>
-                  <div className="text-sm font-semibold text-amber-400">{t('customPricing')}</div>
+                  <div className="text-[13px] font-semibold text-amber-400">{t('customPricing')}</div>
                 </div>
               </button>
 
@@ -556,7 +566,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setShowReferral(true)}
-                  className="mb-6 block text-xs text-slate-500 underline decoration-transparent underline-offset-2 transition-colors hover:text-teal-400 hover:decoration-teal-400"
+                  className="mb-6 block text-[11px] text-slate-500 underline decoration-transparent underline-offset-2 transition-colors hover:text-teal-400 hover:decoration-teal-400"
                 >
                   {t('haveReferralCode')}
                 </button>
@@ -580,7 +590,7 @@ export default function SignupPage() {
                     setDirection('back');
                     setStage('info');
                   }}
-                  className="flex-1 rounded-2xl border border-slate-700 py-4 text-sm font-semibold text-slate-400 transition-all duration-200 hover:border-slate-500 hover:text-white"
+                  className="flex-1 rounded-2xl border border-slate-700 py-3.5 text-[14px] font-semibold text-slate-400 transition-all duration-200 hover:border-slate-500 hover:text-white"
                 >
                   {tc('back')}
                 </button>
@@ -591,7 +601,7 @@ export default function SignupPage() {
                     setStage('payment');
                   }}
                   disabled={!form.plan || !form.ownerName.trim()}
-                  className="flex-[2] rounded-2xl bg-teal-600 py-4 font-semibold text-white shadow-[0_4px_24px_rgba(13,148,136,0.3)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:opacity-40"
+                  className="flex-[2] rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_24px_rgba(13,148,136,0.3)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:opacity-40"
                 >
                   {t('reviewOrder')} →
                 </button>
@@ -607,12 +617,12 @@ export default function SignupPage() {
                   setDirection('back');
                   setStage('plan');
                 }}
-                className="mb-6 flex items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-white"
+                className="mb-6 flex items-center gap-1.5 text-[13px] text-slate-500 transition-colors hover:text-white"
               >
                 ← {tc('back')}
               </button>
 
-              <h1 className="mb-6 text-center text-2xl font-bold text-white">{t('headlinePayment')}</h1>
+              <h1 className="mb-6 text-center text-xl font-bold text-white">{t('headlinePayment')}</h1>
 
               <div className="mb-6 rounded-3xl border border-slate-700/60 bg-slate-900 p-5">
                 <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
@@ -623,26 +633,26 @@ export default function SignupPage() {
                     </svg>
                   </div>
                   <div>
-                    <div className="font-bold text-white">{form.centerName}</div>
-                    <div className="text-xs text-slate-500">{cityLabel(form.city)}</div>
+                    <div className="text-[13px] font-bold text-white">{form.centerName}</div>
+                    <div className="text-[11px] text-slate-500">{cityLabel(form.city)}</div>
                   </div>
                 </div>
 
                 <div className="space-y-2 border-b border-slate-800 py-4">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-[13px]">
                     <span className="text-slate-400">{t('plan')}</span>
                     <span className="font-medium text-white">
                       {selectedPlan ? (locale === 'ar' ? selectedPlan.arabicName : selectedPlan.name) : ''}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-[13px]">
                     <span className="text-slate-400">{tb('changePeriod')}</span>
                     <span className="font-medium text-white">
                       {tb(`period.${form.billingPeriod}.label` as 'billing.period.monthly.label')}
                     </span>
                   </div>
                   {form.referralCode ? (
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-[13px]">
                       <span className="text-slate-400">{t('referralCode')}</span>
                       <span className="font-mono font-medium text-teal-400">{form.referralCode}</span>
                     </div>
@@ -651,12 +661,12 @@ export default function SignupPage() {
 
                 <div className="pt-4">
                   <div className="flex items-end justify-between">
-                    <span className="text-sm text-slate-400">{t('totalDue')}</span>
+                    <span className="text-[13px] text-slate-400">{t('totalDue')}</span>
                     <div className="text-end">
-                      <div className="text-2xl font-black text-white">
+                      <div className="text-xl font-black text-white">
                         {getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')} {tc('egp')}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-[11px] text-slate-500">
                         {selectedPlan
                           ? t('thenMonthly', {
                               price: getDisplayPrice(selectedPlan, form.billingPeriod).toLocaleString('en-US'),
@@ -698,14 +708,14 @@ export default function SignupPage() {
                     </svg>
                   ) : null}
                 </span>
-                <span className="text-sm leading-relaxed text-slate-400">{t('terms')}</span>
+                <span className="text-[13px] leading-relaxed text-slate-400">{t('terms')}</span>
               </label>
 
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={!form.agreeTerms || loading}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-teal-600 py-4 text-base font-bold text-white shadow-[0_8px_32px_rgba(13,148,136,0.4)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-teal-600 py-3.5 text-[14px] font-bold text-white shadow-[0_8px_32px_rgba(13,148,136,0.4)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -720,7 +730,7 @@ export default function SignupPage() {
                 )}
               </button>
 
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-slate-600">
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-600">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="1" y="11" width="22" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -731,7 +741,7 @@ export default function SignupPage() {
           ) : null}
         </div>
 
-        <p className="mt-8 text-center text-sm text-slate-400">
+        <p className="mt-8 text-center text-[12px] text-slate-400">
           {t('hasAccount')}{' '}
           <Link href="/login" className="font-semibold text-teal-400 hover:underline">
             {t('login')}
