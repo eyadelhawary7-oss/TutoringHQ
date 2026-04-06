@@ -1174,14 +1174,14 @@
     "billedAnnually": "يُدفع سنوياً",
     "nav": {
       "login": "تسجيل الدخول",
-      "signup": "ابدأ مجاناً"
+      "signup": "ابدأ الآن"
     },
     "hero": {
       "badge": "عرض المؤسسين الأوائل، خصم 40%",
       "headline_1": "أدِر سنترك",
       "headline_2": "بذكاء",
       "subheadline": "منصة إدارة متكاملة للسناتر الخاصة. حضور QR، مدفوعات مصرية، واتساب تلقائي، وتقارير فورية، كل شيء في مكان واحد.",
-      "cta_primary": "ابدأ مجاناً",
+      "cta_primary": "ابدأ الآن",
       "cta_secondary": "شاهد كيف يعمل",
       "demo_attendance": "محمد أحمد ✓"
     },
@@ -1227,9 +1227,9 @@
     "submitRequest": "إرسال طلب",
     "submitting": "Submitting",
     "terms": "Terms",
-    "navSignup": "ابدأ مجاناً",
+    "navSignup": "ابدأ الآن",
     "heroSub": "من تسجيل الحضور بـ QR إلى تحصيل الرسوم، كل شيء في مكان واحد",
-    "heroCta": "ابدأ مجاناً",
+    "heroCta": "ابدأ الآن",
     "watchDemo": "شاهد كيف يعمل",
     "featuresTitle": "كل ما تحتاجه لإدارة سنترك",
     "pricingTitle": "أسعار شفافة، بدون مفاجآت",
@@ -1280,7 +1280,7 @@
       "proPrice": "٨٬٠٠٠ ج.م/شهر",
       "proStudents": "حتى ٥٠٠ طالب",
       "pricingCta": "عرض جميع الخطط والمقارنة",
-      "finalCtaButton": "ابدأ مجاناً",
+      "finalCtaButton": "ابدأ الآن",
       "footerTagline": "CenterHQ، منصة إدارة السناتر التعليمية",
       "footerEhgi": "An EHG Intelligence Product",
       "footerSupportLabel": "دعم واتساب",

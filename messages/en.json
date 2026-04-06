@@ -4211,14 +4211,14 @@
     "billedAnnually": "billed annually",
     "nav": {
       "login": "Login",
-      "signup": "Get started free"
+      "signup": "Get started"
     },
     "hero": {
       "badge": "Founders Offer, 40% Off",
       "headline_1": "Run your center",
       "headline_2": "smarter",
       "subheadline": "The all-in-one management platform built for Egyptian tutoring centers. QR attendance, Egyptian payments, WhatsApp automation, and instant reports.",
-      "cta_primary": "Get started free",
+      "cta_primary": "Get started",
       "cta_secondary": "See how it works",
       "demo_attendance": "Mohamed Ahmed ✓"
     },
@@ -4264,9 +4264,9 @@
     "submitRequest": "Submit Request",
     "submitting": "Submitting",
     "terms": "Terms",
-    "navSignup": "Get started free",
+    "navSignup": "Get started",
     "heroSub": "From QR attendance to fee collection, everything in one place",
-    "heroCta": "Get started free",
+    "heroCta": "Get started",
     "watchDemo": "See how it works",
     "featuresTitle": "Everything you need to run your center",
     "pricingTitle": "Transparent pricing, no surprises",
@@ -4317,7 +4317,7 @@
       "proPrice": "EGP 8,000/mo",
       "proStudents": "Up to 500 students",
       "pricingCta": "View all plans & comparison",
-      "finalCtaButton": "Get started free",
+      "finalCtaButton": "Get started",
       "footerTagline": "CenterHQ, tutoring center management platform",
       "footerEhgi": "An EHG Intelligence Product",
       "footerSupportLabel": "WhatsApp support",
