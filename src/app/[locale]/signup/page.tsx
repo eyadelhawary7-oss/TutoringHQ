@@ -209,7 +209,10 @@ export default function SignupPage() {
           <p className="mt-1 text-sm text-slate-400">{t('title')}</p>
         </div>
 
-        <div className="w-full max-w-md rounded-3xl border border-slate-700/60 bg-slate-900/80 p-6 shadow-2xl backdrop-blur">
+        <div
+          data-form-card
+          className="w-full max-w-md rounded-3xl border border-slate-700/60 bg-slate-900/80 p-6 shadow-2xl backdrop-blur"
+        >
           {error ? (
             <div className="mb-4 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2.5 text-sm font-medium text-red-300">{error}</div>
           ) : null}

@@ -1285,6 +1285,55 @@ html.light [data-chq-signup] .text-slate-500 {
   color: #64748b !important;
 }
 
+[data-chq-signup] input,
+[data-chq-signup] select,
+[data-chq-signup] textarea {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
+
+[data-chq-signup] input::placeholder,
+[data-chq-signup] textarea::placeholder {
+  color: #64748b !important;
+}
+
+[data-chq-signup] input:focus,
+[data-chq-signup] select:focus,
+[data-chq-signup] textarea:focus {
+  border-color: #0D9488 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.3) !important;
+}
+
+html.light [data-chq-signup] input,
+html.light [data-chq-signup] select,
+html.light [data-chq-signup] textarea {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
+
+html.light [data-chq-signup] input::placeholder,
+html.light [data-chq-signup] textarea::placeholder {
+  color: #64748b !important;
+}
+
+[data-chq-signup] {
+  background-color: #080D14 !important;
+  min-height: 100vh;
+}
+
+html.light [data-chq-signup] {
+  background-color: #080D14 !important;
+}
+
+[data-chq-signup] form,
+[data-chq-signup] [data-form-card] {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  border-color: rgba(71, 85, 105, 0.6) !important;
+}
+
 /* ── S6 Scanner ──────────────────────────────────────────── */
 @keyframes scan-pulse {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }
