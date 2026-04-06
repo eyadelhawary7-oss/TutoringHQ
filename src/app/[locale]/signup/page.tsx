@@ -9,6 +9,7 @@ import {
   PLANS,
   getPlanPrice,
   getPerStudentWeeklyCost,
+  getSignupDisplayMonthlyPrice,
   formatPrice,
   type BillingPeriod,
   type PlanKey,
@@ -32,6 +33,9 @@ const SIGNUP_PLANS = SIGNUP_PLAN_ORDER.map((value) => {
 });
 
 const BILLING_PERIODS: BillingPeriod[] = ['monthly', 'quarterly', 'annual'];
+
+const inputClass =
+  'w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-600/50';
 
 export default function SignupPage() {
   const t = useTranslations('signup');
@@ -98,39 +102,47 @@ export default function SignupPage() {
       } else {
         setError(data.error || 'Signup failed');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const getBillingLabel = (planKey: PlanKey) => {
+    const total = getPlanPrice(planKey, billingPeriod);
+    const amount = formatPrice(total);
+    if (billingPeriod === 'monthly') return tb('billedMonthlyLine', { amount });
+    if (billingPeriod === 'quarterly') return tb('billedQuarterlyLine', { amount });
+    return tb('billedAnnuallyLine', { amount });
+  };
+
   if (submitted) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: 'var(--gradient-hero)' }}>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#080D14] px-4 py-12 font-['Cairo',sans-serif]">
         <div className="w-full max-w-sm text-center">
-          <div className="rounded-2xl border border-white/10 p-8 shadow-xl" style={{ background: 'hsl(var(--card) / 0.95)', backdropFilter: 'blur(20px)' }}>
-            <CheckCircle size={56} className="mx-auto mb-4" style={{ color: 'hsl(var(--scanner-green))' }} />
-            <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">{t('requestSubmitted')}</h2>
-            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-4">{t('receivedRequest')}</p>
+          <div className="rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-xl">
+            <CheckCircle size={56} className="mx-auto mb-4 text-teal-500" />
+            <h2 className="mb-2 text-xl font-bold text-white">{t('requestSubmitted')}</h2>
+            <p className="mb-4 text-sm leading-relaxed text-slate-300">{t('receivedRequest')}</p>
 
-            <div className="rounded-lg p-4 mb-4 text-start border border-border" style={{ background: 'hsl(var(--accent) / 0.5)' }}>
-              <h3 className="font-semibold text-[var(--color-text-primary)] mb-3 text-center">{t('nextStepsTitle')}</h3>
-              <ol className="space-y-2 text-[var(--color-text-secondary)] text-sm">
+            <div className="mb-4 rounded-lg border border-slate-700 bg-slate-800/60 p-4 text-start">
+              <h3 className="mb-3 text-center font-semibold text-white">{t('nextStepsTitle')}</h3>
+              <ol className="space-y-2 text-sm text-slate-300">
                 <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style={{ background: 'hsl(var(--primary))' }}>1</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs text-white">1</span>
                   <span>{t('step1')}</span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style={{ background: 'hsl(var(--primary))' }}>2</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs text-white">2</span>
                   <span>{t('step2')}</span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style={{ background: 'hsl(var(--primary))' }}>3</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs text-white">3</span>
                   <span>{t('step3')}</span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style={{ background: 'hsl(var(--primary))' }}>4</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs text-white">4</span>
                   <span>{t('step4')}</span>
                 </li>
               </ol>
@@ -140,13 +152,12 @@ export default function SignupPage() {
               href={WHATSAPP_ADMIN}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 hover:underline text-sm"
-              style={{ color: 'hsl(var(--primary))' }}
+              className="inline-flex items-center gap-2 text-sm text-teal-400 hover:underline"
             >
               {t('contactUsWhatsApp')}
             </a>
 
-            <Link href="/" className="mt-4 block text-sm font-medium" style={{ color: 'hsl(var(--primary))' }}>
+            <Link href="/" className="mt-4 block text-sm font-medium text-teal-400 hover:underline">
               ← {tc('back')}
             </Link>
           </div>
@@ -155,22 +166,14 @@ export default function SignupPage() {
     );
   }
 
-  const getBillingLabel = (planKey: PlanKey) => {
-    const total = getPlanPrice(planKey, billingPeriod);
-    const amount = formatPrice(total);
-    if (billingPeriod === 'monthly') return tb('billedMonthlyLine', { amount });
-    if (billingPeriod === 'quarterly') return tb('billedQuarterlyLine', { amount });
-    return tb('billedAnnualLine', { amount });
-  };
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 font-['Cairo',sans-serif]" style={{ background: 'var(--gradient-hero)', fontFamily: "'Cairo', sans-serif" }}>
-      {/* Language toggle */}
-      <div className="absolute top-4 end-4">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#080D14] px-4 py-12 font-['Cairo',sans-serif]">
+      <div className="absolute end-4 top-4">
         <button
+          type="button"
           onClick={handleLocaleToggle}
           disabled={isPending}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 text-white/70 hover:text-white transition-colors"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:text-white"
         >
           <Globe size={13} />
           <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
@@ -178,81 +181,89 @@ export default function SignupPage() {
       </div>
 
       <div className="w-full max-w-lg">
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-xl mb-3 shadow-lg" style={{ background: 'hsl(var(--primary))' }}>CH</div>
-          <h1 className="text-xl font-black text-white">CenterHQ</h1>
-          <p className="text-white/50 text-sm mt-1">{t('title')}</p>
+        <div className="mb-6 flex flex-col items-center">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-sm font-bold text-white">CH</div>
+          <h1 className="text-xl font-bold text-white">CenterHQ</h1>
+          <p className="mt-1 text-sm text-slate-400">{t('title')}</p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 p-6 shadow-xl" style={{ background: 'hsl(var(--card) / 0.95)', backdropFilter: 'blur(20px)' }}>
-            {error && (
-            <div className="rounded-lg px-3 py-2.5 text-sm font-medium mb-4" style={{ background: 'hsl(var(--destructive) / 0.1)', color: 'hsl(var(--destructive))' }}>
-              {error}
-            </div>
-          )}
+        <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
+          {error ? (
+            <div className="mb-4 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2.5 text-sm font-medium text-red-300">{error}</div>
+          ) : null}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Center Name */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('centerName')}</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-center">
+                {t('centerName')}
+              </label>
               <input
+                id="signup-center"
                 type="text"
                 value={formData.centerName}
-                onChange={e => setFormData(f => ({ ...f, centerName: e.target.value }))}
+                onChange={(e) => setFormData((f) => ({ ...f, centerName: e.target.value }))}
                 placeholder={t('centerNamePlaceholder')}
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className={inputClass}
                 required
               />
             </div>
 
-            {/* Owner Name */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('ownerName')}</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-owner">
+                {t('ownerName')}
+              </label>
               <input
+                id="signup-owner"
                 type="text"
                 value={formData.ownerName}
-                onChange={e => setFormData(f => ({ ...f, ownerName: e.target.value }))}
+                onChange={(e) => setFormData((f) => ({ ...f, ownerName: e.target.value }))}
                 placeholder={t('ownerNamePlaceholder')}
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className={inputClass}
                 required
               />
             </div>
 
-            {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('phone')}</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-phone">
+                {t('phone')}
+              </label>
               <input
+                id="signup-phone"
                 type="tel"
                 inputMode="numeric"
                 value={formData.phone}
-                onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))}
-                placeholder="+20 1XXXXXXXXX"
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={(e) => setFormData((f) => ({ ...f, phone: e.target.value }))}
+                placeholder={t('phonePlaceholder')}
+                className={inputClass}
                 dir="ltr"
                 required
               />
-              <p className="text-[var(--color-text-secondary)] text-xs mt-1">{t('phoneHelper')}</p>
+              <p className="mt-1 text-xs text-slate-400">{t('phoneHelper')}</p>
             </div>
 
-            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('email')}</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-email">
+                {t('email')}
+              </label>
               <input
+                id="signup-email"
                 type="email"
                 value={formData.email}
-                onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={(e) => setFormData((f) => ({ ...f, email: e.target.value }))}
+                className={inputClass}
               />
             </div>
 
-            {/* City */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('city')}</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-city">
+                {t('city')}
+              </label>
               <select
+                id="signup-city"
                 value={formData.city}
-                onChange={e => setFormData(f => ({ ...f, city: e.target.value }))}
+                onChange={(e) => setFormData((f) => ({ ...f, city: e.target.value }))}
                 required
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className={inputClass}
               >
                 <option value="">{t('selectCity')}</option>
                 <option value="Cairo">القاهرة - Cairo</option>
@@ -266,109 +277,126 @@ export default function SignupPage() {
               </select>
             </div>
 
-            {/* Billing Period */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">{tb('changePeriod')}</label>
-              <div className="flex flex-wrap gap-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">{tb('changePeriod')}</label>
+              <div className="flex gap-1 rounded-xl bg-slate-800 p-1">
                 {BILLING_PERIODS.map((period) => (
                   <button
                     key={period}
                     type="button"
                     onClick={() => setBillingPeriod(period)}
-                    className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${billingPeriod === period ? 'text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
-                    style={billingPeriod === period ? { backgroundColor: '#0D9488' } : {}}
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                      billingPeriod === period ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
                   >
-                    {tb(`period.${period}`)}
-                    {period === 'quarterly' && (
-                      <span className="absolute -top-1.5 start-0 bg-amber-100 text-amber-800 text-[10px] rounded-full px-2 py-0.5 whitespace-nowrap">
-                        {tb('period.recommended')}
-                      </span>
-                    )}
-                    {period === 'monthly' && (
-                      <span className="absolute -top-1.5 end-0 bg-[var(--color-surface-3)] text-[var(--color-text-primary)] text-[10px] rounded-full px-2 py-0.5 whitespace-nowrap">
-                        {tb('period.monthlyPremium')}
-                      </span>
-                    )}
-                    {period === 'annual' && (
-                      <span className="absolute -top-1.5 end-0 bg-amber-100 text-amber-800 text-[10px] rounded-full px-2 py-0.5 whitespace-nowrap">
-                        {tb('period.twoMonthsFree')}
-                      </span>
-                    )}
+                    <span className="block">{tb(`period.${period}.label` as 'billing.period.monthly.label')}</span>
+                    {period === 'monthly' ? (
+                      <span className="block text-[10px] opacity-70">{tb('period.monthly.premium')}</span>
+                    ) : null}
+                    {period === 'quarterly' ? (
+                      <span className="block text-[10px] opacity-70">{tb('period.quarterly.recommended')}</span>
+                    ) : null}
+                    {period === 'annual' ? (
+                      <span className="block text-[10px] opacity-70">{tb('period.annual.free')}</span>
+                    ) : null}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Plan */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">{t('selectPlan')}</label>
+              <p className="mb-2 text-sm font-medium text-slate-300">{t('selectPlan')}</p>
               <div className="grid grid-cols-1 gap-2">
-                {SIGNUP_PLANS.map(plan => (
-                  <label
-                    key={plan.value}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${formData.plan === plan.value ? 'border-primary/60 bg-primary/5' : 'border-border hover:border-primary/30'}`}
-                    style={plan.custom ? { border: '2px solid #F59E0B', boxShadow: '0 0 12px rgba(245,158,11,0.25)' } : {}}
-                    onClick={(e) => {
-                      if (plan.custom) {
-                        e.preventDefault();
-                        window.open(TOP_CENTERS_WHATSAPP, '_blank');
-                      }
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="plan"
-                      value={plan.value}
-                      checked={formData.plan === plan.value}
-                      onChange={e => {
-                        if (!plan.custom) {
-                          setFormData(f => ({ ...f, plan: e.target.value }));
+                {SIGNUP_PLANS.map((plan) => {
+                  const selected = formData.plan === plan.value;
+                  const baseCard =
+                    'cursor-pointer rounded-xl border p-4 transition-all ' +
+                    (plan.custom
+                      ? 'border-amber-500/60 bg-slate-800/50 shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:border-amber-500'
+                      : selected
+                        ? 'border-teal-600 bg-teal-900/20'
+                        : 'border-slate-700 bg-slate-800/50 hover:border-teal-600/50');
+                  const displayMonthly =
+                    !plan.custom && plan.value !== 'top_centers'
+                      ? getSignupDisplayMonthlyPrice(plan.value, billingPeriod)
+                      : 0;
+                  return (
+                    <div
+                      key={plan.value}
+                      role="button"
+                      tabIndex={0}
+                      className={baseCard}
+                      onClick={() => {
+                        if (plan.custom) {
+                          window.open(TOP_CENTERS_WHATSAPP, '_blank');
+                        } else {
+                          setFormData((f) => ({ ...f, plan: plan.value }));
                         }
                       }}
-                      className="hidden"
-                      disabled={plan.custom}
-                    />
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${formData.plan === plan.value ? 'border-primary' : 'border-border'}`}>
-                      {formData.plan === plan.value && <div className="w-2 h-2 rounded-full" style={{ background: 'hsl(var(--primary))' }} />}
-                    </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold text-sm text-[var(--color-text-primary)]">{locale === 'ar' ? plan.nameAr : plan.nameEn}</span>
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          if (plan.custom) {
+                            window.open(TOP_CENTERS_WHATSAPP, '_blank');
+                          } else {
+                            setFormData((f) => ({ ...f, plan: plan.value }));
+                          }
+                        }
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-semibold text-white">{locale === 'ar' ? plan.nameAr : plan.nameEn}</div>
+                          {!plan.custom ? (
+                            <div className="text-xs text-slate-400">
+                              {tb('studentsLimit', { limit: plan.limit.toLocaleString('en-US') })}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-400">{t('topCentersDesc')}</div>
+                          )}
+                        </div>
+                        <div className="text-end">
                           {plan.custom ? (
-                            <span className="text-sm font-bold text-[var(--color-text-secondary)] font-mono">{tl('custom')}</span>
+                            <div className="font-bold text-white">{tl('custom')}</div>
                           ) : (
                             <>
-                              <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{formatPrice(getPlanPrice(plan.value, billingPeriod))} {tc('egp')}</span>
+                              <div className="font-bold text-white">
+                                {displayMonthly.toLocaleString('en-US')} {tc('egp')}
+                              </div>
+                              <div className="text-xs text-slate-500">{t('perMonthAbbr')}</div>
                             </>
                           )}
                         </div>
-                        {!plan.custom && (
-                          <>
-                            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{getBillingLabel(plan.value)}</p>
-                            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{tb('studentsLimit', { limit: formatPrice(plan.limit) })}</p>
-                          </>
-                        )}
-                        {plan.perStudentWeek != null && (
-                          <p className="text-xs font-medium mt-0.5 text-[var(--color-success)]">• {tb('perStudentWeekly', { price: formatPrice(plan.perStudentWeek) })}</p>
-                        )}
-                        {plan.custom && (
-                          <p className="text-xs text-green-600 mt-0.5 font-medium">{t('contactWhatsApp')}</p>
-                        )}
                       </div>
-                  </label>
-                ))}
+                      {!plan.custom ? (
+                        <>
+                          <p className="mt-2 text-xs text-slate-400">{getBillingLabel(plan.value)}</p>
+                          {plan.perStudentWeek != null ? (
+                            <p className="mt-1 text-xs font-medium text-teal-400/90">
+                              • {tb('perStudentWeekly', { price: formatPrice(plan.perStudentWeek) })}
+                            </p>
+                          ) : null}
+                        </>
+                      ) : (
+                        <p className="mt-2 text-xs font-medium text-amber-400/90">{t('contactWhatsApp')}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Referral */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{locale === 'ar' ? 'كود الإحالة (اختياري)' : 'Referral Code (optional)'}</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-referral">
+                {t('referralCode')}
+              </label>
               <div className="relative">
                 <input
+                  id="signup-referral"
                   type="text"
                   value={formData.referralCode}
-                  onChange={e => {
-                    setFormData(f => ({ ...f, referralCode: e.target.value }));
+                  onChange={(e) => {
+                    setFormData((f) => ({ ...f, referralCode: e.target.value }));
                     setReferralValidation('idle');
                   }}
                   onBlur={async () => {
@@ -390,64 +418,76 @@ export default function SignupPage() {
                       setReferralValidation('invalid');
                     }
                   }}
-                  placeholder={locale === 'ar' ? 'مثال: NASR-7X4K' : 'e.g. NASR-7X4K'}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring uppercase"
+                  placeholder={t('referralPlaceholder')}
+                  className={`${inputClass} uppercase`}
                   dir="ltr"
                 />
-                {referralValidation === 'valid' && (
-                  <span className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-green-600 text-sm">
-                    <Check className="w-4 h-4" /> {locale === 'ar' ? '✓ كود صحيح' : 'Valid code'}
+                {referralValidation === 'valid' ? (
+                  <span className="absolute end-3 top-1/2 flex -translate-y-1/2 items-center gap-1 text-sm text-emerald-400">
+                    <Check className="h-4 w-4" /> {locale === 'ar' ? '✓ كود صحيح' : 'Valid code'}
                   </span>
-                )}
-                {referralValidation === 'invalid' && (
-                  <span className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-red-600 text-sm">
-                    <X className="w-4 h-4" /> {locale === 'ar' ? 'كود غير صحيح' : 'Invalid code'}
+                ) : null}
+                {referralValidation === 'invalid' ? (
+                  <span className="absolute end-3 top-1/2 flex -translate-y-1/2 items-center gap-1 text-sm text-red-400">
+                    <X className="h-4 w-4" /> {locale === 'ar' ? 'كود غير صحيح' : 'Invalid code'}
                   </span>
-                )}
-                {referralValidation === 'checking' && (
-                  <span className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{locale === 'ar' ? 'جاري التحقق...' : 'Checking...'}</span>
-                )}
+                ) : null}
+                {referralValidation === 'checking' ? (
+                  <span className="absolute end-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                    {locale === 'ar' ? 'جاري التحقق...' : 'Checking...'}
+                  </span>
+                ) : null}
               </div>
             </div>
 
-            {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">
-                {t('notes')} ({t('optional')})
+              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-notes">
+                {t('notes')}
               </label>
               <textarea
+                id="signup-notes"
                 value={formData.notes}
-                onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))}
+                onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
                 placeholder={t('notesPlaceholder')}
                 rows={2}
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className={inputClass}
               />
             </div>
 
-            {/* Terms */}
-            <label className="flex items-start gap-3 cursor-pointer">
-              <div
-                onClick={() => setFormData(f => ({ ...f, terms: !f.terms }))}
-                className={`w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5 border-2 transition-colors ${formData.terms ? 'border-primary' : 'border-border'}`}
-                style={formData.terms ? { background: 'hsl(var(--primary))' } : {}}
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={formData.terms}
+                onChange={(e) => setFormData((f) => ({ ...f, terms: e.target.checked }))}
+                className="peer sr-only"
+              />
+              <span
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-teal-500 ${
+                  formData.terms ? 'border-teal-500 bg-teal-600' : 'border-slate-600 bg-slate-800'
+                }`}
+                aria-hidden
               >
-                {formData.terms && <svg viewBox="0 0 10 8" className="w-3 h-3 fill-white"><path d="M9 1L3.5 7 1 4.5" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-              </div>
-              <span className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{t('terms')}</span>
+                {formData.terms ? (
+                  <svg viewBox="0 0 10 8" className="h-3 w-3 stroke-white" fill="none" strokeWidth="1.5">
+                    <path d="M9 1L3.5 7 1 4.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : null}
+              </span>
+              <span className="text-sm leading-relaxed text-slate-300">{t('terms')}</span>
             </label>
 
             <button
               type="submit"
               disabled={loading || !formData.terms}
-              className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg text-base tracking-wide disabled:opacity-50"
+              className="w-full rounded-xl bg-teal-600 py-3.5 text-base font-bold tracking-wide text-white shadow-md transition-all hover:bg-teal-500 disabled:opacity-50"
             >
-              {loading ? t('submitting') : t('submitRequest')}
+              {loading ? t('submitting') : t('submit')}
             </button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
-            {t('alreadyHaveAccount')}{' '}
-            <Link href="/login" className="font-semibold hover:underline" style={{ color: 'hsl(var(--primary))' }}>
+          <p className="mt-4 text-center text-sm text-slate-400">
+            {t('hasAccount')}{' '}
+            <Link href="/login" className="font-semibold text-teal-400 hover:underline">
               {t('login')}
             </Link>
           </p>

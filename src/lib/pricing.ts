@@ -133,6 +133,18 @@ export function getImpliedMonthlyMrr(
   return Math.round(allInPerMonth * 0.85);
 }
 
+/**
+ * Signup UI headline: EGP/month figure (quarterly = all-in monthly equivalent, not ×3).
+ */
+export function getSignupDisplayMonthlyPrice(planKey: PlanKey, period: BillingPeriod): number {
+  const plan = PLANS[planKey];
+  if (!plan || planKey === 'top_centers') return 0;
+  const p = normalizeBillingPeriod(period);
+  if (p === 'quarterly') return plan.quarterlyAllIn;
+  if (p === 'monthly') return plan.monthlyListPrice;
+  return getAnnualMonthlyEquivalent(planKey);
+}
+
 /** Display price for plan picker / landing (full cycle amount for the selected period). */
 export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
   const plan = PLANS[planKey];

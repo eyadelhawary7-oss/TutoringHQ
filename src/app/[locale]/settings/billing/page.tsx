@@ -616,9 +616,9 @@ function PaygTab({
                   className="rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100"
                   style={cairoFont}
                 >
-                  <option value="monthly">{t('period.monthly')}</option>
-                  <option value="quarterly">{t('period.quarterly')}</option>
-                  <option value="annual">{t('period.annual')}</option>
+                  <option value="monthly">{t('period.monthly.label')}</option>
+                  <option value="quarterly">{t('period.quarterly.label')}</option>
+                  <option value="annual">{t('period.annual.label')}</option>
                 </select>
                 <button
                   type="button"
@@ -1689,7 +1689,7 @@ export default function BillingPage() {
                       : { backgroundColor: 'rgba(255,255,255,0.2)' }
                   }
                 >
-                  {billingIsPayg ? t('payg.hero.badge') : `${t('billingPeriod')}: ${t(`period.${bp}` as 'billing.period.monthly')}`}
+                  {billingIsPayg ? t('payg.hero.badge') : `${t('billingPeriod')}: ${t(`period.${bp}.label` as 'billing.period.monthly.label')}`}
                 </span>
                 <span
                   className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${billingStatusChip.cls}`}
@@ -1906,7 +1906,7 @@ export default function BillingPage() {
                   </h3>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <PeriodCard
-                      label={t('period.monthly')}
+                      label={t('period.monthly.label')}
                       price={periodPrices.monthly}
                       isSelected={selectedPeriod === 'monthly'}
                       isCurrent={bp === 'monthly'}
@@ -1920,7 +1920,7 @@ export default function BillingPage() {
                       numFont={numFont}
                     />
                     <PeriodCard
-                      label={t('period.quarterly')}
+                      label={t('period.quarterly.label')}
                       price={periodPrices.quarterly}
                       isSelected={selectedPeriod === 'quarterly'}
                       isCurrent={bp === 'quarterly'}
@@ -1934,7 +1934,7 @@ export default function BillingPage() {
                       numFont={numFont}
                     />
                     <PeriodCard
-                      label={t('period.annual')}
+                      label={t('period.annual.label')}
                       price={periodPrices.annual}
                       isSelected={selectedPeriod === 'annual'}
                       isCurrent={bp === 'annual'}
@@ -2012,7 +2012,7 @@ export default function BillingPage() {
                           {t('upgrade.newPeriod')}
                         </dt>
                         <dd className="text-end text-slate-900 dark:text-slate-100" style={cairoFont}>
-                          {t(`period.${selectedPeriod}` as 'billing.period.monthly')}
+                          {t(`period.${selectedPeriod}.label` as 'billing.period.monthly.label')}
                         </dd>
                       </div>
                       <div className="flex flex-wrap justify-between gap-2">
@@ -2123,7 +2123,7 @@ export default function BillingPage() {
                     </h3>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                       <PeriodCard
-                        label={t('period.monthly')}
+                        label={t('period.monthly.label')}
                         price={getChargeFromQuarterlyAllIn(
                           pricingForPlan(selectedPlan, pricingRows).allIn,
                           'monthly',
@@ -2138,7 +2138,7 @@ export default function BillingPage() {
                         numFont={numFont}
                       />
                       <PeriodCard
-                        label={t('period.quarterly')}
+                        label={t('period.quarterly.label')}
                         price={getChargeFromQuarterlyAllIn(
                           pricingForPlan(selectedPlan, pricingRows).allIn,
                           'quarterly',
@@ -2153,7 +2153,7 @@ export default function BillingPage() {
                         numFont={numFont}
                       />
                       <PeriodCard
-                        label={t('period.annual')}
+                        label={t('period.annual.label')}
                         price={getChargeFromQuarterlyAllIn(
                           pricingForPlan(selectedPlan, pricingRows).allIn,
                           'annual',

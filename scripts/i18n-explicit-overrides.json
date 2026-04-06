@@ -6,9 +6,9 @@
   "billing.status.active": { "en": "Active", "ar": "نشط" },
   "billing.status.suspended": { "en": "Suspended", "ar": "موقوف" },
   "billing.status.due_soon": { "en": "Due Soon", "ar": "مستحق قريباً" },
-  "billing.period.monthly": { "en": "Monthly", "ar": "شهري" },
-  "billing.period.quarterly": { "en": "Quarterly", "ar": "ربع سنوي" },
-  "billing.period.annual": { "en": "Annual", "ar": "سنوي" },
+  "billing.period.monthly.label": { "en": "Monthly", "ar": "شهري" },
+  "billing.period.quarterly.label": { "en": "Quarterly", "ar": "ربع سنوي" },
+  "billing.period.annual.label": { "en": "Annual", "ar": "سنوي" },
   "billing.credits.applyInfo": {
     "en": "Credits are automatically applied at your next renewal if your balance is sufficient.",
     "ar": "يتم تطبيق الرصيد تلقائياً عند تجديد اشتراكك إذا كان رصيدك كافياً."
