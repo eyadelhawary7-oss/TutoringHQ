@@ -2391,7 +2391,15 @@
     "stageTwoSubtitle": "You can change your plan anytime",
     "stageThreeTitle": "Confirm your order",
     "yourCenter": "Your center",
-    "phoneHint": "We will reach you on WhatsApp"
+    "phoneHint": "We will reach you on WhatsApp",
+    "subtotal": "Subtotal",
+    "serviceFee": "Service fee 6%",
+    "stampDuty": "Stamp duty 0.4%",
+    "included": "Included",
+    "allTaxesIncluded": "EGP · all taxes included",
+    "periodLabel": "Period",
+    "studentsLabel": "Students",
+    "authNote": "By confirming, you authorize CenterHQ to charge {amount} EGP {period}."
   },
   "acceptInvite": {
     "title": "Accept Team Invitation",

@@ -4573,7 +4573,15 @@
     "stageTwoSubtitle": "يمكنك تغيير خطتك في أي وقت",
     "stageThreeTitle": "تأكيد طلبك",
     "yourCenter": "مركزك",
-    "phoneHint": "سنتواصل معك على واتساب"
+    "phoneHint": "سنتواصل معك على واتساب",
+    "subtotal": "المجموع",
+    "serviceFee": "رسوم الخدمة 6%",
+    "stampDuty": "ضريبة الدمغة 0.4%",
+    "included": "مشمول",
+    "allTaxesIncluded": "EGP · شامل جميع الضرائب",
+    "periodLabel": "الفترة",
+    "studentsLabel": "الطلاب",
+    "authNote": "بالتأكيد تفوّض CenterHQ بخصم {amount} EGP {period} تلقائياً"
   },
   "students": {
     "allSubjects": "كل المواد",

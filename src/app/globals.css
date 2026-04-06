@@ -1334,13 +1334,35 @@ html.light [data-chq-signup] {
   border-color: rgba(71, 85, 105, 0.6) !important;
 }
 
-[data-chq-signup] input[data-chq-underline],
-[data-chq-signup] select[data-chq-underline] {
+[data-chq-signup] [data-chq-underline],
+html.light [data-chq-signup] [data-chq-underline] {
   color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
-[data-chq-signup] input[data-chq-underline]::placeholder {
-  color: #64748b !important;
+[data-chq-signup] [data-chq-underline]::placeholder,
+html.light [data-chq-signup] [data-chq-underline]::placeholder {
+  color: #475569 !important;
+  -webkit-text-fill-color: #475569 !important;
+  opacity: 1 !important;
+}
+
+[data-chq-signup] [data-chq-underline]:-webkit-autofill,
+[data-chq-signup] [data-chq-underline]:-webkit-autofill:hover,
+[data-chq-signup] [data-chq-underline]:-webkit-autofill:focus,
+html.light [data-chq-signup] [data-chq-underline]:-webkit-autofill {
+  -webkit-text-fill-color: #f8fafc !important;
+  -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
+  background-color: #080d14 !important;
+  caret-color: #f8fafc;
+}
+
+[data-chq-signup] select[data-chq-underline],
+html.light [data-chq-signup] select[data-chq-underline] {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
 }
 
 @keyframes breathe {
