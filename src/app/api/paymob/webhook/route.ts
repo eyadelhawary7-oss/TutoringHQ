@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
         const cardResult = await finalizeCardOrderPaymentSuccess(supabaseAdmin, orderId, transactionId);
         if (!cardResult) {
           const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
+          // Includes invoice_type signup_first_payment: pending_payment centers are finalized in processInvoiceSignupAfterPaymobSuccess.
           await finalizeInvoicePaymentSuccess(supabaseAdmin, orderId, transactionId);
         }
       }

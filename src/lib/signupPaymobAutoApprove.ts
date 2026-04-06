@@ -1,10 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 import { createAction } from '@/lib/ceo';
 import { sendWelcomeTemplate } from '@/lib/centerNotify';
+import { generateReferralCode } from '@/lib/referral';
+import { todayISO } from '@/lib/parentPack';
+import { normalizePhone } from '@/lib/utils/phone';
 import {
   getChargeFromQuarterlyAllIn,
   isPlanKey,
   normalizeBillingPeriod,
+  PLANS,
   type BillingPeriod,
   type PlanKey,
 } from '@/lib/pricing';
@@ -26,6 +31,376 @@ function nextPaymentDueDaysForPeriod(bp: BillingPeriod): number {
   if (bp === 'monthly') return 30;
   if (bp === 'annual') return 365;
   return 90;
+}
+
+function addDaysToYmd(baseYmd: string, delta: number): string {
+  const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
+  const t = Date.UTC(y, m - 1, d + delta);
+  const dt = new Date(t);
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
+async function resolveBillingForAutoApprove(
+  supabase: SupabaseClient,
+  centerId: string,
+  c: {
+    name: string;
+    plan: string | null;
+    billing_period?: string | null;
+    subscription_billing_period?: string | null;
+    all_in_price?: number | null;
+  },
+): Promise<{
+  billingAmount: number;
+  allIn: number;
+  period: BillingPeriod;
+  planKey: string;
+  nextPaymentDue: string;
+  autoSuspendYmd: string;
+} | null> {
+  const planKey = c.plan ?? 'starter';
+  const { data: priceByKey } = await supabase
+    .from('pricing_plans')
+    .select('all_in_price, monthly_fee, plan_key, id')
+    .eq('plan_key', planKey)
+    .maybeSingle();
+
+  let priceRow = priceByKey;
+  if (!priceRow) {
+    const { data: byId } = await supabase
+      .from('pricing_plans')
+      .select('all_in_price, monthly_fee, plan_key, id')
+      .eq('id', planKey)
+      .maybeSingle();
+    priceRow = byId ?? null;
+  }
+
+  let allIn = Number((priceRow as { all_in_price?: number | null } | null)?.all_in_price);
+  const monthlyFee = Number((priceRow as { monthly_fee?: number | null } | null)?.monthly_fee);
+
+  if (!Number.isFinite(allIn) || allIn <= 0) {
+    const custom = Number(c.all_in_price);
+    if (Number.isFinite(custom) && custom > 0) {
+      allIn = custom;
+    }
+  }
+
+  if (!Number.isFinite(allIn) || allIn <= 0 || !Number.isFinite(monthlyFee) || monthlyFee <= 0) {
+    console.log(`[signupInvoiceAutoApprove] Cannot auto-approve: invalid pricing for plan ${planKey}`);
+    try {
+      await createAction(supabase, {
+        type: 'ops',
+        priority: 'amber',
+        center_id: centerId,
+        title: `Cannot auto-approve: invalid pricing for plan ${planKey}`,
+        subtitle: c.name,
+        revenue_at_risk: 0,
+        auto_generated: true,
+      });
+    } catch (e) {
+      console.error('[signupInvoiceAutoApprove] ceo_action_queue invalid pricing', e);
+    }
+    return null;
+  }
+
+  const period = normalizeBillingPeriod(
+    c.subscription_billing_period ?? c.billing_period,
+  ) as BillingPeriod;
+  const pk: PlanKey | undefined = isPlanKey(planKey) ? planKey : undefined;
+  const billingAmount = getChargeFromQuarterlyAllIn(allIn, period, pk);
+
+  if (!Number.isFinite(billingAmount) || billingAmount <= 0) {
+    console.log(`[signupInvoiceAutoApprove] Cannot auto-approve: billing_amount invalid for plan ${planKey}`);
+    try {
+      await createAction(supabase, {
+        type: 'ops',
+        priority: 'amber',
+        center_id: centerId,
+        title: `Cannot auto-approve: invalid billing amount for plan ${planKey}`,
+        subtitle: c.name,
+        revenue_at_risk: 0,
+        auto_generated: true,
+      });
+    } catch (e) {
+      console.error('[signupInvoiceAutoApprove] ceo_action_queue billing amount', e);
+    }
+    return null;
+  }
+
+  const startYmd = todayISO();
+  const dueDays = nextPaymentDueDaysForPeriod(period);
+  const nextPaymentDue = addDaysToYmd(startYmd, dueDays);
+  const autoSuspendYmd = addDaysToYmd(nextPaymentDue, 8);
+
+  return { billingAmount, allIn, period, planKey, nextPaymentDue, autoSuspendYmd };
+}
+
+/**
+ * After Paymob marks a signup_first_payment invoice paid: pending_payment center → pending or active (+ owner user when auto-approved).
+ */
+export async function processInvoiceSignupAfterPaymobSuccess(
+  supabase: SupabaseClient,
+  centerId: string,
+  paymobTransactionId: string,
+): Promise<void> {
+  const { data: center, error: centerErr } = await supabase
+    .from('centers')
+    .select(
+      'id, name, owner_name, plan, billing_period, subscription_billing_period, all_in_price, status, phone, email',
+    )
+    .eq('id', centerId)
+    .eq('status', 'pending_payment')
+    .maybeSingle();
+
+  if (centerErr || !center) return;
+
+  const c = center as {
+    id: string;
+    name: string;
+    owner_name?: string | null;
+    plan: string | null;
+    billing_period?: string | null;
+    subscription_billing_period?: string | null;
+    all_in_price?: number | null;
+    status?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  };
+
+  const { data: existingOwner } = await supabase
+    .from('users')
+    .select('id')
+    .eq('center_id', centerId)
+    .eq('role', 'owner')
+    .limit(1)
+    .maybeSingle();
+  if (existingOwner) return;
+
+  const { data: autoRow } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'auto_approve_signups')
+    .maybeSingle();
+  const { data: pauseRow } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'pause_new_signups')
+    .maybeSingle();
+
+  const autoApprove = parseConfigBool(autoRow?.value);
+  const pauseIntake = parseConfigBool(pauseRow?.value);
+
+  if (pauseIntake) {
+    const { error: updErr } = await supabase
+      .from('centers')
+      .update({
+        status: 'paid_pending_activation',
+        billing_status: 'paid',
+      })
+      .eq('id', centerId)
+      .eq('status', 'pending_payment');
+
+    if (updErr) {
+      console.error('[signupInvoiceAutoApprove] paid_pending_activation', updErr);
+      return;
+    }
+
+    try {
+      await createAction(supabase, {
+        type: 'ops',
+        priority: 'amber',
+        center_id: centerId,
+        title: 'Signup paid but intake paused',
+        subtitle: c.name,
+        revenue_at_risk: 0,
+        auto_generated: true,
+      });
+    } catch (e) {
+      console.error('[signupInvoiceAutoApprove] ceo_action_queue intake paused', e);
+    }
+    return;
+  }
+
+  if (!autoApprove) {
+    const { error: pendErr } = await supabase
+      .from('centers')
+      .update({ status: 'pending' })
+      .eq('id', centerId)
+      .eq('status', 'pending_payment');
+    if (pendErr) {
+      console.error('[signupInvoiceAutoApprove] set pending', pendErr);
+      return;
+    }
+    try {
+      await createAction(supabase, {
+        type: 'ops',
+        priority: 'amber',
+        center_id: centerId,
+        title: 'Signup payment received, manual approval required',
+        subtitle: c.name,
+        revenue_at_risk: 0,
+        auto_generated: true,
+      });
+    } catch (e) {
+      console.error('[signupInvoiceAutoApprove] ceo pending notify', e);
+    }
+    return;
+  }
+
+  const resolved = await resolveBillingForAutoApprove(supabase, centerId, c);
+  if (!resolved) return;
+
+  const { billingAmount, allIn, period, planKey, nextPaymentDue, autoSuspendYmd } = resolved;
+  const phoneRaw = (c.phone ?? '').trim();
+  if (!phoneRaw) {
+    console.error('[signupInvoiceAutoApprove] no phone on center', centerId);
+    return;
+  }
+
+  const normalizedPhone = normalizePhone(phoneRaw);
+  const phoneDigits = normalizedPhone.replace(/\D/g, '');
+  if (!phoneDigits) {
+    console.error('[signupInvoiceAutoApprove] invalid phone', centerId);
+    return;
+  }
+
+  const pin = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashedPin = await bcrypt.hash(pin, 10);
+  const authEmail = `${phoneDigits}@centerhq.local`;
+
+  const { data: authData, error: createAuthError } = await supabase.auth.admin.createUser({
+    email: authEmail,
+    password: pin,
+    email_confirm: true,
+  });
+
+  if (createAuthError || !authData?.user?.id) {
+    const msg = createAuthError?.message ?? '';
+    console.error('[signupInvoiceAutoApprove] auth create', createAuthError);
+    await supabase.from('centers').update({ status: 'pending' }).eq('id', centerId);
+    try {
+      await createAction(supabase, {
+        type: 'ops',
+        priority: 'red',
+        center_id: centerId,
+        title: `Auto-approve blocked: auth error ${msg.slice(0, 80)}`,
+        subtitle: c.name,
+        revenue_at_risk: 0,
+        auto_generated: true,
+      });
+    } catch (e) {
+      console.error('[signupInvoiceAutoApprove] ceo auth error', e);
+    }
+    return;
+  }
+
+  const userId = authData.user.id;
+
+  const { error: userInsErr } = await supabase.from('users').insert({
+    id: userId,
+    center_id: centerId,
+    role: 'owner',
+    phone: normalizedPhone,
+    name: (c.owner_name as string) ?? c.name ?? null,
+    pin_code: hashedPin,
+    preferred_locale: 'ar',
+    can_scan: true,
+    can_view_payments: true,
+    can_record_payments: true,
+    can_view_dashboard: true,
+    can_view_revenue: true,
+    can_manage_students: true,
+    can_manage_groups: true,
+    can_manage_rooms: true,
+    can_view_schedule: true,
+    can_view_settings: true,
+    can_allow_late_entry: true,
+    is_active: true,
+  });
+
+  if (userInsErr) {
+    console.error('[signupInvoiceAutoApprove] users insert', userInsErr);
+    await supabase.auth.admin.deleteUser(userId);
+    await supabase.from('centers').update({ status: 'pending' }).eq('id', centerId);
+    return;
+  }
+
+  const pkTyped = isPlanKey(planKey) ? planKey : 'starter';
+  const weeklyLimit = PLANS[pkTyped]?.weeklyStudentLimit ?? null;
+
+  const centerUpdates: Record<string, unknown> = {
+    status: 'active',
+    subscription_status: 'active',
+    billing_status: 'active',
+    approved_at: new Date().toISOString(),
+    billing_amount: billingAmount,
+    all_in_price: allIn,
+    subscription_billing_period: period,
+    next_payment_due: nextPaymentDue,
+    subscription_start_date: todayISO(),
+    auto_suspend_at: `${autoSuspendYmd}T12:00:00.000Z`,
+  };
+  if (weeklyLimit != null) centerUpdates.weekly_student_limit = weeklyLimit;
+
+  const { error: actErr } = await supabase.from('centers').update(centerUpdates).eq('id', centerId);
+
+  if (actErr) {
+    console.error('[signupInvoiceAutoApprove] center activation', actErr);
+    return;
+  }
+
+  let generatedCode = generateReferralCode(c.name);
+  for (let attempts = 0; attempts < 5; attempts++) {
+    const { error: rcError } = await supabase
+      .from('referral_codes')
+      .insert({ center_id: centerId, code: generatedCode });
+    if (!rcError) {
+      await supabase.from('centers').update({ referral_code: generatedCode }).eq('id', centerId);
+      break;
+    }
+    generatedCode = generateReferralCode(c.name);
+  }
+
+  try {
+    const { data: waCfg } = await supabase
+      .from('platform_config')
+      .select('value')
+      .eq('key', 'wa_sending_enabled')
+      .maybeSingle();
+    if (waCfg?.value !== false) {
+      try {
+        await sendWelcomeTemplate(supabase, { id: centerId, name: c.name, phone: c.phone ?? null });
+      } catch (waErr) {
+        console.error('[signupInvoiceAutoApprove] WA send error:', waErr);
+      }
+    }
+  } catch (e) {
+    console.error('[signupInvoiceAutoApprove] chq_welcome', e);
+  }
+
+  try {
+    await supabase.from('cron_log').insert({
+      cron_name: 'auto_approve',
+      status: 'success',
+      records_processed: 1,
+      metadata: { center_id: centerId, paymob_txn: paymobTransactionId, source: 'signup_invoice' },
+    });
+  } catch (e) {
+    console.error('[signupInvoiceAutoApprove] cron_log', e);
+  }
+
+  try {
+    await createAction(supabase, {
+      type: 'ops',
+      priority: 'green',
+      center_id: centerId,
+      title: `Signup auto-approved (Paymob): ${c.name}`,
+      revenue_at_risk: 0,
+      auto_generated: true,
+    });
+  } catch (e) {
+    console.error('[signupInvoiceAutoApprove] ceo briefing', e);
+  }
 }
 
 /**

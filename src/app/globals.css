@@ -1334,6 +1334,28 @@ html.light [data-chq-signup] {
   border-color: rgba(71, 85, 105, 0.6) !important;
 }
 
+/* Signup page stage transitions */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slideInBack {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* ── S6 Scanner ──────────────────────────────────────────── */
 @keyframes scan-pulse {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }

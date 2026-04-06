@@ -1,186 +1,300 @@
 'use client';
 
-import { useState, useEffect, FormEvent, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
-import { Globe, CheckCircle, Check, X } from 'lucide-react';
-import {
-  PLANS,
-  getPlanPrice,
-  getSignupDisplayMonthlyPrice,
-  formatPrice,
-  type BillingPeriod,
-  type PlanKey,
-} from '@/lib/pricing';
+import { Globe } from 'lucide-react';
 
-const WHATSAPP_ADMIN = 'https://wa.me/201220601410';
-const TOP_CENTERS_WHATSAPP = 'https://wa.me/201220601410?text=I%20am%20interested%20in%20the%20TOP%20CENTERS%20plan';
+const TOP_CENTERS_WHATSAPP =
+  'https://wa.me/201220601410?text=I%20am%20interested%20in%20the%20TOP%20CENTERS%20plan';
 
-const SIGNUP_PLAN_ORDER: PlanKey[] = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'];
+const CITIES = [
+  { id: 'cairo', ar: 'القاهرة', en: 'Cairo', emoji: '🏙️' },
+  { id: 'giza', ar: 'الجيزة', en: 'Giza', emoji: '🏛️' },
+  { id: 'alexandria', ar: 'الإسكندرية', en: 'Alexandria', emoji: '🌊' },
+  { id: 'sixth_october', ar: '6 أكتوبر', en: '6th October', emoji: '🏘️' },
+  { id: 'sheikh_zayed', ar: 'الشيخ زايد', en: 'Sheikh Zayed', emoji: '✨' },
+  { id: 'nasr_city', ar: 'مدينة نصر', en: 'Nasr City', emoji: '🌆' },
+  { id: 'new_cairo', ar: 'القاهرة الجديدة', en: 'New Cairo', emoji: '🏗️' },
+  { id: 'heliopolis', ar: 'مصر الجديدة', en: 'Heliopolis', emoji: '🌿' },
+  { id: 'maadi', ar: 'المعادي', en: 'Maadi', emoji: '🌳' },
+  { id: 'other', ar: 'أخرى', en: 'Other', emoji: '📍' },
+] as const;
 
-const SIGNUP_PLANS = SIGNUP_PLAN_ORDER.map((value) => {
-  const p = PLANS[value];
-  return {
-    value,
-    nameAr: p.arabicName,
-    nameEn: p.englishName,
-    limit: p.weeklyStudentLimit ?? 0,
-    student_limit: p.weeklyStudentLimit ?? 0,
-    all_in_price: p.quarterlyAllIn,
-    custom: value === 'top_centers',
-  };
-});
+const SIGNUP_PLANS = [
+  {
+    key: 'nano',
+    name: 'Nano',
+    arabicName: 'ناشئ',
+    students: 100,
+    allInPrice: 2000,
+    monthlyPrice: 2500,
+    annualPrice: 20400,
+  },
+  {
+    key: 'starter',
+    name: 'Starter',
+    arabicName: 'أساسي',
+    students: 250,
+    allInPrice: 4500,
+    monthlyPrice: 5200,
+    annualPrice: 45900,
+  },
+  {
+    key: 'pro',
+    name: 'Pro',
+    arabicName: 'محترف',
+    students: 500,
+    allInPrice: 8000,
+    monthlyPrice: 9200,
+    annualPrice: 81600,
+  },
+  {
+    key: 'business',
+    name: 'Business',
+    arabicName: 'أعمال',
+    students: 1000,
+    allInPrice: 13000,
+    monthlyPrice: 15000,
+    annualPrice: 132600,
+  },
+  {
+    key: 'enterprise',
+    name: 'Enterprise',
+    arabicName: 'مؤسسات',
+    students: 2000,
+    allInPrice: 18500,
+    monthlyPrice: 21300,
+    annualPrice: 188700,
+  },
+] as const;
 
-/** Display-only psychology pricing (DB / API amounts unchanged). */
+type SignupPlan = (typeof SIGNUP_PLANS)[number];
+type BillingPeriodUi = 'monthly' | 'quarterly' | 'annual';
+
+const PERIODS: BillingPeriodUi[] = ['monthly', 'quarterly', 'annual'];
+
 function display99Price(price: number): number {
   if (!Number.isFinite(price) || price <= 1) return price;
   return price - 1;
 }
 
-const getPerStudentWeeklyCost = (monthlyPrice: number, studentLimit: number): string => {
-  if (!studentLimit || studentLimit <= 0) return '';
-  const weeklyTotal = monthlyPrice / 4.33;
-  const perStudent = weeklyTotal / studentLimit;
+function getDisplayPrice(plan: SignupPlan, period: string): number {
+  const base =
+    period === 'monthly'
+      ? plan.monthlyPrice
+      : period === 'annual'
+        ? Math.round(plan.annualPrice / 12)
+        : plan.allInPrice;
+  return display99Price(base);
+}
+
+function getTotalAmount(plan: SignupPlan | undefined, period: string): number {
+  if (!plan) return 0;
+  if (period === 'monthly') return display99Price(plan.monthlyPrice);
+  if (period === 'annual') return display99Price(plan.annualPrice);
+  return display99Price(plan.allInPrice * 3);
+}
+
+function getPerStudentCost(plan: SignupPlan, period: string): string {
+  const monthly = getDisplayPrice(plan, period);
+  const weekly = monthly / 4.33;
+  const perStudent = weekly / plan.students;
   return perStudent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
+}
 
-const BILLING_PERIODS: BillingPeriod[] = ['monthly', 'quarterly', 'annual'];
+function getBilledAmount(plan: SignupPlan, period: string): number {
+  return getTotalAmount(plan, period);
+}
 
-const inputFieldClass =
-  'w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30 transition-colors';
+function FloatingInput({
+  label,
+  value,
+  onChange,
+  type = 'text',
+  placeholder = '',
+  hint = '',
+  inputMode,
+  dir,
+  id,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  hint?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  dir?: 'ltr' | 'rtl';
+  id?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const active = focused || value.length > 0;
 
-const selectFieldClass =
-  'w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-teal-500 appearance-none cursor-pointer';
+  return (
+    <div className="relative mb-5">
+      <label
+        htmlFor={id}
+        className={`pointer-events-none absolute z-10 transition-all duration-200 start-4 ${
+          active ? 'top-2 text-[10px] font-medium text-teal-400' : 'top-4 text-sm text-slate-500'
+        }`}
+      >
+        {label}
+      </label>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={active ? placeholder : ''}
+        inputMode={inputMode}
+        dir={dir}
+        className={`w-full rounded-2xl border bg-slate-900 px-4 pb-3 pt-7 text-sm text-white transition-all duration-200 outline-none ${
+          focused
+            ? 'border-teal-500 shadow-[0_0_0_3px_rgba(13,148,136,0.15)]'
+            : 'border-slate-700/60 hover:border-slate-600'
+        }`}
+      />
+      {hint ? <p className="mt-1.5 px-1 text-xs text-slate-500">{hint}</p> : null}
+    </div>
+  );
+}
+
+type Stage = 'info' | 'plan' | 'payment' | 'success';
 
 export default function SignupPage() {
   const t = useTranslations('signup');
-  const tl = useTranslations('landing');
   const tc = useTranslations('common');
   const tb = useTranslations('billing');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('quarterly');
-  const [formData, setFormData] = useState({
+  const [stage, setStage] = useState<Stage>('info');
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
+  const [form, setForm] = useState({
     centerName: '',
     ownerName: '',
     phone: '',
     email: '',
-    plan: 'nano',
-    referralCode: '',
-    terms: false,
     city: '',
+    plan: 'starter',
+    billingPeriod: 'quarterly' as BillingPeriodUi,
+    referralCode: '',
     notes: '',
+    agreeTerms: false,
   });
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-  const [referralValidation, setReferralValidation] = useState<'idle' | 'valid' | 'invalid' | 'checking'>('idle');
-  const searchParams = useSearchParams();
+  const [showReferral, setShowReferral] = useState(false);
 
   useEffect(() => {
     const refFromUrl = searchParams?.get('ref')?.trim().toUpperCase();
-    const refFromStorage = typeof window !== 'undefined' ? localStorage.getItem('referral_code')?.trim().toUpperCase() : null;
+    const refFromStorage =
+      typeof window !== 'undefined' ? localStorage.getItem('referral_code')?.trim().toUpperCase() : null;
     const code = refFromUrl || refFromStorage;
     if (code) {
-      setFormData((f) => ({ ...f, referralCode: code }));
+      setForm((f) => ({ ...f, referralCode: code }));
+      setShowReferral(true);
     }
   }, [searchParams]);
+
+  const updateForm = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleLocaleToggle = () => {
     const next = locale === 'ar' ? 'en' : 'ar';
     startTransition(() => router.replace(pathname, { locale: next }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!formData.terms) return;
+  const handleSubmit = async () => {
+    if (!form.agreeTerms || loading) return;
     setLoading(true);
     setError('');
     try {
-      let phone = formData.phone.replace(/\s/g, '').replace(/\D/g, '');
+      let phone = form.phone.replace(/\s/g, '').replace(/\D/g, '');
       if (!phone.startsWith('+')) {
         if (phone.startsWith('0')) phone = '+20' + phone.substring(1);
         else if (!phone.startsWith('20')) phone = '+20' + phone;
         else phone = '+' + phone;
       }
-      const response = await fetch('/api/signup', {
+      const res = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, phone, billing_period: billingPeriod }),
+        body: JSON.stringify({
+          centerName: form.centerName,
+          ownerName: form.ownerName,
+          phone,
+          email: form.email,
+          city: form.city,
+          plan: form.plan,
+          billingPeriod: form.billingPeriod,
+          referralCode: form.referralCode || null,
+          notes: form.notes,
+          initiatePayment: true,
+        }),
       });
-      const data = await response.json();
-      if (response.ok) {
-        setSubmitted(true);
-      } else {
-        setError(data.error || 'Signup failed');
+      const data = (await res.json()) as { error?: string; paymentUrl?: string; success?: boolean };
+      if (!res.ok) {
+        if (data.error === 'phone_exists') setError(t('errorPhoneExists'));
+        else if (data.error === 'phone_blacklisted') setError(t('errorPhoneBlacklisted'));
+        else if (data.error === 'payment_unavailable') setError(t('paymentUnavailable'));
+        else setError(data.error || t('errorGeneric'));
+        return;
+      }
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else if (data.success) {
+        setStage('success');
       }
     } catch {
-      setError('An error occurred. Please try again.');
+      setError(t('errorGeneric'));
     } finally {
       setLoading(false);
     }
   };
 
-  const getBillingLabel = (planKey: PlanKey) => {
-    const total = getPlanPrice(planKey, billingPeriod);
-    const amount = formatPrice(display99Price(total));
-    if (billingPeriod === 'monthly') return tb('billedMonthlyLine', { amount });
-    if (billingPeriod === 'quarterly') return tb('billedQuarterlyLine', { amount });
-    return tb('billedAnnuallyLine', { amount });
+  const selectedPlan = SIGNUP_PLANS.find((p) => p.key === form.plan);
+  const progressPct = stage === 'info' ? 33 : stage === 'plan' ? 66 : 100;
+  const slideAnim = direction === 'forward' ? 'slideIn' : 'slideInBack';
+
+  const cityLabel = (id: string) => {
+    const c = CITIES.find((x) => x.id === id);
+    if (!c) return id;
+    return locale === 'ar' ? c.ar : c.en;
   };
 
-  if (submitted) {
+  if (stage === 'success') {
     return (
       <div
         data-chq-signup
-        className="flex min-h-screen flex-col items-center justify-center bg-[#080D14] p-4 py-10 font-['Cairo',sans-serif]"
+        className="flex min-h-screen flex-col items-center justify-center bg-[#080D14] p-6 text-center font-['Cairo',sans-serif]"
       >
-        <div className="w-full max-w-sm text-center">
-          <div className="rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-xl">
-            <CheckCircle size={56} className="mx-auto mb-4 text-teal-500" />
-            <h2 className="mb-2 text-xl font-bold text-white">{t('requestSubmitted')}</h2>
-            <p className="mb-4 text-sm leading-relaxed text-slate-300">{t('receivedRequest')}</p>
-
-            <div className="mb-4 rounded-lg border border-slate-700 bg-slate-800/60 p-4 text-start">
-              <h3 className="mb-3 text-center font-semibold text-white">{t('nextStepsTitle')}</h3>
-              <ol className="space-y-2 text-sm text-slate-300">
-                <li className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs text-white">1</span>
-                  <span>{t('step1')}</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs text-white">2</span>
-                  <span>{t('step2')}</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs text-white">3</span>
-                  <span>{t('step3')}</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs text-white">4</span>
-                  <span>{t('step4')}</span>
-                </li>
-              </ol>
-            </div>
-
-            <a
-              href={WHATSAPP_ADMIN}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-teal-400 hover:underline"
-            >
-              {t('contactUsWhatsApp')}
-            </a>
-
-            <Link href="/" className="mt-4 block text-sm font-medium text-teal-400 hover:underline">
-              ← {tc('back')}
-            </Link>
-          </div>
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-teal-500 bg-teal-900/40 shadow-[0_0_40px_rgba(13,148,136,0.3)]">
+          <svg
+            width="36"
+            height="36"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#0D9488"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
+        <h2 className="mb-3 text-2xl font-bold text-white">{t('successTitle')}</h2>
+        <p className="max-w-sm leading-relaxed text-slate-400">{t('successDesc')}</p>
+        <Link href="/login" className="mt-8 text-sm font-semibold text-teal-400 hover:underline">
+          {t('login')}
+        </Link>
       </div>
     );
   }
@@ -188,9 +302,22 @@ export default function SignupPage() {
   return (
     <div
       data-chq-signup
-      className="relative flex min-h-screen flex-col items-center justify-center bg-[#080D14] p-4 py-10 font-['Cairo',sans-serif]"
+      className="relative flex min-h-screen flex-col bg-[#080D14] font-['Cairo',sans-serif]"
     >
-      <div className="absolute end-4 top-4">
+      <div
+        className="fixed start-0 end-0 top-0 z-50 h-[3px] bg-slate-800"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={progressPct}
+      >
+        <div
+          className="h-full bg-gradient-to-r from-teal-600 to-teal-400 transition-all duration-700 ease-out"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      <div className="absolute end-4 top-6 z-40">
         <button
           type="button"
           onClick={handleLocaleToggle}
@@ -202,328 +329,414 @@ export default function SignupPage() {
         </button>
       </div>
 
-      <div className="w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-sm font-bold text-white">CH</div>
-          <h1 className="text-xl font-bold text-white">CenterHQ</h1>
-          <p className="mt-1 text-sm text-slate-400">{t('title')}</p>
+      <div className="mx-auto flex max-w-lg flex-col px-4 pt-16 pb-12">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-teal-600 text-sm font-black text-white">
+            CH
+          </div>
+          <div className="text-lg font-bold text-white">CenterHQ</div>
+          <p className="mt-1 text-sm text-slate-400">
+            {stage === 'info'
+              ? t('headlineInfo')
+              : stage === 'plan'
+                ? t('headlinePlan')
+                : t('headlinePayment')}
+          </p>
         </div>
 
+        {error ? (
+          <div className="mb-4 rounded-2xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-300">
+            {error}
+          </div>
+        ) : null}
+
         <div
-          data-form-card
-          className="w-full max-w-md rounded-3xl border border-slate-700/60 bg-slate-900/80 p-6 shadow-2xl backdrop-blur"
+          key={stage}
+          style={{
+            animationName: slideAnim,
+            animationDuration: '0.4s',
+            animationTimingFunction: 'ease-out',
+            animationFillMode: 'both',
+          }}
         >
-          {error ? (
-            <div className="mb-4 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2.5 text-sm font-medium text-red-300">{error}</div>
-          ) : null}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-center">
-                {t('centerName')}
-              </label>
-              <input
-                id="signup-center"
-                type="text"
-                value={formData.centerName}
-                onChange={(e) => setFormData((f) => ({ ...f, centerName: e.target.value }))}
+          {stage === 'info' ? (
+            <>
+              <h1 className="mb-8 text-center text-2xl font-bold text-white">{t('headlineInfo')}</h1>
+              <FloatingInput
+                id="su-center"
+                label={t('centerName')}
+                value={form.centerName}
+                onChange={(v) => updateForm('centerName', v)}
                 placeholder={t('centerNamePlaceholder')}
-                className={inputFieldClass}
-                required
               />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-owner">
-                {t('ownerName')}
-              </label>
-              <input
-                id="signup-owner"
-                type="text"
-                value={formData.ownerName}
-                onChange={(e) => setFormData((f) => ({ ...f, ownerName: e.target.value }))}
+              <FloatingInput
+                id="su-owner"
+                label={t('ownerName')}
+                value={form.ownerName}
+                onChange={(v) => updateForm('ownerName', v)}
                 placeholder={t('ownerNamePlaceholder')}
-                className={inputFieldClass}
-                required
               />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-phone">
-                {t('phone')}
-              </label>
-              <input
-                id="signup-phone"
+              <FloatingInput
+                id="su-phone"
+                label={t('phone')}
+                value={form.phone}
+                onChange={(v) => updateForm('phone', v)}
                 type="tel"
                 inputMode="numeric"
-                value={formData.phone}
-                onChange={(e) => setFormData((f) => ({ ...f, phone: e.target.value }))}
-                placeholder={t('phonePlaceholder')}
-                className={inputFieldClass}
                 dir="ltr"
-                required
+                placeholder={t('phonePlaceholder')}
+                hint={t('phoneHelper')}
               />
-              <p className="mt-1 text-xs text-slate-400">{t('phoneHelper')}</p>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-email">
-                {t('email')}
-              </label>
-              <input
-                id="signup-email"
+              <FloatingInput
+                id="su-email"
+                label={t('email')}
+                value={form.email}
+                onChange={(v) => updateForm('email', v)}
                 type="email"
-                value={formData.email}
-                onChange={(e) => setFormData((f) => ({ ...f, email: e.target.value }))}
-                className={inputFieldClass}
+                dir="ltr"
               />
-            </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-city">
-                {t('city')}
-              </label>
-              <select
-                id="signup-city"
-                value={formData.city}
-                onChange={(e) => setFormData((f) => ({ ...f, city: e.target.value }))}
-                required
-                className={selectFieldClass}
+              <div className="mb-5">
+                <label className="mb-3 block text-sm text-slate-400">{t('city')}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {CITIES.map((city) => (
+                    <button
+                      key={city.id}
+                      type="button"
+                      onClick={() => updateForm('city', city.id)}
+                      className={`flex items-center gap-2.5 rounded-2xl border p-3 text-sm font-medium transition-all duration-200 ${
+                        form.city === city.id
+                          ? 'border-teal-500 bg-teal-950/40 text-white shadow-[0_0_0_3px_rgba(13,148,136,0.15)]'
+                          : 'border-slate-700/60 bg-slate-900 text-slate-400 hover:border-slate-500 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-lg">{city.emoji}</span>
+                      <span>{locale === 'ar' ? city.ar : city.en}</span>
+                      {form.city === city.id ? (
+                        <svg
+                          className="ms-auto h-3.5 w-3.5 text-teal-400"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDirection('forward');
+                  setStage('plan');
+                }}
+                disabled={!form.centerName || !form.phone || !form.city}
+                className="w-full rounded-2xl bg-teal-600 py-4 text-base font-semibold text-white shadow-[0_4px_24px_rgba(13,148,136,0.3)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <option value="">{t('selectCity')}</option>
-                <option value="Cairo">القاهرة - Cairo</option>
-                <option value="Giza">الجيزة - Giza</option>
-                <option value="Alexandria">الإسكندرية - Alexandria</option>
-                <option value="Qalyubia">القليوبية - Qalyubia</option>
-                <option value="6th October">6 أكتوبر - 6th October</option>
-                <option value="Nasr City">مدينة نصر - Nasr City</option>
-                <option value="Heliopolis">مصر الجديدة - Heliopolis</option>
-                <option value="Other">أخرى - Other</option>
-              </select>
-            </div>
+                {t('continueToPlans')} →
+              </button>
+            </>
+          ) : null}
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">{tb('changePeriod')}</label>
-              <div className="flex gap-1 rounded-xl bg-slate-800 p-1">
-                {BILLING_PERIODS.map((period) => (
+          {stage === 'plan' ? (
+            <>
+              <h1 className="mb-2 text-center text-2xl font-bold text-white">{t('headlinePlan')}</h1>
+              <p className="mb-8 text-center text-sm text-slate-400">{t('subtitlePlan')}</p>
+
+              <div className="relative mb-8 flex rounded-2xl border border-slate-700/60 bg-slate-900 p-1">
+                <div
+                  className="absolute top-1 bottom-1 rounded-xl bg-teal-600 transition-all duration-300 ease-out"
+                  style={{
+                    width: 'calc(33.33% - 4px)',
+                    insetInlineStart: `calc(${
+                      form.billingPeriod === 'monthly' ? '0' : form.billingPeriod === 'quarterly' ? '33.33' : '66.66'
+                    }% + 4px)`,
+                  }}
+                />
+                {PERIODS.map((p) => (
                   <button
-                    key={period}
+                    key={p}
                     type="button"
-                    onClick={() => setBillingPeriod(period)}
-                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
-                      billingPeriod === period ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'
+                    onClick={() => updateForm('billingPeriod', p)}
+                    className={`relative z-10 flex-1 rounded-xl py-2.5 text-center text-xs font-semibold transition-colors duration-300 ${
+                      form.billingPeriod === p ? 'text-white' : 'text-slate-400'
                     }`}
                   >
-                    <span className="block">{tb(`period.${period}.label` as 'billing.period.monthly.label')}</span>
-                    {period === 'monthly' ? (
-                      <span className="block text-[10px] opacity-70">{tb('period.monthly.premium')}</span>
-                    ) : null}
-                    {period === 'quarterly' ? (
-                      <span className="block text-[10px] opacity-70">{tb('period.quarterly.recommended')}</span>
-                    ) : null}
-                    {period === 'annual' ? (
-                      <span className="block text-[10px] opacity-70">{tb('period.annual.free')}</span>
-                    ) : null}
+                    <div>{tb(`period.${p}.label` as 'billing.period.monthly.label')}</div>
+                    <div className="mt-0.5 text-[10px] font-normal opacity-80">
+                      {p === 'monthly' ? t('monthlyPremiumMark') : null}
+                      {p === 'quarterly' ? tb('period.quarterly.recommended') : null}
+                      {p === 'annual' ? tb('period.annual.free') : null}
+                    </div>
                   </button>
                 ))}
               </div>
-            </div>
 
-            <div>
-              <p className="mb-2 text-sm font-medium text-slate-300">{t('selectPlan')}</p>
-              <div className="grid grid-cols-1 gap-2">
-                {SIGNUP_PLANS.map((plan) => {
-                  const selected = formData.plan === plan.value;
-                  const baseCard =
-                    'cursor-pointer rounded-xl border p-4 transition-all ' +
-                    (plan.custom
-                      ? 'border-amber-500/60 bg-slate-800/50 shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:border-amber-500'
-                      : selected
-                        ? 'border-teal-600 bg-teal-900/20'
-                        : 'border-slate-700 bg-slate-800/50 hover:border-teal-600/50');
-                  const displayMonthly =
-                    !plan.custom && plan.value !== 'top_centers'
-                      ? display99Price(getSignupDisplayMonthlyPrice(plan.value, billingPeriod))
-                      : 0;
-                  return (
-                    <div
-                      key={plan.value}
-                      role="button"
-                      tabIndex={0}
-                      className={baseCard}
-                      onClick={() => {
-                        if (plan.custom) {
-                          window.open(TOP_CENTERS_WHATSAPP, '_blank');
-                        } else {
-                          setFormData((f) => ({ ...f, plan: plan.value }));
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          if (plan.custom) {
-                            window.open(TOP_CENTERS_WHATSAPP, '_blank');
-                          } else {
-                            setFormData((f) => ({ ...f, plan: plan.value }));
-                          }
-                        }
-                      }}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="!text-white text-base font-bold">
-                            {locale === 'ar' ? plan.nameAr : plan.nameEn}
-                          </div>
-                          {!plan.custom ? (
-                            <div className="!text-slate-400 text-xs">
-                              {tb('studentsLimit', { limit: plan.limit.toLocaleString('en-US') })}
-                            </div>
-                          ) : (
-                            <div className="!text-slate-400 text-xs">{t('topCentersDesc')}</div>
-                          )}
+              {SIGNUP_PLANS.map((plan) => (
+                <button
+                  key={plan.key}
+                  type="button"
+                  onClick={() => updateForm('plan', plan.key)}
+                  className={`relative mb-3 w-full overflow-hidden rounded-3xl border-2 p-5 text-start transition-all duration-300 ${
+                    form.plan === plan.key
+                      ? 'border-teal-500 bg-gradient-to-br from-teal-950/60 to-slate-900 shadow-[0_0_30px_rgba(13,148,136,0.2)]'
+                      : 'border-slate-700/40 bg-slate-900/60 hover:border-slate-600'
+                  }`}
+                >
+                  {plan.key === 'starter' ? (
+                    <div className="absolute top-4 start-4 rounded-full bg-teal-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                      {t('mostPopular')}
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
+                          form.plan === plan.key ? 'border-teal-500 bg-teal-500' : 'border-slate-600'
+                        }`}
+                      >
+                        {form.plan === plan.key ? <div className="h-2 w-2 rounded-full bg-white" /> : null}
+                      </div>
+                      <div>
+                        <div className="text-base font-bold text-white">
+                          {locale === 'ar' ? plan.arabicName : plan.name}
                         </div>
-                        <div className="text-end">
-                          {plan.custom ? (
-                            <div className="!text-white text-base font-bold">{tl('custom')}</div>
-                          ) : (
-                            <>
-                              <div className="!text-white text-lg font-bold">
-                                {displayMonthly.toLocaleString('en-US')} {tc('egp')}
-                              </div>
-                              <div className="!text-slate-500 text-xs">{t('perMonthAbbr')}</div>
-                            </>
-                          )}
+                        <div className="mt-0.5 text-xs text-slate-500">
+                          {t('upTo')} {plan.students.toLocaleString('en-US')} {t('studentsPerWeek')}
                         </div>
                       </div>
-                      {!plan.custom ? (
-                        <>
-                          <p className="mt-2 !text-slate-500 text-xs">{getBillingLabel(plan.value)}</p>
-                          {plan.student_limit > 0 ? (
-                            <div className="mt-0.5 text-xs text-teal-500/70">
-                              {tb('perStudentWeekly', {
-                                price: getPerStudentWeeklyCost(
-                                  display99Price(Number(plan.all_in_price)),
-                                  plan.student_limit,
-                                ),
-                              })}
-                            </div>
-                          ) : null}
-                        </>
-                      ) : (
-                        <p className="mt-2 text-xs font-medium text-amber-400/90">{t('contactWhatsApp')}</p>
-                      )}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                    <div className="shrink-0 text-end ms-4">
+                      <div className="text-xl font-black text-white">
+                        {getDisplayPrice(plan, form.billingPeriod).toLocaleString('en-US')}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        {tc('egp')} / {t('month')}
+                      </div>
+                    </div>
+                  </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-referral">
-                {t('referralCode')}
-              </label>
-              <div className="relative">
-                <input
-                  id="signup-referral"
-                  type="text"
-                  value={formData.referralCode}
-                  onChange={(e) => {
-                    setFormData((f) => ({ ...f, referralCode: e.target.value }));
-                    setReferralValidation('idle');
-                  }}
-                  onBlur={async () => {
-                    const code = formData.referralCode.trim().toUpperCase();
-                    if (!code) {
-                      setReferralValidation('idle');
-                      return;
-                    }
-                    setReferralValidation('checking');
-                    try {
-                      const res = await fetch('/api/referral/validate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code }),
-                      });
-                      const data = await res.json();
-                      setReferralValidation(data.valid ? 'valid' : 'invalid');
-                    } catch {
-                      setReferralValidation('invalid');
-                    }
-                  }}
-                  placeholder={t('referralPlaceholder')}
-                  className={`${inputFieldClass} uppercase`}
-                  dir="ltr"
-                />
-                {referralValidation === 'valid' ? (
-                  <span className="absolute end-3 top-1/2 flex -translate-y-1/2 items-center gap-1 text-sm text-emerald-400">
-                    <Check className="h-4 w-4" /> {locale === 'ar' ? '✓ كود صحيح' : 'Valid code'}
-                  </span>
-                ) : null}
-                {referralValidation === 'invalid' ? (
-                  <span className="absolute end-3 top-1/2 flex -translate-y-1/2 items-center gap-1 text-sm text-red-400">
-                    <X className="h-4 w-4" /> {locale === 'ar' ? 'كود غير صحيح' : 'Invalid code'}
-                  </span>
-                ) : null}
-                {referralValidation === 'checking' ? (
-                  <span className="absolute end-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                    {locale === 'ar' ? 'جاري التحقق...' : 'Checking...'}
-                  </span>
-                ) : null}
-              </div>
-            </div>
+                  {form.plan === plan.key ? (
+                    <div className="mt-3 flex items-center gap-4 border-t border-teal-900/60 pt-3 text-xs text-slate-400">
+                      <span>
+                        {getBilledAmount(plan, form.billingPeriod).toLocaleString('en-US')} {tc('egp')}{' '}
+                        {t('billedLabel')}
+                      </span>
+                      <span className="text-teal-500">
+                        {tb('perStudentWeekly', { price: getPerStudentCost(plan, form.billingPeriod) })}
+                      </span>
+                    </div>
+                  ) : null}
+                </button>
+              ))}
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="signup-notes">
-                {t('notes')}
-              </label>
-              <textarea
-                id="signup-notes"
-                value={formData.notes}
-                onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
-                placeholder={t('notesPlaceholder')}
-                rows={2}
-                className={inputFieldClass}
-              />
-            </div>
-
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={formData.terms}
-                onChange={(e) => setFormData((f) => ({ ...f, terms: e.target.checked }))}
-                className="peer sr-only"
-              />
-              <span
-                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-teal-500 ${
-                  formData.terms ? 'border-teal-500 bg-teal-600' : 'border-slate-600 bg-slate-800'
-                }`}
-                aria-hidden
+              <button
+                type="button"
+                onClick={() => window.open(TOP_CENTERS_WHATSAPP, '_blank')}
+                className="mb-3 w-full rounded-3xl border-2 border-amber-600/40 bg-amber-950/20 p-5 text-start transition-all duration-300 hover:border-amber-500/60"
               >
-                {formData.terms ? (
-                  <svg viewBox="0 0 10 8" className="h-3 w-3 stroke-white" fill="none" strokeWidth="1.5">
-                    <path d="M9 1L3.5 7 1 4.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : null}
-              </span>
-              <span className="text-sm leading-relaxed text-slate-300">{t('terms')}</span>
-            </label>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-white">{t('topCentersTitle')}</div>
+                    <div className="mt-0.5 text-xs text-slate-500">{t('topCentersDesc')}</div>
+                  </div>
+                  <div className="text-sm font-semibold text-amber-400">{t('customPricing')}</div>
+                </div>
+              </button>
 
-            <button
-              type="submit"
-              disabled={loading || !formData.terms}
-              className="w-full rounded-xl bg-teal-600 py-3.5 text-base font-bold tracking-wide text-white shadow-md transition-all hover:bg-teal-500 disabled:opacity-50"
-            >
-              {loading ? t('submitting') : t('submit')}
-            </button>
-          </form>
+              {!showReferral ? (
+                <button
+                  type="button"
+                  onClick={() => setShowReferral(true)}
+                  className="mb-6 block text-xs text-slate-500 underline decoration-transparent underline-offset-2 transition-colors hover:text-teal-400 hover:decoration-teal-400"
+                >
+                  {t('haveReferralCode')}
+                </button>
+              ) : (
+                <div className="mb-6">
+                  <FloatingInput
+                    id="su-ref"
+                    label={t('referralCode')}
+                    value={form.referralCode}
+                    onChange={(v) => updateForm('referralCode', v.toUpperCase())}
+                    placeholder={t('referralPlaceholder')}
+                    dir="ltr"
+                  />
+                </div>
+              )}
 
-          <p className="mt-4 text-center text-sm text-slate-400">
-            {t('hasAccount')}{' '}
-            <Link href="/login" className="font-semibold text-teal-400 hover:underline">
-              {t('login')}
-            </Link>
-          </p>
+              <div className="mt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDirection('back');
+                    setStage('info');
+                  }}
+                  className="flex-1 rounded-2xl border border-slate-700 py-4 text-sm font-semibold text-slate-400 transition-all duration-200 hover:border-slate-500 hover:text-white"
+                >
+                  {tc('back')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDirection('forward');
+                    setStage('payment');
+                  }}
+                  disabled={!form.plan || !form.ownerName.trim()}
+                  className="flex-[2] rounded-2xl bg-teal-600 py-4 font-semibold text-white shadow-[0_4px_24px_rgba(13,148,136,0.3)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:opacity-40"
+                >
+                  {t('reviewOrder')} →
+                </button>
+              </div>
+            </>
+          ) : null}
+
+          {stage === 'payment' ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setDirection('back');
+                  setStage('plan');
+                }}
+                className="mb-6 flex items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-white"
+              >
+                ← {tc('back')}
+              </button>
+
+              <h1 className="mb-6 text-center text-2xl font-bold text-white">{t('headlinePayment')}</h1>
+
+              <div className="mb-6 rounded-3xl border border-slate-700/60 bg-slate-900 p-5">
+                <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-teal-700/50 bg-teal-900/40">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                      <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-bold text-white">{form.centerName}</div>
+                    <div className="text-xs text-slate-500">{cityLabel(form.city)}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-b border-slate-800 py-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">{t('plan')}</span>
+                    <span className="font-medium text-white">
+                      {selectedPlan ? (locale === 'ar' ? selectedPlan.arabicName : selectedPlan.name) : ''}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">{tb('changePeriod')}</span>
+                    <span className="font-medium text-white">
+                      {tb(`period.${form.billingPeriod}.label` as 'billing.period.monthly.label')}
+                    </span>
+                  </div>
+                  {form.referralCode ? (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">{t('referralCode')}</span>
+                      <span className="font-mono font-medium text-teal-400">{form.referralCode}</span>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="pt-4">
+                  <div className="flex items-end justify-between">
+                    <span className="text-sm text-slate-400">{t('totalDue')}</span>
+                    <div className="text-end">
+                      <div className="text-2xl font-black text-white">
+                        {getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')} {tc('egp')}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {selectedPlan
+                          ? t('thenMonthly', {
+                              price: getDisplayPrice(selectedPlan, form.billingPeriod).toLocaleString('en-US'),
+                            })
+                          : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <label className="group mb-6 flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.agreeTerms}
+                  onChange={(e) => updateForm('agreeTerms', e.target.checked)}
+                  className="sr-only"
+                />
+                <span
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-200 ${
+                    form.agreeTerms
+                      ? 'border-teal-600 bg-teal-600'
+                      : 'border-slate-600 group-hover:border-slate-400'
+                  }`}
+                  aria-hidden
+                >
+                  {form.agreeTerms ? (
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : null}
+                </span>
+                <span className="text-sm leading-relaxed text-slate-400">{t('terms')}</span>
+              </label>
+
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!form.agreeTerms || loading}
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-teal-600 py-4 text-base font-bold text-white shadow-[0_8px_32px_rgba(13,148,136,0.4)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {loading ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="1" y="11" width="22" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    {t('confirmAndPay')}
+                  </>
+                )}
+              </button>
+
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-slate-600">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="1" y="11" width="22" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                {t('securedByPaymob')}
+              </p>
+            </>
+          ) : null}
         </div>
+
+        <p className="mt-8 text-center text-sm text-slate-400">
+          {t('hasAccount')}{' '}
+          <Link href="/login" className="font-semibold text-teal-400 hover:underline">
+            {t('login')}
+          </Link>
+        </p>
       </div>
     </div>
   );
