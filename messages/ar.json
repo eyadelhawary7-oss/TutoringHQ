@@ -4566,7 +4566,14 @@
     "errorPhoneBlacklisted": "التسجيل غير متاح لهذا الرقم.",
     "paymentUnavailable": "الدفع الإلكتروني غير متاح مؤقتاً. حاول لاحقاً أو تواصل مع الدعم.",
     "monthlyPremiumMark": "+15%",
-    "topCentersTitle": "كبار السناتر"
+    "topCentersTitle": "كبار السناتر",
+    "stageOneTitle": "أخبرنا عن مركزك",
+    "stageOneSubtitle": "سيتم مراجعة طلبك خلال دقائق",
+    "stageTwoTitle": "اختر خطتك",
+    "stageTwoSubtitle": "يمكنك تغيير خطتك في أي وقت",
+    "stageThreeTitle": "تأكيد طلبك",
+    "yourCenter": "مركزك",
+    "phoneHint": "سنتواصل معك على واتساب"
   },
   "students": {
     "allSubjects": "كل المواد",

@@ -2384,7 +2384,14 @@
     "errorPhoneBlacklisted": "Registration is not available for this phone number.",
     "paymentUnavailable": "Online payment is temporarily unavailable. Please try again later or contact support.",
     "monthlyPremiumMark": "+15%",
-    "topCentersTitle": "Top Centers"
+    "topCentersTitle": "Top Centers",
+    "stageOneTitle": "Tell us about your center",
+    "stageOneSubtitle": "Your request will be reviewed within minutes",
+    "stageTwoTitle": "Choose your plan",
+    "stageTwoSubtitle": "You can change your plan anytime",
+    "stageThreeTitle": "Confirm your order",
+    "yourCenter": "Your center",
+    "phoneHint": "We will reach you on WhatsApp"
   },
   "acceptInvite": {
     "title": "Accept Team Invitation",

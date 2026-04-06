@@ -74,8 +74,6 @@ const SIGNUP_PLANS = [
 type SignupPlan = (typeof SIGNUP_PLANS)[number];
 type BillingPeriodUi = 'monthly' | 'quarterly' | 'annual';
 
-const PERIODS: BillingPeriodUi[] = ['monthly', 'quarterly', 'annual'];
-
 function display99Price(price: number): number {
   if (!Number.isFinite(price) || price <= 1) return price;
   return price - 1;
@@ -109,13 +107,14 @@ function getBilledAmount(plan: SignupPlan, period: string): number {
   return getTotalAmount(plan, period);
 }
 
-function FloatingInput({
+function UnderlineInput({
   label,
   value,
   onChange,
   type = 'text',
   placeholder = '',
   hint = '',
+  required = false,
   inputMode,
   dir,
   id,
@@ -126,6 +125,7 @@ function FloatingInput({
   type?: string;
   placeholder?: string;
   hint?: string;
+  required?: boolean;
   inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
   dir?: 'ltr' | 'rtl';
   id?: string;
@@ -134,17 +134,21 @@ function FloatingInput({
   const active = focused || value.length > 0;
 
   return (
-    <div className="relative mb-5">
+    <div className="group relative mb-8">
       <label
         htmlFor={id}
-        className={`pointer-events-none absolute z-10 transition-all duration-200 start-4 ${
-          active ? 'top-2 text-[9px] font-medium text-teal-400' : 'top-4 text-[13px] text-slate-500'
+        className={`pointer-events-none absolute font-medium transition-all duration-300 start-0 ${
+          active
+            ? 'top-0 text-[10px] tracking-wider text-teal-400 uppercase'
+            : 'top-5 text-[13px] text-slate-500'
         }`}
       >
         {label}
+        {required ? <span className="ms-0.5 text-teal-500">*</span> : null}
       </label>
       <input
         id={id}
+        data-chq-underline
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -153,13 +157,16 @@ function FloatingInput({
         placeholder={active ? placeholder : ''}
         inputMode={inputMode}
         dir={dir}
-        className={`w-full rounded-2xl border bg-slate-900 px-4 pb-3 pt-7 text-[13px] text-white transition-all duration-200 outline-none ${
-          focused
-            ? 'border-teal-500 shadow-[0_0_0_3px_rgba(13,148,136,0.15)]'
-            : 'border-slate-700/60 hover:border-slate-600'
-        }`}
+        className="w-full border-0 border-b bg-transparent pt-6 pb-2 text-[14px] text-white outline-none transition-all duration-300 placeholder-slate-600"
+        style={{
+          borderBottomColor: focused ? '#0D9488' : value ? '#334155' : '#1e293b',
+          borderBottomWidth: focused ? '2px' : '1px',
+        }}
       />
-      {hint ? <p className="mt-1.5 px-1 text-[11px] text-slate-500">{hint}</p> : null}
+      {focused ? (
+        <div className="animate-[expandWidth_0.3s_ease-out] absolute end-0 bottom-0 start-0 h-[2px] origin-start rounded-full bg-gradient-to-r from-teal-600 to-teal-300" />
+      ) : null}
+      {hint ? <p className="mt-2 text-[11px] text-slate-600">{hint}</p> : null}
     </div>
   );
 }
@@ -262,55 +269,72 @@ export default function SignupPage() {
   };
 
   const selectedPlan = SIGNUP_PLANS.find((p) => p.key === form.plan);
-  const progressPct = stage === 'info' ? 33 : stage === 'plan' ? 66 : 100;
   const slideAnim = direction === 'forward' ? 'slideIn' : 'slideInBack';
 
-  const cityLabel = (id: string) => CITY_SUMMARY_LABEL[id] ?? id;
+  const stageSubtitle =
+    stage === 'info' ? t('stageOneSubtitle') : stage === 'plan' ? t('stageTwoSubtitle') : t('stageThreeTitle');
+
+  const progressWidth = stage === 'info' ? '33%' : stage === 'plan' ? '66%' : '100%';
+  const progressNow = stage === 'info' ? 33 : stage === 'plan' ? 66 : 100;
 
   if (stage === 'success') {
     return (
       <div
         data-chq-signup
-        className="flex min-h-screen flex-col items-center justify-center bg-[#080D14] p-6 text-center font-['Cairo',sans-serif]"
+        className="relative flex min-h-screen flex-col items-center justify-center bg-[#080D14] p-8 text-center font-['Cairo',sans-serif]"
       >
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-teal-500 bg-teal-900/40 shadow-[0_0_40px_rgba(13,148,136,0.3)]">
-          <svg
-            width="36"
-            height="36"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#0D9488"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+        <div className="pointer-events-none fixed inset-0" aria-hidden>
+          <div
+            className="absolute top-1/2 left-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)',
+            }}
+          />
         </div>
-        <h2 className="mb-3 text-xl font-bold text-white">{t('successTitle')}</h2>
-        <p className="max-w-sm text-xs leading-relaxed text-slate-400">{t('successDesc')}</p>
-        <Link href="/login" className="mt-8 text-[12px] font-semibold text-teal-400 hover:underline">
-          {t('login')}
-        </Link>
+        <div className="relative z-10">
+          <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full border border-teal-700/50 bg-teal-950/50 shadow-[0_0_40px_rgba(13,148,136,0.3)]">
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#0D9488"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <h2 className="mb-3 text-[32px] font-black tracking-tight text-white">{t('successTitle')}</h2>
+          <p className="mx-auto max-w-xs text-[13px] leading-relaxed text-slate-500">{t('successDesc')}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      data-chq-signup
-      className="relative flex min-h-screen flex-col bg-[#080D14] font-['Cairo',sans-serif]"
-    >
+    <div data-chq-signup className="relative min-h-screen bg-[#080D14] font-['Cairo',sans-serif]">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+        <div
+          className="absolute top-[-20%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(13,148,136,0.12) 0%, transparent 70%)',
+            animation: 'breathe 6s ease-in-out infinite',
+          }}
+        />
+      </div>
+
       <div
-        className="fixed start-0 end-0 top-0 z-50 h-[3px] bg-slate-800"
+        className="fixed top-0 right-0 left-0 z-50 h-[2px] bg-slate-800/50"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={progressPct}
+        aria-valuenow={progressNow}
       >
         <div
-          className="h-full bg-gradient-to-r from-teal-600 to-teal-400 transition-all duration-700 ease-out"
-          style={{ width: `${progressPct}%` }}
+          className="h-full bg-gradient-to-r from-teal-600 to-teal-300 transition-all duration-700 ease-out"
+          style={{ width: progressWidth }}
         />
       </div>
 
@@ -326,26 +350,14 @@ export default function SignupPage() {
         </button>
       </div>
 
-      <div className="mx-auto flex max-w-lg flex-col px-4 pt-16 pb-12">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-teal-600 text-sm font-black text-white">
-            CH
+      <div className="relative z-10 mx-auto max-w-md px-6 pt-14 pb-20">
+        <div className="mb-12 flex flex-col items-center">
+          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 shadow-[0_0_20px_rgba(13,148,136,0.4)]">
+            <span className="text-sm font-black text-white">CH</span>
           </div>
-          <div className="text-lg font-bold text-white">CenterHQ</div>
-          <p className="mt-1 text-xs text-slate-400">
-            {stage === 'info'
-              ? t('headlineInfo')
-              : stage === 'plan'
-                ? t('headlinePlan')
-                : t('headlinePayment')}
-          </p>
+          <span className="text-base font-bold tracking-wide text-white">CenterHQ</span>
+          <span className="mt-0.5 text-[11px] text-slate-600">{stageSubtitle}</span>
         </div>
-
-        {error ? (
-          <div className="mb-4 rounded-2xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-[13px] font-medium text-red-300">
-            {error}
-          </div>
-        ) : null}
 
         <div
           key={stage}
@@ -358,23 +370,32 @@ export default function SignupPage() {
         >
           {stage === 'info' ? (
             <>
-              <h1 className="mb-8 text-center text-xl font-bold text-white">{t('headlineInfo')}</h1>
-              <FloatingInput
+              <div className="mb-10">
+                <h1 className="mb-2 text-[28px] font-black leading-tight tracking-tight text-white">
+                  {t('stageOneTitle')}
+                </h1>
+                <p className="text-[12px] text-slate-500">{t('stageOneSubtitle')}</p>
+              </div>
+
+              <UnderlineInput
                 id="su-center"
+                required
                 label={t('centerName')}
                 value={form.centerName}
                 onChange={(v) => updateForm('centerName', v)}
                 placeholder={t('centerNamePlaceholder')}
               />
-              <FloatingInput
+              <UnderlineInput
                 id="su-owner"
+                required
                 label={t('ownerName')}
                 value={form.ownerName}
                 onChange={(v) => updateForm('ownerName', v)}
                 placeholder={t('ownerNamePlaceholder')}
               />
-              <FloatingInput
+              <UnderlineInput
                 id="su-phone"
+                required
                 label={t('phone')}
                 value={form.phone}
                 onChange={(v) => updateForm('phone', v)}
@@ -382,9 +403,9 @@ export default function SignupPage() {
                 inputMode="numeric"
                 dir="ltr"
                 placeholder={t('phonePlaceholder')}
-                hint={t('phoneHelper')}
+                hint={t('phoneHint')}
               />
-              <FloatingInput
+              <UnderlineInput
                 id="su-email"
                 label={t('email')}
                 value={form.email}
@@ -393,44 +414,70 @@ export default function SignupPage() {
                 dir="ltr"
               />
 
-              <div className="relative mb-5">
+              <div className="relative mb-8">
                 <label
                   htmlFor="su-city"
-                  className={`pointer-events-none absolute right-4 z-10 transition-all duration-200 ${
-                    form.city ? 'top-2 text-[9px] font-medium text-teal-400' : 'top-4 text-[13px] text-slate-500'
+                  className={`pointer-events-none absolute font-medium transition-all duration-300 start-0 ${
+                    form.city
+                      ? 'top-0 text-[10px] tracking-wider text-teal-400 uppercase'
+                      : 'top-5 text-[13px] text-slate-500'
                   }`}
                 >
                   {t('city')}
+                  <span className="ms-0.5 text-teal-500">*</span>
                 </label>
                 <select
                   id="su-city"
+                  data-chq-underline
                   value={form.city}
                   onChange={(e) => updateForm('city', e.target.value)}
-                  className={`w-full cursor-pointer appearance-none rounded-2xl border border-slate-700/60 bg-slate-900 px-4 pt-7 pb-3 ps-10 text-[13px] transition-all duration-200 outline-none hover:border-slate-600 ${
-                    form.city ? 'text-white' : 'text-slate-500'
-                  }`}
+                  className="w-full cursor-pointer appearance-none border-0 border-b bg-transparent pt-6 pb-2 text-[14px] text-white outline-none transition-all duration-300"
+                  style={{
+                    borderBottomColor: form.city ? '#334155' : '#1e293b',
+                    borderBottomWidth: '1px',
+                  }}
                 >
-                  <option value="" disabled hidden>
+                  <option value="" disabled hidden style={{ background: '#080D14' }}>
                     {t('selectCity')}
                   </option>
-                  <option value="cairo">القاهرة — Cairo</option>
-                  <option value="giza">الجيزة — Giza</option>
-                  <option value="alexandria">الإسكندرية — Alexandria</option>
-                  <option value="sixth_october">6 أكتوبر — 6th October</option>
-                  <option value="sheikh_zayed">الشيخ زايد — Sheikh Zayed</option>
-                  <option value="nasr_city">مدينة نصر — Nasr City</option>
-                  <option value="new_cairo">القاهرة الجديدة — New Cairo</option>
-                  <option value="heliopolis">مصر الجديدة — Heliopolis</option>
-                  <option value="maadi">المعادي — Maadi</option>
-                  <option value="other">أخرى — Other</option>
+                  <option value="cairo" style={{ background: '#0f172a' }}>
+                    القاهرة — Cairo
+                  </option>
+                  <option value="giza" style={{ background: '#0f172a' }}>
+                    الجيزة — Giza
+                  </option>
+                  <option value="alexandria" style={{ background: '#0f172a' }}>
+                    الإسكندرية — Alexandria
+                  </option>
+                  <option value="sixth_october" style={{ background: '#0f172a' }}>
+                    6 أكتوبر — 6th October
+                  </option>
+                  <option value="sheikh_zayed" style={{ background: '#0f172a' }}>
+                    الشيخ زايد — Sheikh Zayed
+                  </option>
+                  <option value="nasr_city" style={{ background: '#0f172a' }}>
+                    مدينة نصر — Nasr City
+                  </option>
+                  <option value="new_cairo" style={{ background: '#0f172a' }}>
+                    القاهرة الجديدة — New Cairo
+                  </option>
+                  <option value="heliopolis" style={{ background: '#0f172a' }}>
+                    مصر الجديدة — Heliopolis
+                  </option>
+                  <option value="maadi" style={{ background: '#0f172a' }}>
+                    المعادي — Maadi
+                  </option>
+                  <option value="other" style={{ background: '#0f172a' }}>
+                    أخرى — Other
+                  </option>
                 </select>
-                <div className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2">
+                <div className="pointer-events-none absolute bottom-2 start-0">
                   <svg
-                    width="14"
-                    height="14"
+                    width="12"
+                    height="12"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#64748b"
+                    stroke="#475569"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -441,6 +488,12 @@ export default function SignupPage() {
                 </div>
               </div>
 
+              {error ? (
+                <div className="mb-4 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3">
+                  <p className="text-[12px] text-red-400">{error}</p>
+                </div>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => {
@@ -448,151 +501,189 @@ export default function SignupPage() {
                   setStage('plan');
                 }}
                 disabled={!form.centerName || !form.phone || !form.city}
-                className="w-full rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_24px_rgba(13,148,136,0.3)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-4 w-full rounded-2xl bg-teal-600 py-4 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-300 hover:bg-teal-500 hover:shadow-[0_4px_40px_rgba(13,148,136,0.5)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
               >
                 {t('continueToPlans')} →
               </button>
+
+              <p className="mt-6 text-center text-[11px] text-slate-700">
+                {t('hasAccount')}{' '}
+                <Link href="/login" className="text-teal-600 transition-colors hover:text-teal-400">
+                  {t('login')}
+                </Link>
+              </p>
             </>
           ) : null}
 
           {stage === 'plan' ? (
             <>
-              <h1 className="mb-2 text-center text-xl font-bold text-white">{t('headlinePlan')}</h1>
-              <p className="mb-8 text-center text-xs text-slate-400">{t('subtitlePlan')}</p>
+              <div className="mb-8">
+                <h1 className="mb-2 text-[28px] font-black leading-tight tracking-tight text-white">
+                  {t('stageTwoTitle')}
+                </h1>
+                <p className="text-[12px] text-slate-500">{t('stageTwoSubtitle')}</p>
+              </div>
 
-              <div className="relative mb-8 flex rounded-2xl border border-slate-700/60 bg-slate-900 p-1">
-                <div
-                  className="absolute top-1 bottom-1 rounded-xl bg-teal-600 transition-all duration-300 ease-out"
-                  style={{
-                    width: 'calc(33.33% - 4px)',
-                    insetInlineStart: `calc(${
-                      form.billingPeriod === 'monthly' ? '0' : form.billingPeriod === 'quarterly' ? '33.33' : '66.66'
-                    }% + 4px)`,
-                  }}
-                />
-                {PERIODS.map((p) => (
+              <div className="mb-8 flex gap-6 border-b border-slate-800 pb-0">
+                {(['monthly', 'quarterly', 'annual'] as const).map((p) => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => updateForm('billingPeriod', p)}
-                    className={`relative z-10 flex-1 rounded-xl py-2.5 text-center text-[11px] font-semibold transition-colors duration-300 ${
-                      form.billingPeriod === p ? 'text-white' : 'text-slate-400'
+                    className={`relative pb-3 text-[12px] font-semibold transition-all duration-200 ${
+                      form.billingPeriod === p ? 'text-white' : 'text-slate-600 hover:text-slate-400'
                     }`}
                   >
-                    <div>{tb(`period.${p}.label` as 'billing.period.monthly.label')}</div>
-                    <div className="mt-0.5 text-[9px] font-normal opacity-80">
-                      {p === 'monthly' ? t('monthlyPremiumMark') : null}
-                      {p === 'quarterly' ? tb('period.quarterly.recommended') : null}
-                      {p === 'annual' ? tb('period.annual.free') : null}
-                    </div>
+                    {tb(`period.${p}.label` as 'billing.period.monthly.label')}
+                    {form.billingPeriod === p ? (
+                      <div className="absolute end-0 bottom-0 start-0 h-[2px] rounded-full bg-teal-500" />
+                    ) : null}
+                    {p === 'monthly' ? (
+                      <span
+                        className={`ms-1 text-[9px] ${form.billingPeriod === p ? 'text-amber-400' : 'text-slate-700'}`}
+                      >
+                        +15%
+                      </span>
+                    ) : null}
+                    {p === 'annual' ? (
+                      <span
+                        className={`ms-1 text-[9px] ${form.billingPeriod === p ? 'text-teal-400' : 'text-slate-700'}`}
+                      >
+                        -15%
+                      </span>
+                    ) : null}
                   </button>
                 ))}
               </div>
 
-              {SIGNUP_PLANS.map((plan) => (
-                <button
-                  key={plan.key}
-                  type="button"
-                  onClick={() => updateForm('plan', plan.key)}
-                  className={`relative mb-2 w-full overflow-hidden rounded-3xl border-2 p-4 text-start transition-all duration-300 ${
-                    form.plan === plan.key
-                      ? 'border-teal-500 bg-gradient-to-br from-teal-950/60 to-slate-900 shadow-[0_0_30px_rgba(13,148,136,0.2)]'
-                      : 'border-slate-700/40 bg-slate-900/60 hover:border-slate-600'
-                  }`}
-                >
-                  {plan.key === 'starter' ? (
-                    <div className="absolute top-3 right-3 rounded-full bg-teal-600 px-2 py-0.5 text-[9px] font-bold text-white">
-                      {t('mostPopular')}
-                    </div>
-                  ) : null}
+              {SIGNUP_PLANS.map((plan) => {
+                const selected = form.plan === plan.key;
+                const price = getDisplayPrice(plan, form.billingPeriod);
+                return (
+                  <button
+                    key={plan.key}
+                    type="button"
+                    onClick={() => updateForm('plan', plan.key)}
+                    className={`group relative w-full border-b py-5 text-start transition-all duration-300 ${
+                      selected ? 'border-teal-900' : 'border-slate-800/60 hover:border-slate-700'
+                    }`}
+                  >
+                    {selected ? (
+                      <div className="absolute top-0 bottom-0 start-0 w-[2px] rounded-full bg-gradient-to-b from-teal-500 to-teal-700" />
+                    ) : null}
 
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
-                          form.plan === plan.key ? 'border-teal-500 bg-teal-500' : 'border-slate-600'
-                        }`}
-                      >
-                        {form.plan === plan.key ? <div className="h-2 w-2 rounded-full bg-white" /> : null}
-                      </div>
-                      <div>
-                        <div className="text-[13px] font-bold text-white">
-                          {locale === 'ar' ? plan.arabicName : plan.name}
+                    <div className="flex items-center justify-between ps-4">
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
+                            selected ? 'border-teal-500 bg-teal-500' : 'border-slate-700 group-hover:border-slate-500'
+                          }`}
+                        >
+                          {selected ? <div className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
                         </div>
-                        <div className="mt-0.5 text-[11px] text-slate-500">
-                          {t('upTo')} {plan.students.toLocaleString('en-US')} {t('studentsPerWeek')}
+                        <div>
+                          <div
+                            className={`text-[14px] font-bold transition-colors ${
+                              selected ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
+                            }`}
+                          >
+                            {locale === 'ar' ? plan.arabicName : plan.name}
+                          </div>
+                          <div className="mt-0.5 text-[11px] text-slate-600">
+                            {t('upTo')} {plan.students.toLocaleString('en-US')} {t('studentsPerWeek')}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="shrink-0 text-end ms-4">
-                      <div className="text-lg font-black text-white">
-                        {getDisplayPrice(plan, form.billingPeriod).toLocaleString('en-US')}
-                      </div>
-                      <div className="text-[9px] text-slate-500">
-                        {tc('egp')} / {t('month')}
-                      </div>
-                    </div>
-                  </div>
 
-                  {form.plan === plan.key ? (
-                    <div className="mt-3 flex items-center gap-4 border-t border-teal-900/60 pt-3 text-[11px] text-slate-400">
-                      <span>
-                        {getBilledAmount(plan, form.billingPeriod).toLocaleString('en-US')} {tc('egp')}{' '}
-                        {t('billedLabel')}
-                      </span>
-                      <span className="text-teal-500">
-                        {tb('perStudentWeekly', { price: getPerStudentCost(plan, form.billingPeriod) })}
-                      </span>
+                      <div className="shrink-0 text-end">
+                        <div
+                          className={`text-[20px] font-black leading-none transition-colors ${
+                            selected ? 'text-white' : 'text-slate-400'
+                          }`}
+                        >
+                          {price.toLocaleString('en-US')}
+                        </div>
+                        <div className="mt-0.5 text-[9px] text-slate-600">
+                          EGP / {t('month')}
+                        </div>
+                      </div>
                     </div>
-                  ) : null}
-                </button>
-              ))}
+
+                    {selected ? (
+                      <div className="mt-2 flex items-center gap-4 ps-12">
+                        <span className="text-[10px] text-slate-600">
+                          {getBilledAmount(plan, form.billingPeriod).toLocaleString('en-US')} EGP {t('billedLabel')}
+                        </span>
+                        <span className="text-[10px] text-teal-600">
+                          {tb('perStudentWeekly', { price: getPerStudentCost(plan, form.billingPeriod) })}
+                        </span>
+                      </div>
+                    ) : null}
+
+                    {plan.key === 'starter' ? (
+                      <div className="absolute top-5 end-0">
+                        <span className="text-[9px] font-semibold tracking-wider text-teal-400 uppercase">
+                          {t('mostPopular')}
+                        </span>
+                      </div>
+                    ) : null}
+                  </button>
+                );
+              })}
 
               <button
                 type="button"
                 onClick={() => window.open(TOP_CENTERS_WHATSAPP, '_blank')}
-                className="mb-2 w-full rounded-3xl border-2 border-amber-600/40 bg-amber-950/20 p-4 text-start transition-all duration-300 hover:border-amber-500/60"
+                className="group w-full border-b border-slate-800/60 py-5 text-start transition-all duration-300 hover:border-slate-700"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-[13px] font-bold text-white">{t('topCentersTitle')}</div>
-                    <div className="mt-0.5 text-[11px] text-slate-500">{t('topCentersDesc')}</div>
+                    <div className="text-[14px] font-bold text-slate-400 transition-colors group-hover:text-slate-200">
+                      {locale === 'ar' ? 'كبار السناتر' : 'Top Centers'}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-slate-600">{t('topCentersDesc')}</div>
                   </div>
-                  <div className="text-[13px] font-semibold text-amber-400">{t('customPricing')}</div>
+                  <div className="text-[12px] font-medium text-amber-500/70">{t('customPricing')} →</div>
                 </div>
               </button>
 
-              {!showReferral ? (
-                <button
-                  type="button"
-                  onClick={() => setShowReferral(true)}
-                  className="mb-6 block text-[11px] text-slate-500 underline decoration-transparent underline-offset-2 transition-colors hover:text-teal-400 hover:decoration-teal-400"
-                >
-                  {t('haveReferralCode')}
-                </button>
-              ) : (
-                <div className="mb-6">
-                  <FloatingInput
+              <div className="mt-6">
+                {!showReferral ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowReferral(true)}
+                    className="text-[11px] text-slate-700 transition-colors hover:text-teal-500"
+                  >
+                    + {t('haveReferralCode')}
+                  </button>
+                ) : (
+                  <UnderlineInput
                     id="su-ref"
                     label={t('referralCode')}
                     value={form.referralCode}
                     onChange={(v) => updateForm('referralCode', v.toUpperCase())}
-                    placeholder={t('referralPlaceholder')}
+                    placeholder="NASR-7X4K"
                     dir="ltr"
                   />
-                </div>
-              )}
+                )}
+              </div>
 
-              <div className="mt-6 flex gap-3">
+              {error ? (
+                <div className="mb-4 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3">
+                  <p className="text-[12px] text-red-400">{error}</p>
+                </div>
+              ) : null}
+
+              <div className="mt-10 flex gap-4">
                 <button
                   type="button"
                   onClick={() => {
                     setDirection('back');
                     setStage('info');
                   }}
-                  className="flex-1 rounded-2xl border border-slate-700 py-3.5 text-[14px] font-semibold text-slate-400 transition-all duration-200 hover:border-slate-500 hover:text-white"
+                  className="px-6 py-3.5 text-[13px] font-medium text-slate-600 transition-colors hover:text-white"
                 >
-                  {tc('back')}
+                  ← {tc('back')}
                 </button>
                 <button
                   type="button"
@@ -601,7 +692,7 @@ export default function SignupPage() {
                     setStage('payment');
                   }}
                   disabled={!form.plan || !form.ownerName.trim()}
-                  className="flex-[2] rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_24px_rgba(13,148,136,0.3)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:opacity-40"
+                  className="flex-1 rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   {t('reviewOrder')} →
                 </button>
@@ -611,117 +702,118 @@ export default function SignupPage() {
 
           {stage === 'payment' ? (
             <>
-              <button
-                type="button"
-                onClick={() => {
-                  setDirection('back');
-                  setStage('plan');
-                }}
-                className="mb-6 flex items-center gap-1.5 text-[13px] text-slate-500 transition-colors hover:text-white"
-              >
-                ← {tc('back')}
-              </button>
+              <div className="mb-8">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDirection('back');
+                    setStage('plan');
+                  }}
+                  className="mb-6 flex items-center gap-1.5 text-[11px] text-slate-600 transition-colors hover:text-white"
+                >
+                  ← {tc('back')}
+                </button>
+                <h1 className="mb-2 text-[28px] font-black leading-tight tracking-tight text-white">
+                  {t('stageThreeTitle')}
+                </h1>
+              </div>
 
-              <h1 className="mb-6 text-center text-xl font-bold text-white">{t('headlinePayment')}</h1>
-
-              <div className="mb-6 rounded-3xl border border-slate-700/60 bg-slate-900 p-5">
-                <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-teal-700/50 bg-teal-900/40">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2">
-                      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                      <polyline points="9 22 9 12 15 12 15 22" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-[13px] font-bold text-white">{form.centerName}</div>
-                    <div className="text-[11px] text-slate-500">{cityLabel(form.city)}</div>
+              <div className="mb-8">
+                <div className="border-b border-slate-800 pb-5">
+                  <div className="mb-1 text-[11px] tracking-wider text-slate-600 uppercase">{t('yourCenter')}</div>
+                  <div className="text-[20px] font-black text-white">{form.centerName}</div>
+                  <div className="mt-0.5 text-[12px] text-slate-500">
+                    {CITY_SUMMARY_LABEL[form.city] || form.city}
                   </div>
                 </div>
 
-                <div className="space-y-2 border-b border-slate-800 py-4">
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-slate-400">{t('plan')}</span>
-                    <span className="font-medium text-white">
+                <div className="space-y-4 border-b border-slate-800 py-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] tracking-wider text-slate-600 uppercase">{t('plan')}</span>
+                    <span className="text-[14px] font-semibold text-white">
                       {selectedPlan ? (locale === 'ar' ? selectedPlan.arabicName : selectedPlan.name) : ''}
                     </span>
                   </div>
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-slate-400">{tb('changePeriod')}</span>
-                    <span className="font-medium text-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] tracking-wider text-slate-600 uppercase">{tb('changePeriod')}</span>
+                    <span className="text-[14px] font-semibold text-white">
                       {tb(`period.${form.billingPeriod}.label` as 'billing.period.monthly.label')}
                     </span>
                   </div>
                   {form.referralCode ? (
-                    <div className="flex justify-between text-[13px]">
-                      <span className="text-slate-400">{t('referralCode')}</span>
-                      <span className="font-mono font-medium text-teal-400">{form.referralCode}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] tracking-wider text-slate-600 uppercase">{t('referralCode')}</span>
+                      <span className="font-mono text-[13px] text-teal-400">{form.referralCode}</span>
                     </div>
                   ) : null}
                 </div>
 
-                <div className="pt-4">
+                <div className="pt-5">
                   <div className="flex items-end justify-between">
-                    <span className="text-[13px] text-slate-400">{t('totalDue')}</span>
+                    <span className="text-[11px] tracking-wider text-slate-600 uppercase">{t('totalDue')}</span>
                     <div className="text-end">
-                      <div className="text-xl font-black text-white">
-                        {getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')} {tc('egp')}
+                      <div className="text-[32px] font-black leading-none text-white">
+                        {selectedPlan
+                          ? getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')
+                          : '0'}
                       </div>
-                      <div className="text-[11px] text-slate-500">
+                      <div className="mt-1 text-[10px] text-slate-600">
+                        EGP{' '}
                         {selectedPlan
                           ? t('thenMonthly', {
                               price: getDisplayPrice(selectedPlan, form.billingPeriod).toLocaleString('en-US'),
                             })
-                          : null}
+                          : ''}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <label className="group mb-6 flex cursor-pointer items-start gap-3">
-                <input
-                  type="checkbox"
-                  checked={form.agreeTerms}
-                  onChange={(e) => updateForm('agreeTerms', e.target.checked)}
-                  className="sr-only"
-                />
-                <span
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-200 ${
-                    form.agreeTerms
-                      ? 'border-teal-600 bg-teal-600'
-                      : 'border-slate-600 group-hover:border-slate-400'
+              <div className="mb-8 flex items-start gap-3">
+                <button
+                  type="button"
+                  onClick={() => updateForm('agreeTerms', !form.agreeTerms)}
+                  aria-pressed={form.agreeTerms}
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-all duration-200 ${
+                    form.agreeTerms ? 'border-teal-600 bg-teal-600' : 'border-slate-700 hover:border-slate-500'
                   }`}
-                  aria-hidden
                 >
                   {form.agreeTerms ? (
                     <svg
-                      width="10"
-                      height="10"
+                      width="9"
+                      height="9"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="white"
-                      strokeWidth="3"
+                      strokeWidth="3.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     >
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   ) : null}
-                </span>
-                <span className="text-[13px] leading-relaxed text-slate-400">{t('terms')}</span>
-              </label>
+                </button>
+                <span className="text-[12px] leading-relaxed text-slate-500">{t('terms')}</span>
+              </div>
+
+              {error ? (
+                <div className="mb-4 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3">
+                  <p className="text-[12px] text-red-400">{error}</p>
+                </div>
+              ) : null}
 
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={!form.agreeTerms || loading}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-teal-600 py-3.5 text-[14px] font-bold text-white shadow-[0_8px_32px_rgba(13,148,136,0.4)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-teal-600 py-4 text-[14px] font-bold text-white shadow-[0_4px_40px_rgba(13,148,136,0.4)] transition-all duration-300 hover:bg-teal-500 hover:shadow-[0_4px_50px_rgba(13,148,136,0.6)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
               >
                 {loading ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 ) : (
                   <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="1" y="11" width="22" height="11" rx="2" ry="2" />
                       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
@@ -730,8 +822,8 @@ export default function SignupPage() {
                 )}
               </button>
 
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-600">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[10px] text-slate-700">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="1" y="11" width="22" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
@@ -740,13 +832,6 @@ export default function SignupPage() {
             </>
           ) : null}
         </div>
-
-        <p className="mt-8 text-center text-[12px] text-slate-400">
-          {t('hasAccount')}{' '}
-          <Link href="/login" className="font-semibold text-teal-400 hover:underline">
-            {t('login')}
-          </Link>
-        </p>
       </div>
     </div>
   );

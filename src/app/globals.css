@@ -1285,37 +1285,37 @@ html.light [data-chq-signup] .text-slate-500 {
   color: #64748b !important;
 }
 
-[data-chq-signup] input,
-[data-chq-signup] select,
-[data-chq-signup] textarea {
+[data-chq-signup] input:not([data-chq-underline]),
+[data-chq-signup] select:not([data-chq-underline]),
+[data-chq-signup] textarea:not([data-chq-underline]) {
   background-color: rgba(30, 41, 59, 0.6) !important;
   border-color: #475569 !important;
   color: #f8fafc !important;
 }
 
-[data-chq-signup] input::placeholder,
-[data-chq-signup] textarea::placeholder {
+[data-chq-signup] input:not([data-chq-underline])::placeholder,
+[data-chq-signup] textarea:not([data-chq-underline])::placeholder {
   color: #64748b !important;
 }
 
-[data-chq-signup] input:focus,
-[data-chq-signup] select:focus,
-[data-chq-signup] textarea:focus {
+[data-chq-signup] input:not([data-chq-underline]):focus,
+[data-chq-signup] select:not([data-chq-underline]):focus,
+[data-chq-signup] textarea:not([data-chq-underline]):focus {
   border-color: #0D9488 !important;
   outline: none !important;
   box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.3) !important;
 }
 
-html.light [data-chq-signup] input,
-html.light [data-chq-signup] select,
-html.light [data-chq-signup] textarea {
+html.light [data-chq-signup] input:not([data-chq-underline]),
+html.light [data-chq-signup] select:not([data-chq-underline]),
+html.light [data-chq-signup] textarea:not([data-chq-underline]) {
   background-color: rgba(30, 41, 59, 0.6) !important;
   border-color: #475569 !important;
   color: #f8fafc !important;
 }
 
-html.light [data-chq-signup] input::placeholder,
-html.light [data-chq-signup] textarea::placeholder {
+html.light [data-chq-signup] input:not([data-chq-underline])::placeholder,
+html.light [data-chq-signup] textarea:not([data-chq-underline])::placeholder {
   color: #64748b !important;
 }
 
@@ -1332,6 +1332,36 @@ html.light [data-chq-signup] {
 [data-chq-signup] [data-form-card] {
   background-color: rgba(15, 23, 42, 0.8) !important;
   border-color: rgba(71, 85, 105, 0.6) !important;
+}
+
+[data-chq-signup] input[data-chq-underline],
+[data-chq-signup] select[data-chq-underline] {
+  color: #f8fafc !important;
+}
+
+[data-chq-signup] input[data-chq-underline]::placeholder {
+  color: #64748b !important;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes expandWidth {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 /* Signup page stage transitions */
