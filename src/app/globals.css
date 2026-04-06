@@ -1262,6 +1262,29 @@ html.light [data-chq-landing] .text-white\/70 {
   color: rgb(248 250 252 / 0.7) !important;
 }
 
+/* Signup (#080D14) — plan cards stay readable in html.light (text-white remap) */
+[data-chq-signup] .text-white,
+[data-chq-signup] .\!text-white {
+  color: #ffffff !important;
+}
+[data-chq-signup] .text-slate-400 {
+  color: #94a3b8 !important;
+}
+[data-chq-signup] .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.light [data-chq-signup] .text-white,
+html.light [data-chq-signup] .\!text-white {
+  color: #ffffff !important;
+}
+html.light [data-chq-signup] .text-slate-400 {
+  color: #94a3b8 !important;
+}
+html.light [data-chq-signup] .text-slate-500 {
+  color: #64748b !important;
+}
+
 /* ── S6 Scanner ──────────────────────────────────────────── */
 @keyframes scan-pulse {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }

@@ -8,7 +8,6 @@ import { Globe, CheckCircle, Check, X } from 'lucide-react';
 import {
   PLANS,
   getPlanPrice,
-  getPerStudentWeeklyCost,
   getSignupDisplayMonthlyPrice,
   formatPrice,
   type BillingPeriod,
@@ -27,10 +26,15 @@ const SIGNUP_PLANS = SIGNUP_PLAN_ORDER.map((value) => {
     nameAr: p.arabicName,
     nameEn: p.englishName,
     limit: p.weeklyStudentLimit ?? 0,
-    perStudentWeek: value === 'top_centers' ? null : getPerStudentWeeklyCost(value),
     custom: value === 'top_centers',
   };
 });
+
+/** Display-only psychology pricing (DB / API amounts unchanged). */
+function display99Price(price: number): number {
+  if (!Number.isFinite(price) || price <= 1) return price;
+  return price - 1;
+}
 
 const BILLING_PERIODS: BillingPeriod[] = ['monthly', 'quarterly', 'annual'];
 
@@ -111,7 +115,7 @@ export default function SignupPage() {
 
   const getBillingLabel = (planKey: PlanKey) => {
     const total = getPlanPrice(planKey, billingPeriod);
-    const amount = formatPrice(total);
+    const amount = formatPrice(display99Price(total));
     if (billingPeriod === 'monthly') return tb('billedMonthlyLine', { amount });
     if (billingPeriod === 'quarterly') return tb('billedQuarterlyLine', { amount });
     return tb('billedAnnuallyLine', { amount });
@@ -119,7 +123,10 @@ export default function SignupPage() {
 
   if (submitted) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#080D14] px-4 py-12 font-['Cairo',sans-serif]">
+      <div
+        data-chq-signup
+        className="flex min-h-screen flex-col items-center justify-center bg-[#080D14] px-4 py-12 font-['Cairo',sans-serif]"
+      >
         <div className="w-full max-w-sm text-center">
           <div className="rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-xl">
             <CheckCircle size={56} className="mx-auto mb-4 text-teal-500" />
@@ -167,7 +174,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#080D14] px-4 py-12 font-['Cairo',sans-serif]">
+    <div
+      data-chq-signup
+      className="relative flex min-h-screen flex-col items-center justify-center bg-[#080D14] px-4 py-12 font-['Cairo',sans-serif]"
+    >
       <div className="absolute end-4 top-4">
         <button
           type="button"
@@ -318,7 +328,7 @@ export default function SignupPage() {
                         : 'border-slate-700 bg-slate-800/50 hover:border-teal-600/50');
                   const displayMonthly =
                     !plan.custom && plan.value !== 'top_centers'
-                      ? getSignupDisplayMonthlyPrice(plan.value, billingPeriod)
+                      ? display99Price(getSignupDisplayMonthlyPrice(plan.value, billingPeriod))
                       : 0;
                   return (
                     <div
@@ -346,37 +356,32 @@ export default function SignupPage() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <div className="font-semibold text-white">{locale === 'ar' ? plan.nameAr : plan.nameEn}</div>
+                          <div className="!text-white text-base font-bold">
+                            {locale === 'ar' ? plan.nameAr : plan.nameEn}
+                          </div>
                           {!plan.custom ? (
-                            <div className="text-xs text-slate-400">
+                            <div className="!text-slate-400 text-xs">
                               {tb('studentsLimit', { limit: plan.limit.toLocaleString('en-US') })}
                             </div>
                           ) : (
-                            <div className="text-xs text-slate-400">{t('topCentersDesc')}</div>
+                            <div className="!text-slate-400 text-xs">{t('topCentersDesc')}</div>
                           )}
                         </div>
                         <div className="text-end">
                           {plan.custom ? (
-                            <div className="font-bold text-white">{tl('custom')}</div>
+                            <div className="!text-white text-base font-bold">{tl('custom')}</div>
                           ) : (
                             <>
-                              <div className="font-bold text-white">
+                              <div className="!text-white text-lg font-bold">
                                 {displayMonthly.toLocaleString('en-US')} {tc('egp')}
                               </div>
-                              <div className="text-xs text-slate-500">{t('perMonthAbbr')}</div>
+                              <div className="!text-slate-500 text-xs">{t('perMonthAbbr')}</div>
                             </>
                           )}
                         </div>
                       </div>
                       {!plan.custom ? (
-                        <>
-                          <p className="mt-2 text-xs text-slate-400">{getBillingLabel(plan.value)}</p>
-                          {plan.perStudentWeek != null ? (
-                            <p className="mt-1 text-xs font-medium text-teal-400/90">
-                              • {tb('perStudentWeekly', { price: formatPrice(plan.perStudentWeek) })}
-                            </p>
-                          ) : null}
-                        </>
+                        <p className="mt-2 !text-slate-500 text-xs">{getBillingLabel(plan.value)}</p>
                       ) : (
                         <p className="mt-2 text-xs font-medium text-amber-400/90">{t('contactWhatsApp')}</p>
                       )}
