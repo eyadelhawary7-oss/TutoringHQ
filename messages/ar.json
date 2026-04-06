@@ -4581,7 +4581,10 @@
     "allTaxesIncluded": "شامل جميع الضرائب",
     "periodLabel": "الفترة",
     "studentsLabel": "الطلاب",
-    "authNote": "بالتأكيد تفوّض CenterHQ بخصم {amount} EGP {period} تلقائياً"
+    "authNote": "بالتأكيد تفوّض CenterHQ بخصم {amount} EGP {period} تلقائياً",
+    "renewsMonthly": "يتجدد شهرياً بـ {amount} EGP",
+    "renewsQuarterly": "يتجدد ربع سنوياً بـ {amount} EGP",
+    "renewsAnnually": "يتجدد سنوياً بـ {amount} EGP"
   },
   "students": {
     "allSubjects": "كل المواد",

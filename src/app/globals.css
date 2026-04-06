@@ -1322,6 +1322,13 @@ html.light [data-chq-signup] select {
   border-radius: 0 !important;
 }
 
+[data-chq-signup] select option,
+html.light [data-chq-signup] select option {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
 [data-chq-signup] input::placeholder,
 [data-chq-signup] textarea::placeholder,
 html.light [data-chq-signup] input::placeholder,

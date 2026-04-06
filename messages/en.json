@@ -2399,7 +2399,10 @@
     "allTaxesIncluded": "All taxes included",
     "periodLabel": "Period",
     "studentsLabel": "Students",
-    "authNote": "By confirming, you authorize CenterHQ to charge {amount} EGP {period}."
+    "authNote": "By confirming, you authorize CenterHQ to charge {amount} EGP {period}.",
+    "renewsMonthly": "Renews monthly at {amount} EGP",
+    "renewsQuarterly": "Renews quarterly at {amount} EGP",
+    "renewsAnnually": "Renews annually at {amount} EGP"
   },
   "acceptInvite": {
     "title": "Accept Team Invitation",

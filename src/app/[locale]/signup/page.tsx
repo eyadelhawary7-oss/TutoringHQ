@@ -28,6 +28,19 @@ const CITY_SUMMARY_LABEL: Record<string, string> = {
   other: 'أخرى - Other',
 };
 
+const SIGNUP_CITIES = [
+  { id: 'cairo', ar: 'القاهرة', en: 'Cairo' },
+  { id: 'giza', ar: 'الجيزة', en: 'Giza' },
+  { id: 'alexandria', ar: 'الإسكندرية', en: 'Alexandria' },
+  { id: 'sixth_october', ar: '6 أكتوبر', en: '6th October' },
+  { id: 'sheikh_zayed', ar: 'الشيخ زايد', en: 'Sheikh Zayed' },
+  { id: 'nasr_city', ar: 'مدينة نصر', en: 'Nasr City' },
+  { id: 'new_cairo', ar: 'القاهرة الجديدة', en: 'New Cairo' },
+  { id: 'heliopolis', ar: 'مصر الجديدة', en: 'Heliopolis' },
+  { id: 'maadi', ar: 'المعادي', en: 'Maadi' },
+  { id: 'other', ar: 'أخرى', en: 'Other' },
+] as const;
+
 const SIGNUP_PLANS = [
   {
     key: 'nano',
@@ -300,6 +313,15 @@ export default function SignupPage() {
   };
 
   const selectedPlan = SIGNUP_PLANS.find((p) => p.key === form.plan);
+  const renewsKey =
+    form.billingPeriod === 'monthly'
+      ? 'renewsMonthly'
+      : form.billingPeriod === 'annual'
+        ? 'renewsAnnually'
+        : 'renewsQuarterly';
+  const renewsAmount = selectedPlan
+    ? getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')
+    : '0';
   const slideAnim = direction === 'forward' ? 'slideIn' : 'slideInBack';
 
   const stageSubtitle =
@@ -652,21 +674,23 @@ export default function SignupPage() {
                 >
                   {t('allTaxesIncluded')}
                 </div>
-                <div
-                  style={{
-                    ...SANS,
-                    fontSize: '10px',
-                    color: '#334155',
-                    marginTop: '2px',
-                    textAlign: 'right',
-                  }}
-                >
-                  {selectedPlan
-                    ? t('thenMonthly', {
-                        price: getDisplayPrice(selectedPlan, form.billingPeriod).toLocaleString('en-US'),
-                      })
-                    : ''}
-                </div>
+                {selectedPlan ? (
+                  <div
+                    style={{
+                      ...SANS,
+                      fontSize: '10px',
+                      color: '#334155',
+                      marginTop: '2px',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {renewsKey === 'renewsMonthly'
+                      ? t('renewsMonthly', { amount: renewsAmount })
+                      : renewsKey === 'renewsAnnually'
+                        ? t('renewsAnnually', { amount: renewsAmount })
+                        : t('renewsQuarterly', { amount: renewsAmount })}
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -888,11 +912,14 @@ export default function SignupPage() {
                     style={{
                       ...PLAYFAIR,
                       width: '100%',
+                      minHeight: '44px',
+                      height: 'auto',
+                      paddingTop: '24px',
+                      paddingBottom: '10px',
                       background: '#080D14',
                       backgroundColor: '#080D14',
                       border: 'none',
                       borderBottom: form.city ? '1px solid #334155' : '1px solid #1e293b',
-                      padding: '3px 0 9px',
                       color: form.city ? '#f8fafc' : '#475569',
                       outline: 'none',
                       WebkitTextFillColor: form.city ? '#f8fafc' : '#475569',
@@ -901,39 +928,33 @@ export default function SignupPage() {
                       boxSizing: 'border-box',
                     }}
                   >
-                    <option value="" disabled hidden style={{ background: '#080D14' }}>
+                    <option
+                      value=""
+                      disabled
+                      hidden
+                      style={{
+                        background: '#080D14',
+                        color: '#f8fafc',
+                        fontSize: '14px',
+                        padding: '8px',
+                      }}
+                    >
                       {t('selectCity')}
                     </option>
-                    <option value="cairo" style={{ background: '#0f172a' }}>
-                      القاهرة - Cairo
-                    </option>
-                    <option value="giza" style={{ background: '#0f172a' }}>
-                      الجيزة - Giza
-                    </option>
-                    <option value="alexandria" style={{ background: '#0f172a' }}>
-                      الإسكندرية - Alexandria
-                    </option>
-                    <option value="sixth_october" style={{ background: '#0f172a' }}>
-                      6 أكتوبر - 6th October
-                    </option>
-                    <option value="sheikh_zayed" style={{ background: '#0f172a' }}>
-                      الشيخ زايد - Sheikh Zayed
-                    </option>
-                    <option value="nasr_city" style={{ background: '#0f172a' }}>
-                      مدينة نصر - Nasr City
-                    </option>
-                    <option value="new_cairo" style={{ background: '#0f172a' }}>
-                      القاهرة الجديدة - New Cairo
-                    </option>
-                    <option value="heliopolis" style={{ background: '#0f172a' }}>
-                      مصر الجديدة - Heliopolis
-                    </option>
-                    <option value="maadi" style={{ background: '#0f172a' }}>
-                      المعادي - Maadi
-                    </option>
-                    <option value="other" style={{ background: '#0f172a' }}>
-                      أخرى - Other
-                    </option>
+                    {SIGNUP_CITIES.map((city) => (
+                      <option
+                        key={city.id}
+                        value={city.id}
+                        style={{
+                          background: '#0f172a',
+                          color: '#f8fafc',
+                          fontSize: '14px',
+                          padding: '8px',
+                        }}
+                      >
+                        {locale === 'ar' ? city.ar : city.en} - {locale === 'ar' ? city.en : city.ar}
+                      </option>
+                    ))}
                   </select>
                   <div className="pointer-events-none absolute bottom-2 start-0">
                     <svg
