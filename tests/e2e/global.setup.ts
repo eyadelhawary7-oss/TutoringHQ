@@ -8,9 +8,9 @@ setup('authenticate once for all tests', async ({ page }) => {
   const base = process.env.PLAYWRIGHT_BASE_URL || 'https://center-hq.vercel.app'
 
   await page.goto(`${base}/ar/login`)
-  await page.getByPlaceholder('رقم الهاتف').fill(process.env.TEST_PHONE!)
-  await page.getByPlaceholder('الرقم السري').fill(process.env.TEST_PIN!)
-  await page.getByRole('button', { name: 'إرسال' }).click()
+  await page.locator('input[type="tel"]').fill(process.env.TEST_PHONE!, { timeout: 30_000 })
+  await page.locator('input[type="password"]').fill(process.env.TEST_PIN!, { timeout: 30_000 })
+  await page.getByRole('button', { name: /إرسال|تسجيل/ }).click()
   await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
 
   // Ensure directory exists
