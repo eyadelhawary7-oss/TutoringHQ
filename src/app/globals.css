@@ -560,6 +560,18 @@ html.light {
   /* They look correct on both dark and light backgrounds */
 }
 
+html [data-chq-landing],
+html.light [data-chq-landing] {
+  --color-surface-0: #080f1a !important;
+  --color-surface-1: #0f172a !important;
+  --color-surface-2: #1e293b !important;
+  --color-surface-3: #334155 !important;
+  --color-text-primary: #f8fafc !important;
+  --color-text-secondary: #cbd5e1 !important;
+  --color-text-muted: #64748b !important;
+  --color-border: #1e293b !important;
+}
+
 /* Light theme — component overrides */
 html.light .card {
   background: #ffffff;

@@ -194,16 +194,6 @@ export default function LocaleHomePage() {
   const [screenIndex, setScreenIndex] = useState(0);
 
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-    document.documentElement.classList.remove('light');
-    return () => {
-      const saved = localStorage.getItem('chq-theme') ?? 'dark';
-      document.documentElement.classList.toggle('dark', saved === 'dark');
-      document.documentElement.classList.toggle('light', saved === 'light');
-    };
-  }, []);
-
-  useEffect(() => {
     const timings: Record<DemoScreen, number> = {
       scanning: 2500,
       scanned: 1800,
