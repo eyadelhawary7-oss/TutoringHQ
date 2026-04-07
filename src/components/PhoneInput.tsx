@@ -47,7 +47,7 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
         </label>
         <div className="relative" dir="ltr">
           <Phone size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)] pointer-events-none" />
-          <div className="flex items-center w-full ps-9 pe-4 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)]">
+          <div className="flex items-center w-full ps-9 pe-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]">
             <span className="text-[var(--color-text-secondary)] font-medium shrink-0 text-sm select-none me-2">+20</span>
             <input
               id="phone"
@@ -60,7 +60,7 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
                 setValidationError('');
               }}
               placeholder="1XXXXXXXXX"
-              className="flex-1 min-w-0 bg-transparent outline-none text-[var(--color-text-primary)] text-sm"
+              className="flex-1 min-w-0 bg-transparent outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm"
               maxLength={10}
               required
             />

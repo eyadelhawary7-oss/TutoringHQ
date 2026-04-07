@@ -75,7 +75,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
     if (centerCount >= 5) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
     if (centerCount >= 2) return 'bg-amber-500/15 text-amber-700 dark:text-amber-400';
     if (centerCount === 1) return 'bg-sky-500/15 text-sky-600 dark:text-sky-400';
-    return 'bg-slate-500/15 text-[var(--color-text-secondary)]';
+    return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]';
   };
 
   return (
@@ -107,7 +107,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                     key={`stage-${stageKey}`}
                     className={`rounded-lg border px-4 py-3 min-w-[100px] text-center ${
                       stageKey === 'closed'
-                        ? 'border-[#0D9488]/40 bg-[#0D9488]/10'
+                        ? 'border-teal-600/40 bg-teal-600/10'
                         : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]'
                     }`}
                   >
@@ -130,7 +130,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                     className="flex flex-col items-center gap-0.5 text-[var(--color-text-secondary)] shrink-0"
                   >
                     <ArrowRight className="h-4 w-4" aria-hidden />
-                    <span className="text-[10px] rounded-full bg-slate-200/80 dark:bg-slate-700 px-2 py-0.5 font-mono">
+                    <span className="text-[10px] rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 font-mono">
                       {convRate(count, nextCount)}
                     </span>
                   </div>
@@ -188,7 +188,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                       <td
                         className={`py-2 pe-3 font-mono font-semibold ${
                           centerCount > 0
-                            ? 'text-[#0D9488]'
+                            ? 'text-teal-600 dark:text-teal-400'
                             : 'text-[var(--color-text-tertiary)]'
                         }`}
                       >
@@ -249,12 +249,12 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                 {n(referral.totalReferrals).toLocaleString('en-US')}
               </p>
             </div>
-            <div className="rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 p-4">
-              <div className="flex items-center gap-2 text-[#0D9488] text-xs mb-2">
+            <div className="rounded-xl border border-teal-600/30 bg-teal-600/5 p-4">
+              <div className="flex items-center gap-2 text-teal-700 dark:text-teal-300 text-xs mb-2">
                 <CheckCircle className="h-4 w-4 shrink-0" />
                 {t('referralConverted')}
               </div>
-              <p className="text-xl font-bold font-mono text-[#0D9488]">
+              <p className="text-xl font-bold font-mono text-teal-700 dark:text-teal-300">
                 {n(referral.converted).toLocaleString('en-US')}
               </p>
             </div>

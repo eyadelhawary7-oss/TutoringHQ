@@ -70,7 +70,7 @@ function statusBadgeClass(status: string): string {
     case 'cancelled':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
     default:
-      return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+      return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border)]';
   }
 }
 
@@ -190,14 +190,14 @@ export default function OrdersPage() {
       <div className="px-4 pt-4 pb-6 max-w-3xl mx-auto w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-white">{t('ordersTitle')}</h1>
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('ordersTitle')}</h1>
             <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('ordersSubtitle')}</p>
           </div>
           {centerId && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
-              className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-colors shrink-0"
+              className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-primary-foreground text-sm font-semibold rounded-xl transition-colors shrink-0"
             >
               {t('newOrder')}
             </button>
@@ -231,7 +231,7 @@ export default function OrdersPage() {
               <button
                 type="button"
                 onClick={() => setShowModal(true)}
-                className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-primary-foreground text-sm font-semibold rounded-xl transition-colors"
               >
                 {t('newOrder')}
               </button>

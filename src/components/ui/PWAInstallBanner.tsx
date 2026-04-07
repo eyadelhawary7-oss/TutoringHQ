@@ -57,13 +57,13 @@ export function PWAInstallBanner() {
           <span className="text-white font-bold text-sm">CH</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white">{t('installTitle')}</p>
-          <p className="text-xs text-slate-400 mt-0.5">{t('installSubtitle')}</p>
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">{t('installTitle')}</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('installSubtitle')}</p>
         </div>
         <button
           type="button"
           onClick={handleDismiss}
-          className="text-slate-500 hover:text-slate-300 btn-press chq-focus rounded-lg p-1 shrink-0"
+          className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] btn-press chq-focus rounded-lg p-1 shrink-0"
           aria-label={t('dismissAria')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
@@ -82,7 +82,7 @@ export function PWAInstallBanner() {
         <button
           type="button"
           onClick={handleDismiss}
-          className="px-4 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl py-2 text-sm btn-press chq-focus transition-colors"
+          className="px-4 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl py-2 text-sm btn-press chq-focus transition-colors"
         >
           {t('later')}
         </button>

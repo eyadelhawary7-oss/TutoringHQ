@@ -130,11 +130,11 @@ export default function BenchmarksPage() {
         <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
         <div className="max-w-md mx-auto text-center pt-10 md:pt-16">
           <BenchmarkLockIllustration />
-          <h2 className="text-xl font-bold text-white mt-6">{t('districtTitle')}</h2>
-          <p className="text-sm text-slate-400 mt-2">{t('emptySubheading')}</p>
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)] mt-6">{t('districtTitle')}</h2>
+          <p className="text-sm text-[var(--color-text-muted)] mt-2">{t('emptySubheading')}</p>
 
           <div className="mt-8 text-start">
-            <div className="flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+            <div className="flex justify-between text-xs font-medium text-[var(--color-text-muted)] mb-1">
               <span>
                 {t('progressLabel', {
                   current: currentCenters.toLocaleString('en-US'),
@@ -143,7 +143,7 @@ export default function BenchmarksPage() {
               </span>
               <span className="tabular-nums">{progressPct}%</span>
             </div>
-            <div className="h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+            <div className="h-2.5 rounded-full bg-[var(--color-surface-3)] overflow-hidden">
               <div
                 className="h-full rounded-full bg-teal-500 transition-all duration-500"
                 style={{ width: `${progressPct}%` }}
@@ -151,7 +151,7 @@ export default function BenchmarksPage() {
             </div>
           </div>
 
-          <p className="text-sm text-slate-400 mt-6 leading-relaxed">
+          <p className="text-sm text-[var(--color-text-muted)] mt-6 leading-relaxed">
             {isNoDistrict ? t('noDistrict') : t('emptyBody')}
           </p>
 
@@ -159,14 +159,14 @@ export default function BenchmarksPage() {
             {isNoDistrict ? (
               <Link
                 href="/settings"
-                className="btn-lift inline-flex items-center justify-center px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-colors"
+                className="btn-lift inline-flex items-center justify-center px-6 py-3 bg-teal-600 hover:bg-teal-700 text-primary-foreground font-semibold rounded-xl transition-colors"
               >
                 {t('settingsCta')}
               </Link>
             ) : (
               <Link
                 href="/referrals"
-                className="btn-lift inline-flex items-center justify-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-colors"
+                className="btn-lift inline-flex items-center justify-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-primary-foreground font-semibold rounded-xl transition-colors"
               >
                 <Gift size={20} />
                 {t('referEarnCta')}
@@ -210,23 +210,23 @@ export default function BenchmarksPage() {
           return (
             <div
               key={key}
-              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-6 card-shadow"
+              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 card-shadow"
             >
-              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
+              <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm mb-2">
                 <Icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                 {t(key)}
               </div>
-              <p className="text-3xl font-bold text-white mb-1">{format(yourVal)}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              <p className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">{format(yourVal)}</p>
+              <p className="text-sm text-[var(--color-text-muted)] mb-4">
                 {t('districtAvg')}: {format(avgVal)}
               </p>
-              <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-3">
+              <div className="h-2 bg-[var(--color-surface-3)] rounded-full overflow-hidden mb-3">
                 <div
                   className="h-full bg-teal-500 rounded-full transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{t(descKey, { percentile: pct.toFixed(0) })}</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-3">{t(descKey, { percentile: pct.toFixed(0) })}</p>
               {(() => {
                 const isMoney = key === 'revenue';
                 const youN = isMoney ? yourVal : yourVal * 100;

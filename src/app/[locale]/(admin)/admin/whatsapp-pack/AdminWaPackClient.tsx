@@ -97,7 +97,7 @@ function billingBadgeClass(status: WaPackBillingSummary['status']): string {
     case 'failed':
       return 'bg-red-100 text-red-800 border border-red-200'
     default:
-      return 'bg-slate-100 text-slate-700 border border-slate-200'
+      return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
   }
 }
 
@@ -122,13 +122,13 @@ function PackToggle({
       onClick={onToggle}
       className={cn(
         'flex h-7 w-12 shrink-0 items-center rounded-full p-0.5 transition-colors',
-        value ? 'bg-teal-600' : 'bg-slate-300 dark:bg-slate-600',
+        value ? 'bg-teal-600' : 'bg-[var(--color-surface-3)]',
         disabled && 'cursor-not-allowed opacity-50',
       )}
     >
       <span
         className={cn(
-          'h-6 w-6 rounded-full bg-slate-200 shadow transition-[margin]',
+          'h-6 w-6 rounded-full bg-[var(--color-surface-1)] shadow transition-[margin]',
           value ? 'ms-auto' : 'ms-0',
         )}
       />
@@ -407,8 +407,8 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
               className={cn(
                 'rounded-full px-4 py-2 text-sm font-medium transition-shadow',
                 activeTab === 'centers'
-                  ? 'ring-2 ring-teal-500 bg-teal-900 text-white'
-                  : 'bg-slate-800 text-slate-400',
+                  ? 'ring-2 ring-teal-500 bg-teal-600 text-white'
+                  : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]',
               )}
             >
               {tRoot('admin.centersTab')}
@@ -419,8 +419,8 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
               className={cn(
                 'inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-shadow',
                 activeTab === 'requests'
-                  ? 'ring-2 ring-teal-500 bg-teal-900 text-white'
-                  : 'bg-slate-800 text-slate-400',
+                  ? 'ring-2 ring-teal-500 bg-teal-600 text-white'
+                  : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]',
               )}
             >
               {tRoot('admin.packRequestsTab')}
@@ -438,29 +438,29 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                 <table className="w-full text-start text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
-                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {t('centerName')}
                       </th>
-                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">{t('plan')}</th>
-                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">{t('plan')}</th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {t('activeParents')}
                       </th>
-                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {t('monthlyAmount')}
                       </th>
-                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {tRoot('admin.announcementBalance')}
                       </th>
-                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {tRoot('admin.packRequestStatus')}
                       </th>
-                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {tRoot('admin.pendingBalance')}
                       </th>
-                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {t('billingStatus')}
                       </th>
-                      <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {t('packEnabled')}
                       </th>
                     </tr>
@@ -496,7 +496,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                             <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
                               {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
                             </p>
-                            <div className="mt-1 h-[3px] w-full rounded bg-slate-700">
+                            <div className="mt-1 h-[3px] w-full rounded bg-[var(--color-surface-3)]">
                               <div
                                 className={cn('h-[3px] rounded', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
                                 style={{ width: `${pct}%` }}
@@ -593,7 +593,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         <p className="mt-0.5 text-xs tabular-nums text-[var(--color-text-primary)]">
                           {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
                         </p>
-                        <div className="mt-1 h-[3px] w-full rounded bg-slate-700">
+                        <div className="mt-1 h-[3px] w-full rounded bg-[var(--color-surface-3)]">
                           <div
                             className={cn('h-[3px] rounded', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
                             style={{ width: `${pct}%` }}
@@ -650,17 +650,17 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                   <table className="w-full text-start text-sm">
                     <thead>
                       <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
-                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                           {t('centerName')}
                         </th>
-                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">{t('plan')}</th>
-                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">{t('plan')}</th>
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                           {tRoot('admin.phone')}
                         </th>
-                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                           {tRoot('admin.packRequestedAtColumn')}
                         </th>
-                        <th className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                        <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                           {tRoot('admin.actions')}
                         </th>
                       </tr>
@@ -829,7 +829,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                         setCustomMinimum('')
                                         setApproveInlineError(null)
                                       }}
-                                      className="rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+                                      className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                                     >
                                       {tRoot('common.cancel')}
                                     </button>
@@ -921,7 +921,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                         setRejectReason('')
                                         setRejectInlineError(null)
                                       }}
-                                      className="rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+                                      className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                                     >
                                       {tRoot('common.cancel')}
                                     </button>

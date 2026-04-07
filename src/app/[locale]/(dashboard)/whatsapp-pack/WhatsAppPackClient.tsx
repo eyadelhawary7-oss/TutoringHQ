@@ -281,7 +281,7 @@ export default function WhatsAppPackClient({
               type="button"
               disabled={togglingPack}
               onClick={() => setShowDisableConfirm(true)}
-              className="text-sm font-medium text-red-400 border border-red-500/60 rounded-lg px-3 py-1.5 hover:bg-red-950/30 disabled:opacity-50"
+              className="text-sm font-medium text-red-600 dark:text-red-400 border border-red-500/60 rounded-lg px-3 py-1.5 hover:bg-red-500/10 disabled:opacity-50"
             >
               {t('whatsapp.disablePack')}
             </button>
@@ -321,7 +321,7 @@ export default function WhatsAppPackClient({
                     type="button"
                     disabled={togglingPack}
                     onClick={() => setShowDisableConfirm(false)}
-                    className="rounded-lg border border-slate-600 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+                    className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                   >
                     {t('common.cancel')}
                   </button>
@@ -339,7 +339,7 @@ export default function WhatsAppPackClient({
             </h2>
             <button
               type="button"
-              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
               onClick={() => setParentsExpanded((prev) => !prev)}
               aria-label={
                 parentsExpanded ? t('whatsapp.collapseParents') : t('whatsapp.expandParents')
@@ -368,7 +368,7 @@ export default function WhatsAppPackClient({
               <div className="p-4 sm:p-6 space-y-6">
                 <div className="relative mb-3">
                   <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-muted)] pointer-events-none"
                     aria-hidden
                   />
                   <input
@@ -376,13 +376,13 @@ export default function WhatsAppPackClient({
                     value={parentSearch}
                     onChange={(e) => setParentSearch(e.target.value)}
                     placeholder={t('whatsapp.searchParents')}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg ps-9 pe-10 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-lg ps-9 pe-10 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
                   />
                   {parentSearch ? (
                     <button
                       type="button"
                       onClick={() => setParentSearch('')}
-                      className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                       aria-label={t('whatsapp.clearParentSearch')}
                     >
                       <X className="h-3.5 w-3.5" aria-hidden />
@@ -390,21 +390,21 @@ export default function WhatsAppPackClient({
                   ) : null}
                 </div>
                 {filteredGroupedEntries.length === 0 ? (
-                  <p className="text-sm text-slate-500 text-center py-4">{t('whatsapp.noSearchResults')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] text-center py-4">{t('whatsapp.noSearchResults')}</p>
                 ) : (
                   filteredGroupedEntries.map(([phone, group]) => (
                 <div key={phone} className="rounded-lg border border-[var(--color-border-subtle)] overflow-hidden">
-                  <div className="bg-teal-900/20 px-3 py-2 font-medium text-sm text-teal-100 tabular-nums">
+                  <div className="bg-teal-600/15 px-3 py-2 font-medium text-sm text-[var(--color-text-primary)] tabular-nums">
                     {phone}
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
-                          <th className="text-start px-3 py-2 font-semibold">{t('common.name')}</th>
-                          <th className="text-start px-3 py-2 font-semibold">{t('students.studentId')}</th>
-                          <th className="text-start px-3 py-2 font-semibold">{t('whatsapp.notifications')}</th>
-                          <th className="text-start px-3 py-2 font-semibold">{t('whatsapp.lastAlert')}</th>
+                          <th className="text-start px-3 py-2 font-semibold text-[var(--color-text-muted)]">{t('common.name')}</th>
+                          <th className="text-start px-3 py-2 font-semibold text-[var(--color-text-muted)]">{t('students.studentId')}</th>
+                          <th className="text-start px-3 py-2 font-semibold text-[var(--color-text-muted)]">{t('whatsapp.notifications')}</th>
+                          <th className="text-start px-3 py-2 font-semibold text-[var(--color-text-muted)]">{t('whatsapp.lastAlert')}</th>
                           <th className="w-24 px-3 py-2" />
                         </tr>
                       </thead>
@@ -413,8 +413,8 @@ export default function WhatsAppPackClient({
                           const isOpted = student.parent_pack_opted_in ?? false;
                           return (
                             <tr key={student.id} className="border-b border-[var(--color-border-subtle)]">
-                              <td className="px-3 py-2 font-medium">{student.name}</td>
-                              <td className="px-3 py-2 text-xs text-slate-400 tabular-nums">
+                              <td className="px-3 py-2 font-medium text-[var(--color-text-primary)]">{student.name}</td>
+                              <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)] tabular-nums">
                                 #{student.student_number ?? '-'}
                               </td>
                               <td className="px-3 py-2">
@@ -453,25 +453,25 @@ export default function WhatsAppPackClient({
                                   }}
                                   className={cn(
                                     'relative inline-flex h-7 w-12 shrink-0 rounded-full p-0.5 transition-colors',
-                                    isOpted ? 'bg-teal-600' : 'bg-slate-600',
+                                    isOpted ? 'bg-teal-600' : 'bg-[var(--color-surface-3)]',
                                   )}
                                 >
                                   <span
                                     className={cn(
-                                      'h-6 w-6 rounded-full bg-slate-200 shadow transition-[margin]',
+                                      'h-6 w-6 rounded-full bg-[var(--color-surface-1)] shadow transition-[margin]',
                                       isOpted ? 'ms-auto' : 'ms-0',
                                     )}
                                   />
                                 </button>
                               </td>
-                              <td className="px-3 py-2 text-xs text-slate-400 whitespace-nowrap">
+                              <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)] whitespace-nowrap">
                                 {lastAlertLabel(student.parent_phone)}
                               </td>
                               <td className="px-3 py-2">
                                 {confirmClearId !== student.id ? (
                                   <button
                                     type="button"
-                                    className="text-slate-400 hover:text-red-400 text-lg leading-none"
+                                    className="text-[var(--color-text-muted)] hover:text-red-500 text-lg leading-none"
                                     aria-label={t('common.delete')}
                                     onClick={() => setConfirmClearId(student.id)}
                                   >
@@ -569,7 +569,7 @@ export default function WhatsAppPackClient({
             <p className="text-xs text-[var(--color-text-tertiary)] mb-1">
               {balance.toLocaleString('en-US')} EGP / {cap.toLocaleString('en-US')} EGP {t('whatsapp.announcementUsedOfCap')}
             </p>
-            <div className="w-full h-1 rounded bg-slate-200 dark:bg-slate-700 overflow-hidden" aria-hidden>
+            <div className="w-full h-1 rounded bg-[var(--color-surface-3)] overflow-hidden" aria-hidden>
               <div
                 className={cn('h-1 rounded transition-all', pct < 90 ? 'bg-teal-600' : 'bg-amber-500')}
                 style={{ width: `${pct}%` }}
@@ -586,7 +586,7 @@ export default function WhatsAppPackClient({
               }}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-shadow',
-                blastType === 'ops' ? 'ring-2 ring-teal-500 bg-teal-900 text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]',
+                blastType === 'ops' ? 'ring-2 ring-teal-500 bg-teal-600 text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]',
               )}
             >
               {t('billing.blastOps')}
@@ -599,7 +599,7 @@ export default function WhatsAppPackClient({
               }}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-shadow',
-                blastType === 'promo' ? 'ring-2 ring-teal-500 bg-teal-900 text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]',
+                blastType === 'promo' ? 'ring-2 ring-teal-500 bg-teal-600 text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]',
               )}
             >
               {t('billing.blastPromo')}
@@ -617,7 +617,7 @@ export default function WhatsAppPackClient({
                 setMessage(e.target.value);
                 setAnnouncementInlineError(null);
               }}
-              className="w-full min-h-[100px] rounded-lg border border-slate-600 bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              className="w-full min-h-[100px] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
             />
             <p className="text-end text-xs text-[var(--color-text-tertiary)] mt-1" data-announcement-counter>
               {message.length}/{ANNOUNCEMENT_MESSAGE_MAX}
@@ -625,7 +625,7 @@ export default function WhatsAppPackClient({
           </div>
 
           <div className="flex justify-end" dir="ltr">
-            <div className="max-w-[min(100%,20rem)] rounded-2xl rounded-tr-sm bg-[#dcf8c6] dark:bg-[#056162] px-3 py-2.5 text-sm text-slate-900 dark:text-slate-50 shadow-sm">
+            <div className="max-w-[min(100%,20rem)] rounded-2xl rounded-tr-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] shadow-sm">
               {blastType === 'ops'
                 ? t('whatsapp.previewOps', { center: center.name, message: message.trim() || '…' })
                 : blastType === 'promo'
@@ -708,7 +708,7 @@ export default function WhatsAppPackClient({
                     type="button"
                     disabled={sending}
                     onClick={() => setShowConfirm(false)}
-                    className="rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    className="rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                   >
                     {t('common.cancel')}
                   </button>
@@ -750,7 +750,9 @@ export default function WhatsAppPackClient({
                       <span
                         className={cn(
                           'text-xs font-medium rounded px-2 py-0.5',
-                          blast.blast_type === 'ops' ? 'bg-teal-900 text-teal-200' : 'bg-amber-900 text-amber-200',
+                          blast.blast_type === 'ops'
+                            ? 'bg-teal-600/15 text-teal-700 dark:text-teal-300'
+                            : 'bg-amber-500/15 text-amber-800 dark:text-amber-200',
                         )}
                       >
                         {blast.blast_type === 'ops' ? t('billing.blastOps') : t('billing.blastPromo')}

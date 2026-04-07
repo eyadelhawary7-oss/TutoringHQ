@@ -46,7 +46,8 @@ interface Commission {
 }
 
 const T1_COLORS: Record<string, string> = {
-  pending: 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
+  pending:
+    'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)]',
   eligible:
     'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30',
   paid: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300',
@@ -54,7 +55,8 @@ const T1_COLORS: Record<string, string> = {
 }
 
 const T2_COLORS: Record<string, string> = {
-  locked: 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
+  locked:
+    'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)]',
   eligible:
     'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30',
   paid: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300',
@@ -278,7 +280,7 @@ export default function CommissionsPage() {
 
   if (!gateOk) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-slate-400">
+      <div className="min-h-screen flex items-center justify-center text-[var(--color-text-muted)]">
         {tCommon('loading')}
       </div>
     )
@@ -298,10 +300,10 @@ export default function CommissionsPage() {
             <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
+            <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
               {t('commissions.title')}
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-[var(--color-text-muted)]">
               {t('commissions.record_count', {
                 count: commissions.length.toLocaleString('en-US'),
               })}
@@ -317,7 +319,7 @@ export default function CommissionsPage() {
 
         <div className="flex gap-4 flex-wrap">
           <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-slate-500 dark:text-slate-400 me-1">
+            <span className="text-xs text-[var(--color-text-muted)] me-1">
               {t('commissions.filter_t1')}:
             </span>
             {(['all', 'pending', 'eligible', 'paid', 'clawed_back'] as const).map((s) => (
@@ -328,7 +330,7 @@ export default function CommissionsPage() {
                 className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
                   filterT1 === s
                     ? 'bg-teal-600 text-white'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
                 }`}
               >
                 {s === 'all' ? t('filterAll') : t(`commissions.t1_${s}`)}
@@ -336,7 +338,7 @@ export default function CommissionsPage() {
             ))}
           </div>
           <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-slate-500 dark:text-slate-400 me-1">
+            <span className="text-xs text-[var(--color-text-muted)] me-1">
               {t('commissions.filter_t2')}:
             </span>
             {(['all', 'locked', 'eligible', 'paid', 'forfeited'] as const).map((s) => (
@@ -347,7 +349,7 @@ export default function CommissionsPage() {
                 className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
                   filterT2 === s
                     ? 'bg-teal-600 text-white'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
                 }`}
               >
                 {s === 'all' ? t('filterAll') : t(`commissions.t2_${s}`)}
@@ -358,18 +360,18 @@ export default function CommissionsPage() {
 
         <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
           {loading ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+            <div className="p-12 text-center text-[var(--color-text-muted)]">
               {tCommon('loading')}
             </div>
           ) : commissions.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+            <div className="p-12 text-center text-[var(--color-text-muted)]">
               {t('commissions.no_commissions')}
             </div>
           ) : (
             <table className="w-full text-sm min-w-[900px]">
-              <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
+              <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
                 <tr
-                  className={`text-slate-500 dark:text-slate-400 ${isRTL ? 'text-end' : 'text-start'}`}
+                  className={`text-[var(--color-text-muted)] ${isRTL ? 'text-end' : 'text-start'}`}
                 >
                   <th className="px-4 py-3 font-medium">{t('commissions.col_center')}</th>
                   <th className="px-4 py-3 font-medium">{t('commissions.col_staff')}</th>
@@ -382,27 +384,29 @@ export default function CommissionsPage() {
                   <th className="px-4 py-3 font-medium">{t('commissions.col_actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
-                {commissions.map((c) => {
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {commissions.map((c, rowIdx) => {
                   const center = relCenters(c)
                   return (
                     <tr
                       key={c.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors"
+                      className={`transition-colors hover:bg-[var(--color-surface-2)]/80 ${
+                        rowIdx % 2 === 0 ? 'bg-[var(--color-surface-0)]' : 'bg-[var(--color-surface-1)]'
+                      }`}
                     >
                       <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900 dark:text-white">
+                        <div className="font-medium text-[var(--color-text-primary)]">
                           {center?.name ?? t('staff.dash')}
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <div className="text-xs text-[var(--color-text-muted)]">
                           {center?.center_code ?? ''}
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-slate-900 dark:text-white">{staffDisplayName(c)}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{typeLabel(c)}</div>
+                        <div className="text-[var(--color-text-primary)]">{staffDisplayName(c)}</div>
+                        <div className="text-xs text-[var(--color-text-muted)]">{typeLabel(c)}</div>
                       </td>
-                      <td className="px-4 py-3 text-slate-700 dark:text-slate-300 capitalize">
+                      <td className="px-4 py-3 text-[var(--color-text-primary)] capitalize">
                         {c.plan_at_signing}
                       </td>
                       <td className="px-4 py-3 text-teal-600 dark:text-teal-400 font-medium">
@@ -416,7 +420,7 @@ export default function CommissionsPage() {
                           >
                             {t(`commissions.t1_${c.t1_status}` as 'commissions.t1_pending')}
                           </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                          <span className="text-xs text-[var(--color-text-muted)]">
                             {Number(c.t1_amount).toLocaleString('en-US')}{' '}
                             {t('staff.currency_suffix')}
                           </span>
@@ -429,12 +433,12 @@ export default function CommissionsPage() {
                           >
                             {t(`commissions.t2_${c.t2_status}` as 'commissions.t2_locked')}
                           </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                          <span className="text-xs text-[var(--color-text-muted)]">
                             {Number(c.t2_amount).toLocaleString('en-US')}{' '}
                             {t('staff.currency_suffix')}
                           </span>
                           {c.t2_status === 'locked' && c.center_first_payment_date ? (
-                            <span className="text-xs text-slate-500 dark:text-slate-500">
+                            <span className="text-xs text-[var(--color-text-muted)]">
                               {t('commissions.days_until_t2', {
                                 count: daysUntilT2(c).toLocaleString('en-US'),
                               })}
@@ -463,7 +467,7 @@ export default function CommissionsPage() {
                             className={`text-sm font-medium ${
                               isPaused(c)
                                 ? 'text-amber-600 dark:text-amber-400'
-                                : 'text-slate-900 dark:text-white'
+                                : 'text-[var(--color-text-primary)]'
                             }`}
                           >
                             {(c.active_days ?? 0).toLocaleString('en-US')}
@@ -497,12 +501,12 @@ export default function CommissionsPage() {
         {unlockModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[var(--color-surface-1)] border border-amber-800/40 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
                 {t('commissions.unlock_t2')}
               </h2>
-              <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300">
+              <div className="bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg p-3 text-sm text-[var(--color-text-primary)]">
                 <div>{relCenters(unlockModal)?.name ?? t('staff.dash')}</div>
-                <div className="text-slate-500 dark:text-slate-400">
+                <div className="text-[var(--color-text-muted)]">
                   {staffDisplayName(unlockModal)} -{' '}
                   {Number(unlockModal.t2_amount).toLocaleString('en-US')}{' '}
                   {t('staff.currency_suffix')}
@@ -514,7 +518,7 @@ export default function CommissionsPage() {
                 </div>
               ) : null}
               <div>
-                <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   {t('commissions.unlock_reason')} *
                 </label>
                 <textarea
@@ -522,9 +526,9 @@ export default function CommissionsPage() {
                   onChange={(e) => setUnlockReason(e.target.value)}
                   rows={3}
                   placeholder={t('commissions.unlock_reason_placeholder')}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-amber-500 outline-none resize-none"
+                  className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm focus:border-amber-500 outline-none resize-none"
                 />
-                <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                <div className="text-xs text-[var(--color-text-muted)] mt-1">
                   {t('commissions.unlock_reason_counter', {
                     current: unlockReason.length.toLocaleString('en-US'),
                     min: (10).toLocaleString('en-US'),
@@ -535,7 +539,7 @@ export default function CommissionsPage() {
                 <button
                   type="button"
                   onClick={() => setUnlockModal(null)}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg text-sm transition-colors"
                 >
                   {t('commissions.cancel')}
                 </button>

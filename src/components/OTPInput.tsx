@@ -97,7 +97,7 @@ export default function OTPInput({ onSubmit, onResend, isLoading, error, phone }
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={index === 0 ? handlePaste : undefined}
-            className="w-12 h-14 text-center text-xl font-bold rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+            className="w-12 h-14 text-center text-xl font-bold rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500 transition-shadow"
           />
         ))}
       </div>

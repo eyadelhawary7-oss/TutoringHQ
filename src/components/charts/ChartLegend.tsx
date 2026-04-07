@@ -25,9 +25,9 @@ export function ChartLegend({ items, direction = 'horizontal' }: ChartLegendProp
             style={{ background: item.color }}
             aria-hidden
           />
-          <span className="text-xs text-slate-400 truncate">{item.label}</span>
+          <span className="text-xs text-[var(--color-text-muted)] truncate">{item.label}</span>
           {item.value !== undefined && item.value !== null ? (
-            <span className="text-xs font-semibold text-slate-300 tabular-nums shrink-0">
+            <span className="text-xs font-semibold text-[var(--color-text-primary)] tabular-nums shrink-0">
               {item.prefix ?? ''}
               {typeof item.value === 'number'
                 ? item.value.toLocaleString('en-US')

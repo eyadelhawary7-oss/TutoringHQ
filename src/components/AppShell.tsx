@@ -149,7 +149,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </button>
             {user && (
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white bg-teal-600">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-teal-600">
                   {(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}
                 </div>
               </div>

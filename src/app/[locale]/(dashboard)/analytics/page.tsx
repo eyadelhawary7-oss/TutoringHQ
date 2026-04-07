@@ -184,15 +184,15 @@ export default function AnalyticsPage() {
 
   return (
     <div className="bg-[var(--color-surface-0)] min-h-screen w-full page-enter max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px)+0.5rem)] md:pb-28">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-4 pt-4 pb-4 no-print border-b border-slate-200/80 dark:border-slate-800">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-4 pt-4 pb-4 no-print border-b border-[var(--color-border)]">
         <div>
-          <h1 className="text-xl font-bold text-white">{ta('title')}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">{ta('subtitle')}</p>
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ta('title')}</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1 max-w-xl">{ta('subtitle')}</p>
         </div>
         <button
           type="button"
           onClick={() => window.print()}
-          className="inline-flex items-center justify-center gap-2 self-stretch sm:self-auto sm:ms-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-[var(--color-surface-1)] text-slate-800 dark:text-white text-sm font-semibold shadow-sm hover:border-teal-500/40 dark:hover:border-teal-400/30 transition-colors"
+          className="inline-flex items-center justify-center gap-2 self-stretch sm:self-auto sm:ms-auto px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold shadow-sm hover:border-teal-500/40 transition-colors"
         >
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
             <polyline points="6 9 6 2 18 2 18 9" />
@@ -204,13 +204,13 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 px-4 mt-4 mb-4 chart-animate">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('mrr')}</span>
-              <span className="block text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">
+              <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('mrr')}</span>
+              <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
                 {Number(d.mrr ?? 0).toLocaleString('en-US')}
-                <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ms-1">{egp}</span>
+                <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">{egp}</span>
               </span>
               {mrrDelta !== undefined && (
                 <span
@@ -239,11 +239,11 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('collection_rate')}</span>
-              <span className="block text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">
+              <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('collection_rate')}</span>
+              <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
                 {Number(d.collection_rate ?? 0).toLocaleString('en-US', { maximumFractionDigits: 1 })}%
               </span>
             </div>
@@ -255,13 +255,13 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('avg_per_student')}</span>
-              <span className="block text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">
+              <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('avg_per_student')}</span>
+              <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
                 {Number(d.avg_payment_per_student ?? 0).toLocaleString('en-US')}
-                <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ms-1">{egp}</span>
+                <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">{egp}</span>
               </span>
             </div>
             <div
@@ -272,13 +272,13 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('total_revenue')}</span>
-              <span className="block text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">
+              <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('total_revenue')}</span>
+              <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
                 {Number(totalRevenue).toLocaleString('en-US')}
-                <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ms-1">{egp}</span>
+                <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">{egp}</span>
               </span>
             </div>
             <div
@@ -308,7 +308,7 @@ export default function AnalyticsPage() {
           ) : revenueData.length === 1 ? (
             <div className="chq-skeleton h-48 w-full rounded-xl" aria-hidden />
           ) : (
-            <p className="text-sm text-slate-400 py-8 text-center">{ta('no_data')}</p>
+            <p className="text-sm text-[var(--color-text-muted)] py-8 text-center">{ta('no_data')}</p>
           )}
         </ChartCard>
       </div>
@@ -332,7 +332,7 @@ export default function AnalyticsPage() {
                 />
               </>
             ) : (
-              <p className="text-sm text-slate-400 py-8 text-center">{ta('no_data')}</p>
+              <p className="text-sm text-[var(--color-text-muted)] py-8 text-center">{ta('no_data')}</p>
             )}
           </ChartCard>
         </div>

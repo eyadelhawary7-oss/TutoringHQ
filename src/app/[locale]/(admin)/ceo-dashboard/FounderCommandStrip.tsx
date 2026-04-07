@@ -125,9 +125,9 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           {t('breakevenSubtitle')}
         </p>
-        <div className="mt-4 h-3 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+        <div className="mt-4 h-3 w-full rounded-full bg-[var(--color-surface-3)] overflow-hidden">
           <div
-            className="h-full rounded-full bg-[#0D9488] transition-[width] duration-500"
+            className="h-full rounded-full bg-teal-600 transition-[width] duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -135,7 +135,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
           <span className="font-mono text-[var(--color-text-primary)]">
             {`${activePayingCenters.toLocaleString('en-US')} / ${target} ${t('centers')}`}
           </span>
-          <span className="rounded-full bg-[#0D9488]/15 text-[#0D9488] px-2.5 py-0.5 text-xs font-medium font-mono">
+          <span className="rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 px-2.5 py-0.5 text-xs font-medium font-mono">
             {`${pct.toLocaleString('en-US')}%`}
           </span>
           {pct === 0 && (
@@ -178,7 +178,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                   <div className="p-4 flex flex-col gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`h-2 w-2 rounded-full shrink-0 ${dotColor}`} aria-hidden />
-                      <span className="text-xs rounded-md bg-slate-200/80 dark:bg-slate-700 px-2 py-0.5 text-[var(--color-text-secondary)]">
+                      <span className="text-xs rounded-md bg-[var(--color-surface-2)] px-2 py-0.5 text-[var(--color-text-secondary)]">
                         {typeLabels[item.type] ?? item.type}
                       </span>
                     </div>
@@ -195,7 +195,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                       {item.action_label && item.action_url && (
                         <Link
                           href={item.action_url}
-                          className="inline-flex items-center rounded-md bg-[#0D9488] text-white text-xs font-medium px-3 py-1.5 hover:bg-[#0f766e]"
+                          className="inline-flex items-center rounded-md bg-teal-600 text-white text-xs font-medium px-3 py-1.5 hover:bg-teal-700"
                         >
                           {item.action_label}
                         </Link>
@@ -266,7 +266,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                         </td>
                         <td className="py-2 pe-3 text-[var(--color-text-secondary)]">{location}</td>
                         <td className="py-2 pe-3">
-                          <span className="inline-block rounded-full bg-[#0D9488]/15 text-[#0D9488] text-xs px-2.5 py-0.5 font-medium">
+                          <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 text-xs px-2.5 py-0.5 font-medium">
                             {planDisplayName(center.plan)}
                           </span>
                         </td>
@@ -279,7 +279,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                         <td className="py-2">
                           <Link
                             href={`/${locale}/admin`}
-                            className="inline-flex rounded-md border border-[#0D9488] text-[#0D9488] text-xs font-medium px-3 py-1.5 hover:bg-[#0D9488]/10"
+                            className="inline-flex rounded-md border border-teal-600 text-teal-700 dark:text-teal-300 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10"
                           >
                             {t('reviewCenter')}
                           </Link>
@@ -315,7 +315,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                     </div>
                     <div className="text-sm">
                       <span className="text-[var(--color-text-tertiary)]">{t('colPlan')}: </span>
-                      <span className="inline-block rounded-full bg-[#0D9488]/15 text-[#0D9488] text-xs px-2.5 py-0.5 font-medium">
+                      <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 text-xs px-2.5 py-0.5 font-medium">
                         {planDisplayName(center.plan)}
                       </span>
                     </div>
@@ -331,7 +331,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                     </div>
                     <Link
                       href={`/${locale}/admin`}
-                      className="inline-flex rounded-md border border-[#0D9488] text-[#0D9488] text-xs font-medium px-3 py-1.5 hover:bg-[#0D9488]/10 mt-2"
+                      className="inline-flex rounded-md border border-teal-600 text-teal-700 dark:text-teal-300 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10 mt-2"
                     >
                       {t('reviewCenter')}
                     </Link>

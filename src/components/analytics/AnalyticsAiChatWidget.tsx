@@ -100,14 +100,14 @@ export default function AnalyticsAiChatWidget() {
           id={`${formId}-panel`}
           aria-labelledby={`${formId}-label`}
         >
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
-            <p id={`${formId}-label`} className="text-sm font-semibold text-slate-800 dark:text-white">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+            <p id={`${formId}-label`} className="text-sm font-semibold text-[var(--color-text-primary)]">
               {ta('aiChat_title')}
             </p>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200/80 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface-3)] transition-colors"
               aria-label={ta('aiChat_close')}
             >
               <X className="w-4 h-4" />
@@ -116,7 +116,7 @@ export default function AnalyticsAiChatWidget() {
 
           <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
             {messages.length === 0 && !loading && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 px-1">{ta('aiChat_emptyHint')}</p>
+              <p className="text-xs text-[var(--color-text-muted)] px-1">{ta('aiChat_emptyHint')}</p>
             )}
             {messages.map((m) => (
               <div
@@ -127,15 +127,15 @@ export default function AnalyticsAiChatWidget() {
                   className={`max-w-[90%] rounded-xl px-3 py-2 text-sm ${
                     m.role === 'user'
                       ? 'bg-teal-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700/80 text-[var(--color-text-primary)] font-cairo text-start'
+                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] font-cairo text-start'
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{m.text}</p>
                   {m.role === 'assistant' && m.rows && m.rows.length > 0 && (
-                    <div className="mt-2 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-600">
+                    <div className="mt-2 overflow-x-auto rounded-lg border border-[var(--color-border)]">
                       <table className="w-full text-xs font-mono">
                         <thead>
-                          <tr className="border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/80">
+                          <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-1)]">
                             {Object.keys(m.rows[0]).map((col) => (
                               <th key={col} className="px-2 py-1.5 text-start font-semibold">
                                 {col}
@@ -145,7 +145,7 @@ export default function AnalyticsAiChatWidget() {
                         </thead>
                         <tbody>
                           {m.rows.slice(0, 8).map((row, i) => (
-                            <tr key={i} className="border-b border-slate-100 dark:border-slate-700/80 last:border-0">
+                            <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
                               {Object.keys(m.rows![0]).map((col) => (
                                 <td key={col} className="px-2 py-1.5 text-start">
                                   {String((row as Record<string, unknown>)[col] ?? '-')}
@@ -161,7 +161,7 @@ export default function AnalyticsAiChatWidget() {
               </div>
             ))}
             {loading && (
-              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 px-1">
+              <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] px-1">
                 <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                 {ta('aiChat_loading')}
               </div>
@@ -180,7 +180,7 @@ export default function AnalyticsAiChatWidget() {
                   key={s}
                   type="button"
                   onClick={() => setInput(s)}
-                  className="text-xs rounded-full border border-slate-200 dark:border-slate-600 px-2.5 py-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors font-cairo"
+                  className="text-xs rounded-full border border-[var(--color-border)] px-2.5 py-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] transition-colors font-cairo"
                 >
                   {s}
                 </button>
@@ -203,7 +203,7 @@ export default function AnalyticsAiChatWidget() {
                 onKeyDown={onKeyDown}
                 placeholder={ta('aiChat_placeholder')}
                 disabled={loading}
-                className="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-[var(--color-surface-2)] px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 font-cairo"
+                className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-teal-500/30 font-cairo"
               />
               <button
                 type="submit"
@@ -214,7 +214,7 @@ export default function AnalyticsAiChatWidget() {
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">{ta('aiChat_beta')}</p>
+            <p className="text-[10px] text-[var(--color-text-muted)] mt-2 text-center">{ta('aiChat_beta')}</p>
           </form>
         </div>
       )}

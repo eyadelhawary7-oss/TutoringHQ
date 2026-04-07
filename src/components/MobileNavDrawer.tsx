@@ -156,7 +156,7 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
             {user?.center?.logo_url ? (
               <img src={user.center.logo_url} alt={centerName} className="w-9 h-9 rounded-lg object-contain" />
             ) : (
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-sm">
                 CH
               </div>
             )}

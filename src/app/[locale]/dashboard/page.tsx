@@ -128,7 +128,7 @@ function KpiCommandCard({
       <div className="absolute top-4 end-4 text-teal-500" aria-hidden>
         <Icon className="h-4 w-4" strokeWidth={2} />
       </div>
-      <p className="pe-8 text-xs uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="pe-8 text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{label}</p>
       <div
         className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums"
         style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
@@ -852,7 +852,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => router.push('/settings/billing')}
-            className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-warning)] hover:opacity-90 transition-opacity btn-press chq-focus"
+            className="px-4 py-2 rounded-lg font-medium text-primary-foreground bg-[var(--color-warning)] hover:opacity-90 transition-opacity btn-press chq-focus"
           >
             {t('payNow', { defaultValue: 'Pay Now' })}
           </button>
@@ -878,7 +878,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => router.push('/settings/billing')}
-              className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-danger)] hover:opacity-90 transition-opacity btn-press chq-focus"
+              className="px-4 py-2 rounded-lg font-medium text-primary-foreground bg-[var(--color-danger)] hover:opacity-90 transition-opacity btn-press chq-focus"
             >
               {t('payNow', { defaultValue: 'Pay Now' })}
             </button>
@@ -897,7 +897,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => router.push('/settings/billing')}
-            className="px-4 py-2 rounded-lg font-medium text-white bg-[var(--color-danger)] hover:opacity-90 transition-opacity btn-press chq-focus"
+            className="px-4 py-2 rounded-lg font-medium text-primary-foreground bg-[var(--color-danger)] hover:opacity-90 transition-opacity btn-press chq-focus"
           >
             {t('payNow', { defaultValue: 'Pay Now' })}
           </button>
@@ -924,7 +924,7 @@ export default function DashboardPage() {
 
   if (user?.role === 'assistant' && !isLoading) {
     return (
-      <div className="min-h-screen bg-[var(--color-surface-1)] p-4 pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
+      <div className="min-h-screen bg-[var(--color-surface-0)] p-4 pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
         <h1 className="mb-6 text-xl font-semibold text-[var(--color-text-primary)]">{t('title')}</h1>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
@@ -933,13 +933,13 @@ export default function DashboardPage() {
           >
             <QrCode className="mx-auto mb-3 h-14 w-14 text-teal-500" strokeWidth={1.5} />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('action_scan')}</h2>
-            <p className="mt-1 text-sm text-slate-400">{t('scanSubtitle')}</p>
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">{t('scanSubtitle')}</p>
           </Link>
           <Link
             href="/payments"
             className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
-            <p className="text-xs uppercase tracking-wider text-slate-400">{t('unpaidCount')}</p>
+            <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{t('unpaidCount')}</p>
             <p className="mt-1 text-3xl font-bold text-[var(--color-text-primary)] tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
               {Number(data.unpaidCount).toLocaleString('en-US')}
             </p>
@@ -947,7 +947,7 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-          <p className="text-xs uppercase tracking-wider text-slate-400">{t('stats.attendance_today')}</p>
+          <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{t('stats.attendance_today')}</p>
           <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
             {Number(data.todayAttendance).toLocaleString('en-US')}
           </p>
@@ -957,7 +957,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-1)] p-4 page-enter pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
+    <div className="min-h-screen bg-[var(--color-surface-0)] p-4 page-enter pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
       {showSurgeAlert && statsData?.surge_message && (
         <div
           className="card mb-4 p-4 border-[var(--color-border-brand)] flex items-center justify-between gap-4"
@@ -980,7 +980,7 @@ export default function DashboardPage() {
           <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
             {t('greeting')}، {centerBilling?.name ?? 'CenterHQ'}
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
               weekday: 'long',
               day: 'numeric',
@@ -1060,7 +1060,7 @@ export default function DashboardPage() {
               valueDisplay={
                 <>
                   {Number(attendanceTodayCount).toLocaleString('en-US')}
-                  <span className="ms-1 text-base font-semibold text-slate-400">
+                  <span className="ms-1 text-base font-semibold text-[var(--color-text-muted)]">
                     ({Number(attendancePctOfTotal).toLocaleString('en-US')}%)
                   </span>
                 </>
@@ -1076,7 +1076,7 @@ export default function DashboardPage() {
                 valueDisplay={
                   <>
                     {Number(data.monthConfirmed).toLocaleString('en-US')}
-                    <span className="ms-1 text-base font-normal text-slate-400">{egpSuffix}</span>
+                    <span className="ms-1 text-base font-normal text-[var(--color-text-muted)]">{egpSuffix}</span>
                   </>
                 }
                 trendPct={monthlyRevenueRaw.length >= 2 ? monthTrendPct : undefined}
@@ -1088,7 +1088,7 @@ export default function DashboardPage() {
               <KpiCommandCard
                 label={t('monthlyRevenue')}
                 valueDisplay={
-                  <span className="text-slate-600 text-xs" aria-hidden>
+                  <span className="text-[var(--color-text-muted)] text-xs" aria-hidden>
                     -
                   </span>
                 }
@@ -1127,7 +1127,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex flex-col md:col-span-2">
               <div className="flex h-full min-h-[240px] flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">{t('paymentStatus')}</p>
+                <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{t('paymentStatus')}</p>
                 <div className="min-h-0 flex-1">
                   <DonutChart
                     data={[
@@ -1154,7 +1154,7 @@ export default function DashboardPage() {
               <div className="mb-1 flex items-start justify-between gap-2">
                 <div>
                   <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('atRisk')}</h2>
-                  <p className="text-xs text-slate-500">{t('atRiskDesc')}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">{t('atRiskDesc')}</p>
                 </div>
                 <Link
                   href="/students?filter=atrisk"
@@ -1179,16 +1179,16 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0 flex-1 text-end">
                             <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{student.name}</p>
-                            <p className="truncate font-mono text-xs text-slate-400" dir="ltr">
+                            <p className="truncate font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
                               {student.student_number ? (
                                 student.student_number
                               ) : (
-                                <span className="text-slate-600 text-xs">-</span>
+                                <span className="text-[var(--color-text-muted)] text-xs">-</span>
                               )}
                             </p>
                           </div>
                           <span
-                            className="shrink-0 tabular-nums text-xs font-semibold text-slate-300"
+                            className="shrink-0 tabular-nums text-xs font-semibold text-[var(--color-text-secondary)]"
                             style={{ fontFamily: 'Georgia, serif' }}
                           >
                             {pct.toLocaleString('en-US')}%
@@ -1270,7 +1270,7 @@ export default function DashboardPage() {
             </p>
             <Link
               href="/settings/billing"
-              className="inline-block px-4 py-2 bg-brand-500 hover:opacity-90 text-white text-sm font-medium rounded-lg"
+              className="inline-block px-4 py-2 bg-brand-500 hover:opacity-90 text-primary-foreground text-sm font-medium rounded-lg"
             >
               {t('upgradePlan')}
             </Link>

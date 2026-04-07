@@ -14,9 +14,11 @@ interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT_CLASSES: Record<string, string> = {
   primary: 'bg-teal-600 hover:bg-teal-500 text-white',
-  secondary: 'bg-slate-700 hover:bg-slate-600 text-white',
+  secondary:
+    'bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] text-[var(--color-text-primary)]',
   danger: 'bg-red-600 hover:bg-red-500 text-white',
-  ghost: 'bg-transparent hover:bg-slate-800 text-slate-300',
+  ghost:
+    'bg-transparent hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]',
 };
 
 export function LoadingButton({

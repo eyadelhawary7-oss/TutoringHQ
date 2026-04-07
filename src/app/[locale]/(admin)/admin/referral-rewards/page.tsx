@@ -203,6 +203,12 @@ export default function ReferralRewardsPage() {
     return s;
   };
 
+  const statusChipClass = (s: string) => {
+    if (s === 'paid') return 'bg-emerald-600 text-white';
+    if (s === 'available') return 'bg-teal-600 text-white';
+    return 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)]';
+  };
+
   async function handleMarkPaid() {
     if (selectedIds.size === 0) return;
     setMarking(true);
@@ -233,7 +239,7 @@ export default function ReferralRewardsPage() {
 
   if (!gateOk) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-slate-400">
+      <div className="min-h-screen flex items-center justify-center text-[var(--color-text-muted)]">
         {tCommon('loading')}
       </div>
     );
@@ -253,10 +259,10 @@ export default function ReferralRewardsPage() {
             <Gift className="w-5 h-5 text-teal-600 dark:text-teal-400" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
+            <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
               {t('referralRewards.title')}
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{t('referralRewards.subtitle')}</p>
+            <p className="text-sm text-[var(--color-text-muted)]">{t('referralRewards.subtitle')}</p>
           </div>
         </div>
 
@@ -275,7 +281,7 @@ export default function ReferralRewardsPage() {
               className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
                 statusFilter === s
                   ? 'bg-teal-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
               }`}
             >
               {s === 'all' ? t('referralRewards.filter_all') : t(`referralRewards.filter_${s}`)}
@@ -285,7 +291,7 @@ export default function ReferralRewardsPage() {
 
         {isSuperAdmin ? (
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t('referralRewards.select_payable')}</p>
+            <p className="text-xs text-[var(--color-text-muted)]">{t('referralRewards.select_payable')}</p>
             <button
               type="button"
               onClick={() => void handleMarkPaid()}
@@ -301,39 +307,44 @@ export default function ReferralRewardsPage() {
         ) : null}
 
         <div>
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+          <h2 className="text-sm font-semibold text-[var(--color-text-muted)] mb-2">
             {t('referralRewards.totals_heading')}
           </h2>
           <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
             {loading ? (
-              <div className="p-8 text-center text-slate-500 dark:text-slate-400">{tCommon('loading')}</div>
+              <div className="p-8 text-center text-[var(--color-text-muted)]">{tCommon('loading')}</div>
             ) : totals.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+              <div className="p-8 text-center text-[var(--color-text-muted)]">
                 {t('referralRewards.no_records')}
               </div>
             ) : (
               <table className="w-full text-sm min-w-[640px]">
-                <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
-                  <tr className={`text-slate-500 dark:text-slate-400 ${isRTL ? 'text-end' : 'text-start'}`}>
+                <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                  <tr className={`text-[var(--color-text-muted)] ${isRTL ? 'text-end' : 'text-start'}`}>
                     <th className="px-4 py-3 font-medium">{t('referralRewards.col_referrer')}</th>
                     <th className="px-4 py-3 font-medium">{t('referralRewards.col_total_pending')}</th>
                     <th className="px-4 py-3 font-medium">{t('referralRewards.col_total_paid')}</th>
                     <th className="px-4 py-3 font-medium">{t('referralRewards.col_total_records')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
-                  {totals.map((row) => (
-                    <tr key={row.center_id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
-                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                <tbody className="divide-y divide-[var(--color-border)]">
+                  {totals.map((row, i) => (
+                    <tr
+                      key={row.center_id}
+                      className={`hover:bg-[var(--color-surface-2)]/80 ${
+                        i % 2 === 0 ? 'bg-[var(--color-surface-0)]' : 'bg-[var(--color-surface-1)]'
+                      }`}
+                    >
+                      <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">
                         {row.center_name || '-'}
                       </td>
                       <td className="px-4 py-3 text-teal-600 dark:text-teal-400 font-mono">
                         {Number(row.pending).toLocaleString('en-US')} {t('staff.currency_suffix')}
                       </td>
-                      <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-mono">
+                      <td className="px-4 py-3 text-[var(--color-text-secondary)] font-mono">
                         {Number(row.paid).toLocaleString('en-US')} {t('staff.currency_suffix')}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono">
+                      <td className="px-4 py-3 text-[var(--color-text-muted)] font-mono">
                         {row.total_records.toLocaleString('en-US')}
                       </td>
                     </tr>
@@ -346,15 +357,15 @@ export default function ReferralRewardsPage() {
 
         <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
           {loading ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400">{tCommon('loading')}</div>
+            <div className="p-12 text-center text-[var(--color-text-muted)]">{tCommon('loading')}</div>
           ) : records.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+            <div className="p-12 text-center text-[var(--color-text-muted)]">
               {t('referralRewards.no_records')}
             </div>
           ) : (
             <table className="w-full text-sm min-w-[1000px]">
-              <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
-                <tr className={`text-slate-500 dark:text-slate-400 ${isRTL ? 'text-end' : 'text-start'}`}>
+              <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                <tr className={`text-[var(--color-text-muted)] ${isRTL ? 'text-end' : 'text-start'}`}>
                   {isSuperAdmin ? (
                     <th className="px-4 py-3 font-medium w-10" aria-label={t('referralRewards.mark_paid')}>
                       <span className="sr-only">{t('referralRewards.mark_paid')}</span>
@@ -371,14 +382,19 @@ export default function ReferralRewardsPage() {
                   <th className="px-4 py-3 font-medium">{t('referralRewards.col_held_until')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
-                {records.map((r) => {
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {records.map((r, rowIdx) => {
                   const ref = relCenter(r.referrer);
                   const rec = relCenter(r.referred);
                   const pct = Number(r.reward_percentage) * 100;
                   const selectable = isSuperAdmin && canSelectForPay(r);
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+                    <tr
+                      key={r.id}
+                      className={`transition-colors hover:bg-[var(--color-surface-2)]/80 ${
+                        rowIdx % 2 === 0 ? 'bg-[var(--color-surface-0)]' : 'bg-[var(--color-surface-1)]'
+                      }`}
+                    >
                       {isSuperAdmin ? (
                         <td className="px-4 py-3 align-middle">
                           <input
@@ -386,39 +402,39 @@ export default function ReferralRewardsPage() {
                             disabled={!selectable}
                             checked={selectedIds.has(r.id)}
                             onChange={() => toggleSelect(r.id, r)}
-                            className="rounded border-slate-300 dark:border-slate-600 disabled:opacity-30"
+                            className="rounded border-[var(--color-border)] disabled:opacity-30"
                           />
                         </td>
                       ) : null}
                       <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900 dark:text-white">{ref?.name ?? '-'}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{ref?.center_code ?? ''}</div>
+                        <div className="font-medium text-[var(--color-text-primary)]">{ref?.name ?? '-'}</div>
+                        <div className="text-xs text-[var(--color-text-muted)]">{ref?.center_code ?? ''}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900 dark:text-white">{rec?.name ?? '-'}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <div className="font-medium text-[var(--color-text-primary)]">{rec?.name ?? '-'}</div>
+                        <div className="text-xs text-[var(--color-text-muted)]">
                           {rec?.plan ?? ''} {rec?.center_code ? `· ${rec.center_code}` : ''}
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-slate-700 dark:text-slate-300">
+                      <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
                         {r.month_number.toLocaleString('en-US')}
                       </td>
-                      <td className="px-4 py-3 font-mono text-slate-700 dark:text-slate-300">
+                      <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
                         {pct.toLocaleString('en-US')}%
                       </td>
-                      <td className="px-4 py-3 font-mono text-slate-700 dark:text-slate-300">
+                      <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
                         {Number(r.base_amount).toLocaleString('en-US')} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 font-mono text-teal-600 dark:text-teal-400 font-medium">
                         {Number(r.reward_amount).toLocaleString('en-US')} {t('staff.currency_suffix')}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{r.period_month}</td>
+                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">{r.period_month}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded-md text-xs bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                        <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${statusChipClass(r.status)}`}>
                           {statusLabel(r.status)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                      <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
                         {r.held_until
                           ? new Date(r.held_until).toLocaleString(undefined, {
                               dateStyle: 'short',

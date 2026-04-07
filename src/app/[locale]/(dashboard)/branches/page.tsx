@@ -151,14 +151,14 @@ export default function BranchesPage() {
               <Building2 className="h-7 w-7 text-teal-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">{t('upgradeTitle')}</h2>
-              <p className="text-slate-300 text-sm">{t('upgradeDescription')}</p>
+              <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('upgradeTitle')}</h2>
+              <p className="text-[var(--color-text-muted)] text-sm">{t('upgradeDescription')}</p>
             </div>
           </div>
-          <p className="text-slate-300 mb-6">{t('upgradeBenefits')}</p>
+          <p className="text-[var(--color-text-secondary)] mb-6">{t('upgradeBenefits')}</p>
           <Link
             href="/settings"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-primary-foreground font-medium hover:bg-teal-700 transition-colors"
           >
             {t('upgradeCta')}
           </Link>
@@ -191,13 +191,13 @@ export default function BranchesPage() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder={t('branchNamePlaceholder')}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface-1)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
             />
           </div>
           <button
             onClick={handleAddBranch}
             disabled={adding || !newName.trim()}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-primary-foreground font-medium hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus size={18} />}
             {t('addBranch')}
@@ -205,15 +205,15 @@ export default function BranchesPage() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border bg-[var(--color-surface-1)] mb-8">
+      <div className="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] mb-8">
         <table className="w-full">
           <thead>
-            <tr className="border-b bg-[var(--color-surface-0)]">
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('branchName')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('students')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('monthlyRevenue')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('outstanding')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('staffCount')}</th>
+            <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('branchName')}</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('students')}</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('monthlyRevenue')}</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('outstanding')}</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('staffCount')}</th>
             </tr>
           </thead>
           <tbody>
@@ -274,21 +274,21 @@ export default function BranchesPage() {
 
       {consolidated && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
             <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
               <TrendingUp size={16} />
               {t('totalMrr')}
             </div>
             <p className="text-2xl font-bold text-[var(--color-text-primary)]">{consolidated.total_mrr.toLocaleString('en-US')} {tCommon('egp')}</p>
           </div>
-          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
             <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
               <Users size={16} />
               {t('totalStudents')}
             </div>
             <p className="text-2xl font-bold text-[var(--color-text-primary)]">{consolidated.total_students.toLocaleString('en-US')}</p>
           </div>
-          <div className="rounded-lg border bg-[var(--color-surface-1)] p-4">
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
             <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
               <DollarSign size={16} />
               {t('totalOutstanding')}

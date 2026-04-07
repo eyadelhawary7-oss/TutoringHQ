@@ -118,7 +118,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   if (error) {
     return (
-      <div className="text-xs text-slate-400 p-2" dir="rtl">
+      <div className="text-xs text-[var(--color-text-muted)] p-2" dir="rtl">
         {t('error')}
       </div>
     );
@@ -126,7 +126,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   if (cells.length === 0) {
     return (
-      <div className="text-xs text-slate-400 p-2" dir="rtl">
+      <div className="text-xs text-[var(--color-text-muted)] p-2" dir="rtl">
         {t('noData')}
       </div>
     );
@@ -142,7 +142,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
       <div className="flex gap-1">
         {dayHeaders.map((d, i) => (
-          <div key={i} className="w-4 text-center text-xs text-slate-400">
+          <div key={i} className="w-4 text-center text-xs text-[var(--color-text-muted)]">
             {d}
           </div>
         ))}
@@ -171,7 +171,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1">
             <div className={`w-3 h-3 rounded-sm ${color}`} />
-            <span className="text-xs text-slate-400">{label}</span>
+            <span className="text-xs text-[var(--color-text-muted)]">{label}</span>
           </div>
         ))}
       </div>

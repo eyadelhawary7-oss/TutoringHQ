@@ -45,7 +45,7 @@ function navLinkClass(isActive: boolean) {
   return cn(
     'flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors duration-150 border-solid border-s-4',
     isActive
-      ? 'border-teal-600 bg-teal-600/10 text-teal-600'
+      ? 'border-teal-600 bg-teal-600/10 text-[var(--color-text-primary)]'
       : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
   );
 }
@@ -157,7 +157,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
               <img src={user.center.logo_url} alt={centerName} className="w-9 h-9 rounded-lg shrink-0 object-contain" />
             ) : (
               <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center shrink-0">
-                <span className="text-white font-bold text-sm">CH</span>
+                <span className="text-primary-foreground font-bold text-sm">CH</span>
               </div>
             )}
             <span className="font-bold text-[var(--color-text-primary)] text-lg tracking-tight truncate">CenterHQ</span>
@@ -215,8 +215,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 <span className="text-[var(--color-text-primary)] text-sm font-bold">{(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{centerName}</p>
-                <p className="text-xs text-[var(--color-text-secondary)]">{roleLabelKey ? t(roleLabelKey) : ''}</p>
+                <p className="text-sm font-semibold text-[var(--color-text-secondary)] truncate">{centerName}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">{roleLabelKey ? t(roleLabelKey) : ''}</p>
               </div>
             </div>
           )}

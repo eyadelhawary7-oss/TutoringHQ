@@ -366,7 +366,7 @@ export default function CenterAssignmentsPage() {
 
   if (!gateOk) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-slate-400">
+      <div className="min-h-screen flex items-center justify-center text-[var(--color-text-muted)]">
         {tCommon('loading')}
       </div>
     )
@@ -387,10 +387,10 @@ export default function CenterAssignmentsPage() {
               <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
+              <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
                 {t('centerAssignments.title')}
               </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-[var(--color-text-muted)]">
                 {t('centerAssignments.subtitle')}
               </p>
             </div>
@@ -437,17 +437,17 @@ export default function CenterAssignmentsPage() {
 
         <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto shadow-sm dark:shadow-none">
           {loading ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+            <div className="p-12 text-center text-[var(--color-text-muted)]">
               {t('centerAssignments.loading')}
             </div>
           ) : assignments.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+            <div className="p-12 text-center text-[var(--color-text-muted)]">
               {t('centerAssignments.no_assignments')}
             </div>
           ) : (
             <table className="w-full text-sm min-w-[800px]">
-              <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
-                <tr className="text-slate-500 dark:text-slate-400">
+              <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                <tr className="text-[var(--color-text-muted)]">
                   <th className={`px-4 py-3 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
                     {t('centerAssignments.col_center')}
                   </th>
@@ -468,19 +468,23 @@ export default function CenterAssignmentsPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
-                {assignments.map((a) => {
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {assignments.map((a, rowIdx) => {
                   const cen = relCenters(a)
                   return (
                     <tr
                       key={a.id}
-                      className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors ${
-                        a.assignment_disputed ? 'bg-red-50/50 dark:bg-red-900/10' : ''
+                      className={`transition-colors hover:bg-[var(--color-surface-2)]/80 ${
+                        a.assignment_disputed
+                          ? 'bg-red-50/50 dark:bg-red-900/10'
+                          : rowIdx % 2 === 0
+                            ? 'bg-[var(--color-surface-0)]'
+                            : 'bg-[var(--color-surface-1)]'
                       }`}
                     >
                       <td className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-                        <div className="font-medium text-slate-900 dark:text-white">{cen?.name}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <div className="font-medium text-[var(--color-text-primary)]">{cen?.name}</div>
+                        <div className="text-xs text-[var(--color-text-muted)]">
                           {cen?.center_code} · {cen?.plan} · {cen?.city}
                         </div>
                         {a.referred_by_center ? (
@@ -498,10 +502,10 @@ export default function CenterAssignmentsPage() {
                           {t(`centerAssignments.sourced_${a.sourced_by}` as 'centerAssignments.sourced_eyad')}
                         </span>
                       </td>
-                      <td className={`px-4 py-3 text-slate-600 dark:text-slate-300 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <td className={`px-4 py-3 text-[var(--color-text-primary)] ${isRTL ? 'text-right' : 'text-left'}`}>
                         {staffCellLabel(a)}
                       </td>
-                      <td className={`px-4 py-3 text-slate-500 dark:text-slate-400 text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <td className={`px-4 py-3 text-[var(--color-text-muted)] text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
                         {a.territory_city ?? t('centerAssignments.value_empty')}
                         {a.territory_override_reason ? (
                           <div className="text-amber-600 dark:text-amber-400 mt-0.5">
@@ -527,7 +531,7 @@ export default function CenterAssignmentsPage() {
                           <button
                             type="button"
                             onClick={() => openEdit(a)}
-                            className="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors"
+                            className="p-1.5 rounded-lg bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors"
                             title={t('centerAssignments.edit')}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -568,7 +572,7 @@ export default function CenterAssignmentsPage() {
         {showModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-xl">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
                 {editingId ? t('centerAssignments.edit') : t('centerAssignments.add')}
               </h2>
               {error ? (
@@ -578,14 +582,14 @@ export default function CenterAssignmentsPage() {
               ) : null}
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                     {t('centerAssignments.center_label')}
                   </label>
                   <select
                     value={form.center_id}
                     onChange={(e) => setForm((p) => ({ ...p, center_id: e.target.value }))}
                     disabled={!!editingId}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none disabled:opacity-50"
+                    className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text-primary)] text-sm focus:border-teal-500 outline-none disabled:opacity-50"
                   >
                     <option value="">{t('centerAssignments.center_placeholder')}</option>
                     {allCenters.map((c) => (
@@ -597,7 +601,7 @@ export default function CenterAssignmentsPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                     {t('centerAssignments.sourced_by_label')}
                   </label>
                   <select
@@ -609,7 +613,7 @@ export default function CenterAssignmentsPage() {
                         staff_id: e.target.value === 'eyad' ? '' : p.staff_id,
                       }))
                     }
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text-primary)] text-sm focus:border-teal-500 outline-none"
                   >
                     <option value="eyad">{t('centerAssignments.sourced_eyad')}</option>
                     <option value="sm">{t('centerAssignments.sourced_sm')}</option>
@@ -619,13 +623,13 @@ export default function CenterAssignmentsPage() {
 
                 {form.sourced_by !== 'eyad' ? (
                   <div>
-                    <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                    <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                       {t('centerAssignments.staff_label')}
                     </label>
                     <select
                       value={form.staff_id}
                       onChange={(e) => setForm((p) => ({ ...p, staff_id: e.target.value }))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text-primary)] text-sm focus:border-teal-500 outline-none"
                     >
                       <option value="">{t('centerAssignments.staff_placeholder')}</option>
                       {(form.sourced_by === 'sm' ? staffOptionsSm : staffOptionsSr).map((s) => (
@@ -638,7 +642,7 @@ export default function CenterAssignmentsPage() {
                 ) : null}
 
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                     {t('centerAssignments.territory_city_label')}
                   </label>
                   <input
@@ -646,13 +650,13 @@ export default function CenterAssignmentsPage() {
                     value={form.territory_city}
                     onChange={(e) => setForm((p) => ({ ...p, territory_city: e.target.value }))}
                     placeholder={t('centerAssignments.territory_placeholder_example')}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none placeholder:text-slate-400"
+                    className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text-primary)] text-sm focus:border-teal-500 outline-none placeholder:text-[var(--color-text-muted)]"
                   />
                 </div>
 
                 {form.territory_city ? (
                   <div>
-                    <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                    <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                       {t('centerAssignments.override_reason_label')}
                     </label>
                     <input
@@ -661,7 +665,7 @@ export default function CenterAssignmentsPage() {
                       onChange={(e) =>
                         setForm((p) => ({ ...p, territory_override_reason: e.target.value }))
                       }
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text-primary)] text-sm focus:border-teal-500 outline-none"
                     />
                   </div>
                 ) : null}
@@ -675,7 +679,7 @@ export default function CenterAssignmentsPage() {
                     setEditingId(null)
                     setError(null)
                   }}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg text-sm transition-colors"
                 >
                   {t('centerAssignments.cancel')}
                 </button>
@@ -700,7 +704,7 @@ export default function CenterAssignmentsPage() {
         {disputeModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[var(--color-surface-1)] border border-amber-800/40 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
                 {t('centerAssignments.dispute_flag')} - {relCenters(disputeModal)?.name}
               </h2>
               {error ? (
@@ -709,14 +713,14 @@ export default function CenterAssignmentsPage() {
                 </div>
               ) : null}
               <div>
-                <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   {t('centerAssignments.dispute_notes_label')} *
                 </label>
                 <textarea
                   value={disputeNotes}
                   onChange={(e) => setDisputeNotes(e.target.value)}
                   rows={3}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-amber-500 outline-none resize-none"
+                  className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm focus:border-amber-500 outline-none resize-none"
                 />
               </div>
               <div className="flex gap-3 justify-end">
@@ -726,7 +730,7 @@ export default function CenterAssignmentsPage() {
                     setDisputeModal(null)
                     setError(null)
                   }}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg text-sm transition-colors"
                 >
                   {t('centerAssignments.cancel')}
                 </button>

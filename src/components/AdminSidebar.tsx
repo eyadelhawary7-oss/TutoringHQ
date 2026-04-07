@@ -319,7 +319,7 @@ export function AdminSidebar({
             <button
               type="button"
               onClick={() => setIsUserMenuOpen((v) => !v)}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 transition-colors"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-teal-600 hover:bg-teal-700 transition-colors"
             >
               {(userName || userPhone || 'U').charAt(0).toUpperCase()}
             </button>
@@ -405,7 +405,7 @@ export function AdminSidebar({
                 <Icon size={18} className="shrink-0" />
                 <span>{t(labelKey as Parameters<typeof t>[0])}</span>
                 {key === 'cardOrders' && pendingCount > 0 ? (
-                  <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] font-bold px-1.5">
+                  <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-red-600 text-primary-foreground text-[11px] font-bold px-1.5">
                     {pendingCount}
                   </span>
                 ) : null}

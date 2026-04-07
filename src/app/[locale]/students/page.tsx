@@ -1736,6 +1736,7 @@ export default function StudentsPage() {
                   centerLogo={centerInfo?.logo_url ?? null}
                   centerName={centerInfo?.name ?? 'CenterHQ'}
                   scale={1.2}
+                  variant="preview"
                 />
               </div>
             </div>

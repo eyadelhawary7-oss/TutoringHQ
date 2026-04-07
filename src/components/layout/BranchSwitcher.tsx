@@ -53,29 +53,29 @@ export function BranchSwitcher() {
 
   if (!user || loading || branches.length === 0) {
     return (
-      <div className="px-4 py-3 border-b border-slate-800">
-        <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">{t('centerName')}</p>
-        <p className="text-sm font-semibold text-slate-300 truncate">{user?.center?.name ?? '-'}</p>
+      <div className="px-4 py-3 border-b border-[var(--color-border)]">
+        <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-0.5">{t('centerName')}</p>
+        <p className="text-sm font-semibold text-[var(--color-text-secondary)] truncate">{user?.center?.name ?? '-'}</p>
       </div>
     );
   }
 
   if (!isMultiBranch) {
     return (
-      <div className="px-4 py-3 border-b border-slate-800">
-        <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">{t('centerName')}</p>
-        <p className="text-sm font-semibold text-slate-300 truncate">{activeBranch?.name ?? user?.center?.name ?? '-'}</p>
+      <div className="px-4 py-3 border-b border-[var(--color-border)]">
+        <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-0.5">{t('centerName')}</p>
+        <p className="text-sm font-semibold text-[var(--color-text-secondary)] truncate">{activeBranch?.name ?? user?.center?.name ?? '-'}</p>
       </div>
     );
   }
 
   return (
-    <div className="px-4 py-3 border-b border-slate-800 relative">
-      <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t('centerName')}</p>
+    <div className="px-4 py-3 border-b border-[var(--color-border)] relative">
+      <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">{t('centerName')}</p>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 w-full text-left rounded-lg px-2 py-1.5 hover:bg-slate-800 transition-colors group"
+        className="flex items-center gap-2 w-full text-left rounded-lg px-2 py-1.5 hover:bg-[var(--color-surface-2)] transition-colors group"
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label="Switch branch"
@@ -84,11 +84,11 @@ export function BranchSwitcher() {
           <img src={activeBranch.logo_url} alt="" className="w-6 h-6 rounded object-contain shrink-0" />
         ) : (
           <div className="w-6 h-6 rounded bg-teal-600/80 flex items-center justify-center shrink-0">
-            <Building2 size={12} className="text-white" />
+            <Building2 size={12} className="text-primary-foreground" />
           </div>
         )}
-        <span className="flex-1 text-sm font-semibold text-slate-300 truncate">{activeBranch?.name ?? '-'}</span>
-        <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-600/20 text-teal-400 font-medium shrink-0">
+        <span className="flex-1 text-sm font-semibold text-[var(--color-text-secondary)] truncate">{activeBranch?.name ?? '-'}</span>
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-600/20 text-[var(--color-text-brand)] font-medium shrink-0">
           {branches.length} branches
         </span>
         <ChevronDown size={14} className={`text-[var(--color-text-secondary)] shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -99,7 +99,7 @@ export function BranchSwitcher() {
           <div className="fixed inset-0 z-40" aria-hidden="true" onClick={() => setOpen(false)} />
           <ul
             role="listbox"
-            className="absolute left-2 right-2 mt-1 py-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto"
+            className="absolute left-2 right-2 mt-1 py-1 bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto"
           >
             {branches.map((b) => (
               <li key={b.id} role="option" aria-selected={b.id === activeCenterId}>
@@ -109,13 +109,13 @@ export function BranchSwitcher() {
                     setActiveCenterId(b.id);
                     setOpen(false);
                   }}
-                  className={`flex items-center gap-2 w-full px-3 py-2 text-left text-sm transition-colors ${b.id === activeCenterId ? 'bg-teal-600/20 text-teal-400' : 'text-slate-300 hover:bg-slate-700'}`}
+                  className={`flex items-center gap-2 w-full px-3 py-2 text-left text-sm transition-colors ${b.id === activeCenterId ? 'bg-teal-600/10 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'}`}
                 >
                   {b.logo_url ? (
                     <img src={b.logo_url} alt="" className="w-5 h-5 rounded object-contain shrink-0" />
                   ) : (
-                    <div className="w-5 h-5 rounded bg-slate-600 flex items-center justify-center shrink-0">
-                      <Building2 size={10} className="text-slate-400" />
+                    <div className="w-5 h-5 rounded bg-[var(--color-surface-2)] flex items-center justify-center shrink-0">
+                      <Building2 size={10} className="text-[var(--color-text-muted)]" />
                     </div>
                   )}
                   <span className="truncate">{b.name}</span>

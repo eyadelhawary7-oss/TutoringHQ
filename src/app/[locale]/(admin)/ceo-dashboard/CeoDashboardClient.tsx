@@ -92,7 +92,7 @@ function FinancialErrorCard({ onRetry }: { onRetry: () => void }) {
       <button
         type="button"
         onClick={onRetry}
-        className="rounded-lg bg-[#0D9488] text-white px-4 py-2 text-sm font-medium"
+        className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-medium"
       >
         {t('financials.retryButton')}
       </button>
@@ -162,15 +162,15 @@ function CeoFinancialsBody({
   return (
     <>
       <section className="mt-12 space-y-6 border-t border-[var(--color-border-subtle)] pt-10">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-white">{tFinancials('financials.sectionTitle')}</h2>
+        <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{tFinancials('financials.sectionTitle')}</h2>
 
         <div className="grid grid-cols-1 gap-4 max-w-xl">
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] card-shadow p-4 border-s-4 border-teal-500">
-            <p className="text-xs text-slate-500 dark:text-slate-400">{tFinancials('financials.cardTotalTitle')}</p>
-            <p className="text-xl font-mono font-bold text-slate-800 dark:text-white mt-1">
+            <p className="text-xs text-[var(--color-text-muted)]">{tFinancials('financials.cardTotalTitle')}</p>
+            <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
               {nf(financials.currentMonth?.totalRevenue).toLocaleString('en-US')} {tCommon('egp')}
             </p>
-            <div className="mt-2 space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+            <div className="mt-2 space-y-0.5 text-[11px] text-[var(--color-text-muted)]">
               <p>
                 {tFinancials('financials.cardTotalSubSubscriptions', {
                   amount: nf(financials.currentMonth?.subscriptionRevenue).toLocaleString('en-US'),
@@ -191,7 +191,7 @@ function CeoFinancialsBody({
         </div>
 
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] card-shadow p-4">
-          <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.chart12MonthTitle')}</h3>
+          <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-3">{tFinancials('financials.chart12MonthTitle')}</h3>
           {monthly.length >= 2 ? (
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={monthly}>
@@ -291,30 +291,30 @@ function CeoFinancialsBody({
         </div>
 
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] card-shadow p-4">
-          <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.cardOrdersPanelTitle')}</h3>
+          <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-3">{tFinancials('financials.cardOrdersPanelTitle')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3 text-sm">
               <div>
-                <p className="text-slate-500 text-xs">{tFinancials('financials.labelTotalCardsSold')}</p>
-                <p className="font-mono text-slate-800 dark:text-white">
+                <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelTotalCardsSold')}</p>
+                <p className="font-mono text-[var(--color-text-primary)]">
                   {nf(financials.cardOrders?.totalCardsSold).toLocaleString('en-US')}
                 </p>
               </div>
               <div>
-                <p className="text-slate-500 text-xs">{tFinancials('financials.labelRevenueAllTime')}</p>
-                <p className="font-mono text-slate-800 dark:text-white">
+                <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelRevenueAllTime')}</p>
+                <p className="font-mono text-[var(--color-text-primary)]">
                   {nf(financials.cardOrders?.revenueAllTime).toLocaleString('en-US')} EGP
                 </p>
               </div>
               <div>
-                <p className="text-slate-500 text-xs">{tFinancials('financials.labelRevenueThisMonth')}</p>
-                <p className="font-mono text-slate-800 dark:text-white">
+                <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelRevenueThisMonth')}</p>
+                <p className="font-mono text-[var(--color-text-primary)]">
                   {nf(financials.cardOrders?.revenueThisMonth).toLocaleString('en-US')} EGP
                 </p>
               </div>
               <div>
-                <p className="text-slate-500 text-xs">{tFinancials('financials.labelAverageOrderValue')}</p>
-                <p className="font-mono text-slate-800 dark:text-white">
+                <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelAverageOrderValue')}</p>
+                <p className="font-mono text-[var(--color-text-primary)]">
                   {nf(financials.cardOrders?.averageOrderValue).toLocaleString('en-US')} EGP
                 </p>
               </div>
@@ -324,7 +324,7 @@ function CeoFinancialsBody({
                 {tFinancials('financials.badgePending')}:{' '}
                 {nf(financials.cardOrders?.pendingOrders).toLocaleString('en-US')}
               </span>
-              <span className="rounded-full bg-teal-500/20 text-[#0D9488] text-xs px-3 py-1 font-medium">
+              <span className="rounded-full bg-teal-500/20 text-teal-700 dark:text-teal-300 text-xs px-3 py-1 font-medium">
                 {tFinancials('financials.badgePaid')}:{' '}
                 {nf(financials.cardOrders?.paidOrders).toLocaleString('en-US')}
               </span>
@@ -333,22 +333,22 @@ function CeoFinancialsBody({
         </div>
 
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] card-shadow p-4">
-          <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.whatsappPanelTitle')}</h3>
+          <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-3">{tFinancials('financials.whatsappPanelTitle')}</h3>
           <div className="flex flex-wrap gap-6 items-baseline text-sm">
             <div>
-              <p className="text-slate-500 text-xs">{tFinancials('financials.labelActiveParents')}</p>
-              <p className="font-mono text-slate-800 dark:text-white">
+              <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelActiveParents')}</p>
+              <p className="font-mono text-[var(--color-text-primary)]">
                 {nf(financials.whatsappPack?.activeParents).toLocaleString('en-US')}
               </p>
             </div>
             <div>
-              <p className="text-slate-500 text-xs">{tFinancials('financials.labelPackMrr')}</p>
-              <p className="font-mono text-slate-800 dark:text-white">
+              <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelPackMrr')}</p>
+              <p className="font-mono text-[var(--color-text-primary)]">
                 {nf(financials.whatsappPack?.packMRR).toLocaleString('en-US')} EGP
               </p>
             </div>
             <div>
-              <p className="text-slate-500 text-xs">{tFinancials('financials.labelGrowthVsLastMonth')}</p>
+              <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelGrowthVsLastMonth')}</p>
               {g > 0 ? (
                 <p className="text-green-400 font-mono" aria-label={tFinancials('financials.growthUp')}>
                   ↑ {g.toFixed(1)}%
@@ -358,7 +358,7 @@ function CeoFinancialsBody({
                   ↓ {Math.abs(g).toFixed(1)}%
                 </p>
               ) : (
-                <p className="text-slate-400 font-mono">{tFinancials('financials.growthNeutral')}</p>
+                <p className="text-[var(--color-text-muted)] font-mono">{tFinancials('financials.growthNeutral')}</p>
               )}
             </div>
           </div>
@@ -566,7 +566,7 @@ export default function CeoDashboardClient({
             type="button"
             onClick={() => void fetchData()}
             disabled={loading}
-            className="p-2 rounded-lg hover:bg-slate-200 text-[var(--color-text-secondary)]"
+            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>

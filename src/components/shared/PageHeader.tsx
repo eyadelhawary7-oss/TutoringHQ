@@ -20,9 +20,9 @@ export default function PageHeader({
   return (
     <div className="flex items-center justify-between mb-6">
       <div>
-        <h1 className={cn('text-2xl font-bold text-white', titleClassName)}>{title}</h1>
+        <h1 className={cn('text-2xl font-bold text-[var(--color-text-primary)]', titleClassName)}>{title}</h1>
         {subtitle && (
-          <p className={cn('text-sm text-slate-400 mt-0.5', subtitleClassName)}>{subtitle}</p>
+          <p className={cn('text-sm text-[var(--color-text-muted)] mt-0.5', subtitleClassName)}>{subtitle}</p>
         )}
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}

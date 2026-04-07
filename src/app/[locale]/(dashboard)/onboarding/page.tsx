@@ -412,11 +412,11 @@ export default function OnboardingPage() {
     waState === 'confirmed'
       ? 'bg-teal-500 chq-fade-in'
       : waState === 'idle'
-        ? 'bg-slate-600'
+        ? 'bg-[var(--color-surface-3)]'
         : 'bg-amber-400';
 
   const waBoxBorderClass =
-    waState === 'confirmed' ? 'border-teal-600/40' : 'border-slate-700';
+    waState === 'confirmed' ? 'border-teal-600/40' : 'border-[var(--color-border)]';
 
   if (loading) {
     return (
@@ -432,7 +432,7 @@ export default function OnboardingPage() {
   if (!centerId) {
     return (
       <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center p-4">
-        <p className="text-slate-400">{tCommon('error')}</p>
+        <p className="text-[var(--color-text-muted)]">{tCommon('error')}</p>
       </div>
     );
   }
@@ -440,7 +440,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-surface-0)] pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-6">
       {step < 4 ? (
-        <header className="shrink-0 bg-[var(--color-surface-1)] border-b border-slate-800/80">
+        <header className="shrink-0 bg-[var(--color-surface-1)] border-b border-[var(--color-border)]">
           <div className="max-w-lg mx-auto w-full px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <div
@@ -449,18 +449,18 @@ export default function OnboardingPage() {
               >
                 CH
               </div>
-              <span className="text-sm font-semibold text-slate-100 truncate" style={{ fontFamily: 'Georgia, serif' }}>
+              <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate" style={{ fontFamily: 'Georgia, serif' }}>
                 CenterHQ
               </span>
             </div>
-            <span className="text-xs font-medium text-slate-400 tabular-nums shrink-0" aria-live="polite">
+            <span className="text-xs font-medium text-[var(--color-text-muted)] tabular-nums shrink-0" aria-live="polite">
               {stepCounterText}
             </span>
           </div>
           <div className="max-w-lg mx-auto w-full px-4 pb-3">
-            <div className="h-[3px] rounded-full bg-slate-800 overflow-hidden" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={4}>
+            <div className="h-[3px] rounded-full bg-[var(--color-surface-2)] overflow-hidden" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={4}>
               <div
-                className="h-full rounded-full bg-[#0D9488] transition-[width] duration-[400ms] ease-out"
+                className="h-full rounded-full bg-teal-600 transition-[width] duration-[400ms] ease-out"
                 style={{ width: `${progressWidthPct}%` }}
               />
             </div>
@@ -477,7 +477,7 @@ export default function OnboardingPage() {
                         ? 'w-6 bg-teal-600'
                         : active
                           ? 'w-10 bg-teal-600/50'
-                          : 'w-6 bg-slate-700'
+                          : 'w-6 bg-[var(--color-surface-2)]'
                     }`}
                   />
                 );
@@ -491,7 +491,7 @@ export default function OnboardingPage() {
         <button
           type="button"
           onClick={toggleLocale}
-          className="text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 btn-press chq-focus"
+          className="text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors px-3 py-1.5 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] btn-press chq-focus"
         >
           {locale === 'ar' ? 'English' : 'العربية'}
         </button>
@@ -501,10 +501,10 @@ export default function OnboardingPage() {
         {step < 4 ? (
           <div
             key={stepKey}
-            className={`flex-1 flex flex-col min-h-0 ${stepKey > 0 && direction === 'forward' ? 'chq-slide-up' : ''}`}
+            className={`flex-1 flex flex-col min-h-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 ${stepKey > 0 && direction === 'forward' ? 'chq-slide-up' : ''}`}
           >
             <div
-              className="inline-flex items-center gap-2 rounded-full bg-teal-600/15 border border-teal-600/30 px-3 py-1 text-xs font-medium text-teal-300 w-fit chq-fade-in"
+              className="inline-flex items-center gap-2 rounded-full bg-teal-600/15 border border-teal-600/30 px-3 py-1 text-xs font-medium text-teal-700 dark:text-teal-300 w-fit chq-fade-in"
               style={{ animationDelay: '0ms' }}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-teal-500" aria-hidden />
@@ -513,48 +513,48 @@ export default function OnboardingPage() {
             {step === 1 ? (
               <>
                 <h1
-                  className="text-xl font-bold text-slate-100 mt-3 chq-fade-in"
+                  className="text-xl font-bold text-[var(--color-text-primary)] mt-3 chq-fade-in"
                   style={{ animationDelay: '80ms' }}
                 >
                   {to('step1Title')}
                 </h1>
                 <p
-                  className="text-sm text-slate-500 mt-1 chq-fade-in"
+                  className="text-sm text-[var(--color-text-muted)] mt-1 chq-fade-in"
                   style={{ animationDelay: '160ms' }}
                 >
                   {to('step1Desc')}
                 </p>
                 <div className="mt-6 space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1.5">{to('centerName')}</label>
+                    <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">{to('centerName')}</label>
                     <input
                       type="text"
                       value={centerName}
                       onChange={(e) => setCenterName(e.target.value)}
                       placeholder={to('centerNamePlaceholder')}
-                      className={`w-full bg-slate-800 border rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none transition-colors chq-focus ${
-                        nameValid ? 'border-teal-600' : 'border-slate-700'
+                      className={`w-full bg-[var(--color-surface-2)] border rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] px-3 py-2.5 text-sm outline-none transition-colors chq-focus ${
+                        nameValid ? 'border-teal-600' : 'border-[var(--color-border)]'
                       }`}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1.5">{to('cityLabel')}</label>
+                    <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">{to('cityLabel')}</label>
                     <input
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder={to('cityPlaceholder')}
-                      className={`w-full bg-slate-800 border rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none transition-colors chq-focus ${
-                        city.trim() ? 'border-teal-600' : 'border-slate-700'
+                      className={`w-full bg-[var(--color-surface-2)] border rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] px-3 py-2.5 text-sm outline-none transition-colors chq-focus ${
+                        city.trim() ? 'border-teal-600' : 'border-[var(--color-border)]'
                       }`}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1.5">{to('governorateLabel')}</label>
+                    <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">{to('governorateLabel')}</label>
                     <select
                       value={governorate}
                       onChange={(e) => setGovernorate(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none focus:border-teal-600 chq-focus"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg text-[var(--color-text-primary)] px-3 py-2.5 text-sm outline-none focus:border-teal-600 chq-focus"
                     >
                       {governorateOptions.map((o) => (
                         <option key={o.value} value={o.value}>
@@ -569,10 +569,10 @@ export default function OnboardingPage() {
 
             {step === 2 ? (
               <>
-                <h1 className="text-xl font-bold text-slate-100 mt-3 chq-fade-in" style={{ animationDelay: '80ms' }}>
+                <h1 className="text-xl font-bold text-[var(--color-text-primary)] mt-3 chq-fade-in" style={{ animationDelay: '80ms' }}>
                   {to('step2Title')}
                 </h1>
-                <p className="text-sm text-slate-500 mt-1 chq-fade-in" style={{ animationDelay: '160ms' }}>
+                <p className="text-sm text-[var(--color-text-muted)] mt-1 chq-fade-in" style={{ animationDelay: '160ms' }}>
                   {to('step2Desc')}
                 </p>
                 <p className="text-sm text-teal-400/90 mt-3">{to('firstStudentEncourage')}</p>
@@ -582,8 +582,8 @@ export default function OnboardingPage() {
                     value={firstStudentName}
                     onChange={(e) => setFirstStudentName(e.target.value)}
                     placeholder={to('studentNamePlaceholder')}
-                    className={`w-full bg-slate-800 border rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none chq-focus ${
-                      firstStudentName.trim().length >= 2 ? 'border-teal-600' : 'border-slate-700'
+                    className={`w-full bg-[var(--color-surface-2)] border rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] px-3 py-2.5 text-sm outline-none chq-focus ${
+                      firstStudentName.trim().length >= 2 ? 'border-teal-600' : 'border-[var(--color-border)]'
                     }`}
                   />
                   <input
@@ -592,7 +592,7 @@ export default function OnboardingPage() {
                     onChange={(e) => setFirstStudentPhone(e.target.value)}
                     placeholder={to('phoneOptional')}
                     dir="ltr"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 px-3 py-2.5 text-sm outline-none focus:border-teal-600 chq-focus"
+                    className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] px-3 py-2.5 text-sm outline-none focus:border-teal-600 chq-focus"
                   />
                   <LoadingButton
                     type="button"
@@ -611,16 +611,16 @@ export default function OnboardingPage() {
 
             {step === 3 ? (
               <>
-                <h1 className="text-xl font-bold text-slate-100 mt-3 chq-fade-in" style={{ animationDelay: '80ms' }}>
+                <h1 className="text-xl font-bold text-[var(--color-text-primary)] mt-3 chq-fade-in" style={{ animationDelay: '80ms' }}>
                   {to('waConfirmTitle')}
                 </h1>
-                <p className="text-sm text-slate-500 mt-1 chq-fade-in" style={{ animationDelay: '160ms' }}>
+                <p className="text-sm text-[var(--color-text-muted)] mt-1 chq-fade-in" style={{ animationDelay: '160ms' }}>
                   {to('waConfirmDesc')}
                 </p>
 
-                <div className={`mt-5 rounded-xl p-3 bg-slate-800 border ${waBoxBorderClass} transition-colors`}>
-                  <p className="text-xs text-slate-500 mb-2">{to('whatsapp_preview_label')}</p>
-                  <div className="bg-[#0D9488] rounded-lg rounded-br-sm px-3 py-2 inline-block max-w-[95%]">
+                <div className={`mt-5 rounded-xl p-3 bg-[var(--color-surface-1)] border ${waBoxBorderClass} transition-colors`}>
+                  <p className="text-xs text-[var(--color-text-muted)] mb-2">{to('whatsapp_preview_label')}</p>
+                  <div className="bg-teal-600 rounded-lg rounded-br-sm px-3 py-2 inline-block max-w-[95%]">
                     <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">{to('waPreviewBody')}</p>
                   </div>
                 </div>
@@ -641,9 +641,9 @@ export default function OnboardingPage() {
 
                 {waState !== 'idle' && waState !== 'sending' ? (
                   <div className="mt-4 space-y-3 chq-spring-in">
-                    <div className="bg-slate-800 rounded-lg px-3 py-2 flex items-center gap-2 border border-slate-700">
+                    <div className="bg-[var(--color-surface-2)] rounded-lg px-3 py-2 flex items-center gap-2 border border-[var(--color-border)]">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${stateDotClass}`} aria-hidden />
-                      <span className="text-sm text-slate-300">
+                      <span className="text-sm text-[var(--color-text-secondary)]">
                         {waState === 'confirmed' ? (
                           to('waConfirmed')
                         ) : (
@@ -653,7 +653,7 @@ export default function OnboardingPage() {
                           </>
                         )}
                         {waSentAt ? (
-                          <span className="text-slate-500 ms-2 tabular-nums">
+                          <span className="text-[var(--color-text-muted)] ms-2 tabular-nums">
                             {new Date(waSentAt).toLocaleString('en-US', {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -664,7 +664,7 @@ export default function OnboardingPage() {
                       </span>
                     </div>
 
-                    <p className="text-sm font-medium text-slate-200">{to('waGateQuestion')}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-secondary)]">{to('waGateQuestion')}</p>
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -679,7 +679,7 @@ export default function OnboardingPage() {
                         className={`flex-1 min-w-[8rem] px-4 py-2.5 rounded-lg text-sm font-medium border bg-transparent btn-press chq-focus ${
                           waState === 'support'
                             ? 'border-amber-500/60 text-amber-400'
-                            : 'border-slate-700 text-slate-500'
+                            : 'border-[var(--color-border)] text-[var(--color-text-muted)]'
                         }`}
                       >
                         {to('waNo')}
@@ -689,7 +689,7 @@ export default function OnboardingPage() {
                     {waState === 'support' ? (
                       <div className="rounded-xl p-4 bg-amber-950/20 border border-amber-800/30 chq-spring-in">
                         <p className="text-amber-400 font-semibold text-sm">{to('waSupportTitle')}</p>
-                        <p className="text-slate-500 text-sm mt-2 leading-relaxed">{to('waSupportDesc')}</p>
+                        <p className="text-[var(--color-text-muted)] text-sm mt-2 leading-relaxed">{to('waSupportDesc')}</p>
                         <button
                           type="button"
                           onClick={() =>
@@ -707,38 +707,38 @@ export default function OnboardingPage() {
             ) : null}
           </div>
         ) : (
-          <div className="flex flex-col items-center py-6">
+          <div className="flex flex-col items-center py-6 w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 pb-8">
             <div className="chq-spring-in">
               <SuccessCheck size={64} color="#0D9488" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-100 mt-6 text-center">{to('completionTitle')}</h1>
-            <p className="text-sm text-slate-500 mt-2 text-center max-w-sm">{to('completionDesc')}</p>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mt-6 text-center">{to('completionTitle')}</h1>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-2 text-center max-w-sm">{to('completionDesc')}</p>
 
             <div className="grid grid-cols-3 gap-2 w-full mt-8">
               <div
-                className="bg-slate-800 rounded-xl p-3 text-center border border-slate-700/80 chq-slide-up"
+                className="bg-[var(--color-surface-2)] rounded-xl p-3 text-center border border-[var(--color-border)] chq-slide-up"
                 style={{ animationDelay: '0ms' }}
               >
                 <p className="text-teal-400 text-xl font-medium tabular-nums">
                   {animatedCount.toLocaleString('en-US')}
                 </p>
-                <p className="text-slate-500 text-xs mt-1">{to('statStudents')}</p>
+                <p className="text-[var(--color-text-muted)] text-xs mt-1">{to('statStudents')}</p>
               </div>
               <div
-                className="bg-slate-800 rounded-xl p-3 text-center border border-slate-700/80 chq-slide-up"
+                className="bg-[var(--color-surface-2)] rounded-xl p-3 text-center border border-[var(--color-border)] chq-slide-up"
                 style={{ animationDelay: '100ms' }}
               >
                 <p className="text-teal-400 text-xl font-medium tabular-nums">
                   {groups.length.toLocaleString('en-US')}
                 </p>
-                <p className="text-slate-500 text-xs mt-1">{to('statGroups')}</p>
+                <p className="text-[var(--color-text-muted)] text-xs mt-1">{to('statGroups')}</p>
               </div>
               <div
-                className="bg-slate-800 rounded-xl p-3 text-center border border-slate-700/80 chq-slide-up"
+                className="bg-[var(--color-surface-2)] rounded-xl p-3 text-center border border-[var(--color-border)] chq-slide-up"
                 style={{ animationDelay: '200ms' }}
               >
                 <p className="text-teal-400 text-xl font-medium tabular-nums">100%</p>
-                <p className="text-slate-500 text-xs mt-1">{to('statComplete')}</p>
+                <p className="text-[var(--color-text-muted)] text-xs mt-1">{to('statComplete')}</p>
               </div>
             </div>
 
@@ -760,7 +760,7 @@ export default function OnboardingPage() {
               type="button"
               onClick={() => void handleFooterBack()}
               disabled={advancing}
-              className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 text-sm font-medium btn-press chq-focus disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm font-medium btn-press chq-focus disabled:opacity-50"
             >
               {to('back')}
             </button>
@@ -771,7 +771,7 @@ export default function OnboardingPage() {
               type="button"
               onClick={() => void handleStep2Skip()}
               disabled={advancing}
-              className="py-2.5 px-3 rounded-lg border border-slate-700 bg-transparent text-slate-500 text-sm font-medium btn-press chq-focus disabled:opacity-50"
+              className="py-2.5 px-3 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] text-sm font-medium btn-press chq-focus disabled:opacity-50"
             >
               {to('skip')}
             </button>
@@ -785,7 +785,7 @@ export default function OnboardingPage() {
               className={`flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-colors btn-press chq-focus ${
                 waState === 'confirmed'
                   ? 'bg-teal-600 border-teal-600 text-white'
-                  : 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed opacity-60'
+                  : 'bg-[var(--color-surface-2)] border-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed opacity-60'
               }`}
             >
               {waState !== 'confirmed' ? <Lock className="w-4 h-4 shrink-0" aria-hidden /> : null}
@@ -795,7 +795,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               disabled
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed opacity-60"
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed opacity-60"
             >
               {to('next')}
             </button>
@@ -803,7 +803,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               disabled
-              className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed opacity-60"
+              className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed opacity-60"
             >
               {to('next')}
             </button>

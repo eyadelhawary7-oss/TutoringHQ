@@ -17,16 +17,16 @@ export default function PaymentRowSkeleton() {
           {Array.from({ length: 5 }).map((_, i) => (
             <tr key={i}>
               <td className="py-3.5 px-4 text-end">
-                <div className="h-4 w-20 bg-slate-200 rounded skeleton-pulse ml-auto" />
+                <div className="h-4 w-20 bg-[var(--color-surface-2)] rounded skeleton-pulse ml-auto" />
               </td>
               <td className="py-3.5 px-4 text-end">
                 <div className="space-y-1 flex flex-col items-end">
-                  <div className="h-4 w-28 bg-slate-200 rounded skeleton-pulse" />
+                  <div className="h-4 w-28 bg-[var(--color-surface-2)] rounded skeleton-pulse" />
                   <div className="h-3 w-16 bg-[var(--color-surface-2)] rounded skeleton-pulse" />
                 </div>
               </td>
               <td className="py-3.5 px-4 text-end">
-                <div className="h-4 w-16 bg-slate-200 rounded skeleton-pulse ml-auto" />
+                <div className="h-4 w-16 bg-[var(--color-surface-2)] rounded skeleton-pulse ml-auto" />
               </td>
               <td className="py-3.5 px-4 text-end">
                 <div className="h-5 w-14 bg-[var(--color-surface-2)] rounded skeleton-pulse ml-auto" />

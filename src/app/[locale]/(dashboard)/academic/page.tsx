@@ -38,7 +38,7 @@ interface Holiday {
 }
 
 const PERIOD_COLORS: Record<PeriodType, string> = {
-  normal: 'bg-slate-300',
+  normal: 'bg-[var(--color-surface-4)]',
   exam: 'bg-amber-400',
   holiday: 'bg-red-400',
   peak: 'bg-teal-300',
@@ -402,7 +402,7 @@ export default function AcademicPage() {
       </PageHeader>
 
       {/* Section 1: Current year card */}
-      <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
+      <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border)] shadow-sm p-6 mb-6">
         <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-teal-600" />
           {t('currentYear')}
@@ -414,7 +414,7 @@ export default function AcademicPage() {
                 type="text"
                 value={editYearForm.name}
                 onChange={(e) => setEditYearForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                 placeholder={t('yearName')}
               />
               <div className="flex gap-2">
@@ -422,13 +422,13 @@ export default function AcademicPage() {
                   type="date"
                   value={editYearForm.start_date}
                   onChange={(e) => setEditYearForm((f) => ({ ...f, start_date: e.target.value }))}
-                  className="flex-1 px-3 py-2 border rounded-lg"
+                  className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)]"
                 />
                 <input
                   type="date"
                   value={editYearForm.end_date}
                   onChange={(e) => setEditYearForm((f) => ({ ...f, end_date: e.target.value }))}
-                  className="flex-1 px-3 py-2 border rounded-lg"
+                  className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)]"
                 />
               </div>
               <div className="flex gap-2">
@@ -444,7 +444,7 @@ export default function AcademicPage() {
                     setEditYear(null);
                     setEditYearForm({ name: currentYear.name, start_date: currentYear.start_date, end_date: currentYear.end_date });
                   }}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm"
+                  className="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
                 >
                   {t('cancel')}
                 </button>
@@ -480,7 +480,7 @@ export default function AcademicPage() {
 
       {/* Section 2: Timeline bar */}
       {currentYear && yearDays > 0 && (
-        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
+        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border)] shadow-sm p-6 mb-6">
           <h2 className="font-bold text-[var(--color-text-primary)] mb-4">{t('timeline')}</h2>
           <div className="relative h-10 rounded-lg overflow-hidden bg-[var(--color-surface-2)]">
             {currentYearPeriods.map((p) => {
@@ -506,18 +506,18 @@ export default function AcademicPage() {
               />
             )}
           </div>
-          <div className="flex flex-wrap gap-4 mt-3 text-xs">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-slate-300" /> {t('normal')}</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400" /> {t('exam')}</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-400" /> {t('holiday')}</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-teal-300" /> {t('peak')}</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-teal-400 animate-pulse" /> {t('currentWeek')}</span>
+          <div className="flex flex-wrap gap-4 mt-3 text-xs text-[var(--color-text-secondary)]">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded shrink-0 bg-[var(--color-surface-4)]" /> {t('normal')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded shrink-0 bg-amber-400" /> {t('exam')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded shrink-0 bg-red-400" /> {t('holiday')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded shrink-0 bg-teal-300" /> {t('peak')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded shrink-0 bg-teal-400 animate-pulse" /> {t('currentWeek')}</span>
           </div>
         </div>
       )}
 
       {/* Section 3: Period management */}
-      <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 mb-6">
+      <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border)] shadow-sm p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-[var(--color-text-primary)]">{t('periods')}</h2>
           {currentYear && (
@@ -538,11 +538,11 @@ export default function AcademicPage() {
             {currentYearPeriods.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)]"
+                className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-0)]"
               >
                 <div className="flex items-center gap-3">
-                  <span className={`w-3 h-3 rounded ${PERIOD_COLORS[p.period_type]}`} />
-                  <span className="font-medium">{p.name}</span>
+                  <span className={`w-3 h-3 rounded shrink-0 ${PERIOD_COLORS[p.period_type]}`} />
+                  <span className="font-medium text-[var(--color-text-primary)]">{p.name}</span>
                   <span className="text-[var(--color-text-secondary)] text-sm">
                     {formatDateShort(p.start_date)} - {formatDateShort(p.end_date)}
                   </span>
@@ -553,9 +553,9 @@ export default function AcademicPage() {
                       setPeriodForm({ ...p });
                       setShowPeriodModal(true);
                     }}
-                    className="p-1.5 rounded hover:bg-slate-200"
+                    className="p-1.5 rounded hover:bg-[var(--color-surface-2)]"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Pencil className="w-4 h-4 text-[var(--color-text-secondary)]" />
                   </button>
                   <button
                     onClick={() => deletePeriod(p.id)}
@@ -579,7 +579,7 @@ export default function AcademicPage() {
                 setHolidayForm({ name: '', date: '', is_recurring: false });
                 setShowHolidayModal(true);
               }}
-              className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
             >
               <Plus className="w-4 h-4" />
               {t('addHoliday')}
@@ -590,18 +590,18 @@ export default function AcademicPage() {
               {holidays.map((h) => (
                 <div
                   key={h.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border-subtle)]"
+                  className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border)]"
                 >
-                  <span>{h.name} - {formatHolidayDate(h.date, locale)}</span>
+                  <span className="text-[var(--color-text-primary)]">{h.name} - {formatHolidayDate(h.date, locale)}</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
                         setHolidayForm({ ...h });
                         setShowHolidayModal(true);
                       }}
-                      className="p-1.5 rounded hover:bg-slate-200"
+                      className="p-1.5 rounded hover:bg-[var(--color-surface-2)]"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="w-4 h-4 text-[var(--color-text-secondary)]" />
                     </button>
                     <button
                       onClick={() => deleteHoliday(h.id)}
@@ -631,7 +631,7 @@ export default function AcademicPage() {
           });
           setShowNewYearModal(true);
         }}
-        className="w-full py-4 px-6 rounded-xl border-2 border-dashed border-teal-400 text-teal-700 font-medium hover:bg-teal-50 flex items-center justify-center gap-2"
+        className="w-full py-4 px-6 rounded-xl border-2 border-dashed border-teal-500 text-teal-700 dark:text-teal-300 font-medium hover:bg-teal-500/10 flex items-center justify-center gap-2"
       >
         <Plus className="w-5 h-5" />
         {t('createNewYear')}
@@ -641,26 +641,26 @@ export default function AcademicPage() {
       {showNewYearModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-md w-full">
-            <h3 className="font-bold text-lg mb-4">{t('createNewYear')}</h3>
+            <h3 className="font-bold text-lg mb-4 text-[var(--color-text-primary)]">{t('createNewYear')}</h3>
             <div className="space-y-3">
               <input
                 type="text"
                 value={newYearForm.name}
                 onChange={(e) => setNewYearForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                 placeholder={t('yearName')}
               />
               <input
                 type="date"
                 value={newYearForm.start_date}
                 onChange={(e) => setNewYearForm((f) => ({ ...f, start_date: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
               <input
                 type="date"
                 value={newYearForm.end_date}
                 onChange={(e) => setNewYearForm((f) => ({ ...f, end_date: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
             </div>
             <div className="flex gap-2 mt-4">
@@ -673,7 +673,7 @@ export default function AcademicPage() {
               </button>
               <button
                 onClick={() => setShowNewYearModal(false)}
-                className="px-4 py-2 border rounded-lg"
+                className="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)]"
               >
                 {t('cancel')}
               </button>
@@ -685,12 +685,12 @@ export default function AcademicPage() {
       {showPeriodModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-md w-full">
-            <h3 className="font-bold text-lg mb-4">{periodForm.id ? t('editPeriod') : t('addPeriod')}</h3>
+            <h3 className="font-bold text-lg mb-4 text-[var(--color-text-primary)]">{periodForm.id ? t('editPeriod') : t('addPeriod')}</h3>
             <div className="space-y-3">
               <select
                 value={periodForm.period_type ?? 'exam'}
                 onChange={(e) => setPeriodForm((f) => ({ ...f, period_type: e.target.value as PeriodType }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               >
                 <option value="exam">{t('exam')}</option>
                 <option value="holiday">{t('holiday')}</option>
@@ -701,20 +701,20 @@ export default function AcademicPage() {
                 type="text"
                 value={periodForm.name ?? ''}
                 onChange={(e) => setPeriodForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                 placeholder={t('periodName')}
               />
               <input
                 type="date"
                 value={periodForm.start_date ?? ''}
                 onChange={(e) => setPeriodForm((f) => ({ ...f, start_date: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
               <input
                 type="date"
                 value={periodForm.end_date ?? ''}
                 onChange={(e) => setPeriodForm((f) => ({ ...f, end_date: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
             </div>
             <div className="flex gap-2 mt-4">
@@ -727,7 +727,7 @@ export default function AcademicPage() {
               </button>
               <button
                 onClick={() => setShowPeriodModal(false)}
-                className="px-4 py-2 border rounded-lg"
+                className="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)]"
               >
                 {t('cancel')}
               </button>
@@ -739,20 +739,20 @@ export default function AcademicPage() {
       {showHolidayModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-md w-full">
-            <h3 className="font-bold text-lg mb-4">{holidayForm.id ? t('editHoliday') : t('addHoliday')}</h3>
+            <h3 className="font-bold text-lg mb-4 text-[var(--color-text-primary)]">{holidayForm.id ? t('editHoliday') : t('addHoliday')}</h3>
             <div className="space-y-3">
               <input
                 type="text"
                 value={holidayForm.name ?? ''}
                 onChange={(e) => setHolidayForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                 placeholder={t('holidayName')}
               />
               <input
                 type="date"
                 value={holidayForm.date ?? ''}
                 onChange={(e) => setHolidayForm((f) => ({ ...f, date: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
               <label className="flex items-center gap-2">
                 <input
@@ -760,7 +760,7 @@ export default function AcademicPage() {
                   checked={holidayForm.is_recurring ?? false}
                   onChange={(e) => setHolidayForm((f) => ({ ...f, is_recurring: e.target.checked }))}
                 />
-                <span className="text-sm">{t('isRecurring')}</span>
+                <span className="text-sm text-[var(--color-text-primary)]">{t('isRecurring')}</span>
               </label>
             </div>
             <div className="flex gap-2 mt-4">
@@ -773,7 +773,7 @@ export default function AcademicPage() {
               </button>
               <button
                 onClick={() => setShowHolidayModal(false)}
-                className="px-4 py-2 border rounded-lg"
+                className="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)]"
               >
                 {t('cancel')}
               </button>
@@ -789,7 +789,7 @@ export default function AcademicPage() {
           role="presentation"
         >
           <div
-            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] max-w-md w-full p-6 shadow-xl"
+            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border)] max-w-md w-full p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">

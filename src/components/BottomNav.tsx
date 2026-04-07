@@ -112,7 +112,7 @@ export function BottomNav() {
                 href={path}
                 className={cn(
                   'flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 transition-colors',
-                  active ? 'text-teal-600' : 'text-slate-400'
+                  active ? 'text-teal-600' : 'text-[var(--color-text-muted)]'
                 )}
               >
                 <Icon size={24} className={cn(active && 'text-teal-600')} />
@@ -124,7 +124,7 @@ export function BottomNav() {
           <button
             type="button"
             onClick={() => setShowMore(true)}
-            className="flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-slate-400"
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)]"
           >
             <MoreHorizontal size={24} />
             <span>{t('more')}</span>
