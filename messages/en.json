@@ -914,7 +914,10 @@
     "registerLink": "Register new center",
     "sendOTP": "Send OTP",
     "submit": "Submit",
-    "title": "Title"
+    "title": "Title",
+    "welcomeBack": "Welcome back",
+    "headline": "Sign in to your center",
+    "register": "Register your center"
   },
   "forgotPassword": {
     "title": "Reset Password",

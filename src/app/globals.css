@@ -1348,6 +1348,42 @@ html.light [data-chq-signup] [data-chq-underline]:-webkit-autofill {
   caret-color: #f8fafc;
 }
 
+[data-chq-login] {
+  background-color: #080d14 !important;
+  min-height: 100vh;
+}
+
+html.light [data-chq-login] {
+  background-color: #080d14 !important;
+}
+
+[data-chq-login] input,
+html.light [data-chq-login] input {
+  background: transparent !important;
+  background-color: transparent !important;
+  -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
+  box-shadow: 0 0 0px 1000px #080d14 inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  color: #f8fafc !important;
+  border-radius: 0 !important;
+}
+
+[data-chq-login] input::placeholder,
+html.light [data-chq-login] input::placeholder {
+  -webkit-text-fill-color: #334155 !important;
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+[data-chq-login] input:-webkit-autofill,
+[data-chq-login] input:-webkit-autofill:hover,
+[data-chq-login] input:-webkit-autofill:focus,
+html.light [data-chq-login] input:-webkit-autofill {
+  -webkit-text-fill-color: #f8fafc !important;
+  -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
+  caret-color: #f8fafc;
+}
+
 @keyframes breathe {
   0%,
   100% {

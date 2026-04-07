@@ -4,11 +4,10 @@ import { useState, FormEvent, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import { Eye, EyeOff, Phone, Lock, Globe } from 'lucide-react';
+import { Globe } from 'lucide-react';
 
 export default function LoginPage() {
   const t = useTranslations('login');
-  const tc = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -20,6 +19,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [shakePin, setShakePin] = useState(false);
+
+  const PLAYFAIR = {
+    fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', Georgia, serif",
+  } as const;
+  const SANS = {
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+  } as const;
 
   const shakePinField = () => {
     setShakePin(true);
@@ -70,7 +76,9 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (!session) return;
 
         const checkRes = await fetch('/api/admin/check', {
@@ -133,128 +141,405 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: 'var(--gradient-hero)' }}>
-      {/* Language toggle */}
-      <div className="absolute top-4 end-4">
+    <div
+      data-chq-login
+      style={{
+        background: '#080D14',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 24px',
+        position: 'relative',
+      }}
+    >
+      <div style={{ position: 'absolute', top: '16px', insetInlineEnd: '16px' }}>
         <button
+          type="button"
           onClick={handleLocaleToggle}
           disabled={isPending}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 text-white/70 hover:text-white transition-colors"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            fontSize: '12px',
+            fontWeight: 500,
+            border: '1px solid rgba(148, 163, 184, 0.35)',
+            color: 'rgba(226, 232, 240, 0.85)',
+            background: 'transparent',
+            cursor: 'pointer',
+          }}
         >
           <Globe size={13} />
           <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
         </button>
       </div>
 
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl mb-4 shadow-lg" style={{ background: 'hsl(var(--primary))' }}>
-            CH
+      <div
+        style={{
+          width: '56px',
+          height: '56px',
+          border: '2px solid #0D9488',
+          borderRadius: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '12px',
+        }}
+      >
+        <span
+          style={{
+            ...PLAYFAIR,
+            color: '#0D9488',
+            fontWeight: 900,
+            fontSize: '18px',
+          }}
+        >
+          CH
+        </span>
+      </div>
+
+      <div
+        style={{
+          ...PLAYFAIR,
+          color: '#f8fafc',
+          fontSize: '14px',
+          fontWeight: 700,
+          letterSpacing: '0.3px',
+          marginBottom: '44px',
+        }}
+      >
+        CenterHQ
+      </div>
+
+      <div style={{ width: '100%', maxWidth: '360px' }}>
+        <form onSubmit={handleLogin} style={{ width: '100%' }}>
+          <div
+            style={{
+              ...SANS,
+              fontSize: '10px',
+              color: '#334155',
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              textAlign: 'center',
+              marginBottom: '8px',
+            }}
+          >
+            {t('welcomeBack')}
           </div>
-          <h1 className="text-2xl font-black text-white">CenterHQ</h1>
-          <p className="text-white/50 text-sm mt-1">{t('title')}</p>
-        </div>
 
-        {/* Card */}
-        <div className="rounded-2xl border border-white/10 p-6 shadow-xl" style={{ background: 'hsl(var(--card) / 0.95)', backdropFilter: 'blur(20px)' }}>
-          <form onSubmit={handleLogin} className="space-y-4">
-            {/* Phone */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('phone')}</label>
-              <div className="relative">
-                <Phone size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)]" />
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  value={phone}
-                  onChange={(e) => {
-                    let value = e.target.value.replace(/[^0-9+]/g, '');
-                    if (value.length === 1 && value !== '+') {
-                      value = '+20' + value;
-                    }
-                    if (value.length <= 13) {
-                      setPhone(value);
-                    }
-                    setError('');
-                  }}
-                  placeholder={t('phonePlaceholder')}
-                  className="w-full ps-9 pe-4 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
-                  dir="ltr"
-                  required
-                  autoComplete="tel"
-                />
-              </div>
-            </div>
+          <h1
+            style={{
+              ...PLAYFAIR,
+              fontSize: '26px',
+              fontWeight: 700,
+              color: '#f8fafc',
+              textAlign: 'center',
+              letterSpacing: '-0.3px',
+              lineHeight: '1.2',
+              marginBottom: '40px',
+            }}
+          >
+            {t('headline')}
+          </h1>
 
-            {/* PIN */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('pin')}</label>
-              <div className={`relative ${shakePin ? 'micro-shake' : ''}`}>
-                <Lock size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)]" />
-                <input
-                  type={showPin ? 'text' : 'password'}
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pin}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, '');
-                    if (value.length <= 6) setPin(value);
-                    setError('');
-                  }}
-                  placeholder={t('pinPlaceholder')}
-                  className="w-full ps-9 pe-10 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow font-mono tracking-widest"
-                  dir="ltr"
-                  required
-                  autoComplete="off"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPin((v) => !v)}
-                  className="absolute top-1/2 -translate-y-1/2 end-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                >
-                  {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Demo hint */}
-            <p className="text-xs text-[var(--color-text-secondary)] border border-dashed border-border rounded-lg px-3 py-2">
-              <span className="font-semibold">Demo:</span> 01000000000 / 123456
-            </p>
-
-            {/* Error */}
-            {error && (
-              <div className="rounded-lg px-3 py-2.5 text-sm font-medium" style={{ background: 'hsl(var(--destructive) / 0.1)', color: 'hsl(var(--destructive))' }}>
-                {error}
-              </div>
-            )}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-60"
-              style={{ background: 'hsl(var(--primary))' }}
+          <div style={{ marginBottom: '32px' }}>
+            <label
+              style={{
+                ...SANS,
+                fontSize: '9px',
+                color: '#0D9488',
+                textTransform: 'uppercase',
+                letterSpacing: '1.5px',
+                fontWeight: 700,
+                display: 'block',
+                marginBottom: '8px',
+              }}
             >
-              {isLoading ? tc('loading') : t('submit')}
-            </button>
-
-            {/* Forgot PIN */}
-            <div className="text-center">
-              <Link href="/forgot-password" className="text-sm hover:underline" style={{ color: 'hsl(var(--primary))' }}>
-                {t('forgotPin')}
-              </Link>
+              {t('phone')}
+            </label>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                borderBottom: '1px solid #1e293b',
+                paddingBottom: '10px',
+                gap: '10px',
+              }}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#334155"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ flexShrink: 0 }}
+                aria-hidden
+              >
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.01 2.21 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z" />
+              </svg>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/[^0-9+]/g, '');
+                  if (value.length === 1 && value !== '+') {
+                    value = '+20' + value;
+                  }
+                  if (value.length <= 13) {
+                    setPhone(value);
+                  }
+                  setError('');
+                }}
+                placeholder="+20 1XXXXXXXXX"
+                autoComplete="tel"
+                dir="ltr"
+                required
+                style={{
+                  ...PLAYFAIR,
+                  flex: 1,
+                  background: 'transparent',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#f8fafc',
+                  fontSize: '15px',
+                  outline: 'none',
+                  WebkitTextFillColor: '#f8fafc',
+                  WebkitBoxShadow: '0 0 0px 1000px #080D14 inset',
+                  caretColor: '#f8fafc',
+                }}
+              />
             </div>
-          </form>
+          </div>
 
-          <p className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
-            {t('noAccount')}{' '}
-            <Link href="/signup" className="font-semibold hover:underline" style={{ color: 'hsl(var(--primary))' }}>
-              {t('registerLink')}
+          <div style={{ marginBottom: '8px' }} className={shakePin ? 'micro-shake' : undefined}>
+            <label
+              style={{
+                ...SANS,
+                fontSize: '9px',
+                color: '#0D9488',
+                textTransform: 'uppercase',
+                letterSpacing: '1.5px',
+                fontWeight: 700,
+                display: 'block',
+                marginBottom: '8px',
+              }}
+            >
+              {t('pin')}
+            </label>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                borderBottom: '1px solid #1e293b',
+                paddingBottom: '10px',
+                gap: '10px',
+              }}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#334155"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ flexShrink: 0 }}
+                aria-hidden
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+              <input
+                type={showPin ? 'text' : 'password'}
+                inputMode="numeric"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  if (value.length <= 6) setPin(value);
+                  setError('');
+                }}
+                placeholder="••••••"
+                autoComplete="current-password"
+                dir="ltr"
+                required
+                style={{
+                  ...PLAYFAIR,
+                  flex: 1,
+                  background: 'transparent',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#f8fafc',
+                  fontSize: '15px',
+                  outline: 'none',
+                  WebkitTextFillColor: '#f8fafc',
+                  WebkitBoxShadow: '0 0 0px 1000px #080D14 inset',
+                  caretColor: '#f8fafc',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPin(!showPin)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  flexShrink: 0,
+                  color: '#334155',
+                }}
+                aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
+              >
+                {showPin ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div
+            style={{
+              ...SANS,
+              fontSize: '10px',
+              color: '#1e293b',
+              marginBottom: '32px',
+              marginTop: '6px',
+            }}
+          >
+            Demo: <span style={{ color: '#334155' }}>01000000000 / 123456</span>
+          </div>
+
+          {error ? (
+            <div
+              style={{
+                marginBottom: '16px',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid rgba(239,68,68,0.3)',
+                background: 'rgba(127,29,29,0.2)',
+              }}
+            >
+              <p
+                style={{
+                  ...SANS,
+                  fontSize: '12px',
+                  color: '#f87171',
+                }}
+              >
+                {error}
+              </p>
+            </div>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={isLoading || !phone || !pin}
+            style={{
+              ...PLAYFAIR,
+              width: '100%',
+              padding: '15px',
+              borderRadius: '12px',
+              background: '#0D9488',
+              color: 'white',
+              border: 'none',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              opacity: isLoading || !phone || !pin ? 0.4 : 1,
+              transition: 'opacity 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              letterSpacing: '0.2px',
+            }}
+          >
+            {isLoading ? (
+              <div
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: 'white',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }}
+              />
+            ) : (
+              t('submit')
+            )}
+          </button>
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              marginTop: '28px',
+              marginBottom: '28px',
+            }}
+          >
+            <div
+              style={{
+                width: '40px',
+                height: '1px',
+                background: '#0f172a',
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+            }}
+          >
+            <Link
+              href="/forgot-password"
+              style={{
+                ...SANS,
+                fontSize: '11px',
+                color: '#334155',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              {t('forgotPin')}
             </Link>
-          </p>
-        </div>
+            <Link
+              href="/signup"
+              style={{
+                ...SANS,
+                fontSize: '11px',
+                color: '#334155',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              {t('noAccount')}{' '}
+              <span style={{ color: '#0D9488' }}>{t('register')}</span>
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );

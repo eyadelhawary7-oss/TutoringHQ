@@ -3773,7 +3773,10 @@
     "registerLink": "تسجيل سنتر جديد",
     "sendOTP": "Send OTP",
     "submit": "إرسال",
-    "title": "عنوان"
+    "title": "عنوان",
+    "welcomeBack": "مرحباً بعودتك",
+    "headline": "سجّل دخولك إلى مركزك",
+    "register": "سجّل مركزك"
   },
   "onboarding": {
     "title": "مرحبًا بك في CenterHQ",
