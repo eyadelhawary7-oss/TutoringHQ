@@ -139,7 +139,7 @@ export default function SettingsReferralsPage() {
 
   if (user?.role !== 'owner') {
     return (
-      <div className="min-h-screen bg-[var(--color-surface-0)] p-4">
+      <div className="min-h-screen w-full bg-[#080D14] p-4">
         <PageHeader title={t('title')} />
         <p className="text-[var(--color-text-secondary)]">{tRef('ownerOnly')}</p>
       </div>
@@ -166,7 +166,7 @@ export default function SettingsReferralsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-0)] p-4 md:p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen w-full bg-[#080D14] p-4 md:p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <button
         onClick={() => router.push('/settings')}
         className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] mb-4"

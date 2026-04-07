@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 
 interface ChangePinModalProps {
@@ -9,6 +10,7 @@ interface ChangePinModalProps {
 }
 
 export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
+  const tSettings = useTranslations('settings');
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -86,7 +88,7 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="modal-spring-in bg-[var(--color-surface-1)] rounded-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
-        <h2 className="text-lg font-bold text-[var(--color-text-primary)]">تغيير الرمز السري</h2>
+        <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tSettings('changePin')}</h2>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>

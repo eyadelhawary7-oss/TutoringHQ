@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface RevenueStackedChartProps {
@@ -19,6 +19,8 @@ const COLORS = {
 
 export default function RevenueStackedChart({ data = [] }: RevenueStackedChartProps) {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
+  const currencySuffix = locale === 'ar' ? 'ج.م' : 'EGP';
 
   if (!data?.length) {
     return (
@@ -36,7 +38,11 @@ export default function RevenueStackedChart({ data = [] }: RevenueStackedChartPr
         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
         <XAxis dataKey="day" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
         <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-        <Tooltip formatter={(v: number | undefined) => `${Math.round((v ?? 0)).toLocaleString('en-US')} ج.م`} />
+        <Tooltip
+          formatter={(v: number | undefined) =>
+            `${Math.round((v ?? 0)).toLocaleString('en-US')} ${currencySuffix}`
+          }
+        />
         <Legend />
         <Bar dataKey="cash" fill={COLORS.cash} stackId="a" name={t('methodCash')} />
         <Bar dataKey="instapay" fill={COLORS.instapay} stackId="a" name={t('methodInstapay')} />

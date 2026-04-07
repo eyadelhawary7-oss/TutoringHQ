@@ -330,7 +330,7 @@ export default function GroupsPage() {
   };
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="space-y-6 animate-fade-in">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen w-full bg-[#080D14] space-y-6 animate-fade-in">
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <div>

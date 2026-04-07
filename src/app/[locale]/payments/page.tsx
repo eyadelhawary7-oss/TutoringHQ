@@ -344,7 +344,7 @@ export default function PaymentsPage() {
 
   return (
     <>
-      <div className="bg-[var(--color-surface-0)] min-h-screen animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="min-h-screen w-full bg-[#080D14] animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{tp('title')}</h1>
           <p className="text-xs text-[var(--color-text-secondary)]">{tp('subtitle')}</p>

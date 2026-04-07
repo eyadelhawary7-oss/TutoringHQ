@@ -935,7 +935,7 @@ export default function AdminPage() {
     });
     const message = encodeURIComponent(
       `السلام عليكم ${centerName} 👋\n\n` +
-      `نود تذكيركم بأن دفعة اشتراككم في CenterHQ بقيمة *${formattedAmount} ج.م* مستحقة بتاريخ *${formattedDue}*.\n\n` +
+      `نود تذكيركم بأن دفعة اشتراككم في CenterHQ بقيمة *${formattedAmount} ${locale === 'ar' ? 'ج.م' : 'EGP'}* مستحقة بتاريخ *${formattedDue}*.\n\n` +
       `يمكنكم تسوية الدفع ورفع إثبات الدفع من خلال:\n` +
       `🔗 https://center-hq.vercel.app/settings/billing\n\n` +
       `شكراً لثقتكم بـ CenterHQ 🙏`
@@ -1093,7 +1093,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[#080D14] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminHeader />
       <div className="flex flex-col lg:flex-row flex-1">
         <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname ?? undefined} />

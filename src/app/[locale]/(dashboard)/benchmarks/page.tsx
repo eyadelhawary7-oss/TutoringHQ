@@ -101,7 +101,7 @@ export default function BenchmarksPage() {
 
   if (loading && !data) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[300px]">
+      <div className="p-6 flex min-h-screen w-full items-center justify-center bg-[#080D14]">
         <Loader2 className="h-8 w-8 animate-spin text-[var(--color-text-secondary)]" />
       </div>
     );
@@ -109,8 +109,13 @@ export default function BenchmarksPage() {
 
   if (error) {
     return (
-      <div className="p-6">
-        <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
+      <div className="min-h-screen w-full bg-[#080D14] p-6">
+        <PageHeader
+          title={t('title')}
+          subtitle={tNav('benchmarks')}
+          titleClassName="text-white"
+          subtitleClassName="text-slate-400"
+        />
         <p className="text-destructive">{error}</p>
       </div>
     );
@@ -126,12 +131,17 @@ export default function BenchmarksPage() {
     const progressPct = Math.min(100, Math.round((currentCenters / DISTRICT_TARGET) * 100));
 
     return (
-      <div className="px-4 py-6 md:py-10">
-        <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
+      <div className="min-h-screen w-full bg-[#080D14] px-4 py-6 md:py-10">
+        <PageHeader
+          title={t('title')}
+          subtitle={tNav('benchmarks')}
+          titleClassName="text-white"
+          subtitleClassName="text-slate-400"
+        />
         <div className="max-w-md mx-auto text-center pt-10 md:pt-16">
           <BenchmarkLockIllustration />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-6">{t('districtTitle')}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{t('emptySubheading')}</p>
+          <h2 className="text-xl font-bold text-white mt-6">{t('districtTitle')}</h2>
+          <p className="text-sm text-slate-400 mt-2">{t('emptySubheading')}</p>
 
           <div className="mt-8 text-start">
             <div className="flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
@@ -151,7 +161,7 @@ export default function BenchmarksPage() {
             </div>
           </div>
 
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-6 leading-relaxed">
+          <p className="text-sm text-slate-400 mt-6 leading-relaxed">
             {isNoDistrict ? t('noDistrict') : t('emptyBody')}
           </p>
 
@@ -198,8 +208,13 @@ export default function BenchmarksPage() {
   ];
 
   return (
-    <div className="p-6">
-      <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
+    <div className="min-h-screen w-full bg-[#080D14] p-6">
+      <PageHeader
+        title={t('title')}
+        subtitle={tNav('benchmarks')}
+        titleClassName="text-white"
+        subtitleClassName="text-slate-400"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {cards.map(({ key, icon: Icon, metric, format, descKey }) => {
@@ -216,7 +231,7 @@ export default function BenchmarksPage() {
                 <Icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                 {t(key)}
               </div>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{format(yourVal)}</p>
+              <p className="text-3xl font-bold text-white mb-1">{format(yourVal)}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                 {t('districtAvg')}: {format(avgVal)}
               </p>

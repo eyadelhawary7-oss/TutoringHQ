@@ -143,19 +143,19 @@ export default function BranchesPage() {
 
   if (plan === 'single') {
     return (
-      <div className="p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="min-h-screen w-full bg-[#080D14] p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
         <PageHeader title={t('title')} subtitle={tNav('branches')} />
-        <div className="rounded-xl border bg-[var(--color-surface-1)] p-8 max-w-lg">
+        <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 p-8 max-w-lg">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-xl bg-teal-100 flex items-center justify-center">
-              <Building2 className="h-7 w-7 text-teal-600" />
+            <div className="w-14 h-14 rounded-xl bg-teal-900/40 flex items-center justify-center">
+              <Building2 className="h-7 w-7 text-teal-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('upgradeTitle')}</h2>
-              <p className="text-[var(--color-text-secondary)] text-sm">{t('upgradeDescription')}</p>
+              <h2 className="text-xl font-bold text-white">{t('upgradeTitle')}</h2>
+              <p className="text-slate-300 text-sm">{t('upgradeDescription')}</p>
             </div>
           </div>
-          <p className="text-[var(--color-text-secondary)] mb-6">{t('upgradeBenefits')}</p>
+          <p className="text-slate-300 mb-6">{t('upgradeBenefits')}</p>
           <Link
             href="/settings"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors"
@@ -175,7 +175,7 @@ export default function BranchesPage() {
   }));
 
   return (
-    <div className="p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen w-full bg-[#080D14] p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <PageHeader title={t('title')} subtitle={tNav('branches')} />
 
       {error && (

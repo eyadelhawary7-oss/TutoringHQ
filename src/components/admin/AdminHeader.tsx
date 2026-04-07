@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Globe } from 'lucide-react';
@@ -12,6 +12,7 @@ export function AdminHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();
+  const tSettings = useTranslations('settings');
   const [isPending, startTransition] = useTransition();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
@@ -98,7 +99,7 @@ export function AdminHeader() {
                   }}
                   className="w-full text-start px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
                 >
-                  تغيير الرمز السري
+                  {tSettings('changePin')}
                 </button>
                 <button
                   onClick={handleLogout}

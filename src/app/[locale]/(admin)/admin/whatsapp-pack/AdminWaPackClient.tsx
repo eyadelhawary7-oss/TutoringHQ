@@ -179,6 +179,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
   }
 
   const isRTL = locale === 'ar'
+  const currencySuffix = locale === 'ar' ? 'ج.م' : 'EGP'
 
   useEffect(() => {
     setHideShell(true)
@@ -366,7 +367,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('totalMrr')}</p>
               <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">
-                {fmtInt(stats.totalMRR)} ج.م
+                {fmtInt(stats.totalMRR)} {currencySuffix}
               </p>
             </div>
           </section>
@@ -489,7 +490,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                             {fmtInt(parents)}
                           </td>
                           <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                            {fmtInt(parents * 10)} ج.م
+                            {fmtInt(parents * 10)} {currencySuffix}
                           </td>
                           <td className="px-4 py-3">
                             <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
@@ -581,7 +582,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         <div>
                           <span className="text-[var(--color-text-tertiary)]">{t('monthlyAmount')}: </span>
                           <span className="tabular-nums font-medium">
-                            {fmtInt(parents * 10)} ج.م
+                            {fmtInt(parents * 10)} {currencySuffix}
                           </span>
                         </div>
                       </div>

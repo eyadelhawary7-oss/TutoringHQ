@@ -834,7 +834,7 @@ export default function StudentsPage() {
 
   return (
     <>
-      <div className="bg-[var(--color-surface-0)] min-h-screen page-enter max-md:pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="min-h-screen w-full bg-[#080D14] page-enter max-md:pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
             <div className="min-w-0">

@@ -167,7 +167,7 @@ export default function ReferralsPage() {
 
   if (user?.role !== 'owner') {
     return (
-      <div className="min-h-screen bg-[var(--color-surface-0)] p-4">
+      <div className="min-h-screen w-full bg-[#080D14] p-4">
         <PageHeader title={t('title')} />
         <p className="text-[var(--color-text-secondary)]">{t('ownerOnly')}</p>
       </div>
@@ -176,14 +176,14 @@ export default function ReferralsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--color-surface-0)] p-4 flex items-center justify-center">
+      <div className="min-h-screen w-full bg-[#080D14] p-4 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-teal-500 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-0)] p-4 md:p-6">
+    <div className="min-h-screen w-full bg-[#080D14] p-4 md:p-6">
       <PageHeader title={t('title')} />
 
       <div className="max-w-2xl mx-auto space-y-6">

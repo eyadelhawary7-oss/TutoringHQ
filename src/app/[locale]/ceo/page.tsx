@@ -132,7 +132,7 @@ export default function CeoDashboardPage() {
 
   if (loading || !data) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[var(--color-surface-0)]">
+      <div className="flex items-center justify-center min-h-screen w-full bg-[#080D14]">
         <div className="flex flex-col items-center gap-3">
           <div className="size-8 rounded-full border-2 border-[var(--color-border-default)] border-t-[var(--color-brand-500)] animate-spin" aria-hidden />
           <p className="text-[var(--color-text-secondary)] text-sm">{tCommon('loading')}</p>

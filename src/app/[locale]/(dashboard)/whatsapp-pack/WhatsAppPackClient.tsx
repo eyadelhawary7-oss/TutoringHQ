@@ -241,7 +241,7 @@ export default function WhatsAppPackClient({
 
   if (packEnabled) {
     return (
-      <div className="min-h-screen bg-[var(--color-surface-0)] px-4 py-6 pb-24 md:pb-8 max-w-5xl mx-auto space-y-8">
+      <div className="min-h-screen w-full bg-[#080D14] px-4 py-6 pb-24 md:pb-8 max-w-5xl mx-auto space-y-8">
         {/* Section 1 - Status */}
         <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 sm:p-6 space-y-3">
           <div className="flex flex-wrap items-center gap-2">

@@ -68,6 +68,7 @@ type MobileNavDrawerProps = {
 
 export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   const tNav = useTranslations('nav');
+  const tSettings = useTranslations('settings');
   const pathname = usePathname();
   const router = useRouter();
   const { user, hasPermission } = useUser();
@@ -225,7 +226,7 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
                 className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full mb-2"
               >
                 <KeyRound size={16} className="shrink-0" />
-                <span>تغيير الرمز السري</span>
+                <span>{tSettings('changePin')}</span>
               </button>
               <button
                 type="button"

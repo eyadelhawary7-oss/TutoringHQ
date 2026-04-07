@@ -32,7 +32,7 @@ export default function OfflinePage() {
           </svg>
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-white">{t('title')}</h1>
+          <h1 className="text-xl font-bold text-white">{t('title')}</h1>
           <p className="mt-2 text-sm text-slate-400">{t('desc')}</p>
         </div>
         <div className="rounded-xl border border-teal-800/40 bg-teal-900/20 p-4 text-start text-sm text-teal-300">

@@ -1617,8 +1617,8 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full bg-[#080D14] p-4 pb-10 md:p-8">
-        <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="bg-[#080D14] min-h-screen w-full flex flex-col p-4 pb-10 md:p-8">
+        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
           <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
           <div className="h-56 animate-pulse rounded-2xl bg-gradient-to-br from-teal-200 to-slate-300 dark:from-teal-900/40 dark:to-slate-800" />
           <div className="h-48 animate-pulse rounded-2xl bg-slate-800/40" />
@@ -1633,10 +1633,10 @@ export default function BillingPage() {
 
   return (
     <div
-      className="min-h-screen w-full bg-[#080D14] p-4 pb-10 text-slate-100 md:p-8"
+      className="bg-[#080D14] min-h-screen w-full flex flex-col p-4 pb-10 text-slate-100 md:p-8"
       dir={locale === 'ar' ? 'rtl' : 'ltr'}
     >
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-xl font-bold md:text-2xl" style={cairoFont}>
             {t('page.title')}

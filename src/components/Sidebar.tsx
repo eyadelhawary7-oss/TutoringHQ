@@ -52,6 +52,7 @@ function navLinkClass(isActive: boolean) {
 
 export default function Sidebar({ onClose }: SidebarProps) {
   const t = useTranslations('nav');
+  const tSettings = useTranslations('settings');
   const pathname = usePathname();
   const router = useRouter();
   const { user, hasPermission } = useUser();
@@ -227,7 +228,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors duration-150 w-full"
               >
                 <KeyRound size={16} className="shrink-0" />
-                <span className="truncate">تغيير الرمز السري</span>
+                <span className="truncate">{tSettings('changePin')}</span>
               </button>
               <button
                 type="button"

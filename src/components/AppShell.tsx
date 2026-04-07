@@ -80,7 +80,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   const cleanPath = stripLocale(pathname);
   const isPublic = PUBLIC_PATHS.some((p) => cleanPath === p || cleanPath.startsWith(p + '/'));
-  const isAdminRoute = cleanPath === '/admin' || cleanPath.startsWith('/admin/');
+  const isAdminRoute =
+    cleanPath === '/admin' ||
+    cleanPath.startsWith('/admin/') ||
+    cleanPath === '/ceo' ||
+    cleanPath.startsWith('/ceo/') ||
+    cleanPath === '/ceo-dashboard' ||
+    cleanPath.startsWith('/ceo-dashboard/');
   const showShell = !isPublic && !hideShell;
 
   const pageTitleKey = PAGE_TITLE_MAP[cleanPath] || 'nav.dashboard';

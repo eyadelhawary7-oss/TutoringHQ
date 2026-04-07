@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { MessageCircle, Loader2 } from 'lucide-react';
 
@@ -26,6 +26,8 @@ function getRowBg(days: number): string {
 
 export default function AgingReport({ data = [], onRefresh }: AgingReportProps) {
   const t = useTranslations('analytics');
+  const locale = useLocale();
+  const currencySuffix = locale === 'ar' ? 'ج.م' : 'EGP';
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendingAll, setSendingAll] = useState(false);
 
@@ -117,7 +119,9 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
                 <td className="py-2 px-4">{row.student_name}</td>
                 <td className="py-2 px-4">{row.group_name}</td>
                 <td className="py-2 px-4 font-mono">{row.days_overdue}</td>
-                <td className="py-2 px-4 font-mono">{row.amount.toLocaleString('en-US')} ج.م</td>
+                <td className="py-2 px-4 font-mono">
+                  {row.amount.toLocaleString('en-US')} {currencySuffix}
+                </td>
                 <td className="py-2 px-2">
                   <button
                     type="button"

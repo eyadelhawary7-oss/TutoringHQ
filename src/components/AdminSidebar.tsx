@@ -106,6 +106,7 @@ export function AdminSidebar({
   desktopSidebarFullHeight = false,
 }: AdminSidebarProps) {
   const t = useTranslations('admin');
+  const tSettings = useTranslations('settings');
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();
@@ -359,7 +360,7 @@ export function AdminSidebar({
                   }}
                   className="w-full text-start px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
                 >
-                  تغيير الرمز السري
+                  {tSettings('changePin')}
                 </button>
                 <button
                   type="button"

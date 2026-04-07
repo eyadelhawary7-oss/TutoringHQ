@@ -330,7 +330,7 @@ export default function AttendancePage() {
   };
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-4 md:p-6 space-y-5 animate-fade-in min-h-screen bg-[var(--color-surface-0)]">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-4 md:p-6 space-y-5 animate-fade-in min-h-screen w-full bg-[#080D14]">
       <div>
         <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('subtitle')}</p>

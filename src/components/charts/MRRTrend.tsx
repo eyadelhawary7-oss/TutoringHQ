@@ -34,6 +34,7 @@ export interface MRRTrendProps {
 
 export default function MRRTrend({ data = [] }: MRRTrendProps) {
   const locale = useLocale();
+  const currencySuffix = locale === 'ar' ? 'ج.م' : 'EGP';
 
   if (!data?.length) {
     return (
@@ -86,7 +87,7 @@ export default function MRRTrend({ data = [] }: MRRTrendProps) {
         />
         <Tooltip
           formatter={(v, name) => [
-            `${Number(v ?? 0).toLocaleString('en-US')} ج.م`,
+            `${Number(v ?? 0).toLocaleString('en-US')} ${currencySuffix}`,
             name === 'projection' ? 'التوقع' : '',
           ]}
           labelFormatter={(label) => label}

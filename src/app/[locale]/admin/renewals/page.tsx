@@ -177,7 +177,7 @@ export default function AdminRenewalsPage() {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 min-h-screen">
+    <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[#080D14]">
       <AdminHeader />
       <div className="flex flex-1">
         <AdminSidebar activeRoute="/admin/renewals" />

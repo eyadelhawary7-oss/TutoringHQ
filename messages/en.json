@@ -2021,6 +2021,7 @@
     "billingDesc": "Manage plan, pricing, and subscriptions.",
     "billingLink": "Billing Settings",
     "billingCardTitle": "Billing & subscriptions",
+    "changePin": "Change PIN",
     "logoToastSuccess": "Logo uploaded successfully",
     "logoToastError": "Logo upload failed. Please try again.",
     "centerLogoAlt": "Center logo",

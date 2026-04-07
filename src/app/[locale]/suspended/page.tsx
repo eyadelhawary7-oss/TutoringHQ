@@ -78,7 +78,7 @@ export default function SuspendedPage() {
           </span>
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-white">{t('title')}</h1>
+          <h1 className="text-xl font-bold text-white">{t('title')}</h1>
           <p className="mt-2 text-sm text-slate-400">{t('desc')}</p>
         </div>
 

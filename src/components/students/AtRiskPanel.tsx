@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Send, RefreshCw, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { AtRiskStudent } from '@/app/api/students/at-risk/route';
 
 export function AtRiskPanel() {
   const t = useTranslations('students');
+  const locale = useLocale();
+  const currencySuffix = locale === 'ar' ? 'ج.م' : 'EGP';
   const [students, setStudents] = useState<AtRiskStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
@@ -132,7 +134,8 @@ export function AtRiskPanel() {
                       )}
                     </p>
                     <p className="text-sm font-mono text-[var(--color-text-secondary)] mt-1">
-                      {t('balance', { defaultValue: 'المستحق' })}: {s.balance_due.toLocaleString('en-US')} ج.م
+                      {t('balance', { defaultValue: 'المستحق' })}: {s.balance_due.toLocaleString('en-US')}{' '}
+                      {currencySuffix}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
