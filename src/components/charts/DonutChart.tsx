@@ -122,6 +122,7 @@ export function DonutChart({
         {centerValStr || centerLabel ? (
           <>
             <text
+              className="recharts-text"
               x="50%"
               y={centerLabel ? '46%' : '50%'}
               textAnchor="middle"
@@ -135,6 +136,7 @@ export function DonutChart({
             </text>
             {centerLabel ? (
               <text
+                className="recharts-text"
                 x="50%"
                 y="58%"
                 textAnchor="middle"

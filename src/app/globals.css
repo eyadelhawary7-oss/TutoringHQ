@@ -1030,16 +1030,24 @@ body {
   color: #f8fafc;
   min-height: 100vh;
   width: 100%;
-  font-feature-settings: "tnum" 0, "zero" 1;
 }
 
-/* Force tabular numerals and clearer zero glyph where Playfair is used */
+/* Only apply zero glyph fix to explicit Playfair elements */
 [style*="Playfair"],
 [style*="playfair"],
 [class*="font-playfair"],
 .font-playfair {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* Recharts labels must never use Playfair */
+.recharts-text,
+.recharts-label,
+.recharts-cartesian-axis-tick-value,
+.recharts-legend-item-text {
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-feature-settings: normal !important;
 }
 
 /* Belt-and-suspenders for number and code elements.
@@ -1361,6 +1369,10 @@ html.light [data-chq-signup] [data-chq-underline]:-webkit-autofill {
 [data-chq-login] {
   background-color: #080d14 !important;
   min-height: 100vh;
+}
+
+[data-chq-login] a.chq-login-forgot-link:hover {
+  color: #f8fafc !important;
 }
 
 html.light [data-chq-login] {

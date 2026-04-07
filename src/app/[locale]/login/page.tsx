@@ -223,7 +223,7 @@ export default function LoginPage() {
             style={{
               ...SANS,
               fontSize: '10px',
-              color: '#334155',
+              color: '#64748b',
               textTransform: 'uppercase',
               letterSpacing: '2px',
               textAlign: 'center',
@@ -277,7 +277,7 @@ export default function LoginPage() {
                 height="14"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#334155"
+                stroke="#475569"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -350,7 +350,7 @@ export default function LoginPage() {
                 height="14"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#334155"
+                stroke="#475569"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -397,7 +397,7 @@ export default function LoginPage() {
                   cursor: 'pointer',
                   padding: 0,
                   flexShrink: 0,
-                  color: '#334155',
+                  color: '#475569',
                 }}
                 aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
               >
@@ -421,12 +421,12 @@ export default function LoginPage() {
             style={{
               ...SANS,
               fontSize: '10px',
-              color: '#1e293b',
+              color: '#475569',
               marginBottom: '32px',
               marginTop: '6px',
             }}
           >
-            Demo: <span style={{ color: '#334155' }}>01000000000 / 123456</span>
+            Demo: <span style={{ color: '#64748b' }}>01000000000 / 123456</span>
           </div>
 
           {error ? (
@@ -517,10 +517,11 @@ export default function LoginPage() {
           >
             <Link
               href="/forgot-password"
+              className="chq-login-forgot-link"
               style={{
                 ...SANS,
                 fontSize: '11px',
-                color: '#334155',
+                color: '#64748b',
                 textDecoration: 'none',
                 cursor: 'pointer',
               }}
@@ -532,7 +533,7 @@ export default function LoginPage() {
               style={{
                 ...SANS,
                 fontSize: '11px',
-                color: '#334155',
+                color: '#64748b',
                 textDecoration: 'none',
                 cursor: 'pointer',
               }}
