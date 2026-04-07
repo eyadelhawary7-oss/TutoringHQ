@@ -1143,6 +1143,8 @@ export default function DashboardPage() {
                         : tCommon('noData')
                     }
                     suffix={canViewRevenue ? ` ${egpSuffix}` : ''}
+                    centerValueFill="var(--color-text-primary)"
+                    centerLabelFill="var(--color-text-secondary)"
                   />
                 </div>
               </div>

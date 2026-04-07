@@ -30,6 +30,10 @@ export interface DonutChartProps {
   suffix?: string;
   centerLabel?: string;
   centerValue?: string | number;
+  /** Recharts <text> fill for the center amount (theme-aware). */
+  centerValueFill?: string;
+  /** Recharts <text> fill for the center caption (e.g. “Collected”). */
+  centerLabelFill?: string;
 }
 
 export function DonutChart({
@@ -41,6 +45,8 @@ export function DonutChart({
   suffix = '',
   centerLabel,
   centerValue,
+  centerValueFill = 'var(--color-text-primary)',
+  centerLabelFill = 'var(--color-text-secondary)',
 }: DonutChartProps) {
   const t = useTranslations('charts');
 
@@ -58,11 +64,11 @@ export function DonutChart({
   if (!chartData.length || sum <= 0) {
     return (
       <div
-        className="flex flex-col items-center justify-center text-center px-4"
-        style={{ height, color: '#334155', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
+        className="flex flex-col items-center justify-center text-center px-4 text-[var(--color-text-secondary)]"
+        style={{ height, fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
       >
         <p>{t('noData')}</p>
-        <p className="mt-1 text-xs opacity-80 max-w-xs">{t('noDataSub')}</p>
+        <p className="mt-1 text-xs max-w-xs text-[var(--color-text-muted)]">{t('noDataSub')}</p>
       </div>
     );
   }
@@ -127,7 +133,7 @@ export function DonutChart({
               y={centerLabel ? '46%' : '50%'}
               textAnchor="middle"
               dominantBaseline="middle"
-              fill="#F8FAFC"
+              fill={centerValueFill}
               fontSize={20}
               fontWeight={700}
               style={{ fontFamily: CHART_STYLE.fontFamily }}
@@ -141,7 +147,7 @@ export function DonutChart({
                 y="58%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill="#64748B"
+                fill={centerLabelFill}
                 fontSize={11}
                 style={{ fontFamily: CHART_STYLE.fontFamily }}
               >
