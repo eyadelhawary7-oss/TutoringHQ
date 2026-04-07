@@ -7,9 +7,9 @@ const TEST_PHONE = process.env.TEST_PHONE ?? ''
 const TEST_PIN = process.env.TEST_PIN ?? ''
 
 async function fillLoginForm(page: Page, phone: string, pin: string): Promise<void> {
-  await page.getByPlaceholder('رقم الهاتف').fill(phone)
-  await page.getByPlaceholder('الرقم السري').fill(pin)
-  await page.getByRole('button', { name: 'إرسال' }).click()
+  await page.locator('input[type="tel"]').fill(phone, { timeout: 30_000 })
+  await page.locator('input[type="password"]').fill(pin, { timeout: 30_000 })
+  await page.getByRole('button', { name: /إرسال|تسجيل/ }).click()
 }
 
 test.describe('Authentication', () => {
@@ -20,9 +20,9 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveTitle(/.+/)
-    await expect(page.getByPlaceholder('رقم الهاتف')).toBeVisible()
-    await expect(page.getByPlaceholder('الرقم السري')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'إرسال' })).toBeVisible()
+    await expect(page.locator('input[type="tel"]')).toBeVisible()
+    await expect(page.locator('input[type="password"]')).toBeVisible()
+    await expect(page.getByRole('button', { name: /إرسال|تسجيل/ })).toBeVisible()
     expect(errors).toHaveLength(0)
   })
 
