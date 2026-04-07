@@ -194,6 +194,16 @@ export default function LocaleHomePage() {
   const [screenIndex, setScreenIndex] = useState(0);
 
   useEffect(() => {
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+    return () => {
+      const saved = localStorage.getItem('chq-theme') ?? 'dark';
+      document.documentElement.classList.toggle('dark', saved === 'dark');
+      document.documentElement.classList.toggle('light', saved === 'light');
+    };
+  }, []);
+
+  useEffect(() => {
     const timings: Record<DemoScreen, number> = {
       scanning: 2500,
       scanned: 1800,
@@ -244,7 +254,7 @@ export default function LocaleHomePage() {
   return (
     <main
       data-chq-landing
-      className="min-h-screen bg-[var(--color-surface-0)] text-white dark:bg-[var(--color-surface-0)] [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-slate-300"
+      className="bg-[var(--color-surface-0)] min-h-screen text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-slate-300"
     >
       <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-[var(--color-surface-0)]/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 md:h-16 md:px-6">
