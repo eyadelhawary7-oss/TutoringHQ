@@ -868,7 +868,7 @@ export default function ScanPage() {
   return (
     <>
       {showFlash && <div className="chq-flash-success" aria-hidden />}
-      <div className="bg-[#080D14] min-h-screen w-full flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="bg-[var(--color-surface-0)] min-h-screen w-full flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         {!isOnline && (
           <div className="chq-fade-in mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-amber-800/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-300 sm:mx-0">
             <div className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />

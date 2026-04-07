@@ -374,7 +374,7 @@ export default function CenterAssignmentsPage() {
 
   return (
     <div
-      className="flex flex-col flex-1 min-h-0 min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+      className="flex flex-col flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <AdminHeader />
@@ -435,7 +435,7 @@ export default function CenterAssignmentsPage() {
           </div>
         ) : null}
 
-        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden overflow-x-auto shadow-sm dark:shadow-none">
+        <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto shadow-sm dark:shadow-none">
           {loading ? (
             <div className="p-12 text-center text-slate-500 dark:text-slate-400">
               {t('centerAssignments.loading')}
@@ -446,7 +446,7 @@ export default function CenterAssignmentsPage() {
             </div>
           ) : (
             <table className="w-full text-sm min-w-[800px]">
-              <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+              <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
                 <tr className="text-slate-500 dark:text-slate-400">
                   <th className={`px-4 py-3 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
                     {t('centerAssignments.col_center')}
@@ -567,7 +567,7 @@ export default function CenterAssignmentsPage() {
 
         {showModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-xl">
+            <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-xl">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                 {editingId ? t('centerAssignments.edit') : t('centerAssignments.add')}
               </h2>
@@ -699,7 +699,7 @@ export default function CenterAssignmentsPage() {
 
         {disputeModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-800/40 border border-amber-800/40 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
+            <div className="bg-[var(--color-surface-1)] border border-amber-800/40 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                 {t('centerAssignments.dispute_flag')} - {relCenters(disputeModal)?.name}
               </h2>

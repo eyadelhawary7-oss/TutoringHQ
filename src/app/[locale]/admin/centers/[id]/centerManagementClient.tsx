@@ -1577,7 +1577,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       {(data.center.name as string) ?? tCommon('notAvailable')}
                     </h1>
                     {data.center.center_code ? (
-                      <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-slate-800/60 text-slate-200 border border-slate-600">
+                      <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-[var(--color-surface-2)] text-slate-200 border border-slate-600">
                         {String(data.center.center_code)}
                       </span>
                     ) : null}
@@ -1592,7 +1592,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </div>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section1.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1735,7 +1735,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section2.title')}</h2>
                 {String(data.center?.status) === 'pending_cancellation' ? (
                   <div
@@ -1930,7 +1930,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section3.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-slate-600 dark:text-slate-300">
                   <div>
@@ -2049,7 +2049,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section4.title')}</h2>
                   <button
@@ -2065,7 +2065,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
                     <table className="w-full text-sm text-left text-slate-800 dark:text-slate-200 min-w-[720px]">
-                      <thead className="bg-gray-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400">
+                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
                         <tr>
                           <th className="p-2 font-medium">{t('centerManagement.section4.invoiceNumber')}</th>
                           <th className="p-2 font-medium">{t('centerManagement.section4.type')}</th>
@@ -2128,7 +2128,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                 </td>
                               </tr>
                               {s4ExpandedId === invId ? (
-                                <tr className="bg-gray-50 dark:bg-slate-900/80 border-t border-gray-200 dark:border-t-slate-700">
+                                <tr className="bg-gray-50 dark:bg-[var(--color-surface-2)] border-t border-gray-200 dark:border-t-slate-700">
                                   <td colSpan={7} className="p-4 space-y-4">
                                     <div className="flex flex-wrap gap-3 items-end">
                                       <div>
@@ -2226,7 +2226,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               {s4MarkPaidId ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 max-w-md w-full space-y-3">
+                  <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
                     <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section4.markPaid')}</h3>
                     <div>
                       <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
@@ -2283,7 +2283,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               {s4ShowCreate ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 max-w-lg w-full space-y-3 max-h-[90vh] overflow-y-auto">
+                  <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-lg w-full space-y-3 max-h-[90vh] overflow-y-auto">
                     <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">
                       {t('centerManagement.section4.createInvoice')}
                     </h3>
@@ -2367,7 +2367,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section5.title')}</h2>
                   <button
@@ -2383,7 +2383,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
                     <table className="w-full text-sm text-slate-800 dark:text-slate-200 min-w-[640px]">
-                      <thead className="bg-gray-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400">
+                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
                         <tr>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section5.date')}</th>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section5.amount')}</th>
@@ -2424,7 +2424,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               {s5ShowModal ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 max-w-md w-full space-y-3">
+                  <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
                     <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">
                       {t('centerManagement.section5.recordPayment')}
                     </h3>
@@ -2496,7 +2496,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section6.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-slate-500 dark:text-slate-400">
                   <div>
@@ -2642,7 +2642,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section7.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
@@ -2704,7 +2704,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section8.title')}</h2>
                 {s8ScheduleError ? <p className="text-red-400 text-sm mb-3">{s8ScheduleError}</p> : null}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2786,7 +2786,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section9.title')}</h2>
                   <button
@@ -2803,7 +2803,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
                     <table className="w-full text-sm text-slate-800 dark:text-slate-200 min-w-[800px]">
-                      <thead className="bg-gray-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400">
+                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
                         <tr>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section9.currentPlan')}</th>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section9.requestedPlan')}</th>
@@ -2870,7 +2870,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               {s9ApproveId ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 max-w-md w-full space-y-3">
+                  <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
                     <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section9.approve')}</h3>
                     <div>
                       <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section2.plan')}</label>
@@ -2938,7 +2938,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               {s9RejectId ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 max-w-md w-full space-y-3">
+                  <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
                     <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section9.reject')}</h3>
                     {s9RejectNotesError ? <p className="text-red-400 text-sm">{s9RejectNotesError}</p> : null}
                     <div>
@@ -2975,7 +2975,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               {s9ShowOverride ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 max-w-md w-full space-y-3">
+                  <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
                     <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section9.overridePlan')}</h3>
                     <div>
                       <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section2.plan')}</label>
@@ -3041,7 +3041,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section10.title')}</h2>
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <span className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.section10.referralCode')}:</span>
@@ -3090,7 +3090,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600 mb-4">
                     <table className="w-full text-sm text-slate-800 dark:text-slate-200 min-w-[360px]">
-                      <thead className="bg-gray-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400">
+                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
                         <tr>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section4.amount')}</th>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section4.status')}</th>
@@ -3177,7 +3177,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
                     <table className="w-full text-sm text-slate-800 dark:text-slate-200">
-                      <thead className="bg-gray-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400">
+                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
                         <tr>
                           <th className="text-start p-2 font-medium">ID</th>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section4.status')}</th>
@@ -3206,7 +3206,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 )}
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section11.title')}</h2>
                 {data.center.is_blacklisted ? (
                   <div className="rounded-lg border border-red-800 bg-red-950/40 p-4 mb-4">
@@ -3239,7 +3239,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               {s11ShowBlacklist ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 max-w-md w-full space-y-3">
+                  <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
                     <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section11.confirmBlacklist')}</h3>
                     {s11ReasonError ? <p className="text-red-400 text-sm">{s11ReasonError}</p> : null}
                     <div>
@@ -3276,7 +3276,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               {s11ShowUnblacklist ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 max-w-md w-full space-y-3">
+                  <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
                     <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section11.confirmRemove')}</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.section11.unblacklistWarning')}</p>
                     <div className="flex justify-end gap-2 pt-2">
@@ -3300,7 +3300,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerNotes.title')}</h2>
                 {opsNotesLoading ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.loading')}</p>
@@ -3316,7 +3316,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       return (
                         <li
                           key={nid}
-                          className="rounded-lg border border-gray-200 dark:border-slate-600 p-3 bg-gray-50 dark:bg-slate-900/50"
+                          className="rounded-lg border border-gray-200 dark:border-slate-600 p-3 bg-gray-50 dark:bg-[var(--color-surface-2)]"
                         >
                           <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
                             <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -3447,7 +3447,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('manualWA.title')}</h2>
                 <textarea
                   rows={4}
@@ -3503,7 +3503,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </button>
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('auditLog.title')}</h2>
                 {opsAuditLoading ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.loading')}</p>
@@ -3512,7 +3512,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
                     <table className="w-full text-sm text-slate-800 dark:text-slate-200 min-w-[640px]">
-                      <thead className="bg-gray-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400">
+                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
                         <tr>
                           <th className="text-start p-2 font-medium">{t('auditLog.col_date')}</th>
                           <th className="text-start p-2 font-medium">{t('auditLog.col_action')}</th>
@@ -3586,7 +3586,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 )}
               </section>
 
-              <section className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section12.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
                   <div>

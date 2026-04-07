@@ -17,7 +17,7 @@ export default function KpiCard({ title, value, subLabel, icon: Icon, iconBg = '
       <div>
         <p className="text-sm text-[var(--color-text-secondary)] mb-1">{title}</p>
         <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
-        {subLabel && <p className="text-xs text-slate-400 mt-1">{subLabel}</p>}
+        {subLabel && <p className="text-xs text-[var(--color-text-muted)] mt-1">{subLabel}</p>}
       </div>
       <div className={`p-3 rounded-full ${iconBg}`}>
         <Icon className={`w-5 h-5 ${iconColor}`} />

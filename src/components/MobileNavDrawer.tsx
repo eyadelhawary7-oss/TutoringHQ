@@ -136,18 +136,18 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
 
   const linkClass = (active: boolean) =>
     `flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors ${
-      active ? 'bg-teal-600/10 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+      active ? 'bg-teal-600/10 text-teal-600' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]'
     }`;
 
   return (
     <>
       <aside
-        className={`fixed top-0 start-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-slate-900 border-e border-slate-800 transition-transform duration-[250ms] ease-in-out ${
+        className={`fixed top-0 start-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-[var(--color-surface-1)] border-e border-[var(--color-border)] transition-transform duration-[250ms] ease-in-out ${
           open ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
         }`}
         aria-hidden={!open}
       >
-        <div className="flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800 shrink-0">
+        <div className="flex items-center justify-between gap-3 px-4 h-16 border-b border-[var(--color-border)] shrink-0">
           <Link
             href={isSuperAdminOnly ? '/admin' : '/dashboard'}
             className="flex items-center gap-3 shrink-0"
@@ -160,12 +160,12 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
                 CH
               </div>
             )}
-            <span className="font-bold text-white text-lg tracking-tight">CenterHQ</span>
+            <span className="font-bold text-[var(--color-text-primary)] text-lg tracking-tight">CenterHQ</span>
           </Link>
         </div>
 
         {user && !isSuperAdminOnly && (
-          <div className="border-b border-slate-800">
+          <div className="border-b border-[var(--color-border)]">
             <BranchSwitcher />
           </div>
         )}
@@ -204,17 +204,17 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
           )}
         </nav>
 
-        <div className="border-t border-slate-800 p-4 bg-slate-800/50 shrink-0">
+        <div className="border-t border-[var(--color-border)] p-4 bg-[var(--color-surface-2)] shrink-0">
           {user && (
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-white text-sm font-bold">
+              <div className="w-9 h-9 bg-[var(--color-surface-3)] rounded-full flex items-center justify-center shrink-0">
+                <span className="text-[var(--color-text-primary)] text-sm font-bold">
                   {(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{centerName}</p>
-                <p className="text-xs text-slate-400">{roleNavKey ? tNav(roleNavKey) : ''}</p>
+                <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{centerName}</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">{roleNavKey ? tNav(roleNavKey) : ''}</p>
               </div>
             </div>
           )}
@@ -223,7 +223,7 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
               <button
                 type="button"
                 onClick={() => setIsPinModalOpen(true)}
-                className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full mb-2"
+                className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm transition-colors w-full mb-2"
               >
                 <KeyRound size={16} className="shrink-0" />
                 <span>{tSettings('changePin')}</span>
@@ -231,7 +231,7 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
               <button
                 type="button"
                 onClick={() => void handleLogout()}
-                className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors w-full"
+                className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm transition-colors w-full"
               >
                 <LogOut size={16} className="shrink-0" />
                 <span>{tNav('logout')}</span>

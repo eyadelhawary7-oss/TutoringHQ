@@ -420,7 +420,7 @@ export default function OnboardingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#080D14] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center">
         <div
           className="animate-spin h-12 w-12 border-2 border-teal-600 border-t-transparent rounded-full"
           aria-hidden
@@ -431,16 +431,16 @@ export default function OnboardingPage() {
 
   if (!centerId) {
     return (
-      <div className="min-h-screen bg-[#080D14] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center p-4">
         <p className="text-slate-400">{tCommon('error')}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#080D14] pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-6">
+    <div className="min-h-screen flex flex-col bg-[var(--color-surface-0)] pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-6">
       {step < 4 ? (
-        <header className="shrink-0 bg-[#0f172a] border-b border-slate-800/80">
+        <header className="shrink-0 bg-[var(--color-surface-1)] border-b border-slate-800/80">
           <div className="max-w-lg mx-auto w-full px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <div

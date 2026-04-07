@@ -58,7 +58,7 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 print:hidden bg-slate-900 border-t border-slate-700/60 shadow-none transition-colors duration-150"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 print:hidden bg-[var(--color-surface-1)] border-t border-[var(--color-border)] shadow-none transition-colors duration-150"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label={tm('tab_bar_label')}
     >
@@ -69,11 +69,11 @@ export function BottomTabBar() {
             <Link
               key={path}
               href={path}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-1 py-1 min-w-0 transition-colors duration-150 ${active ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-1 py-1 min-w-0 transition-colors duration-150 ${active ? 'text-teal-600' : 'text-[var(--color-text-muted)]'}`}
             >
               <Icon size={22} strokeWidth={active ? 2.25 : 1.75} className="shrink-0" />
               <span
-                className={`text-[0.625rem] font-semibold leading-none truncate max-w-full transition-colors duration-150 ${active ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`}
+                className={`text-[0.625rem] font-semibold leading-none truncate max-w-full transition-colors duration-150 ${active ? 'text-teal-600' : 'text-[var(--color-text-muted)]'}`}
               >
                 {t(navKey)}
               </span>

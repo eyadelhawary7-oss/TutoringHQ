@@ -122,7 +122,7 @@ function KpiCommandCard({
   const showTrend = trendPct !== undefined && trendPct !== 0 && Number.isFinite(trendPct);
   return (
     <div
-      className="relative chq-fade-in rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4"
+      className="relative chq-fade-in rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4"
       style={{ animationDelay: `${delayMs}ms` }}
     >
       <div className="absolute top-4 end-4 text-teal-500" aria-hidden>
@@ -130,7 +130,7 @@ function KpiCommandCard({
       </div>
       <p className="pe-8 text-xs uppercase tracking-wider text-slate-400">{label}</p>
       <div
-        className="mt-1 text-2xl font-bold text-white tabular-nums"
+        className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums"
         style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
       >
         {valueDisplay}
@@ -924,31 +924,31 @@ export default function DashboardPage() {
 
   if (user?.role === 'assistant' && !isLoading) {
     return (
-      <div className="min-h-screen bg-[#0f172a] p-4 pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
-        <h1 className="mb-6 text-xl font-semibold text-white">{t('title')}</h1>
+      <div className="min-h-screen bg-[var(--color-surface-1)] p-4 pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
+        <h1 className="mb-6 text-xl font-semibold text-[var(--color-text-primary)]">{t('title')}</h1>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
             href="/scan"
-            className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 text-center transition-colors hover:bg-slate-800/60 btn-press chq-focus"
+            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-center transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <QrCode className="mx-auto mb-3 h-14 w-14 text-teal-500" strokeWidth={1.5} />
-            <h2 className="text-lg font-bold text-white">{t('action_scan')}</h2>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('action_scan')}</h2>
             <p className="mt-1 text-sm text-slate-400">{t('scanSubtitle')}</p>
           </Link>
           <Link
             href="/payments"
-            className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 transition-colors hover:bg-slate-800/60 btn-press chq-focus"
+            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <p className="text-xs uppercase tracking-wider text-slate-400">{t('unpaidCount')}</p>
-            <p className="mt-1 text-3xl font-bold text-white tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
+            <p className="mt-1 text-3xl font-bold text-[var(--color-text-primary)] tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
               {Number(data.unpaidCount).toLocaleString('en-US')}
             </p>
             <p className="mt-2 text-sm text-teal-400">{t('goToPayments')}</p>
           </Link>
         </div>
-        <div className="mt-4 rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4">
+        <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
           <p className="text-xs uppercase tracking-wider text-slate-400">{t('stats.attendance_today')}</p>
-          <p className="mt-1 text-2xl font-bold text-white tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
+          <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
             {Number(data.todayAttendance).toLocaleString('en-US')}
           </p>
         </div>
@@ -957,12 +957,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] p-4 page-enter pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
+    <div className="min-h-screen bg-[var(--color-surface-1)] p-4 page-enter pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
       {showSurgeAlert && statsData?.surge_message && (
         <div
           className="card mb-4 p-4 border-[var(--color-border-brand)] flex items-center justify-between gap-4"
         >
-          <span className="text-sm font-medium text-white">{statsData.surge_message}</span>
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">{statsData.surge_message}</span>
           <button
             type="button"
             onClick={dismissSurge}
@@ -977,7 +977,7 @@ export default function DashboardPage() {
 
       <header className="mb-6 flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 text-end">
-          <h1 className="text-xl font-semibold text-white">
+          <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
             {t('greeting')}، {centerBilling?.name ?? 'CenterHQ'}
           </h1>
           <p className="mt-1 text-sm text-slate-400">
@@ -998,7 +998,7 @@ export default function DashboardPage() {
           type="button"
           onClick={handleExport}
           disabled={isExporting || isLoading}
-          className="shrink-0 rounded-lg border border-slate-600 bg-slate-800/60 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50 btn-press chq-focus"
+          className="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-3)] disabled:opacity-50 btn-press chq-focus"
         >
           {isExporting ? t('exporting') : t('exportData')}
         </button>
@@ -1126,7 +1126,7 @@ export default function DashboardPage() {
               </ChartCard>
             </div>
             <div className="flex flex-col md:col-span-2">
-              <div className="flex h-full min-h-[240px] flex-col rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4">
+              <div className="flex h-full min-h-[240px] flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-500">{t('paymentStatus')}</p>
                 <div className="min-h-0 flex-1">
                   <DonutChart
@@ -1150,10 +1150,10 @@ export default function DashboardPage() {
           </div>
 
           <div className="mb-6 grid max-w-6xl grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4">
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
               <div className="mb-1 flex items-start justify-between gap-2">
                 <div>
-                  <h2 className="text-sm font-semibold text-white">{t('atRisk')}</h2>
+                  <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('atRisk')}</h2>
                   <p className="text-xs text-slate-500">{t('atRiskDesc')}</p>
                 </div>
                 <Link
@@ -1174,11 +1174,11 @@ export default function DashboardPage() {
                     return (
                       <li
                         key={student.id}
-                        className="rounded-xl border border-slate-700/50 bg-slate-900/30 px-3 py-2.5"
+                        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0 flex-1 text-end">
-                            <p className="truncate text-sm font-medium text-white">{student.name}</p>
+                            <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{student.name}</p>
                             <p className="truncate font-mono text-xs text-slate-400" dir="ltr">
                               {student.student_number ? (
                                 student.student_number
@@ -1194,7 +1194,7 @@ export default function DashboardPage() {
                             {pct.toLocaleString('en-US')}%
                           </span>
                         </div>
-                        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-slate-700/80">
+                        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-3)]">
                           <div
                             className={`h-full rounded-full transition-all ${barColor}`}
                             style={{ width: `${pct}%` }}
@@ -1207,26 +1207,26 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4">
-              <h2 className="mb-3 text-sm font-semibold text-white">{t('quickActions')}</h2>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+              <h2 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('quickActions')}</h2>
               <div className="flex flex-col gap-2">
                 <Link
                   href="/students?action=add"
-                  className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-end text-sm font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
+                  className="flex min-h-14 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-end text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                 >
                   <UserPlus className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
                   <span className="flex-1">{t('addStudent')}</span>
                 </Link>
                 <Link
                   href="/scan"
-                  className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-end text-sm font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
+                  className="flex min-h-14 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-end text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                 >
                   <QrCode className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
                   <span className="flex-1">{t('recordAttendance')}</span>
                 </Link>
                 <Link
                   href="/payments?action=collect"
-                  className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-end text-sm font-semibold text-white transition-colors hover:bg-slate-700 btn-press chq-focus"
+                  className="flex min-h-14 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-end text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                 >
                   <CreditCard className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
                   <span className="flex-1">{t('collectPayment')}</span>
@@ -1235,7 +1235,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={() => void onSendReport()}
                   disabled={sendingReport}
-                  className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-end text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50 btn-press chq-focus"
+                  className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-end text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50 btn-press chq-focus"
                 >
                   <Send className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
                   <span className="flex-1">{t('sendReport')}</span>
@@ -1260,7 +1260,7 @@ export default function DashboardPage() {
             role="dialog"
             aria-modal="true"
           >
-            <h3 className="text-lg font-semibold text-white mb-2">
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
               {tSettings('upgradeToUnlockFeature')}
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)] mb-4">
@@ -1277,7 +1277,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setShowUpgradeModal(false)}
-              className="ms-2 px-4 py-2 rounded-lg text-sm text-white bg-[var(--color-surface-3)] btn-press chq-focus"
+              className="ms-2 px-4 py-2 rounded-lg text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-3)] btn-press chq-focus"
             >
               {tCommon('cancel')}
             </button>

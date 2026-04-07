@@ -1,46 +1,24 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
 
 export function ThemeToggle() {
   const t = useTranslations('common');
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  useLayoutEffect(() => {
-    const saved = localStorage.getItem('chq-theme') as 'dark' | 'light' | null;
-    const initial =
-      saved === 'light' || saved === 'dark'
-        ? saved
-        : document.documentElement.classList.contains('light')
-          ? 'light'
-          : 'dark';
-    setTheme(initial);
-    applyTheme(initial);
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
-  function applyTheme(next: 'dark' | 'light') {
-    const html = document.documentElement;
-    if (next === 'light') {
-      html.classList.add('light');
-    } else {
-      html.classList.remove('light');
-    }
-  }
-
-  function toggle() {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    applyTheme(next);
-    localStorage.setItem('chq-theme', next);
-  }
-
-  const isDark = theme === 'dark';
+  const isDark = resolvedTheme === undefined || resolvedTheme === 'dark';
 
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
       suppressHydrationWarning
       aria-label={isDark ? t('switchToLightTheme') : t('switchToDarkTheme')}
       className="flex items-center justify-center w-9 h-9 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors duration-fast ease-out"

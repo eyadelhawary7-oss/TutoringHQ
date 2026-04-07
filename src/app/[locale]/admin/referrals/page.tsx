@@ -282,7 +282,7 @@ export default function AdminReferralsPage() {
               className="rounded-lg p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700"
               aria-label={tCommon('back')}
             >
-              <ArrowLeft size={20} className="text-slate-800 dark:text-slate-100" />
+              <ArrowLeft size={20} className="text-[var(--color-text-primary)]" />
             </button>
             <Gift className="h-6 w-6 text-teal-600 dark:text-teal-400" aria-hidden />
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('pageTitle')}</h1>
@@ -505,7 +505,7 @@ export default function AdminReferralsPage() {
                   <select
                     value={commissionStatus}
                     onChange={(e) => setCommissionStatus(e.target.value as 'all' | 'pending' | 'paid')}
-                    className="rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100"
+                    className="rounded-lg border border-slate-600 bg-[var(--color-surface-2)] px-3 py-2 text-sm text-slate-100"
                   >
                     <option value="all">{tAdmin('filterAll')}</option>
                     <option value="pending">{tAdmin('filterPending')}</option>
@@ -519,7 +519,7 @@ export default function AdminReferralsPage() {
                   <select
                     value={commissionQuarter}
                     onChange={(e) => setCommissionQuarter(e.target.value)}
-                    className="rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100"
+                    className="rounded-lg border border-slate-600 bg-[var(--color-surface-2)] px-3 py-2 text-sm text-slate-100"
                   >
                     {qOpts.map((o) => (
                       <option key={o.value} value={o.value}>

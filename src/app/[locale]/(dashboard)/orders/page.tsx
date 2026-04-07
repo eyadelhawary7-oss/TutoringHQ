@@ -186,7 +186,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#080D14] animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
+    <div className="min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
       <div className="px-4 pt-4 pb-6 max-w-3xl mx-auto w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
           <div>

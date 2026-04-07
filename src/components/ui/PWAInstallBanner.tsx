@@ -50,7 +50,7 @@ export function PWAInstallBanner() {
 
   return (
     <div
-      className="chq-slide-up fixed bottom-20 sm:bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 bg-slate-900 border border-teal-800/50 rounded-2xl p-4 shadow-2xl"
+      className="chq-slide-up fixed bottom-20 sm:bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-2xl p-4 shadow-2xl"
     >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shrink-0">

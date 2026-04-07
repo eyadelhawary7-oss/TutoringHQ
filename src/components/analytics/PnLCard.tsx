@@ -84,8 +84,8 @@ export default function PnLCard({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 overflow-hidden card-shadow">
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] overflow-hidden card-shadow">
+      <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
         <h3 className="font-semibold text-slate-800 dark:text-white">{t('pnl')}</h3>
         <button
           type="button"
@@ -124,7 +124,7 @@ export default function PnLCard({
         {pnlMonths.length > 0 && (
           <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-[1] bg-slate-50 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-600">
+              <thead className="sticky top-0 z-[1] bg-slate-50 dark:bg-[var(--color-surface-2)] backdrop-blur-sm border-b border-slate-200 dark:border-slate-600">
                 <tr>
                   <th className="py-2.5 px-3 font-medium text-slate-700 dark:text-slate-200 text-start">{t('month')}</th>
                   <th className="py-2.5 px-3 font-medium text-slate-700 dark:text-slate-200 text-end">{t('income')}</th>
@@ -138,10 +138,10 @@ export default function PnLCard({
                   const e = expensesByMonth[m];
                   const exp = e ? e.rent + e.salaries + e.utilities + e.other : 0;
                   const rowNet = inc - exp;
-                  const stripe = idx % 2 === 0 ? 'bg-slate-800/40' : 'bg-slate-800/20';
+                  const stripe = idx % 2 === 0 ? 'bg-[var(--color-surface-1)]' : 'bg-slate-800/20';
                   return (
                     <tr key={m} className={`border-b border-slate-100 dark:border-slate-700/80 last:border-0 ${stripe}`}>
-                      <td className="py-2.5 px-3 text-slate-800 dark:text-slate-100">{formatMonth(m, locale)}</td>
+                      <td className="py-2.5 px-3 text-[var(--color-text-primary)]">{formatMonth(m, locale)}</td>
                       <td className="py-2.5 px-3 font-mono text-end text-green-600 dark:text-green-400">
                         {inc.toLocaleString('en-US')}
                       </td>

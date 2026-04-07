@@ -64,7 +64,7 @@ export default function SuspendedPage() {
 
   return (
     <div
-      className="relative flex min-h-screen items-center justify-center bg-[#080D14] p-6"
+      className="relative flex min-h-screen items-center justify-center bg-[var(--color-surface-0)] p-6"
       dir={dir}
     >
       <div className="absolute end-4 top-4 z-10">

@@ -686,7 +686,7 @@ function SettingsPageContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full bg-[#080D14]">
+      <div className="min-h-screen w-full bg-[var(--color-surface-0)]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-4" aria-busy>
           <div className="skeleton h-8 rounded-xl w-48" />
           {[1, 2, 3, 4].map((i) => (
@@ -698,7 +698,7 @@ function SettingsPageContent() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#080D14] page-enter" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen w-full bg-[var(--color-surface-0)] page-enter" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <PageHeader title={t('title')} />
 

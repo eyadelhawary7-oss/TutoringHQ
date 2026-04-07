@@ -101,7 +101,7 @@ export default function BenchmarksPage() {
 
   if (loading && !data) {
     return (
-      <div className="p-6 flex min-h-screen w-full items-center justify-center bg-[#080D14]">
+      <div className="p-6 flex min-h-screen w-full items-center justify-center bg-[var(--color-surface-0)]">
         <Loader2 className="h-8 w-8 animate-spin text-[var(--color-text-secondary)]" />
       </div>
     );
@@ -109,7 +109,7 @@ export default function BenchmarksPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen w-full bg-[#080D14] p-6">
+      <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
         <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
         <p className="text-destructive">{error}</p>
       </div>
@@ -126,7 +126,7 @@ export default function BenchmarksPage() {
     const progressPct = Math.min(100, Math.round((currentCenters / DISTRICT_TARGET) * 100));
 
     return (
-      <div className="min-h-screen w-full bg-[#080D14] px-4 py-6 md:py-10">
+      <div className="min-h-screen w-full bg-[var(--color-surface-0)] px-4 py-6 md:py-10">
         <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
         <div className="max-w-md mx-auto text-center pt-10 md:pt-16">
           <BenchmarkLockIllustration />
@@ -198,7 +198,7 @@ export default function BenchmarksPage() {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#080D14] p-6">
+    <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
       <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -210,7 +210,7 @@ export default function BenchmarksPage() {
           return (
             <div
               key={key}
-              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 p-6 card-shadow"
+              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-6 card-shadow"
             >
               <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
                 <Icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />

@@ -95,12 +95,12 @@ export default function AnalyticsAiChatWidget() {
     <div className="no-print fixed z-[60] bottom-0 inset-x-0 md:bottom-6 md:inset-x-auto md:end-6 flex flex-col items-stretch md:items-end pointer-events-none">
       {open && (
         <div
-          className="pointer-events-auto mb-3 mx-4 md:mx-0 w-[min(100%,360px)] max-h-[min(70vh,480px)] flex flex-col rounded-2xl border border-slate-700/60 bg-slate-800/40 shadow-lg card-shadow ms-auto me-4 md:me-0 overflow-hidden"
+          className="pointer-events-auto mb-3 mx-4 md:mx-0 w-[min(100%,360px)] max-h-[min(70vh,480px)] flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] shadow-lg card-shadow ms-auto me-4 md:me-0 overflow-hidden"
           role="dialog"
           id={`${formId}-panel`}
           aria-labelledby={`${formId}-label`}
         >
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
             <p id={`${formId}-label`} className="text-sm font-semibold text-slate-800 dark:text-white">
               {ta('aiChat_title')}
             </p>
@@ -127,7 +127,7 @@ export default function AnalyticsAiChatWidget() {
                   className={`max-w-[90%] rounded-xl px-3 py-2 text-sm ${
                     m.role === 'user'
                       ? 'bg-teal-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700/80 text-slate-800 dark:text-slate-100 font-cairo text-start'
+                      : 'bg-slate-100 dark:bg-slate-700/80 text-[var(--color-text-primary)] font-cairo text-start'
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{m.text}</p>
@@ -189,7 +189,7 @@ export default function AnalyticsAiChatWidget() {
           )}
 
           <form
-            className="p-3 border-t border-slate-700/60 bg-slate-800/40"
+            className="p-3 border-t border-[var(--color-border)] bg-[var(--color-surface-1)]"
             onSubmit={(e) => {
               e.preventDefault();
               void submit();
@@ -203,7 +203,7 @@ export default function AnalyticsAiChatWidget() {
                 onKeyDown={onKeyDown}
                 placeholder={ta('aiChat_placeholder')}
                 disabled={loading}
-                className="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 font-cairo"
+                className="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-[var(--color-surface-2)] px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 font-cairo"
               />
               <button
                 type="submit"

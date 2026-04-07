@@ -34,28 +34,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { supabase } from '@/lib/supabase';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
-import { useTheme } from 'next-themes';
-
-function ThemeToggle() {
-  const { setTheme, resolvedTheme } = useTheme();
-  const t = useTranslations('admin');
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
-
-  const isDark = resolvedTheme === 'dark';
-  return (
-    <button
-      type="button"
-      onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-sm"
-      title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-    >
-      <span style={{ fontSize: 16 }}>{isDark ? '☀️' : '🌙'}</span>
-      <span className="hidden xl:block">{isDark ? 'Light Mode' : t('darkMode')}</span>
-    </button>
-  );
-}
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export type AdminTab =
   | 'overview'
@@ -288,8 +267,8 @@ export function AdminSidebar({
     cn(
       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
       active
-        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+        ? 'bg-teal-600/10 text-teal-600'
+        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
     );
 
   const desktopAsideTop = desktopSidebarFullHeight ? 'top-0' : 'top-14';
@@ -387,20 +366,20 @@ export function AdminSidebar({
 
       {/* Mobile drawer */}
       <aside
-        className={`fixed top-0 start-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-slate-900 border-e border-slate-700/60 transition-transform duration-[250ms] ease-in-out ${
+        className={`fixed top-0 start-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-[var(--color-surface-1)] border-e border-[var(--color-border)] transition-transform duration-[250ms] ease-in-out ${
           openMenu ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
         }`}
         aria-hidden={!openMenu}
       >
-        <div className="p-4 border-b border-gray-200 dark:border-slate-800 shrink-0">
+        <div className="p-4 border-b border-[var(--color-border)] shrink-0">
           <Link
             href="/dashboard"
             onClick={afterNavigate}
-            className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white block mb-3"
+            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] block mb-3"
           >
             {t('backToMyCenter')}
           </Link>
-          <h2 className="font-bold text-slate-900 dark:text-white">{t('title')}</h2>
+          <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
         </div>
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {navItems.map(({ key, icon: Icon, labelKey }) => {
@@ -441,8 +420,8 @@ export function AdminSidebar({
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                     isReferralRewards
-                      ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                      ? 'bg-teal-600/10 text-teal-600'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
                   )}
                 >
                   <Gift size={18} className="shrink-0" />
@@ -542,8 +521,8 @@ export function AdminSidebar({
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                 isHealth
-                  ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                  ? 'bg-teal-600/10 text-teal-600'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
               )}
             >
               <Activity size={18} className="shrink-0" />
@@ -553,7 +532,7 @@ export function AdminSidebar({
           {/* HR & Commissions group */}
           {adminRole === 'super_admin' ? (
             <>
-              <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                 {t('sidebarHr')}
               </p>
               <Link
@@ -562,8 +541,8 @@ export function AdminSidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                   isStaff
-                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
                 )}
               >
                 <Users size={18} className="shrink-0" />
@@ -575,8 +554,8 @@ export function AdminSidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                   isCenterAssignments
-                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
                 )}
               >
                 <MapPin size={18} className="shrink-0" />
@@ -588,8 +567,8 @@ export function AdminSidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                   isCommissions
-                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
                 )}
               >
                 <TrendingUp size={18} className="shrink-0" />
@@ -601,8 +580,8 @@ export function AdminSidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                   isPayouts
-                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
                 )}
               >
                 <CreditCard size={18} className="shrink-0" />
@@ -611,23 +590,25 @@ export function AdminSidebar({
             </>
           ) : null}
         </nav>
-        <div className="shrink-0 p-2 border-t border-gray-200 dark:border-slate-800">
-          <ThemeToggle />
+        <div className="shrink-0 p-2 border-t border-[var(--color-border)]">
+          <div className="px-1">
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
 
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex flex-col fixed start-0 w-56 z-20 bg-slate-900 border-e border-slate-700/60 bottom-0',
+          'hidden lg:flex flex-col fixed start-0 w-56 z-20 bg-[var(--color-surface-1)] border-e border-[var(--color-border)] bottom-0',
           desktopAsideTop,
         )}
       >
-        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
-          <h2 className="font-bold text-slate-900 dark:text-white">{t('title')}</h2>
+        <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+          <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
           <Link
             href="/dashboard"
-            className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mt-1 block"
+            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] mt-1 block"
           >
             {t('backToMyCenter')}
           </Link>
@@ -677,9 +658,9 @@ export function AdminSidebar({
                 }}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
-                  isActive
-                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                    isActive
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
                 )}
               >
                 <Icon size={18} />
@@ -700,8 +681,8 @@ export function AdminSidebar({
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                     isReferralRewards
-                      ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                      ? 'bg-teal-600/10 text-teal-600'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
                   )}
                 >
                   <Gift size={18} className="shrink-0" />
@@ -722,8 +703,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isRenewals
-                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                        ? 'bg-teal-600/10 text-teal-600'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                     )}
                   >
                     <CalendarCheck size={18} />
@@ -743,8 +724,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isPricing
-                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                        ? 'bg-teal-600/10 text-teal-600'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                     )}
                   >
                     <Banknote size={18} />
@@ -764,8 +745,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isPlatformConfig
-                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                        ? 'bg-teal-600/10 text-teal-600'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                     )}
                   >
                     <Settings size={18} />
@@ -785,8 +766,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isVendors
-                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                        ? 'bg-teal-600/10 text-teal-600'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                     )}
                   >
                     <Truck size={18} />
@@ -806,8 +787,8 @@ export function AdminSidebar({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start',
                       isWaPack
-                        ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                        ? 'bg-teal-600/10 text-teal-600'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                     )}
                   >
                     <MessageCircle size={18} />
@@ -826,8 +807,8 @@ export function AdminSidebar({
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                 isHealth
-                  ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                  ? 'bg-teal-600/10 text-teal-600'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
               )}
             >
               <Activity size={18} />
@@ -837,7 +818,7 @@ export function AdminSidebar({
           {/* HR & Commissions group */}
           {adminRole === 'super_admin' ? (
             <>
-              <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                 {t('sidebarHr')}
               </p>
               <Link
@@ -846,8 +827,8 @@ export function AdminSidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                   isStaff
-                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                 )}
               >
                 <Users size={18} />
@@ -859,8 +840,8 @@ export function AdminSidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                   isCenterAssignments
-                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                 )}
               >
                 <MapPin size={18} />
@@ -872,8 +853,8 @@ export function AdminSidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                   isCommissions
-                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                 )}
               >
                 <TrendingUp size={18} />
@@ -885,8 +866,8 @@ export function AdminSidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline',
                   isPayouts
-                    ? 'bg-teal-50 dark:bg-slate-700 text-teal-700 dark:text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800',
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                 )}
               >
                 <CreditCard size={18} />
@@ -895,8 +876,10 @@ export function AdminSidebar({
             </>
           ) : null}
         </nav>
-        <div className="shrink-0 p-2 border-t border-gray-200 dark:border-slate-700">
-          <ThemeToggle />
+        <div className="shrink-0 p-2 border-t border-[var(--color-border)]">
+          <div className="px-1">
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
     </>

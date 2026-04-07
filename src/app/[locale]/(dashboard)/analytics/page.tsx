@@ -183,7 +183,7 @@ export default function AnalyticsPage() {
   const egp = tCommon('egp');
 
   return (
-    <div className="bg-[#080D14] min-h-screen w-full page-enter max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px)+0.5rem)] md:pb-28">
+    <div className="bg-[var(--color-surface-0)] min-h-screen w-full page-enter max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px)+0.5rem)] md:pb-28">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-4 pt-4 pb-4 no-print border-b border-slate-200/80 dark:border-slate-800">
         <div>
           <h1 className="text-xl font-bold text-white">{ta('title')}</h1>
@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
         <button
           type="button"
           onClick={() => window.print()}
-          className="inline-flex items-center justify-center gap-2 self-stretch sm:self-auto sm:ms-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-800/40 text-slate-800 dark:text-white text-sm font-semibold shadow-sm hover:border-teal-500/40 dark:hover:border-teal-400/30 transition-colors"
+          className="inline-flex items-center justify-center gap-2 self-stretch sm:self-auto sm:ms-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-[var(--color-surface-1)] text-slate-800 dark:text-white text-sm font-semibold shadow-sm hover:border-teal-500/40 dark:hover:border-teal-400/30 transition-colors"
         >
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
             <polyline points="6 9 6 2 18 2 18 9" />
@@ -204,7 +204,7 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 px-4 mt-4 mb-4 chart-animate">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 p-4 card-shadow btn-lift">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('mrr')}</span>
@@ -239,7 +239,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 p-4 card-shadow btn-lift">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('collection_rate')}</span>
@@ -255,7 +255,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 p-4 card-shadow btn-lift">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('avg_per_student')}</span>
@@ -272,7 +272,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-800/40 p-4 card-shadow btn-lift">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">{ta('total_revenue')}</span>

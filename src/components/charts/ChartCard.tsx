@@ -38,13 +38,13 @@ export function ChartCard({
       : '';
 
   return (
-    <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-5">
+    <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-2xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div className="min-w-0">
-          <p className="text-xs text-slate-500 uppercase tracking-wide">{title}</p>
-          {subtitle ? <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p> : null}
+          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide">{title}</p>
+          {subtitle ? <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{subtitle}</p> : null}
           {valueStr ? (
-            <p className="text-2xl font-bold text-white mt-1 tabular-nums">
+            <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
               {valuePrefix}
               {valueStr}
               {valueSuffix}

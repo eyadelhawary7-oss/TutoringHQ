@@ -220,6 +220,15 @@
 html:not(.light) {
   --shadow-card: var(--shadow-card-dark);
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.45), 0 8px 32px rgba(0, 0, 0, 0.28);
+  --color-surface-0: #080f1a;
+  --color-surface-1: #0f172a;
+  --color-surface-2: #1e293b;
+  --color-surface-3: #334155;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #64748b;
+  --color-border: #1e293b;
+  --color-teal: #0d9488;
 }
 
 .card-shadow {
@@ -513,7 +522,7 @@ html.light {
   --color-accent-foreground: hsl(174 72% 25%);
   --color-destructive: hsl(0 72% 51%);
   --color-destructive-foreground: hsl(0 0% 100%);
-  --color-border: hsl(214 32% 88%);
+  --color-border: #e2e8f0;
   --color-input: hsl(214 32% 88%);
   --color-ring: hsl(174 72% 30%);
 
@@ -528,9 +537,11 @@ html.light {
   --color-text-primary: #0f172a;
   --color-text-secondary: #475569;
   --color-text-tertiary: #64748b;
+  --color-text-muted: #94a3b8;
   --color-text-disabled: #94a3b8;
   --color-text-inverse: #f8fafc;
   --color-text-brand: #0d9488;
+  --color-teal: #0d9488;
 
   /* Borders — visible on light backgrounds */
   --color-border-subtle: rgba(15, 23, 42, 0.08);
@@ -1026,10 +1037,39 @@ html.light .skeleton {
 html,
 body {
   font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif;
-  background-color: #080d14;
-  color: #f8fafc;
+  background-color: var(--color-surface-0);
+  color: var(--color-text-primary);
   min-height: 100vh;
   width: 100%;
+}
+
+.chq-page {
+  background-color: var(--color-surface-0);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  width: 100%;
+}
+
+.chq-card {
+  background-color: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.chq-card-elevated {
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.chq-text-primary {
+  color: var(--color-text-primary);
+}
+.chq-text-secondary {
+  color: var(--color-text-secondary);
+}
+.chq-text-muted {
+  color: var(--color-text-muted);
 }
 
 /* Only apply zero glyph fix to explicit Playfair elements */
@@ -1250,34 +1290,16 @@ samp {
 }
 
 /* ── Light mode — white text readability fix ────────────────
-   S5 dashboard uses text-white hardcoded on headings and numbers.
-   In light mode these become invisible. Override to dark text.
-   Exception: public marketing landing (data-chq-landing on #080D14) must
-   keep real white — otherwise html.light users see dark text on dark hero.
+   Hardcoded text-white on surfaces must map to theme primary in light mode.
 ──────────────────────────────────────────────────────────── */
 html.light .text-white {
   color: var(--color-text-primary) !important;
-}
-
-html.light [data-chq-landing] .text-white,
-html.light [data-chq-landing].text-white {
-  color: #ffffff !important;
 }
 
 html.light .text-white\/90,
 html.light .text-white\/80,
 html.light .text-white\/70 {
   color: var(--color-text-secondary) !important;
-}
-
-html.light [data-chq-landing] .text-white\/90 {
-  color: rgb(248 250 252 / 0.9) !important;
-}
-html.light [data-chq-landing] .text-white\/80 {
-  color: rgb(248 250 252 / 0.8) !important;
-}
-html.light [data-chq-landing] .text-white\/70 {
-  color: rgb(248 250 252 / 0.7) !important;
 }
 
 /* Signup (#080D14) — plan cards stay readable in html.light (text-white remap) */

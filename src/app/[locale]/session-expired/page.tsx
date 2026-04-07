@@ -10,7 +10,7 @@ export default function SessionExpiredPage() {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center bg-[#080D14] p-6"
+      className="flex min-h-screen items-center justify-center bg-[var(--color-surface-0)] p-6"
       dir={dir}
     >
       <div className="chq-spring-in w-full max-w-md space-y-6 text-center">

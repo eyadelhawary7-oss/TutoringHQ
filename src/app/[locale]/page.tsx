@@ -82,7 +82,7 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
 );
 
 const DashboardScreen = () => (
-  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[#080D14] p-3">
+  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[var(--color-surface-0)] p-3">
     <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">لوحة التحكم</div>
     <div className="grid grid-cols-2 gap-1.5">
       <div className="rounded-lg bg-slate-800 p-2">
@@ -150,7 +150,7 @@ const WhatsAppScreen = () => (
 );
 
 const PaymentScreen = () => (
-  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[#080D14] p-3">
+  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[var(--color-surface-0)] p-3">
     <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">المدفوعات</div>
     <div className="flex items-center gap-3 rounded-xl border border-teal-700/50 bg-teal-900/40 p-3">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal-500 bg-teal-500/20">
@@ -244,9 +244,9 @@ export default function LocaleHomePage() {
   return (
     <main
       data-chq-landing
-      className="min-h-screen bg-[#080D14] text-white dark:bg-[#080D14] [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-slate-300"
+      className="min-h-screen bg-[var(--color-surface-0)] text-white dark:bg-[var(--color-surface-0)] [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-slate-300"
     >
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-[#080D14]/90 backdrop-blur-md">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-[var(--color-surface-0)]/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 md:h-16 md:px-6">
           <Link
             href="/"
@@ -317,7 +317,7 @@ export default function LocaleHomePage() {
         </div>
 
         {mobileOpen ? (
-          <div className="border-t border-slate-800/60 bg-[#080D14]/95 px-4 py-4 md:hidden">
+          <div className="border-t border-slate-800/60 bg-[var(--color-surface-0)]/95 px-4 py-4 md:hidden">
             <div className="flex flex-col gap-1">
               <a
                 href="#features"
@@ -365,7 +365,7 @@ export default function LocaleHomePage() {
         className="chq-fade-in px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28"
         style={{
           background:
-            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), #080D14',
+            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), var(--color-surface-0)',
         }}
       >
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 md:grid-cols-2 md:gap-16">
@@ -403,7 +403,7 @@ export default function LocaleHomePage() {
                 {/* Status bar */}
                 <div className="flex items-center justify-between px-6 pb-2 pt-4">
                   <span className="text-[11px] font-semibold text-slate-300">9:41</span>
-                  <div className="h-5 w-16 rounded-full bg-slate-900" />
+                  <div className="h-5 w-16 rounded-full bg-[var(--color-surface-3)]" />
                   <div className="flex items-center gap-1.5">
                     <div className="flex h-3 items-end gap-[2px]">
                       <div className="h-1 w-[3px] rounded-full bg-slate-500" />
@@ -484,7 +484,7 @@ export default function LocaleHomePage() {
         </div>
       </section>
 
-      <section className="chq-fade-in border-y border-slate-800/40 bg-[#080D14] px-4 py-12 md:px-6">
+      <section className="chq-fade-in border-y border-slate-800/40 bg-[var(--color-surface-0)] px-4 py-12 md:px-6">
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
           {[
             { v: m('stat1Value'), l: m('stat1Label') },
@@ -493,7 +493,7 @@ export default function LocaleHomePage() {
           ].map((s, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6 text-center"
+              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-center"
             >
               <p className="text-3xl font-bold text-teal-400">{s.v}</p>
               <p className="mt-1 text-sm text-slate-400">{s.l}</p>
@@ -556,7 +556,7 @@ export default function LocaleHomePage() {
             {featureKeys.map((k) => (
               <div
                 key={k}
-                className="rounded-2xl border border-slate-700/60 bg-slate-800/40 p-5"
+                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5"
               >
                 <div
                   className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg border border-teal-700/50 bg-teal-900/40"
@@ -585,10 +585,10 @@ export default function LocaleHomePage() {
           </p>
           <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
             <div
-              className="rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-start !text-white"
+              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-2)] p-6 text-start !text-white"
               style={{ color: '#ffffff' }}
             >
-              <span className="inline-block rounded-full border border-slate-600 bg-slate-900/50 px-2 py-0.5 text-xs !text-slate-400">
+              <span className="inline-block rounded-full border border-slate-600 bg-[var(--color-surface-2)] px-2 py-0.5 text-xs !text-slate-400">
                 {m('nanoBadge')}
               </span>
               <p className="mt-3 text-base font-bold !text-white">{m('nanoName')}</p>
@@ -608,7 +608,7 @@ export default function LocaleHomePage() {
               <p className="mt-3 text-xs text-slate-400">{m('starterStudents')}</p>
             </div>
             <div
-              className="rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-start !text-white"
+              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-2)] p-6 text-start !text-white"
               style={{ color: '#ffffff' }}
             >
               <p className="mt-3 text-base font-bold !text-white">{m('proName')}</p>
@@ -618,14 +618,14 @@ export default function LocaleHomePage() {
           </div>
           <Link
             href="/signup"
-            className="mt-10 inline-flex rounded-xl border border-slate-600 bg-slate-800/40 px-6 py-3 text-sm font-semibold text-slate-300 transition-colors hover:border-slate-500 hover:bg-slate-800/60 hover:text-white btn-press chq-focus"
+            className="mt-10 inline-flex rounded-xl border border-slate-600 bg-[var(--color-surface-1)] px-6 py-3 text-sm font-semibold text-slate-300 transition-colors hover:border-slate-500 hover:bg-[var(--color-surface-2)] hover:text-white btn-press chq-focus"
           >
             {m('pricingCta')}
           </Link>
         </div>
       </section>
 
-      <section className="chq-fade-in bg-gradient-to-b from-[#080D14] via-[#0a1620] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
+      <section className="chq-fade-in bg-gradient-to-b from-[var(--color-surface-0)] via-[var(--color-surface-1)] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('finalCtaTitle')}</h2>
           <p className="mt-3 text-sm text-slate-300 md:text-base">{t('finalCtaDesc')}</p>

@@ -241,7 +241,7 @@ export default function ReferralRewardsPage() {
 
   return (
     <div
-      className="flex flex-col flex-1 min-h-0 min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+      className="flex flex-col flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <AdminHeader />
@@ -304,7 +304,7 @@ export default function ReferralRewardsPage() {
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
             {t('referralRewards.totals_heading')}
           </h2>
-          <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden overflow-x-auto">
+          <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
             {loading ? (
               <div className="p-8 text-center text-slate-500 dark:text-slate-400">{tCommon('loading')}</div>
             ) : totals.length === 0 ? (
@@ -313,7 +313,7 @@ export default function ReferralRewardsPage() {
               </div>
             ) : (
               <table className="w-full text-sm min-w-[640px]">
-                <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
                   <tr className={`text-slate-500 dark:text-slate-400 ${isRTL ? 'text-end' : 'text-start'}`}>
                     <th className="px-4 py-3 font-medium">{t('referralRewards.col_referrer')}</th>
                     <th className="px-4 py-3 font-medium">{t('referralRewards.col_total_pending')}</th>
@@ -344,7 +344,7 @@ export default function ReferralRewardsPage() {
           </div>
         </div>
 
-        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden overflow-x-auto">
+        <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
           {loading ? (
             <div className="p-12 text-center text-slate-500 dark:text-slate-400">{tCommon('loading')}</div>
           ) : records.length === 0 ? (
@@ -353,7 +353,7 @@ export default function ReferralRewardsPage() {
             </div>
           ) : (
             <table className="w-full text-sm min-w-[1000px]">
-              <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+              <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
                 <tr className={`text-slate-500 dark:text-slate-400 ${isRTL ? 'text-end' : 'text-start'}`}>
                   {isSuperAdmin ? (
                     <th className="px-4 py-3 font-medium w-10" aria-label={t('referralRewards.mark_paid')}>

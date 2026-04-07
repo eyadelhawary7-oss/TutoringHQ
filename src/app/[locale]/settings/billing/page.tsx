@@ -463,7 +463,7 @@ function PaygTab({
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+        <label className="mb-2 block text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
           {t('payg.slider.label')}
         </label>
         <input
@@ -507,7 +507,7 @@ function PaygTab({
               className={`rounded-xl border p-3 text-center transition-all duration-200 ${
                 active
                   ? 'scale-105 border-2 border-teal-600 bg-teal-50 dark:bg-teal-900/30'
-                  : 'border border-slate-600 bg-slate-900/40'
+                  : 'border border-slate-600 bg-[var(--color-surface-2)]'
               }`}
               style={cairoFont}
             >
@@ -525,7 +525,7 @@ function PaygTab({
         })}
       </div>
 
-      <div className="rounded-2xl border border-slate-600 bg-slate-800/40 p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-600 bg-[var(--color-surface-1)] p-6 shadow-sm">
         <dl className="space-y-2 text-sm">
           <div className="flex justify-between gap-2">
             <dt className="text-slate-500" style={cairoFont}>
@@ -613,7 +613,7 @@ function PaygTab({
                 <select
                   value={paygLeavePeriod}
                   onChange={(e) => setPaygLeavePeriod(e.target.value as BillingPeriod)}
-                  className="rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100"
+                  className="rounded-xl border border-slate-600 bg-[var(--color-surface-2)] px-3 py-2 text-sm text-slate-100"
                   style={cairoFont}
                 >
                   <option value="monthly">{t('period.monthly.label')}</option>
@@ -1630,13 +1630,13 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="bg-[#080D14] min-h-screen w-full flex flex-col p-4 pb-10 md:p-8">
+      <div className="bg-[var(--color-surface-0)] min-h-screen w-full flex flex-col p-4 pb-10 md:p-8">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
           <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
           <div className="h-56 animate-pulse rounded-2xl bg-gradient-to-br from-teal-200 to-slate-300 dark:from-teal-900/40 dark:to-slate-800" />
-          <div className="h-48 animate-pulse rounded-2xl bg-slate-800/40" />
-          <div className="h-64 animate-pulse rounded-2xl bg-slate-800/40" />
-          <div className="h-48 animate-pulse rounded-2xl bg-slate-800/40" />
+          <div className="h-48 animate-pulse rounded-2xl bg-[var(--color-surface-1)]" />
+          <div className="h-64 animate-pulse rounded-2xl bg-[var(--color-surface-1)]" />
+          <div className="h-48 animate-pulse rounded-2xl bg-[var(--color-surface-1)]" />
         </div>
       </div>
     );
@@ -1646,7 +1646,7 @@ export default function BillingPage() {
 
   return (
     <div
-      className="bg-[#080D14] min-h-screen w-full flex flex-col p-4 pb-10 text-slate-100 md:p-8"
+      className="bg-[var(--color-surface-0)] min-h-screen w-full flex flex-col p-4 pb-10 text-slate-100 md:p-8"
       dir={locale === 'ar' ? 'rtl' : 'ltr'}
     >
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
@@ -1814,7 +1814,7 @@ export default function BillingPage() {
         {/* SECTION 2: UPGRADE / DOWNGRADE */}
         {canPlanChange ? (
           <section
-            className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+            className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
             aria-labelledby="billing-plan-change-heading"
           >
             <h2
@@ -1922,7 +1922,7 @@ export default function BillingPage() {
                 </div>
 
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                  <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
                     {t('upgrade.choosePeriod')}
                   </h3>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -1975,7 +1975,7 @@ export default function BillingPage() {
                   <div
                     className={`transition-opacity duration-300 ${selectedPeriod ? 'opacity-100' : 'opacity-0'}`}
                   >
-                    <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                    <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
                       {t('upgrade.choosePlan')}
                     </h3>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -2015,8 +2015,8 @@ export default function BillingPage() {
                 ) : null}
 
                 {selectedPeriod && selectedPlan && costSummary ? (
-                  <div className="rounded-xl border border-slate-600 bg-slate-900/40 p-4">
-                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                  <div className="rounded-xl border border-slate-600 bg-[var(--color-surface-2)] p-4">
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
                       {t('upgrade.summary')}
                     </h3>
                     <dl className="mt-3 space-y-2 text-sm">
@@ -2106,7 +2106,7 @@ export default function BillingPage() {
                 </div>
 
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                  <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
                     {t('downgrade.choosePlan')}
                   </h3>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -2139,7 +2139,7 @@ export default function BillingPage() {
 
                 {selectedPlan ? (
                   <div className="transition-opacity duration-300 opacity-100">
-                    <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                    <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
                       {t('downgrade.choosePeriod')}
                     </h3>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -2193,8 +2193,8 @@ export default function BillingPage() {
                 ) : null}
 
                 {selectedPlan && selectedPeriod && downgradePreview ? (
-                  <div className="rounded-xl border border-slate-600 bg-slate-900/40 p-4">
-                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100" style={cairoFont}>
+                  <div className="rounded-xl border border-slate-600 bg-[var(--color-surface-2)] p-4">
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
                       {t('downgrade.summary')}
                     </h3>
                     <dl className="mt-3 space-y-2 text-sm">
@@ -2269,7 +2269,7 @@ export default function BillingPage() {
               <>
             {/* SECTION 3: CREDITS BALANCE */}
             <section
-              className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
               aria-labelledby="billing-credits-heading"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2349,7 +2349,7 @@ export default function BillingPage() {
             <section
               ref={withdrawalSectionRef}
               id="billing-withdrawal"
-              className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
               aria-labelledby="billing-withdrawal-heading"
             >
               {availableCredits < 2000 ? (
@@ -2461,7 +2461,7 @@ export default function BillingPage() {
                           setWithdrawalSuccess(null);
                           setWithdrawAmount(Number(e.target.value));
                         }}
-                        className="w-full rounded-xl border border-slate-600 bg-slate-900/80 px-4 py-2.5 text-slate-100 tabular-nums"
+                        className="w-full rounded-xl border border-slate-600 bg-[var(--color-surface-2)] px-4 py-2.5 text-slate-100 tabular-nums"
                       />
                       <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
                         {t('withdrawal.youReceive', {
@@ -2533,7 +2533,7 @@ export default function BillingPage() {
                   {reactivationCalc.tier === 'tier1' ? t('reactivation.tier1') : t('reactivation.tier2')}
                 </span>
               </div>
-              <div className="mt-4 rounded-xl border border-slate-600 bg-slate-900/40 p-4">
+              <div className="mt-4 rounded-xl border border-slate-600 bg-[var(--color-surface-2)] p-4">
                 {reactivationCalc.tier === 'tier1' ? (
                   <dl className="space-y-2 text-sm">
                     <div className="flex justify-between gap-2">
@@ -2630,7 +2630,7 @@ export default function BillingPage() {
         ) : null}
 
         {/* SECTION 5: WA PACK */}
-        <section className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <section className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white" style={cairoFont}>
               {t('pack.title')}
@@ -2690,7 +2690,7 @@ export default function BillingPage() {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-600 bg-slate-900/40 p-5">
+            <div className="rounded-xl border border-dashed border-slate-600 bg-[var(--color-surface-2)] p-5">
               <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
                 {t('pack.enableDescription')}
               </p>
@@ -2714,7 +2714,7 @@ export default function BillingPage() {
         </section>
 
         {/* SECTION 6: INVOICE HISTORY */}
-        <section className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <section className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white" style={cairoFont}>
             {t('history.title')}
           </h2>
@@ -2827,7 +2827,7 @@ export default function BillingPage() {
         </section>
 
         {/* SECTION 7: PLAN CHANGE HISTORY */}
-        <section className="rounded-2xl border border-slate-700 bg-slate-800/40 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <section className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white" style={cairoFont}>
             {t('planHistory.title')}
           </h2>
@@ -2965,7 +2965,7 @@ export default function BillingPage() {
             <select
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--color-surface-2)] px-3 py-2 text-sm text-slate-100"
             >
               <option value="">{t('cancel.reasonPlaceholder')}</option>
               {CANCEL_REASON_KEYS.map((k) => (
@@ -2983,7 +2983,7 @@ export default function BillingPage() {
               value={cancelConfirmText}
               onChange={(e) => setCancelConfirmText(e.target.value)}
               placeholder={t('cancel.confirmLabel')}
-              className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--color-surface-2)] px-3 py-2 text-sm text-slate-100"
               dir="ltr"
               autoComplete="off"
             />

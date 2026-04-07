@@ -153,7 +153,7 @@ export default function AdminWithdrawalsPage() {
               className="rounded-lg p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700"
               aria-label={tCommon('back')}
             >
-              <ArrowLeft size={20} className="text-slate-800 dark:text-slate-100" />
+              <ArrowLeft size={20} className="text-[var(--color-text-primary)]" />
             </button>
             <Wallet className="h-6 w-6 text-teal-600 dark:text-teal-400" aria-hidden />
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('title')}</h1>

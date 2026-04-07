@@ -165,7 +165,7 @@ export default function AdminHealthPage() {
 
   return (
     <div
-      className="flex flex-col flex-1 min-h-0 min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+      className="flex flex-col flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <AdminHeader />
@@ -258,7 +258,7 @@ export default function AdminHealthPage() {
                   return (
                     <div
                       key={c.label}
-                      className={`rounded-xl border border-slate-700/60 bg-slate-800/40 p-4 ${
+                      className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 ${
                         bad
                           ? 'border-red-200 dark:border-red-500/40 bg-red-50 dark:bg-red-950/20'
                           : ok
@@ -288,10 +288,10 @@ export default function AdminHealthPage() {
               <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
                 {t('healthCronStatus')}
               </h2>
-              <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 overflow-x-auto">
+              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] overflow-x-auto">
                 <table className="w-full text-sm text-start">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+                    <tr className="border-b border-gray-200 dark:border-slate-700 bg-[var(--color-surface-0)]">
                       <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColCron')}</th>
                       <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColLastRun')}</th>
                       <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColStatus')}</th>

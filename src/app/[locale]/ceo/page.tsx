@@ -132,7 +132,7 @@ export default function CeoDashboardPage() {
 
   if (loading || !data) {
     return (
-      <div className="flex items-center justify-center min-h-screen w-full bg-[#080D14]">
+      <div className="flex items-center justify-center min-h-screen w-full bg-[var(--color-surface-0)]">
         <div className="flex flex-col items-center gap-3">
           <div className="size-8 rounded-full border-2 border-[var(--color-border-default)] border-t-[var(--color-brand-500)] animate-spin" aria-hidden />
           <p className="text-[var(--color-text-secondary)] text-sm">{tCommon('loading')}</p>
@@ -264,7 +264,7 @@ export default function CeoDashboardPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen w-full min-w-0 bg-[#080D14] pt-14 lg:pt-0 page-enter">
+    <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen w-full min-w-0 bg-[var(--color-surface-0)] pt-14 lg:pt-0 page-enter">
       <AdminSidebar activeRoute={pathname} />
       <div className="flex-1 overflow-auto flex flex-col min-w-0 lg:ms-56">
         <MobileWrapper fullWidth>

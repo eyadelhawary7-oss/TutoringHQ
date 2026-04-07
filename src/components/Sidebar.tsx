@@ -45,8 +45,8 @@ function navLinkClass(isActive: boolean) {
   return cn(
     'flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors duration-150 border-solid border-s-4',
     isActive
-      ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400'
-      : 'border-transparent text-slate-400 hover:bg-slate-800 hover:text-white dark:text-slate-400 dark:hover:bg-slate-700',
+      ? 'border-teal-600 bg-teal-600/10 text-teal-600'
+      : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
   );
 }
 
@@ -145,9 +145,9 @@ export default function Sidebar({ onClose }: SidebarProps) {
   return (
     <>
       <aside
-        className="hidden lg:flex flex-col fixed top-0 bottom-0 start-0 h-screen w-60 z-[100] print:hidden bg-slate-900 border-e border-slate-800 isolate"
+        className="hidden lg:flex flex-col fixed top-0 bottom-0 start-0 h-screen w-60 z-[100] print:hidden bg-[var(--color-surface-1)] border-e border-[var(--color-border)] isolate"
       >
-        <div className="relative z-10 flex items-center gap-3 px-4 h-16 border-b border-slate-800 pointer-events-auto justify-between">
+        <div className="relative z-10 flex items-center gap-3 px-4 h-16 border-b border-[var(--color-border)] pointer-events-auto justify-between">
           <Link
             href={isSuperAdminOnly ? '/admin' : '/dashboard'}
             className="flex items-center shrink-0 gap-3 min-w-0"
@@ -160,12 +160,12 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 <span className="text-white font-bold text-sm">CH</span>
               </div>
             )}
-            <span className="font-bold text-white text-lg tracking-tight truncate">CenterHQ</span>
+            <span className="font-bold text-[var(--color-text-primary)] text-lg tracking-tight truncate">CenterHQ</span>
           </Link>
         </div>
 
         {user ? (
-          <div className="border-b border-slate-800">
+          <div className="border-b border-[var(--color-border)]">
             <BranchSwitcher />
           </div>
         ) : null}
@@ -208,15 +208,15 @@ export default function Sidebar({ onClose }: SidebarProps) {
           )}
         </nav>
 
-        <div className="border-t border-slate-800 p-4 bg-slate-800/50">
+        <div className="border-t border-[var(--color-border)] p-4 bg-[var(--color-surface-2)]">
           {user && (
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-white text-sm font-bold">{(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}</span>
+              <div className="w-9 h-9 bg-[var(--color-surface-3)] rounded-full flex items-center justify-center shrink-0">
+                <span className="text-[var(--color-text-primary)] text-sm font-bold">{(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{centerName}</p>
-                <p className="text-xs text-slate-400">{roleLabelKey ? t(roleLabelKey) : ''}</p>
+                <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{centerName}</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">{roleLabelKey ? t(roleLabelKey) : ''}</p>
               </div>
             </div>
           )}
@@ -225,7 +225,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
               <button
                 type="button"
                 onClick={() => setIsPinModalOpen(true)}
-                className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors duration-150 w-full"
+                className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm transition-colors duration-150 w-full"
               >
                 <KeyRound size={16} className="shrink-0" />
                 <span className="truncate">{tSettings('changePin')}</span>
@@ -233,7 +233,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors duration-150 w-full mt-2"
+                className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm transition-colors duration-150 w-full mt-2"
               >
                 <LogOut size={16} className="shrink-0" />
                 <span>{t('logout')}</span>

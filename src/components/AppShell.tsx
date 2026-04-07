@@ -118,7 +118,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   // Scanner fullscreen mode (hideShell=true)
   if (!showShell) {
     return (
-      <main className="min-h-screen w-full bg-[#080D14]">
+      <main className="min-h-screen w-full bg-[var(--color-surface-0)]">
         {children}
       </main>
     );
@@ -126,7 +126,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider closeMainSidebar={closeMainSidebar}>
-    <div className="flex min-h-screen w-full min-w-0 bg-[#080D14]">
+    <div className="flex min-h-screen w-full min-w-0 bg-[var(--color-surface-0)]">
       {!isAdminRoute && <Sidebar onClose={closeMainSidebar} />}
 
       <div
