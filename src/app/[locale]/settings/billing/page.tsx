@@ -450,13 +450,13 @@ function PaygTab({
         <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('payg.intro.title')}</h3>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{t('payg.intro.subtitle')}</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-teal-900 dark:bg-teal-950/50 dark:text-teal-100">
+          <span className="rounded-full bg-slate-800/80 px-3 py-1 text-xs font-medium text-teal-100">
             ✓ {t('payg.pill.noCommitment')}
           </span>
-          <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-teal-900 dark:bg-teal-950/50 dark:text-teal-100">
+          <span className="rounded-full bg-slate-800/80 px-3 py-1 text-xs font-medium text-teal-100">
             ✓ {t('payg.pill.cancelAnytime')}
           </span>
-          <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-teal-900 dark:bg-teal-950/50 dark:text-teal-100">
+          <span className="rounded-full bg-slate-800/80 px-3 py-1 text-xs font-medium text-teal-100">
             ✓ {t('payg.pill.endOfMonth')}
           </span>
         </div>
@@ -659,6 +659,7 @@ export default function BillingPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [planRequests, setPlanRequests] = useState<PlanRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [billingStallMessage, setBillingStallMessage] = useState<string | null>(null);
   const [packRequestLoading, setPackRequestLoading] = useState(false);
   const [paymobUrl, setPaymobUrl] = useState<string | null>(null);
   const [paymobSessionId, setPaymobSessionId] = useState<string | null>(null);
@@ -782,13 +783,25 @@ export default function BillingPage() {
       } catch {
         if (!cancelled) toast.error(tToast('error'), t('loadError'));
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setBillingStallMessage(null);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [t, tToast, toast]);
+
+  useEffect(() => {
+    if (!loading) return;
+    const id = window.setTimeout(() => {
+      setBillingStallMessage(t('loadTimeout'));
+      setLoading(false);
+    }, 10000);
+    return () => window.clearTimeout(id);
+  }, [loading, t]);
 
   const closePaymob = useCallback(() => {
     setPaymobUrl(null);
@@ -1337,7 +1350,7 @@ export default function BillingPage() {
     if (bsLower === 'overdue') {
       return { cls: 'border-red-400/60 bg-red-500/20 text-red-50 animate-pulse', label: t('status.overdue'), icon: null };
     }
-    return { cls: 'border-white/30 bg-white/10 text-white', label: t('status.active'), icon: null };
+    return { cls: 'border-white/30 bg-slate-950/40 text-white', label: t('status.active'), icon: null };
   }, [bsLower, subLower, isSuspendedCenter, t]);
 
   const invoiceStatusDisplay = (raw: string | null | undefined) => {
@@ -1637,8 +1650,16 @@ export default function BillingPage() {
       dir={locale === 'ar' ? 'rtl' : 'ltr'}
     >
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
+        {billingStallMessage ? (
+          <div
+            className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100"
+            style={cairoFont}
+          >
+            {billingStallMessage}
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-xl font-bold md:text-2xl" style={cairoFont}>
+          <h1 className="text-xl font-bold md:text-2xl text-white" style={cairoFont}>
             {t('page.title')}
           </h1>
           <Link

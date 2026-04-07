@@ -87,7 +87,7 @@ function FinancialSkeletons() {
 function FinancialErrorCard({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations('ceo');
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-6 mt-10">
+    <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 card-shadow p-6 mt-10">
       <p className="text-red-600 dark:text-red-400 text-sm mb-3">{t('financials.fetchError')}</p>
       <button
         type="button"
@@ -165,7 +165,7 @@ function CeoFinancialsBody({
         <h2 className="text-lg font-semibold text-slate-800 dark:text-white">{tFinancials('financials.sectionTitle')}</h2>
 
         <div className="grid grid-cols-1 gap-4 max-w-xl">
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4 border-s-4 border-teal-500">
+          <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 card-shadow p-4 border-s-4 border-teal-500">
             <p className="text-xs text-slate-500 dark:text-slate-400">{tFinancials('financials.cardTotalTitle')}</p>
             <p className="text-xl font-mono font-bold text-slate-800 dark:text-white mt-1">
               {nf(financials.currentMonth?.totalRevenue).toLocaleString('en-US')} {tCommon('egp')}
@@ -190,7 +190,7 @@ function CeoFinancialsBody({
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4">
+        <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 card-shadow p-4">
           <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.chart12MonthTitle')}</h3>
           {monthly.length >= 2 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -290,7 +290,7 @@ function CeoFinancialsBody({
           )}
         </div>
 
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4">
+        <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 card-shadow p-4">
           <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.cardOrdersPanelTitle')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3 text-sm">
@@ -332,7 +332,7 @@ function CeoFinancialsBody({
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 card-shadow p-4">
+        <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 card-shadow p-4">
           <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">{tFinancials('financials.whatsappPanelTitle')}</h3>
           <div className="flex flex-wrap gap-6 items-baseline text-sm">
             <div>

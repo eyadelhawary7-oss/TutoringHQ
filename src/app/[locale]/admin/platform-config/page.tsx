@@ -252,7 +252,7 @@ export default function PlatformConfigPage() {
                 <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
                   {t(g.titleKey)}
                 </h2>
-                <div className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+                <div className="space-y-4 rounded-xl border border-slate-700/60 bg-slate-800/40 p-4">
                   {g.keys.map((k) => {
                     const labelKey = `platformConfig_${k}_label` as Parameters<typeof t>[0];
                     const descKey = `platformConfig_${k}_desc` as Parameters<typeof t>[0];
@@ -280,7 +280,7 @@ export default function PlatformConfigPage() {
                             style={{ backgroundColor: checked ? '#0d9488' : '#64748b' }}
                           >
                             <span
-                              className="absolute top-[3px] h-5 w-5 rounded-full bg-white shadow"
+                              className="absolute top-[3px] h-5 w-5 rounded-full bg-slate-200 shadow"
                               style={{ left: checked ? 25 : 3 }}
                             />
                           </span>
@@ -297,7 +297,7 @@ export default function PlatformConfigPage() {
               <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
                 {t('platformConfigGroupBusiness')}
               </h2>
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+              <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 p-4">
                 <p className="font-medium text-slate-900 dark:text-slate-100">
                   {t('platformConfig_breakeven_target_label')}
                 </p>
@@ -308,7 +308,7 @@ export default function PlatformConfigPage() {
                   type="number"
                   min={0}
                   step={1}
-                  className="w-full max-w-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100"
+                  className="w-full max-w-xs rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-slate-100"
                   value={breakevenDraft}
                   disabled={breakevenSaving}
                   onChange={(e) => setBreakevenDraft(e.target.value)}

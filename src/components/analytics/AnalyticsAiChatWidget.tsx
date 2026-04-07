@@ -95,7 +95,7 @@ export default function AnalyticsAiChatWidget() {
     <div className="no-print fixed z-[60] bottom-0 inset-x-0 md:bottom-6 md:inset-x-auto md:end-6 flex flex-col items-stretch md:items-end pointer-events-none">
       {open && (
         <div
-          className="pointer-events-auto mb-3 mx-4 md:mx-0 w-[min(100%,360px)] max-h-[min(70vh,480px)] flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg card-shadow ms-auto me-4 md:me-0 overflow-hidden"
+          className="pointer-events-auto mb-3 mx-4 md:mx-0 w-[min(100%,360px)] max-h-[min(70vh,480px)] flex flex-col rounded-2xl border border-slate-700/60 bg-slate-800/40 shadow-lg card-shadow ms-auto me-4 md:me-0 overflow-hidden"
           role="dialog"
           id={`${formId}-panel`}
           aria-labelledby={`${formId}-label`}
@@ -189,7 +189,7 @@ export default function AnalyticsAiChatWidget() {
           )}
 
           <form
-            className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+            className="p-3 border-t border-slate-700/60 bg-slate-800/40"
             onSubmit={(e) => {
               e.preventDefault();
               void submit();
@@ -231,7 +231,7 @@ export default function AnalyticsAiChatWidget() {
         aria-expanded={open}
         aria-controls={`${formId}-panel`}
       >
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-600/30">
           <MessageCircle className="w-5 h-5" />
         </span>
         <span className="text-sm font-semibold pe-1 max-md:sr-only">{ta('aiChat_fabLabel')}</span>

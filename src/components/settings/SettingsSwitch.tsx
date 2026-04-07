@@ -32,7 +32,7 @@ export function SettingsSwitch({
       }`}
     >
       <span
-        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-150 ${
+        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-slate-200 shadow ring-0 transition-transform duration-150 ${
           checked ? 'translate-x-5' : 'translate-x-1'
         }`}
       />

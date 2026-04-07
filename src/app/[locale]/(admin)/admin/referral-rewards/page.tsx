@@ -304,7 +304,7 @@ export default function ReferralRewardsPage() {
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
             {t('referralRewards.totals_heading')}
           </h2>
-          <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden overflow-x-auto">
+          <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden overflow-x-auto">
             {loading ? (
               <div className="p-8 text-center text-slate-500 dark:text-slate-400">{tCommon('loading')}</div>
             ) : totals.length === 0 ? (
@@ -344,7 +344,7 @@ export default function ReferralRewardsPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden overflow-x-auto">
+        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden overflow-x-auto">
           {loading ? (
             <div className="p-12 text-center text-slate-500 dark:text-slate-400">{tCommon('loading')}</div>
           ) : records.length === 0 ? (

@@ -387,7 +387,7 @@ export function AdminSidebar({
 
       {/* Mobile drawer */}
       <aside
-        className={`fixed top-0 start-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-white dark:bg-slate-900 border-e border-gray-200 dark:border-slate-800 transition-transform duration-[250ms] ease-in-out ${
+        className={`fixed top-0 start-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-slate-900 border-e border-slate-700/60 transition-transform duration-[250ms] ease-in-out ${
           openMenu ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
         }`}
         aria-hidden={!openMenu}
@@ -619,7 +619,7 @@ export function AdminSidebar({
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex flex-col fixed start-0 w-56 z-20 bg-white dark:bg-slate-900 border-e border-gray-200 dark:border-slate-700 bottom-0',
+          'hidden lg:flex flex-col fixed start-0 w-56 z-20 bg-slate-900 border-e border-slate-700/60 bottom-0',
           desktopAsideTop,
         )}
       >

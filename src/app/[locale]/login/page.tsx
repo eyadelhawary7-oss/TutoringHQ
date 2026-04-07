@@ -22,6 +22,8 @@ export default function LoginPage() {
 
   const PLAYFAIR = {
     fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', Georgia, serif",
+    fontVariantNumeric: 'tabular-nums' as const,
+    fontFeatureSettings: '"zero" 1, "tnum" 1',
   } as const;
   const SANS = {
     fontFamily: 'system-ui, -apple-system, sans-serif',

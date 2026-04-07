@@ -1030,6 +1030,16 @@ body {
   color: #f8fafc;
   min-height: 100vh;
   width: 100%;
+  font-feature-settings: "tnum" 0, "zero" 1;
+}
+
+/* Force tabular numerals and clearer zero glyph where Playfair is used */
+[style*="Playfair"],
+[style*="playfair"],
+[class*="font-playfair"],
+.font-playfair {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
 }
 
 /* Belt-and-suspenders for number and code elements.

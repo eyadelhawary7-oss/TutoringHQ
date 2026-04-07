@@ -110,12 +110,7 @@ export default function BenchmarksPage() {
   if (error) {
     return (
       <div className="min-h-screen w-full bg-[#080D14] p-6">
-        <PageHeader
-          title={t('title')}
-          subtitle={tNav('benchmarks')}
-          titleClassName="text-white"
-          subtitleClassName="text-slate-400"
-        />
+        <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
         <p className="text-destructive">{error}</p>
       </div>
     );
@@ -132,12 +127,7 @@ export default function BenchmarksPage() {
 
     return (
       <div className="min-h-screen w-full bg-[#080D14] px-4 py-6 md:py-10">
-        <PageHeader
-          title={t('title')}
-          subtitle={tNav('benchmarks')}
-          titleClassName="text-white"
-          subtitleClassName="text-slate-400"
-        />
+        <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
         <div className="max-w-md mx-auto text-center pt-10 md:pt-16">
           <BenchmarkLockIllustration />
           <h2 className="text-xl font-bold text-white mt-6">{t('districtTitle')}</h2>
@@ -209,12 +199,7 @@ export default function BenchmarksPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#080D14] p-6">
-      <PageHeader
-        title={t('title')}
-        subtitle={tNav('benchmarks')}
-        titleClassName="text-white"
-        subtitleClassName="text-slate-400"
-      />
+      <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {cards.map(({ key, icon: Icon, metric, format, descKey }) => {

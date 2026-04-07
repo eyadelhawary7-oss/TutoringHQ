@@ -186,7 +186,7 @@ export default function AnalyticsPage() {
     <div className="bg-[#080D14] min-h-screen w-full page-enter max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px)+0.5rem)] md:pb-28">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-4 pt-4 pb-4 no-print border-b border-slate-200/80 dark:border-slate-800">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">{ta('title')}</h1>
+          <h1 className="text-xl font-bold text-white">{ta('title')}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">{ta('subtitle')}</p>
         </div>
         <button

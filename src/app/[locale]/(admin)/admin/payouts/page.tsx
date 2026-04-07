@@ -325,18 +325,18 @@ export default function PayoutsPage() {
 
         <div className="space-y-3">
           {loading ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400 bg-slate-800/40 border border-slate-700/60 rounded-xl">
               {tCommon('loading')}
             </div>
           ) : payouts.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400 bg-slate-800/40 border border-slate-700/60 rounded-xl">
               {t('payouts.no_payouts')}
             </div>
           ) : (
             payouts.map((payout) => (
               <div
                 key={payout.id}
-                className={`bg-white dark:bg-slate-800/50 border rounded-xl p-5 space-y-4 ${
+                className={`bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 space-y-4 ${
                   payout.requires_review && payout.status === 'draft'
                     ? 'border-amber-400 dark:border-amber-600/50'
                     : 'border-slate-200 dark:border-slate-700'
@@ -458,7 +458,7 @@ export default function PayoutsPage() {
 
         {generateModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
+            <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                 {t('payouts.generate')}
               </h2>
@@ -521,7 +521,7 @@ export default function PayoutsPage() {
 
         {adjustModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
+            <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                 {t('payouts.adjustment')}
               </h2>

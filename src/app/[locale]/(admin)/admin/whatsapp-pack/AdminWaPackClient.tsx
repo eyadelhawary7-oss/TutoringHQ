@@ -128,7 +128,7 @@ function PackToggle({
     >
       <span
         className={cn(
-          'h-6 w-6 rounded-full bg-white shadow transition-[margin]',
+          'h-6 w-6 rounded-full bg-slate-200 shadow transition-[margin]',
           value ? 'ms-auto' : 'ms-0',
         )}
       />

@@ -458,7 +458,7 @@ export default function WhatsAppPackClient({
                                 >
                                   <span
                                     className={cn(
-                                      'h-6 w-6 rounded-full bg-white shadow transition-[margin]',
+                                      'h-6 w-6 rounded-full bg-slate-200 shadow transition-[margin]',
                                       isOpted ? 'ms-auto' : 'ms-0',
                                     )}
                                   />
@@ -531,7 +531,7 @@ export default function WhatsAppPackClient({
         {/* Section 3 - Announcement blast (parent_pack_enabled only; composer max 160 chars; sendAnnouncementBlast POST) */}
         <section
           className={cn(
-            'rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 space-y-4 shadow-sm',
+            'rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4 sm:p-6 space-y-4 shadow-sm',
             activeParents === 0 && 'opacity-50 pointer-events-none',
           )}
         >
@@ -617,7 +617,7 @@ export default function WhatsAppPackClient({
                 setMessage(e.target.value);
                 setAnnouncementInlineError(null);
               }}
-              className="w-full min-h-[100px] rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              className="w-full min-h-[100px] rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-[var(--color-text-primary)]"
             />
             <p className="text-end text-xs text-[var(--color-text-tertiary)] mt-1" data-announcement-counter>
               {message.length}/{ANNOUNCEMENT_MESSAGE_MAX}
@@ -691,7 +691,7 @@ export default function WhatsAppPackClient({
               }}
             >
               <div
-                className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 p-5 shadow-xl space-y-4"
+                className="w-full max-w-md rounded-2xl border border-slate-700/60 bg-slate-800/40 p-5 shadow-xl space-y-4"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 id="announcement-confirm-title" className="text-lg font-semibold text-[var(--color-text-primary)]">

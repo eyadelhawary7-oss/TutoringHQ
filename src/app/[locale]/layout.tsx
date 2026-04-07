@@ -109,8 +109,16 @@ export default async function LocaleLayout({
           dangerouslySetInnerHTML={{
             __html: `
       try {
-        var t = localStorage.getItem('chq-theme');
-        if (t === 'light') document.documentElement.classList.add('light');
+        var p = window.location.pathname;
+        var clean = p.replace(/^\\/(ar|en)(\\/|$)/, '$2') || '/';
+        var pub = {'/':1,'/login':1,'/signup':1,'/forgot-password':1,'/suspended':1,'/offline':1,'/session-expired':1,'/status':1,'/onboarding':1,'/auth/callback':1};
+        var isPublic = !!pub[clean] || clean.indexOf('/refer/') === 0;
+        document.documentElement.classList.remove('light');
+        document.documentElement.classList.add('dark');
+        if (isPublic && localStorage.getItem('chq-theme') === 'light') {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.add('light');
+        }
       } catch(e) {}
     `,
           }}

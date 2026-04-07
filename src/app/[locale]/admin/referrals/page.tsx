@@ -505,7 +505,7 @@ export default function AdminReferralsPage() {
                   <select
                     value={commissionStatus}
                     onChange={(e) => setCommissionStatus(e.target.value as 'all' | 'pending' | 'paid')}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                    className="rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100"
                   >
                     <option value="all">{tAdmin('filterAll')}</option>
                     <option value="pending">{tAdmin('filterPending')}</option>
@@ -519,7 +519,7 @@ export default function AdminReferralsPage() {
                   <select
                     value={commissionQuarter}
                     onChange={(e) => setCommissionQuarter(e.target.value)}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                    className="rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100"
                   >
                     {qOpts.map((o) => (
                       <option key={o.value} value={o.value}>

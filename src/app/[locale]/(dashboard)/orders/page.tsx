@@ -98,67 +98,88 @@ export default function OrdersPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [orders, setOrders] = useState<CardOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    setLoadError(null);
+    setLoading(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        return;
+      }
+
+      const meRes = await fetch('/api/me', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!meRes.ok) {
+        setLoadError(t('loadFailed'));
+        return;
+      }
+      const meData = await meRes.json();
+      if (!meData?.user?.center_id) {
+        return;
+      }
+
+      const cid = meData.user.center_id as string;
+      setCenterId(cid);
+      setCenterInfo(
+        meData.user.center
+          ? {
+              name: meData.user.center.name,
+              logo_url: meData.user.center.logo_url,
+              phone: meData.user.center.phone,
+              governorate: meData.user.center.governorate,
+              delivery_address: meData.user.center.delivery_address,
+              card_color: meData.user.center.card_color,
+            }
+          : null
+      );
+
+      const [studentsRes, ordersRes] = await Promise.all([
+        dbSelect({
+          table: 'students',
+          select: 'id, name, student_number, qr_code',
+          filters: [{ column: 'center_id', op: 'eq', value: cid }],
+          order: { column: 'name', ascending: true },
+        }),
+        dbSelect({
+          table: 'card_orders',
+          select: '*',
+          filters: [{ column: 'center_id', op: 'eq', value: cid }],
+          order: { column: 'created_at', ascending: false },
+        }),
+      ]);
+
+      if (studentsRes.data && Array.isArray(studentsRes.data)) {
+        setStudents(studentsRes.data as Student[]);
+      }
+      if (ordersRes.data && Array.isArray(ordersRes.data)) {
+        setOrders(ordersRes.data as CardOrderRow[]);
+      }
+    } catch {
+      setLoadError(t('loadFailed'));
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const meRes = await fetch('/api/me', {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    const meData = await meRes.json();
-    if (!meData?.user?.center_id) {
-      setLoading(false);
-      return;
-    }
-
-    const cid = meData.user.center_id as string;
-    setCenterId(cid);
-    setCenterInfo(
-      meData.user.center
-        ? {
-            name: meData.user.center.name,
-            logo_url: meData.user.center.logo_url,
-            phone: meData.user.center.phone,
-            governorate: meData.user.center.governorate,
-            delivery_address: meData.user.center.delivery_address,
-            card_color: meData.user.center.card_color,
-          }
-        : null
-    );
-
-    const [studentsRes, ordersRes] = await Promise.all([
-      dbSelect({
-        table: 'students',
-        select: 'id, name, student_number, qr_code',
-        filters: [{ column: 'center_id', op: 'eq', value: cid }],
-        order: { column: 'name', ascending: true },
-      }),
-      dbSelect({
-        table: 'card_orders',
-        select: '*',
-        filters: [{ column: 'center_id', op: 'eq', value: cid }],
-        order: { column: 'created_at', ascending: false },
-      }),
-    ]);
-
-    if (studentsRes.data && Array.isArray(studentsRes.data)) {
-      setStudents(studentsRes.data as Student[]);
-    }
-    if (ordersRes.data && Array.isArray(ordersRes.data)) {
-      setOrders(ordersRes.data as CardOrderRow[]);
-    }
-    setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!loading) return;
+    const timeout = window.setTimeout(() => {
+      setLoading(false);
+      setLoadError((prev) => prev ?? t('loadTimeout'));
+    }, 10000);
+    return () => window.clearTimeout(timeout);
+  }, [loading, t]);
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -169,7 +190,7 @@ export default function OrdersPage() {
       <div className="px-4 pt-4 pb-6 max-w-3xl mx-auto w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('ordersTitle')}</h1>
+            <h1 className="text-xl font-bold text-white">{t('ordersTitle')}</h1>
             <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('ordersSubtitle')}</p>
           </div>
           {centerId && (
@@ -183,7 +204,18 @@ export default function OrdersPage() {
           )}
         </div>
 
-        {loading ? (
+        {loadError && !loading ? (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+            <p>{loadError}</p>
+            <button
+              type="button"
+              onClick={() => void loadData()}
+              className="mt-2 text-xs font-semibold text-teal-400 underline"
+            >
+              {t('tryAgain')}
+            </button>
+          </div>
+        ) : loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <div

@@ -7,7 +7,9 @@ import { useSearchParams } from 'next/navigation';
 import { Globe } from 'lucide-react';
 
 const PLAYFAIR = {
-  fontFamily: "var(--font-playfair), 'Didot', 'Bodoni MT', Georgia, serif",
+  fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
+  fontVariantNumeric: 'tabular-nums' as const,
+  fontFeatureSettings: '"zero" 1, "tnum" 1',
 } as const;
 const SANS = { fontFamily: 'system-ui, -apple-system, sans-serif' } as const;
 

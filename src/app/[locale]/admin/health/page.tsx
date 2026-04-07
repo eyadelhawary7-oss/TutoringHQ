@@ -258,7 +258,7 @@ export default function AdminHealthPage() {
                   return (
                     <div
                       key={c.label}
-                      className={`rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 ${
+                      className={`rounded-xl border border-slate-700/60 bg-slate-800/40 p-4 ${
                         bad
                           ? 'border-red-200 dark:border-red-500/40 bg-red-50 dark:bg-red-950/20'
                           : ok
@@ -288,7 +288,7 @@ export default function AdminHealthPage() {
               <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
                 {t('healthCronStatus')}
               </h2>
-              <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto">
+              <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 overflow-x-auto">
                 <table className="w-full text-sm text-start">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">

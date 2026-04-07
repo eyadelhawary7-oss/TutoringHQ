@@ -839,7 +839,7 @@ export default function StudentsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
+                <h1 className="text-xl font-bold text-white">{ts('title')}</h1>
                 <span className="inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0">
                   {students.length.toLocaleString('en-US')}
                 </span>

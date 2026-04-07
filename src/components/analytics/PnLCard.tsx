@@ -84,7 +84,7 @@ export default function PnLCard({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden card-shadow">
+    <div className="rounded-2xl border border-slate-700/60 bg-slate-800/40 overflow-hidden card-shadow">
       <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
         <h3 className="font-semibold text-slate-800 dark:text-white">{t('pnl')}</h3>
         <button
@@ -138,7 +138,7 @@ export default function PnLCard({
                   const e = expensesByMonth[m];
                   const exp = e ? e.rent + e.salaries + e.utilities + e.other : 0;
                   const rowNet = inc - exp;
-                  const stripe = idx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-700/40';
+                  const stripe = idx % 2 === 0 ? 'bg-slate-800/40' : 'bg-slate-800/20';
                   return (
                     <tr key={m} className={`border-b border-slate-100 dark:border-slate-700/80 last:border-0 ${stripe}`}>
                       <td className="py-2.5 px-3 text-slate-800 dark:text-slate-100">{formatMonth(m, locale)}</td>

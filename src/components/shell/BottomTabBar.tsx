@@ -58,7 +58,7 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 print:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 shadow-[0_-1px_0_rgba(0,0,0,0.06)] dark:shadow-none transition-colors duration-150"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 print:hidden bg-slate-900 border-t border-slate-700/60 shadow-none transition-colors duration-150"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label={tm('tab_bar_label')}
     >

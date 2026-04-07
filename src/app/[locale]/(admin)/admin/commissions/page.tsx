@@ -356,7 +356,7 @@ export default function CommissionsPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden overflow-x-auto">
+        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden overflow-x-auto">
           {loading ? (
             <div className="p-12 text-center text-slate-500 dark:text-slate-400">
               {tCommon('loading')}
@@ -496,7 +496,7 @@ export default function CommissionsPage() {
 
         {unlockModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
+            <div className="bg-slate-800/40 border border-amber-800/40 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                 {t('commissions.unlock_t2')}
               </h2>
