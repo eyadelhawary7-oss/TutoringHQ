@@ -1524,17 +1524,21 @@ html.light [data-chq-session-expired] .text-slate-400 {
   100% { transform: translateY(100%); opacity: 0.8; }
 }
 
-/* Landing hero phone mockup — scanner sweep */
-@keyframes scanline {
+/* Landing hero phone mockup — scanner sweep (transform only; animating top caused layout thrash / scroll jank) */
+@keyframes chq-landing-scanline {
   0%,
   100% {
-    top: 28%;
+    transform: translateY(calc(0.28 * 100cqh));
     opacity: 0.85;
   }
   50% {
-    top: 72%;
+    transform: translateY(calc(0.72 * 100cqh));
     opacity: 1;
   }
+}
+.chq-landing-scanline-bar {
+  animation: chq-landing-scanline 2s ease-in-out infinite;
+  will-change: transform;
 }
 
 @keyframes result-slide-in {
@@ -2232,14 +2236,3 @@ html.light {
   z-index: 100;
 }
 
-@keyframes scanline {
-  0%,
-  100% {
-    top: 20%;
-    opacity: 1;
-  }
-  50% {
-    top: 80%;
-    opacity: 0.6;
-  }
-}

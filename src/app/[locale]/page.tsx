@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Menu, X } from 'lucide-react';
@@ -74,15 +74,15 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
     </div>
 
     {demoScreen === 'scanning' ? (
-      <div
-        className="pointer-events-none absolute left-8 right-8 h-[2px] rounded-full"
-        style={{
-          top: '28%',
-          background: 'linear-gradient(90deg,transparent,#0D9488,transparent)',
-          boxShadow: '0 0 12px 2px rgba(13,148,136,0.6)',
-          animation: 'scanline 2s ease-in-out infinite',
-        }}
-      />
+      <div className="pointer-events-none absolute inset-6 overflow-hidden [container-type:size]">
+        <div
+          className="chq-landing-scanline-bar absolute left-8 right-8 top-0 h-[2px] rounded-full"
+          style={{
+            background: 'linear-gradient(90deg,transparent,#0D9488,transparent)',
+            boxShadow: '0 0 12px 2px rgba(13,148,136,0.6)',
+          }}
+        />
+      </div>
     ) : null}
   </div>
 );
@@ -204,9 +204,24 @@ export default function LocaleHomePage() {
   const locale = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [demoScreen, setDemoScreen] = useState<DemoScreen>('scanning');
-  const [screenIndex, setScreenIndex] = useState(0);
+  const [demoInView, setDemoInView] = useState(true);
+  const phoneDemoRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const el = phoneDemoRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        setDemoInView(entry.isIntersecting);
+      },
+      { root: null, rootMargin: '80px 0px', threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!demoInView) return;
     const timings: Record<DemoScreen, number> = {
       scanning: 2500,
       scanned: 1800,
@@ -215,12 +230,12 @@ export default function LocaleHomePage() {
       payment: 3000,
     };
     const timer = setTimeout(() => {
-      const next = (screenIndex + 1) % SCREEN_SEQUENCE.length;
-      setScreenIndex(next);
+      const idx = SCREEN_SEQUENCE.indexOf(demoScreen);
+      const next = (idx + 1) % SCREEN_SEQUENCE.length;
       setDemoScreen(SCREEN_SEQUENCE[next]);
     }, timings[demoScreen]);
     return () => clearTimeout(timer);
-  }, [demoScreen, screenIndex]);
+  }, [demoScreen, demoInView]);
 
   const heroLines = t('heroTitle').split('\n').filter((line) => line.length > 0);
   const featureKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] as const;
@@ -411,7 +426,12 @@ export default function LocaleHomePage() {
           </div>
 
           <div className="flex justify-center md:justify-end">
-            <div className="relative mx-auto h-[560px] w-[280px] shrink-0" aria-hidden dir="ltr">
+            <div
+              ref={phoneDemoRef}
+              className="relative mx-auto h-[560px] w-[280px] shrink-0 [contain:layout_paint]"
+              aria-hidden
+              dir="ltr"
+            >
               {/* Outer phone frame */}
               <div className="absolute inset-0 rounded-[48px] border border-slate-600 bg-slate-800 shadow-[0_0_80px_rgba(13,148,136,0.2)]" />
 
@@ -447,7 +467,7 @@ export default function LocaleHomePage() {
                 </div>
 
                 {/* Multi-screen demo */}
-                <div className="relative flex-1 overflow-hidden bg-[#080c14] transition-all duration-500">
+                <div className="relative min-h-0 flex-1 overflow-hidden bg-[#080c14]">
                   {(demoScreen === 'scanning' || demoScreen === 'scanned') && <ScannerScreen demoScreen={demoScreen} />}
                   {demoScreen === 'dashboard' ? <DashboardScreen /> : null}
                   {demoScreen === 'whatsapp' ? <WhatsAppScreen /> : null}
