@@ -24,15 +24,6 @@ const DonutChart = dynamic(
 import { useToast } from '@/components/ui/ToastProvider';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import {
-  SkeletonStat,
-  SkeletonText,
-  SkeletonBlock,
-  SkeletonChart,
-  SkeletonPageHeader,
-  SkeletonCircle,
-  SkeletonRow,
-} from '@/components/ui/skeleton';
-import {
   QrCode,
   TrendingUp,
   TrendingDown,
@@ -100,6 +91,49 @@ type AtRiskRow = {
   days_since_last_scan: number;
 };
 
+const DASHBOARD_CACHE_KEY = 'chq_dashboard_cache';
+
+const EMPTY_DASHBOARD_DATA: DashboardData = {
+  todayAttendance: 0,
+  totalStudents: 0,
+  paidCount: 0,
+  unpaidCount: 0,
+  pendingCount: 0,
+  todayRevenue: 0,
+  totalPending: 0,
+  revenueByMethod: [],
+  trendData: [],
+  revenueChartData: [],
+  recentPayments: [],
+  monthTotal: 0,
+  monthConfirmed: 0,
+  monthPending: 0,
+  monthLate: 0,
+  weeklyTrendPct: 0,
+  collectionRatePct: 0,
+  newStudentsCount: 0,
+  atRiskCount: 0,
+  inactiveStudents: [],
+  scanDeltaPct: 0,
+  revenueDeltaPct: 0,
+  pendingInvoicesCount: 0,
+  latePaymentCount: 0,
+  studentSparkline7d: [],
+};
+
+function readDashboardCache(): DashboardData | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as unknown;
+    if (!p || typeof p !== 'object') return null;
+    return p as DashboardData;
+  } catch {
+    return null;
+  }
+}
+
 function atRiskAttendanceIndicator(daysSinceLastScan: number): number {
   return Math.max(5, Math.min(59, 100 - Math.min(30, daysSinceLastScan) * 3));
 }
@@ -111,6 +145,7 @@ function KpiCommandCard({
   icon: Icon,
   delayMs,
   sparkline,
+  staleMetrics,
 }: {
   label: string;
   valueDisplay: ReactNode;
@@ -118,6 +153,8 @@ function KpiCommandCard({
   icon: LucideIcon;
   delayMs: number;
   sparkline: { value: number }[];
+  /** When true, main KPI value is dimmed until fresh data arrives (sessionStorage rehydrate). */
+  staleMetrics?: boolean;
 }) {
   const showTrend = trendPct !== undefined && trendPct !== 0 && Number.isFinite(trendPct);
   return (
@@ -130,7 +167,7 @@ function KpiCommandCard({
       </div>
       <p className="pe-8 text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{label}</p>
       <div
-        className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums"
+        className={`mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${staleMetrics ? 'opacity-70' : 'opacity-100'}`}
         style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
       >
         {valueDisplay}
@@ -174,37 +211,11 @@ export default function DashboardPage() {
 
   const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string; plan?: string } | null>(null);
   const [planUsage, setPlanUsage] = useState<{ plan: string; weeklyUniqueStudents: number; studentLimit: number } | null>(null);
-  const [data, setData] = useState<DashboardData>({
-    todayAttendance: 0,
-    totalStudents: 0,
-    paidCount: 0,
-    unpaidCount: 0,
-    pendingCount: 0,
-    todayRevenue: 0,
-    totalPending: 0,
-    revenueByMethod: [],
-    trendData: [],
-    revenueChartData: [],
-    recentPayments: [],
-    monthTotal: 0,
-    monthConfirmed: 0,
-    monthPending: 0,
-    monthLate: 0,
-    weeklyTrendPct: 0,
-    collectionRatePct: 0,
-    newStudentsCount: 0,
-    atRiskCount: 0,
-    inactiveStudents: [],
-    scanDeltaPct: 0,
-    revenueDeltaPct: 0,
-    pendingInvoicesCount: 0,
-    latePaymentCount: 0,
-    studentSparkline7d: [],
-  });
+  const [data, setData] = useState<DashboardData | null>(() => readDashboardCache());
+  const [dashboardDataFresh, setDashboardDataFresh] = useState(false);
   const [inactivePeriod, setInactivePeriod] = useState<InactivePeriod>('7d');
   const [timeRange, setTimeRange] = useState<'7' | '30'>('7');
   const [centerId, setCenterId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [statsData, setStatsData] = useState<{
     revenueToday: number;
@@ -481,7 +492,7 @@ export default function DashboardPage() {
         studentSparkline7d.push(students.filter((s) => new Date(s.created_at) <= end).length);
       }
 
-      setData({
+      const next: DashboardData = {
         todayAttendance: attendanceCount || 0,
         totalStudents: students.length,
         paidCount,
@@ -507,11 +518,16 @@ export default function DashboardPage() {
         pendingInvoicesCount,
         latePaymentCount,
         studentSparkline7d,
-      });
+      };
+      setData(next);
+      try {
+        sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(next));
+      } catch {
+        /* private mode / quota */
+      }
+      setDashboardDataFresh(true);
     } catch (err) {
       console.error('Dashboard load error:', err);
-    } finally {
-      setIsLoading(false);
     }
   }, [locale, tCommon]);
 
@@ -746,6 +762,8 @@ export default function DashboardPage() {
     }
   }, [centerId, canExportExcel]);
 
+  const safeData = data ?? EMPTY_DASHBOARD_DATA;
+
   const monthlyRevenueRaw = statsData?.monthlyRevenue ?? [];
   const monthlyRevenueData = monthlyRevenueRaw.map((r) => ({
     month: formatMonthLabel(r.month, locale),
@@ -753,10 +771,10 @@ export default function DashboardPage() {
   }));
 
   const attendanceChart7 = useMemo(() => {
-    const td = data.trendData;
+    const td = safeData.trendData;
     if (td.length <= 7) return td.map((d) => ({ date: d.date, count: d.count }));
     return td.slice(-7).map((d) => ({ date: d.date, count: d.count }));
-  }, [data.trendData]);
+  }, [safeData.trendData]);
 
   const attendanceWeekTotal = useMemo(
     () => attendanceChart7.reduce((s, d) => s + d.count, 0),
@@ -772,17 +790,17 @@ export default function DashboardPage() {
   }, [monthlyRevenueRaw]);
 
   const studentTrendPct = useMemo(() => {
-    const s = data.studentSparkline7d;
+    const s = safeData.studentSparkline7d;
     if (!s.length || s.length < 2) return undefined;
     const a = s[0] ?? 0;
     const b = s[s.length - 1] ?? 0;
     if (a <= 0) return b > 0 ? 100 : undefined;
     return Math.round(((b - a) / a) * 10000) / 100;
-  }, [data.studentSparkline7d]);
+  }, [safeData.studentSparkline7d]);
 
   const studentSparklinePoints = useMemo(
-    () => data.studentSparkline7d.map((n) => ({ value: n })),
-    [data.studentSparkline7d],
+    () => safeData.studentSparkline7d.map((n) => ({ value: n })),
+    [safeData.studentSparkline7d],
   );
 
   const attendanceSparklinePoints = useMemo(
@@ -796,9 +814,9 @@ export default function DashboardPage() {
   }, [monthlyRevenueData]);
 
   const pendingInvoicesSpark7 = useMemo(() => {
-    const c = data.pendingInvoicesCount;
+    const c = safeData.pendingInvoicesCount;
     return Array.from({ length: 7 }, () => ({ value: c }));
-  }, [data.pendingInvoicesCount]);
+  }, [safeData.pendingInvoicesCount]);
 
   const onSendReport = useCallback(async () => {
     try {
@@ -829,10 +847,10 @@ export default function DashboardPage() {
     }
   }, [toast, t, tToast, tCommon]);
 
-  const attendanceTodayCount = Number(statsData?.attendanceToday ?? data.todayAttendance ?? 0);
+  const attendanceTodayCount = Number(statsData?.attendanceToday ?? safeData.todayAttendance ?? 0);
   const attendancePctOfTotal =
-    data.totalStudents > 0
-      ? Math.min(100, Math.round((attendanceTodayCount / data.totalStudents) * 10000) / 100)
+    safeData.totalStudents > 0
+      ? Math.min(100, Math.round((attendanceTodayCount / safeData.totalStudents) * 10000) / 100)
       : 0;
   const egpSuffix = tCommon('egp');
 
@@ -922,7 +940,9 @@ export default function DashboardPage() {
     : 'starter';
   const planLabel = tBilling(`planNames.${planKeyForI18n}` as 'billing.planNames.starter');
 
-  if (user?.role === 'assistant' && !isLoading) {
+  const kpiStale = Boolean(data && !dashboardDataFresh);
+
+  if (user?.role === 'assistant' && data !== null) {
     return (
       <div className="min-h-screen bg-[var(--color-surface-0)] p-4 pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
         <h1 className="mb-6 text-xl font-semibold text-[var(--color-text-primary)]">{t('title')}</h1>
@@ -940,16 +960,22 @@ export default function DashboardPage() {
             className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{t('unpaidCount')}</p>
-            <p className="mt-1 text-3xl font-bold text-[var(--color-text-primary)] tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
-              {Number(data.unpaidCount).toLocaleString('en-US')}
+            <p
+              className={`mt-1 text-3xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${kpiStale ? 'opacity-70' : 'opacity-100'}`}
+              style={{ fontFamily: 'Georgia, serif' }}
+            >
+              {Number(safeData.unpaidCount).toLocaleString('en-US')}
             </p>
             <p className="mt-2 text-sm text-teal-400">{t('goToPayments')}</p>
           </Link>
         </div>
         <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
           <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{t('stats.attendance_today')}</p>
-          <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums" style={{ fontFamily: 'Georgia, serif' }}>
-            {Number(data.todayAttendance).toLocaleString('en-US')}
+          <p
+            className={`mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${kpiStale ? 'opacity-70' : 'opacity-100'}`}
+            style={{ fontFamily: 'Georgia, serif' }}
+          >
+            {Number(safeData.todayAttendance).toLocaleString('en-US')}
           </p>
         </div>
       </div>
@@ -997,7 +1023,7 @@ export default function DashboardPage() {
         <button
           type="button"
           onClick={handleExport}
-          disabled={isExporting || isLoading}
+          disabled={isExporting || data === null}
           className="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-3)] disabled:opacity-50 btn-press chq-focus"
         >
           {isExporting ? t('exporting') : t('exportData')}
@@ -1014,32 +1040,69 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="max-w-6xl space-y-4">
-          <SkeletonPageHeader />
+      {data === null ? (
+        <div className="max-w-6xl space-y-4" aria-busy="true">
+          <div className="mb-6 flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-2">
+              <div className="h-7 w-48 rounded-md bg-[var(--color-surface-2)] animate-pulse" />
+              <div className="h-4 w-64 rounded-md bg-[var(--color-surface-2)] animate-pulse" />
+            </div>
+            <div className="h-9 w-32 shrink-0 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
+          </div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
-              <SkeletonStat key={i} />
+              <div
+                key={i}
+                className="relative min-h-[136px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4"
+                aria-hidden
+              >
+                <div className="absolute top-4 end-4 h-4 w-4 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="pe-8 h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="mt-2 h-8 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="mt-3 h-8 w-full rounded-md bg-[var(--color-surface-2)] animate-pulse" />
+              </div>
             ))}
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
             <div className="md:col-span-3">
-              <SkeletonChart className="[&_.skeleton]:h-48" />
+              <div className="flex min-h-[200px] flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+                <div className="mb-3 h-4 w-40 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-[168px] w-full rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
+              </div>
             </div>
-            <div className="md:col-span-2">
-              <SkeletonBlock className="h-52 w-full rounded-2xl" />
+            <div className="flex flex-col md:col-span-2">
+              <div className="flex min-h-[240px] flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+                <div className="mb-2 h-3 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="min-h-0 flex-1 rounded-xl bg-[var(--color-surface-2)] animate-pulse" />
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="card p-5">
-              <SkeletonText className="mb-4 h-5 w-40" />
-              <SkeletonRow />
-              <SkeletonRow />
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+              <div className="mb-3 h-4 w-32 rounded bg-[var(--color-surface-2)] animate-pulse" />
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="mb-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5"
+                >
+                  <div className="flex justify-between gap-2">
+                    <div className="h-4 w-36 rounded bg-[var(--color-surface-3)] animate-pulse" />
+                    <div className="h-3 w-10 rounded bg-[var(--color-surface-3)] animate-pulse" />
+                  </div>
+                  <div className="mt-2 h-1 w-full rounded-full bg-[var(--color-surface-3)]" />
+                </div>
+              ))}
             </div>
-            <div className="card p-5">
-              <SkeletonText className="mb-4 h-5 w-32" />
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+              <div className="mb-3 h-4 w-36 rounded bg-[var(--color-surface-2)] animate-pulse" />
               {[1, 2, 3, 4].map((i) => (
-                <SkeletonBlock key={i} className="mb-2 h-14 w-full rounded-xl" />
+                <div
+                  key={i}
+                  className="mb-2 flex min-h-14 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3"
+                >
+                  <div className="h-6 w-6 shrink-0 rounded bg-[var(--color-surface-3)] animate-pulse" />
+                  <div className="h-4 flex-1 rounded bg-[var(--color-surface-3)] animate-pulse" />
+                </div>
               ))}
             </div>
           </div>
@@ -1049,11 +1112,12 @@ export default function DashboardPage() {
           <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3 lg:grid-cols-4">
             <KpiCommandCard
               label={t('totalStudents')}
-              valueDisplay={Number(data.totalStudents).toLocaleString('en-US')}
+              valueDisplay={Number(safeData.totalStudents).toLocaleString('en-US')}
               trendPct={studentTrendPct}
               icon={Users}
               delayMs={0}
               sparkline={studentSparklinePoints}
+              staleMetrics={kpiStale}
             />
             <KpiCommandCard
               label={t('todayAttendance')}
@@ -1065,17 +1129,18 @@ export default function DashboardPage() {
                   </span>
                 </>
               }
-              trendPct={data.scanDeltaPct !== 0 ? data.scanDeltaPct : undefined}
+              trendPct={safeData.scanDeltaPct !== 0 ? safeData.scanDeltaPct : undefined}
               icon={CalendarCheck}
               delayMs={100}
               sparkline={attendanceSparklinePoints}
+              staleMetrics={kpiStale}
             />
             {canViewRevenue ? (
               <KpiCommandCard
                 label={t('monthlyRevenue')}
                 valueDisplay={
                   <>
-                    {Number(data.monthConfirmed).toLocaleString('en-US')}
+                    {Number(safeData.monthConfirmed).toLocaleString('en-US')}
                     <span className="ms-1 text-base font-normal text-[var(--color-text-muted)]">{egpSuffix}</span>
                   </>
                 }
@@ -1083,6 +1148,7 @@ export default function DashboardPage() {
                 icon={TrendingUp}
                 delayMs={200}
                 sparkline={revenueMonthlySpark7}
+                staleMetrics={kpiStale}
               />
             ) : (
               <KpiCommandCard
@@ -1095,14 +1161,16 @@ export default function DashboardPage() {
                 icon={TrendingUp}
                 delayMs={200}
                 sparkline={[]}
+                staleMetrics={kpiStale}
               />
             )}
             <KpiCommandCard
               label={t('pendingPayments')}
-              valueDisplay={Number(data.pendingInvoicesCount).toLocaleString('en-US')}
+              valueDisplay={Number(safeData.pendingInvoicesCount).toLocaleString('en-US')}
               icon={CreditCard}
               delayMs={300}
               sparkline={pendingInvoicesSpark7}
+              staleMetrics={kpiStale}
             />
           </div>
 
@@ -1111,7 +1179,7 @@ export default function DashboardPage() {
               <ChartCard
                 title={t('attendanceChart')}
                 value={Number(attendanceWeekTotal).toLocaleString('en-US')}
-                trend={data.weeklyTrendPct !== 0 ? data.weeklyTrendPct : undefined}
+                trend={safeData.weeklyTrendPct !== 0 ? safeData.weeklyTrendPct : undefined}
                 trendLabel={t('vsLastWeek')}
                 minHeight={200}
               >
@@ -1131,15 +1199,15 @@ export default function DashboardPage() {
                 <div className="min-h-0 flex-1">
                   <DonutChart
                     data={[
-                      { name: t('paid'), value: data.paidCount, color: '#0D9488' },
-                      { name: t('pending'), value: data.pendingCount, color: '#F59E0B' },
-                      { name: t('overdue'), value: data.latePaymentCount, color: '#EF4444' },
+                      { name: t('paid'), value: safeData.paidCount, color: '#0D9488' },
+                      { name: t('pending'), value: safeData.pendingCount, color: '#F59E0B' },
+                      { name: t('overdue'), value: safeData.latePaymentCount, color: '#EF4444' },
                     ]}
                     height={200}
                     centerLabel={t('collected')}
                     centerValue={
                       canViewRevenue
-                        ? Number(data.monthConfirmed).toLocaleString('en-US')
+                        ? Number(safeData.monthConfirmed).toLocaleString('en-US')
                         : tCommon('noData')
                     }
                     suffix={canViewRevenue ? ` ${egpSuffix}` : ''}

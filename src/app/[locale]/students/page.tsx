@@ -25,6 +25,7 @@ import {
 } from '@/lib/parentPack';
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
+const STUDENTS_CACHE_KEY = 'chq_students_cache';
 
 interface Student {
   id: string;
@@ -58,6 +59,18 @@ interface Group {
 type SortBy = 'name' | 'balance';
 
 type LifecycleFilter = 'all' | 'active' | 'at_risk' | 'inactive' | 'enrolled' | 'churned';
+
+function readStudentsCache(): Student[] | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(STUDENTS_CACHE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as unknown;
+    return Array.isArray(p) ? (p as Student[]) : null;
+  } catch {
+    return null;
+  }
+}
 
 function matchesLifecycle(
   s: Student,
@@ -124,13 +137,13 @@ export default function StudentsPage() {
   const { cart, addToCart, removeFromCart, clearCart, isInCart, cartCount } = useCardOrderCart();
   const { toast } = useToast();
 
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<Student[] | null>(() => readStudentsCache());
+  const [studentsListFresh, setStudentsListFresh] = useState(false);
   const [printStudent, setPrintStudent] = useState<{ id: string; name: string } | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [studentGroupsMap, setStudentGroupsMap] = useState<Record<string, { names: string[]; fees: number[]; subjects: string[]; groupIds: string[] }>>({});
   const [balanceByStudent, setBalanceByStudent] = useState<Record<string, number>>({});
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
@@ -239,7 +252,7 @@ export default function StudentsPage() {
         return;
       }
       setStudents((prev) =>
-        prev.map((st) => (st.id === studentId ? { ...st, parent_phone: value || null } : st)),
+        (prev ?? []).map((st) => (st.id === studentId ? { ...st, parent_phone: value || null } : st)),
       );
       setOpenPopoverId(null);
       toast.success(value ? ts('parentPhoneSaved') : ts('parentPhoneCleared'));
@@ -285,8 +298,14 @@ export default function StudentsPage() {
         order: { column: 'name' },
       });
 
-      if (data) setStudents(data as Student[]);
-      setIsLoading(false);
+      const list = Array.isArray(data) ? (data as Student[]) : [];
+      setStudents(list);
+      try {
+        sessionStorage.setItem(STUDENTS_CACHE_KEY, JSON.stringify(list));
+      } catch {
+        /* private mode / quota */
+      }
+      setStudentsListFresh(true);
     };
 
     loadStudents();
@@ -399,19 +418,22 @@ export default function StudentsPage() {
     return Array.from(subs).sort();
   }, [groups]);
 
+  const studentsList = students ?? [];
+  const studentsStale = Boolean(students !== null && !studentsListFresh);
+
   const subjectCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const s of students) {
+    for (const s of studentsList) {
       const subs = studentGroupsMap[s.id]?.subjects ?? [];
       for (const sub of subs) {
         counts[sub] = (counts[sub] ?? 0) + 1;
       }
     }
     return counts;
-  }, [students, studentGroupsMap]);
+  }, [studentsList, studentGroupsMap]);
 
   const filteredStudents = useMemo(() => {
-    let list = students.filter((s) => {
+    let list = studentsList.filter((s) => {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchName = s.name?.toLowerCase().includes(q);
@@ -432,11 +454,11 @@ export default function StudentsPage() {
       list = [...list].sort((a, b) => (balanceByStudent[b.id] ?? 0) - (balanceByStudent[a.id] ?? 0));
     }
     return list;
-  }, [students, searchQuery, subjectFilter, lifecycleFilter, sortBy, studentGroupsMap, balanceByStudent]);
+  }, [studentsList, searchQuery, subjectFilter, lifecycleFilter, sortBy, studentGroupsMap, balanceByStudent]);
 
   const maxBalanceAcross = useMemo(
-    () => Math.max(1, ...students.map((s) => balanceByStudent[s.id] ?? 0)),
-    [students, balanceByStudent]
+    () => Math.max(1, ...studentsList.map((s) => balanceByStudent[s.id] ?? 0)),
+    [studentsList, balanceByStudent]
   );
 
   const activeParentsForAnnounce =
@@ -457,14 +479,14 @@ export default function StudentsPage() {
     const newValue = !student.parent_pack_opted_in;
     const prevOpted = student.parent_pack_opted_in ?? false;
     setStudents((prev) =>
-      prev.map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: newValue } : s)),
+      (prev ?? []).map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: newValue } : s)),
     );
     addToggling(student.id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         setStudents((prev) =>
-          prev.map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: prevOpted } : s)),
+          (prev ?? []).map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: prevOpted } : s)),
         );
         return;
       }
@@ -478,7 +500,7 @@ export default function StudentsPage() {
       });
       if (!res.ok) {
         setStudents((prev) =>
-          prev.map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: prevOpted } : s)),
+          (prev ?? []).map((s) => (s.id === student.id ? { ...s, parent_pack_opted_in: prevOpted } : s)),
         );
         toast.error(ts('packOptInError'));
         return;
@@ -506,7 +528,7 @@ export default function StudentsPage() {
           filters: [{ column: 'id', op: 'eq', value: student.id }],
         });
         setStudents((prev) =>
-          prev.map((s) => (s.id === student.id ? { ...s, qr_code: dataUrl } : s))
+          (prev ?? []).map((s) => (s.id === student.id ? { ...s, qr_code: dataUrl } : s))
         );
       }
       setQrDataUrl(dataUrl);
@@ -529,7 +551,7 @@ export default function StudentsPage() {
         filters: [{ column: 'id', op: 'eq', value: qrModalStudent.id }],
       });
       setStudents((prev) =>
-        prev.map((s) => (s.id === qrModalStudent.id ? { ...s, qr_code: dataUrl } : s))
+        (prev ?? []).map((s) => (s.id === qrModalStudent.id ? { ...s, qr_code: dataUrl } : s))
       );
       setQrDataUrl(dataUrl);
     } catch (err) {
@@ -587,7 +609,7 @@ export default function StudentsPage() {
   };
 
   const handleGenerateAllQR = async () => {
-    const needQR = students.filter((s) => !s.qr_code);
+    const needQR = studentsList.filter((s) => !s.qr_code);
     if (needQR.length === 0) {
       toast.info(ts('allStudentsHaveQR', { defaultValue: 'All students already have QR codes' }));
       return;
@@ -609,7 +631,7 @@ export default function StudentsPage() {
           filters: [{ column: 'id', op: 'eq', value: student.id }],
         });
         setStudents((prev) =>
-          prev.map((s) => (s.id === student.id ? { ...s, qr_code: dataUrl } : s))
+          (prev ?? []).map((s) => (s.id === student.id ? { ...s, qr_code: dataUrl } : s))
         );
       }
       toast.success(ts('qrGeneratedNew', { count: needQR.length, defaultValue: `Generating QR codes for ${needQR.length} new students...` }));
@@ -686,7 +708,7 @@ export default function StudentsPage() {
         },
       }));
       setStudents((prev) =>
-        prev.map((s) =>
+        (prev ?? []).map((s) =>
           s.id === editStudent.id
             ? {
                 ...s,
@@ -722,7 +744,7 @@ export default function StudentsPage() {
       await dbDelete({ table: 'payments', filters: [{ column: 'student_id', op: 'eq', value: student.id }] });
       const { error } = await dbDelete({ table: 'students', filters: [{ column: 'id', op: 'eq', value: student.id }] });
       if (!error) {
-        setStudents((prev) => prev.filter((s) => s.id !== student.id));
+        setStudents((prev) => (prev ?? []).filter((s) => s.id !== student.id));
         await auditLog({ centerId: cid, userId, action: 'student_delete', entityType: 'students', entityId: student.id, details: { name: student.name } });
       }
     } catch (err) {
@@ -819,7 +841,7 @@ export default function StudentsPage() {
           },
         }));
       }
-      setStudents((prev) => [{ ...student, student_number: studentNumber } as Student, ...prev]);
+      setStudents((prev) => [{ ...student, student_number: studentNumber } as Student, ...(prev ?? [])]);
       toast.success(ts('addStudentSuccess', { name: addForm.name.trim(), studentNumber }));
       setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '', parentPackOptIn: false });
       setShowParentSectionAdd(false);
@@ -840,8 +862,10 @@ export default function StudentsPage() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-bold text-white">{ts('title')}</h1>
-                <span className="inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0">
-                  {students.length.toLocaleString('en-US')}
+                <span
+                  className={`inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0 transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
+                >
+                  {students === null ? '–' : studentsList.length.toLocaleString('en-US')}
                 </span>
               </div>
               <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ts('subtitle')}</p>
@@ -898,18 +922,37 @@ export default function StudentsPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
-              <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{ts('total_students')}</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">
-                {students.length.toLocaleString('en-US')}
-              </span>
-            </div>
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
-              <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{ts('active_students')}</span>
-              <span className="text-lg font-bold text-teal-600 dark:text-teal-400 tabular-nums">
-                {students.filter((s) => s.lifecycle_status === 'active').length.toLocaleString('en-US')}
-              </span>
-            </div>
+            {students === null ? (
+              <>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-2" aria-hidden>
+                  <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                  <div className="h-7 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                </div>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-2" aria-hidden>
+                  <div className="h-3 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                  <div className="h-7 w-12 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
+                  <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{ts('total_students')}</span>
+                  <span
+                    className={`text-lg font-bold text-slate-900 dark:text-white tabular-nums transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
+                  >
+                    {studentsList.length.toLocaleString('en-US')}
+                  </span>
+                </div>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
+                  <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{ts('active_students')}</span>
+                  <span
+                    className={`text-lg font-bold text-teal-600 dark:text-teal-400 tabular-nums transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
+                  >
+                    {studentsList.filter((s) => s.lifecycle_status === 'active').length.toLocaleString('en-US')}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="rounded-xl bg-[var(--color-surface-1)] mb-3 ring-1 ring-slate-200 dark:ring-slate-700 border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
@@ -1021,22 +1064,80 @@ export default function StudentsPage() {
         <div className="px-4 max-w-3xl mx-auto w-full space-y-4 pb-6">
           <AtRiskPanel />
 
-          {isLoading ? (
-            <div className="space-y-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] overflow-hidden card-shadow" aria-busy>
-              <div className="skeleton h-12 w-full rounded-none" />
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-4 px-4 py-4 border-b border-slate-100 dark:border-slate-700 last:border-b-0"
-                >
-                  <div className="skeleton h-10 w-10 rounded-full shrink-0" />
-                  <div className="flex-1 space-y-2 min-w-0">
-                    <div className="skeleton h-4 w-40 max-w-[55%] rounded" />
-                    <div className="skeleton h-3 w-28 max-w-[40%] rounded" />
-                  </div>
-                  <div className="skeleton h-6 w-14 rounded-md shrink-0" />
+          {students === null ? (
+            <div className="space-y-3" aria-busy="true">
+              <div className="hidden md:block rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] overflow-hidden card-shadow">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[var(--color-surface-2)]">
+                        <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                          {ts('name')}
+                        </th>
+                        <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                          {ts('studentId')}
+                        </th>
+                        <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                          {ts('parentPhone')}
+                        </th>
+                        <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                          {ts('balance')}
+                        </th>
+                        <th className="px-4 py-3 text-end font-semibold text-slate-700 dark:text-slate-200">
+                          {tCommon('actions')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...Array(8)].map((_, i) => (
+                        <tr
+                          key={i}
+                          className="border-b border-slate-100 dark:border-slate-700 last:border-b-0 transition-colors duration-150"
+                        >
+                          <td className="px-4 py-4 align-top">
+                            <div className="flex items-start gap-2">
+                              <div className="h-9 w-9 shrink-0 rounded-full bg-[var(--color-surface-2)] animate-pulse" />
+                              <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+                                <div className="h-4 w-36 max-w-full rounded bg-[var(--color-surface-2)] animate-pulse" />
+                                <div className="h-3 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <div className="h-4 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <div className="h-4 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <div className="h-4 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                          </td>
+                          <td className="px-4 py-4 align-top text-end">
+                            <div className="ms-auto h-8 w-20 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
+              </div>
+              <div className="flex flex-col gap-2 md:hidden">
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="card p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-9 h-9 rounded-full shrink-0 bg-[var(--color-surface-2)] animate-pulse" />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="h-4 w-40 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                        <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="h-3 w-32 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                  </div>
+                ))}
+              </div>
             </div>
           ) : students.length === 0 ? (
             <EmptyState
@@ -1048,7 +1149,10 @@ export default function StudentsPage() {
               onAction={() => setShowAddModal(true)}
             />
           ) : (
-            <div key={filterKey}>
+            <div
+              key={filterKey}
+              className={`transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
+            >
               {filteredStudents.length === 0 ? (
                 <div className="card p-10 flex flex-col items-center gap-3 mt-4">
                   <svg
@@ -1944,7 +2048,7 @@ export default function StudentsPage() {
             ) : (
               <ul className="space-y-2 overflow-y-auto flex-1 min-h-0 mb-4">
                 {cart.map((id) => {
-                  const st = students.find((x) => x.id === id);
+                  const st = studentsList.find((x) => x.id === id);
                   return (
                     <li
                       key={id}
@@ -2019,7 +2123,7 @@ export default function StudentsPage() {
         <CardOrderModal
           isOpen={showCardOrderModal}
           onClose={() => setShowCardOrderModal(false)}
-          students={students}
+          students={studentsList}
           centerId={centerId}
           centerInfo={centerInfo}
           onSuccess={async () => {

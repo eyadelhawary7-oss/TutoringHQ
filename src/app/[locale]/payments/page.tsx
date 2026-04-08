@@ -102,6 +102,20 @@ function isPaymentPendingAction(p: PaymentRecord): boolean {
   return !isPaymentConfirmed(p) && (p.confirmed === false || p.status === 'pending');
 }
 
+const PAYMENTS_CACHE_KEY = 'chq_payments_cache';
+
+function readPaymentsCache(): PaymentRecord[] | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(PAYMENTS_CACHE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as unknown;
+    return Array.isArray(p) ? (p as PaymentRecord[]) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function PaymentsPage() {
   const tp = useTranslations('payments');
   const tCommon = useTranslations('common');
@@ -112,8 +126,8 @@ export default function PaymentsPage() {
   const { user, hasPermission } = useUser();
   const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
 
-  const [records, setRecords] = useState<PaymentRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [records, setRecords] = useState<PaymentRecord[] | null>(() => readPaymentsCache());
+  const [paymentsFresh, setPaymentsFresh] = useState(false);
   const [methodFilter, setMethodFilter] = useState<MethodPillFilter>('all');
   const [statusFilter, setStatusFilter] = useState<ListStatusFilter>('all');
   const [dateFrom, setDateFrom] = useState(getTodayISO);
@@ -143,7 +157,7 @@ export default function PaymentsPage() {
     const cid = meData.user.center_id;
 
     setLoadFailed(false);
-    setIsLoading(true);
+    setPaymentsFresh(false);
 
     try {
       const filters: Filter[] = [{ column: 'center_id', op: 'eq', value: cid }];
@@ -199,28 +213,32 @@ export default function PaymentsPage() {
         userMap = Object.fromEntries(users.map((u) => [u.id, u.name || tCommon('notAvailable')]));
       }
 
-      setRecords(
-        payments.map((p) => ({
-          ...p,
-          student_name:
-            p.students?.name ??
-            studentMap[p.student_id]?.name ??
-            allStudents.find((s) => s.id === p.student_id)?.name ??
-            tCommon('notAvailable'),
-          student_number:
-            p.students?.student_number ??
-            studentMap[p.student_id]?.student_number ??
-            allStudents.find((s) => s.id === p.student_id)?.student_number ??
-            tCommon('notSet'),
-          recorded_by_name: p.recorded_by ? (userMap[p.recorded_by] ?? tCommon('notSet')) : null,
-        }))
-      );
+      const mapped = payments.map((p) => ({
+        ...p,
+        student_name:
+          p.students?.name ??
+          studentMap[p.student_id]?.name ??
+          allStudents.find((s) => s.id === p.student_id)?.name ??
+          tCommon('notAvailable'),
+        student_number:
+          p.students?.student_number ??
+          studentMap[p.student_id]?.student_number ??
+          allStudents.find((s) => s.id === p.student_id)?.student_number ??
+          tCommon('notSet'),
+        recorded_by_name: p.recorded_by ? (userMap[p.recorded_by] ?? tCommon('notSet')) : null,
+      }));
+      setRecords(mapped);
+      try {
+        sessionStorage.setItem(PAYMENTS_CACHE_KEY, JSON.stringify(mapped));
+      } catch {
+        /* private mode / quota */
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(tToast('error'), msg);
       setLoadFailed(true);
     } finally {
-      setIsLoading(false);
+      setPaymentsFresh(true);
     }
   }, [dateFrom, dateTo, toast, tToast, tCommon]);
 
@@ -228,15 +246,18 @@ export default function PaymentsPage() {
     loadData();
   }, [loadData]);
 
+  const recordsList = records ?? [];
+  const paymentsStale = Boolean(records !== null && !paymentsFresh);
+
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
 
   const { totalToday, totalPending, totalMonth } = useMemo(() => {
-    const tt = records
+    const tt = recordsList
       .filter((p) => p.confirmed === true && (p.paid_at ?? '').startsWith(todayStr))
       .reduce((sum, p) => sum + Number(p.amount), 0);
-    const tpending = records.filter((p) => p.confirmed === false).reduce((sum, p) => sum + Number(p.amount), 0);
-    const tm = records
+    const tpending = recordsList.filter((p) => p.confirmed === false).reduce((sum, p) => sum + Number(p.amount), 0);
+    const tm = recordsList
       .filter(
         (p) =>
           p.confirmed === true &&
@@ -245,10 +266,10 @@ export default function PaymentsPage() {
       )
       .reduce((sum, p) => sum + Number(p.amount), 0);
     return { totalToday: tt, totalPending: tpending, totalMonth: tm };
-  }, [records, todayStr, today]);
+  }, [recordsList, todayStr, today]);
 
   const filteredPayments = useMemo(() => {
-    return records.filter((p) => {
+    return recordsList.filter((p) => {
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         const name = (p.student_name ?? '').toLowerCase();
@@ -273,12 +294,12 @@ export default function PaymentsPage() {
       const matchMethod = paymentMatchesMethodFilter(p.method, methodFilter);
       return matchStatus && matchMethod;
     });
-  }, [records, searchQuery, statusFilter, methodFilter, todayStr, today]);
+  }, [recordsList, searchQuery, statusFilter, methodFilter, todayStr, today]);
 
   const handleConfirm = async (paymentId: string) => {
     if (!canViewPayments) return;
     const snapshot =
-      confirmModal?.id === paymentId ? confirmModal : records.find((r) => r.id === paymentId) ?? null;
+      confirmModal?.id === paymentId ? confirmModal : recordsList.find((r) => r.id === paymentId) ?? null;
     setConfirmingId(paymentId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -363,21 +384,45 @@ export default function PaymentsPage() {
         ) : null}
 
         <div className="grid grid-cols-3 gap-3 px-4 mb-4 max-w-3xl mx-auto w-full">
-          <div className="card p-3 flex flex-col gap-1">
-            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_today')}</span>
-            <span className="text-base font-bold text-[var(--color-success)]">{totalToday.toLocaleString('en-US')}</span>
-            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
-          </div>
-          <div className="card p-3 flex flex-col gap-1">
-            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_pending')}</span>
-            <span className="text-base font-bold text-[var(--color-warning)]">{totalPending.toLocaleString('en-US')}</span>
-            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
-          </div>
-          <div className="card p-3 flex flex-col gap-1">
-            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_month')}</span>
-            <span className="text-base font-bold text-[var(--color-text-primary)]">{totalMonth.toLocaleString('en-US')}</span>
-            <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
-          </div>
+          {records === null ? (
+            <>
+              <div className="card p-3 flex flex-col gap-2" aria-hidden>
+                <div className="h-2.5 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-6 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-2.5 w-8 rounded bg-[var(--color-surface-2)] animate-pulse" />
+              </div>
+              <div className="card p-3 flex flex-col gap-2" aria-hidden>
+                <div className="h-2.5 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-6 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-2.5 w-8 rounded bg-[var(--color-surface-2)] animate-pulse" />
+              </div>
+              <div className="card p-3 flex flex-col gap-2" aria-hidden>
+                <div className="h-2.5 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-6 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-2.5 w-8 rounded bg-[var(--color-surface-2)] animate-pulse" />
+              </div>
+            </>
+          ) : (
+            <div
+              className={`contents transition-opacity duration-300 ${paymentsStale ? 'opacity-70' : 'opacity-100'}`}
+            >
+              <div className="card p-3 flex flex-col gap-1">
+                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_today')}</span>
+                <span className="text-base font-bold text-[var(--color-success)]">{totalToday.toLocaleString('en-US')}</span>
+                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
+              </div>
+              <div className="card p-3 flex flex-col gap-1">
+                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_pending')}</span>
+                <span className="text-base font-bold text-[var(--color-warning)]">{totalPending.toLocaleString('en-US')}</span>
+                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
+              </div>
+              <div className="card p-3 flex flex-col gap-1">
+                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_month')}</span>
+                <span className="text-base font-bold text-[var(--color-text-primary)]">{totalMonth.toLocaleString('en-US')}</span>
+                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 overflow-x-auto px-4 pb-2 max-w-3xl mx-auto w-full">
@@ -467,9 +512,26 @@ export default function PaymentsPage() {
         </div>
 
         <div className="flex flex-col gap-2 px-4 max-w-3xl mx-auto w-full pb-8" key={filterKey}>
-          {isLoading ? (
-            <div className="flex justify-center py-16">
-              <div className="animate-spin h-8 w-8 border-2 border-brand-500 border-t-transparent rounded-full" />
+          {records === null ? (
+            <div className="flex flex-col gap-2" aria-busy="true">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="card p-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="h-6 w-24 rounded-full bg-[var(--color-surface-2)] animate-pulse" />
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                      <div className="h-5 w-14 rounded-md bg-[var(--color-surface-2)] animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                      <div className="h-4 w-40 max-w-full rounded bg-[var(--color-surface-2)] animate-pulse" />
+                      <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                    </div>
+                    <div className="h-3 w-28 shrink-0 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredPayments.length === 0 ? (
             <div className="card p-10 flex flex-col items-center gap-3 mt-2">
@@ -489,7 +551,10 @@ export default function PaymentsPage() {
               <p className="text-xs text-[var(--color-text-tertiary)]">{tp('empty_subtitle')}</p>
             </div>
           ) : (
-            filteredPayments.map((payment, index) => {
+            <div
+              className={`flex flex-col gap-2 transition-opacity duration-300 ${paymentsStale ? 'opacity-70' : 'opacity-100'}`}
+            >
+            {filteredPayments.map((payment, index) => {
               const cfgKey = methodConfigKey(payment.method);
               const cfg = cfgKey ? METHOD_CONFIG[cfgKey] : { color: '#64748b', bg: 'rgba(100,116,139,0.12)' };
               const isJustConfirmed = confirmedId === payment.id;
@@ -557,7 +622,8 @@ export default function PaymentsPage() {
                   )}
                 </div>
               );
-            })
+            })}
+            </div>
           )}
         </div>
       </div>
