@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Globe } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ChangePinModal } from './ChangePinModal';
 
 export function AdminHeader() {
@@ -71,6 +72,7 @@ export function AdminHeader() {
       <header className="hidden lg:flex fixed top-0 left-0 right-0 h-14 z-30 items-center justify-between px-4 md:px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
         <span className="font-bold text-[var(--color-text-primary)] text-lg">CenterHQ</span>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <button
             onClick={handleLocaleToggle}
             disabled={isPending}
