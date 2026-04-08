@@ -22,12 +22,12 @@ export default function ResetPasswordPage() {
     setError('');
 
     if (newPin !== confirmPin) {
-      setError(t('pinsDoNotMatch'));
+      setError(t('errorPinMismatch'));
       return;
     }
 
-    if (newPin.length < 4) {
-      setError(t('pinTooShort'));
+    if (newPin.length !== 6) {
+      setError(t('errorPinLength'));
       return;
     }
 
@@ -38,7 +38,7 @@ export default function ResetPasswordPage() {
       });
 
       if (updateError) {
-        setError(t('error'));
+        setError(t('errorUpdateFailed'));
       } else {
         setSuccess(true);
         setTimeout(() => {
@@ -46,7 +46,7 @@ export default function ResetPasswordPage() {
         }, 2000);
       }
     } catch {
-      setError(t('error'));
+      setError(t('errorUpdateFailed'));
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen bg-bg-primary" dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="max-w-md mx-auto px-4 py-12">
           <div className="p-6 bg-green-50 rounded-xl border border-green-200 text-center">
-            <h2 className="text-xl font-bold text-green-800 mb-2">{t('success')}</h2>
+            <h2 className="text-xl font-bold text-green-800 mb-2">{t('successMessage')}</h2>
             <p className="text-green-700 text-sm">{t('redirecting')}</p>
           </div>
         </div>
