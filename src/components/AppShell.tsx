@@ -26,6 +26,7 @@ const PUBLIC_PATHS = [
   '/forgot-password',
   '/onboarding',
   '/suspended',
+  '/session-expired',
   '/auth/callback',
   '/status',
 ];

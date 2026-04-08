@@ -10,6 +10,7 @@ export default function SessionExpiredPage() {
 
   return (
     <div
+      data-chq-session-expired
       className="flex min-h-screen items-center justify-center bg-[var(--color-surface-0)] p-6"
       dir={dir}
     >

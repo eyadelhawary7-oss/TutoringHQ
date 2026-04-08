@@ -1442,6 +1442,32 @@ html.light [data-chq-login] input:-webkit-autofill {
   caret-color: #f8fafc;
 }
 
+/* Session expired — full-page dark surface (same as login/signup) even in html.light */
+[data-chq-session-expired] {
+  background-color: #080d14 !important;
+  min-height: 100vh;
+}
+
+html.light [data-chq-session-expired] {
+  background-color: #080d14 !important;
+}
+
+[data-chq-session-expired] .text-white,
+[data-chq-session-expired] .\!text-white {
+  color: #ffffff !important;
+}
+[data-chq-session-expired] .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.light [data-chq-session-expired] .text-white,
+html.light [data-chq-session-expired] .\!text-white {
+  color: #ffffff !important;
+}
+html.light [data-chq-session-expired] .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
 @keyframes breathe {
   0%,
   100% {
