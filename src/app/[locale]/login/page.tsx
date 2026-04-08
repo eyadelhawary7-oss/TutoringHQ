@@ -321,7 +321,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div style={{ marginBottom: '8px' }} className={shakePin ? 'micro-shake' : undefined}>
+          <div style={{ marginBottom: '32px' }} className={shakePin ? 'micro-shake' : undefined}>
             <label
               style={{
                 ...SANS,
@@ -415,18 +415,6 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
-          </div>
-
-          <div
-            style={{
-              ...SANS,
-              fontSize: '10px',
-              color: '#475569',
-              marginBottom: '32px',
-              marginTop: '6px',
-            }}
-          >
-            Demo: <span style={{ color: '#64748b' }}>01000000000 / 123456</span>
           </div>
 
           {error ? (
