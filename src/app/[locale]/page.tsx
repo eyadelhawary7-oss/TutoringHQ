@@ -200,6 +200,7 @@ const PaymentScreen = () => (
 export default function LocaleHomePage() {
   const t = useTranslations('landing');
   const m = useTranslations('landing.marketing');
+  const footerT = useTranslations('footer');
   const locale = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [demoScreen, setDemoScreen] = useState<DemoScreen>('scanning');
@@ -663,7 +664,7 @@ export default function LocaleHomePage() {
       <footer className="chq-fade-in border-t border-slate-800/60 px-4 py-10 md:px-6">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center text-sm text-slate-400">
           <p>{m('footerTagline')}</p>
-          <p className="text-xs">{m('footerEhgi')}</p>
+          <p className="text-xs">{footerT('ehgProduct')}</p>
           <a
             href={WA_SUPPORT}
             target="_blank"

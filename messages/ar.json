@@ -1282,7 +1282,6 @@
       "pricingCta": "عرض جميع الخطط والمقارنة",
       "finalCtaButton": "ابدأ الآن",
       "footerTagline": "CenterHQ، منصة إدارة السناتر التعليمية",
-      "footerEhgi": "An EHG Intelligence Product",
       "footerSupportLabel": "دعم واتساب",
       "footerRights": "© ٢٠٢٦ EHG Intelligence. جميع الحقوق محفوظة."
     },
@@ -4211,7 +4210,11 @@
     "step3Title": "اكسب عمولة",
     "step3Desc": "تكسب مكافآت طالما اشتراكهم نشط.",
     "availableBalanceLine": "رصيدك المتاح: {amount} {egp}",
-    "copyDoneCheck": "تم النسخ ✓"
+    "copyDoneCheck": "تم النسخ ✓",
+    "commissionTiersTitle": "هيكل العمولات",
+    "commissionTierMonth1": "الشهر الأول: 25٪ — تُحجز لمدة شهر قبل السحب",
+    "commissionTierMonths2to12": "من الشهر 2 إلى 12: 10٪ شهرياً",
+    "commissionTierMonth13Plus": "من الشهر 13 فصاعداً: 5٪ شهرياً طالما اشتراك السنتر المحال نشط"
   },
   "resetPassword": {
     "backToSettings": "رجوع إلى الإعدادات",
@@ -5338,7 +5341,8 @@
   },
   "footer": {
     "rights": "الحقوق",
-    "tagline": "الشعار"
+    "tagline": "الشعار",
+    "ehgProduct": "منتج EHG Intelligence"
   },
   "forgotPin": {},
   "frontOfCard": {},

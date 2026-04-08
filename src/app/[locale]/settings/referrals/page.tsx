@@ -205,6 +205,23 @@ export default function SettingsReferralsPage() {
             </div>
           </div>
 
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+            <h2 className="font-bold text-[var(--color-text-primary)] mb-4">
+              {tRef('commissionTiersTitle')}
+            </h2>
+            <ul className="space-y-3 text-sm text-[var(--color-text-secondary)]">
+              <li className="border-s-4 border-teal-600/80 ps-3">
+                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonth1')}</span>
+              </li>
+              <li className="border-s-4 border-teal-600/50 ps-3">
+                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonths2to12')}</span>
+              </li>
+              <li className="border-s-4 border-teal-600/30 ps-3">
+                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonth13Plus')}</span>
+              </li>
+            </ul>
+          </div>
+
           {/* Referrals table */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
             <div className="p-4 border-b border-[var(--color-border-subtle)]">

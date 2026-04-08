@@ -1104,7 +1104,11 @@
     "step3Title": "Earn commission",
     "step3Desc": "You earn rewards while their subscription stays active.",
     "availableBalanceLine": "Your available balance: {amount} {egp}",
-    "copyDoneCheck": "Copied! ✓"
+    "copyDoneCheck": "Copied! ✓",
+    "commissionTiersTitle": "Commission structure",
+    "commissionTierMonth1": "Month 1: 25% — held for 1 month before withdrawal",
+    "commissionTierMonths2to12": "Months 2–12: 10% per month",
+    "commissionTierMonth13Plus": "Month 13 onward: 5% per month (ongoing while the referred center stays subscribed)"
   },
   "referral": {
     "referralCodeOptional": "Referral Code (optional)",
@@ -4441,7 +4445,6 @@
       "pricingCta": "View all plans & comparison",
       "finalCtaButton": "Get started",
       "footerTagline": "CenterHQ, tutoring center management platform",
-      "footerEhgi": "An EHG Intelligence Product",
       "footerSupportLabel": "WhatsApp support",
       "footerRights": "© 2026 EHG Intelligence. All rights reserved."
     },
@@ -5338,7 +5341,8 @@
   },
   "footer": {
     "rights": "Rights",
-    "tagline": "Tagline"
+    "tagline": "Tagline",
+    "ehgProduct": "An EHG Intelligence Product"
   },
   "forgotPin": {},
   "frontOfCard": {},
