@@ -332,23 +332,48 @@ export default function SchedulePage() {
                         return (
                           <div
                             key={slot.id}
-                            className={`relative rounded-lg p-2 cursor-pointer transition-colors group ${isConflict ? 'bg-red-50 border border-red-300 text-red-800' : 'bg-teal-50 border border-teal-200 hover:bg-teal-100'}`}
+                            className={`relative rounded-lg p-2 cursor-pointer transition-colors group border-y border-e border-[var(--color-border)] ${
+                              isConflict
+                                ? 'bg-red-500/10 hover:bg-red-500/15'
+                                : 'bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)]'
+                            }`}
+                            style={{
+                              borderInlineStartWidth: 4,
+                              borderInlineStartStyle: 'solid',
+                              borderInlineStartColor: isConflict ? '#ef4444' : DAY_COLORS[day],
+                            }}
                           >
                             {isConflict && <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />}
-                            <p className={`text-xs font-semibold truncate pe-5 ${isConflict ? 'text-red-800' : 'text-teal-800'}`}>
+                            <p
+                              className={`text-xs font-semibold truncate pe-5 ${
+                                isConflict ? 'text-red-800 dark:text-red-200' : 'text-[var(--color-text-primary)]'
+                              }`}
+                            >
                               {slot.group_name || tCommon('notAvailable')}
                             </p>
-                            <p className={`text-xs truncate ${isConflict ? 'text-red-700' : 'text-teal-600'}`}>
+                            <p
+                              className={`text-xs truncate ${
+                                isConflict ? 'text-red-700 dark:text-red-300' : 'text-[var(--color-text-secondary)]'
+                              }`}
+                            >
                               {slot.room_name || tCommon('notAvailable')}
                             </p>
-                            <p className={`text-xs ${isConflict ? 'text-red-600' : 'text-teal-500'}`}>
+                            <p
+                              className={`text-xs ${
+                                isConflict ? 'text-red-600 dark:text-red-400' : 'text-[var(--color-text-tertiary)]'
+                              }`}
+                            >
                               <span dir="ltr">{formatTimeForDisplay(slot.start_time)} – {formatTimeForDisplay(slot.end_time)}</span>
                             </p>
                             {canEdit && (
                               <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleDeleteSlot(slot.id); }}
-                                className={`hidden group-hover:block absolute top-1 end-1 p-0.5 rounded ${isConflict ? 'hover:bg-red-200 text-red-700' : 'hover:bg-teal-200 text-teal-700'}`}
+                                className={`hidden group-hover:block absolute top-1 end-1 p-0.5 rounded ${
+                                  isConflict
+                                    ? 'hover:bg-red-500/20 text-red-700 dark:text-red-300'
+                                    : 'hover:bg-[var(--color-surface-2)] text-teal-600 dark:text-teal-400'
+                                }`}
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -372,37 +397,55 @@ export default function SchedulePage() {
               const thisWeekSessions = displaySlots.filter((s) => Number(s.day_of_week) !== todayIndex);
               return (
                 <>
-                  <h3 className="font-bold text-teal-700 text-sm mb-2">{t('today')}</h3>
+                  <h3 className="font-bold text-teal-700 dark:text-teal-400 text-sm mb-2">{t('today')}</h3>
                   {todaySessions.length === 0 && (
-                    <p className="text-xs text-slate-400 mb-3">{t('noSessionsToday')}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-3">{t('noSessionsToday')}</p>
                   )}
                   {todaySessions.map((session) => (
                     <div
                       key={session.id}
-                      className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2 border-r-4 border-teal-500"
+                      className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2"
+                      style={{
+                        borderInlineEndWidth: 4,
+                        borderInlineEndStyle: 'solid',
+                        borderInlineEndColor: DAY_COLORS[todayIndex] ?? '#0D9488',
+                      }}
                       dir="rtl"
                     >
-                      <div className="font-mono text-teal-600 text-sm">
+                      <div className="font-mono text-teal-600 dark:text-teal-400 text-sm">
                         <span dir="ltr">{formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}</span>
                       </div>
-                      <div className="font-bold text-sm mt-0.5">{session.group_name || tCommon('notAvailable')}</div>
-                      <div className="text-xs text-slate-400 mt-0.5">
+                      <div className="font-bold text-sm mt-0.5 text-[var(--color-text-primary)]">
+                        {session.group_name || tCommon('notAvailable')}
+                      </div>
+                      <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
                         {session.room_name || tCommon('notAvailable')} • {session.member_count ?? 0} طالب
                       </div>
                     </div>
                   ))}
-                  <hr className="my-3" />
+                  <hr className="my-3 border-[var(--color-border-subtle)]" />
                   <h3 className="font-bold text-[var(--color-text-primary)] text-sm mb-2">{t('thisWeek')}</h3>
                   {thisWeekSessions.length === 0 && (
-                    <p className="text-xs text-slate-400">{t('noSessionsWeek')}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('noSessionsWeek')}</p>
                   )}
                   {thisWeekSessions.map((session) => (
-                    <div key={session.id} className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2" dir="rtl">
-                      <div className="font-mono text-teal-600 text-sm">
+                    <div
+                      key={session.id}
+                      className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2"
+                      style={{
+                        borderInlineEndWidth: 4,
+                        borderInlineEndStyle: 'solid',
+                        borderInlineEndColor: DAY_COLORS[Number(session.day_of_week)] ?? '#0D9488',
+                      }}
+                      dir="rtl"
+                    >
+                      <div className="font-mono text-teal-600 dark:text-teal-400 text-sm">
                         <span dir="ltr">{formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}</span>
                       </div>
-                      <div className="font-bold text-sm mt-0.5">{session.group_name || tCommon('notAvailable')}</div>
-                      <div className="text-xs text-slate-400 mt-0.5">
+                      <div className="font-bold text-sm mt-0.5 text-[var(--color-text-primary)]">
+                        {session.group_name || tCommon('notAvailable')}
+                      </div>
+                      <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
                         {session.room_name || tCommon('notAvailable')} • {session.member_count ?? 0} طالب
                       </div>
                     </div>
@@ -508,7 +551,7 @@ export default function SchedulePage() {
               )}
               </div>
               <div className="flex justify-end gap-3 p-6 pt-0">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-[var(--color-border)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
                 <button type="submit" disabled={!formGroupId || !formRoomId || hasConflict || isSubmitting} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">{t('addSession')}</button>
               </div>
             </form>
