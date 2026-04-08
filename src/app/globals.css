@@ -574,11 +574,6 @@ html.light [data-chq-landing] {
   color: #f8fafc !important;
 }
 
-html [data-chq-landing] section:not([class*="bg-"]),
-html.light [data-chq-landing] section:not([class*="bg-"]) {
-  background-color: #080f1a !important;
-}
-
 /* Light theme — component overrides */
 html.light .card {
   background: #ffffff;

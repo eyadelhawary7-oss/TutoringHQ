@@ -362,7 +362,7 @@ export default function LocaleHomePage() {
       </header>
 
       <section
-        className="chq-fade-in px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28"
+        className="chq-fade-in bg-[var(--color-surface-0)] px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28"
         style={{
           background:
             'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), var(--color-surface-0)',
@@ -625,7 +625,7 @@ export default function LocaleHomePage() {
         </div>
       </section>
 
-      <section className="chq-fade-in bg-gradient-to-b from-[var(--color-surface-0)] via-[var(--color-surface-1)] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
+      <section className="chq-fade-in bg-[var(--color-surface-0)] bg-gradient-to-b from-[var(--color-surface-0)] via-[var(--color-surface-1)] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('finalCtaTitle')}</h2>
           <p className="mt-3 text-sm text-[var(--color-text-secondary)] md:text-base">{t('finalCtaDesc')}</p>
