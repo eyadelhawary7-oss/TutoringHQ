@@ -23,7 +23,7 @@ const playfair = Playfair_Display({
   display: 'swap',
   preload: false,
   variable: '--font-playfair',
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700', '900'],
 });
 
 import { UserProvider } from '@/contexts/UserContext';
