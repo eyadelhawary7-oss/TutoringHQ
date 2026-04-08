@@ -35,6 +35,15 @@ interface Student {
   groups?: { id: string; name: string; fee: number; subject?: string | null }[];
 }
 
+/** Active students row for instant QR lookup (Supabase `students.name`, not full_name). */
+interface RosterRow {
+  id: string;
+  student_number: string | null;
+  name: string | null;
+  is_active: boolean;
+  center_id: string;
+}
+
 /** Fire-and-forget: notify parent of scan (async, no await). */
 function notifyParentScan(studentId: string, result: 'attended' | 'absent' | 'pending_payment') {
   supabase.auth.getSession().then(({ data: { session } }) => {
@@ -44,6 +53,34 @@ function notifyParentScan(studentId: string, result: 'attended' | 'absent' | 'pe
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
       body: JSON.stringify({ student_id: studentId, result }),
     }).catch(() => {});
+  });
+}
+
+/** Fire-and-forget paid attendance write (same /api/db path as sync; SW queue unchanged for offline). */
+function recordAttendanceInBackground(opts: {
+  studentId: string;
+  centerId: string;
+  userId: string;
+  scannedAt: string;
+  groupId: string | null;
+}) {
+  if (typeof navigator === 'undefined' || !navigator.onLine) return;
+  void dbInsert({
+    table: 'attendance_scans',
+    data: {
+      student_id: opts.studentId,
+      center_id: opts.centerId,
+      scanned_by: opts.userId,
+      scanned_at: opts.scannedAt,
+      payment_status_at_scan: 'paid',
+      session_date: opts.scannedAt.split('T')[0],
+      payment_recorded: false,
+      group_id: opts.groupId,
+    },
+    select: false,
+  }).then(({ error }) => {
+    if (error) console.error('Attendance scan insert FAILED:', error);
+    else notifyParentScan(opts.studentId, 'attended');
   });
 }
 
@@ -88,6 +125,10 @@ export default function ScanPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(false);
+  const [rosterHydrated, setRosterHydrated] = useState(false);
+  const studentMapByNumberRef = useRef<Map<string, RosterRow>>(new Map());
+  const studentMapByIdRef = useRef<Map<string, RosterRow>>(new Map());
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -223,6 +264,44 @@ export default function ScanPage() {
     };
   }, [centerId, fetchAndSyncStudents]);
 
+  // In-memory roster for instant QR lookup (createBrowserClient singleton from @/lib/supabase)
+  useEffect(() => {
+    if (!centerId) return;
+    let cancelled = false;
+    setRosterHydrated(false);
+    studentMapByNumberRef.current = new Map();
+    studentMapByIdRef.current = new Map();
+    setRosterLoading(true);
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('students')
+          .select('id, student_number, name, is_active, center_id')
+          .eq('center_id', centerId)
+          .eq('is_active', true);
+        if (cancelled) return;
+        const byNumber = new Map<string, RosterRow>();
+        const byId = new Map<string, RosterRow>();
+        for (const raw of data ?? []) {
+          const row = raw as RosterRow;
+          byId.set(row.id, row);
+          if (row.student_number)
+            byNumber.set(String(row.student_number).toUpperCase(), row);
+        }
+        studentMapByNumberRef.current = byNumber;
+        studentMapByIdRef.current = byId;
+      } finally {
+        if (!cancelled) {
+          setRosterLoading(false);
+          setRosterHydrated(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [centerId]);
+
   // Online/offline and pending count
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -326,74 +405,102 @@ export default function ScanPage() {
     let usedOffline = false;
 
     try {
-      // ONLINE: Try Supabase first
-      if (navigator.onLine) {
-        try {
-          const filters = byId
-            ? [{ column: 'id', op: 'eq' as const, value }, { column: 'center_id', op: 'eq' as const, value: centerId }]
-            : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
-          const { data, error: lookupError } = await dbSelect({
-            table: 'students',
-            select: 'id, name, phone, parent_phone, subject, fee, student_number',
-            filters,
-            single: true,
-          });
-          if (!lookupError && data) student = data as Student;
+      const looksLikePhone = /^\d{10,11}$/.test(code.trim());
+      const mapsHaveRows =
+        studentMapByNumberRef.current.size > 0 || studentMapByIdRef.current.size > 0;
 
-          if (!student && /^\d{10,11}$/.test(code.trim())) {
-            const normalizedPhone = code.trim().startsWith('0') ? '+2' + code.trim() : '+' + code.trim();
-            const { data: phoneData, error: phoneError } = await dbSelect({
+      if (navigator.onLine && rosterHydrated && mapsHaveRows && !looksLikePhone) {
+        const row = byId
+          ? studentMapByIdRef.current.get(value)
+          : studentMapByNumberRef.current.get(value.toUpperCase());
+        if (row) {
+          const enriched = students.find((s) => s.id === row.id);
+          student = enriched
+            ? { ...enriched }
+            : {
+                id: row.id,
+                name: row.name ?? '',
+                payment_status: '',
+                fee: 0,
+                subject: '',
+                student_number: row.student_number,
+              };
+        }
+      }
+
+      if (!student) {
+        // ONLINE: Try Supabase first (or roster still loading / empty / phone lookup)
+        if (navigator.onLine) {
+          try {
+            const filters = byId
+              ? [{ column: 'id', op: 'eq' as const, value }, { column: 'center_id', op: 'eq' as const, value: centerId }]
+              : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
+            const { data, error: lookupError } = await dbSelect({
               table: 'students',
               select: 'id, name, phone, parent_phone, subject, fee, student_number',
-              filters: [
-                { column: 'phone', op: 'eq', value: normalizedPhone },
-                { column: 'center_id', op: 'eq', value: centerId },
-              ],
+              filters,
               single: true,
             });
-            if (!phoneError && phoneData) student = phoneData as Student;
+            if (!lookupError && data) student = data as Student;
+
+            if (!student && /^\d{10,11}$/.test(code.trim())) {
+              const normalizedPhone = code.trim().startsWith('0') ? '+2' + code.trim() : '+' + code.trim();
+              const { data: phoneData, error: phoneError } = await dbSelect({
+                table: 'students',
+                select: 'id, name, phone, parent_phone, subject, fee, student_number',
+                filters: [
+                  { column: 'phone', op: 'eq', value: normalizedPhone },
+                  { column: 'center_id', op: 'eq', value: centerId },
+                ],
+                single: true,
+              });
+              if (!phoneError && phoneData) student = phoneData as Student;
+            }
+          } catch (networkErr) {
+            // Network error: fall back to IndexedDB
+            usedOffline = true;
+            student = (await getStudentOffline(value) as Student | undefined) || null;
           }
-        } catch (networkErr) {
-          // Network error: fall back to IndexedDB
+        } else {
+          // OFFLINE: Use IndexedDB directly
           usedOffline = true;
           student = (await getStudentOffline(value) as Student | undefined) || null;
         }
-      } else {
-        // OFFLINE: Use IndexedDB directly
-        usedOffline = true;
-        student = (await getStudentOffline(value) as Student | undefined) || null;
       }
 
-      // When online and found from API (not IndexedDB fallback), fetch groups
+      // When online and not on IndexedDB fallback, ensure groups are loaded if missing
       if (student && navigator.onLine && !usedOffline) {
-        try {
-          const { data: membersData } = await dbSelect({
-            table: 'student_group_members',
-            select: 'group_id',
-            filters: [{ column: 'student_id', op: 'eq', value: student.id }],
-          });
-          if (membersData && Array.isArray(membersData) && membersData.length > 0) {
-            const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
-            const { data: groupsData } = await dbSelect({
-              table: 'student_groups',
-              select: 'id, name, fee',
-              filters: [{ column: 'id', op: 'in', value: grpIds }],
+        const needsGroupData = !student.groups || student.groups.length === 0;
+        if (needsGroupData) {
+          try {
+            const { data: membersData } = await dbSelect({
+              table: 'student_group_members',
+              select: 'group_id',
+              filters: [{ column: 'student_id', op: 'eq', value: student.id }],
             });
-            if (groupsData && Array.isArray(groupsData)) {
-              student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
-                id: g.id,
-                name: g.name,
-                fee: g.fee ?? 0,
-              }));
-              const primaryGroup = student.groups[0];
-              if (primaryGroup && !student.fee) {
-                student.fee = primaryGroup.fee;
-                student.subject = primaryGroup.name;
+            if (membersData && Array.isArray(membersData) && membersData.length > 0) {
+              const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
+              const { data: groupsData } = await dbSelect({
+                table: 'student_groups',
+                select: 'id, name, fee',
+                filters: [{ column: 'id', op: 'in', value: grpIds }],
+              });
+              if (groupsData && Array.isArray(groupsData)) {
+                student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
+                  id: g.id,
+                  name: g.name,
+                  fee: g.fee ?? 0,
+                }));
+                const primaryGroup = student.groups[0];
+                if (primaryGroup && !student.fee) {
+                  student.fee = primaryGroup.fee;
+                  student.subject = primaryGroup.name;
+                }
               }
             }
+          } catch {
+            // Keep student.groups from IndexedDB if any
           }
-        } catch {
-          // Keep student.groups from IndexedDB if any
         }
       }
 
@@ -483,22 +590,13 @@ export default function ScanPage() {
       if (paidToday) {
         // Already paid today: record attendance only
         if (navigator.onLine) {
-          const { error: attendErr } = await dbInsert({
-            table: 'attendance_scans',
-            data: {
-              student_id: student.id,
-              center_id: centerId,
-              scanned_by: userId,
-              scanned_at: scannedAt,
-              payment_status_at_scan: 'paid',
-              session_date: scannedAt.split('T')[0],
-              payment_recorded: false,
-              group_id: grp?.id ?? null,
-            },
-            select: false,
+          recordAttendanceInBackground({
+            studentId: student.id,
+            centerId,
+            userId,
+            scannedAt,
+            groupId: grp?.id ?? null,
           });
-          if (attendErr) console.error('Attendance scan insert FAILED:', attendErr);
-          else notifyParentScan(student.id, 'attended');
         } else {
           await queueScan({
             student_id: student.id,
@@ -567,7 +665,7 @@ export default function ScanPage() {
       );
       isProcessingRef.current = false;
     }
-  }, [centerId, userId, t, ts, playBeep, vibrate, triggerAttendanceRecordedFeedback]);
+  }, [centerId, userId, rosterHydrated, students, t, ts, playBeep, vibrate, triggerAttendanceRecordedFeedback]);
 
   const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee: number }) => {
     if (!scannedStudent || !centerId || !userId) return;
@@ -619,22 +717,13 @@ export default function ScanPage() {
 
     if (paidToday) {
       if (navigator.onLine) {
-        const { error: attendErr } = await dbInsert({
-          table: 'attendance_scans',
-          data: {
-            student_id: student.id,
-            center_id: centerId,
-            scanned_by: userId,
-            scanned_at: scannedAt,
-            payment_status_at_scan: 'paid',
-            session_date: scannedAt.split('T')[0],
-            payment_recorded: false,
-            group_id: group.id,
-          },
-          select: false,
+        recordAttendanceInBackground({
+          studentId: student.id,
+          centerId,
+          userId,
+          scannedAt,
+          groupId: group.id,
         });
-        if (attendErr) console.error('Attendance scan insert FAILED:', attendErr);
-        else notifyParentScan(student.id, 'attended');
       } else {
         await queueScan({
           student_id: student.id,
@@ -878,7 +967,17 @@ export default function ScanPage() {
 
         <div className="flex flex-col gap-3 px-4 pt-4 pb-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
+              {rosterLoading && (
+                <span
+                  className="inline-flex h-2 w-2 shrink-0 rounded-full bg-teal-400/80 animate-pulse motion-reduce:animate-none"
+                  title={t('loadingRetry')}
+                  aria-label={t('loadingRetry')}
+                  role="status"
+                />
+              )}
+            </div>
             <p className="text-xs text-[var(--color-text-secondary)]">{ts('subtitle')}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
