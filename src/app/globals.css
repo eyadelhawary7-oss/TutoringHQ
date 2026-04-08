@@ -485,7 +485,8 @@ html:not(.light) textarea {
 
 /* Light mode: surface-0 tokens flip to light values (already handled
    by html.light vars above, but ensure S5 dashboard bg classes flip) */
-html.light .bg-\[var\(--color-surface-0\)\] {
+html.light :not([data-chq-landing]) .bg-\[var\(--color-surface-0\)\],
+html.light :not([data-chq-landing]).bg-\[var\(--color-surface-0\)\] {
   background-color: #f8fafc !important;
 }
 
