@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isFeatureEnabled } from '@/lib/features';
 import { verifyPaymobHmac } from '@/lib/paymob';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: NextRequest) {
   if (!isFeatureEnabled('PAYMOB_ENABLED')) {

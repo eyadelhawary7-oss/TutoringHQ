@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function uploadOrderPdf(orderId: string, pdfBuffer: Buffer): Promise<string | null> {
   try {
