@@ -468,8 +468,11 @@ export function CardOrderModal({
       }
 
       try {
+        const { data: sessionWrap } = await supabase.auth.getSession();
+        const token = sessionWrap?.session?.access_token;
         const res = await fetch(
           `/api/paymob/payment-status?paymobOrderId=${encodeURIComponent(currentPaymobOrderId)}`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
         );
         if (!res.ok) return;
         const body = (await res.json()) as { paid?: boolean; failed?: boolean };

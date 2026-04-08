@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { finalizeInvoicePaymentFailure, finalizeInvoicePaymentSuccess } from '@/lib/invoicePaymobPayment';
 import { inquirePaymobCardOrder } from '@/lib/paymobOrderInquiry';
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 type PollStatus = 'paid' | 'failed' | 'pending';
 
@@ -11,6 +11,7 @@ function pollBody(base: Record<string, unknown>, status: PollStatus) {
 
 /**
  * Polling for Paymob: either invoiceId (UUID) or paymobOrderId (combined session / invoice checkout).
+ * Requires center Bearer auth; only returns or finalizes data for the caller's center.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -27,14 +28,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'invoiceId or paymobOrderId required', status: 'pending' as const }, { status: 400 });
     }
 
-    const supabaseAdmin = createClient(url, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
+
+    const supabaseAdmin = auth.supabaseAdmin;
 
     if (invoiceId) {
       const { data: inv } = await supabaseAdmin
         .from('invoices')
-        .select('id, status, paymob_order_id')
+        .select('id, status, paymob_order_id, center_id')
         .eq('id', invoiceId)
         .maybeSingle();
 
@@ -42,7 +44,16 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(pollBody({ paid: false, failed: false }, 'pending'));
       }
 
-      const row = inv as { id: string; status?: string | null; paymob_order_id?: string | null };
+      const row = inv as {
+        id: string;
+        status?: string | null;
+        paymob_order_id?: string | null;
+        center_id?: string | null;
+      };
+
+      if (row.center_id !== auth.centerId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
 
       if (row.status === 'paid') {
         return NextResponse.json(pollBody({ paid: true }, 'paid'));
@@ -76,24 +87,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(pollBody({ paid: false, failed: false }, 'pending'));
     }
 
-    const { data: sess } = await supabaseAdmin
-      .from('combined_payment_sessions')
-      .select('id, status')
-      .eq('paymob_order_id', paymobOrderIdParam)
-      .maybeSingle();
+    const [{ data: sess }, { data: invByOrder }] = await Promise.all([
+      supabaseAdmin
+        .from('combined_payment_sessions')
+        .select('id, status, center_id')
+        .eq('paymob_order_id', paymobOrderIdParam)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('invoices')
+        .select('id, status, paymob_order_id, center_id')
+        .eq('paymob_order_id', paymobOrderIdParam)
+        .maybeSingle(),
+    ]);
 
-    if (sess && (sess as { status?: string }).status === 'paid') {
+    const sessRow = sess as { id: string; status?: string; center_id?: string | null } | null;
+    const invRow = invByOrder as {
+      id: string;
+      status?: string | null;
+      paymob_order_id?: string | null;
+      center_id?: string | null;
+    } | null;
+
+    if (!sessRow && !invRow) {
+      return NextResponse.json(pollBody({ paid: false, failed: false }, 'pending'));
+    }
+
+    if (
+      (sessRow && sessRow.center_id !== auth.centerId) ||
+      (invRow && invRow.center_id !== auth.centerId)
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (sessRow && (sessRow as { status?: string }).status === 'paid') {
       return NextResponse.json(pollBody({ paid: true }, 'paid'));
     }
 
-    const { data: invByOrder } = await supabaseAdmin
-      .from('invoices')
-      .select('id, status, paymob_order_id')
-      .eq('paymob_order_id', paymobOrderIdParam)
-      .maybeSingle();
-
-    if (invByOrder) {
-      const ir = invByOrder as { id: string; status?: string | null; paymob_order_id?: string | null };
+    if (invRow) {
+      const ir = invRow;
       if (ir.status === 'paid') {
         return NextResponse.json(pollBody({ paid: true }, 'paid'));
       }
@@ -114,7 +145,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (sess && (sess as { status?: string }).status === 'pending') {
+    if (sessRow && (sessRow as { status?: string }).status === 'pending') {
       const inquiry = await inquirePaymobCardOrder(paymobOrderIdParam);
       if (inquiry.state === 'failed') {
         return NextResponse.json(pollBody({ paid: false, failed: true }, 'failed'));
@@ -122,7 +153,7 @@ export async function GET(request: NextRequest) {
       if (inquiry.state === 'paid') {
         const txId = inquiry.transactionId ?? '';
         const { tryFinalizeCombinedPaymentSession } = await import('@/lib/combinedPaymentFinalize');
-        const sid = (sess as { id: string }).id;
+        const sid = sessRow.id;
         await tryFinalizeCombinedPaymentSession(sid, supabaseAdmin, 'cron', txId);
         return NextResponse.json(pollBody({ paid: true }, 'paid'));
       }

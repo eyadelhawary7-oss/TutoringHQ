@@ -38,7 +38,7 @@ interface Group {
 }
 
 function formatArabicIndic(n: number): string {
-  return new Intl.NumberFormat('ar-EG', { numberingSystem: 'arab' }).format(n);
+  return n.toLocaleString('en-US');
 }
 
 export default function OnboardingPage() {

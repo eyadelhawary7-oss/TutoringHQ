@@ -765,10 +765,14 @@ export default function DashboardPage() {
   const safeData = data ?? EMPTY_DASHBOARD_DATA;
 
   const monthlyRevenueRaw = statsData?.monthlyRevenue ?? [];
-  const monthlyRevenueData = monthlyRevenueRaw.map((r) => ({
-    month: formatMonthLabel(r.month, locale),
-    revenue: Number(r.amount) || 0,
-  }));
+  const monthlyRevenueData = useMemo(
+    () =>
+      monthlyRevenueRaw.map((r) => ({
+        month: formatMonthLabel(r.month, locale),
+        revenue: Number(r.amount) || 0,
+      })),
+    [monthlyRevenueRaw, locale],
+  );
 
   const attendanceChart7 = useMemo(() => {
     const td = safeData.trendData;

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { finalizeCardOrderPaymentFailure, finalizeCardOrderPaymentSuccess } from '@/lib/cardOrderPayment';
 import { inquirePaymobCardOrder } from '@/lib/paymobOrderInquiry';
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 /**
- * Public polling endpoint — no auth (Amazon-style client poll).
+ * Center-authenticated polling for card order Paymob status.
  * Query: paymobOrderId (Paymob ecommerce order id string).
  */
 export async function GET(request: NextRequest) {
@@ -20,23 +20,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'paymobOrderId required' }, { status: 400 });
     }
 
-    const supabaseAdmin = createClient(url, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
+
+    const supabaseAdmin = auth.supabaseAdmin;
 
     const { data: order } = await supabaseAdmin
       .from('card_orders')
       .select(
         `
         id,
+        center_id,
         quantity,
         students,
         total_amount,
         notes,
         delivery_address,
         payment_status,
-        paymob_order_id,
-        centers ( name, phone, governorate )
+        paymob_order_id
       `,
       )
       .eq('paymob_order_id', paymobOrderId)
@@ -46,7 +47,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ paid: false, failed: false });
     }
 
-    const row = order as { id: string; payment_status?: string | null };
+    const row = order as {
+      id: string;
+      center_id?: string | null;
+      payment_status?: string | null;
+    };
+
+    if (row.center_id !== auth.centerId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     if (row.payment_status === 'paid') {
       return NextResponse.json({ paid: true, orderId: row.id });

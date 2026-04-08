@@ -203,7 +203,11 @@ function PaymobModal({
       const qs = sessionId
         ? `paymobOrderId=${encodeURIComponent(sessionId)}`
         : `invoiceId=${encodeURIComponent(invoicePollId!)}`;
-      const res = await fetch(`/api/paymob/invoice-status?${qs}`);
+      const { data: sessionWrap } = await supabase.auth.getSession();
+      const token = sessionWrap?.session?.access_token;
+      const res = await fetch(`/api/paymob/invoice-status?${qs}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = (await res.json()) as { status?: string; paid?: boolean; failed?: boolean };
       if (data.status === 'paid' || data.paid === true) {
         clearInterval(interval);

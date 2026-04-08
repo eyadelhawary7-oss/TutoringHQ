@@ -124,6 +124,9 @@ interface SalesLead {
   notes: string;
 }
 
+const PIPELINE_STAGES = ['prospect', 'contacted', 'demo_scheduled', 'converted'] as const;
+type PipelineStage = (typeof PIPELINE_STAGES)[number];
+
 const AREAS = ['Nasr City', 'Heliopolis', 'Maadi', '6th October', 'Sheikh Zayed', 'Dokki', 'Mohandeseen', 'Other'];
 const SOURCES = ['Referral', 'Walk-in', 'WhatsApp', 'Social Media', 'Cold Call', 'Other'];
 const AREA_LABELS: Record<string, string> = {
@@ -809,6 +812,54 @@ export default function AdminPage() {
         .sort((a, b) => (b.students_count ?? 0) - (a.students_count ?? 0))
         .slice(0, 5)
         .map((c) => ({ name: c.name, students_count: c.students_count ?? 0 })),
+    [analyticsCenters],
+  );
+
+  const leadsByStage = useMemo((): Record<PipelineStage, SalesLead[]> => {
+    const buckets: Record<PipelineStage, SalesLead[]> = {
+      prospect: [],
+      contacted: [],
+      demo_scheduled: [],
+      converted: [],
+    };
+    for (const l of leads) {
+      buckets[l.stage].push(l);
+    }
+    return buckets;
+  }, [leads]);
+
+  const salesPipelineStats = useMemo(() => {
+    const contacted = leads.filter((l) => l.stage === 'contacted').length;
+    const demo_scheduled = leads.filter((l) => l.stage === 'demo_scheduled').length;
+    const converted = leads.filter((l) => l.stage === 'converted').length;
+    const conversionRate =
+      leads.length > 0 ? `${Math.round((converted / leads.length) * 100)}%` : '0%';
+    return { contacted, demo_scheduled, converted, conversionRate };
+  }, [leads]);
+
+  const analyticsAvgStudentsPerCenter = useMemo(() => {
+    if (analyticsCenters.length === 0) return 0;
+    return Math.round(
+      analyticsCenters.reduce((s, c) => s + (c.students_count ?? 0), 0) / analyticsCenters.length,
+    );
+  }, [analyticsCenters]);
+
+  const analyticsAvgRevenuePerCenterCell = useMemo(() => {
+    const active = analyticsCenters.filter((c) => (c.status ?? 'active') === 'active');
+    if (active.length === 0) return `${(0).toLocaleString('en-US')} ${tCommon('egp')}`;
+    const mrr = overview?.totalMRR ?? overview?.mrr ?? 0;
+    return `${Math.round(mrr / Math.max(1, active.length)).toLocaleString('en-US')} ${tCommon('egp')}`;
+  }, [analyticsCenters, overview?.totalMRR, overview?.mrr, tCommon]);
+
+  const analyticsZeroStudentsCount = useMemo(
+    () => analyticsCenters.filter((c) => (c.students_count ?? 0) === 0).length,
+    [analyticsCenters],
+  );
+
+  const analyticsAtRiskCount = useMemo(
+    () =>
+      analyticsCenters.filter((c) => c.last_active?.includes('days') || c.last_active === 'Never')
+        .length,
     [analyticsCenters],
   );
 
@@ -2151,10 +2202,10 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
               {[
                 { label: 'Total Leads', value: leads.length },
-                { label: 'Contacted', value: leads.filter(l => l.stage === 'contacted').length },
-                { label: 'Demo Scheduled', value: leads.filter(l => l.stage === 'demo_scheduled').length },
-                { label: 'Converted', value: leads.filter(l => l.stage === 'converted').length },
-                { label: 'Conversion Rate', value: leads.length > 0 ? `${Math.round((leads.filter(l => l.stage === 'converted').length / leads.length) * 100)}%` : '0%' },
+                { label: 'Contacted', value: salesPipelineStats.contacted },
+                { label: 'Demo Scheduled', value: salesPipelineStats.demo_scheduled },
+                { label: 'Converted', value: salesPipelineStats.converted },
+                { label: 'Conversion Rate', value: salesPipelineStats.conversionRate },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                   <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>
@@ -2163,14 +2214,14 @@ export default function AdminPage() {
               ))}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {(['prospect', 'contacted', 'demo_scheduled', 'converted'] as const).map((stage) => (
+              {PIPELINE_STAGES.map((stage) => (
                 <div key={stage} className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-sm text-[var(--color-text-primary)]">{stage.replace('_', ' ')}</h3>
-                    <span className="text-xs font-mono text-[var(--color-text-secondary)]">{leads.filter(l => l.stage === stage).length}</span>
+                    <span className="text-xs font-mono text-[var(--color-text-secondary)]">{leadsByStage[stage].length}</span>
                   </div>
                   <div className="space-y-2">
-                    {leads.filter(l => l.stage === stage).map((lead) => (
+                    {leadsByStage[stage].map((lead) => (
                       <div key={lead.id} onClick={() => setSelectedLead(lead)} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow">
                         <p className="font-semibold text-sm text-[var(--color-text-primary)]">{lead.name}</p>
                         <p className="text-xs text-[var(--color-text-secondary)]">{lead.contact_person}</p>
@@ -2275,25 +2326,22 @@ export default function AdminPage() {
                   {
                     key: 'avgStudents',
                     label: tAdmin('analyticsAvgStudentsPerCenter'),
-                    value: analyticsCenters.length > 0 ? Math.round(analyticsCenters.reduce((s, c) => s + (c.students_count ?? 0), 0) / analyticsCenters.length) : 0,
+                    value: analyticsAvgStudentsPerCenter,
                   },
                   {
                     key: 'avgRevenue',
                     label: tAdmin('analyticsAvgRevenuePerCenter'),
-                    value:
-                      analyticsCenters.filter((c) => (c.status ?? 'active') === 'active').length > 0
-                        ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, analyticsCenters.filter((c) => (c.status ?? 'active') === 'active').length)).toLocaleString('en-US')} ${tCommon('egp')}`
-                        : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`,
+                    value: analyticsAvgRevenuePerCenterCell,
                   },
                   {
                     key: 'zeroStudents',
                     label: tAdmin('analyticsCentersZeroStudents'),
-                    value: analyticsCenters.filter((c) => (c.students_count ?? 0) === 0).length,
+                    value: analyticsZeroStudentsCount,
                   },
                   {
                     key: 'atRisk',
                     label: tAdmin('analyticsCentersAtRisk'),
-                    value: analyticsCenters.filter((c) => c.last_active?.includes('days') || c.last_active === 'Never').length,
+                    value: analyticsAtRiskCount,
                   },
                 ] as const
               ).map(({ key, label, value }) => (
