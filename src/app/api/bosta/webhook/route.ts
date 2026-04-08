@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
@@ -78,6 +79,34 @@ async function findCardOrder(
 }
 
 export async function POST(request: Request) {
+  const rawBody = await request.text();
+
+  // BOSTA_WEBHOOK_SECRET — Set in Vercel env vars — get from Bosta dashboard
+  const secret = process.env.BOSTA_WEBHOOK_SECRET ?? '';
+  const sig = request.headers.get('Bosta-Signature') ?? '';
+  if (secret) {
+    const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+    const sigBuf = Buffer.from(sig);
+    const expectedBuf = Buffer.from(expected);
+    if (
+      sigBuf.length !== expectedBuf.length ||
+      !timingSafeEqual(sigBuf, expectedBuf)
+    ) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    }
+  } else {
+    console.warn(
+      '[bosta-webhook] BOSTA_WEBHOOK_SECRET is not set; webhook HMAC verification skipped',
+    );
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(rawBody) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
@@ -88,13 +117,6 @@ export async function POST(request: Request) {
   const supabase = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-
-  let body: Record<string, unknown>;
-  try {
-    body = (await request.json()) as Record<string, unknown>;
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
 
   const shipment = body.shipment as Record<string, unknown> | undefined;
   const state = shipment?.state as Record<string, unknown> | undefined;
