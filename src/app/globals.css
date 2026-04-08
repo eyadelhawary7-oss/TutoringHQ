@@ -570,6 +570,15 @@ html.light [data-chq-landing] {
   --color-text-secondary: #cbd5e1 !important;
   --color-text-muted: #64748b !important;
   --color-border: #1e293b !important;
+  background-color: #080f1a !important;
+  color: #f8fafc !important;
+}
+
+html [data-chq-landing] section,
+html.light [data-chq-landing] section,
+html [data-chq-landing] div,
+html.light [data-chq-landing] div {
+  background-color: inherit;
 }
 
 /* Light theme — component overrides */
