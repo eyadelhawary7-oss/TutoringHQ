@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function logAdminAction(
   userId: string,
@@ -6,19 +6,13 @@ export async function logAdminAction(
   details: Record<string, unknown>,
   centerId?: string | null
 ) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceKey) {
-    console.warn('[audit] Missing Supabase config - audit log skipped');
+  if (!supabaseAdmin) {
+    console.warn('[audit] Missing Supabase admin client - audit log skipped');
     return;
   }
 
-  const supabase = createClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
   try {
-    await supabase.from('audit_log').insert({
+    await supabaseAdmin.from('audit_log').insert({
       center_id: centerId ?? null,
       user_id: userId,
       action,

@@ -129,7 +129,7 @@ export async function dbCount(options: QueryOptions) {
   });
 }
 
-/** Log an audit entry */
+/** Log an audit entry (server: service role via /api/audit-log) */
 export async function auditLog(params: {
   centerId: string;
   userId: string;
@@ -138,16 +138,46 @@ export async function auditLog(params: {
   entityId?: string;
   details?: Record<string, unknown>;
 }) {
-  return dbInsert({
-    table: 'audit_log',
-    data: {
-      center_id: params.centerId,
-      user_id: params.userId,
-      action: params.action,
-      entity_type: params.entityType,
-      entity_id: params.entityId ?? null,
-      details: params.details ?? {},
-    },
-    select: false,
-  });
+  const token = await getAccessToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const url = '/api/audit-log';
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+  const { getCsrfHeaders } = await import('./csrf-client');
+  Object.assign(headers, await getCsrfHeaders(token));
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        centerId: params.centerId,
+        userId: params.userId,
+        action: params.action,
+        entityType: params.entityType,
+        entityId: params.entityId ?? null,
+        details: params.details ?? {},
+      }),
+    });
+  } catch (fetchErr) {
+    throw fetchErr;
+  }
+
+  let result: { ok?: boolean; error?: string };
+  try {
+    result = await res.json();
+  } catch (parseErr) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Invalid JSON response: ${text.slice(0, 200)}`);
+  }
+
+  if (!res.ok || result.error) {
+    const err = new Error(typeof result.error === 'string' ? result.error : `HTTP ${res.status}`);
+    return { data: null, error: err, count: undefined };
+  }
+  return { data: result, error: null, count: undefined };
 }

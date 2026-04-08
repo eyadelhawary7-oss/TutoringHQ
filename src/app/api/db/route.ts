@@ -9,7 +9,7 @@ import { scanRatelimit, rateLimitedResponse } from '@/lib/ratelimit';
 const ALLOWED_TABLES = [
   'payments', 'students', 'student_groups', 'attendance_scans',
   'rooms', 'schedule_slots', 'centers', 'users', 'subjects',
-  'audit_log', 'subscriptions', 'whatsapp_messages', 'whatsapp_incoming',
+  'subscriptions', 'whatsapp_messages', 'whatsapp_incoming',
   'permissions', 'demo_requests', 'center_invites', 'student_group_members',
   'wa_templates', 'paid_parents', 'reminder_settings',
   'card_orders',

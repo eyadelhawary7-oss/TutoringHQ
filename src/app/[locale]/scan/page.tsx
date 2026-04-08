@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert } from '@/lib/db-proxy';
+import { dbSelect, dbInsert, auditLog } from '@/lib/db-proxy';
 import {
   syncStudentsToLocal,
   getAllStudentsOffline,
@@ -888,17 +888,18 @@ export default function ScanPage() {
         });
         if (scanErr) console.error('Attendance scan insert FAILED:', scanErr);
         else notifyParentScan(scannedStudent.id, isCash ? 'attended' : 'pending_payment');
-        await dbInsert({
-          table: 'audit_log',
-          data: {
-            center_id: centerId,
-            user_id: userId,
-            action: 'payment_on_scan',
-            entity_type: 'payment',
-            entity_id: scannedStudent.id,
-            details: { method, amount: paymentAmount, group_id: effectiveGroupId, status: method === 'cash' ? 'confirmed' : 'pending' },
+        await auditLog({
+          centerId,
+          userId,
+          action: 'payment_on_scan',
+          entityType: 'payment',
+          entityId: scannedStudent.id,
+          details: {
+            method,
+            amount: paymentAmount,
+            group_id: effectiveGroupId,
+            status: method === 'cash' ? 'confirmed' : 'pending',
           },
-          select: false,
         });
       } else {
         await queueScan({
