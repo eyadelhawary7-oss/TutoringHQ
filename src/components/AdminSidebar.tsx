@@ -99,8 +99,7 @@ export function AdminSidebar({
   const [userPhone, setUserPhone] = useState('');
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [customPermissions, setCustomPermissions] = useState<string[]>([]);
-
-  const pendingCount = 5; // TODO: replace with real count
+  const [pendingCentersCount, setPendingCentersCount] = useState(0);
   const isCeo =
     activeRoute === '/ceo' ||
     activeRoute === '/ceo-dashboard' ||
@@ -140,6 +139,27 @@ export function AdminSidebar({
       }),
     [adminRole, canSee],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPendingCentersCount = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session || cancelled) return;
+      const { count, error } = await supabase
+        .from('centers')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      if (!cancelled) {
+        setPendingCentersCount(error == null && count != null ? count : 0);
+      }
+    };
+    void loadPendingCentersCount();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const loadAdminRole = async () => {
@@ -410,9 +430,9 @@ export function AdminSidebar({
               >
                 <Icon size={18} className="shrink-0" />
                 <span>{t(labelKey as Parameters<typeof t>[0])}</span>
-                {key === 'cardOrders' && pendingCount > 0 ? (
+                {key === 'pendingSignups' && pendingCentersCount > 0 ? (
                   <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-red-600 text-primary-foreground text-[11px] font-bold px-1.5">
-                    {pendingCount}
+                    {pendingCentersCount}
                   </span>
                 ) : null}
               </button>,
@@ -671,9 +691,9 @@ export function AdminSidebar({
               >
                 <Icon size={18} />
                 <span>{t(labelKey as Parameters<typeof t>[0])}</span>
-                {key === 'cardOrders' && pendingCount > 0 ? (
+                {key === 'pendingSignups' && pendingCentersCount > 0 ? (
                   <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold px-1.5">
-                    {pendingCount}
+                    {pendingCentersCount}
                   </span>
                 ) : null}
               </button>,

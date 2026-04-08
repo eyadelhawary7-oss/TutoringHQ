@@ -15,7 +15,8 @@ import { sendChqPackInvoiceTemplate } from '@/lib/centerNotify';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 import { tCronBackup, tCronWaAr } from '@/lib/cronBackupI18n';
 
-const packInvoiceEnabled = true; // TODO: set to true when chq_pack_invoice is Active
+/** chq_pack_invoice WhatsApp template is Active in Meta. */
+const packInvoiceEnabled = true;
 
 const CENTER_CHUNK_SIZE = 50;
 
