@@ -362,10 +362,10 @@ export default function LocaleHomePage() {
       </header>
 
       <section
-        className="chq-fade-in bg-[var(--color-surface-0)] px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28"
+        className="chq-fade-in bg-[#080f1a] px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28"
         style={{
           background:
-            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), var(--color-surface-0)',
+            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), #080f1a',
         }}
       >
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 md:grid-cols-2 md:gap-16">
@@ -484,7 +484,7 @@ export default function LocaleHomePage() {
         </div>
       </section>
 
-      <section className="chq-fade-in border-y border-slate-800/40 bg-[var(--color-surface-0)] px-4 py-12 md:px-6">
+      <section className="chq-fade-in border-y border-slate-800/40 bg-[#080f1a] px-4 py-12 md:px-6">
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
           {[
             { v: m('stat1Value'), l: m('stat1Label') },
@@ -504,7 +504,7 @@ export default function LocaleHomePage() {
 
       <section
         id="how-it-works"
-        className="chq-fade-in scroll-mt-20 bg-[var(--color-surface-0)] px-4 py-16 md:px-6 md:py-24"
+        className="chq-fade-in scroll-mt-20 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
       >
         <div className="mx-auto max-w-5xl">
           <h2 className="mb-10 text-center text-2xl font-bold !text-white md:mb-14 md:text-3xl">
@@ -546,7 +546,7 @@ export default function LocaleHomePage() {
 
       <section
         id="features"
-        className="chq-fade-in scroll-mt-20 border-t border-slate-800/40 bg-[var(--color-surface-0)] px-4 py-16 md:px-6 md:py-24"
+        className="chq-fade-in scroll-mt-20 border-t border-slate-800/40 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
       >
         <div className="mx-auto max-w-6xl">
           <h2 className="mb-10 text-center text-2xl font-bold !text-white md:mb-14 md:text-3xl">
@@ -576,7 +576,7 @@ export default function LocaleHomePage() {
 
       <section
         id="pricing-preview"
-        className="chq-fade-in scroll-mt-20 bg-[var(--color-surface-0)] px-4 py-16 md:px-6 md:py-24"
+        className="chq-fade-in scroll-mt-20 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
       >
         <div className="mx-auto max-w-5xl text-center">
           <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('pricingTitle')}</h2>
@@ -625,7 +625,7 @@ export default function LocaleHomePage() {
         </div>
       </section>
 
-      <section className="chq-fade-in bg-[var(--color-surface-0)] bg-gradient-to-b from-[var(--color-surface-0)] via-[var(--color-surface-1)] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
+      <section className="chq-fade-in bg-[#080f1a] bg-gradient-to-b from-[#080f1a] via-[#0f172a] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('finalCtaTitle')}</h2>
           <p className="mt-3 text-sm text-[var(--color-text-secondary)] md:text-base">{t('finalCtaDesc')}</p>
