@@ -13,7 +13,7 @@ const SCREEN_SEQUENCE: DemoScreen[] = ['scanning', 'scanned', 'dashboard', 'what
 
 const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
   <div
-    className="absolute inset-0 flex items-center justify-center !bg-[#080c14]"
+    className="absolute inset-0 flex items-center justify-center bg-[#080c14]"
     style={{ background: 'radial-gradient(ellipse at center, #0d1520 0%, #050810 100%)' }}
   >
     {/* Student ID Card */}
@@ -24,13 +24,13 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
         transition: 'transform 0.7s ease-out',
       }}
     >
-      <div className="h-full w-full overflow-hidden rounded-xl border border-slate-600 !bg-gradient-to-br from-slate-700 to-slate-800 shadow-2xl">
-        <div className="flex h-7 items-center gap-2 !bg-teal-700 px-3">
+      <div className="h-full w-full overflow-hidden rounded-xl border border-slate-600 bg-gradient-to-br from-slate-700 to-slate-800 shadow-2xl">
+        <div className="flex h-7 items-center gap-2 bg-teal-700 px-3">
           <span className="text-[8px] font-bold tracking-widest text-white">CENTERHQ</span>
           <span className="ml-auto text-[7px] text-teal-200">طالب</span>
         </div>
         <div className="flex gap-2 p-2">
-          <div className="flex h-14 w-12 shrink-0 items-center justify-center rounded-md border border-slate-500 !bg-slate-600">
+          <div className="flex h-14 w-12 shrink-0 items-center justify-center rounded-md border border-slate-500 bg-slate-600">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5" aria-hidden>
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
@@ -42,7 +42,7 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
             <div className="mt-0.5 text-[7px] text-teal-400">IB Year 1</div>
             <div className="mt-1 flex gap-[2px]">
               {Array.from({ length: 18 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-full !bg-slate-500" style={{ width: i % 3 === 0 ? '2px' : '1px' }} />
+                <div key={i} className="h-3 rounded-full bg-slate-500" style={{ width: i % 3 === 0 ? '2px' : '1px' }} />
               ))}
             </div>
           </div>
@@ -50,8 +50,8 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
       </div>
 
       {demoScreen === 'scanned' ? (
-        <div className="absolute inset-0 flex items-center justify-center rounded-xl !bg-black/40">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full !bg-teal-500 shadow-[0_0_30px_rgba(13,148,136,0.8)]">
+        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shadow-[0_0_30px_rgba(13,148,136,0.8)]">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <polyline points="20 6 9 17 4 12" />
             </svg>
@@ -82,34 +82,34 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
 );
 
 const DashboardScreen = () => (
-  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden !bg-[var(--color-surface-0)] p-3">
+  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[var(--color-surface-0)] p-3">
     <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">لوحة التحكم</div>
     <div className="grid grid-cols-2 gap-1.5">
-      <div className="rounded-lg !bg-slate-800 p-2">
+      <div className="rounded-lg bg-slate-800 p-2">
         <div className="text-[8px] text-slate-500">الطلاب</div>
         <div className="text-sm font-bold text-white">247</div>
         <div className="text-[8px] text-teal-400">↑ 12 هذا الشهر</div>
       </div>
-      <div className="rounded-lg !bg-slate-800 p-2">
+      <div className="rounded-lg bg-slate-800 p-2">
         <div className="text-[8px] text-slate-500">الإيرادات</div>
         <div className="text-sm font-bold text-white">21K</div>
         <div className="text-[8px] text-teal-400">EGP شهرياً</div>
       </div>
     </div>
-    <div className="rounded-lg !bg-slate-800 p-2">
+    <div className="rounded-lg bg-slate-800 p-2">
       <div className="mb-1 flex justify-between">
         <span className="text-[8px] text-slate-500">حضور اليوم</span>
         <span className="text-[8px] text-teal-400">87%</span>
       </div>
-      <div className="h-1.5 rounded-full !bg-slate-700">
-        <div className="h-full w-[87%] rounded-full !bg-teal-500" />
+      <div className="h-1.5 rounded-full bg-slate-700">
+        <div className="h-full w-[87%] rounded-full bg-teal-500" />
       </div>
     </div>
-    <div className="flex flex-1 flex-col rounded-lg !bg-slate-800 p-2">
+    <div className="flex flex-1 flex-col rounded-lg bg-slate-800 p-2">
       <div className="mb-1.5 text-[8px] text-slate-500">آخر المسحات</div>
       {['Ahmed K.', 'Sara M.', 'Omar H.'].map((name, i) => (
         <div key={name} className="mb-1 flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full !bg-teal-500" />
+          <div className="h-1.5 w-1.5 rounded-full bg-teal-500" />
           <span className="text-[8px] text-slate-300">{name}</span>
           <span className="ml-auto text-[7px] text-slate-600">الآن</span>
         </div>
@@ -119,10 +119,10 @@ const DashboardScreen = () => (
 );
 
 const WhatsAppScreen = () => (
-  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden !bg-[#0a1628] p-3">
+  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[#0a1628] p-3">
     <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">واتساب</div>
-    <div className="flex items-center gap-2 rounded-lg !bg-[#128C7E] p-2">
-      <div className="flex h-6 w-6 items-center justify-center rounded-full !bg-white/20">
+    <div className="flex items-center gap-2 rounded-lg bg-[#128C7E] p-2">
+      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden>
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
         </svg>
@@ -133,15 +133,15 @@ const WhatsAppScreen = () => (
       </div>
     </div>
     <div className="flex flex-1 flex-col gap-1.5">
-      <div className="max-w-[85%] rounded-lg rounded-tl-sm !bg-white/10 p-2">
+      <div className="max-w-[85%] rounded-lg rounded-tl-sm bg-white/10 p-2">
         <div className="text-[8px] leading-relaxed text-white">تنبيه غياب: محمد أحمد لم يحضر جلسة اليوم</div>
         <div className="mt-0.5 text-[7px] text-white/50">10:30</div>
       </div>
-      <div className="max-w-[85%] rounded-lg rounded-tl-sm !bg-white/10 p-2">
+      <div className="max-w-[85%] rounded-lg rounded-tl-sm bg-white/10 p-2">
         <div className="text-[8px] leading-relaxed text-white">تذكير: الاشتراك الشهري مستحق يوم الجمعة</div>
         <div className="mt-0.5 text-[7px] text-white/50">10:31</div>
       </div>
-      <div className="max-w-[85%] self-end rounded-lg rounded-tr-sm !bg-teal-600 p-2">
+      <div className="max-w-[85%] self-end rounded-lg rounded-tr-sm bg-teal-600 p-2">
         <div className="text-[8px] text-white">شكراً، سيتم الدفع غداً</div>
         <div className="mt-0.5 text-right text-[7px] text-white/70">10:35 ✓✓</div>
       </div>
@@ -150,10 +150,10 @@ const WhatsAppScreen = () => (
 );
 
 const PaymentScreen = () => (
-  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden !bg-[var(--color-surface-0)] p-3">
+  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[var(--color-surface-0)] p-3">
     <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">المدفوعات</div>
-    <div className="flex items-center gap-3 rounded-xl border border-teal-700/50 !bg-teal-900/40 p-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal-500 !bg-teal-500/20">
+    <div className="flex items-center gap-3 rounded-xl border border-teal-700/50 bg-teal-900/40 p-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal-500 bg-teal-500/20">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <polyline points="20 6 9 17 4 12" />
         </svg>
@@ -164,7 +164,7 @@ const PaymentScreen = () => (
         <div className="text-[8px] text-slate-500">سنتر النخبة للغات</div>
       </div>
     </div>
-    <div className="flex flex-1 flex-col rounded-xl !bg-slate-800 p-2">
+    <div className="flex flex-1 flex-col rounded-xl bg-slate-800 p-2">
       <div className="mb-2 text-[8px] text-slate-500">آخر المدفوعات</div>
       {[
         { name: 'Ahmed K.', amount: '500', status: 'paid' as const },
@@ -172,13 +172,13 @@ const PaymentScreen = () => (
         { name: 'Omar H.', amount: '500', status: 'pending' as const },
       ].map((p, i) => (
         <div key={`${p.name}-${i}`} className="mb-1.5 flex items-center gap-2">
-          <div className={`h-1.5 w-1.5 rounded-full ${p.status === 'paid' ? '!bg-teal-500' : '!bg-amber-500'}`} />
+          <div className={`h-1.5 w-1.5 rounded-full ${p.status === 'paid' ? 'bg-teal-500' : 'bg-amber-500'}`} />
           <span className="flex-1 text-[8px] text-slate-300">{p.name}</span>
           <span className="text-[8px] font-semibold text-white">{p.amount} EGP</span>
         </div>
       ))}
     </div>
-    <div className="flex items-center justify-between rounded-lg !bg-slate-800 p-2">
+    <div className="flex items-center justify-between rounded-lg bg-slate-800 p-2">
       <span className="text-[8px] text-slate-500">إجمالي الشهر</span>
       <span className="text-xs font-bold text-teal-400">21,000 EGP</span>
     </div>
@@ -317,7 +317,7 @@ export default function LocaleHomePage() {
         </div>
 
         {mobileOpen ? (
-          <div className="border-t border-slate-800/60 !bg-[var(--color-surface-0)]/95 px-4 py-4 md:hidden">
+          <div className="border-t border-slate-800/60 bg-[var(--color-surface-0)]/95 px-4 py-4 md:hidden">
             <div className="flex flex-col gap-1">
               <a
                 href="#features"
@@ -386,7 +386,7 @@ export default function LocaleHomePage() {
               </Link>
               <a
                 href="#how-it-works"
-                className="rounded-xl border border-slate-700 !bg-slate-800 px-8 py-4 text-center text-lg font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-slate-700 hover:text-white btn-press chq-focus"
+                className="rounded-xl border border-slate-700 bg-slate-800 px-8 py-4 text-center text-lg font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-slate-700 hover:text-white btn-press chq-focus"
               >
                 {t('watchDemo')}
               </a>
@@ -396,24 +396,24 @@ export default function LocaleHomePage() {
           <div className="flex justify-center md:justify-end">
             <div className="relative mx-auto h-[560px] w-[280px] shrink-0" aria-hidden dir="ltr">
               {/* Outer phone frame */}
-              <div className="absolute inset-0 rounded-[48px] border border-slate-600 !bg-slate-800 shadow-[0_0_80px_rgba(13,148,136,0.2)]" />
+              <div className="absolute inset-0 rounded-[48px] border border-slate-600 bg-slate-800 shadow-[0_0_80px_rgba(13,148,136,0.2)]" />
 
               {/* Inner screen */}
-              <div className="absolute inset-[3px] flex flex-col overflow-hidden rounded-[46px] !bg-[#0a0f1a]">
+              <div className="absolute inset-[3px] flex flex-col overflow-hidden rounded-[46px] bg-[#0a0f1a]">
                 {/* Status bar */}
                 <div className="flex items-center justify-between px-6 pb-2 pt-4">
                   <span className="text-[11px] font-semibold text-[var(--color-text-secondary)]">9:41</span>
-                  <div className="h-5 w-16 rounded-full !bg-[var(--color-surface-3)]" />
+                  <div className="h-5 w-16 rounded-full bg-[var(--color-surface-3)]" />
                   <div className="flex items-center gap-1.5">
                     <div className="flex h-3 items-end gap-[2px]">
-                      <div className="h-1 w-[3px] rounded-full !bg-slate-500" />
-                      <div className="h-1.5 w-[3px] rounded-full !bg-slate-500" />
-                      <div className="h-2 w-[3px] rounded-full !bg-slate-400" />
-                      <div className="h-3 w-[3px] rounded-full !bg-teal-400" />
+                      <div className="h-1 w-[3px] rounded-full bg-slate-500" />
+                      <div className="h-1.5 w-[3px] rounded-full bg-slate-500" />
+                      <div className="h-2 w-[3px] rounded-full bg-slate-400" />
+                      <div className="h-3 w-[3px] rounded-full bg-teal-400" />
                     </div>
                     <div className="relative h-2.5 w-5 rounded-[3px] border border-slate-400">
-                      <div className="absolute inset-[2px] left-[2px] right-[4px] rounded-[1px] !bg-teal-400" />
-                      <div className="absolute -right-[3px] top-1/2 h-[6px] w-[3px] -translate-y-1/2 rounded-r-full !bg-slate-500" />
+                      <div className="absolute inset-[2px] left-[2px] right-[4px] rounded-[1px] bg-teal-400" />
+                      <div className="absolute -right-[3px] top-1/2 h-[6px] w-[3px] -translate-y-1/2 rounded-r-full bg-slate-500" />
                     </div>
                   </div>
                 </div>
@@ -424,7 +424,7 @@ export default function LocaleHomePage() {
                 </div>
 
                 {/* Multi-screen demo */}
-                <div className="relative flex-1 overflow-hidden !bg-[#080c14] transition-all duration-500">
+                <div className="relative flex-1 overflow-hidden bg-[#080c14] transition-all duration-500">
                   {(demoScreen === 'scanning' || demoScreen === 'scanned') && <ScannerScreen demoScreen={demoScreen} />}
                   {demoScreen === 'dashboard' ? <DashboardScreen /> : null}
                   {demoScreen === 'whatsapp' ? <WhatsAppScreen /> : null}
@@ -432,9 +432,9 @@ export default function LocaleHomePage() {
                 </div>
 
                 {demoScreen === 'scanned' ? (
-                  <div className="mx-3 mb-2 rounded-2xl border border-teal-900 !bg-slate-800/90 p-3 transition-all duration-500">
+                  <div className="mx-3 mb-2 rounded-2xl border border-teal-900 bg-slate-800/90 p-3 transition-all duration-500">
                     <div className="flex items-center gap-3" dir="ltr">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-teal-700 !bg-teal-900/60">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-teal-700 bg-teal-900/60">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
@@ -448,35 +448,35 @@ export default function LocaleHomePage() {
                   </div>
                 ) : null}
                 {demoScreen === 'dashboard' ? (
-                  <div className="mx-3 mb-2 rounded-2xl border border-slate-700 !bg-slate-800/90 p-3">
+                  <div className="mx-3 mb-2 rounded-2xl border border-slate-700 bg-slate-800/90 p-3">
                     <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 animate-pulse rounded-full !bg-teal-500" />
+                      <div className="h-2 w-2 animate-pulse rounded-full bg-teal-500" />
                       <p className="text-[10px] text-[var(--color-text-secondary)]">247 طالب نشط اليوم</p>
                     </div>
                   </div>
                 ) : null}
                 {demoScreen === 'whatsapp' ? (
-                  <div className="mx-3 mb-2 rounded-2xl border border-[#128C7E]/40 !bg-[#128C7E]/20 p-3">
+                  <div className="mx-3 mb-2 rounded-2xl border border-[#128C7E]/40 bg-[#128C7E]/20 p-3">
                     <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 animate-pulse rounded-full !bg-green-400" />
+                      <div className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
                       <p className="text-[10px] text-green-300">تم إرسال 12 رسالة واتساب</p>
                     </div>
                   </div>
                 ) : null}
                 {demoScreen === 'payment' ? (
-                  <div className="mx-3 mb-2 rounded-2xl border border-teal-800/50 !bg-teal-900/30 p-3">
+                  <div className="mx-3 mb-2 rounded-2xl border border-teal-800/50 bg-teal-900/30 p-3">
                     <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full !bg-teal-400" />
+                      <div className="h-2 w-2 rounded-full bg-teal-400" />
                       <p className="text-[10px] text-teal-300">تم تحصيل 21,000 EGP هذا الشهر</p>
                     </div>
                   </div>
                 ) : null}
 
                 {/* Bottom bar */}
-                <div className="flex items-center justify-center gap-2 border-t border-slate-800 !bg-[#0a0f1a] py-3">
-                  <div className="h-2 w-2 rounded-full !bg-teal-500" />
-                  <div className="h-2 w-2 rounded-full !bg-slate-700" />
-                  <div className="h-2 w-2 rounded-full !bg-slate-700" />
+                <div className="flex items-center justify-center gap-2 border-t border-slate-800 bg-[#0a0f1a] py-3">
+                  <div className="h-2 w-2 rounded-full bg-teal-500" />
+                  <div className="h-2 w-2 rounded-full bg-slate-700" />
+                  <div className="h-2 w-2 rounded-full bg-slate-700" />
                 </div>
               </div>
             </div>
@@ -493,7 +493,7 @@ export default function LocaleHomePage() {
           ].map((s, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-[var(--color-border)] !bg-[var(--color-surface-1)] p-6 text-center"
+              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-center"
             >
               <p className="text-3xl font-bold text-teal-400">{s.v}</p>
               <p className="mt-1 text-sm text-[var(--color-text-muted)]">{s.l}</p>
@@ -521,7 +521,7 @@ export default function LocaleHomePage() {
                   key={`step-${idx}`}
                   className="flex max-w-xs flex-col items-center text-center md:max-w-[220px] md:shrink-0"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal-700 !bg-teal-900/40 text-lg font-bold text-teal-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal-700 bg-teal-900/40 text-lg font-bold text-teal-400">
                     {idx + 1}
                   </div>
                   <h3 className="mt-4 text-base font-semibold text-white">{step.title}</h3>
@@ -556,13 +556,13 @@ export default function LocaleHomePage() {
             {featureKeys.map((k) => (
               <div
                 key={k}
-                className="rounded-2xl border border-[var(--color-border)] !bg-[var(--color-surface-1)] p-5"
+                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5"
               >
                 <div
-                  className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg border border-teal-700/50 !bg-teal-900/40"
+                  className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg border border-teal-700/50 bg-teal-900/40"
                   aria-hidden
                 >
-                  <div className="h-3 w-3 rounded-sm !bg-teal-500" />
+                  <div className="h-3 w-3 rounded-sm bg-teal-500" />
                 </div>
                 <h3 className="mb-1 text-sm font-semibold text-white">
                   {m(`${k}Title` as 'f1Title')}
@@ -585,10 +585,10 @@ export default function LocaleHomePage() {
           </p>
           <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
             <div
-              className="rounded-2xl border border-slate-700 !bg-[var(--color-surface-2)] p-6 text-start !text-white"
+              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-2)] p-6 text-start !text-white"
               style={{ color: '#ffffff' }}
             >
-              <span className="inline-block rounded-full border border-slate-600 !bg-[var(--color-surface-2)] px-2 py-0.5 text-xs !text-[var(--color-text-muted)]">
+              <span className="inline-block rounded-full border border-slate-600 bg-[var(--color-surface-2)] px-2 py-0.5 text-xs !text-[var(--color-text-muted)]">
                 {m('nanoBadge')}
               </span>
               <p className="mt-3 text-base font-bold !text-white">{m('nanoName')}</p>
@@ -597,10 +597,10 @@ export default function LocaleHomePage() {
               <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m('nanoStudents')}</p>
             </div>
             <div
-              className="rounded-2xl border border-teal-600/60 !bg-slate-800 p-6 text-start !text-white ring-1 ring-teal-600/30"
+              className="rounded-2xl border border-teal-600/60 bg-slate-800 p-6 text-start !text-white ring-1 ring-teal-600/30"
               style={{ color: '#ffffff' }}
             >
-              <span className="inline-block rounded-full border border-teal-700/50 !bg-teal-900/30 px-2 py-0.5 text-xs font-medium !text-teal-400">
+              <span className="inline-block rounded-full border border-teal-700/50 bg-teal-900/30 px-2 py-0.5 text-xs font-medium !text-teal-400">
                 {m('popularBadge')}
               </span>
               <p className="mt-3 text-base font-bold !text-white">{m('starterName')}</p>
@@ -608,7 +608,7 @@ export default function LocaleHomePage() {
               <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m('starterStudents')}</p>
             </div>
             <div
-              className="rounded-2xl border border-slate-700 !bg-[var(--color-surface-2)] p-6 text-start !text-white"
+              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-2)] p-6 text-start !text-white"
               style={{ color: '#ffffff' }}
             >
               <p className="mt-3 text-base font-bold !text-white">{m('proName')}</p>
@@ -618,7 +618,7 @@ export default function LocaleHomePage() {
           </div>
           <Link
             href="/signup"
-            className="mt-10 inline-flex rounded-xl border border-slate-600 !bg-[var(--color-surface-1)] px-6 py-3 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:border-slate-500 hover:!bg-[var(--color-surface-2)] hover:text-white btn-press chq-focus"
+            className="mt-10 inline-flex rounded-xl border border-slate-600 bg-[var(--color-surface-1)] px-6 py-3 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:border-slate-500 hover:bg-[var(--color-surface-2)] hover:text-white btn-press chq-focus"
           >
             {m('pricingCta')}
           </Link>
