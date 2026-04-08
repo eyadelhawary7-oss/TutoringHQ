@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 
 type HeatmapCell = {
@@ -17,6 +17,7 @@ type Props = {
 
 export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
   const t = useTranslations('heatmap');
+  const locale = useLocale();
   const [cells, setCells] = useState<HeatmapCell[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -85,15 +86,16 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   function getCellTooltip(dateStr: string): string {
     const present = cellMap[dateStr];
-    const arabicDate = new Date(dateStr + 'T12:00:00Z').toLocaleDateString('en-US', {
+    const dateLoc = locale === 'ar' ? 'ar' : 'en-US';
+    const formattedDate = new Date(dateStr + 'T12:00:00Z').toLocaleDateString(dateLoc, {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
     });
     if (present === undefined || present === 0) {
-      return `${arabicDate} - ${t('legend.none')}`;
+      return `${formattedDate} - ${t('legend.none')}`;
     }
-    return `${arabicDate} - ${present} طالب حضر`;
+    return `${formattedDate} - ${present} طالب حضر`;
   }
 
   const dayHeaders = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];

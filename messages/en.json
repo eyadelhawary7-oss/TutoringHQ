@@ -185,6 +185,7 @@
     "active": "Active",
     "inactive": "Inactive",
     "students": "students",
+    "studentCount": "{count, plural, one {# student} other {# students}}",
     "all": "All",
     "amount": "Amount",
     "view": "View",

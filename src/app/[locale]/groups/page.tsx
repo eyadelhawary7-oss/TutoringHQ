@@ -373,7 +373,7 @@ export default function GroupsPage() {
                 <div className="p-2 bg-teal-100 rounded-lg">
                   <BookOpen className="w-5 h-5 text-teal-600" />
                 </div>
-                <span className="text-xs text-slate-400">{g.member_count ?? 0} {tCommon('students')}</span>
+                <span className="text-xs text-slate-400">{tCommon('studentCount', { count: g.member_count ?? 0 })}</span>
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject ?? '\u2014'}</p>

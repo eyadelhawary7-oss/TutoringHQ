@@ -129,7 +129,11 @@ export function AtRiskPanel() {
                       {t('daysSinceLastScan', { days: s.days_since_last_scan, defaultValue: `${s.days_since_last_scan} يوم منذ آخر مسح` })}
                       {s.at_risk_since && (
                         <span className="ms-2">
-                          • {t('atRiskSince', { defaultValue: 'معرض منذ' })} {new Date(s.at_risk_since).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                          • {t('atRiskSince', { defaultValue: 'معرض منذ' })}{' '}
+                          {new Date(s.at_risk_since).toLocaleDateString(locale === 'ar' ? 'ar' : 'en-US', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
                         </span>
                       )}
                     </p>

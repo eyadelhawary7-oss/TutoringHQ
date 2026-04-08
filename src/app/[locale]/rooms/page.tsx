@@ -112,36 +112,50 @@ export default function RoomsPage() {
         </button>
       </div>
 
-      {isLoading ? (
-        <div className="text-center py-16">
-          <svg className="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rooms.map(r => (
-            <div key={r.id} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-5">
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <DoorOpen className="w-5 h-5 text-blue-600" />
+      <div className="relative min-h-[min(50vh,20rem)]">
+        {isLoading && (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-[var(--color-surface-0)]/80 backdrop-blur-[1px]"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <svg className="animate-spin h-8 w-8 text-teal-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden>
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+        )}
+        {!isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {rooms.map((r) => (
+              <div key={r.id} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <DoorOpen className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <button className="p-1.5 hover:bg-[var(--color-surface-2)] rounded-lg text-slate-400" aria-label="More">
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
                 </div>
-                <button className="p-1.5 hover:bg-[var(--color-surface-2)] rounded-lg text-slate-400" aria-label="More"><MoreVertical className="w-4 h-4" /></button>
+                <h3 className="font-semibold text-[var(--color-text-primary)]">{r.name}</h3>
+                <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                  {t('maxCapacity')}:{' '}
+                  {r.capacity != null && Number.isFinite(Number(r.capacity))
+                    ? tCommon('studentCount', { count: Number(r.capacity) })
+                    : '—'}
+                </p>
               </div>
-              <h3 className="font-semibold text-[var(--color-text-primary)]">{r.name}</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('maxCapacity')}: {r.capacity ?? '-'} {tCommon('students')}</p>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {rooms.length === 0 && !isLoading && (
-        <div className="text-center py-16">
-          <DoorOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <p className="text-[var(--color-text-secondary)] font-medium">{t('noRooms')}</p>
-        </div>
-      )}
+        {rooms.length === 0 && !isLoading && (
+          <div className="text-center py-16">
+            <DoorOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-[var(--color-text-secondary)] font-medium">{t('noRooms')}</p>
+          </div>
+        )}
+      </div>
 
       {/* Add Room Modal */}
       {showAddModal && (

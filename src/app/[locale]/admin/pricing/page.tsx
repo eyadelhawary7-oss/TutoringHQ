@@ -37,6 +37,20 @@ function fmtMoney(n: number): string {
   return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
+function titleCaseToken(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+/** Display plan names in Title Case (e.g. STARTER → Starter, nano → Nano). */
+function formatPlanDisplayName(raw: string): string {
+  return raw
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map(titleCaseToken)
+    .join(' ');
+}
+
 export default function AdminPricingPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
@@ -335,7 +349,7 @@ export default function AdminPricingPage() {
                             className="border-b border-[var(--color-border-subtle)] last:border-0 text-[var(--color-text-primary)]"
                           >
                             <td className="p-3 font-medium">
-                              {locale === 'ar' ? p.arabic_name : p.english_name}
+                              {locale === 'ar' ? p.arabic_name : formatPlanDisplayName(p.english_name)}
                             </td>
                             <td className="p-2">
                               <input
@@ -442,7 +456,7 @@ export default function AdminPricingPage() {
                         <tbody>
                           {packMinimumsRows.map(([key, val]) => (
                             <tr key={key} className="border-t border-[var(--color-border-subtle)]">
-                              <td className="p-2 font-mono text-[var(--color-text-primary)]">{key}</td>
+                              <td className="p-2 text-[var(--color-text-primary)]">{formatPlanDisplayName(key)}</td>
                               <td className="p-2 tabular-nums">{fmtMoney(val)}</td>
                             </tr>
                           ))}

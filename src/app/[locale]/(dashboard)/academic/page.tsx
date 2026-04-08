@@ -46,14 +46,8 @@ const PERIOD_COLORS: Record<PeriodType, string> = {
 
 function formatHolidayDate(dateStr: string, locale: string): string {
   const d = new Date(dateStr + 'T12:00:00');
-  const months: Record<string, string[]> = {
-    ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
-    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-  };
-  const monthNames = months[locale] ?? months['en'];
-  const day = d.getDate().toLocaleString('en-US');
-  const month = monthNames[d.getMonth()];
-  return `${day} ${month}`;
+  const loc = locale === 'ar' ? 'ar' : 'en-US';
+  return d.toLocaleDateString(loc, { day: 'numeric', month: 'long' });
 }
 
 function formatDateAr(dateStr: string): string {
@@ -378,14 +372,6 @@ export default function AcademicPage() {
     return todayMs >= s && todayMs <= e;
   };
 
-  if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-[300px]" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-      </div>
-    );
-  }
-
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <PageHeader title={t('title')} subtitle={t('subtitle')}>
@@ -401,6 +387,19 @@ export default function AcademicPage() {
         )}
       </PageHeader>
 
+      <div className="relative min-h-[min(50vh,28rem)]">
+        {loading && (
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-[var(--color-surface-0)]/85 backdrop-blur-[1px]"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden />
+          </div>
+        )}
+
+        {!loading && (
+          <>
       {/* Section 1: Current year card */}
       <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border)] shadow-sm p-6 mb-6">
         <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
@@ -636,6 +635,9 @@ export default function AcademicPage() {
         <Plus className="w-5 h-5" />
         {t('createNewYear')}
       </button>
+          </>
+        )}
+      </div>
 
       {/* Modals */}
       {showNewYearModal && (

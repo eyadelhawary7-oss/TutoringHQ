@@ -94,7 +94,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
                 className={i % 2 === 0 ? 'bg-[var(--color-surface-1)]' : 'bg-[var(--color-surface-0)]'}
               >
                 <td className="py-1">
-                  {new Date(p.paid_at).toLocaleDateString('en-US', {
+                  {new Date(p.paid_at).toLocaleDateString('ar', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
@@ -126,7 +126,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
         <div>CenterHQ - centerhq.com</div>
         <div>
           تاريخ الإصدار:{' '}
-          {new Date().toLocaleDateString('en-US', {
+          {new Date().toLocaleDateString('ar', {
             day: 'numeric',
             month: 'long',
             year: 'numeric',

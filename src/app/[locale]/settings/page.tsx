@@ -1169,7 +1169,11 @@ function SettingsPageContent() {
                                   {tCommon('egp')} {Number(r.reward_amount).toLocaleString('en-US')}
                                 </td>
                                 <td className="py-2"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${r.reward_status === 'paid' ? 'badge-confirmed' : r.reward_status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-muted text-[var(--color-text-secondary)]'}`}>{r.reward_status}</span></td>
-                                <td className="py-2 text-[var(--color-text-secondary)]">{new Date(r.created_at).toLocaleDateString('en-US')}</td>
+                                <td className="py-2 text-[var(--color-text-secondary)]">
+                                  {new Date(r.created_at).toLocaleDateString(locale === 'ar' ? 'ar' : 'en-US', {
+                                    dateStyle: 'medium',
+                                  })}
+                                </td>
                               </tr>
                             ))}
                           </tbody>

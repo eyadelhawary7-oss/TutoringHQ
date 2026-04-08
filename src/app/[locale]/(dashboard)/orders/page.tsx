@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { CardOrderModal } from '@/components/CardOrderModal';
@@ -37,9 +37,10 @@ interface CardOrderRow {
   created_at: string;
 }
 
-function formatOrderDate(iso: string): string {
+function formatOrderDate(iso: string, locale: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+  const loc = locale === 'ar' ? 'ar' : 'en-US';
+  return d.toLocaleDateString(loc, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function parseStudentLines(studentsJson: unknown): string[] {
@@ -93,6 +94,7 @@ function statusLabelKey(status: string): CardOrderStatusKey {
 
 export default function OrdersPage() {
   const t = useTranslations('cardOrders');
+  const locale = useLocale();
   const [centerId, setCenterId] = useState<string | null>(null);
   const [centerInfo, setCenterInfo] = useState<CenterInfoState | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -268,7 +270,7 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <p className="text-xs text-[var(--color-text-tertiary)]">
-                        {t('orderDate')}: {formatOrderDate(order.created_at)}
+                        {t('orderDate')}: {formatOrderDate(order.created_at, locale)}
                       </p>
                       <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                         {order.quantity} {t('cards')} · {t('orderTotal')}:{' '}

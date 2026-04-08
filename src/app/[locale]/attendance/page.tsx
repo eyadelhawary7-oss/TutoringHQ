@@ -60,7 +60,7 @@ function formatRelativeTime(dateStr: string, locale: string): string {
     if (diffDays === 2) return 'منذ يومين';
     if (diffDays < 7) return `منذ ${diffDays} أيام`;
     if (diffDays < 30) return `منذ ${Math.floor(diffDays / 7)} أسبوع`;
-    return d.toLocaleDateString('en-US', { dateStyle: 'short' });
+    return d.toLocaleDateString('ar', { dateStyle: 'short' });
   }
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;

@@ -185,6 +185,7 @@
     "active": "نشط",
     "inactive": "غير نشط",
     "students": "طلاب",
+    "studentCount": "{count, plural, one {# طالب} other {# طلاب}}",
     "all": "الكل",
     "amount": "المبلغ",
     "view": "عرض",
