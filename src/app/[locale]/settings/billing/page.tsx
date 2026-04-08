@@ -1580,41 +1580,11 @@ export default function BillingPage() {
     );
   };
 
-  const renderInvoiceActionCell = (inv: InvoiceRow, st: string) => {
-    if (st === 'pending' || st === 'overdue') {
-      return (
-        <button
-          type="button"
-          disabled={!ownerOk || payingInvoiceId === inv.id}
-          onClick={() => void handleInvoicePay(inv.id)}
-          className="rounded-lg border-2 px-3 py-1.5 text-xs font-semibold disabled:opacity-50 btn-press chq-focus"
-          style={{ borderColor: '#0D9488', color: '#0D9488' }}
-        >
-          {payingInvoiceId === inv.id ? t('loadingShort') : t('history.payNow')}
-        </button>
-      );
-    }
-    if (st === 'paid' || st === 'approved') {
-      if (!ownerOk) {
-        return (
-          <span className="text-slate-600 text-xs" aria-hidden>
-            -
-          </span>
-        );
-      }
-      return (
-        <a
-          href={`/api/invoices/${inv.id}/pdf`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => void openInvoicePdf(e, inv.id)}
-          className="inline-block rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#0D9488] hover:bg-teal-50 dark:border-slate-600 dark:hover:bg-teal-950/30"
-        >
-          {t('history.downloadPdf')}
-        </a>
-      );
-    }
-    if (st === 'cancelled' || st === 'canceled') {
+  const invoicePdfDownloadClass =
+    'inline-block rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#0D9488] hover:bg-teal-50 dark:border-slate-600 dark:hover:bg-teal-950/30';
+
+  const renderInvoicePdfLink = (inv: InvoiceRow) => {
+    if (!ownerOk) {
       return (
         <span className="text-slate-600 text-xs" aria-hidden>
           -
@@ -1622,10 +1592,39 @@ export default function BillingPage() {
       );
     }
     return (
-      <span className="text-slate-600 text-xs" aria-hidden>
-        -
-      </span>
+      <a
+        href={`/api/invoices/${inv.id}/pdf`}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => void openInvoicePdf(e, inv.id)}
+        className={invoicePdfDownloadClass}
+      >
+        {t('history.downloadPdf')}
+      </a>
     );
+  };
+
+  const renderInvoiceActionCell = (inv: InvoiceRow, st: string) => {
+    if (st === 'pending' || st === 'overdue') {
+      return (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={!ownerOk || payingInvoiceId === inv.id}
+            onClick={() => void handleInvoicePay(inv.id)}
+            className="rounded-lg border-2 px-3 py-1.5 text-xs font-semibold disabled:opacity-50 btn-press chq-focus"
+            style={{ borderColor: '#0D9488', color: '#0D9488' }}
+          >
+            {payingInvoiceId === inv.id ? t('loadingShort') : t('history.payNow')}
+          </button>
+          {renderInvoicePdfLink(inv)}
+        </div>
+      );
+    }
+    if (st === 'paid' || st === 'approved') {
+      return renderInvoicePdfLink(inv);
+    }
+    return renderInvoicePdfLink(inv);
   };
 
   if (loading) {

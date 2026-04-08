@@ -1,77 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jsPDF } from 'jspdf';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { normalizeBillingPeriod, type BillingPeriod } from '@/lib/pricing';
+import { generateInvoicePdf, type InvoiceData } from '@/lib/generateInvoicePdf';
 
 export const dynamic = 'force-dynamic';
 
-const TEAL: [number, number, number] = [13, 148, 136];
-
-function fmtMoney(n: number): string {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function fmtDate(iso: string | null | undefined): string {
+function fmtDateEn(iso: string | null | undefined): string {
   if (!iso) return '—';
-  const d = new Date(iso);
+  const d = new Date(iso.includes('T') ? iso : `${iso}T12:00:00`);
   if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function fmtDateYmd(ymd: string | null | undefined): string {
+function fmtMonthYearYmd(ymd: string | null | undefined): string {
   if (!ymd) return '—';
   const d = new Date(`${ymd}T12:00:00`);
   if (Number.isNaN(d.getTime())) return ymd;
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
-function billingPeriodLabel(period: BillingPeriod): string {
-  switch (period) {
-    case 'monthly':
-      return 'monthly';
-    case 'annual':
-      return 'annual';
-    case 'quarterly':
-    default:
-      return 'quarterly';
-  }
+function billingPeriodSummary(start: string | null | undefined, end: string | null | undefined): string {
+  if (!start || !end) return '—';
+  return `${fmtMonthYearYmd(start)} – ${fmtMonthYearYmd(end)}`;
 }
 
-function subscriptionLineDescription(
-  invoiceType: string | null | undefined,
-  plan: string,
-  period: BillingPeriod,
-): string {
-  const p = plan ? plan.replace(/_/g, ' ') : '—';
-  const bp = billingPeriodLabel(period);
-  const t = (invoiceType ?? '').toLowerCase();
-  if (t === 'plan_upgrade_difference') {
-    return `Plan upgrade (prorated) (${p} — ${bp})`;
-  }
-  if (t === 'pack_billing' || t === 'whatsapp_addon') {
-    return `Add-on (${p} — ${bp})`;
-  }
-  if (t === 'setup_fee') {
-    return `Setup fee (${p} — ${bp})`;
-  }
-  if (t === 'announcement_settlement' || t === 'announcement_cap') {
-    return `Announcements (${p} — ${bp})`;
-  }
-  return `Subscription (${p} — ${bp})`;
+function normalizePdfStatus(raw: string | null | undefined): InvoiceData['status'] {
+  const s = (raw ?? '').toLowerCase();
+  if (s === 'paid' || s === 'approved') return 'paid';
+  if (s === 'overdue') return 'overdue';
+  if (s === 'failed' || s === 'rejected' || s === 'cancelled' || s === 'canceled') return 'failed';
+  return 'pending';
 }
 
-function watermarkStyle(statusRaw: string | null | undefined): { label: string; rgb: [number, number, number] } {
-  const s = (statusRaw ?? '').toLowerCase();
-  if (s === 'paid' || s === 'approved') {
-    return { label: 'PAID', rgb: [22, 163, 74] };
-  }
-  if (s === 'overdue') {
-    return { label: 'OVERDUE', rgb: [220, 38, 38] };
-  }
-  if (s === 'cancelled' || s === 'canceled') {
-    return { label: 'CANCELLED', rgb: [107, 114, 128] };
-  }
-  return { label: 'PENDING', rgb: [234, 88, 12] };
+function planPresentation(planRaw: string | null | undefined): { planName: string; planNameAr: string } {
+  const k = (planRaw ?? 'starter').toLowerCase().replace(/-/g, '_');
+  const table: Record<string, { planName: string; planNameAr: string }> = {
+    nano: { planName: 'Nano', planNameAr: 'ناشئ' },
+    starter: { planName: 'Starter', planNameAr: 'أساسي' },
+    pro: { planName: 'Pro', planNameAr: 'محترف' },
+    business: { planName: 'Business', planNameAr: 'أعمال' },
+    enterprise: { planName: 'Enterprise', planNameAr: 'مؤسسات' },
+    payg: { planName: 'Pay as you go', planNameAr: 'دفع حسب الاستخدام' },
+    top_centers: { planName: 'Top Centers', planNameAr: 'مراكز مميزة' },
+  };
+  const hit = table[k];
+  if (hit) return hit;
+  const label = (planRaw ?? 'starter').replace(/_/g, ' ');
+  const title = label.replace(/\b\w/g, (c) => c.toUpperCase());
+  return { planName: title, planNameAr: '—' };
 }
 
 function safeFilenamePart(s: string): string {
@@ -99,14 +74,16 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         center_id,
         invoice_number,
         invoice_type,
-        base_amount,
-        discount_amount,
         total_amount,
         billing_period_start,
         billing_period_end,
         status,
         created_at,
-        due_date
+        due_date,
+        paid_at,
+        payment_method,
+        payment_reference,
+        paymob_transaction_id
       `,
       )
       .eq('id', invoiceId.trim())
@@ -120,14 +97,16 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       center_id: string;
       invoice_number: string | null;
       invoice_type: string | null;
-      base_amount: number | string | null;
-      discount_amount: number | string | null;
       total_amount: number | string | null;
       billing_period_start: string | null;
       billing_period_end: string | null;
       status: string | null;
       created_at: string | null;
       due_date: string | null;
+      paid_at: string | null;
+      payment_method: string | null;
+      payment_reference: string | null;
+      paymob_transaction_id: string | null;
     };
 
     if (inv.center_id !== auth.centerId) {
@@ -136,7 +115,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 
     const { data: center, error: cErr } = await auth.supabaseAdmin
       .from('centers')
-      .select('name, phone, center_code, plan, subscription_billing_period, billing_period')
+      .select('name, phone, city, plan')
       .eq('id', inv.center_id)
       .maybeSingle();
 
@@ -147,138 +126,49 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const c = center as {
       name?: string | null;
       phone?: string | null;
-      center_code?: string | null;
+      city?: string | null;
       plan?: string | null;
-      subscription_billing_period?: string | null;
-      billing_period?: string | null;
     };
 
-    const plan = String(c.plan ?? '—');
-    const bp = normalizeBillingPeriod(c.subscription_billing_period ?? c.billing_period);
-    const baseAmount = Number(inv.base_amount ?? 0);
-    const discountAmount = Number(inv.discount_amount ?? 0);
+    const { planName, planNameAr } = planPresentation(c.plan);
+    const invNo = String(inv.invoice_number ?? inv.center_id.slice(0, 8));
     const totalAmount = Number(inv.total_amount ?? 0);
-    const subtotalBeforeVat = Math.max(0, baseAmount - discountAmount);
-    const vatEstimate = Math.round(subtotalBeforeVat * 0.14 * 100) / 100;
+    const payRef =
+      (inv.payment_reference && String(inv.payment_reference).trim()) ||
+      (inv.paymob_transaction_id && String(inv.paymob_transaction_id).trim()) ||
+      null;
 
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const margin = 14;
-    const rightX = pageW - margin;
+    const data: InvoiceData = {
+      invoiceNumber: invNo,
+      invoiceType: String(inv.invoice_type ?? ''),
+      status: normalizePdfStatus(inv.status),
+      centerName: String(c.name ?? '—'),
+      centerPhone: String(c.phone ?? '—'),
+      centerCity: String(c.city ?? '—'),
+      planName,
+      planNameAr,
+      billingPeriod: billingPeriodSummary(inv.billing_period_start, inv.billing_period_end),
+      billingPeriodStart: fmtDateEn(inv.billing_period_start ?? undefined),
+      billingPeriodEnd: fmtDateEn(inv.billing_period_end ?? undefined),
+      totalAmount,
+      paidAt: inv.paid_at ? fmtDateEn(inv.paid_at) : null,
+      paymentMethod: inv.payment_method,
+      paymentReference: payRef,
+      issuedAt: fmtDateEn(inv.created_at ?? undefined),
+      dueDate: fmtDateEn(inv.due_date ?? undefined),
+    };
 
-    const wm = watermarkStyle(inv.status);
-    doc.saveGraphicsState();
-    doc.setGState(doc.GState({ opacity: 0.12 }));
-    doc.setTextColor(...wm.rgb);
-    doc.setFontSize(48);
-    doc.setFont('helvetica', 'bold');
-    doc.text(wm.label, pageW / 2, pageH / 2, { align: 'center', angle: 45 });
-    doc.restoreGraphicsState();
-
-    let y = margin;
-
-    doc.setTextColor(...TEAL);
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CenterHQ', margin, y);
-    y += 8;
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Tax Invoice', margin, y);
-    y += 4;
-
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y, rightX, y);
-    y += 10;
-
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Bill to', margin, y);
-    doc.text('Invoice details', rightX, y, { align: 'right' });
-    y += 6;
-
-    doc.setFont('helvetica', 'normal');
-    const leftLines = [
-      `Center Name: ${c.name ?? '—'}`,
-      `Phone: ${c.phone ?? '—'}`,
-      `Center Code: ${c.center_code ?? '—'}`,
-    ];
-    const invNo = inv.invoice_number ?? inv.center_id.slice(0, 8);
-    const rightLines = [
-      `Invoice #: ${invNo}`,
-      `Date: ${fmtDate(inv.created_at)}`,
-      `Due: ${fmtDateYmd(inv.due_date)}`,
-      `Period: ${fmtDateYmd(inv.billing_period_start)} — ${fmtDateYmd(inv.billing_period_end)}`,
-    ];
-
-    const blockStart = y;
-    leftLines.forEach((line, i) => {
-      doc.text(line, margin, blockStart + i * 5);
-    });
-    rightLines.forEach((line, i) => {
-      doc.text(line, rightX, blockStart + i * 5, { align: 'right' });
-    });
-    y = blockStart + Math.max(leftLines.length, rightLines.length) * 5 + 10;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Description', margin, y);
-    doc.text('Amount (EGP)', rightX, y, { align: 'right' });
-    y += 4;
-    doc.setDrawColor(180, 180, 180);
-    doc.line(margin, y, rightX, y);
-    y += 6;
-
-    doc.setFont('helvetica', 'normal');
-    const desc = subscriptionLineDescription(inv.invoice_type, plan, bp);
-    doc.text(desc, margin, y);
-    doc.text(fmtMoney(baseAmount), rightX, y, { align: 'right' });
-    y += 6;
-
-    if (discountAmount > 0) {
-      doc.text('Discount', margin, y);
-      doc.text(`-${fmtMoney(discountAmount)}`, rightX, y, { align: 'right' });
-      y += 6;
+    const pdfBuf = await generateInvoicePdf(data);
+    if (!pdfBuf) {
+      return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
     }
 
-    doc.line(margin, y, rightX, y);
-    y += 6;
-
-    doc.text('Subtotal (before VAT)', margin, y);
-    doc.text(fmtMoney(subtotalBeforeVat), rightX, y, { align: 'right' });
-    y += 6;
-
-    doc.text('VAT (14%)', margin, y);
-    doc.text(fmtMoney(vatEstimate), rightX, y, { align: 'right' });
-    y += 6;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Total', margin, y);
-    doc.text(`${fmtMoney(totalAmount)} EGP`, rightX, y, { align: 'right' });
-    y += 6;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Status: ${(inv.status ?? '—').toUpperCase()}`, margin, y);
-
-    doc.setTextColor(120, 120, 120);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Generated by CenterHQ — center-hq.vercel.app', margin, pageH - 14);
-    doc.text('This invoice was generated automatically.', margin, pageH - 10);
-
-    const pdfOut = doc.output('arraybuffer');
-    const buf = Buffer.from(pdfOut);
     const fname = safeFilenamePart(invNo);
 
-    return new NextResponse(buf, {
+    return new NextResponse(new Uint8Array(pdfBuf), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="invoice-${fname}.pdf"`,
+        'Content-Disposition': `attachment; filename="INV-${fname}.pdf"`,
       },
     });
   } catch (e) {
