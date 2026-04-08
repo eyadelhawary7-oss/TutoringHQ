@@ -343,7 +343,14 @@ export default function PaymentsPage() {
   };
 
   const handleExportCSV = () => {
-    const cols = ['Date', 'Student Name', 'Amount (EGP)', 'Method', 'Status', 'Recorded By'];
+    const cols = [
+      tp('csv_col_date'),
+      tp('csv_col_student'),
+      tp('csv_col_amount'),
+      tp('csv_col_method'),
+      tp('csv_col_status'),
+      tp('csv_col_recorded_by'),
+    ];
     const rows = filteredPayments.map((r) => [
       r.paid_at ? new Date(r.paid_at).toLocaleString('en-US') : '',
       r.student_name ?? '',

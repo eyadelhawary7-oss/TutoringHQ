@@ -201,6 +201,7 @@ function CardOrderPreview({
   centerLogo: string | null;
 }) {
   const tCommon = useTranslations('common');
+  const tAdmin = useTranslations('admin');
   const [side, setSide] = useState<'front' | 'back'>('front');
   const first = students[0];
   const initials = centerName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -228,30 +229,48 @@ function CardOrderPreview({
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-surface-1)]">
             {centerLogo ? <img src={centerLogo} alt="" className="w-16 h-16 object-contain" /> : <div className="w-12 h-12 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-bold">{initials}</div>}
             <div className="mt-1 font-bold text-[var(--color-text-primary)] text-xs">{centerName}</div>
-            <div className="absolute bottom-1 text-[6px] text-[var(--color-text-tertiary)]">Powered by CenterHQ</div>
+            <div className="absolute bottom-1 text-[6px] text-[var(--color-text-tertiary)]">{tAdmin('poweredByCenterHQ')}</div>
           </div>
         )}
       </div>
       <div className="flex gap-1">
-        <button onClick={() => setSide('front')} className={`px-2 py-1 rounded text-xs ${side === 'front' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'} btn-press chq-focus`}>Front</button>
-        <button onClick={() => setSide('back')} className={`px-2 py-1 rounded text-xs ${side === 'back' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'} btn-press chq-focus`}>Back</button>
+        <button onClick={() => setSide('front')} className={`px-2 py-1 rounded text-xs ${side === 'front' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'} btn-press chq-focus`}>{tAdmin('front')}</button>
+        <button onClick={() => setSide('back')} className={`px-2 py-1 rounded text-xs ${side === 'back' ? 'bg-primary text-white' : 'bg-[var(--color-surface-2)]'} btn-press chq-focus`}>{tAdmin('back')}</button>
       </div>
     </div>
   );
 }
 
-function formatActivitySummary(action: string, details?: unknown): string {
+function formatActivitySummary(
+  action: string,
+  details: unknown | undefined,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string {
   const d = details as Record<string, unknown> | undefined;
-  if (action === 'center_create') return 'New signup';
-  if (action === 'admin_invoice_approved') return 'Payment proof approved';
-  if (action === 'admin_invoice_rejected') return 'Payment proof rejected';
-  if (action === 'payment_on_scan' && d?.method) return `Payment (${d.method})`;
-  if (action === 'admin_payment_recorded') return 'Admin payment recorded';
-  if (action === 'approve_signup') return 'Signup approved';
-  if (action === 'reject_signup') return 'Signup rejected';
-  if (action === 'suspend_center') return 'Center suspended';
-  if (action === 'reactivate_center') return 'Center reactivated';
+  if (action === 'center_create') return t('activityNewSignup');
+  if (action === 'admin_invoice_approved') return t('activityPaymentProofApproved');
+  if (action === 'admin_invoice_rejected') return t('activityPaymentProofRejected');
+  if (action === 'payment_on_scan' && d?.method)
+    return t('activityPaymentOnScan', { method: String(d.method) });
+  if (action === 'admin_payment_recorded') return t('activityAdminPaymentRecorded');
+  if (action === 'approve_signup') return t('activitySignupApproved');
+  if (action === 'reject_signup') return t('activitySignupRejected');
+  if (action === 'suspend_center') return t('activityCenterSuspended');
+  if (action === 'reactivate_center') return t('activityCenterReactivated');
   return action?.replace(/_/g, ' ') ?? '';
+}
+
+function centerStatusLabel(
+  status: string | undefined,
+  t: (key: string) => string,
+): string {
+  const s = (status || 'active').toLowerCase();
+  if (s === 'active') return t('active');
+  if (s === 'suspended') return t('suspended');
+  if (s === 'pending') return t('pending');
+  if (s === 'trial') return t('trial');
+  if (s === 'rejected') return t('rejected');
+  return status || t('active');
 }
 
 export default function AdminPage() {
@@ -835,7 +854,7 @@ export default function AdminPage() {
     if (!blacklistModal) return;
     const reason = blacklistReasonInput.trim();
     if (!reason) {
-      alert('Blacklist reason is required');
+      alert(tAdmin('blacklistReasonRequired'));
       return;
     }
     const headers = await getAuthHeaders(false);
@@ -853,7 +872,7 @@ export default function AdminPage() {
       setBlacklistReasonInput('');
       setOpenActionsId(null);
       loadCenters();
-      setToast({ msg: 'Center blacklisted' });
+      setToast({ msg: tAdmin('centerBlacklistedToast') });
       setTimeout(() => setToast(null), 3000);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Blacklist failed');
@@ -1310,7 +1329,7 @@ export default function AdminPage() {
                   {overview.recentActivity!.slice(0, 5).map((a, i) => (
                     <div key={a.id || i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                       <span className="text-sm text-[var(--color-text-primary)]">
-                        {activityActionLabel[a.action ?? ''] ?? formatActivitySummary(a.action || '', a.details)}
+                        {activityActionLabel[a.action ?? ''] ?? formatActivitySummary(a.action || '', a.details, tAdmin)}
                         {a.details && typeof (a.details as { center_name?: string }).center_name === 'string' ? (
                           <> - {(a.details as { center_name: string }).center_name}</>
                         ) : null}
@@ -1480,9 +1499,9 @@ export default function AdminPage() {
                         />
                       </th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('owner')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tCommon('phone')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('plan')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('studentsCount')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('lastActive') ?? 'Last Active'}</th>
@@ -1507,7 +1526,7 @@ export default function AdminPage() {
                             {c.name}
                             {c.is_blacklisted ? (
                               <span className="inline-flex rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-red-600 text-white">
-                                Blacklisted
+                                {tAdmin('blacklisted')}
                               </span>
                             ) : null}
                           </span>
@@ -1521,7 +1540,7 @@ export default function AdminPage() {
                         <td className="py-3.5 px-4"><PlanBadge plan={c.plan} /></td>
                         <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[c.status || 'active'] || STATUS_STYLES.active}`}>
-                            {c.status || 'active'}
+                            {centerStatusLabel(c.status, tAdmin)}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] font-mono hidden md:table-cell">{c.students_count ?? 0}</td>
@@ -1570,7 +1589,7 @@ export default function AdminPage() {
                                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 text-start btn-press chq-focus"
                                     >
                                       <ShieldAlert size={14} />
-                                      Blacklist
+                                      {tAdmin('blacklistMenu')}
                                     </button>
                                   )}
                                   {c.status === 'suspended' && (
@@ -1640,7 +1659,7 @@ export default function AdminPage() {
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('plan')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('amount')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('nextDue')}</th>
@@ -1722,10 +1741,10 @@ export default function AdminPage() {
                                     onClick={() => setViewingProof(inv.payment_proof_url || null)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors border border-blue-200 btn-press chq-focus"
                                   >
-                                    <Eye className="w-3.5 h-3.5" /> View Proof
+                                    <Eye className="w-3.5 h-3.5" /> {tAdmin('viewProof')}
                                   </button>
                                 ) : (
-                                  <span className="text-xs text-[var(--color-text-tertiary)] px-3">No image</span>
+                                  <span className="text-xs text-[var(--color-text-tertiary)] px-3">{tAdmin('noImage')}</span>
                                 )}
                                 <button
                                   onClick={() => {
@@ -1864,11 +1883,11 @@ export default function AdminPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Center</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Owner</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('center')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('owner')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('phone')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">Email</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Plan</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('email')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('plan')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('referredBy')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('createdAt')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
@@ -1899,7 +1918,7 @@ export default function AdminPage() {
                             <button
                               onClick={() => contactViaWhatsApp(ps.phone ?? '', ps.name ?? '')}
                               className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm btn-press chq-focus"
-                              title="Contact on WhatsApp"
+                              title={tAdmin('contactWhatsApp', { defaultValue: 'Contact on WhatsApp' })}
                             >
                               <MessageCircle className="w-3.5 h-3.5" />
                               <span className="hidden sm:inline">WhatsApp</span>
@@ -2251,19 +2270,34 @@ export default function AdminPage() {
               </ChartCard>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {[
-                { label: 'Avg Students/Center', value: analyticsCenters.length > 0 ? Math.round(analyticsCenters.reduce((s, c) => s + (c.students_count ?? 0), 0) / analyticsCenters.length) : 0 },
-                {
-                  label: 'Avg Revenue/Center',
-                  value:
-                    analyticsCenters.filter((c) => (c.status ?? 'active') === 'active').length > 0
-                      ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, analyticsCenters.filter((c) => (c.status ?? 'active') === 'active').length)).toLocaleString('en-US')} ${tCommon('egp')}`
-                      : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`,
-                },
-                { label: 'Centers with 0 Students', value: analyticsCenters.filter(c => (c.students_count ?? 0) === 0).length },
-                { label: 'Centers at Risk', value: analyticsCenters.filter(c => c.last_active?.includes('days') || c.last_active === 'Never').length },
-              ].map(({ label, value }) => (
-                <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+              {(
+                [
+                  {
+                    key: 'avgStudents',
+                    label: tAdmin('analyticsAvgStudentsPerCenter'),
+                    value: analyticsCenters.length > 0 ? Math.round(analyticsCenters.reduce((s, c) => s + (c.students_count ?? 0), 0) / analyticsCenters.length) : 0,
+                  },
+                  {
+                    key: 'avgRevenue',
+                    label: tAdmin('analyticsAvgRevenuePerCenter'),
+                    value:
+                      analyticsCenters.filter((c) => (c.status ?? 'active') === 'active').length > 0
+                        ? `${Math.round((overview?.totalMRR ?? overview?.mrr ?? 0) / Math.max(1, analyticsCenters.filter((c) => (c.status ?? 'active') === 'active').length)).toLocaleString('en-US')} ${tCommon('egp')}`
+                        : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`,
+                  },
+                  {
+                    key: 'zeroStudents',
+                    label: tAdmin('analyticsCentersZeroStudents'),
+                    value: analyticsCenters.filter((c) => (c.students_count ?? 0) === 0).length,
+                  },
+                  {
+                    key: 'atRisk',
+                    label: tAdmin('analyticsCentersAtRisk'),
+                    value: analyticsCenters.filter((c) => c.last_active?.includes('days') || c.last_active === 'Never').length,
+                  },
+                ] as const
+              ).map(({ key, label, value }) => (
+                <div key={key} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                   <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>
                   <div className="text-sm text-[var(--color-text-secondary)]">{label}</div>
                 </div>
@@ -2286,7 +2320,7 @@ export default function AdminPage() {
               {(
                 [
                   {
-                    label: 'Owner',
+                    label: tAdmin('owner'),
                     value: detailCenter.owner?.name ?? detailCenter.owner_name ?? null,
                     isPlan: false,
                     empty: () => (
@@ -2309,7 +2343,7 @@ export default function AdminPage() {
                       <span className="text-slate-500 text-xs italic">{tCommon('notSet')}</span>
                     ),
                   },
-                  { label: 'Plan', value: detailCenter.plan, isPlan: true },
+                  { label: tAdmin('plan'), value: detailCenter.plan, isPlan: true },
                   {
                     label: tAdmin('billingPeriod'),
                     value: detailCenter.billing_period ?? null,
@@ -2395,7 +2429,7 @@ export default function AdminPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSuspendConfirm(null)}>
           <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold text-[var(--color-text-primary)] mb-2">{tAdmin('confirmSuspend')}</h3>
-            <p className="text-sm text-[var(--color-text-secondary)] mb-4">Are you sure you want to suspend {showSuspendConfirm.name}?</p>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">{tAdmin('suspendConfirmBody', { name: showSuspendConfirm.name })}</p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setShowSuspendConfirm(null)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
               <button
@@ -2517,8 +2551,8 @@ export default function AdminPage() {
       {showRejectReason && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowRejectReason(null)}>
           <div className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-[var(--color-text-primary)] mb-3">Rejection Reason</h3>
-            <textarea placeholder="Optional reason..." className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm h-24 resize-none mb-4" />
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-3">{tAdmin('rejectionReason')}</h3>
+            <textarea placeholder={tAdmin('rejectReasonPlaceholder')} className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm h-24 resize-none mb-4" />
             <div className="flex gap-2 justify-end">
               <button onClick={() => setShowRejectReason(null)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
               <button
@@ -2616,13 +2650,13 @@ export default function AdminPage() {
               <button onClick={() => setSelectedLead(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] btn-press chq-focus"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
-              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Contact Person</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.contact_person}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{tAdmin('contactPerson')}</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.contact_person}</p></div>
               <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{tCommon('phone')}</p><p className="font-medium text-[var(--color-text-primary)]" dir="ltr">{selectedLead.phone}</p></div>
-              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Area</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.area}</p></div>
-              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Source</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.source}</p></div>
-              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">Notes</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.notes}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{tAdmin('area')}</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.area}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{tAdmin('source')}</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.source}</p></div>
+              <div><p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{tAdmin('notes')}</p><p className="font-medium text-[var(--color-text-primary)]">{selectedLead.notes}</p></div>
               <div>
-                <p className="text-xs text-[var(--color-text-secondary)] mb-1">Change Stage</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tAdmin('changeStage')}</p>
                 <select
                   value={selectedLead.stage}
                   onChange={(e) => {
@@ -2632,14 +2666,14 @@ export default function AdminPage() {
                   }}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
                 >
-                  <option value="prospect">Prospect</option>
-                  <option value="contacted">Contacted</option>
-                  <option value="demo_scheduled">Demo Scheduled</option>
-                  <option value="converted">Converted</option>
+                  <option value="prospect">{tAdmin('leadStageProspect')}</option>
+                  <option value="contacted">{tAdmin('leadStageContacted')}</option>
+                  <option value="demo_scheduled">{tAdmin('leadStageDemoScheduled')}</option>
+                  <option value="converted">{tAdmin('leadStageConverted')}</option>
                 </select>
               </div>
               <button onClick={() => { setLeads(prev => prev.filter(l => l.id !== selectedLead.id)); setSelectedLead(null); }} className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-destructive border border-destructive/30 hover:bg-destructive/10 btn-press chq-focus">
-                {tCommon('delete')} Lead
+                {tAdmin('deleteLead')}
               </button>
             </div>
           </div>
@@ -2652,7 +2686,7 @@ export default function AdminPage() {
           <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
               <div>
-                <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Change Plan</h2>
+                <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tAdmin('changePlan')}</h2>
                 <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{changePlanModal.centerName}</p>
               </div>
               <button onClick={() => { setChangePlanModal(null); setNewPlan(''); }} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg btn-press chq-focus">
@@ -2662,15 +2696,16 @@ export default function AdminPage() {
             <div className="p-6 space-y-4">
               <div>
                 <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-                  Current plan: <span className="font-semibold text-[var(--color-text-primary)] capitalize">{changePlanModal.currentPlan}</span>
+                  {tAdmin('changePlanCurrent')}{' '}
+                  <span className="font-semibold text-[var(--color-text-primary)] capitalize">{changePlanModal.currentPlan}</span>
                 </p>
-                <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-2">New Plan</label>
+                <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-2">{tAdmin('changePlanNewLabel')}</label>
                 <select
                   value={newPlan}
                   onChange={(e) => setNewPlan(e.target.value)}
                   className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
                 >
-                  <option value="">Select a plan...</option>
+                  <option value="">{tAdmin('selectPlanPlaceholder')}</option>
                   <option value="nano">Nano - ≤100 students - EGP 2,500/mo</option>
                   <option value="starter">Starter - ≤250 students - EGP 5,200/mo</option>
                   <option value="pro">Pro - ≤500 students - EGP 9,200/mo</option>
@@ -2685,7 +2720,7 @@ export default function AdminPage() {
                 onClick={() => { setChangePlanModal(null); setNewPlan(''); }}
                 className="px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors btn-press chq-focus"
               >
-                Cancel
+                {tCommon('cancel')}
               </button>
               <button
                 disabled={!newPlan || newPlan === changePlanModal.currentPlan || changingPlan}
@@ -2703,7 +2738,7 @@ export default function AdminPage() {
                 }}
                 className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors btn-press chq-focus"
               >
-                {changingPlan ? 'Saving...' : 'Change Plan'}
+                {changingPlan ? tAdmin('changePlanSaving') : tAdmin('changePlan')}
               </button>
             </div>
           </div>
@@ -2715,7 +2750,7 @@ export default function AdminPage() {
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingProof(null)}>
           <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-white font-semibold">Payment Proof</span>
+              <span className="text-white font-semibold">{tAdmin('paymentProof')}</span>
               <div className="flex items-center gap-2">
                 <a
                   href={viewingProof}
@@ -2723,7 +2758,7 @@ export default function AdminPage() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 text-white text-xs font-semibold rounded-lg transition-colors"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" /> Open Original
+                  <ExternalLink className="w-3.5 h-3.5" /> {tAdmin('openOriginal')}
                 </a>
                 <button onClick={() => setViewingProof(null)} className="p-2 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-lg transition-colors btn-press chq-focus">
                   <X className="w-4 h-4 text-white" />
@@ -2732,7 +2767,7 @@ export default function AdminPage() {
             </div>
             <img
               src={viewingProof}
-              alt="Payment proof"
+              alt={tAdmin('paymentProofAlt')}
               className="w-full rounded-xl shadow-2xl max-h-[80vh] object-contain bg-[var(--color-surface-1)]"
             />
           </div>
@@ -2742,18 +2777,19 @@ export default function AdminPage() {
       {blacklistModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setBlacklistModal(null)}>
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-xl max-w-md w-full p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">Blacklist center</h3>
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">{tAdmin('blacklistCenter')}</h3>
             <p className="text-sm text-[var(--color-text-secondary)] mb-3">{blacklistModal.name}</p>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Reason (required)</label>
+            <p className="text-xs text-[var(--color-text-secondary)] mb-2">{tAdmin('blacklistConfirm')}</p>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tAdmin('blacklistReasonLabel')}</label>
             <textarea
               value={blacklistReasonInput}
               onChange={(e) => setBlacklistReasonInput(e.target.value)}
               className="w-full min-h-[88px] rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-              placeholder="Document why this center is blacklisted…"
+              placeholder={tAdmin('blacklistReasonPlaceholder')}
             />
             <div className="flex justify-end gap-2 mt-4">
               <button type="button" onClick={() => setBlacklistModal(null)} className="px-4 py-2 text-sm rounded-lg border border-[var(--color-border-subtle)] btn-press chq-focus">
-                Cancel
+                {tCommon('cancel')}
               </button>
               <button
                 type="button"
@@ -2761,7 +2797,7 @@ export default function AdminPage() {
                 onClick={() => void handleBlacklistCenter()}
                 className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white font-medium disabled:opacity-50 btn-press chq-focus"
               >
-                {actionLoading ? 'Saving…' : 'Blacklist'}
+                {actionLoading ? tAdmin('blacklistSaving') : tAdmin('blacklistMenu')}
               </button>
             </div>
           </div>

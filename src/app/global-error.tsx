@@ -1,7 +1,20 @@
 'use client';
 
 import * as Sentry from '@sentry/nextjs';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import en from '../../messages/en.json';
+import ar from '../../messages/ar.json';
+
+type Locale = 'ar' | 'en';
+
+function readLocale(): Locale {
+  if (typeof document === 'undefined') return 'ar';
+  const m = document.cookie.match(/NEXT_LOCALE=(en|ar)/);
+  if (m?.[1] === 'en' || m?.[1] === 'ar') return m[1];
+  const htmlLang = document.documentElement.getAttribute('lang');
+  if (htmlLang === 'en' || htmlLang === 'ar') return htmlLang;
+  return 'ar';
+}
 
 export default function GlobalError({
   error,
@@ -10,12 +23,21 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [locale, setLocale] = useState<Locale>('ar');
+
+  useEffect(() => {
+    setLocale(readLocale());
+  }, []);
+
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
 
+  const messages = locale === 'en' ? en : ar;
+  const err = messages.errors;
+
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
       <body
         suppressHydrationWarning
         style={{
@@ -48,8 +70,8 @@ export default function GlobalError({
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 0.5rem' }}>حدث خطأ غير متوقع</h1>
-          <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: '1.5rem' }}>Something went wrong</p>
+          <h1 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 0.5rem' }}>{err.unexpectedTitle}</h1>
+          <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: '1.5rem' }}>{err.unexpectedDesc}</p>
           <button
             type="button"
             onClick={reset}
@@ -64,7 +86,7 @@ export default function GlobalError({
               fontWeight: 600,
             }}
           >
-            حاول مجدداً
+            {err.tryAgain}
           </button>
         </div>
       </body>
