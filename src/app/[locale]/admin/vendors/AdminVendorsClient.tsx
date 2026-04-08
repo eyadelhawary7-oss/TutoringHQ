@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
-import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { supabase } from '@/lib/supabase';
@@ -94,11 +93,10 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
   }, [vendor, name, whatsapp, address, city, isActive, toast, t, tCommon]);
 
   return (
-    <>
-      <AdminHeader />
-      <div className="flex flex-1 min-h-0 min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100dvh-3.5rem)]">
+    <div className="-mt-14 flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-h-[calc(100vh-3.5rem)] flex-1 md:min-h-[calc(100dvh-3.5rem)]">
         <AdminSidebar activeRoute={pathname} />
-        <div className="w-full flex-1 p-6 space-y-6 overflow-auto min-w-0 lg:ms-56">
+        <div className="w-full min-w-0 flex-1 space-y-6 overflow-auto p-6 lg:ms-56">
         <div>
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('vendorsTitle')}</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
@@ -114,7 +112,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
             />
           </div>
           <div>
@@ -124,7 +122,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
             <input
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               dir="ltr"
             />
           </div>
@@ -136,7 +134,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
             />
           </div>
           <div>
@@ -146,7 +144,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
             <input
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
             />
           </div>
           <label className="flex items-center gap-2 text-sm text-[var(--color-text-primary)] cursor-pointer">
@@ -169,6 +167,6 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
         </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
