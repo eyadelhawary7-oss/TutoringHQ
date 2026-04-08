@@ -98,12 +98,7 @@ export default async function LocaleLayout({
 
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
   return (
-    <html
-      lang={locale}
-      dir={dir}
-      className={`${cairo.variable} ${playfair.variable} ${bodoniModa.variable}`}
-      suppressHydrationWarning
-    >
+    <html lang={locale} dir={dir} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -127,7 +122,7 @@ export default async function LocaleLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body
-        className="antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] min-h-screen w-full font-cairo"
+        className={`${cairo.variable} ${playfair.variable} ${bodoniModa.variable} antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] min-h-screen w-full font-cairo`}
         suppressHydrationWarning
       >
         <PostHogProvider>
