@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
-import localFont from 'next/font/local';
-import { Playfair_Display } from 'next/font/google';
+import { Cairo, Playfair_Display } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
 import { getMessages } from 'next-intl/server';
@@ -11,23 +10,20 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import WebVitalsReporter from '@/lib/monitoring/WebVitalsReporter';
 import '../globals.css';
 
-const cairo = localFont({
-  src: [
-    { path: '../../../public/fonts/Cairo-Regular.woff2', weight: '400' },
-    { path: '../../../public/fonts/Cairo-Medium.woff2', weight: '500' },
-    { path: '../../../public/fonts/Cairo-SemiBold.woff2', weight: '600' },
-    { path: '../../../public/fonts/Cairo-Bold.woff2', weight: '700' },
-  ],
-  variable: '--font-cairo',
+const cairo = Cairo({
+  subsets: ['arabic'],
   display: 'swap',
-  preload: true,
+  preload: false,
+  variable: '--font-cairo',
+  weight: ['400', '500', '600', '700'],
 });
 
 const playfair = Playfair_Display({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '600', '700', '900'],
-  variable: '--font-playfair',
+  subsets: ['latin'],
   display: 'swap',
+  preload: false,
+  variable: '--font-playfair',
+  weight: ['400', '500', '600', '700'],
 });
 
 import { UserProvider } from '@/contexts/UserContext';
@@ -91,20 +87,6 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir} className={`${cairo.variable} ${playfair.variable}`} suppressHydrationWarning>
       <head>
-        <link
-          rel="preload"
-          href="/fonts/Cairo-Regular.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/fonts/Cairo-Medium.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

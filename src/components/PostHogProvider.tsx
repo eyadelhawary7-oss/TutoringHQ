@@ -11,6 +11,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     if (!key) return;
     posthog.init(key, {
       api_host: host,
+      disable_surveys: true,
       capture_pageview: false,
       capture_pageleave: true,
       autocapture: false,

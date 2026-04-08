@@ -11,6 +11,10 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   /* config options here */
+  experimental: {
+    // Next.js applies this at build time; ExperimentalConfig types may omit it in some releases.
+    browsersListForSwc: true,
+  } as NextConfig['experimental'],
   reactCompiler: true,
   compiler: {
     removeConsole:
