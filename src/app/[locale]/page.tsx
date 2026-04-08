@@ -26,7 +26,13 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
     >
       <div className="h-full w-full overflow-hidden rounded-xl border border-slate-600 bg-gradient-to-br from-slate-700 to-slate-800 shadow-2xl">
         <div className="flex h-7 items-center gap-2 bg-teal-700 px-3">
-          <span className="text-[8px] font-bold tracking-widest text-white">CENTERHQ</span>
+          <span
+            className="text-[8px] tracking-widest text-white"
+            style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+          >
+            <span className="text-white">CENTER</span>
+            <span className="text-teal-600">HQ</span>
+          </span>
           <span className="ml-auto text-[7px] text-teal-200">طالب</span>
         </div>
         <div className="flex gap-2 p-2">
@@ -128,7 +134,13 @@ const WhatsAppScreen = () => (
         </svg>
       </div>
       <div>
-        <div className="text-[9px] font-bold text-white">CenterHQ</div>
+        <div
+          className="text-[9px] text-white"
+          style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+        >
+          <span className="text-white">CENTER</span>
+          <span className="text-teal-600">HQ</span>
+        </div>
         <div className="text-[7px] text-green-200">متصل الآن</div>
       </div>
     </div>
@@ -256,8 +268,12 @@ export default function LocaleHomePage() {
             <span className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-600 text-xs font-bold text-white">
               CH
             </span>
-            <span className="text-lg font-bold tracking-tight text-white">
-              Center<span className="text-teal-400">HQ</span>
+            <span
+              className="text-lg tracking-tight"
+              style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+            >
+              <span className="text-white">CENTER</span>
+              <span className="text-teal-600">HQ</span>
             </span>
           </Link>
 
@@ -420,7 +436,13 @@ export default function LocaleHomePage() {
 
                 {/* App header */}
                 <div className="flex items-center justify-center border-b border-slate-800 py-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-white">CenterHQ</span>
+                  <span
+                    className="text-xs uppercase tracking-widest"
+                    style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+                  >
+                    <span className="text-white">CENTER</span>
+                    <span className="text-teal-600">HQ</span>
+                  </span>
                 </div>
 
                 {/* Multi-screen demo */}

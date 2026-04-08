@@ -206,11 +206,11 @@ export default function LoginPage() {
 
       <div
         style={{
-          ...PLAYFAIR,
+          fontFamily: "var(--font-bodoni), 'Bodoni Moda', Georgia, serif",
           color: '#f8fafc',
           fontSize: '14px',
           fontWeight: 700,
-          letterSpacing: '0.3px',
+          letterSpacing: '2px',
           marginBottom: '44px',
         }}
       >

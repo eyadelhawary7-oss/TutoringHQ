@@ -160,7 +160,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 <span className="text-primary-foreground font-bold text-sm">CH</span>
               </div>
             )}
-            <span className="font-bold text-[var(--color-text-primary)] text-lg tracking-tight truncate">CenterHQ</span>
+            <span
+              className="text-lg tracking-tight truncate"
+              style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+            >
+              <span className="text-[var(--color-text-primary)]">CENTER</span>
+              <span className="text-teal-600">HQ</span>
+            </span>
           </Link>
         </div>
 

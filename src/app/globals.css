@@ -5,6 +5,7 @@
 @theme {
   --font-sans: Georgia, "Times New Roman", serif;
   --font-mono: Georgia, "Times New Roman", serif;
+  --font-bodoni: var(--font-bodoni), 'Bodoni Moda', Georgia, serif;
   /* Default app chrome is dark (<html> without .light) — text tokens must stay light on dark surfaces */
   --color-background: hsl(222 47% 3%);
   --color-foreground: hsl(210 40% 98%);

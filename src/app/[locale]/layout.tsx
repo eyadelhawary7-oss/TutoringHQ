@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { Playfair_Display } from 'next/font/google';
+import { Bodoni_Moda, Playfair_Display } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
 import { getMessages } from 'next-intl/server';
@@ -29,6 +29,14 @@ const playfair = Playfair_Display({
   preload: false,
   variable: '--font-playfair',
   weight: ['400', '500', '600', '700', '900'],
+});
+
+const bodoniModa = Bodoni_Moda({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-bodoni',
+  weight: ['400', '700', '900'],
 });
 
 import { UserProvider } from '@/contexts/UserContext';
@@ -90,7 +98,12 @@ export default async function LocaleLayout({
 
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
   return (
-    <html lang={locale} dir={dir} className={`${cairo.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={dir}
+      className={`${cairo.variable} ${playfair.variable} ${bodoniModa.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{

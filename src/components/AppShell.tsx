@@ -136,7 +136,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
         {/* Desktop topbar */}
         <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            <span className="font-bold text-[var(--color-text-primary)] text-lg">CenterHQ</span>
+            <span
+              className="text-lg"
+              style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+            >
+              <span className="text-[var(--color-text-primary)]">CENTER</span>
+              <span className="text-teal-600">HQ</span>
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />

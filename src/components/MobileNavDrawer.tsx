@@ -160,7 +160,13 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
                 CH
               </div>
             )}
-            <span className="font-bold text-[var(--color-text-primary)] text-lg tracking-tight">CenterHQ</span>
+            <span
+              className="text-lg tracking-tight"
+              style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+            >
+              <span className="text-[var(--color-text-primary)]">CENTER</span>
+              <span className="text-teal-600">HQ</span>
+            </span>
           </Link>
         </div>
 
