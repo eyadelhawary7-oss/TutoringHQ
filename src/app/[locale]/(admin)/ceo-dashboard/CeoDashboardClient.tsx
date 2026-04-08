@@ -578,6 +578,8 @@ export default function CeoDashboardClient({
           </div>
         )}
 
+        {rangeSelector}
+
         <FounderCommandStrip {...commandStrip} />
 
         <FounderGrowthPanel {...growthPanel} />
@@ -595,8 +597,6 @@ export default function CeoDashboardClient({
             </div>
           ))}
         </section>
-
-        {rangeSelector}
 
         <section className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6 mb-8">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('briefingPreview')}</h2>

@@ -1,6 +1,6 @@
 import { getAdminContext } from '@/lib/admin-auth';
 import { getActionQueue, getPipelineSummary } from '@/lib/ceo';
-import { resolveRange } from '@/lib/ceo-time-range';
+import { DEFAULT_RANGE, resolveRange } from '@/lib/ceo-time-range';
 import { getCurrentBillingMonth } from '@/lib/parent-pack';
 import type {
   CeoActivationCenter,
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   const rawFrom = url.searchParams.get('from');
   const rawTo = url.searchParams.get('to');
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  const fallback = resolveRange('this_month');
+  const fallback = resolveRange(DEFAULT_RANGE);
 
   const fromDate: string =
     rawFrom !== null && DATE_RE.test(rawFrom) ? rawFrom : fallback.from;

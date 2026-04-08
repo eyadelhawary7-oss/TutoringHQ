@@ -1,5 +1,5 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth';
-import { resolveRange } from '@/lib/ceo-time-range';
+import { DEFAULT_RANGE, resolveRange } from '@/lib/ceo-time-range';
 import type { FinancialsResponse, MonthlyRevenue } from '@/types/financials';
 import { NextRequest } from 'next/server';
 
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
   const rawFrom = url.searchParams.get('from');
   const rawTo = url.searchParams.get('to');
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  const fallback = resolveRange('this_month');
+  const fallback = resolveRange(DEFAULT_RANGE);
 
   const fromDate: string =
     rawFrom !== null && DATE_RE.test(rawFrom) ? rawFrom : fallback.from;

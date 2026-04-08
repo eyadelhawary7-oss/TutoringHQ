@@ -142,6 +142,8 @@ function SettingsPageContent() {
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  /** Platform admin (e.g. super_admin) with no center — center settings UI does not apply */
+  const [isPlatformAdminNoCenter, setIsPlatformAdminNoCenter] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
 
   // General
@@ -221,7 +223,22 @@ function SettingsPageContent() {
 
       const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
       const meData = await meRes.json();
-      if (!meData?.user?.center_id) return;
+      setIsPlatformAdminNoCenter(false);
+
+      if (!meData?.user?.center_id) {
+        try {
+          const adminRes = await fetch('/api/admin/check', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const adminData = await adminRes.json();
+          setIsPlatformAdminNoCenter(!!adminData?.isAdmin);
+        } catch {
+          setIsPlatformAdminNoCenter(false);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       setCenterId(meData.user.center_id);
       const userCenterId = meData.user.center_id;
 
@@ -692,6 +709,35 @@ function SettingsPageContent() {
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="skeleton h-28 rounded-2xl w-full" />
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isPlatformAdminNoCenter) {
+    return (
+      <div className="min-h-screen w-full bg-[var(--color-surface-0)] page-enter" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <PageHeader title={t('title')} />
+          <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow p-6 space-y-4">
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('platformAdminSettingsHint')}</p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/settings/reset-password"
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                <KeyRound className="w-4 h-4 shrink-0" />
+                {t('resetPassword')}
+              </Link>
+              <Link
+                href="/admin"
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg hover:bg-[var(--color-surface-0)] transition-colors"
+              >
+                <Shield className="w-4 h-4 shrink-0" />
+                {t('backToAdminConsole')}
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );

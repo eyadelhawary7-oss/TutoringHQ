@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 
-export type UserRole = 'owner' | 'admin' | 'assistant' | 'teacher';
+export type UserRole = 'owner' | 'admin' | 'assistant' | 'teacher' | 'super_admin';
 
 export type PermissionKey = 'can_scan' | 'can_view_payments' | 'can_record_payments' | 'can_view_dashboard' | 'can_view_revenue' | 'can_manage_students' | 'can_manage_groups' | 'can_allow_late_entry' | 'can_manage_rooms' | 'can_view_schedule' | 'can_view_settings';
 
@@ -86,7 +86,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (data?.user) {
         setUser(data.user);
-        if (data.user.role === 'owner' || data.user.role === 'admin') {
+        if (data.user.role === 'owner' || data.user.role === 'admin' || data.user.role === 'super_admin') {
           const allTrue: Record<PermissionKey, boolean> = {} as Record<PermissionKey, boolean>;
           for (const key of Object.keys(defaultPermissions)) {
             allTrue[key as PermissionKey] = true;

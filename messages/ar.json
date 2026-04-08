@@ -4452,6 +4452,8 @@
     "logout": "تسجيل الخروج",
     "resetPassword": "تغيير رقم التعريف الشخصي PIN‏ ",
     "resetPasswordDesc": "تغيير رقم التعريف الشخصي (PIN) لحساب",
+    "platformAdminSettingsHint": "حسابك غير مرتبط بمركز. يمكنك تغيير رمز الدخول أو العودة إلى لوحة الإدارة.",
+    "backToAdminConsole": "العودة إلى الإدارة",
     "parentPack": {
       "sectionTitle": "باقة واتساب أولياء الأمور",
       "enableTitle": "تفعيل الباقة",
