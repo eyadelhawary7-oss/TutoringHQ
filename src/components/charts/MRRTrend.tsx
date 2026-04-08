@@ -36,10 +36,10 @@ export default function MRRTrend({ data = [] }: MRRTrendProps) {
   const locale = useLocale();
   const currencySuffix = locale === 'ar' ? 'ج.م' : 'EGP';
 
-  if (!data?.length) {
+  if (!data || data.length < 2) {
     return (
-      <div className="flex items-center justify-center h-[260px] text-[var(--color-text-secondary)]">
-        <p className="text-sm">-</p>
+      <div className="flex items-center justify-center h-[260px] text-[var(--color-text-muted)] text-sm">
+        {/* empty state — not enough data */}
       </div>
     );
   }

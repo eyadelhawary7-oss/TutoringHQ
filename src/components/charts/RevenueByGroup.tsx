@@ -11,6 +11,14 @@ export default function RevenueByGroup({ data = [] }: RevenueByGroupProps) {
   const locale = useLocale();
   const tCommon = useTranslations('common');
 
+  if (!data || !Array.isArray(data) || data.length < 2) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[200px] text-[var(--color-text-muted)] text-sm">
+        {/* empty state — not enough data */}
+      </div>
+    );
+  }
+
   const chartData = data.map((d) => ({
     group_name: d.group_name,
     amount: Number(d.amount) || 0,

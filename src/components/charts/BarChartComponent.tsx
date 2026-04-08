@@ -11,7 +11,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useTranslations } from 'next-intl';
 import { CHART_MARGIN, CHART_STYLE, LINE_BY_GRADIENT, type GradientKey } from './ChartTokens';
 import { ChartTooltip } from './ChartTooltip';
 
@@ -59,23 +58,22 @@ export function BarChartComponent({
   showGrid = true,
   rtl = false,
 }: BarChartComponentProps) {
-  const t = useTranslations('charts');
   const lineColor = LINE_BY_GRADIENT[color];
   const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
-  const barSize = Math.max(8, 32 - safeData.length);
-  const cat = categoryKey ?? xKey;
 
-  if (!safeData.length) {
+  if (!data || !Array.isArray(data) || data.length < 2) {
     return (
       <div
-        className="flex flex-col items-center justify-center text-center px-4"
-        style={{ height, color: '#334155', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
+        className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-sm"
+        style={{ height }}
       >
-        <p>{t('noData')}</p>
-        <p className="mt-1 text-xs opacity-80 max-w-xs">{t('noDataSub')}</p>
+        {/* empty state — not enough data */}
       </div>
     );
   }
+
+  const barSize = Math.max(8, 32 - safeData.length);
+  const cat = categoryKey ?? xKey;
 
   const margin = {
     ...CHART_MARGIN,

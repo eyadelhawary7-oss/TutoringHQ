@@ -249,23 +249,28 @@ export async function sendFreeformMessage(
 export async function markMessageRead(messageId: string): Promise<boolean> {
   const { phoneId, token } = getConfig();
 
-  const res = await fetch(`${GRAPH_BASE}/${phoneId}/messages`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      status: 'read',
-      message_id: messageId,
-    }),
-  });
+  try {
+    const res = await fetch(`${GRAPH_BASE}/${phoneId}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        status: 'read',
+        message_id: messageId,
+      }),
+    });
 
-  if (!res.ok) {
-    const data = (await res.json()) as { error?: { message: string } };
-    console.error('[WhatsApp] markMessageRead failed:', data.error?.message);
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: { message: string } };
+      console.error('[WhatsApp] markMessageRead failed:', data.error?.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[markMessageRead] failed:', err);
     return false;
   }
-  return true;
 }

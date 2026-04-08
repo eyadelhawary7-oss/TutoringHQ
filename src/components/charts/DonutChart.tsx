@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { useTranslations } from 'next-intl';
 import { CHART_STYLE } from './ChartTokens';
 import { ChartTooltip } from './ChartTooltip';
 
@@ -48,8 +47,6 @@ export function DonutChart({
   centerValueFill = 'var(--color-text-primary)',
   centerLabelFill = 'var(--color-text-secondary)',
 }: DonutChartProps) {
-  const t = useTranslations('charts');
-
   const chartData = useMemo(() => {
     const rows = (data ?? []).map((d, i) => ({
       name: d.name,
@@ -61,16 +58,21 @@ export function DonutChart({
 
   const sum = chartData.reduce((s, r) => s + r.value, 0);
 
+  const emptyState = (
+    <div
+      className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-sm"
+      style={{ height }}
+    >
+      {/* empty state — not enough data */}
+    </div>
+  );
+
+  if (!data || !Array.isArray(data) || data.length < 2) {
+    return emptyState;
+  }
+
   if (!chartData.length || sum <= 0) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center text-center px-4 text-[var(--color-text-secondary)]"
-        style={{ height, fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
-      >
-        <p>{t('noData')}</p>
-        <p className="mt-1 text-xs max-w-xs text-[var(--color-text-muted)]">{t('noDataSub')}</p>
-      </div>
-    );
+    return emptyState;
   }
 
   const centerValStr =
