@@ -42,31 +42,18 @@ async function getUserContext(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/5d45850b-1c51-447c-910a-e44a9b31e025',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'limits/route.ts:GET:entry',message:'limits GET called',data:{},timestamp:Date.now(),hypothesisId:'H4'})}).catch(()=>{});
-    // #endregion
     const ctx = await getUserContext(request);
     if (!ctx) {
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/5d45850b-1c51-447c-910a-e44a9b31e025',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'limits/route.ts:ctx_null',message:'getUserContext null',data:{},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const centerId = ctx.user.center_id;
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/5d45850b-1c51-447c-910a-e44a9b31e025',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'limits/route.ts:before_center',message:'before center query',data:{centerId},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
 
     const { data: center, error: centerError } = await ctx.supabaseAdmin
       .from('centers')
       .select('max_teachers, max_students, plan')
       .eq('id', centerId)
       .single();
-
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/5d45850b-1c51-447c-910a-e44a9b31e025',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'limits/route.ts:after_center',message:'after center query',data:{hasCenter:!!center,centerError:centerError?.message??null,centerCode:centerError?.code??null},timestamp:Date.now(),hypothesisId:'H2_H3'})}).catch(()=>{});
-    // #endregion
 
     if (centerError || !center) {
       return NextResponse.json({ error: 'Center not found' }, { status: 404 });

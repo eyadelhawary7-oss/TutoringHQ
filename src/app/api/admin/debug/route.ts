@@ -97,11 +97,7 @@ export async function GET(request: Request) {
     console.error('==========================================');
 
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        type: error?.constructor?.name,
-        stack: error instanceof Error ? error.stack : undefined,
-      },
+      { error: 'Internal error', message: 'An unexpected error occurred' },
       { status: 500 }
     );
   }
