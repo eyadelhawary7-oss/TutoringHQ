@@ -11,8 +11,8 @@ import {
   getPackPlanMinimumEgp,
 } from '@/lib/packBilling'
 
-/** chq_pack_invoice WhatsApp template is Active in Meta. */
-const packInvoiceEnabled = true
+// TODO: set to true when chq_pack_invoice is approved by Meta
+const packInvoiceEnabled = false
 
 function centerCodeForPack(c: { center_code?: string | null; referral_code?: string | null; id: string }): string {
   const raw = (c.center_code || c.referral_code || '').trim()
