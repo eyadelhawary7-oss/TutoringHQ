@@ -21,6 +21,74 @@ function parseConfigBool(v: unknown): boolean {
   return false;
 }
 
+function waApiPhoneNumberId(): string | null {
+  return process.env.PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_ID || null;
+}
+
+function waApiToken(): string | null {
+  return process.env.WHATSAPP_TOKEN || null;
+}
+
+/** Prefer Arabic when owner/center names contain Arabic script; otherwise English. */
+function inferPendingSignupWaLocale(c: {
+  owner_name?: string | null;
+  name?: string | null;
+}): 'ar' | 'en' {
+  const s = `${c.owner_name ?? ''} ${c.name ?? ''}`;
+  if (!s.trim()) return 'ar';
+  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(s) ? 'ar' : 'en';
+}
+
+function pendingPaymentConfirmationBody(ownerName: string, locale: 'ar' | 'en'): string {
+  const name = ownerName.trim() || (locale === 'ar' ? 'عميلنا العزيز' : 'there');
+  if (locale === 'ar') {
+    return `مرحباً ${name}! تلقينا طلبك وتم استلام الدفع بنجاح. سيتم مراجعة طلبك وتفعيل حسابك خلال ساعات قليلة. شكراً لاختيارك CenterHQ.`;
+  }
+  return `Hi ${name}! We received your application and payment. Your account will be reviewed and activated within a few hours. Thank you for choosing CenterHQ.`;
+}
+
+/**
+ * Plain-text WhatsApp (same env/credentials as centerNotify). Logs only; never throws.
+ */
+async function sendPendingSignupPaymentWhatsApp(opts: {
+  toDigits: string;
+  ownerName: string;
+  locale: 'ar' | 'en';
+}): Promise<void> {
+  const phoneId = waApiPhoneNumberId();
+  const token = waApiToken();
+  if (!phoneId || !token) {
+    console.warn('[signupInvoiceAutoApprove] pending payment WA skipped — missing PHONE_NUMBER_ID/WHATSAPP_PHONE_ID or WHATSAPP_TOKEN');
+    return;
+  }
+  const body = pendingPaymentConfirmationBody(opts.ownerName, opts.locale);
+  try {
+    const res = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: opts.toDigits,
+        type: 'text',
+        text: { body },
+      }),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error('[signupInvoiceAutoApprove] pending payment WA send failed:', res.status, txt);
+      return;
+    }
+    console.log('[signupInvoiceAutoApprove] pending payment WA sent successfully', {
+      to: `${opts.toDigits.slice(0, 4)}…`,
+    });
+  } catch (e) {
+    console.error('[signupInvoiceAutoApprove] pending payment WA send error:', e);
+  }
+}
+
 function addCalendarDaysFromToday(days: number): string {
   const t = new Date();
   t.setUTCDate(t.getUTCDate() + days);
@@ -244,6 +312,38 @@ export async function processInvoiceSignupAfterPaymobSuccess(
     } catch (e) {
       console.error('[signupInvoiceAutoApprove] ceo pending notify', e);
     }
+
+    try {
+      const { data: waRow, error: waCfgErr } = await supabase
+        .from('platform_config')
+        .select('value')
+        .eq('key', 'wa_sending_enabled')
+        .maybeSingle();
+      if (waCfgErr) {
+        console.error('[signupInvoiceAutoApprove] wa_sending_enabled platform_config read', waCfgErr);
+      } else if (!parseConfigBool(waRow?.value)) {
+        console.log('[signupInvoiceAutoApprove] pending payment WA skipped — wa_sending_enabled is not true');
+      } else {
+        const phoneRaw = (c.phone ?? '').trim();
+        const normalizedPhone = normalizePhone(phoneRaw);
+        const phoneDigits = normalizedPhone.replace(/\D/g, '');
+        if (!phoneDigits) {
+          console.warn('[signupInvoiceAutoApprove] pending payment WA skipped — no valid phone', centerId);
+        } else {
+          const locale = inferPendingSignupWaLocale(c);
+          const ownerDisplay =
+            (c.owner_name ?? '').trim() || (c.name ?? '').trim() || (locale === 'ar' ? 'عميلنا العزيز' : 'there');
+          await sendPendingSignupPaymentWhatsApp({
+            toDigits: phoneDigits,
+            ownerName: ownerDisplay,
+            locale,
+          });
+        }
+      }
+    } catch (e) {
+      console.error('[signupInvoiceAutoApprove] pending payment WA block error:', e);
+    }
+
     return;
   }
 
