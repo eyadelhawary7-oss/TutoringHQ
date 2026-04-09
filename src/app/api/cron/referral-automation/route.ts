@@ -179,6 +179,9 @@ export async function GET(request: Request) {
         errors.push(`referral ${refId}: ${insErr.message}`);
         continue;
       }
+      if (monthNumber === 1) {
+        await supabase.from('referrals').update({ status: 'active' }).eq('id', row.id as string);
+      }
       created++;
     } catch (err) {
       errors.push(`referral ${refId}: ${String(err)}`);
