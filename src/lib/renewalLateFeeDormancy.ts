@@ -7,7 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { getPeriodMultiplier, isPaygCenter } from '@/lib/billingEngine';
-import { sendChqDormancyNoticeTemplate, sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
+import { sendChqRenewalOverdueTemplate, sendDormancyNotice } from '@/lib/centerNotify';
 
 const SYSTEM_AUDIT_USER_ID = '00000000-0000-0000-0000-000000000000';
 
@@ -281,10 +281,7 @@ export async function runLateFeeAndDormancyScan(
           today: todayCairoYmd,
         });
 
-        await sendChqDormancyNoticeTemplate(supabase, {
-          name: c.name ?? '—',
-          phone: c.phone,
-        });
+        await sendDormancyNotice(supabase, c.id);
 
         result.dormantMarked++;
         continue;

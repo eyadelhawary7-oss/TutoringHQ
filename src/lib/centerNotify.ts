@@ -3,6 +3,28 @@ import { dateInNDays } from '@/lib/parentPack';
 
 const PLATFORM_URL = 'https://center-hq.vercel.app';
 
+function publicAppBase(): string {
+  return (process.env.NEXT_PUBLIC_APP_URL ?? PLATFORM_URL).replace(/\/$/, '');
+}
+
+/** Arabic billing page for dormant centers (Paymob reactivation). */
+export function reactivationBillingUrl(): string {
+  return `${publicAppBase()}/ar/settings/billing`;
+}
+
+function formatDateArEg(ymd: string): string {
+  const ymd10 = ymd.slice(0, 10);
+  const d = new Date(`${ymd10}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return ymd10;
+  return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function addMonthsYmd(ymd: string, months: number): string {
+  const [y, m, d] = ymd.slice(0, 10).split('-').map((x) => parseInt(x, 10));
+  const dt = new Date(Date.UTC(y, m - 1 + months, d));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
 /** Result for all exported WA helpers — never throws to callers. */
 export type CenterNotifyResult = {
   success?: boolean;
@@ -124,17 +146,17 @@ export async function sendChqRenewalOverdueTemplate(
   }
 }
 
-/** chq_dormancy_notice — center marked dormant (template to be created in Meta). */
+/** chq_dormancy_notice — variables: center_name, dormancy_date, reactivation_url */
 export async function sendChqDormancyNoticeTemplate(
   supabase: SupabaseClient,
-  opts: { name: string; phone: string | null },
+  opts: { name: string; phone: string | null; dormancyDateStr: string; reactivationUrl: string },
 ): Promise<CenterNotifyResult> {
   const TEMPLATE = 'chq_dormancy_notice';
   const to = digitsOnly(opts.phone ?? '');
   if (!to) return { skipped: true };
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — template not APPROVED in wa_meta_templates`);
     return { skipped: true };
   }
   try {
@@ -142,7 +164,7 @@ export async function sendChqDormancyNoticeTemplate(
       templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [opts.name ?? '—'],
+      bodyParameters: [opts.name ?? '—', opts.dormancyDateStr, opts.reactivationUrl],
     });
     return ok ? { success: true } : { error: true };
   } catch (err) {
@@ -151,17 +173,42 @@ export async function sendChqDormancyNoticeTemplate(
   }
 }
 
-/** chq_reactivation_warning_90 — 9 months dormant (template to be created in Meta). */
+/** Loads center and sends dormancy notice (skips if template not APPROVED). */
+export async function sendDormancyNotice(
+  supabase: SupabaseClient,
+  centerId: string,
+): Promise<CenterNotifyResult> {
+  const { data: row, error } = await supabase
+    .from('centers')
+    .select('name, phone, dormancy_date')
+    .eq('id', centerId)
+    .maybeSingle();
+  if (error || !row) {
+    console.warn('[centerNotify] sendDormancyNotice: center not found', centerId);
+    return { skipped: true };
+  }
+  const c = row as { name: string | null; phone: string | null; dormancy_date: string | null };
+  const dormYmd = c.dormancy_date ? String(c.dormancy_date).slice(0, 10) : '';
+  const dormancyDateStr = dormYmd ? formatDateArEg(dormYmd) : '—';
+  return sendChqDormancyNoticeTemplate(supabase, {
+    name: c.name ?? '—',
+    phone: c.phone,
+    dormancyDateStr,
+    reactivationUrl: reactivationBillingUrl(),
+  });
+}
+
+/** chq_reactivation_warning_90 — variables: center_name, deletion_date */
 export async function sendChqReactivationWarning90Template(
   supabase: SupabaseClient,
-  opts: { name: string; phone: string | null },
+  opts: { name: string; phone: string | null; deletionDateStr: string },
 ): Promise<CenterNotifyResult> {
   const TEMPLATE = 'chq_reactivation_warning_90';
   const to = digitsOnly(opts.phone ?? '');
   if (!to) return { skipped: true };
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — template not APPROVED in wa_meta_templates`);
     return { skipped: true };
   }
   try {
@@ -169,7 +216,7 @@ export async function sendChqReactivationWarning90Template(
       templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [opts.name ?? '—'],
+      bodyParameters: [opts.name ?? '—', opts.deletionDateStr],
     });
     return ok ? { success: true } : { error: true };
   } catch (err) {
@@ -178,17 +225,43 @@ export async function sendChqReactivationWarning90Template(
   }
 }
 
-/** chq_reactivation_warning_30 — 11 months dormant (template to be created in Meta). */
+/** ~9 months dormant (cron): deletion date = 12 months after dormancy_date. */
+export async function sendReactivationWarning90(
+  supabase: SupabaseClient,
+  centerId: string,
+): Promise<CenterNotifyResult> {
+  const { data: row, error } = await supabase
+    .from('centers')
+    .select('name, phone, dormancy_date')
+    .eq('id', centerId)
+    .maybeSingle();
+  if (error || !row) {
+    console.warn('[centerNotify] sendReactivationWarning90: center not found', centerId);
+    return { skipped: true };
+  }
+  const c = row as { name: string | null; phone: string | null; dormancy_date: string | null };
+  const dormYmd = c.dormancy_date ? String(c.dormancy_date).slice(0, 10) : '';
+  if (!dormYmd) return { skipped: true };
+  const deletionYmd = addMonthsYmd(dormYmd, 12);
+  const deletionDateStr = formatDateArEg(deletionYmd);
+  return sendChqReactivationWarning90Template(supabase, {
+    name: c.name ?? '—',
+    phone: c.phone,
+    deletionDateStr,
+  });
+}
+
+/** chq_reactivation_warning_30 — variables: center_name, deletion_date */
 export async function sendChqReactivationWarning30Template(
   supabase: SupabaseClient,
-  opts: { name: string; phone: string | null },
+  opts: { name: string; phone: string | null; deletionDateStr: string },
 ): Promise<CenterNotifyResult> {
   const TEMPLATE = 'chq_reactivation_warning_30';
   const to = digitsOnly(opts.phone ?? '');
   if (!to) return { skipped: true };
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — template not APPROVED in wa_meta_templates`);
     return { skipped: true };
   }
   try {
@@ -196,7 +269,7 @@ export async function sendChqReactivationWarning30Template(
       templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [opts.name ?? '—'],
+      bodyParameters: [opts.name ?? '—', opts.deletionDateStr],
     });
     return ok ? { success: true } : { error: true };
   } catch (err) {
@@ -205,17 +278,42 @@ export async function sendChqReactivationWarning30Template(
   }
 }
 
-/** chq_data_deletion_notice — after purge (template to be created in Meta). */
+export async function sendReactivationWarning30(
+  supabase: SupabaseClient,
+  centerId: string,
+): Promise<CenterNotifyResult> {
+  const { data: row, error } = await supabase
+    .from('centers')
+    .select('name, phone, dormancy_date')
+    .eq('id', centerId)
+    .maybeSingle();
+  if (error || !row) {
+    console.warn('[centerNotify] sendReactivationWarning30: center not found', centerId);
+    return { skipped: true };
+  }
+  const c = row as { name: string | null; phone: string | null; dormancy_date: string | null };
+  const dormYmd = c.dormancy_date ? String(c.dormancy_date).slice(0, 10) : '';
+  if (!dormYmd) return { skipped: true };
+  const deletionYmd = addMonthsYmd(dormYmd, 12);
+  const deletionDateStr = formatDateArEg(deletionYmd);
+  return sendChqReactivationWarning30Template(supabase, {
+    name: c.name ?? '—',
+    phone: c.phone,
+    deletionDateStr,
+  });
+}
+
+/** chq_data_deletion_notice — variables: center_name, deletion_date */
 export async function sendChqDataDeletionNoticeTemplate(
   supabase: SupabaseClient,
-  opts: { name: string; phone: string | null },
+  opts: { name: string; phone: string | null; deletionDateStr: string },
 ): Promise<CenterNotifyResult> {
   const TEMPLATE = 'chq_data_deletion_notice';
   const to = digitsOnly(opts.phone ?? '');
   if (!to) return { skipped: true };
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — template not APPROVED in wa_meta_templates`);
     return { skipped: true };
   }
   try {
@@ -223,13 +321,38 @@ export async function sendChqDataDeletionNoticeTemplate(
       templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [opts.name ?? '—'],
+      bodyParameters: [opts.name ?? '—', opts.deletionDateStr],
     });
     return ok ? { success: true } : { error: true };
   } catch (err) {
     console.error(`[centerNotify] ${TEMPLATE}:`, err);
     return { error: true };
   }
+}
+
+/** After operational purge: uses purge date (today) as deletion_date in copy. */
+export async function sendDataDeletionNotice(
+  supabase: SupabaseClient,
+  centerId: string,
+  purgeDateYmd?: string,
+): Promise<CenterNotifyResult> {
+  const { data: row, error } = await supabase
+    .from('centers')
+    .select('name, phone')
+    .eq('id', centerId)
+    .maybeSingle();
+  if (error || !row) {
+    console.warn('[centerNotify] sendDataDeletionNotice: center not found', centerId);
+    return { skipped: true };
+  }
+  const c = row as { name: string | null; phone: string | null };
+  const ymd = (purgeDateYmd ?? new Date().toISOString().slice(0, 10)).slice(0, 10);
+  const deletionDateStr = formatDateArEg(ymd);
+  return sendChqDataDeletionNoticeTemplate(supabase, {
+    name: c.name ?? '—',
+    phone: c.phone,
+    deletionDateStr,
+  });
 }
 
 /** chq_payment_confirmed — Paymob subscription / renewal success (Item 7). */

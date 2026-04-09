@@ -7,9 +7,9 @@ import { NextResponse } from 'next/server';
 import { todayISO } from '@/lib/parentPack';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import {
-  sendChqDataDeletionNoticeTemplate,
-  sendChqReactivationWarning30Template,
-  sendChqReactivationWarning90Template,
+  sendDataDeletionNotice,
+  sendReactivationWarning30,
+  sendReactivationWarning90,
 } from '@/lib/centerNotify';
 import {
   exportDormantCenterToDrive,
@@ -114,16 +114,16 @@ export async function POST(request: Request) {
             },
           });
 
-          await sendChqDataDeletionNoticeTemplate(supabase, { name: c.name ?? '—', phone: c.phone });
+          await sendDataDeletionNotice(supabase, c.id, today);
           purged++;
           continue;
         }
 
         if (months === 9) {
-          const r = await sendChqReactivationWarning90Template(supabase, { name: c.name ?? '—', phone: c.phone });
+          const r = await sendReactivationWarning90(supabase, c.id);
           if (r.success) warned90++;
         } else if (months === 11) {
-          const r = await sendChqReactivationWarning30Template(supabase, { name: c.name ?? '—', phone: c.phone });
+          const r = await sendReactivationWarning30(supabase, c.id);
           if (r.success) warned30++;
         }
       } catch (e) {
