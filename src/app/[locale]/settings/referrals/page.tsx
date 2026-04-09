@@ -6,7 +6,7 @@ import { useRouter } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Gift } from 'lucide-react';
+import { ArrowLeft, Download, Gift } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 
 const PLAN_LABELS_AR: Record<string, string> = {
@@ -38,6 +38,15 @@ interface ReferralRow {
   } | null;
 }
 
+interface PayoutRequestRow {
+  id: string;
+  amount_requested: number;
+  status: string;
+  payment_method?: string | null;
+  requested_at: string;
+  processed_at?: string | null;
+}
+
 export default function SettingsReferralsPage() {
   const t = useTranslations('referral');
   const tRef = useTranslations('referrals');
@@ -48,6 +57,7 @@ export default function SettingsReferralsPage() {
   const [referrals, setReferrals] = useState<ReferralRow[]>([]);
   const [referralCode, setReferralCode] = useState('');
   const [totalEarned, setTotalEarned] = useState(0);
+  const [payoutRequests, setPayoutRequests] = useState<PayoutRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const centerId = user?.center_id;
@@ -67,6 +77,10 @@ export default function SettingsReferralsPage() {
           const json = await res.json();
           setReferralCode(json.referralCode ?? '');
           setTotalEarned(json.totalEarned ?? 0);
+          const pr = json.payoutRequests;
+          if (Array.isArray(pr)) {
+            setPayoutRequests(pr as PayoutRequestRow[]);
+          }
         }
       } catch {
         // ignore
@@ -155,6 +169,25 @@ export default function SettingsReferralsPage() {
     }).replace(/\//g, '/');
   };
 
+  const openPayoutPdf = async (payoutId: string) => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/payouts/${payoutId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const opened = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!opened) URL.revokeObjectURL(url);
+      else setTimeout(() => URL.revokeObjectURL(url), 120_000);
+    } catch {
+      /* ignore */
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     if (status === 'active') {
       return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">{locale === 'ar' ? 'نشط' : 'Active'}</span>;
@@ -204,6 +237,66 @@ export default function SettingsReferralsPage() {
               </div>
             </div>
           </div>
+
+          {payoutRequests.length > 0 && (
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-[var(--color-border-subtle)]">
+                <h3 className="font-bold text-[var(--color-text-primary)]">
+                  {locale === 'ar' ? 'سجل طلبات الصرف' : 'Payout history'}
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
+                        {locale === 'ar' ? 'المبلغ' : 'Amount'}
+                      </th>
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
+                        {locale === 'ar' ? 'الحالة' : 'Status'}
+                      </th>
+                      <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
+                        {locale === 'ar' ? 'تاريخ الطلب' : 'Requested'}
+                      </th>
+                      <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
+                        PDF
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payoutRequests.map((p) => {
+                      const canPdf = p.status === 'approved' || p.status === 'paid';
+                      return (
+                        <tr key={p.id} className="border-b border-[var(--color-border-subtle)]">
+                          <td className="py-3 px-4 font-mono font-semibold">
+                            {Number(p.amount_requested ?? 0).toLocaleString('en-US')} {tc('egp')}
+                          </td>
+                          <td className="py-3 px-4">{p.status}</td>
+                          <td className="py-3 px-4 text-[var(--color-text-secondary)]">
+                            {formatDate(p.requested_at)}
+                          </td>
+                          <td className="py-3 px-4 text-end">
+                            {canPdf ? (
+                              <button
+                                type="button"
+                                onClick={() => void openPayoutPdf(p.id)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-teal-600/60 px-2 py-1 text-xs font-semibold text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/30"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                {locale === 'ar' ? 'تحميل' : 'Download'}
+                              </button>
+                            ) : (
+                              <span className="text-xs text-[var(--color-text-secondary)]">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
             <h2 className="font-bold text-[var(--color-text-primary)] mb-4">
