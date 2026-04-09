@@ -91,7 +91,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       'plan_upgrade_difference',
       'pack_billing',
       'announcement_settlement',
+      'late_payment_fee',
       'late_fee',
+      'reactivation_fee',
     ];
     if (!row.invoice_type || !payableTypes.includes(row.invoice_type)) {
       return NextResponse.json({ error: 'This invoice cannot be paid online' }, { status: 400 });
@@ -214,7 +216,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       })
       .eq('id', row.id)
       .eq('center_id', ctx.user.center_id)
-      .eq('status', 'pending');
+      .in('status', ['pending', 'overdue']);
 
     if (updateErr) {
       console.error('[invoices/pay] Failed to save Paymob fields:', updateErr);

@@ -16,7 +16,8 @@ const GRAY_BG = '#f8fafc';
 const BORDER = '#ebebeb';
 const MUTED = '#94a3b8';
 
-const DOC_TOTAL = 12;
+const DOC_TOTAL = 13;
+const GREEN = '#16a34a';
 
 const INVOICE_TYPE_ORDER: Record<string, number> = {
   subscription: 1,
@@ -29,7 +30,9 @@ const INVOICE_TYPE_ORDER: Record<string, number> = {
   payment_proof: 8,
   setup_fee: 9,
   whatsapp_addon: 10,
+  late_payment_fee: 11,
   late_fee: 11,
+  reactivation_fee: 12,
 };
 
 const DOC_TYPE_AR: Record<string, string> = {
@@ -43,7 +46,9 @@ const DOC_TYPE_AR: Record<string, string> = {
   payment_proof: 'إثبات دفع',
   setup_fee: 'رسوم إعداد / توصيل',
   whatsapp_addon: 'باقة واتساب',
-  late_fee: 'فاتورة رسوم تأخير',
+  late_payment_fee: 'فاتورة غرامة تأخير',
+  late_fee: 'فاتورة غرامة تأخير',
+  reactivation_fee: 'فاتورة إعادة تفعيل',
 };
 
 export function invoiceTypeFooterIndex(invoiceType: string): number {
@@ -142,9 +147,11 @@ type LineRow = {
   amount: number;
   amountMuted?: boolean;
   amountRed?: boolean;
+  amountGreen?: boolean;
+  titleBoldRed?: boolean;
 };
 
-type BreakRow = { labelAr: string; value: string; red?: boolean; teal?: boolean };
+type BreakRow = { labelAr: string; value: string; red?: boolean; teal?: boolean; amber?: boolean; green?: boolean };
 
 type SidebarRow = { label: string; value: string };
 
@@ -158,7 +165,8 @@ type StatusKind =
   | 'review'
   | 'cap_deduct'
   | 'pack_auto'
-  | 'activated';
+  | 'activated'
+  | 'reactivation';
 
 function resolveStatusKind(
   invoiceType: string,
@@ -189,6 +197,9 @@ function resolveStatusKind(
   if (invoiceType === 'setup_fee' && (st === 'paid' || st === 'approved')) {
     return { kind: 'shipped', overdueDays: 0 };
   }
+  if (invoiceType === 'reactivation_fee' && (st === 'pending' || st === 'overdue')) {
+    return { kind: 'reactivation', overdueDays: 0 };
+  }
   if (st === 'overdue') return { kind: 'overdue', overdueDays: od || overdueDaysFromDue(dueYmd) };
   if (st === 'paid' || st === 'approved') return { kind: 'paid', overdueDays: 0 };
   return { kind: 'pending', overdueDays: 0 };
@@ -216,9 +227,20 @@ function statusPillHtml(kind: StatusKind, overdueDays: number): string {
       return `<span style="${base}border:2px solid ${AMBER};color:${AMBER};background:transparent;">قيد المراجعة</span>`;
     case 'cap_deduct':
       return `<span style="${base}border:2px solid ${TEAL};color:${TEAL};background:transparent;">خُصم فوراً</span>`;
+    case 'reactivation':
+      return `<span style="${base}background:${TEAL};color:${WHITE};">إعادة تفعيل</span>`;
     default:
       return `<span style="${base}border:2px solid ${MUTED};color:${MUTED};background:transparent;">—</span>`;
   }
+}
+
+function latePaymentOverduePillHtml(days: number, rate: number): string {
+  const base =
+    'display:inline-block;padding:6px 14px;border-radius:9999px;font-size:11px;font-weight:700;font-family:Cairo,system-ui,sans-serif;';
+  const tier10 = rate >= 0.095;
+  const color = tier10 ? RED : AMBER;
+  const border = tier10 ? `2px solid ${RED}` : `2px solid ${AMBER}`;
+  return `<span style="${base}background:transparent;color:${color};border:${border};">متأخرة ${days || '—'} أيام</span>`;
 }
 
 function sidebarDivider(): string {
@@ -248,13 +270,15 @@ function renderLineTable(rows: LineRow[]): string {
   </thead>`;
   const body = rows
     .map((r) => {
-      const amtColor = r.amountMuted ? MUTED : r.amountRed ? RED : '#0f172a';
+      const amtColor = r.amountMuted ? MUTED : r.amountRed ? RED : r.amountGreen ? GREEN : '#0f172a';
+      const titleColor = r.titleBoldRed ? RED : '#0f172a';
+      const titleWeight = r.titleBoldRed ? 800 : 700;
       const sub = r.subAr
         ? `<div style="font-size:11px;color:${TEAL};margin-top:4px;font-family:Cairo,sans-serif;">${esc(r.subAr)}</div>`
         : '';
       return `<tr>
       <td style="padding:12px;vertical-align:top;border-bottom:1px solid ${BORDER};font-family:Cairo,sans-serif;">
-        <div style="font-weight:700;color:#0f172a;">${esc(r.titleAr)}</div>
+        <div style="font-weight:${titleWeight};color:${titleColor};">${esc(r.titleAr)}</div>
         ${sub}
       </td>
       <td style="padding:12px;vertical-align:top;border-bottom:1px solid ${BORDER};text-align:center;font-size:12px;color:${TEAL};font-family:Cairo,sans-serif;">${esc(r.mid)}</td>
@@ -271,7 +295,7 @@ function renderBreakdownTwoCol(leftRows: BreakRow[], rightRows: BreakRow[]): str
     <div style="font-size:10px;color:#64748b;margin-bottom:10px;font-family:Cairo,sans-serif;">${esc(title)}</div>
     ${rows
       .map((r) => {
-        const c = r.red ? RED : r.teal ? TEAL : '#475569';
+        const c = r.red ? RED : r.teal ? TEAL : r.amber ? AMBER : r.green ? GREEN : '#475569';
         const font = r.teal ? "'Bodoni Moda',serif" : 'system-ui,sans-serif';
         const fw = r.teal ? 700 : 500;
         return `<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:12px;font-family:Cairo,sans-serif;color:#475569;">
@@ -408,13 +432,14 @@ function buildSidebar(params: {
 }
 
 function buildMainColumn(params: {
-  topBanner?: { line: string; sub?: string };
+  topBanner?: { line: string; sub?: string; bannerLineColor?: string };
   headerLabel: string;
   centerName: string;
   centerPhone: string;
   centerCity: string;
   amountLabel: string;
   totalAmount: number;
+  totalAmountColor?: string;
   lineRows: LineRow[];
   leftBreak: BreakRow[];
   rightBreak: BreakRow[];
@@ -423,9 +448,10 @@ function buildMainColumn(params: {
   extraTitleAr?: string;
 }): string {
   const cityLine = params.centerCity.trim() ? `${esc(params.centerCity.trim())}` : '—';
+  const bannerLineColor = params.topBanner?.bannerLineColor ?? TEAL;
   const banner = params.topBanner
     ? `<div style="text-align:left;margin-bottom:12px;">
-    <div style="font-size:12px;color:${TEAL};font-weight:700;font-family:Cairo,sans-serif;">${esc(params.topBanner.line)}</div>
+    <div style="font-size:12px;color:${bannerLineColor};font-weight:700;font-family:Cairo,sans-serif;">${esc(params.topBanner.line)}</div>
     ${params.topBanner.sub ? `<div style="font-size:11px;color:#64748b;margin-top:4px;font-family:Cairo,sans-serif;max-width:520px;">${esc(params.topBanner.sub)}</div>` : ''}
   </div>`
     : '';
@@ -445,7 +471,7 @@ function buildMainColumn(params: {
     </div>
     <div style="text-align:left;">
       <div style="font-size:10px;color:#64748b;font-family:Cairo,sans-serif;">${esc(params.amountLabel)}</div>
-      <div style="font-size:36px;font-weight:700;color:${TEAL};font-family:'Bodoni Moda',serif;margin-top:4px;font-variant-numeric:tabular-nums;">${esc(fmtEgp(params.totalAmount))}</div>
+      <div style="font-size:36px;font-weight:700;color:${params.totalAmountColor ?? TEAL};font-family:'Bodoni Moda',serif;margin-top:4px;font-variant-numeric:tabular-nums;">${esc(fmtEgp(params.totalAmount))}</div>
     </div>
   </div>
   ${extraTitle}
@@ -480,7 +506,7 @@ export async function generateInvoicePdf(invoiceId: string, supabase: SupabaseCl
   const { data: center, error: cErr } = await supabase
     .from('centers')
     .select(
-      'name, phone, city, plan, referral_code, subscription_billing_period, next_payment_due, billing_amount, pack_price_per_parent, announcement_balance',
+      'name, phone, city, plan, referral_code, subscription_billing_period, next_payment_due, billing_amount, pack_price_per_parent, announcement_balance, dormancy_date, active_months_count',
     )
     .eq('id', centerId)
     .maybeSingle();
@@ -510,7 +536,7 @@ export async function generateInvoicePdf(invoiceId: string, supabase: SupabaseCl
   const status = String(inv.status ?? 'pending');
   const dueYmd = inv.due_date != null ? String(inv.due_date).slice(0, 10) : null;
   const { kind: statusKind, overdueDays } = resolveStatusKind(invoiceType, status, dueYmd);
-  const statusHtml = statusPillHtml(statusKind, overdueDays);
+  let statusHtml = statusPillHtml(statusKind, overdueDays);
 
   const issuedAt = fmtDate(inv.created_at != null ? String(inv.created_at) : undefined);
   const periodStart = fmtDate(inv.billing_period_start != null ? String(inv.billing_period_start) : undefined);
@@ -542,7 +568,8 @@ export async function generateInvoicePdf(invoiceId: string, supabase: SupabaseCl
   const refCode = String(c.referral_code ?? 'CODE').replace(/\s+/g, '') || 'CODE';
   const referUrl = `${appBase}/refer/${encodeURIComponent(refCode)}`;
   let referralStrip: string | undefined;
-  const showReferralStrip = invoiceType !== 'payment_proof' && invoiceType !== 'setup_fee';
+  const showReferralStrip =
+    invoiceType !== 'payment_proof' && invoiceType !== 'setup_fee' && invoiceType !== 'reactivation_fee';
   if (showReferralStrip) {
     try {
       const qrDataUrl = await QRCode.toDataURL(referUrl, { margin: 1, width: 160 });
@@ -558,9 +585,10 @@ export async function generateInvoicePdf(invoiceId: string, supabase: SupabaseCl
   const footerRight = `${footerIdx} OF ${DOC_TOTAL}: ${invoiceType.toUpperCase().replace(/_/g, ' ')}`;
   const footerLeft = 'CenterHQ · centerhq.app · An EHG Intelligence Product';
 
-  let topBanner: { line: string; sub?: string } | undefined;
+  let topBanner: { line: string; sub?: string; bannerLineColor?: string } | undefined;
   let headerLabel = 'مُرسَلة إلى';
   let amountLabel = 'الإجمالي';
+  let invoiceAmountColor: string | undefined;
   let lineRows: LineRow[] = [];
   let leftBreak: BreakRow[] = [];
   let rightBreak: BreakRow[] = [];
@@ -939,42 +967,139 @@ export async function generateInvoicePdf(invoiceId: string, supabase: SupabaseCl
     rightBreak = [{ labelAr: 'المدفوع', value: fmtEgp(total), teal: true }];
     showTax = false;
     referralStrip = undefined;
-  } else if (invoiceType === 'late_fee') {
+  } else if (invoiceType === 'late_payment_fee' || invoiceType === 'late_fee') {
     const lfMeta = meta as {
       late_fee_rate?: number;
       late_fee_amount?: number;
       days_overdue?: number;
       tier?: number;
+      cycle_anchor?: string;
+      grace_period_end?: string;
     };
     const rate = Number(lfMeta.late_fee_rate ?? 0);
     const feeAmt = Number(lfMeta.late_fee_amount ?? Math.max(0, total - base));
-    const daysOd = Number(lfMeta.days_overdue ?? 0);
-    const tier = Number(lfMeta.tier ?? 1);
+    const daysOd = Number(lfMeta.days_overdue ?? overdueDays ?? 0);
+    const origDueYmd =
+      lfMeta.cycle_anchor != null && String(lfMeta.cycle_anchor).trim()
+        ? String(lfMeta.cycle_anchor).slice(0, 10)
+        : inv.billing_period_start != null
+          ? String(inv.billing_period_start).slice(0, 10)
+          : dueYmd ?? '';
+    const graceEndYmd =
+      lfMeta.grace_period_end != null && String(lfMeta.grace_period_end).trim()
+        ? String(lfMeta.grace_period_end).slice(0, 10)
+        : null;
+    const graceEndLabel = graceEndYmd ? fmtDate(graceEndYmd) : '—';
+    const dueDateLabel = dueYmd ? fmtDate(dueYmd) : '—';
+
     sidebarMeta = [
+      { label: 'الموعد الأصلي', value: origDueYmd ? fmtDate(origDueYmd) : '—' },
       { label: 'أيام التأخير', value: String(daysOd || '—') },
-      { label: 'نسبة الرسوم', value: `${Math.round(rate * 100)}%` },
-      { label: 'الفترة', value: periodRange },
-      { label: 'المستوى', value: tier === 2 ? '10%' : '5%' },
+      { label: 'نسبة الغرامة', value: `${Math.round(rate * 100)}%` },
     ];
+
+    if (status === 'pending' || status === 'overdue') {
+      statusHtml = latePaymentOverduePillHtml(daysOd, rate);
+    }
+
+    topBanner = {
+      line: 'الحساب معرض للإيقاف.',
+      sub: 'يرجى سداد المبلغ الكامل بما في ذلك غرامة التأخير لاستعادة الوصول الكامل.',
+      bannerLineColor: RED,
+    };
+    paymentMethodLine = `السداد متأخر — انتهت فترة السماح: ${graceEndLabel}`;
+
+    const tier10 = rate >= 0.095;
+    invoiceAmountColor = tier10 ? RED : AMBER;
+
     lineRows = [
       {
-        titleAr: 'مبلغ الاشتراك الأساسي',
-        subAr: 'دورة الفوترة الحالية',
+        titleAr: `${displayPlanAr} — ${billingCycle}`,
+        subAr: `فترة الفوترة`,
         mid: periodRange,
         amount: base,
       },
       {
-        titleAr: `رسوم تأخير (${Math.round(rate * 100)}%)`,
-        subAr: undefined,
-        mid: `${daysOd} يوم تأخير`,
+        titleAr: `غرامة التأخير (${Math.round(rate * 100)}%)`,
+        titleBoldRed: true,
+        mid: `${dueDateLabel} · ${issuedAt}`,
         amount: feeAmt,
+        amountRed: true,
       },
     ];
     leftBreak = [
-      { labelAr: 'الأساس', value: fmtEgp(base) },
-      { labelAr: 'رسوم التأخير', value: fmtEgp(feeAmt) },
+      { labelAr: 'مبلغ الخطة الأساسي', value: fmtEgp(base) },
+      { labelAr: `غرامة التأخير (${Math.round(rate * 100)}%)`, value: fmtEgp(feeAmt), red: true },
+      { labelAr: 'الضرائب مدمجة', value: 'شاملة' },
     ];
-    rightBreak = [{ labelAr: 'الإجمالي', value: fmtEgp(total), teal: true }];
+    rightBreak = [
+      {
+        labelAr: 'الإجمالي المستحق',
+        value: fmtEgp(total),
+        red: tier10,
+        amber: !tier10 && rate > 0,
+      },
+    ];
+  } else if (invoiceType === 'reactivation_fee') {
+    referralStrip = undefined;
+    const rm = meta as {
+      active_months_count?: number;
+      avg_monthly_price?: number;
+      base_fee?: number;
+      discount_rate?: number;
+      suspension_started?: string | null;
+      suspension_days?: number;
+    };
+    const avgM = Number(rm.avg_monthly_price ?? base);
+    const dr = Number(rm.discount_rate ?? 0);
+    const monthsActive = Number(rm.active_months_count ?? Number(c.active_months_count ?? 0));
+    const discAmt = Number(inv.discount_amount ?? Math.round(base * dr * 100) / 100);
+    const suspStart =
+      rm.suspension_started != null && String(rm.suspension_started).trim()
+        ? fmtDate(String(rm.suspension_started))
+        : c.dormancy_date != null
+          ? fmtDate(String(c.dormancy_date))
+          : '—';
+    const suspDays = Number(rm.suspension_days ?? 0);
+
+    sidebarMeta = [
+      { label: 'تاريخ الإيقاف', value: suspStart },
+      { label: 'مدة الإيقاف', value: suspDays > 0 ? `${suspDays} يوم` : '—' },
+      { label: 'خصم الولاء', value: dr > 0 ? `${Math.round(dr * 100)}%` : '—' },
+    ];
+    topBanner = {
+      line: 'مرحباً بك مجدداً في CenterHQ.',
+      sub: 'حسابك نشط الآن. جميع بياناتك محفوظة.',
+      bannerLineColor: TEAL,
+    };
+    amountLabel = 'رسوم إعادة التفعيل';
+    invoiceAmountColor = TEAL;
+
+    lineRows = [
+      {
+        titleAr: 'متوسط الاشتراك الشهري (مرجعية التسعير)',
+        subAr: undefined,
+        mid: `مجموع فواتير الاشتراك ÷ ${Math.max(1, monthsActive)} شهر`,
+        amount: base,
+      },
+    ];
+    if (dr > 0 && discAmt > 0) {
+      lineRows.push({
+        titleAr: 'خصم الولاء',
+        subAr: undefined,
+        mid: `${monthsActive} شهر نشاط`,
+        amount: -discAmt,
+        amountGreen: true,
+      });
+    }
+    leftBreak = [
+      { labelAr: 'متوسط السعر الشهري', value: fmtEgp(avgM) },
+      ...(dr > 0
+        ? [{ labelAr: `خصم الولاء (${Math.round(dr * 100)}%)`, value: `−${fmtEgp(discAmt)}`, green: true } as BreakRow]
+        : []),
+    ];
+    rightBreak = [{ labelAr: 'إجمالي إعادة التفعيل', value: fmtEgp(total), teal: true }];
+    showTax = false;
   } else {
     sidebarMeta = [
       { label: 'الخطة', value: displayPlanAr },
@@ -1009,6 +1134,7 @@ export async function generateInvoicePdf(invoiceId: string, supabase: SupabaseCl
     centerCity,
     amountLabel,
     totalAmount: total,
+    totalAmountColor: invoiceAmountColor,
     lineRows,
     leftBreak,
     rightBreak,
@@ -1209,7 +1335,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
   const html = wrapDocument(
     `${sidebar}${main}`,
     'CenterHQ · centerhq.app · An EHG Intelligence Product',
-    `12 OF ${DOC_TOTAL}: REFERRAL PAYOUT`,
+    `13 OF ${DOC_TOTAL}: REFERRAL PAYOUT`,
   );
   return htmlToPdfBuffer(html);
 }

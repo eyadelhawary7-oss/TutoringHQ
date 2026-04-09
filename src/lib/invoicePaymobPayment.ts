@@ -250,7 +250,7 @@ export async function finalizeInvoicePaymentSuccess(
     return { invoiceId: row.id };
   }
 
-  if (row.invoice_type === 'late_fee') {
+  if (row.invoice_type === 'late_payment_fee' || row.invoice_type === 'late_fee') {
     const paidDay = new Date().toISOString().slice(0, 10);
     const { error: cErr } = await supabaseAdmin
       .from('centers')
@@ -260,7 +260,26 @@ export async function finalizeInvoicePaymentSuccess(
       })
       .eq('id', row.center_id);
     if (cErr) {
-      console.error('[finalizeInvoicePaymentSuccess] late_fee center', cErr);
+      console.error('[finalizeInvoicePaymentSuccess] late_payment_fee center', cErr);
+    }
+    return { invoiceId: row.id };
+  }
+
+  if (row.invoice_type === 'reactivation_fee') {
+    const paidDay = new Date().toISOString().slice(0, 10);
+    const { error: cErr } = await supabaseAdmin
+      .from('centers')
+      .update({
+        status: 'active',
+        reactivation_date: paidDay,
+        dormancy_date: null,
+        billing_status: 'paid',
+        subscription_status: 'active',
+        last_payment_date: paidDay,
+      })
+      .eq('id', row.center_id);
+    if (cErr) {
+      console.error('[finalizeInvoicePaymentSuccess] reactivation_fee center', cErr);
     }
     return { invoiceId: row.id };
   }

@@ -52,6 +52,13 @@ export function daysOverdueYmd(dueYmd: string, todayYmd: string): number {
   return Math.floor((today.getTime() - due.getTime()) / 86400000);
 }
 
+function addDaysToYmd(ymd: string, days: number): string {
+  const [y, m, d] = ymd.slice(0, 10).split('-').map((x) => parseInt(x, 10));
+  const t = Date.UTC(y, m - 1, d + days);
+  const dt = new Date(t);
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
 function centerCode(c: { center_code?: string | null; referral_code?: string | null; id: string }): string {
   const raw = (c.center_code || c.referral_code || '').trim();
   if (raw) return raw.replace(/\s+/g, '');
@@ -104,6 +111,7 @@ type LateFeeMeta = {
   late_fee_amount: number;
   days_overdue: number;
   tier: 1 | 2;
+  grace_period_end?: string;
 };
 
 async function fetchPendingLateFeesForCycle(
@@ -115,7 +123,7 @@ async function fetchPendingLateFeesForCycle(
     .from('invoices')
     .select('id, metadata, status')
     .eq('center_id', centerId)
-    .eq('invoice_type', 'late_fee')
+    .eq('invoice_type', 'late_payment_fee')
     .eq('status', 'pending');
 
   const list = (data ?? []) as { id: string; metadata: Record<string, unknown> | null; status: string }[];
@@ -301,7 +309,7 @@ export async function runLateFeeAndDormancyScan(
         const { error: insErr } = await supabase.from('invoices').insert({
           center_id: c.id,
           invoice_number: invNoTier2,
-          invoice_type: 'late_fee',
+          invoice_type: 'late_payment_fee',
           base_amount: base,
           total_amount: total,
           billing_period_start: npd,
@@ -315,6 +323,7 @@ export async function runLateFeeAndDormancyScan(
             late_fee_amount: feeAmt,
             days_overdue: daysLate,
             tier: 2,
+            grace_period_end: addDaysToYmd(npd, cfg.graceDays),
           } as LateFeeMeta,
         });
 
@@ -348,7 +357,7 @@ export async function runLateFeeAndDormancyScan(
         const { error: insErr } = await supabase.from('invoices').insert({
           center_id: c.id,
           invoice_number: invNo,
-          invoice_type: 'late_fee',
+          invoice_type: 'late_payment_fee',
           base_amount: base,
           total_amount: total,
           billing_period_start: npd,
@@ -362,6 +371,7 @@ export async function runLateFeeAndDormancyScan(
             late_fee_amount: feeAmt,
             days_overdue: daysLate,
             tier: 1,
+            grace_period_end: addDaysToYmd(npd, cfg.graceDays),
           } as LateFeeMeta,
         });
 
