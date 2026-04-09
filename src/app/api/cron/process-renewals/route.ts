@@ -19,6 +19,11 @@ import {
 import { runProcessRenewalWhatsappTemplates } from '@/lib/centerNotify';
 import { runSubscriptionBillingCron } from '@/lib/subscriptionBillingCron';
 import { tCronBackup } from '@/lib/cronBackupI18n';
+import {
+  incrementActiveMonthsOnFirstOfMonth,
+  runLateFeeAndDormancyScan,
+  type LateFeeDormancyRunResult,
+} from '@/lib/renewalLateFeeDormancy';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -90,15 +95,42 @@ export async function POST(request: Request) {
       console.error('[process-renewals] runProcessRenewalWhatsappTemplates:', err);
     }
 
+    const todayStr = todayISO();
+    let activeMonthsIncremented = 0;
+    try {
+      activeMonthsIncremented = await incrementActiveMonthsOnFirstOfMonth(supabase, todayStr);
+    } catch (err) {
+      console.error('[process-renewals] incrementActiveMonthsOnFirstOfMonth:', err);
+    }
+
+    let lateFeeDormancy: LateFeeDormancyRunResult | null = null;
+    try {
+      lateFeeDormancy = await runLateFeeAndDormancyScan(supabase, todayStr);
+    } catch (err) {
+      console.error('[process-renewals] runLateFeeAndDormancyScan:', err);
+    }
+
     if (actions.length === 0) {
       await supabase.from('cron_log').insert({
         cron_name: CRON_NAME,
         status: 'success',
         duration_ms: Date.now() - cronStart,
         records_processed: 0,
-        metadata: { waTemplates: !!waTemplates, billingCron: !!billingCron },
+        metadata: {
+          waTemplates: !!waTemplates,
+          billingCron: !!billingCron,
+          activeMonthsIncremented,
+          lateFeeDormancy,
+        },
       });
-      return NextResponse.json({ success: true, processed: 0, waTemplates, billingCron });
+      return NextResponse.json({
+        success: true,
+        processed: 0,
+        waTemplates,
+        billingCron,
+        activeMonthsIncremented,
+        lateFeeDormancy,
+      });
     }
 
     const uniqueIds = [...new Set(actions.map((x) => x.centerId))];
@@ -262,10 +294,21 @@ export async function POST(request: Request) {
       status: 'success',
       duration_ms: Date.now() - cronStart,
       records_processed: processed,
-      metadata: { actionCount: actions.length },
+      metadata: {
+        actionCount: actions.length,
+        activeMonthsIncremented,
+        lateFeeDormancy,
+      },
     });
 
-    return NextResponse.json({ success: true, processed, waTemplates, billingCron });
+    return NextResponse.json({
+      success: true,
+      processed,
+      waTemplates,
+      billingCron,
+      activeMonthsIncremented,
+      lateFeeDormancy,
+    });
   } catch (error) {
     console.error(`[${CRON_NAME}] Error:`, error);
     try {

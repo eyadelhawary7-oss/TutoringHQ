@@ -86,7 +86,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    const payableTypes = ['subscription', 'plan_upgrade_difference', 'pack_billing', 'announcement_settlement'];
+    const payableTypes = [
+      'subscription',
+      'plan_upgrade_difference',
+      'pack_billing',
+      'announcement_settlement',
+      'late_fee',
+    ];
     if (!row.invoice_type || !payableTypes.includes(row.invoice_type)) {
       return NextResponse.json({ error: 'This invoice cannot be paid online' }, { status: 400 });
     }

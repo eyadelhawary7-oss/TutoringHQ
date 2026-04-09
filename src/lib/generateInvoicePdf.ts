@@ -16,7 +16,7 @@ const GRAY_BG = '#f8fafc';
 const BORDER = '#ebebeb';
 const MUTED = '#94a3b8';
 
-const DOC_TOTAL = 11;
+const DOC_TOTAL = 12;
 
 const INVOICE_TYPE_ORDER: Record<string, number> = {
   subscription: 1,
@@ -29,6 +29,7 @@ const INVOICE_TYPE_ORDER: Record<string, number> = {
   payment_proof: 8,
   setup_fee: 9,
   whatsapp_addon: 10,
+  late_fee: 11,
 };
 
 const DOC_TYPE_AR: Record<string, string> = {
@@ -42,6 +43,7 @@ const DOC_TYPE_AR: Record<string, string> = {
   payment_proof: 'إثبات دفع',
   setup_fee: 'رسوم إعداد / توصيل',
   whatsapp_addon: 'باقة واتساب',
+  late_fee: 'فاتورة رسوم تأخير',
 };
 
 export function invoiceTypeFooterIndex(invoiceType: string): number {
@@ -937,6 +939,42 @@ export async function generateInvoicePdf(invoiceId: string, supabase: SupabaseCl
     rightBreak = [{ labelAr: 'المدفوع', value: fmtEgp(total), teal: true }];
     showTax = false;
     referralStrip = undefined;
+  } else if (invoiceType === 'late_fee') {
+    const lfMeta = meta as {
+      late_fee_rate?: number;
+      late_fee_amount?: number;
+      days_overdue?: number;
+      tier?: number;
+    };
+    const rate = Number(lfMeta.late_fee_rate ?? 0);
+    const feeAmt = Number(lfMeta.late_fee_amount ?? Math.max(0, total - base));
+    const daysOd = Number(lfMeta.days_overdue ?? 0);
+    const tier = Number(lfMeta.tier ?? 1);
+    sidebarMeta = [
+      { label: 'أيام التأخير', value: String(daysOd || '—') },
+      { label: 'نسبة الرسوم', value: `${Math.round(rate * 100)}%` },
+      { label: 'الفترة', value: periodRange },
+      { label: 'المستوى', value: tier === 2 ? '10%' : '5%' },
+    ];
+    lineRows = [
+      {
+        titleAr: 'مبلغ الاشتراك الأساسي',
+        subAr: 'دورة الفوترة الحالية',
+        mid: periodRange,
+        amount: base,
+      },
+      {
+        titleAr: `رسوم تأخير (${Math.round(rate * 100)}%)`,
+        subAr: undefined,
+        mid: `${daysOd} يوم تأخير`,
+        amount: feeAmt,
+      },
+    ];
+    leftBreak = [
+      { labelAr: 'الأساس', value: fmtEgp(base) },
+      { labelAr: 'رسوم التأخير', value: fmtEgp(feeAmt) },
+    ];
+    rightBreak = [{ labelAr: 'الإجمالي', value: fmtEgp(total), teal: true }];
   } else {
     sidebarMeta = [
       { label: 'الخطة', value: displayPlanAr },
@@ -1171,7 +1209,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
   const html = wrapDocument(
     `${sidebar}${main}`,
     'CenterHQ · centerhq.app · An EHG Intelligence Product',
-    `11 OF ${DOC_TOTAL}: REFERRAL PAYOUT`,
+    `12 OF ${DOC_TOTAL}: REFERRAL PAYOUT`,
   );
   return htmlToPdfBuffer(html);
 }

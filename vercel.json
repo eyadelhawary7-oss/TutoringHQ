@@ -23,7 +23,8 @@
     { "path": "/api/cron/weekly-backup", "schedule": "0 3 * * 0" },
     { "path": "/api/cron/monthly-backup", "schedule": "0 2 1 * *" },
     { "path": "/api/cron/cleanup-status-checks", "schedule": "0 1 * * 1" },
-    { "path": "/api/cron/referral-automation", "schedule": "0 3 2 * *" }
+    { "path": "/api/cron/referral-automation", "schedule": "0 3 2 * *" },
+    { "path": "/api/cron/dormancy-warnings", "schedule": "0 4 1 * *" }
   ],
   "functions": {
     "src/app/api/login/route.ts": { "maxDuration": 30 },
@@ -62,6 +63,9 @@
     },
     "src/app/api/cron/referral-automation/route.ts": {
       "maxDuration": 120
+    },
+    "src/app/api/cron/dormancy-warnings/route.ts": {
+      "maxDuration": 300
     }
   }
 }

@@ -250,6 +250,21 @@ export async function finalizeInvoicePaymentSuccess(
     return { invoiceId: row.id };
   }
 
+  if (row.invoice_type === 'late_fee') {
+    const paidDay = new Date().toISOString().slice(0, 10);
+    const { error: cErr } = await supabaseAdmin
+      .from('centers')
+      .update({
+        billing_status: 'paid',
+        last_payment_date: paidDay,
+      })
+      .eq('id', row.center_id);
+    if (cErr) {
+      console.error('[finalizeInvoicePaymentSuccess] late_fee center', cErr);
+    }
+    return { invoiceId: row.id };
+  }
+
   const { data: center } = await supabaseAdmin
     .from('centers')
     .select('billing_period, status, subscription_status, next_payment_due')

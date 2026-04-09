@@ -31,6 +31,7 @@ const VALID_INVOICE_TYPES = [
   'announcement_cap',
   'plan_upgrade_difference',
   'pack_billing',
+  'late_fee',
 ] as const;
 
 const VALID_PLANS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;

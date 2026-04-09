@@ -124,6 +124,114 @@ export async function sendChqRenewalOverdueTemplate(
   }
 }
 
+/** chq_dormancy_notice — center marked dormant (template to be created in Meta). */
+export async function sendChqDormancyNoticeTemplate(
+  supabase: SupabaseClient,
+  opts: { name: string; phone: string | null },
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_dormancy_notice';
+  const to = digitsOnly(opts.phone ?? '');
+  if (!to) return { skipped: true };
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+  try {
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [opts.name ?? '—'],
+    });
+    return ok ? { success: true } : { error: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE}:`, err);
+    return { error: true };
+  }
+}
+
+/** chq_reactivation_warning_90 — 9 months dormant (template to be created in Meta). */
+export async function sendChqReactivationWarning90Template(
+  supabase: SupabaseClient,
+  opts: { name: string; phone: string | null },
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_reactivation_warning_90';
+  const to = digitsOnly(opts.phone ?? '');
+  if (!to) return { skipped: true };
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+  try {
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [opts.name ?? '—'],
+    });
+    return ok ? { success: true } : { error: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE}:`, err);
+    return { error: true };
+  }
+}
+
+/** chq_reactivation_warning_30 — 11 months dormant (template to be created in Meta). */
+export async function sendChqReactivationWarning30Template(
+  supabase: SupabaseClient,
+  opts: { name: string; phone: string | null },
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_reactivation_warning_30';
+  const to = digitsOnly(opts.phone ?? '');
+  if (!to) return { skipped: true };
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+  try {
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [opts.name ?? '—'],
+    });
+    return ok ? { success: true } : { error: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE}:`, err);
+    return { error: true };
+  }
+}
+
+/** chq_data_deletion_notice — after purge (template to be created in Meta). */
+export async function sendChqDataDeletionNoticeTemplate(
+  supabase: SupabaseClient,
+  opts: { name: string; phone: string | null },
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_data_deletion_notice';
+  const to = digitsOnly(opts.phone ?? '');
+  if (!to) return { skipped: true };
+  const approved = await isTemplateApproved(TEMPLATE, supabase);
+  if (!approved) {
+    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    return { skipped: true };
+  }
+  try {
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [opts.name ?? '—'],
+    });
+    return ok ? { success: true } : { error: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE}:`, err);
+    return { error: true };
+  }
+}
+
 /** chq_payment_confirmed — Paymob subscription / renewal success (Item 7). */
 export async function sendChqPaymentConfirmedTemplate(
   supabase: SupabaseClient,
