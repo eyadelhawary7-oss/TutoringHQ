@@ -12,20 +12,20 @@ function getRate(monthNumber: number): number {
   return 0.05;
 }
 
-/** Gross reward from monthly base × tier rate; month 1 applies 15% withholding (net to record). */
-function computeRewardAmount(monthNumber: number, baseAmount: number): number {
-  const gross = baseAmount * getRate(monthNumber);
-  const net = monthNumber === 1 ? Math.round(gross * 0.85) : Math.round(gross);
-  return net;
+function addDays(d: Date, days: number): Date {
+  const out = new Date(d);
+  out.setDate(out.getDate() + days);
+  return out;
 }
 
 /**
  * Runs on the 2nd of each month at 3am UTC (Vercel cron).
- * Calculates referral_reward_records for the previous calendar month.
+ * Creates referral_commissions for the previous calendar month using net revenue base
+ * (all_in_price ex VAT / service fee / stamp duty).
  */
 export async function GET(request: Request) {
   const cronStart = Date.now();
-  const CRON_NAME = 'referral-rewards';
+  const CRON_NAME = 'referral-automation';
 
   if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
       }
 
       const { data: existing } = await supabase
-        .from('referral_reward_records')
+        .from('referral_commissions')
         .select('id')
         .eq('referral_id', row.id as string)
         .eq('period_month', periodMonth)
@@ -148,29 +148,32 @@ export async function GET(request: Request) {
         continue;
       }
 
+      const allIn = Number(referred.all_in_price) || 0;
+      const referred_plan_fee = netReferralBaseFromAllInPrice(allIn);
+      if (referred_plan_fee <= 0) {
+        skipped++;
+        continue;
+      }
+
       const rate = getRate(monthNumber);
-      const baseAmount = netReferralBaseFromAllInPrice(Number(referred.all_in_price) || 0);
-      const rewardAmount = computeRewardAmount(monthNumber, baseAmount);
+      const commission_amount = Math.round(referred_plan_fee * rate);
 
-      const heldUntil =
-        monthNumber === 1
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-          : null;
+      const holdUntil = monthNumber === 1 ? addDays(firstPaid, 30) : null;
+      const status = holdUntil ? 'hold' : 'withdrawable';
 
-      const status = heldUntil ? 'held' : 'pending';
-
-      const { error: insErr } = await supabase.from('referral_reward_records').insert({
+      const insertData: Record<string, unknown> = {
         referral_id: row.id,
         referrer_center_id: row.referrer_center_id,
         referred_center_id: row.referred_center_id,
-        month_number: monthNumber,
-        reward_percentage: rate,
-        base_amount: baseAmount,
-        reward_amount: rewardAmount,
-        status,
-        held_until: heldUntil,
         period_month: periodMonth,
-      });
+        referred_plan_fee,
+        commission_rate: rate,
+        commission_amount,
+        status,
+      };
+      if (holdUntil) insertData.hold_until = holdUntil.toISOString();
+
+      const { error: insErr } = await supabase.from('referral_commissions').insert(insertData);
 
       if (insErr) {
         errors.push(`referral ${refId}: ${insErr.message}`);

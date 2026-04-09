@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
 
 function differenceInMonths(d1: Date, d2: Date): number {
   const y1 = d1.getFullYear();
@@ -48,10 +49,10 @@ export async function POST(request: NextRequest) {
     if (!adminUser && !isPhoneAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
-    const { referral_id, period_month, referred_plan_fee, paid_in_full } = body;
+    const { referral_id, period_month, paid_in_full } = body;
 
-    if (!referral_id || !period_month || typeof referred_plan_fee !== 'number' || typeof paid_in_full !== 'boolean') {
-      return NextResponse.json({ error: 'Missing required fields: referral_id, period_month, referred_plan_fee, paid_in_full' }, { status: 400 });
+    if (!referral_id || !period_month || typeof paid_in_full !== 'boolean') {
+      return NextResponse.json({ error: 'Missing required fields: referral_id, period_month, paid_in_full' }, { status: 400 });
     }
 
     const { data: referral, error: refErr } = await supabaseAdmin
@@ -62,6 +63,23 @@ export async function POST(request: NextRequest) {
 
     if (refErr || !referral) {
       return NextResponse.json({ error: 'Referral not found' }, { status: 404 });
+    }
+
+    const { data: referredCenter, error: centerErr } = await supabaseAdmin
+      .from('centers')
+      .select('all_in_price')
+      .eq('id', referral.referred_center_id)
+      .single();
+
+    if (centerErr || !referredCenter) {
+      return NextResponse.json({ error: 'Referred center not found' }, { status: 404 });
+    }
+
+    const referred_plan_fee = netReferralBaseFromAllInPrice(
+      Number((referredCenter as { all_in_price?: number | string | null }).all_in_price) || 0,
+    );
+    if (paid_in_full && referred_plan_fee <= 0) {
+      return NextResponse.json({ error: 'Referred center has no valid all_in_price for commission base' }, { status: 400 });
     }
 
     if (!referral.referred_first_paid_at) {
@@ -88,6 +106,7 @@ export async function POST(request: NextRequest) {
         referral_id,
         period_month: period_month.slice(0, 7),
         referred_plan_fee,
+        commission_rate: rate,
         commission_amount: 0,
         status: 'forfeited',
         referred_center_id: referral.referred_center_id,
@@ -104,6 +123,7 @@ export async function POST(request: NextRequest) {
       referral_id,
       period_month: period_month.slice(0, 7),
       referred_plan_fee,
+      commission_rate: rate,
       commission_amount: commission,
       status,
       referred_center_id: referral.referred_center_id,
