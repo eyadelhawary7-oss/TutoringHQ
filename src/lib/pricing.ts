@@ -84,11 +84,10 @@ export function isPlanKey(id: string | null | undefined): id is PlanKey {
   return id != null && Object.prototype.hasOwnProperty.call(PLANS, id);
 }
 
-/** Full annual charge from quarterly monthly equivalent (−15% vs 12× quarter months), rounded to nearest 100 EGP. */
+/** Full annual charge from quarterly monthly equivalent (−15% vs 12× quarter months): round to nearest 100 EGP then −1 (99-ending). */
 export function getAnnualChargeRounded(allInPerMonth: number): number {
   if (!Number.isFinite(allInPerMonth) || allInPerMonth <= 0) return 0;
-  const raw = allInPerMonth * 12 * 0.85;
-  return Math.round(raw / 100) * 100;
+  return Math.round((allInPerMonth * 10.2) / 100) * 100 - 1;
 }
 
 const WEEKS_PER_QUARTER = 13;

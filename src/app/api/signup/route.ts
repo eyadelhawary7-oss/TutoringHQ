@@ -19,11 +19,11 @@ import { isFeatureEnabled } from '@/lib/features';
 import { todayISO } from '@/lib/parentPack';
 
 const SIGNUP_PLAN_AMOUNTS = [
-  { key: 'nano', allInPrice: 2000, monthlyPrice: 2500, annualPrice: 20400 },
-  { key: 'starter', allInPrice: 4500, monthlyPrice: 5200, annualPrice: 45900 },
-  { key: 'pro', allInPrice: 8000, monthlyPrice: 9200, annualPrice: 81600 },
-  { key: 'business', allInPrice: 13000, monthlyPrice: 15000, annualPrice: 132600 },
-  { key: 'enterprise', allInPrice: 18500, monthlyPrice: 21300, annualPrice: 188700 },
+  { key: 'nano', allInPrice: 2000, monthlyPrice: 2500, annualPrice: 20399 },
+  { key: 'starter', allInPrice: 4500, monthlyPrice: 5200, annualPrice: 45899 },
+  { key: 'pro', allInPrice: 8000, monthlyPrice: 9200, annualPrice: 81599 },
+  { key: 'business', allInPrice: 13000, monthlyPrice: 15000, annualPrice: 132599 },
+  { key: 'enterprise', allInPrice: 18500, monthlyPrice: 21300, annualPrice: 188699 },
 ] as const;
 
 function display99Price(price: number): number {

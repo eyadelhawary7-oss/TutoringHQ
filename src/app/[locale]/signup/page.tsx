@@ -51,7 +51,7 @@ const SIGNUP_PLANS = [
     students: 100,
     allInPrice: 2000,
     monthlyPrice: 2500,
-    annualPrice: 20400,
+    annualPrice: 20399,
   },
   {
     key: 'starter',
@@ -60,7 +60,7 @@ const SIGNUP_PLANS = [
     students: 250,
     allInPrice: 4500,
     monthlyPrice: 5200,
-    annualPrice: 45900,
+    annualPrice: 45899,
   },
   {
     key: 'pro',
@@ -69,7 +69,7 @@ const SIGNUP_PLANS = [
     students: 500,
     allInPrice: 8000,
     monthlyPrice: 9200,
-    annualPrice: 81600,
+    annualPrice: 81599,
   },
   {
     key: 'business',
@@ -78,7 +78,7 @@ const SIGNUP_PLANS = [
     students: 1000,
     allInPrice: 13000,
     monthlyPrice: 15000,
-    annualPrice: 132600,
+    annualPrice: 132599,
   },
   {
     key: 'enterprise',
@@ -87,7 +87,7 @@ const SIGNUP_PLANS = [
     students: 2000,
     allInPrice: 18500,
     monthlyPrice: 21300,
-    annualPrice: 188700,
+    annualPrice: 188699,
   },
 ] as const;
 
