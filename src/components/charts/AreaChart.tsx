@@ -11,7 +11,13 @@ import {
   YAxis,
 } from 'recharts';
 import { useTranslations } from 'next-intl';
-import { CHART_MARGIN, CHART_STYLE, LINE_BY_GRADIENT, type GradientKey } from './ChartTokens';
+import {
+  CHART_MARGIN,
+  CHART_STYLE,
+  LINE_BY_GRADIENT,
+  RECHARTS_TOOLTIP_WRAPPER_PROPS,
+  type GradientKey,
+} from './ChartTokens';
 import { ChartTooltip } from './ChartTooltip';
 
 export type AreaChartDataPoint = Record<string, string | number | undefined | null>;
@@ -101,6 +107,7 @@ export function AreaChartComponent({
           />
         ) : null}
         <Tooltip
+          {...RECHARTS_TOOLTIP_WRAPPER_PROPS}
           cursor={{ stroke: '#334155', strokeWidth: 1, strokeDasharray: '4 4' }}
           content={(props) => {
             const pl = props.payload?.map((p) => ({

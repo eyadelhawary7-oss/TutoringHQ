@@ -11,7 +11,13 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { CHART_MARGIN, CHART_STYLE, LINE_BY_GRADIENT, type GradientKey } from './ChartTokens';
+import {
+  CHART_MARGIN,
+  CHART_STYLE,
+  LINE_BY_GRADIENT,
+  RECHARTS_TOOLTIP_WRAPPER_PROPS,
+  type GradientKey,
+} from './ChartTokens';
 import { ChartTooltip } from './ChartTooltip';
 
 export type BarChartDataPoint = Record<string, string | number | undefined | null>;
@@ -152,6 +158,7 @@ export function BarChartComponent({
           </>
         )}
         <Tooltip
+          {...RECHARTS_TOOLTIP_WRAPPER_PROPS}
           cursor={layout === 'vertical' ? { fill: '#1E293B80' } : { fill: '#1E293B80' }}
           content={(props) => {
             const pl = props.payload?.map((p) => ({

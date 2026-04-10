@@ -40,6 +40,18 @@ export const CHART_MARGIN = {
   left: 0,
 } as const;
 
+/** Recharts <Tooltip /> wrapper styles — readable in light and dark (custom content still inherits). */
+export const RECHARTS_TOOLTIP_WRAPPER_PROPS = {
+  contentStyle: {
+    backgroundColor: 'var(--color-surface-2)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 8,
+    color: 'var(--color-text-primary)',
+  },
+  labelStyle: { color: 'var(--color-text-primary)' },
+  itemStyle: { color: 'var(--color-text-secondary)' },
+} as const;
+
 export type GradientKey = 'teal' | 'amber' | 'red' | 'purple' | 'green' | 'blue' | 'slate';
 
 export const LINE_BY_GRADIENT: Record<GradientKey, string> = {

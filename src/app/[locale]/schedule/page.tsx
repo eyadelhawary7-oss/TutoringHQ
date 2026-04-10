@@ -311,7 +311,7 @@ export default function SchedulePage() {
 
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
             <div className="grid grid-cols-8 border-b border-[var(--color-border-subtle)]">
-              <div className="py-3 px-3 text-xs font-semibold text-slate-400 uppercase bg-[var(--color-surface-0)] border-e border-[var(--color-border-subtle)]">{t('time')}</div>
+              <div className="py-3 px-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase bg-[var(--color-surface-0)] border-e border-[var(--color-border-subtle)]">{t('time')}</div>
               {DAY_ORDER.map(day => (
                 <div key={day} className={`py-3 px-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase text-center bg-[var(--color-surface-0)] border-e border-[var(--color-border-subtle)] last:border-e-0 ${selectedDay === day ? 'ring-1 ring-teal-500/30' : ''}`}>
                   {t(DAY_KEYS[day])}
@@ -320,7 +320,7 @@ export default function SchedulePage() {
             </div>
             {HOURS.map(hour => (
               <div key={hour} className="grid grid-cols-8 border-b border-[var(--color-border-subtle)] min-h-[60px]">
-                <div className="py-3 px-3 text-xs text-slate-400 bg-[var(--color-surface-0)]/50 border-e border-[var(--color-border-subtle)] self-start pt-2">
+                <div className="py-3 px-3 text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface-0)]/50 border-e border-[var(--color-border-subtle)] self-start pt-2">
                   {formatHour(hour)}
                 </div>
                 {DAY_ORDER.map(day => {

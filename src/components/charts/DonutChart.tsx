@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { CHART_STYLE } from './ChartTokens';
+import { CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from './ChartTokens';
 import { ChartTooltip } from './ChartTooltip';
 
 const DEFAULT_PALETTE = [
@@ -106,6 +106,7 @@ export function DonutChart({
           ))}
         </Pie>
         <Tooltip
+          {...RECHARTS_TOOLTIP_WRAPPER_PROPS}
           content={(props) => {
             const pl = props.payload?.map((p) => {
               const row = p.payload as { name?: string; value?: number; color?: string };

@@ -32,11 +32,11 @@ export function ChartTooltip({
   return (
     <div
       style={{
-        background: CHART_STYLE.tooltipBg,
-        border: `1px solid ${CHART_STYLE.tooltipBorder}`,
-        borderRadius: 12,
+        background: 'var(--color-surface-2)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 8,
         padding: '10px 14px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
         minWidth: 140,
       }}
     >
@@ -44,7 +44,7 @@ export function ChartTooltip({
         <p
           style={{
             fontSize: 11,
-            color: '#64748B',
+            color: 'var(--color-text-secondary)',
             marginBottom: 6,
             fontFamily: CHART_STYLE.fontFamily,
           }}
@@ -72,7 +72,7 @@ export function ChartTooltip({
                 <p
                   style={{
                     fontSize: 10,
-                    color: '#64748B',
+                    color: 'var(--color-text-secondary)',
                     fontFamily: CHART_STYLE.fontFamily,
                     marginBottom: 1,
                   }}
@@ -84,7 +84,7 @@ export function ChartTooltip({
                 style={{
                   fontSize: 15,
                   fontWeight: 600,
-                  color: '#F8FAFC',
+                  color: 'var(--color-text-primary)',
                   fontFamily: CHART_STYLE.fontFamily,
                   lineHeight: 1,
                 }}

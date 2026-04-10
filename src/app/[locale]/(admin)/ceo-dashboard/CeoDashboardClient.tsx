@@ -39,7 +39,7 @@ import {
   YAxis,
 } from 'recharts';
 import { ChartTooltip } from '@/components/charts/ChartTooltip';
-import { CHART_STYLE } from '@/components/charts/ChartTokens';
+import { CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from '@/components/charts/ChartTokens';
 
 interface DashboardData {
   totalActiveCenters: number;
@@ -219,6 +219,7 @@ function CeoFinancialsBody({
                   }
                 />
                 <Tooltip
+                  {...RECHARTS_TOOLTIP_WRAPPER_PROPS}
                   cursor={{ stroke: '#334155', strokeWidth: 1, strokeDasharray: '4 4' }}
                   content={(props) => {
                     const pl = props.payload?.map((p) => ({
@@ -389,8 +390,13 @@ export default function CeoDashboardClient({
     setHideShell(true);
     return () => setHideShell(false);
   }, [setHideShell]);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const rangeQs = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
 
@@ -590,8 +596,12 @@ export default function CeoDashboardClient({
           {metrics.map(({ label, value, icon: Icon }) => (
             <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-4">
               <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-                <Icon className="h-4 w-4" />
-                {label}
+                <Icon className="h-4 w-4 shrink-0" />
+                {isHydrated ? (
+                  label
+                ) : (
+                  <span className="inline-block w-24 h-4 bg-[var(--color-surface-2)] animate-pulse rounded" aria-hidden />
+                )}
               </div>
               <p className="text-xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
             </div>

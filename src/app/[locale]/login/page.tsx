@@ -204,17 +204,18 @@ export default function LoginPage() {
         </span>
       </div>
 
-      <div
-        style={{
-          fontFamily: "var(--font-bodoni), 'Bodoni Moda', Georgia, serif",
-          color: '#f8fafc',
-          fontSize: '14px',
-          fontWeight: 700,
-          letterSpacing: '2px',
-          marginBottom: '44px',
-        }}
-      >
-        CenterHQ
+      <div style={{ marginBottom: '44px' }}>
+        <span
+          style={{
+            fontFamily: "var(--font-bodoni), 'Bodoni Moda', Georgia, serif",
+            fontWeight: 700,
+            letterSpacing: '2px',
+            fontSize: '14px',
+          }}
+        >
+          <span style={{ color: '#f8fafc' }}>CENTER</span>
+          <span style={{ color: '#0D9488' }}>HQ</span>
+        </span>
       </div>
 
       <div style={{ width: '100%', maxWidth: '360px' }}>
