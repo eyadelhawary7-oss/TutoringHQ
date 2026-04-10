@@ -1596,6 +1596,7 @@
     "collectionRate": "Collection Rate",
     "avgPaymentPerStudent": "Avg Payment/Student",
     "revenueByGroup": "Revenue by Group",
+    "noGroup": "No group",
     "mrrTrend": "MRR Trend",
     "agingReport": "Aging Report",
     "studentName": "Student Name",

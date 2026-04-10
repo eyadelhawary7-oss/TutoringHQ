@@ -2781,6 +2781,7 @@
     "collectionRate": "معدل التحصيل",
     "avgPaymentPerStudent": "متوسط الدفع/الطالب",
     "revenueByGroup": "الإيرادات حسب المجموعة",
+    "noGroup": "بدون مجموعة",
     "mrrTrend": "اتجاه MRR",
     "agingReport": "تقرير التقادم",
     "studentName": "اسم الطالب",

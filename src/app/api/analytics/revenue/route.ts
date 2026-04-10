@@ -100,13 +100,18 @@ export async function GET(request: NextRequest) {
     const groupRevenue = new Map<string, number>();
     for (const p of confirmedPayments) {
       const gid = p.group_id ?? 'ungrouped';
-      const gname = gid === 'ungrouped' ? (groups.length ? 'بدون مجموعة' : '—') : (groupMap.get(gid) ?? gid);
       groupRevenue.set(gid, (groupRevenue.get(gid) ?? 0) + (p.amount ?? 0));
     }
     for (const [gid, amt] of groupRevenue) {
+      const group_name =
+        gid === 'ungrouped'
+          ? groups.length > 0
+            ? ''
+            : '—'
+          : (groupMap.get(gid) ?? gid);
       revenueByGroup.push({
         group_id: gid,
-        group_name: gid === 'ungrouped' ? 'بدون مجموعة' : (groupMap.get(gid) ?? gid),
+        group_name,
         amount: amt,
       });
     }

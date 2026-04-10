@@ -1022,7 +1022,7 @@ export default function DashboardPage() {
             {centerBilling?.name ?? 'CenterHQ'}
           </h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {new Date().toLocaleDateString('en-US', {
+            {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
               weekday: 'long',
               day: 'numeric',
               month: 'long',

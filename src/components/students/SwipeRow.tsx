@@ -64,7 +64,11 @@ export function SwipeRow({ children, actions }: Props) {
       <div className="swipe-row-content" style={{ transform: `translateX(-${offset}px)` }}>
         {children}
       </div>
-      <div className="swipe-row-actions" style={{ width: `${offset}px` }}>
+      <div
+        className="swipe-row-actions lg:hidden"
+        style={{ width: `${offset}px` }}
+        aria-hidden={offset === 0}
+      >
         {actions.map((action, i) => (
           <button
             key={i}

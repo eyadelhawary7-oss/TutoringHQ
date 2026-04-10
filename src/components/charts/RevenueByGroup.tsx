@@ -10,6 +10,7 @@ export interface RevenueByGroupProps {
 export default function RevenueByGroup({ data = [] }: RevenueByGroupProps) {
   const locale = useLocale();
   const tCommon = useTranslations('common');
+  const tAnalytics = useTranslations('analytics');
 
   if (!data || !Array.isArray(data) || data.length < 2) {
     return (
@@ -20,7 +21,12 @@ export default function RevenueByGroup({ data = [] }: RevenueByGroupProps) {
   }
 
   const chartData = data.map((d) => ({
-    group_name: d.group_name,
+    group_name:
+      d.group_id === 'ungrouped'
+        ? d.group_name === '—'
+          ? '—'
+          : tAnalytics('noGroup')
+        : d.group_name,
     amount: Number(d.amount) || 0,
   }));
 

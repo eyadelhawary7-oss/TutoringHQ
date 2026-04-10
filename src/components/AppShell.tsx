@@ -127,7 +127,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider closeMainSidebar={closeMainSidebar}>
-    <div className="flex min-h-screen w-full min-w-0 bg-[var(--color-surface-0)]">
+    <div className="flex min-h-screen w-full min-w-0 overflow-x-clip bg-[var(--color-surface-0)]">
       {!isAdminRoute && <Sidebar onClose={closeMainSidebar} />}
 
       <div
