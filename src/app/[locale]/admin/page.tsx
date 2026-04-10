@@ -284,7 +284,7 @@ export default function AdminPage() {
   const tCommon = useTranslations('common');
   const tIdCards = useTranslations('idCards');
   const tCharts = useTranslations('charts');
-  const tSettings = useTranslations('settings');
+  const tBilling = useTranslations('billing');
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const router = useRouter();
@@ -764,19 +764,19 @@ export default function AdminPage() {
     const planIds = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
     const planColors = ['#94A3B8', '#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'] as const;
     const label: Record<(typeof planIds)[number], string> = {
-      nano: tSettings('planNames.nano'),
-      starter: tSettings('planNames.starter'),
-      pro: tSettings('planNames.pro'),
-      business: tSettings('planNames.business'),
-      enterprise: tSettings('planNames.enterprise'),
-      top_centers: tSettings('planNames.top_centers'),
+      nano: tBilling('planNames.nano'),
+      starter: tBilling('planNames.starter'),
+      pro: tBilling('planNames.pro'),
+      business: tBilling('planNames.business'),
+      enterprise: tBilling('planNames.enterprise'),
+      top_centers: tBilling('planNames.top_centers'),
     };
     return planIds.map((id, i) => ({
       name: label[id],
       value: analyticsCenters.filter((c) => c.plan === id).length,
       color: planColors[i],
     }));
-  }, [analyticsCenters, tSettings]);
+  }, [analyticsCenters, tBilling]);
 
   const adminStatusDonutData = useMemo(
     () => [
@@ -1437,13 +1437,13 @@ export default function AdminPage() {
                 }}
                 className="px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-1)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
-                <option value="all">كل الخطط</option>
-                <option value="nano">ناشئ</option>
-                <option value="starter">سنتر صغير</option>
-                <option value="pro">سنتر متوسط</option>
-                <option value="business">سنتر كبير</option>
-                <option value="enterprise">سنتر ضخم</option>
-                <option value="top_centers">ميجا سنتر</option>
+                <option value="all">{tAdmin('allPlans')}</option>
+                <option value="nano">{tBilling('planNames.nano')}</option>
+                <option value="starter">{tBilling('planNames.starter')}</option>
+                <option value="pro">{tBilling('planNames.pro')}</option>
+                <option value="business">{tBilling('planNames.business')}</option>
+                <option value="enterprise">{tBilling('planNames.enterprise')}</option>
+                <option value="top_centers">{tBilling('planNames.top_centers')}</option>
               </select>
               <select
                 value={sortBy}
@@ -1453,10 +1453,10 @@ export default function AdminPage() {
                 }}
                 className="px-3 py-1.5 text-sm border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-surface-1)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
-                <option value="newest">الأحدث أولاً</option>
-                <option value="oldest">الأقدم أولاً</option>
-                <option value="plan_high">الخطة: الأعلى أولاً</option>
-                <option value="plan_low">الخطة: الأدنى أولاً</option>
+                <option value="newest">{tAdmin('newestFirst')}</option>
+                <option value="oldest">{tAdmin('oldestFirst')}</option>
+                <option value="plan_high">{tAdmin('planHighestFirst')}</option>
+                <option value="plan_low">{tAdmin('planLowestFirst')}</option>
               </select>
             </div>
             <div className="flex flex-wrap gap-3 items-center mb-4">

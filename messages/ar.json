@@ -2243,6 +2243,11 @@
     "exportCenters": "تصدير السناتر",
     "exportInvoices": "تصدير الفواتير",
     "exportCommissions": "تصدير العمولات",
+    "allPlans": "كل الخطط",
+    "newestFirst": "الأحدث أولاً",
+    "oldestFirst": "الأقدم أولاً",
+    "planHighestFirst": "الخطة: الأعلى أولاً",
+    "planLowestFirst": "الخطة: الأدنى أولاً",
     "export": {
       "unauthorized": "غير مصرح",
       "configError": "خطأ في إعداد الخادم"
@@ -2988,6 +2993,7 @@
       "business": "أعمال",
       "enterprise": "مؤسسات",
       "top_centers": "كبار السناتر",
+      "payg": "الدفع حسب الاستخدام",
       "activeParents": "نشط أولياء الأمور",
       "billingStatus": "الفوترة الحالة",
       "centerName": "سنتر الاسم",
@@ -4407,6 +4413,18 @@
     "billingLink": "إعدادات الفوترة",
     "billingCardTitle": "الفوترة والاشتراكات",
     "changePin": "تغيير الرمز السري",
+    "pin": {
+      "currentPin": "الرمز الحالي",
+      "newPin": "الرمز الجديد",
+      "confirmPin": "تأكيد الرمز الجديد",
+      "updatePin": "تحديث الرمز",
+      "updateSuccess": "تم تحديث الرمز بنجاح ✓",
+      "errorMinDigits": "الرمز الجديد يجب أن يكون 4 أرقام على الأقل (أرقام فقط)",
+      "errorMismatch": "الرمز الجديد وتأكيد الرمز غير متطابقَين",
+      "errorUserNotFound": "لم يتم العثور على المستخدم",
+      "errorCurrentInvalid": "الرمز الحالي غير صحيح",
+      "errorGeneric": "حدث خطأ، حاول مرة أخرى"
+    },
     "logoToastSuccess": "تم رفع الشعار بنجاح",
     "logoToastError": "فشل رفع الشعار، حاول مرة أخرى",
     "centerLogoAlt": "شعار المركز",

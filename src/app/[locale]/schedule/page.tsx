@@ -160,6 +160,26 @@ export default function SchedulePage() {
     );
   }, [displaySlots, formRoomId, formDay, formStart, formEnd]);
 
+  const getConflictingSlotIds = useMemo(() => {
+    const conflictIds = new Set<string>();
+    for (const s1 of slots) {
+      for (const s2 of slots) {
+        if (s1.id >= s2.id) continue;
+        if (s1.room_id !== s2.room_id) continue;
+        if (Number(s1.day_of_week) !== Number(s2.day_of_week)) continue;
+        const a1 = timeToMinutes(s1.start_time);
+        const b1 = timeToMinutes(s1.end_time);
+        const a2 = timeToMinutes(s2.start_time);
+        const b2 = timeToMinutes(s2.end_time);
+        if (a1 < b2 && a2 < b1) {
+          conflictIds.add(s1.id);
+          conflictIds.add(s2.id);
+        }
+      }
+    }
+    return conflictIds;
+  }, [slots]);
+
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!centerId || !userId || !formGroupId || !formRoomId) {
@@ -241,26 +261,6 @@ export default function SchedulePage() {
       const hourEnd = (hour + 1) * 60;
       return startM < hourEnd && endM > hourStart;
     });
-
-  const getConflictingSlotIds = useMemo(() => {
-    const conflictIds = new Set<string>();
-    for (const s1 of slots) {
-      for (const s2 of slots) {
-        if (s1.id >= s2.id) continue;
-        if (s1.room_id !== s2.room_id) continue;
-        if (Number(s1.day_of_week) !== Number(s2.day_of_week)) continue;
-        const a1 = timeToMinutes(s1.start_time);
-        const b1 = timeToMinutes(s1.end_time);
-        const a2 = timeToMinutes(s2.start_time);
-        const b2 = timeToMinutes(s2.end_time);
-        if (a1 < b2 && a2 < b1) {
-          conflictIds.add(s1.id);
-          conflictIds.add(s2.id);
-        }
-      }
-    }
-    return conflictIds;
-  }, [displaySlots]);
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] space-y-5 animate-fade-in">

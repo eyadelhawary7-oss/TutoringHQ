@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 
 interface ChangePinModalProps {
@@ -11,6 +11,10 @@ interface ChangePinModalProps {
 
 export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
   const tSettings = useTranslations('settings');
+  const tPin = useTranslations('settings.pin');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
+  const dir = locale === 'ar' ? 'rtl' : 'ltr';
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -34,25 +38,25 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
   const handleSubmit = async () => {
     setError(null);
     if (!/^\d{4,}$/.test(newPin)) {
-      setError('الرمز الجديد يجب أن يكون 4 أرقام على الأقل (أرقام فقط)');
+      setError(tPin('errorMinDigits'));
       return;
     }
     if (newPin !== confirmPin) {
-      setError('الرمز الجديد وتأكيد الرمز غير متطابقَين');
+      setError(tPin('errorMismatch'));
       return;
     }
 
     setLoading(true);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user?.email) throw new Error('لم يتم العثور على المستخدم');
+      if (userError || !user?.email) throw new Error(tPin('errorUserNotFound'));
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: currentPin,
       });
       if (signInError) {
-        setError('الرمز الحالي غير صحيح');
+        setError(tPin('errorCurrentInvalid'));
         setLoading(false);
         return;
       }
@@ -77,7 +81,7 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
       setSuccess(true);
       setTimeout(() => handleClose(), 1500);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ، حاول مرة أخرى');
+      setError(err instanceof Error ? err.message : tPin('errorGeneric'));
     } finally {
       setLoading(false);
     }
@@ -85,9 +89,18 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
 
   if (!isOpen) return null;
 
+  const fields = [
+    { fieldKey: 'currentPin' as const, value: currentPin, setter: setCurrentPin },
+    { fieldKey: 'newPin' as const, value: newPin, setter: setNewPin },
+    { fieldKey: 'confirmPin' as const, value: confirmPin, setter: setConfirmPin },
+  ];
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="modal-spring-in bg-[var(--color-surface-1)] rounded-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+      <div
+        className="modal-spring-in bg-[var(--color-surface-1)] rounded-2xl p-6 w-full max-w-sm space-y-4"
+        dir={dir}
+      >
         <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tSettings('changePin')}</h2>
 
         {error && (
@@ -95,17 +108,15 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
         )}
         {success && (
           <p className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-            تم تحديث الرمز بنجاح ✓
+            {tPin('updateSuccess')}
           </p>
         )}
 
-        {[
-          { label: 'الرمز الحالي', value: currentPin, setter: setCurrentPin },
-          { label: 'الرمز الجديد', value: newPin, setter: setNewPin },
-          { label: 'تأكيد الرمز الجديد', value: confirmPin, setter: setConfirmPin },
-        ].map(({ label, value, setter }) => (
-          <div key={label} className="space-y-1">
-            <label className="text-sm font-medium text-[var(--color-text-primary)] block">{label}</label>
+        {fields.map(({ fieldKey, value, setter }) => (
+          <div key={fieldKey} className="space-y-1">
+            <label className="text-sm font-medium text-[var(--color-text-primary)] block">
+              {tPin(fieldKey)}
+            </label>
             <input
               type="password"
               inputMode="numeric"
@@ -120,17 +131,19 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
 
         <div className="flex gap-2 pt-2">
           <button
+            type="button"
             onClick={handleClose}
             className="flex-1 px-4 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)]"
           >
-            إلغاء
+            {tCommon('cancel')}
           </button>
           <button
-            onClick={handleSubmit}
+            type="button"
+            onClick={() => void handleSubmit()}
             disabled={loading || success}
             className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700 disabled:opacity-50"
           >
-            {loading ? '...' : 'تحديث الرمز'}
+            {loading ? '...' : tPin('updatePin')}
           </button>
         </div>
       </div>

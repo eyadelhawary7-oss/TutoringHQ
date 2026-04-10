@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 const styles: Record<string, string> = {
   nano: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-slate-300',
   starter: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-slate-300',
@@ -10,24 +12,37 @@ const styles: Record<string, string> = {
   payg: 'bg-indigo-100 text-indigo-700 border border-indigo-300',
 };
 
-const labels: Record<string, string> = {
-  nano: 'سنتر نانو',
-  starter: 'Starter',
-  pro: 'Pro',
-  business: 'Business',
-  enterprise: 'Enterprise',
-  top_centers: 'Top Centers',
-  payg: 'PAYG',
-};
+const PLAN_LABEL_KEYS = [
+  'nano',
+  'starter',
+  'pro',
+  'business',
+  'enterprise',
+  'top_centers',
+  'payg',
+] as const;
+
+function canonicalPlanKey(plan?: string): string {
+  const raw = plan?.toLowerCase() ?? 'starter';
+  if (raw === 'pro_plus') return 'pro';
+  return raw;
+}
 
 export default function PlanBadge({ plan }: { plan?: string }) {
-  const raw = plan?.toLowerCase() ?? 'starter';
-  const key = raw === ['pro', '_plus'].join('') ? 'pro' : raw;
+  const t = useTranslations('billing');
+  const key = canonicalPlanKey(plan);
+  const labelKey = PLAN_LABEL_KEYS.includes(key as (typeof PLAN_LABEL_KEYS)[number])
+    ? key
+    : null;
+  const text = labelKey
+    ? t(`planNames.${labelKey}`)
+    : (plan ?? t('planNames.nano'));
+
   return (
     <span
       className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[key] ?? styles.starter}`}
     >
-      {labels[key] ?? plan ?? 'Nano'}
+      {text}
     </span>
   );
 }

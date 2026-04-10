@@ -2040,6 +2040,18 @@
     "billingLink": "Billing Settings",
     "billingCardTitle": "Billing & subscriptions",
     "changePin": "Change PIN",
+    "pin": {
+      "currentPin": "Current PIN",
+      "newPin": "New PIN",
+      "confirmPin": "Confirm new PIN",
+      "updatePin": "Update PIN",
+      "updateSuccess": "PIN updated successfully ✓",
+      "errorMinDigits": "New PIN must be at least 4 digits (numbers only)",
+      "errorMismatch": "New PIN and confirmation do not match",
+      "errorUserNotFound": "User not found",
+      "errorCurrentInvalid": "Current PIN is incorrect",
+      "errorGeneric": "Something went wrong, please try again"
+    },
     "logoToastSuccess": "Logo uploaded successfully",
     "logoToastError": "Logo upload failed. Please try again.",
     "centerLogoAlt": "Center logo",
@@ -3360,6 +3372,11 @@
     "exportCenters": "Export Centers",
     "exportInvoices": "Export Invoices",
     "exportCommissions": "Export Commissions",
+    "allPlans": "All Plans",
+    "newestFirst": "Newest first",
+    "oldestFirst": "Oldest first",
+    "planHighestFirst": "Plan: highest first",
+    "planLowestFirst": "Plan: lowest first",
     "export": {
       "unauthorized": "Unauthorized",
       "configError": "Server configuration error"
@@ -3622,6 +3639,7 @@
       "business": "Business",
       "enterprise": "Enterprise",
       "top_centers": "Top Centers",
+      "payg": "PAYG",
       "activeParents": "Active Parents",
       "billingStatus": "Billing Status",
       "centerName": "Center Name",
