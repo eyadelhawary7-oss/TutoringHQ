@@ -7,26 +7,41 @@ export const dynamic = 'force-dynamic';
 // Aggregates: cron_log (latest per cron_name), stuck_sessions (stale combined_payment_sessions),
 // zero_billing_centers (active centers with null/zero billing_amount).
 
-/** Crons we expect to see in cron_log (merge with DB for any extras). */
-const KNOWN_CRON_NAMES = [
-  'ceo-briefing',
-  'check-stuck-payments',
-  'cleanup-expired-sessions',
-  'compute-benchmarks',
-  'daily-summary',
-  'detect-churn',
-  'expire-credits',
-  'mrr-snapshot',
-  'pack-request-check',
-  'parent-absence-alerts',
-  'parent-balance-alerts',
-  'parent-pack-billing',
-  'process-renewals',
-  'recompute-health-scores',
-  'renewal-reminders',
-  'status-ping',
-  'check-token-health',
+/**
+ * All Vercel cron routes (path + schedule) — single source for health UI row count.
+ * Order matches vercel.json `crons`.
+ */
+export const VERCEL_CRON_DEFINITIONS = [
+  { path: '/api/cron/check-stuck-payments', schedule: '*/30 * * * *' },
+  { path: '/api/cron/cleanup-expired-sessions', schedule: '0 1 * * *' },
+  { path: '/api/cron/expire-credits', schedule: '0 1 * * *' },
+  { path: '/api/cron/parent-pack-billing', schedule: '1 0 1 * *' },
+  { path: '/api/cron/parent-absence-alerts', schedule: '0 19 * * *' },
+  { path: '/api/cron/parent-balance-alerts', schedule: '0 8 * * *' },
+  { path: '/api/cron/pack-request-check', schedule: '0 7 * * *' },
+  { path: '/api/cron/ceo-briefing', schedule: '15 7 * * *' },
+  { path: '/api/cron/payg-billing', schedule: '0 21 28-31 * *' },
+  { path: '/api/cron/commission-t2-check', schedule: '0 9 * * *' },
+  { path: '/api/cron/loyalty-bonus-check', schedule: '0 9 * * *' },
+  { path: '/api/cron/process-renewals', schedule: '0 7 * * *' },
+  { path: '/api/cron/detect-churn', schedule: '0 2 * * *' },
+  { path: '/api/cron/daily-summary', schedule: '55 5 * * *' },
+  { path: '/api/cron/compute-benchmarks', schedule: '0 1 * * *' },
+  { path: '/api/cron/recompute-health-scores', schedule: '0 2 * * *' },
+  { path: '/api/cron/status-ping', schedule: '*/5 * * * *' },
+  { path: '/api/cron/mrr-snapshot', schedule: '0 0 * * *' },
+  { path: '/api/cron/check-token-health', schedule: '0 8 * * 1' },
+  { path: '/api/cron/renewal-reminders', schedule: '0 7 * * *' },
+  { path: '/api/cron/weekly-backup', schedule: '0 3 * * 0' },
+  { path: '/api/cron/monthly-backup', schedule: '0 2 1 * *' },
+  { path: '/api/cron/cleanup-status-checks', schedule: '0 1 * * 1' },
+  { path: '/api/cron/referral-automation', schedule: '0 3 2 * *' },
+  { path: '/api/cron/dormancy-warnings', schedule: '0 4 2 * *' },
 ] as const;
+
+function pathToCronLogName(path: string): string {
+  return path.replace(/^\/api\/cron\//, '').replace(/\/$/, '');
+}
 
 function paymobMode(): 'live' | 'sandbox' {
   return process.env.PAYMOB_API_KEY?.startsWith('Key_') ? 'live' : 'sandbox';
@@ -37,6 +52,11 @@ function waMode(): 'live' | 'test' {
 }
 
 export type AdminHealthCronRow = {
+  /** Route path, e.g. /api/cron/check-stuck-payments */
+  path: string;
+  /** Vercel cron expression */
+  schedule: string;
+  /** Matches cron_log.cron_name */
   name: string;
   last_ran: string | null;
   last_status: 'success' | 'failure' | 'partial' | null;
@@ -135,35 +155,33 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const nameSet = new Set<string>([...KNOWN_CRON_NAMES]);
-    for (const n of latestByName.keys()) nameSet.add(n);
-
-    const cron_status: AdminHealthCronRow[] = [...nameSet]
-      .sort((a, b) => a.localeCompare(b))
-      .map((name) => {
-        const hit = latestByName.get(name);
-        if (!hit) {
-          return {
-            name,
-            last_ran: null,
-            last_status: null,
-            last_duration_ms: null,
-            last_error: null,
-          };
-        }
-        const st = hit.status;
-        const last_status =
-          st === 'success' || st === 'failure' || st === 'partial'
-            ? st
-            : null;
+    const cron_status: AdminHealthCronRow[] = VERCEL_CRON_DEFINITIONS.map(({ path, schedule }) => {
+      const name = pathToCronLogName(path);
+      const hit = latestByName.get(name);
+      if (!hit) {
         return {
+          path,
+          schedule,
           name,
-          last_ran: hit.ran_at,
-          last_status,
-          last_duration_ms: hit.duration_ms,
-          last_error: hit.error_message,
+          last_ran: null,
+          last_status: null,
+          last_duration_ms: null,
+          last_error: null,
         };
-      });
+      }
+      const st = hit.status;
+      const last_status =
+        st === 'success' || st === 'failure' || st === 'partial' ? st : null;
+      return {
+        path,
+        schedule,
+        name,
+        last_ran: hit.ran_at,
+        last_status,
+        last_duration_ms: hit.duration_ms,
+        last_error: hit.error_message,
+      };
+    });
 
     const stuck_sessions = stuckRes.count ?? 0;
     const zero_billing_centers = zeroBillRes.count ?? 0;

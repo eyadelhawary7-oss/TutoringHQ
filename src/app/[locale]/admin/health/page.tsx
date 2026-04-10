@@ -11,6 +11,8 @@ import { useLayout } from '@/contexts/LayoutContext';
 import { Activity, ArrowLeft, AlertTriangle } from 'lucide-react';
 
 type CronStatus = {
+  path: string;
+  schedule: string;
   name: string;
   last_ran: string | null;
   last_status: 'success' | 'failure' | 'partial' | null;
@@ -31,7 +33,7 @@ type HealthPayload = {
 };
 
 const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
-const FREQUENT_CRONS = new Set(['check-stuck-payments']);
+const FREQUENT_CRONS = new Set(['check-stuck-payments', 'status-ping']);
 
 function formatDuration(ms: number | null): string {
   if (ms === null || !Number.isFinite(ms)) return '-';
@@ -292,11 +294,24 @@ export default function AdminHealthPage() {
                 <table className="w-full text-sm text-start">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-slate-700 bg-[var(--color-surface-0)]">
-                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColCron')}</th>
-                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColLastRun')}</th>
-                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColStatus')}</th>
-                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColDuration')}</th>
-                      <th className="p-3 font-medium text-slate-500 dark:text-slate-400">{t('healthColError')}</th>
+                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                        {t('healthColCron')}
+                      </th>
+                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                        {t('healthColSchedule')}
+                      </th>
+                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                        {t('healthColLastRun')}
+                      </th>
+                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                        {t('healthColStatus')}
+                      </th>
+                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                        {t('healthColDuration')}
+                      </th>
+                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                        {t('healthColError')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -305,14 +320,14 @@ export default function AdminHealthPage() {
                       const stale = isStaleFrequent(row);
                       return (
                         <tr
-                          key={row.name}
-                          className={`border-b border-gray-100 dark:border-slate-700 last:border-0 text-slate-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 ${
+                          key={row.path}
+                          className={`border-b border-gray-100 dark:border-slate-700 last:border-0 hover:bg-[var(--color-surface-2)] ${
                             errRow ? 'bg-red-50 dark:bg-red-950/35' : stale ? 'bg-amber-50 dark:bg-amber-950/20' : ''
                           }`}
                         >
-                          <td className="p-3 font-mono whitespace-nowrap">
+                          <td className="p-3 font-mono text-[var(--color-text-primary)] whitespace-nowrap">
                             <span className="inline-flex items-center gap-1.5">
-                              {row.name}
+                              {row.path}
                               {stale ? (
                                 <AlertTriangle
                                   className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0"
@@ -321,12 +336,15 @@ export default function AdminHealthPage() {
                               ) : null}
                             </span>
                           </td>
-                          <td className="p-3 whitespace-nowrap">
+                          <td className="p-3 font-mono text-[var(--color-text-secondary)] whitespace-nowrap">
+                            {row.schedule}
+                          </td>
+                          <td className="p-3 whitespace-nowrap text-[var(--color-text-secondary)]">
                             {formatRanAt(row.last_ran, locale)}
                           </td>
-                          <td className="p-3">
+                          <td className="p-3 text-[var(--color-text-primary)]">
                             {!row.last_status ? (
-                              <span className="text-slate-500 dark:text-slate-400">-</span>
+                              <span className="text-[var(--color-text-secondary)]">-</span>
                             ) : row.last_status === 'success' ? (
                               <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                                 ✓ success
@@ -341,10 +359,17 @@ export default function AdminHealthPage() {
                               </span>
                             )}
                           </td>
-                          <td className="p-3 text-slate-500 dark:text-slate-400 font-mono">
+                          <td className="p-3 font-mono text-[var(--color-text-secondary)]">
                             {formatDuration(row.last_duration_ms)}
                           </td>
-                          <td className="p-3 text-red-600 dark:text-red-400 max-w-xs truncate" title={row.last_error ?? ''}>
+                          <td
+                            className={`p-3 max-w-xs truncate font-mono ${
+                              row.last_error
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-[var(--color-text-secondary)]'
+                            }`}
+                            title={row.last_error ?? ''}
+                          >
                             {row.last_error ?? '-'}
                           </td>
                         </tr>

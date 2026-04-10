@@ -21,6 +21,39 @@ function asBool(v: unknown): boolean {
   return false;
 }
 
+function inferEditor(value: unknown): 'bool' | 'number' | 'text' | 'json' {
+  if (typeof value === 'boolean') return 'bool';
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'object' && value !== null) return 'json';
+  return 'text';
+}
+
+function isLateFeesDormancyKey(key: string): boolean {
+  return (
+    key.startsWith('late_fee_') ||
+    key.startsWith('dormancy_') ||
+    key.startsWith('reactivation_discount_')
+  );
+}
+
+function formatDraftValue(key: string, value: unknown): string {
+  const ed = inferEditor(value);
+  if (ed === 'json') {
+    try {
+      return JSON.stringify(value ?? {}, null, 2);
+    } catch {
+      return '{}';
+    }
+  }
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
+function numberStepForKey(key: string): string {
+  if (key.includes('_rate') || key.includes('reactivation_discount')) return '0.01';
+  return '1';
+}
+
 export default function PlatformConfigPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
@@ -34,10 +67,10 @@ export default function PlatformConfigPage() {
   const [gateOk, setGateOk] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rows, setRows] = useState<ConfigRow[]>([]);
   const [byKey, setByKey] = useState<Record<string, unknown>>({});
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [breakevenDraft, setBreakevenDraft] = useState('77');
-  const [breakevenSaving, setBreakevenSaving] = useState(false);
 
   const getSession = useCallback(async () => {
     const {
@@ -96,16 +129,16 @@ export default function PlatformConfigPage() {
       throw new Error(err?.error || t('platformConfigLoadError'));
     }
     const data = await res.json();
-    const rows = (data.config || []) as ConfigRow[];
+    const list = (data.config || []) as ConfigRow[];
+    setRows(list);
     const next: Record<string, unknown> = {};
-    for (const r of rows) {
+    const d: Record<string, string> = {};
+    for (const r of list) {
       next[r.key] = r.value;
+      d[r.key] = formatDraftValue(r.key, r.value);
     }
     setByKey(next);
-    const bt = next.breakeven_target;
-    if (bt !== undefined && bt !== null) {
-      setBreakevenDraft(String(typeof bt === 'number' ? bt : Number(bt) || 0));
-    }
+    setDrafts(d);
   }, [getAuthHeaders, t]);
 
   useEffect(() => {
@@ -146,6 +179,7 @@ export default function PlatformConfigPage() {
           throw new Error(err?.error || tCommon('error'));
         }
         toast.success(t('platformConfigSaved'));
+        await load();
       } catch (e) {
         setByKey((m) => ({ ...m, [key]: prevVal }));
         toast.error(e instanceof Error ? e.message : tCommon('error'));
@@ -153,59 +187,166 @@ export default function PlatformConfigPage() {
         setSavingKey(null);
       }
     },
-    [getAuthHeaders, toast, t, tCommon],
+    [getAuthHeaders, load, t, tCommon, toast],
   );
 
-  const saveBreakeven = useCallback(async () => {
-    const n = Number(breakevenDraft);
-    const rawCur = byKey.breakeven_target;
-    const cur = typeof rawCur === 'number' ? rawCur : Number(rawCur);
-    if (Number.isFinite(n) && Number.isFinite(cur) && n === cur) return;
-    if (!Number.isFinite(n) || n < 0) {
-      toast.error(t('platformConfigBreakevenInvalid'));
-      return;
-    }
-    const headers = await getAuthHeaders();
-    if (!headers) return;
-    const prev = byKey.breakeven_target;
-    setBreakevenSaving(true);
-    setByKey((m) => ({ ...m, breakeven_target: n }));
-    try {
-      const res = await fetch('/api/admin/platform-config', {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ key: 'breakeven_target', value: n }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error || tCommon('error'));
+  const saveDraft = useCallback(
+    async (key: string) => {
+      const raw = drafts[key] ?? '';
+      const editor = inferEditor(byKey[key]);
+      let parsed: unknown;
+
+      if (editor === 'number') {
+        const n = parseFloat(raw);
+        if (!Number.isFinite(n)) {
+          toast.error(t('platformConfigNumberInvalid'));
+          return;
+        }
+        parsed = numberStepForKey(key) === '1' ? Math.trunc(n) : n;
+      } else if (editor === 'json') {
+        try {
+          parsed = JSON.parse(raw) as Record<string, unknown>;
+          if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            toast.error(t('platformConfigJsonInvalid'));
+            return;
+          }
+        } catch {
+          toast.error(t('platformConfigJsonInvalid'));
+          return;
+        }
+      } else {
+        const trimmed = raw.trim();
+        parsed = trimmed === '' ? null : trimmed;
       }
-      toast.success(t('platformConfigSaved'));
-    } catch (e) {
-      setByKey((m) => ({ ...m, breakeven_target: prev }));
-      toast.error(e instanceof Error ? e.message : tCommon('error'));
-    } finally {
-      setBreakevenSaving(false);
-    }
-  }, [breakevenDraft, byKey.breakeven_target, getAuthHeaders, toast, t, tCommon]);
 
-  const groups = useMemo(
-    () => [
-      {
-        titleKey: 'platformConfigGroupApproval' as const,
-        keys: ['auto_approve_signups', 'pause_new_signups', 'auto_approve_pack'] as const,
-      },
-      {
-        titleKey: 'platformConfigGroupWaBilling' as const,
-        keys: ['wa_sending_enabled', 'payment_failed_enabled', 'pack_invoice_enabled'] as const,
-      },
-      {
-        titleKey: 'platformConfigGroupOps' as const,
-        keys: ['cron_paused', 'maintenance_mode', 'read_only_mode', 'bosta_auto_reship_on_lost'] as const,
-      },
-    ],
-    [],
+      const headers = await getAuthHeaders();
+      if (!headers) return;
+      setSavingKey(key);
+      try {
+        const res = await fetch('/api/admin/platform-config', {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ key, value: parsed }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.error || tCommon('error'));
+        }
+        toast.success(t('platformConfigSaved'));
+        await load();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : tCommon('error'));
+      } finally {
+        setSavingKey(null);
+      }
+    },
+    [byKey, drafts, getAuthHeaders, load, t, tCommon, toast],
   );
+
+  const { lateKeys, otherKeys } = useMemo(() => {
+    const keys = rows.map((r) => r.key);
+    const late: string[] = [];
+    const other: string[] = [];
+    for (const k of keys) {
+      if (isLateFeesDormancyKey(k)) late.push(k);
+      else other.push(k);
+    }
+    late.sort((a, b) => a.localeCompare(b));
+    other.sort((a, b) => a.localeCompare(b));
+    return { lateKeys: late, otherKeys: other };
+  }, [rows]);
+
+  const labelFor = useCallback(
+    (key: string) => t(`platformConfig_${key}_label` as Parameters<typeof t>[0]),
+    [t],
+  );
+
+  const descFor = useCallback(
+    (key: string) => t(`platformConfig_${key}_desc` as Parameters<typeof t>[0]),
+    [t],
+  );
+
+  const renderRow = (key: string) => {
+    const val = byKey[key];
+    const editor = inferEditor(val);
+    const busy = savingKey === key;
+
+    if (editor === 'bool') {
+      const checked = asBool(val);
+      return (
+        <div
+          key={key}
+          className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-slate-100 dark:border-slate-800 last:border-0 pb-4 last:pb-0"
+        >
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-[var(--color-text-primary)]">{labelFor(key)}</p>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{descFor(key)}</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={checked}
+            aria-label={labelFor(key)}
+            disabled={busy}
+            onClick={() => void patchToggle(key, !checked, checked)}
+            className="shrink-0 flex items-center gap-2 disabled:opacity-50"
+          >
+            <span
+              className="relative inline-block h-[26px] w-12 rounded-[13px] transition-colors"
+              style={{ backgroundColor: checked ? '#0d9488' : '#64748b' }}
+            >
+              <span
+                className="absolute top-[3px] h-5 w-5 rounded-full bg-slate-200 shadow"
+                style={{ left: checked ? 25 : 3 }}
+              />
+            </span>
+            {busy ? <span className="text-xs text-[var(--color-text-secondary)]">{tCommon('loading')}</span> : null}
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        key={key}
+        className="flex flex-col gap-2 border-b border-slate-100 dark:border-slate-800 last:border-0 pb-4 last:pb-0"
+      >
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-[var(--color-text-primary)]">{labelFor(key)}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{descFor(key)}</p>
+        </div>
+        {editor === 'json' ? (
+          <textarea
+            className="w-full min-h-[120px] rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
+            dir="ltr"
+            value={drafts[key] ?? ''}
+            disabled={busy}
+            onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
+            spellCheck={false}
+          />
+        ) : (
+          <input
+            type={editor === 'number' ? 'number' : 'text'}
+            step={editor === 'number' ? numberStepForKey(key) : undefined}
+            min={editor === 'number' ? 0 : undefined}
+            className="w-full max-w-md rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2 text-[var(--color-text-primary)]"
+            value={drafts[key] ?? ''}
+            disabled={busy}
+            onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
+            dir={editor === 'number' ? 'ltr' : undefined}
+          />
+        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void saveDraft(key)}
+          className="self-start rounded-lg bg-[var(--color-brand-500)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+        >
+          {busy ? tCommon('loading') : t('platformConfigSaveRow')}
+        </button>
+      </div>
+    );
+  };
 
   if (!gateOk) {
     return (
@@ -247,73 +388,23 @@ export default function PlatformConfigPage() {
           <p className="text-red-600 mt-8">{error}</p>
         ) : (
           <div className="mt-8 space-y-10">
-            {groups.map((g) => (
-              <section key={g.titleKey}>
-                <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
-                  {t(g.titleKey)}
+            {lateKeys.length > 0 ? (
+              <section>
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
+                  {t('platformConfigGroupLateFeesDormancy')}
                 </h2>
                 <div className="space-y-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-                  {g.keys.map((k) => {
-                    const labelKey = `platformConfig_${k}_label` as Parameters<typeof t>[0];
-                    const descKey = `platformConfig_${k}_desc` as Parameters<typeof t>[0];
-                    const checked = asBool(byKey[k]);
-                    const busy = savingKey === k;
-                    return (
-                      <div
-                        key={k}
-                        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-slate-100 dark:border-slate-800 last:border-0 pb-4 last:pb-0"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-900 dark:text-slate-100">{t(labelKey)}</p>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t(descKey)}</p>
-                        </div>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={checked}
-                          disabled={busy}
-                          onClick={() => void patchToggle(k, !checked, checked)}
-                          className="shrink-0 flex items-center gap-2 disabled:opacity-50"
-                        >
-                          <span
-                            className="relative inline-block h-[26px] w-12 rounded-[13px] transition-colors"
-                            style={{ backgroundColor: checked ? '#0d9488' : '#64748b' }}
-                          >
-                            <span
-                              className="absolute top-[3px] h-5 w-5 rounded-full bg-slate-200 shadow"
-                              style={{ left: checked ? 25 : 3 }}
-                            />
-                          </span>
-                          {busy ? <span className="text-xs text-slate-500">{tCommon('loading')}</span> : null}
-                        </button>
-                      </div>
-                    );
-                  })}
+                  {lateKeys.map((k) => renderRow(k))}
                 </div>
               </section>
-            ))}
+            ) : null}
 
             <section>
-              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
-                {t('platformConfigGroupBusiness')}
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
+                {t('platformConfigGroupAll')}
               </h2>
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-                <p className="font-medium text-slate-900 dark:text-slate-100">
-                  {t('platformConfig_breakeven_target_label')}
-                </p>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5 mb-3">
-                  {t('platformConfig_breakeven_target_desc')}
-                </p>
-                <input
-                  type="number"
-                  min={0}
-                  step={1}
-                  className="w-full max-w-xs rounded-lg border border-slate-600 bg-[var(--color-surface-2)] px-3 py-2 text-slate-100"
-                  value={breakevenDraft}
-                  disabled={breakevenSaving}
-                  onChange={(e) => setBreakevenDraft(e.target.value)}
-                  onBlur={() => void saveBreakeven()}
-                />
+              <div className="space-y-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+                {otherKeys.map((k) => renderRow(k))}
               </div>
             </section>
           </div>

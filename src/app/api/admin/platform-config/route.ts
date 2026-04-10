@@ -25,23 +25,14 @@ import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { requireSuperAdminRow } from '@/lib/admin-access';
 import { NextRequest, NextResponse } from 'next/server';
 
-const MANAGED_KEYS = new Set([
-  'auto_approve_signups',
-  'pause_new_signups',
-  'auto_approve_pack',
-  'wa_sending_enabled',
-  'payment_failed_enabled',
-  'pack_invoice_enabled',
-  'cron_paused',
-  'maintenance_mode',
-  'read_only_mode',
-  'bosta_auto_reship_on_lost',
-  'breakeven_target',
-]);
-
-function toJsonbValue(v: unknown): boolean | number | string | null {
+/** Accept boolean, number, string, null, or JSON-serializable object/array for jsonb. */
+function normalizePatchValue(
+  v: unknown,
+): boolean | number | string | object | null | undefined {
+  if (v === null) return null;
   if (typeof v === 'boolean' || typeof v === 'number' || typeof v === 'string') return v;
-  return null;
+  if (typeof v === 'object' && v !== null) return v;
+  return undefined;
 }
 
 /** GET — all platform_config rows (super_admin). */
@@ -55,7 +46,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await auth.supabaseAdmin
     .from('platform_config')
-    .select('key, value, updated_at')
+    .select('key, value')
     .order('key', { ascending: true });
 
   if (error) {
@@ -77,20 +68,46 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = (await request.json()) as { key?: string; value?: unknown };
-    const key = typeof body.key === 'string' ? body.key : '';
-    if (!key || !MANAGED_KEYS.has(key)) {
-      return NextResponse.json({ error: 'Invalid or unsupported config key' }, { status: 400 });
+    const key = typeof body.key === 'string' ? body.key.trim() : '';
+    if (!key) {
+      return NextResponse.json({ error: 'key is required' }, { status: 400 });
     }
 
-    const jsonVal = toJsonbValue(body.value);
-    if (jsonVal === null) {
-      return NextResponse.json({ error: 'value must be boolean, number, or string' }, { status: 400 });
+    const { data: existing, error: existErr } = await auth.supabaseAdmin
+      .from('platform_config')
+      .select('key')
+      .eq('key', key)
+      .maybeSingle();
+
+    if (existErr) {
+      console.error('[PATCH /api/admin/platform-config] key lookup', existErr);
+      return NextResponse.json({ error: existErr.message }, { status: 500 });
+    }
+    if (!existing) {
+      return NextResponse.json({ error: 'Unknown config key' }, { status: 400 });
+    }
+
+    const jsonVal = normalizePatchValue(body.value);
+    if (jsonVal === undefined) {
+      return NextResponse.json(
+        { error: 'value must be boolean, number, string, null, or a JSON object' },
+        { status: 400 },
+      );
     }
 
     if (key === 'breakeven_target') {
       const n = typeof jsonVal === 'number' ? jsonVal : Number(jsonVal);
       if (!Number.isFinite(n) || n < 0) {
         return NextResponse.json({ error: 'breakeven_target must be a non-negative number' }, { status: 400 });
+      }
+    }
+    if (key === 'pack_price_per_parent') {
+      const n = typeof jsonVal === 'number' ? jsonVal : Number(jsonVal);
+      if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
+        return NextResponse.json(
+          { error: 'pack_price_per_parent must be a non-negative integer' },
+          { status: 400 },
+        );
       }
     }
 
