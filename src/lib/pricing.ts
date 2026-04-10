@@ -84,6 +84,13 @@ export function isPlanKey(id: string | null | undefined): id is PlanKey {
   return id != null && Object.prototype.hasOwnProperty.call(PLANS, id);
 }
 
+/** Full annual charge from quarterly monthly equivalent (−15% vs 12× quarter months), rounded to nearest 100 EGP. */
+export function getAnnualChargeRounded(allInPerMonth: number): number {
+  if (!Number.isFinite(allInPerMonth) || allInPerMonth <= 0) return 0;
+  const raw = allInPerMonth * 12 * 0.85;
+  return Math.round(raw / 100) * 100;
+}
+
 const WEEKS_PER_QUARTER = 13;
 
 /**
@@ -112,7 +119,7 @@ export function getChargeFromQuarterlyAllIn(
       return Math.max(1, Math.round(list * scale));
     }
     case 'annual':
-      return Math.round(allInPerMonth * 12 * 0.85);
+      return getAnnualChargeRounded(allInPerMonth);
     default:
       return Math.round(allInPerMonth * 3);
   }
@@ -130,7 +137,7 @@ export function getImpliedMonthlyMrr(
   if (p === 'monthly') {
     return getChargeFromQuarterlyAllIn(allInPerMonth, 'monthly', planKey);
   }
-  return Math.round(allInPerMonth * 0.85);
+  return Math.round(getAnnualChargeRounded(allInPerMonth) / 12);
 }
 
 /**
@@ -156,7 +163,7 @@ export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
     case 'monthly':
       return plan.monthlyListPrice;
     case 'annual':
-      return Math.round(plan.quarterlyAllIn * 12 * 0.85);
+      return getAnnualChargeRounded(plan.quarterlyAllIn);
     default:
       return Math.round(plan.quarterlyAllIn * 3);
   }
@@ -166,7 +173,7 @@ export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
 export function getAnnualMonthlyEquivalent(planKey: PlanKey): number {
   const plan = PLANS[planKey];
   if (!plan || planKey === 'top_centers') return 0;
-  return Math.round(plan.quarterlyAllIn * 0.85);
+  return Math.round(getAnnualChargeRounded(plan.quarterlyAllIn) / 12);
 }
 
 export function getQuarterlyCharge(planKey: PlanKey, period: BillingPeriod): number {

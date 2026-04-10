@@ -460,9 +460,13 @@ export default function SignupPage() {
           <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 shadow-[0_0_20px_rgba(13,148,136,0.4)]">
             <span className="text-sm font-black text-white">CH</span>
           </div>
-          <div className="logo-name text-base font-bold tracking-wide text-white" style={PLAYFAIR}>
-            CenterHQ
-          </div>
+          <span
+            className="logo-name text-base text-white"
+            style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+          >
+            <span className="text-[#f8fafc]">CENTER</span>
+            <span className="text-[#0D9488]">HQ</span>
+          </span>
           <span className="mt-0.5 text-[11px] text-slate-600" style={SANS}>
             {stageSubtitle}
           </span>

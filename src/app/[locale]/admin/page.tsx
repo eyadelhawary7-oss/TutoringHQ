@@ -1,10 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter } from 'next/navigation';
-import { usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { canonicalPlanId } from '@/lib/plans';
 import { useLayout } from '@/contexts/LayoutContext';
@@ -269,6 +268,15 @@ function centerStatusLabel(
   if (s === 'trial') return t('trial');
   if (s === 'rejected') return t('rejected');
   return status || t('active');
+}
+
+function AdminTabQuerySync({ setTab }: { setTab: (tab: AdminTab) => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const v = searchParams?.get('tab');
+    if (v === 'centers') setTab('centers');
+  }, [searchParams, setTab]);
+  return null;
 }
 
 export default function AdminPage() {
@@ -1159,6 +1167,9 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+      <Suspense fallback={null}>
+        <AdminTabQuerySync setTab={setTab} />
+      </Suspense>
       <AdminHeader />
       <div className="flex flex-col lg:flex-row flex-1">
         <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname ?? undefined} />

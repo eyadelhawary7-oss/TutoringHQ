@@ -71,14 +71,20 @@ function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso.includes('T') ? iso : `${iso}T12:00:00`);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function fmtDateTime(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString('en-US', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function billingCycleAr(period: string | null | undefined): string {

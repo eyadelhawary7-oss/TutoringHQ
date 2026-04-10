@@ -9,6 +9,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
+import { getAnnualChargeRounded } from '@/lib/pricing';
 import { useToast } from '@/hooks/useToast';
 import { Pin, Trash2 } from 'lucide-react';
 
@@ -1566,7 +1567,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const billingNum = parseFloat(s3BillingAmount);
   const allInNum = parseFloat(s3AllInPrice);
   const effectiveMonthly = !isNaN(billingNum) ? billingNum / 3 : 0;
-  const annualEquivalent = !isNaN(allInNum) ? allInNum * 12 * 0.85 : 0;
+  const annualEquivalent = !isNaN(allInNum) ? getAnnualChargeRounded(allInNum) : 0;
 
   return (
     <div

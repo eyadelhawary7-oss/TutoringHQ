@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { canUpgrade, getUpgradeCost } from '@/lib/billingEngine';
 import {
+  getAnnualChargeRounded,
   getChargeFromQuarterlyAllIn,
   isPlanKey,
   normalizeBillingPeriod,
@@ -170,7 +171,7 @@ export async function POST(request: NextRequest) {
       case 'quarterly':
         return Number(newPlanData.all_in_price) * 3;
       case 'annual':
-        return Number(newPlanData.all_in_price) * 12 * 0.85;
+        return getAnnualChargeRounded(Number(newPlanData.all_in_price));
       default:
         return Number(newPlanData.monthly_fee);
     }

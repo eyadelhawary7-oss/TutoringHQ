@@ -10,6 +10,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { PACK_PLAN_MINIMUMS } from '@/lib/packBilling';
+import { getAnnualChargeRounded } from '@/lib/pricing';
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Banknote } from 'lucide-react';
 
@@ -340,7 +341,7 @@ export default function AdminPricingPage() {
                         const d = drafts[p.plan_key];
                         if (!d) return null;
                         const allIn = parseFloat(d.all_in_price);
-                        const annual = Number.isFinite(allIn) ? allIn * 12 * 0.85 : NaN;
+                        const annual = Number.isFinite(allIn) ? getAnnualChargeRounded(allIn) : NaN;
                         const prem = Number.isFinite(allIn) ? allIn * 1.15 : NaN;
                         const busy = savingPlanId === p.plan_key;
                         return (
