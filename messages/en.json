@@ -181,6 +181,7 @@
     "phone": "Phone",
     "status": "Status",
     "download": "Download",
+    "downloadPdf": "Download PDF",
     "print": "Print",
     "active": "Active",
     "inactive": "Inactive",

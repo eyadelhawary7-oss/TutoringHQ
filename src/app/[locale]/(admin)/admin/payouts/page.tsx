@@ -403,6 +403,19 @@ export default function PayoutsPage() {
                   </div>
                 ) : null}
 
+                {payout.status === 'confirmed' || payout.status === 'paid' ? (
+                  <div className="flex justify-end">
+                    <a
+                      href={`/api/admin/payouts/${payout.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[var(--color-teal)] text-sm hover:underline"
+                    >
+                      {tCommon('downloadPdf')}
+                    </a>
+                  </div>
+                ) : null}
+
                 {payout.status !== 'paid' ? (
                   <div className="flex gap-2 justify-end flex-wrap">
                     {payout.status === 'draft' ? (

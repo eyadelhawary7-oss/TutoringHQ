@@ -1345,3 +1345,104 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
   );
   return htmlToPdfBuffer(html);
 }
+
+/** PDF for internal `commission_payouts` (staff SR/SM) — not center `payout_requests`. */
+export async function generateStaffCommissionPayoutPdf(
+  payoutId: string,
+  supabase: SupabaseClient,
+): Promise<Buffer | null> {
+  const { data: row, error } = await supabase
+    .from('commission_payouts')
+    .select(`*, staff(id, name, role, base_salary)`)
+    .eq('id', payoutId)
+    .maybeSingle();
+
+  if (error || !row) {
+    console.error('[generateStaffCommissionPayoutPdf] load:', error);
+    return null;
+  }
+
+  const p = row as Record<string, unknown> & { staff?: unknown };
+  const st = String(p.status ?? '');
+  if (st !== 'confirmed' && st !== 'paid') {
+    return null;
+  }
+
+  let staffName = '—';
+  let staffRole = '—';
+  const s = p.staff;
+  if (Array.isArray(s) && s[0]) {
+    staffName = String((s[0] as { name?: string }).name ?? '—');
+    staffRole = String((s[0] as { role?: string }).role ?? '—');
+  } else if (s && typeof s === 'object') {
+    staffName = String((s as { name?: string }).name ?? '—');
+    staffRole = String((s as { role?: string }).role ?? '—');
+  }
+
+  const period = String(p.period ?? '—');
+  const total = Number(p.total_amount ?? 0);
+  const adj = Number(p.adjustment_amount ?? 0);
+  const paidAt =
+    p.paid_at != null ? fmtDateTime(String(p.paid_at)) : st === 'paid' ? '—' : 'لم يُسجَّل بعد';
+
+  const lineItems: { ar: string; amount: number; muted?: boolean }[] = [
+    { ar: 'الراتب الأساسي', amount: Number(p.base_salary ?? 0) },
+    { ar: 'عمولات المستوى الأول (T1)', amount: Number(p.t1_commissions ?? 0) },
+    { ar: 'عمولات المستوى الثاني (T2)', amount: Number(p.t2_commissions ?? 0) },
+    { ar: 'مكافآت الولاء', amount: Number(p.loyalty_bonuses ?? 0) },
+    { ar: 'عمولات إضافية (override)', amount: Number(p.override_commissions ?? 0) },
+  ];
+  if (adj !== 0) {
+    lineItems.push({ ar: 'تعديل', amount: adj, muted: false });
+  }
+
+  const statusAr = st === 'paid' ? 'مدفوع' : 'معتمد — بانتظار الصرف';
+  const statusHtml =
+    st === 'paid'
+      ? `<span style="display:inline-block;padding:6px 14px;border-radius:9999px;font-size:11px;font-weight:700;font-family:Cairo,sans-serif;background:${TEAL};color:${WHITE};">${esc(statusAr)}</span>`
+      : `<span style="display:inline-block;padding:6px 14px;border-radius:9999px;font-size:11px;font-weight:700;font-family:Cairo,sans-serif;border:2px solid ${AMBER};color:${AMBER};">${esc(statusAr)}</span>`;
+
+  const docRef = `CP-${esc(payoutId.slice(0, 8).toUpperCase())}`;
+  const rowsHtml = lineItems
+    .map(
+      (item) => `
+    <tr>
+      <td style="padding:10px 8px;border-bottom:1px solid ${BORDER};font-family:Cairo,sans-serif;color:#334155;">${esc(item.ar)}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid ${BORDER};text-align:left;direction:ltr;font-variant-numeric:tabular-nums;font-weight:600;color:${item.muted ? MUTED : NAVY};">${fmtEgp(item.amount)}</td>
+    </tr>`,
+    )
+    .join('');
+
+  const inner = `<div style="flex:1;padding:14mm 12mm;font-family:Cairo,sans-serif;direction:rtl;text-align:right;">
+    <div style="font-size:20px;font-weight:800;color:${TEAL};margin-bottom:4px;">إيصال صرف عمولات فريق</div>
+    <div style="font-size:11px;color:${MUTED};margin-bottom:16px;">${docRef}</div>
+    <div style="margin-bottom:14px;">${statusHtml}</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px;">
+      <tr><td style="padding:6px 0;color:${MUTED};width:40%;">اسم الموظف</td><td style="padding:6px 0;font-weight:700;">${esc(staffName)}</td></tr>
+      <tr><td style="padding:6px 0;color:${MUTED};">الدور</td><td style="padding:6px 0;">${esc(staffRole)}</td></tr>
+      <tr><td style="padding:6px 0;color:${MUTED};">الفترة</td><td style="padding:6px 0;">${esc(period)}</td></tr>
+      <tr><td style="padding:6px 0;color:${MUTED};">تاريخ الصرف</td><td style="padding:6px 0;direction:ltr;text-align:right;">${esc(paidAt)}</td></tr>
+    </table>
+    <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:${NAVY};">التفاصيل</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      <thead>
+        <tr>
+          <th style="text-align:right;padding:8px;border-bottom:2px solid ${TEAL};font-family:Cairo,sans-serif;">البند</th>
+          <th style="text-align:left;padding:8px;border-bottom:2px solid ${TEAL};direction:ltr;">المبلغ</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-radius:12px;background:${GRAY_BG};border:1px solid ${BORDER};">
+      <span style="font-weight:800;font-size:15px;font-family:Cairo,sans-serif;">الإجمالي</span>
+      <span style="font-weight:800;font-size:18px;color:${TEAL};direction:ltr;">${fmtEgp(total)}</span>
+    </div>
+  </div>`;
+
+  const html = wrapDocument(
+    inner,
+    'CenterHQ · centerhq.app · An EHG Intelligence Product',
+    `STAFF COMMISSION PAYOUT · ${esc(period)}`,
+  );
+  return htmlToPdfBuffer(html);
+}

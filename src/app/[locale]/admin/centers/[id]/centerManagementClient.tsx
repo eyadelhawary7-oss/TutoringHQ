@@ -366,47 +366,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     return headers;
   }, [getSession]);
 
-  const getPdfAuthHeaders = useCallback(async () => {
-    const session = await getSession();
-    if (!session) return null;
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${session.access_token}`,
-    };
-    const csrf = await getCsrfHeaders(session.access_token);
-    Object.assign(headers, csrf);
-    return headers;
-  }, [getSession]);
-
-  const openAdminInvoicePdf = useCallback(
-    async (invoiceId: string) => {
-      const headers = await getPdfAuthHeaders();
-      if (!headers) {
-        toast.error(t('centerManagement.error'));
-        return;
-      }
-      try {
-        const res = await fetch(`/api/admin/invoices/${invoiceId}/pdf`, { headers });
-        if (!res.ok) {
-          const j = (await res.json().catch(() => ({}))) as { error?: string };
-          toast.error(typeof j.error === 'string' ? j.error : t('centerManagement.error'));
-          return;
-        }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const opened = window.open(url, '_blank', 'noopener,noreferrer');
-        if (!opened) {
-          toast.error(t('centerManagement.error'));
-          URL.revokeObjectURL(url);
-          return;
-        }
-        setTimeout(() => URL.revokeObjectURL(url), 120_000);
-      } catch {
-        toast.error(t('centerManagement.error'));
-      }
-    },
-    [getPdfAuthHeaders, t, toast],
-  );
-
   const showApiError = useCallback(
     (j: Record<string, unknown>) => {
       const ek = typeof j.errorKey === 'string' ? j.errorKey : '';
@@ -2115,7 +2074,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           <th className="p-2 font-medium">{t('centerManagement.section4.status')}</th>
                           <th className="p-2 font-medium">{t('centerManagement.section4.dueDate')}</th>
                           <th className="p-2 font-medium">{t('centerManagement.section4.created')}</th>
-                          <th className="p-2 font-medium">PDF</th>
+                          <th className="p-2 font-medium">{tCommon('downloadPdf')}</th>
                           <th className="p-2 w-24" />
                         </tr>
                       </thead>
@@ -2159,13 +2118,14 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     : tCommon('notSet')}
                                 </td>
                                 <td className="p-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => void openAdminInvoicePdf(invId)}
-                                    className="rounded border border-teal-600/60 px-2 py-1 text-xs font-semibold text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/30"
+                                  <a
+                                    href={`/api/admin/invoices/${invId}/pdf`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[var(--color-teal)] text-sm hover:underline"
                                   >
-                                    PDF
-                                  </button>
+                                    {tCommon('downloadPdf')}
+                                  </a>
                                 </td>
                                 <td className="p-2">
                                   <button

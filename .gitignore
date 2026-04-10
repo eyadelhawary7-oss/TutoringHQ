@@ -62,3 +62,8 @@ supabase/.temp/.claude/
 # Local tool noise
 .cursor/
 .claude/
+
+# Local audit / pre-launch reports (do not commit)
+*-Audit-Report.*
+*Audit*.md
+PRELAUNCH_*.md

@@ -62,10 +62,14 @@
       "maxDuration": 300
     },
     "src/app/api/cron/referral-automation/route.ts": {
-      "maxDuration": 120
+      "maxDuration": 300
     },
     "src/app/api/cron/dormancy-warnings/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/admin/payouts/[id]/pdf/route.ts": {
+      "memory": 1024,
+      "maxDuration": 60
     }
   }
 }
