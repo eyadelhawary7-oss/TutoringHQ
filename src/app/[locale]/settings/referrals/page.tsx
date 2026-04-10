@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Download, Gift } from 'lucide-react';
+import { ArrowLeft, Download, Gift, Link2 } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 
 const PLAN_LABELS_AR: Record<string, string> = {
@@ -59,8 +59,16 @@ export default function SettingsReferralsPage() {
   const [totalEarned, setTotalEarned] = useState(0);
   const [payoutRequests, setPayoutRequests] = useState<PayoutRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const centerId = user?.center_id;
+
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const localePrefix = locale === 'ar' ? '' : `/${locale}`;
+  const referLink = useMemo(
+    () => (appUrl ? `${appUrl}${localePrefix}/refer/${referralCode || ''}` : ''),
+    [appUrl, localePrefix, referralCode],
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -226,6 +234,26 @@ export default function SettingsReferralsPage() {
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('yourCode')}</p>
                 <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">{referralCode || '-'}</p>
+                {referralCode ? (
+                  <button
+                    type="button"
+                    aria-label={tRef('copyLink')}
+                    onClick={async () => {
+                      if (!referLink) return;
+                      try {
+                        await navigator.clipboard.writeText(referLink);
+                        setLinkCopied(true);
+                        setTimeout(() => setLinkCopied(false), 2000);
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                    className="mt-3 inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)] focus:ring-offset-2 focus:ring-offset-[var(--color-surface-1)] btn-press chq-focus"
+                  >
+                    <Link2 className="h-4 w-4 shrink-0" aria-hidden />
+                    {linkCopied ? tRef('copyDoneCheck') : tRef('shareLink')}
+                  </button>
+                ) : null}
               </div>
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-1">{locale === 'ar' ? 'عدد السناتر المُحالة' : 'Referred Centers'}</p>

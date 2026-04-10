@@ -26,6 +26,7 @@ import {
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 const STUDENTS_CACHE_KEY = 'chq_students_cache';
+const STUDENTS_PAGE_SIZE = 20;
 
 interface Student {
   id: string;
@@ -200,6 +201,7 @@ export default function StudentsPage() {
   const [parentPhoneDraft, setParentPhoneDraft] = useState('');
   const [savingParentPhoneId, setSavingParentPhoneId] = useState<string | null>(null);
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
+  const [studentListPage, setStudentListPage] = useState(1);
 
   const addToggling = (id: string) => setTogglingIds((prev) => new Set(prev).add(id));
   const removeToggling = (id: string) =>
@@ -455,6 +457,25 @@ export default function StudentsPage() {
     }
     return list;
   }, [studentsList, searchQuery, subjectFilter, lifecycleFilter, sortBy, studentGroupsMap, balanceByStudent]);
+
+  const studentTotalCount = filteredStudents.length;
+  const studentTotalPages = Math.max(1, Math.ceil(studentTotalCount / STUDENTS_PAGE_SIZE));
+  const studentPageClamped = Math.min(studentListPage, studentTotalPages);
+  const paginatedStudents = useMemo(() => {
+    const start = (studentPageClamped - 1) * STUDENTS_PAGE_SIZE;
+    return filteredStudents.slice(start, start + STUDENTS_PAGE_SIZE);
+  }, [filteredStudents, studentPageClamped]);
+
+  useEffect(() => {
+    setStudentListPage(1);
+  }, [searchQuery, subjectFilter, lifecycleFilter, sortBy]);
+
+  useEffect(() => {
+    setStudentListPage((p) => Math.min(p, studentTotalPages));
+  }, [studentTotalPages]);
+
+  const isFirstStudentPage = studentPageClamped <= 1;
+  const isLastStudentPage = studentPageClamped >= studentTotalPages;
 
   const maxBalanceAcross = useMemo(
     () => Math.max(1, ...studentsList.map((s) => balanceByStudent[s.id] ?? 0)),
@@ -1195,7 +1216,7 @@ export default function StudentsPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredStudents.map((s) => {
+                          {paginatedStudents.map((s) => {
                             const bal = balanceByStudent[s.id] ?? 0;
                             const balNum = Number(bal);
                             const statusKey = studentStatusLabelKey(s.lifecycle_status);
@@ -1330,7 +1351,7 @@ export default function StudentsPage() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 md:hidden">
-                {filteredStudents.map((s, index) => {
+                {paginatedStudents.map((s, index) => {
                   const bal = balanceByStudent[s.id] ?? 0;
                   const balNum = Number(bal);
                   const statusKey = studentStatusLabelKey(s.lifecycle_status);
@@ -1657,6 +1678,35 @@ export default function StudentsPage() {
                   );
                 })}
                   </div>
+                  {studentTotalPages > 1 ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow">
+                      <span className="text-sm text-[var(--color-text-secondary)]">
+                        {ts('pageOf', { page: studentPageClamped, total: studentTotalPages })}
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setStudentListPage((p) => Math.max(1, p - 1))}
+                          disabled={isFirstStudentPage}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] transition-colors btn-press chq-focus ${
+                            isFirstStudentPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-surface-0)]'
+                          }`}
+                        >
+                          {ts('prevPage')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setStudentListPage((p) => Math.min(studentTotalPages, p + 1))}
+                          disabled={isLastStudentPage}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] transition-colors btn-press chq-focus ${
+                            isLastStudentPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-surface-0)]'
+                          }`}
+                        >
+                          {ts('nextPage')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </>
               )}
             </div>

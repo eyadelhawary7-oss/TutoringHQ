@@ -41,6 +41,7 @@ type VendorRow = {
   pickup_address: string;
   city: string;
   is_active: boolean;
+  created_at?: string | null;
 };
 
 export default async function AdminVendorsPage({

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { supabase } from '@/lib/supabase';
@@ -15,7 +16,15 @@ type VendorRow = {
   pickup_address: string;
   city: string;
   is_active: boolean;
+  created_at?: string | null;
 };
+
+type VendorSortKey = 'name' | 'whatsapp_number' | 'city' | 'is_active' | 'created_at';
+
+function cmpStr(a: string, b: string, asc: boolean): number {
+  const c = a.localeCompare(b, undefined, { sensitivity: 'base' });
+  return asc ? c : -c;
+}
 
 export default function AdminVendorsClient({ initialVendor }: { initialVendor: VendorRow | null }) {
   const t = useTranslations('admin');
@@ -30,6 +39,8 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
   const [city, setCity] = useState(initialVendor?.city ?? 'Cairo');
   const [isActive, setIsActive] = useState(initialVendor?.is_active ?? true);
   const [saving, setSaving] = useState(false);
+  const [sortKey, setSortKey] = useState<VendorSortKey>('name');
+  const [sortAsc, setSortAsc] = useState(true);
 
   useEffect(() => {
     if (typeof closeMainSidebar === 'function') closeMainSidebar();
@@ -45,6 +56,55 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
       setIsActive(initialVendor.is_active);
     }
   }, [initialVendor]);
+
+  const sortedVendorRows = useMemo(() => {
+    const rows = vendor ? [vendor] : [];
+    const dir = sortAsc ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      if (sortKey === 'is_active') {
+        const av = a.is_active ? 1 : 0;
+        const bv = b.is_active ? 1 : 0;
+        return (av - bv) * dir;
+      }
+      if (sortKey === 'created_at') {
+        const at = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bt = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return (at - bt) * dir;
+      }
+      const ak =
+        sortKey === 'name'
+          ? a.name ?? ''
+          : sortKey === 'city'
+            ? a.city ?? ''
+            : a.whatsapp_number ?? '';
+      const bk =
+        sortKey === 'name'
+          ? b.name ?? ''
+          : sortKey === 'city'
+            ? b.city ?? ''
+            : b.whatsapp_number ?? '';
+      return cmpStr(ak, bk, sortAsc);
+    });
+  }, [vendor, sortKey, sortAsc]);
+
+  const toggleSort = (key: VendorSortKey) => {
+    if (sortKey === key) {
+      setSortAsc((v) => !v);
+    } else {
+      setSortKey(key);
+      setSortAsc(true);
+    }
+  };
+
+  const SortIcon = ({ col }: { col: VendorSortKey }) => {
+    if (sortKey !== col) {
+      return <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-muted)] opacity-40" aria-hidden />;
+    }
+    if (sortAsc) {
+      return <ArrowUp className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-primary)]" aria-hidden />;
+    }
+    return <ArrowDown className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-primary)]" aria-hidden />;
+  };
 
   const save = useCallback(async () => {
     const {
@@ -164,6 +224,98 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
           >
             {saving ? t('creating') : t('saveVendor')}
           </button>
+        </div>
+
+        <div className="max-w-4xl rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[var(--color-surface-2)] border-b border-[var(--color-border-subtle)]">
+                <tr>
+                  <th className="px-4 py-3 text-start">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('name')}
+                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                    >
+                      {t('vendorName')}
+                      <SortIcon col="name" />
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-start">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('whatsapp_number')}
+                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                    >
+                      {t('vendorWhatsapp')}
+                      <SortIcon col="whatsapp_number" />
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-start">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('city')}
+                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                    >
+                      {t('vendorCity')}
+                      <SortIcon col="city" />
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-start">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('is_active')}
+                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                    >
+                      {t('vendorActive')}
+                      <SortIcon col="is_active" />
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-start">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('created_at')}
+                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                    >
+                      {tCommon('date')}
+                      <SortIcon col="created_at" />
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedVendorRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-[var(--color-text-secondary)]">
+                      {t('noVendorYet')}
+                    </td>
+                  </tr>
+                ) : (
+                  sortedVendorRows.map((row) => (
+                    <tr key={row.id} className="border-t border-[var(--color-border-subtle)]">
+                      <td className="px-4 py-3 text-[var(--color-text-primary)] font-medium">{row.name}</td>
+                      <td className="px-4 py-3 font-mono text-[var(--color-text-primary)]" dir="ltr">
+                        {row.whatsapp_number}
+                      </td>
+                      <td className="px-4 py-3 text-[var(--color-text-primary)]">{row.city}</td>
+                      <td className="px-4 py-3 text-[var(--color-text-primary)]">
+                        {row.is_active ? tCommon('active') : tCommon('inactive')}
+                      </td>
+                      <td className="px-4 py-3 text-[var(--color-text-secondary)] tabular-nums" dir="ltr">
+                        {row.created_at
+                          ? new Date(row.created_at).toLocaleDateString(undefined, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
         </div>
       </div>

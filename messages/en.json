@@ -1060,6 +1060,7 @@
     "yourCode": "Your Code",
     "copyCode": "Copy Code",
     "shareLink": "Copy Link",
+    "copyLink": "Copy referral link",
     "shareWhatsApp": "Share on WhatsApp",
     "withdrawable": "Withdrawable",
     "totalEarned": "Total Earned",
@@ -1311,7 +1312,10 @@
     "autoGenerateNumber": "Auto-generate student number",
     "cardOrderCart": "Card Order Cart",
     "addParentPhone": "Add Parent Phone",
-    "viewQR": "View QR Code"
+    "viewQR": "View QR Code",
+    "prevPage": "Previous",
+    "nextPage": "Next",
+    "pageOf": "Page {page} of {total}"
   },
   "print": {
     "title": "Print Student Cards",

@@ -525,7 +525,7 @@ export default function PaymentsPage() {
                 <div key={i} className="card p-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="h-6 w-24 rounded-full bg-[var(--color-surface-2)] animate-pulse" />
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 ms-auto">
                       <div className="h-6 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
                       <div className="h-5 w-14 rounded-md bg-[var(--color-surface-2)] animate-pulse" />
                     </div>
@@ -535,7 +535,7 @@ export default function PaymentsPage() {
                       <div className="h-4 w-40 max-w-full rounded bg-[var(--color-surface-2)] animate-pulse" />
                       <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
                     </div>
-                    <div className="h-3 w-28 shrink-0 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                    <div className="h-3 w-28 shrink-0 rounded bg-[var(--color-surface-2)] animate-pulse ms-auto" />
                   </div>
                 </div>
               ))}
@@ -576,7 +576,7 @@ export default function PaymentsPage() {
                     <span className="method-pill" style={{ background: cfg.bg, color: cfg.color }}>
                       {tp(methodTpKey(payment.method))}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 ms-auto min-w-0 text-end tabular-nums">
                       <span className="text-base font-bold text-[var(--color-text-primary)]">
                         {Number(payment.amount).toLocaleString('en-US')}
                         <span className="text-xs font-normal text-[var(--color-text-tertiary)] ms-1">{tp('egp')}</span>

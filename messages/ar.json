@@ -4199,6 +4199,7 @@
     "yourCode": "رمزك",
     "copyCode": "نسخ الكود",
     "shareLink": "نسخ الرابط",
+    "copyLink": "نسخ رابط الإحالة",
     "shareWhatsApp": "شارك على Whatsapp",
     "withdrawable": "قابلة للسحب",
     "totalEarned": "إجمالي المبالغ المكتسبة",
@@ -4764,7 +4765,10 @@
     "autoGenerateNumber": "توليد رقم الطالب تلقائياً",
     "cardOrderCart": "سلة طلبات البطاقات",
     "addParentPhone": "إضافة رقم ولي الأمر",
-    "viewQR": "عرض رمز QR"
+    "viewQR": "عرض رمز QR",
+    "prevPage": "السابق",
+    "nextPage": "التالي",
+    "pageOf": "صفحة {page} من {total}"
   },
   "notFound": {
     "heading": "الصفحة غير موجودة",
