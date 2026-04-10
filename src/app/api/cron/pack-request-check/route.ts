@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     const n = count ?? 0;
-    console.log(`[pack-request-check] Pending WA pack requests: ${n}`);
+    console.info(`[pack-request-check] Pending WA pack requests: ${n}`);
 
     await supabaseAdmin.from('cron_log').insert({
       cron_name: CRON_NAME,

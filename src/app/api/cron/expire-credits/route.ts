@@ -164,7 +164,7 @@ export async function POST(request: Request) {
         }
 
         if (!creditExpiryWaEnabled) {
-          console.log('[cron/expire-credits] WA template queue chq_credit_expiry', {
+          console.info('[cron/expire-credits] WA template queue chq_credit_expiry', {
             centerId: row.center_id,
             amount: row.amount,
             expiresOnStr,

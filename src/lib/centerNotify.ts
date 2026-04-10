@@ -124,7 +124,7 @@ export async function sendChqRenewalOverdueTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
     return { skipped: true };
   }
 
@@ -373,7 +373,7 @@ export async function sendChqPaymentConfirmedTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
     return { skipped: true };
   }
 
@@ -422,7 +422,7 @@ export async function sendChqPackInvoiceTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
     return { skipped: true };
   }
 
@@ -465,7 +465,7 @@ export async function sendChqCreditExpiryTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
     return { skipped: true };
   }
 
@@ -508,7 +508,7 @@ export async function sendChqPaymentFailedTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
     return { skipped: true };
   }
 
@@ -546,7 +546,7 @@ export async function sendWelcomeTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
     return { skipped: true };
   }
 
@@ -558,7 +558,7 @@ export async function sendWelcomeTemplate(
       bodyParameters: [center.name, PLATFORM_URL, center.phone],
     });
     if (ok) {
-      console.log('[centerNotify] Welcome sent to', center.name);
+      console.info('[centerNotify] Welcome sent to', center.name);
       return { success: true };
     }
     console.error(`[centerNotify] ${TEMPLATE} send failed:`, center.name);
@@ -585,7 +585,7 @@ export async function sendOnboardingStep1Template(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
     return { skipped: true };
   }
 
@@ -597,7 +597,7 @@ export async function sendOnboardingStep1Template(
       bodyParameters: [center.name, PLATFORM_URL],
     });
     if (ok) {
-      console.log('[centerNotify] Onboarding step1 sent to', center.name);
+      console.info('[centerNotify] Onboarding step1 sent to', center.name);
       return { success: true };
     }
     console.error(`[centerNotify] ${TEMPLATE} send failed:`, center.name);
@@ -697,7 +697,7 @@ export async function runChqInactivityAlertTemplates(supabase: SupabaseClient): 
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.log(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
     return 0;
   }
 

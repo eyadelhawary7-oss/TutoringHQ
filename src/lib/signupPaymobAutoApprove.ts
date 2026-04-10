@@ -81,7 +81,7 @@ async function sendPendingSignupPaymentWhatsApp(opts: {
       console.error('[signupInvoiceAutoApprove] pending payment WA send failed:', res.status, txt);
       return;
     }
-    console.log('[signupInvoiceAutoApprove] pending payment WA sent successfully', {
+    console.info('[signupInvoiceAutoApprove] pending payment WA sent successfully', {
       to: `${opts.toDigits.slice(0, 4)}…`,
     });
   } catch (e) {
@@ -154,7 +154,7 @@ async function resolveBillingForAutoApprove(
   }
 
   if (!Number.isFinite(allIn) || allIn <= 0 || !Number.isFinite(monthlyFee) || monthlyFee <= 0) {
-    console.log(`[signupInvoiceAutoApprove] Cannot auto-approve: invalid pricing for plan ${planKey}`);
+    console.info(`[signupInvoiceAutoApprove] Cannot auto-approve: invalid pricing for plan ${planKey}`);
     try {
       await createAction(supabase, {
         type: 'ops',
@@ -178,7 +178,7 @@ async function resolveBillingForAutoApprove(
   const billingAmount = getChargeFromQuarterlyAllIn(allIn, period, pk);
 
   if (!Number.isFinite(billingAmount) || billingAmount <= 0) {
-    console.log(`[signupInvoiceAutoApprove] Cannot auto-approve: billing_amount invalid for plan ${planKey}`);
+    console.info(`[signupInvoiceAutoApprove] Cannot auto-approve: billing_amount invalid for plan ${planKey}`);
     try {
       await createAction(supabase, {
         type: 'ops',
@@ -322,7 +322,7 @@ export async function processInvoiceSignupAfterPaymobSuccess(
       if (waCfgErr) {
         console.error('[signupInvoiceAutoApprove] wa_sending_enabled platform_config read', waCfgErr);
       } else if (!parseConfigBool(waRow?.value)) {
-        console.log('[signupInvoiceAutoApprove] pending payment WA skipped — wa_sending_enabled is not true');
+        console.info('[signupInvoiceAutoApprove] pending payment WA skipped — wa_sending_enabled is not true');
       } else {
         const phoneRaw = (c.phone ?? '').trim();
         const normalizedPhone = normalizePhone(phoneRaw);
@@ -577,7 +577,7 @@ export async function processSignupAutoApprovalAfterPaymobSuccess(
   const pauseIntake = parseConfigBool(pauseRow?.value);
 
   if (!autoApprove) {
-    console.log('[signupAutoApprove] auto_approve_signups disabled, manual review needed');
+    console.info('[signupAutoApprove] auto_approve_signups disabled, manual review needed');
     return;
   }
 
@@ -663,7 +663,7 @@ export async function processSignupAutoApprovalAfterPaymobSuccess(
   }
 
   if (!Number.isFinite(allIn) || allIn <= 0 || !Number.isFinite(monthlyFee) || monthlyFee <= 0) {
-    console.log(`[signupAutoApprove] Cannot auto-approve: invalid pricing for plan ${planKey}`);
+    console.info(`[signupAutoApprove] Cannot auto-approve: invalid pricing for plan ${planKey}`);
     try {
       await createAction(supabase, {
         type: 'ops',
@@ -687,7 +687,7 @@ export async function processSignupAutoApprovalAfterPaymobSuccess(
   const billingAmount = getChargeFromQuarterlyAllIn(allIn, period, pk);
 
   if (!Number.isFinite(billingAmount) || billingAmount <= 0) {
-    console.log(`[signupAutoApprove] Cannot auto-approve: billing_amount would be invalid for plan ${planKey}`);
+    console.info(`[signupAutoApprove] Cannot auto-approve: billing_amount would be invalid for plan ${planKey}`);
     try {
       await createAction(supabase, {
         type: 'ops',

@@ -925,8 +925,7 @@ export async function PUT(request: Request) {
     // Referral rewards are now created only when admin approves the referred center's first payment (in admin billing)
 
     if (center.email) {
-      // TODO: Send email if email service is configured
-      // For now we rely on WhatsApp
+      // Email notifications not implemented — WhatsApp only
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app';

@@ -63,12 +63,12 @@ export async function handleVendorReadySignal(
     }
 
     if (order.bosta_order_id) {
-      console.log('[vendorWebhook] Bosta already booked:', order.id);
+      console.warn('[vendorWebhook] Bosta already booked:', order.id);
       return;
     }
 
     if (order.status === 'ready_for_pickup') {
-      console.log('[vendorWebhook] Already marked ready:', order.id);
+      console.warn('[vendorWebhook] Already marked ready:', order.id);
       return;
     }
 
@@ -83,7 +83,7 @@ export async function handleVendorReadySignal(
       return;
     }
 
-    console.log('[vendorWebhook] Marked ready_for_pickup:', order.id);
+    console.warn('[vendorWebhook] Marked ready_for_pickup:', order.id);
 
     await autoBookBosta(order.id, supabase);
   } catch (err) {

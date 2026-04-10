@@ -87,7 +87,7 @@ export async function autoBookBosta(
       return { success: false, error: upErr.message };
     }
 
-    console.log('[autoBookBosta] Booked for order:', orderId, 'tracking:', result.trackingNumber);
+    console.info('[autoBookBosta] Booked for order:', orderId, 'tracking:', result.trackingNumber);
 
     return {
       success: true,

@@ -260,9 +260,9 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
 
         return;
       }
-      console.log('[vendorNotify] Sent plain text fallback for', ref);
+      console.warn('[vendorNotify] Sent plain text fallback for', ref);
     } else {
-      console.log(
+      console.info(
         templateName
           ? '[vendorNotify] Sent WhatsApp template for'
           : '[vendorNotify] Sent interactive button for',
@@ -355,7 +355,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
             reason: 'وصلت رسالة الطلب — لكن فشل إرسال ملف PDF',
           });
         } else {
-          console.log('[vendorNotify] PDF sent successfully for', ref);
+          console.info('[vendorNotify] PDF sent successfully for', ref);
         }
       }
     }
@@ -373,7 +373,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
       console.error('[vendorNotify] Failed to record vendor update:', upErr);
     }
 
-    console.log(`[vendorNotify] Notified vendor for order ${orderId}`);
+    console.info(`[vendorNotify] Notified vendor for order ${orderId}`);
   } catch (err) {
     console.error('[vendorNotify] Error:', err);
   }

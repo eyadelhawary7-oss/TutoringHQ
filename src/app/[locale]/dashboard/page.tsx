@@ -232,6 +232,15 @@ export default function DashboardPage() {
   const [sendingReport, setSendingReport] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  type DashboardGreetingKey = 'goodMorning' | 'goodAfternoon' | 'goodEvening';
+  const [greetingKey, setGreetingKey] = useState<DashboardGreetingKey>('goodMorning');
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setGreetingKey(hour < 12 ? 'goodMorning' : hour < 17 ? 'goodAfternoon' : 'goodEvening');
+  }, []);
+
+  const greetingComma = locale === 'ar' ? '\u060C ' : ', ';
+
   const startOfToday = () => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -1008,10 +1017,12 @@ export default function DashboardPage() {
       <header className="mb-6 flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 text-end">
           <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
-            {t('greeting')}، {centerBilling?.name ?? 'CenterHQ'}
+            {t(greetingKey)}
+            {greetingComma}
+            {centerBilling?.name ?? 'CenterHQ'}
           </h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
+            {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               day: 'numeric',
               month: 'long',
