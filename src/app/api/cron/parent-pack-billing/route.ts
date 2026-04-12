@@ -17,7 +17,7 @@ import { sendWhatsAppMessage } from '@/lib/whatsapp';
 import { tCronBackup, tCronWaAr } from '@/lib/cronBackupI18n';
 
 // TODO: set to true when chq_pack_invoice is approved by Meta
-const packInvoiceEnabled = false;
+const packInvoiceEnabled = true;
 
 const CENTER_CHUNK_SIZE = 50;
 
