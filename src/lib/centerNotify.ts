@@ -301,6 +301,103 @@ export async function sendInactivityAlert(
   }
 }
 
+const TEMPLATE_PAYMENT_RETRY = 'chq_payment_retry';
+
+/**
+ * First payment-retry nudge: chq_payment_retry if approved, else Arabic freeform with link.
+ * Second (urgent): chq_renewal_overdue plus a follow-up text with the Paymob link. Never throws.
+ */
+export async function sendPaymentRetry(
+  supabase: SupabaseClient,
+  centerId: string,
+  ownerPhone: string | null,
+  ownerName: string,
+  centerName: string,
+  amount: number,
+  paymentLink: string,
+  isUrgent: boolean,
+): Promise<CenterNotifyResult> {
+  try {
+    const phoneId = waPhoneNumberId();
+    if (!phoneId || phoneId === WHATSAPP_META_TEST_PHONE_NUMBER_ID) {
+      return { skipped: true };
+    }
+
+    const { data: cfg } = await supabase
+      .from('platform_config')
+      .select('value')
+      .eq('key', 'wa_sending_enabled')
+      .maybeSingle();
+    if (cfg?.value === false) return { skipped: true };
+
+    const to = digitsOnly(ownerPhone ?? '');
+    if (!to) return { skipped: true };
+
+    const amountStr = amount.toLocaleString('en-US');
+
+    if (isUrgent) {
+      try {
+        const r = await sendChqRenewalOverdueTemplate(supabase, {
+          name: ownerName || centerName || '—',
+          phone: ownerPhone,
+          daysLate: '2',
+          amountStr,
+        });
+        if (r.error) {
+          return { error: true };
+        }
+      } catch (e) {
+        console.error('[centerNotify] sendPaymentRetry urgent template:', centerId, e);
+      }
+      try {
+        const ok = await postWhatsappTextMessage({
+          toDigits: to,
+          body:
+            `تنبيه عاجل: يرجى السداد خلال يومين لتجنب إيقاف الخدمة.\n` +
+            `المبلغ: ${amountStr} ج.م\n` +
+            `رابط الدفع:\n${paymentLink}`,
+        });
+        return ok ? { success: true } : { error: true };
+      } catch (e) {
+        console.error('[centerNotify] sendPaymentRetry urgent link:', centerId, e);
+        return { error: true };
+      }
+    }
+
+    const approved = await isTemplateApproved(TEMPLATE_PAYMENT_RETRY, supabase);
+    if (approved) {
+      try {
+        const ok = await postWhatsappTemplate({
+          templateName: TEMPLATE_PAYMENT_RETRY,
+          languageCode: 'ar_EG',
+          toDigits: to,
+          bodyParameters: [ownerName || '—', centerName || '—', amountStr, paymentLink],
+        });
+        if (!ok) {
+          console.error(`[centerNotify] ${TEMPLATE_PAYMENT_RETRY} send failed:`, centerId);
+          return { error: true };
+        }
+        return { success: true };
+      } catch (e) {
+        console.error(`[centerNotify] ${TEMPLATE_PAYMENT_RETRY}:`, centerId, e);
+        return { error: true };
+      }
+    }
+
+    const body = `مرحباً ${ownerName || '—'}، فاتورة مركز ${centerName || '—'} بقيمة ${amountStr} جنيه لم تُسدَّد بعد. اضغط هنا للدفع: ${paymentLink}`;
+    try {
+      const ok = await postWhatsappTextMessage({ toDigits: to, body });
+      return ok ? { success: true } : { error: true };
+    } catch (e) {
+      console.error('[centerNotify] sendPaymentRetry freeform:', centerId, e);
+      return { error: true };
+    }
+  } catch (err) {
+    console.error('[centerNotify] sendPaymentRetry:', centerId, err);
+    return { error: true };
+  }
+}
+
 /** chq_renewal_overdue — used by subscription billing cron (Items 2–3). */
 export async function sendChqRenewalOverdueTemplate(
   supabase: SupabaseClient,

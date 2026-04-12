@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
@@ -138,6 +139,27 @@ export function buildPaymobIframeUrl(paymentToken: string): string {
   const iframeId = process.env.PAYMOB_IFRAME_ID;
   if (!iframeId) throw new Error('PAYMOB_IFRAME_ID not configured');
   return `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
+}
+
+/**
+ * Invoice retry / billing: Paymob iframe URL (EGP) for a fresh checkout session.
+ */
+export async function createPaymentLink(
+  invoiceId: string,
+  amountEgp: number,
+  centerName: string,
+  invoiceNumber: string,
+  ownerPhoneDigits: string,
+): Promise<{ paymentLink: string; paymobOrderId: string }> {
+  const itemName = `Invoice ${invoiceNumber} - ${centerName}`.slice(0, 120);
+  const { paymobOrderId, iframeUrl } = await createPaymobCheckoutEgp({
+    amountEgp,
+    merchantOrderId: `inv-${invoiceId}-${Date.now()}`,
+    itemName,
+    phoneDigits: ownerPhoneDigits.replace(/\D/g, '') || '0',
+    displayName: centerName.slice(0, 50) || 'Center',
+  });
+  return { paymentLink: iframeUrl, paymobOrderId };
 }
 
 /** Card-order callback: exact field order per Paymob HMAC spec (nested order.id, not whole order). */
