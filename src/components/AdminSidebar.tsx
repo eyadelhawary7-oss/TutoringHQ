@@ -120,6 +120,24 @@ export function AdminSidebar({
   const isCommissions = activeRoute?.includes('admin/commissions');
   const isPayouts = activeRoute?.includes('admin/payouts');
 
+  /** Sub-routes under admin — main `?tab=` items must not stay highlighted as Overview, etc. */
+  const onDedicatedAdminSubpage =
+    isWithdrawals ||
+    isRenewals ||
+    isPricing ||
+    isPlatformConfig ||
+    isVendors ||
+    isWaPack ||
+    isOrders ||
+    isReferrals ||
+    isReferralRewards ||
+    isHealth ||
+    isStaff ||
+    isCenterAssignments ||
+    isCommissions ||
+    isPayouts ||
+    isCeo;
+
   const allowedKeys =
     adminRole === 'super_admin' ? null : adminRole ? getAdminPermissions(adminRole, customPermissions) : null;
 
@@ -420,7 +438,9 @@ export function AdminSidebar({
                       ? isRenewals
                       : key === 'cardOrders'
                         ? isOrders
-                        : activeTab === key;
+                        : key === 'overview'
+                          ? activeTab === 'overview' && !onDedicatedAdminSubpage
+                          : activeTab === key && !onDedicatedAdminSubpage;
             const items: React.ReactNode[] = [
               <button
                 key={key}
@@ -652,7 +672,9 @@ export function AdminSidebar({
                       ? isRenewals
                       : key === 'cardOrders'
                         ? isOrders
-                        : activeTab === key;
+                        : key === 'overview'
+                          ? activeTab === 'overview' && !onDedicatedAdminSubpage
+                          : activeTab === key && !onDedicatedAdminSubpage;
             const items: React.ReactNode[] = [
               <button
                 key={key}

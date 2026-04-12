@@ -1,9 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { Suspense, useState, useEffect, useLayoutEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { canonicalPlanId } from '@/lib/plans';
 import { useLayout } from '@/contexts/LayoutContext';
@@ -278,7 +279,8 @@ function centerStatusLabel(
   return tStatus('active');
 }
 
-const ADMIN_TAB_VALUES: readonly AdminTab[] = [
+/** Tabs rendered on `/[locale]/admin` with `?tab=` (dedicated tools use their own routes). */
+const ADMIN_QUERY_TAB_WHITELIST = new Set<string>([
   'overview',
   'ceoDashboard',
   'centers',
@@ -286,18 +288,27 @@ const ADMIN_TAB_VALUES: readonly AdminTab[] = [
   'cardOrders',
   'planRequests',
   'pendingSignups',
-  'renewals',
   'referrals',
-  'withdrawals',
   'internalTeam',
   'salesPipeline',
   'analytics',
-];
+]);
+
+/** `?tab=` values that map to full admin sub-routes (not inline panels). */
+const ADMIN_TAB_REDIRECTS: Record<string, string> = {
+  renewals: '/admin/renewals',
+  withdrawals: '/admin/withdrawals',
+  pricingPanel: '/admin/pricing',
+  platformConfig: '/admin/platform-config',
+  vendors: '/admin/vendors',
+  whatsappPack: '/admin/whatsapp-pack',
+};
 
 function parseAdminTabParam(raw: string | null): AdminTab {
   if (!raw) return 'overview';
   if (raw === 'pending') return 'pendingSignups';
-  if ((ADMIN_TAB_VALUES as readonly string[]).includes(raw)) return raw as AdminTab;
+  if (ADMIN_TAB_REDIRECTS[raw]) return 'overview';
+  if (ADMIN_QUERY_TAB_WHITELIST.has(raw)) return raw as AdminTab;
   return 'overview';
 }
 
@@ -342,12 +353,29 @@ function AdminPageContent() {
 
   const [tab, setTab] = useState<AdminTab>(() => parseAdminTabParam(tabParam));
 
+  useLayoutEffect(() => {
+    if (!tabParam) return;
+    const target = ADMIN_TAB_REDIRECTS[tabParam];
+    if (target) {
+      router.replace(target, { scroll: false });
+    }
+  }, [tabParam, router]);
+
   useEffect(() => {
+    if (tabParam && ADMIN_TAB_REDIRECTS[tabParam]) return;
     setTab(parseAdminTabParam(tabParam));
   }, [tabParam]);
 
   const handleTabChange = useCallback(
     (next: AdminTab) => {
+      if (next === 'renewals') {
+        router.push('/admin/renewals');
+        return;
+      }
+      if (next === 'withdrawals') {
+        router.push('/admin/withdrawals');
+        return;
+      }
       setTab(next);
       const q = adminTabToQueryParam(next);
       if (q == null) {

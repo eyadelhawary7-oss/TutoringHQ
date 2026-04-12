@@ -202,7 +202,7 @@ export default function AdminWithdrawalsPage() {
           {loading ? (
             <p className="text-slate-500 dark:text-slate-400">{tCommon('loading')}</p>
           ) : rows.length === 0 ? (
-            <p className="text-slate-500 dark:text-slate-400">{t('empty')}</p>
+            <div className="text-center py-16 text-[var(--color-text-muted)]">{tAdmin('noWithdrawals')}</div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
               <table className="w-full min-w-[880px] border-collapse text-start text-sm">

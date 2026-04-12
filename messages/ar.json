@@ -1387,6 +1387,8 @@
     "commissionSummaryTitle": "عمولة ملخص عنوان",
     "confirmPaid": "تأكيد مدفوع",
     "empty": "فارغ",
+    "noRenewals": "لا توجد تجديدات",
+    "noWithdrawals": "لا توجد طلبات سحب",
     "emptyCommissions": "فارغ العمولات",
     "exportCsv": "تصدير Csv",
     "filterPaid": "تصفية مدفوع",

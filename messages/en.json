@@ -2537,6 +2537,8 @@
     "commissionSummaryTitle": "Commission Summary Title",
     "confirmPaid": "Confirm Paid",
     "empty": "Empty",
+    "noRenewals": "No renewals found",
+    "noWithdrawals": "No withdrawal requests",
     "emptyCommissions": "Empty Commissions",
     "exportCsv": "Export Csv",
     "filterPaid": "Filter Paid",

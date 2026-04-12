@@ -362,7 +362,7 @@ export default function PlatformConfigPage() {
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <AdminHeader />
-      <AdminSidebar activeTab="billing" activeRoute="/admin/platform-config" />
+      <AdminSidebar activeRoute="/admin/platform-config" />
 
       <main className="lg:ms-56 px-4 py-6 max-w-3xl mx-auto">
         <button

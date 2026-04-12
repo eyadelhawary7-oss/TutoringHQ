@@ -259,7 +259,7 @@ export default function AdminRenewalsPage() {
               <RefreshCw className="animate-spin text-[var(--color-text-secondary)]" size={24} />
             </div>
           ) : centers.length === 0 ? (
-            <div className="text-center py-12 text-[var(--color-text-secondary)]">{tCommon('noData')}</div>
+            <div className="text-center py-16 text-[var(--color-text-muted)]">{t('noRenewals')}</div>
           ) : (
             <div className="rounded-xl border border-border bg-[var(--color-surface-1)] overflow-hidden">
               <div className="overflow-x-auto">
