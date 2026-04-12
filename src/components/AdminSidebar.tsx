@@ -264,7 +264,7 @@ export function AdminSidebar({
   const runPrimaryNav = (key: AdminTab) => {
     afterNavigate();
     if (key === 'ceoDashboard') {
-      router.push('/ceo-dashboard');
+      onTabChange?.(key);
       return;
     }
     if (key === 'renewals') {
@@ -411,11 +411,11 @@ export function AdminSidebar({
           {navItems.map(({ key, icon: Icon, labelKey }) => {
             const isActive =
               key === 'ceoDashboard'
-                ? isCeo
+                ? activeTab === 'ceoDashboard' || isCeo
                 : key === 'withdrawals'
                   ? isWithdrawals
                   : key === 'referrals'
-                    ? isReferrals || isReferralRewards
+                    ? activeTab === 'referrals' || isReferrals || isReferralRewards
                     : key === 'renewals'
                       ? isRenewals
                       : key === 'cardOrders'
@@ -643,11 +643,11 @@ export function AdminSidebar({
           {navItems.map(({ key, icon: Icon, labelKey }) => {
             const isActive =
               key === 'ceoDashboard'
-                ? isCeo
+                ? activeTab === 'ceoDashboard' || isCeo
                 : key === 'withdrawals'
                   ? isWithdrawals
                   : key === 'referrals'
-                    ? isReferrals || isReferralRewards
+                    ? activeTab === 'referrals' || isReferrals || isReferralRewards
                     : key === 'renewals'
                       ? isRenewals
                       : key === 'cardOrders'
@@ -660,7 +660,7 @@ export function AdminSidebar({
                 onClick={() => {
                   closeMainSidebar?.();
                   if (key === 'ceoDashboard') {
-                    router.push('/ceo-dashboard');
+                    onTabChange?.(key);
                     return;
                   }
                   if (key === 'renewals') {
@@ -676,7 +676,7 @@ export function AdminSidebar({
                     return;
                   }
                   if (key === 'referrals') {
-                    router.push('/admin/referrals');
+                    onTabChange?.(key);
                     return;
                   }
                   if (isCeo || isOrders) router.push('/admin');

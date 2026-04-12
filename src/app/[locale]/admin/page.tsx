@@ -270,16 +270,51 @@ function centerStatusLabel(
   return status || t('active');
 }
 
-function AdminTabQuerySync({ setTab }: { setTab: (tab: AdminTab) => void }) {
-  const searchParams = useSearchParams();
-  useEffect(() => {
-    const v = searchParams?.get('tab');
-    if (v === 'centers') setTab('centers');
-  }, [searchParams, setTab]);
-  return null;
+const ADMIN_TAB_VALUES: readonly AdminTab[] = [
+  'overview',
+  'ceoDashboard',
+  'centers',
+  'billing',
+  'cardOrders',
+  'planRequests',
+  'pendingSignups',
+  'renewals',
+  'referrals',
+  'withdrawals',
+  'internalTeam',
+  'salesPipeline',
+  'analytics',
+];
+
+function parseAdminTabParam(raw: string | null): AdminTab {
+  if (!raw) return 'overview';
+  if (raw === 'pending') return 'pendingSignups';
+  if ((ADMIN_TAB_VALUES as readonly string[]).includes(raw)) return raw as AdminTab;
+  return 'overview';
 }
 
-export default function AdminPage() {
+function adminTabToQueryParam(tab: AdminTab): string | null {
+  if (tab === 'overview') return null;
+  if (tab === 'pendingSignups') return 'pending';
+  return tab;
+}
+
+function AdminReferralsTabPanel() {
+  const tAdmin = useTranslations('admin');
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-4">
+      <p className="text-[var(--color-text-secondary)] text-center max-w-md">{tAdmin('referralsTabEmbedHint')}</p>
+      <Link
+        href="/admin/referrals"
+        className="bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-teal-700 transition"
+      >
+        {tAdmin('openReferralsAdmin')}
+      </Link>
+    </div>
+  );
+}
+
+function AdminPageContent() {
   const tAdmin = useTranslations('admin');
   const tCommon = useTranslations('common');
   const tIdCards = useTranslations('idCards');
@@ -289,9 +324,30 @@ export default function AdminPage() {
   const isRTL = locale === 'ar';
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get('tab') ?? null;
+  const basePath = pathname ?? '/admin';
   const { setHideShell } = useLayout();
 
-  const [tab, setTab] = useState<AdminTab>('overview');
+  const [tab, setTab] = useState<AdminTab>(() => parseAdminTabParam(tabParam));
+
+  useEffect(() => {
+    setTab(parseAdminTabParam(tabParam));
+  }, [tabParam]);
+
+  const handleTabChange = useCallback(
+    (next: AdminTab) => {
+      setTab(next);
+      const q = adminTabToQueryParam(next);
+      if (q == null) {
+        router.replace(basePath, { scroll: false });
+      } else {
+        router.replace(`${basePath}?tab=${encodeURIComponent(q)}`, { scroll: false });
+      }
+    },
+    [basePath, router],
+  );
+
   const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -1167,12 +1223,9 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
-      <Suspense fallback={null}>
-        <AdminTabQuerySync setTab={setTab} />
-      </Suspense>
       <AdminHeader />
       <div className="flex flex-col lg:flex-row flex-1">
-        <AdminSidebar activeTab={tab} onTabChange={setTab} activeRoute={pathname ?? undefined} />
+        <AdminSidebar activeTab={tab} onTabChange={handleTabChange} activeRoute={pathname ?? undefined} />
 
       {/* Toast for new card order */}
       {toast && (
@@ -1401,6 +1454,20 @@ export default function AdminPage() {
             )}
           </>
         )}
+
+        {tab === 'ceoDashboard' && (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <p className="text-[var(--color-text-secondary)]">{tAdmin('ceoDashboardLink')}</p>
+            <Link
+              href="/ceo-dashboard"
+              className="bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-teal-700 transition"
+            >
+              {tAdmin('openCeoDashboard')}
+            </Link>
+          </div>
+        )}
+
+        {tab === 'referrals' && <AdminReferralsTabPanel />}
 
         {/* Centers */}
         {tab === 'centers' && (
@@ -2880,5 +2947,19 @@ export default function AdminPage() {
       )}
       </div>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen w-full flex items-center justify-center bg-[var(--color-surface-0)]">
+          <div className="animate-spin h-8 w-8 border-2 border-teal-600 border-t-transparent rounded-full" />
+        </div>
+      }
+    >
+      <AdminPageContent />
+    </Suspense>
   );
 }
