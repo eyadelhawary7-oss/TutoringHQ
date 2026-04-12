@@ -1,0 +1,1 @@
+ALTER TABLE centers ADD COLUMN IF NOT EXISTS upgrade_nudge_sent_at TIMESTAMPTZ;

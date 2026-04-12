@@ -199,6 +199,54 @@ export async function sendOnboardingNudge(
   }
 }
 
+/**
+ * Upgrade nudge at ~80% student cap (freeform Arabic). Never throws.
+ */
+export async function sendUpgradeNudge(
+  supabase: SupabaseClient,
+  centerId: string,
+  ownerPhone: string | null,
+  ownerName: string,
+  centerName: string,
+  currentPlan: string,
+  studentCount: string,
+  cap: string,
+  nextPlan: string,
+  nextPlanPrice: string,
+): Promise<CenterNotifyResult> {
+  try {
+    const phoneId = waPhoneNumberId();
+    if (!phoneId || phoneId === WHATSAPP_META_TEST_PHONE_NUMBER_ID) {
+      return { skipped: true };
+    }
+
+    const { data: cfg } = await supabase
+      .from('platform_config')
+      .select('value')
+      .eq('key', 'wa_sending_enabled')
+      .maybeSingle();
+    if (cfg?.value === false) return { skipped: true };
+
+    const to = digitsOnly(ownerPhone ?? '');
+    if (!to) return { skipped: true };
+
+    const greet = ownerName.trim() || centerName.trim();
+    const body = `مرحباً ${greet}، وصل مركز ${centerName} إلى ${studentCount} طالب من أصل ${cap}.
+فكّر في الترقية إلى خطة ${nextPlan} بـ ${nextPlanPrice} جنيه/شهر
+لاستيعاب المزيد من الطلاب. تواصل معنا للترقية.`;
+
+    const ok = await postWhatsappTextMessage({ toDigits: to, body });
+    if (ok) {
+      console.info('[centerNotify] Upgrade nudge', centerId, currentPlan, centerName);
+      return { success: true };
+    }
+    return { error: true };
+  } catch (err) {
+    console.error('[centerNotify] sendUpgradeNudge:', centerId, err);
+    return { error: true };
+  }
+}
+
 /** chq_renewal_overdue — used by subscription billing cron (Items 2–3). */
 export async function sendChqRenewalOverdueTemplate(
   supabase: SupabaseClient,
