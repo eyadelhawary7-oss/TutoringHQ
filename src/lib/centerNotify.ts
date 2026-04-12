@@ -247,6 +247,60 @@ export async function sendUpgradeNudge(
   }
 }
 
+const CHQ_INACTIVITY_LOGIN_LINK = `${publicAppBase()}/ar/login`;
+
+/**
+ * chq_inactivity_alert (owner re-engagement): owner name, center name, days inactive, login link.
+ * Never throws.
+ */
+export async function sendInactivityAlert(
+  supabase: SupabaseClient,
+  centerId: string,
+  ownerPhone: string | null,
+  ownerName: string,
+  centerName: string,
+  daysInactive: number,
+): Promise<CenterNotifyResult> {
+  const TEMPLATE = 'chq_inactivity_alert';
+  try {
+    const { data: cfg } = await supabase
+      .from('platform_config')
+      .select('value')
+      .eq('key', 'wa_sending_enabled')
+      .maybeSingle();
+    if (cfg?.value === false) return { skipped: true };
+
+    const to = digitsOnly(ownerPhone ?? '');
+    if (!to) return { skipped: true };
+
+    const approved = await isTemplateApproved(TEMPLATE, supabase);
+    if (!approved) {
+      console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+      return { skipped: true };
+    }
+
+    const owner = ownerName.trim() || centerName.trim() || '-';
+    const center = centerName.trim() || '-';
+    const daysStr = daysInactive.toLocaleString('en-US');
+
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE,
+      languageCode: 'ar',
+      toDigits: to,
+      bodyParameters: [owner, center, daysStr, CHQ_INACTIVITY_LOGIN_LINK],
+    });
+    if (ok) {
+      console.info('[centerNotify] chq_inactivity_alert re-engage', centerId, centerName);
+      return { success: true };
+    }
+    console.error(`[centerNotify] ${TEMPLATE} send failed`, centerId);
+    return { error: true };
+  } catch (err) {
+    console.error('[centerNotify] sendInactivityAlert:', centerId, err);
+    return { error: true };
+  }
+}
+
 /** chq_renewal_overdue — used by subscription billing cron (Items 2–3). */
 export async function sendChqRenewalOverdueTemplate(
   supabase: SupabaseClient,
