@@ -680,6 +680,61 @@ export async function sendChqCreditExpiryTemplate(
   }
 }
 
+const TEMPLATE_WEEKLY_SUMMARY = 'chq_weekly_summary';
+
+/** chq_weekly_summary — weekly owner stats + rotating tip (Automation 5). Never throws. */
+export async function sendWeeklyReport(
+  supabase: SupabaseClient,
+  centerId: string,
+  ownerPhone: string | null,
+  ownerName: string,
+  centerName: string,
+  activeStudents: number,
+  sessions: number,
+  revenue: number,
+  newStudents: number,
+  tip: string,
+): Promise<CenterNotifyResult> {
+  try {
+    const { data: cfg } = await supabase
+      .from('platform_config')
+      .select('value')
+      .eq('key', 'wa_sending_enabled')
+      .maybeSingle();
+    if (cfg?.value === false) return { skipped: true };
+
+    const to = digitsOnly(ownerPhone ?? '');
+    if (!to) return { skipped: true };
+
+    const approved = await isTemplateApproved(TEMPLATE_WEEKLY_SUMMARY, supabase);
+    if (!approved) {
+      console.warn(`[centerNotify] Skipping ${TEMPLATE_WEEKLY_SUMMARY} — not approved`);
+      return { skipped: true };
+    }
+
+    const activeStr = activeStudents.toLocaleString('en-US');
+    const sessionsStr = sessions.toLocaleString('en-US');
+    const revenueStr = `${revenue.toLocaleString('en-US')} جنيه`;
+    const newStr = newStudents.toLocaleString('en-US');
+
+    const ok = await postWhatsappTemplate({
+      templateName: TEMPLATE_WEEKLY_SUMMARY,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [ownerName, centerName, activeStr, sessionsStr, revenueStr, newStr, tip],
+    });
+    if (!ok) {
+      console.error(`[centerNotify] ${TEMPLATE_WEEKLY_SUMMARY} send failed:`, centerId, centerName);
+      return { error: true };
+    }
+    console.info(`[centerNotify] ${TEMPLATE_WEEKLY_SUMMARY} sent`, centerId, centerName);
+    return { success: true };
+  } catch (err) {
+    console.error(`[centerNotify] ${TEMPLATE_WEEKLY_SUMMARY} send failed:`, centerId, err);
+    return { error: true };
+  }
+}
+
 /** chq_payment_failed — subscription Paymob failure (Session E). Pass `templateEnabled` from route flag. */
 export async function sendChqPaymentFailedTemplate(
   supabase: SupabaseClient,
