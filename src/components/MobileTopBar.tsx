@@ -45,7 +45,7 @@ export default function MobileTopBar({ openMenu, setOpenMenu }: MobileTopBarProp
 
   return (
     <header className="lg:hidden fixed top-0 inset-x-0 z-40 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] min-h-14 flex items-center justify-center print:hidden relative px-4">
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 lg:hidden">
+      <div className="absolute start-4 top-1/2 -translate-y-1/2 z-10 lg:hidden">
         {openMenu ? (
           <X className="h-6 w-6 cursor-pointer text-[var(--color-text-primary)]" onClick={() => setOpenMenu(false)} />
         ) : (
@@ -65,7 +65,7 @@ export default function MobileTopBar({ openMenu, setOpenMenu }: MobileTopBarProp
         <span className="font-bold text-sm text-[var(--color-text-primary)]">CenterHQ</span>
       </Link>
 
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+      <div className="absolute end-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
         <ThemeToggle />
         <button
           onClick={handleLocaleToggle}

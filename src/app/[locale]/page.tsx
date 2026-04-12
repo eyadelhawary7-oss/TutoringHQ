@@ -285,12 +285,27 @@ export default function LocaleHomePage() {
             <span className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-600 text-xs font-bold text-white">
               CH
             </span>
-            <span
-              className="text-lg tracking-tight"
-              style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
-            >
-              <span className="text-white">CENTER</span>
-              <span className="text-teal-600">HQ</span>
+            <span className="text-lg tracking-tight">
+              <span
+                style={{
+                  fontFamily: 'var(--font-bodoni)',
+                  fontWeight: 700,
+                  letterSpacing: '2px',
+                  color: '#f8fafc',
+                }}
+              >
+                CENTER
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-bodoni)',
+                  fontWeight: 700,
+                  letterSpacing: '2px',
+                  color: '#0D9488',
+                }}
+              >
+                HQ
+              </span>
             </span>
           </Link>
 

@@ -63,9 +63,29 @@ function formatAmount(amount: number | null): string {
   return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+function subscriptionStatusLabel(
+  raw: string | null | undefined,
+  tStatus: (key: string) => string,
+): string {
+  const s = (raw || 'active').toLowerCase().replace(/-/g, '_');
+  const known = new Set([
+    'active',
+    'suspended',
+    'pending',
+    'cancelled',
+    'overdue',
+    'paid',
+    'rejected',
+    'pending_payment',
+  ]);
+  if (known.has(s)) return tStatus(s);
+  return tStatus('active');
+}
+
 export default function AdminRenewalsPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
+  const tStatus = useTranslations('status');
   const locale = useLocale();
   const router = useRouter();
   const { closeMainSidebar } = useSidebar() ?? {};
@@ -277,7 +297,7 @@ export default function AdminRenewalsPage() {
                         <td className="p-3">{formatAmount(row.subscription_monthly_fee)} {tCommon('egp')}</td>
                         <td className="p-3">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_STYLES[row.subscription_status ?? 'active'] ?? STATUS_STYLES.active}`}>
-                            {row.subscription_status === 'overdue' ? t('overdue') : row.subscription_status === 'active' ? tCommon('active') : row.subscription_status ?? tCommon('active')}
+                            {subscriptionStatusLabel(row.subscription_status, tStatus)}
                           </span>
                         </td>
                         <td className="p-3 text-end">

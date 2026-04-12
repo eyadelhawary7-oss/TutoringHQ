@@ -40,6 +40,7 @@ const getRoleBadge = (role: UserRole | string) => {
 
 export default function TopNavbar() {
   const t = useTranslations('nav');
+  const tRoles = useTranslations('roles');
   const pathname = usePathname();
   const router = useRouter();
   const { user, hasPermission } = useUser();
@@ -91,7 +92,12 @@ export default function TopNavbar() {
         })
       : [];
 
-  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : isSuperAdminOnly ? 'roleAdmin' : null;
+  const roleLabelText =
+    user?.role && ['owner', 'admin', 'assistant', 'teacher', 'super_admin'].includes(user.role)
+      ? tRoles(user.role as 'owner' | 'admin' | 'assistant' | 'teacher' | 'super_admin')
+      : isSuperAdminOnly
+        ? tRoles('super_admin')
+        : null;
   const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-[var(--color-surface-0)]0/15 text-slate-400';
   const isLimitedAccess = user?.role === 'assistant';
   const centerName = user?.center?.name || user?.name || user?.phone || 'User';
@@ -168,9 +174,9 @@ export default function TopNavbar() {
         {user && (
           <div className="hidden lg:flex items-center gap-2">
             <span className="text-xs text-[var(--text-secondary)] truncate max-w-[80px]">{centerName}</span>
-            {roleLabelKey && (
+            {roleLabelText && (
               <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`}>
-                {t(roleLabelKey)}
+                {roleLabelText}
               </span>
             )}
           </div>
@@ -242,9 +248,9 @@ export default function TopNavbar() {
             {user && (
               <div>
                 <p className="text-xs text-[var(--text-secondary)] truncate">{centerName}</p>
-                {roleLabelKey && (
+                {roleLabelText && (
                   <span className={`inline-flex mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`}>
-                    {t(roleLabelKey)}
+                    {roleLabelText}
                   </span>
                 )}
               </div>

@@ -260,15 +260,22 @@ function formatActivitySummary(
 
 function centerStatusLabel(
   status: string | undefined,
-  t: (key: string) => string,
+  tStatus: (key: string) => string,
 ): string {
-  const s = (status || 'active').toLowerCase();
-  if (s === 'active') return t('active');
-  if (s === 'suspended') return t('suspended');
-  if (s === 'pending') return t('pending');
-  if (s === 'trial') return t('trial');
-  if (s === 'rejected') return t('rejected');
-  return status || t('active');
+  const s = (status || 'active').toLowerCase().replace(/-/g, '_');
+  const known = new Set([
+    'active',
+    'suspended',
+    'pending',
+    'trial',
+    'rejected',
+    'cancelled',
+    'pending_payment',
+    'paid',
+    'overdue',
+  ]);
+  if (known.has(s)) return tStatus(s);
+  return tStatus('active');
 }
 
 const ADMIN_TAB_VALUES: readonly AdminTab[] = [
@@ -318,6 +325,9 @@ function AdminReferralsTabPanel() {
 function AdminPageContent() {
   const tAdmin = useTranslations('admin');
   const tCommon = useTranslations('common');
+  const tStatus = useTranslations('status');
+  const tRoles = useTranslations('roles');
+  const tPipeline = useTranslations('pipeline');
   const tIdCards = useTranslations('idCards');
   const tCharts = useTranslations('charts');
   const tBilling = useTranslations('billing');
@@ -1636,6 +1646,16 @@ function AdminPageContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                    {displayedCenters.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={11}
+                          className="text-center py-8 text-[var(--color-text-muted)] text-sm"
+                        >
+                          {tAdmin('noCenters')}
+                        </td>
+                      </tr>
+                    ) : null}
                     {displayedCenters.map((c) => (
                       <tr key={c.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 w-10 align-middle">
@@ -1665,7 +1685,7 @@ function AdminPageContent() {
                         <td className="py-3.5 px-4"><PlanBadge plan={c.plan} /></td>
                         <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[c.status || 'active'] || STATUS_STYLES.active}`}>
-                            {centerStatusLabel(c.status, tAdmin)}
+                            {centerStatusLabel(c.status, tStatus)}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] font-mono hidden md:table-cell">{c.students_count ?? 0}</td>
@@ -2251,7 +2271,13 @@ function AdminPageContent() {
                       <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
                         {m.phone ?? m.email ?? tCommon('notSet')}
                       </td>
-                      <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">{m.role}</span></td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">
+                          {['owner', 'admin', 'assistant', 'teacher', 'super_admin'].includes(m.role)
+                            ? tRoles(m.role as 'owner' | 'admin' | 'assistant' | 'teacher' | 'super_admin')
+                            : m.role}
+                        </span>
+                      </td>
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
                         {m.created_at ? new Date(m.created_at).toLocaleDateString() : tCommon('notSet')}
                       </td>
@@ -2297,7 +2323,7 @@ function AdminPageContent() {
               {PIPELINE_STAGES.map((stage) => (
                 <div key={stage} className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-sm text-[var(--color-text-primary)]">{stage.replace('_', ' ')}</h3>
+                    <h3 className="font-semibold text-sm text-[var(--color-text-primary)]">{tPipeline(stage)}</h3>
                     <span className="text-xs font-mono text-[var(--color-text-secondary)]">{leadsByStage[stage].length}</span>
                   </div>
                   <div className="space-y-2">
@@ -2729,10 +2755,11 @@ function AdminPageContent() {
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">مرحلة المسار</label>
                 <select value={addLeadForm.stage} onChange={(e) => setAddLeadForm(f => ({ ...f, stage: e.target.value as 'prospect' | 'contacted' | 'demo_scheduled' | 'converted' }))} className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm">
-                  <option value="prospect">عميل محتمل</option>
-                  <option value="contacted">تم التواصل</option>
-                  <option value="demo_scheduled">تم العرض</option>
-                  <option value="converted">تم الإغلاق</option>
+                  {PIPELINE_STAGES.map((st) => (
+                    <option key={st} value={st}>
+                      {tPipeline(st)}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -2794,10 +2821,11 @@ function AdminPageContent() {
                   }}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
                 >
-                  <option value="prospect">{tAdmin('leadStageProspect')}</option>
-                  <option value="contacted">{tAdmin('leadStageContacted')}</option>
-                  <option value="demo_scheduled">{tAdmin('leadStageDemoScheduled')}</option>
-                  <option value="converted">{tAdmin('leadStageConverted')}</option>
+                  {PIPELINE_STAGES.map((st) => (
+                    <option key={st} value={st}>
+                      {tPipeline(st)}
+                    </option>
+                  ))}
                 </select>
               </div>
               <button onClick={() => { setLeads(prev => prev.filter(l => l.id !== selectedLead.id)); setSelectedLead(null); }} className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-destructive border border-destructive/30 hover:bg-destructive/10 btn-press chq-focus">

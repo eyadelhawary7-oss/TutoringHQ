@@ -136,6 +136,29 @@ const GOVERNORATE_OPTIONS: { value: string; label: string }[] = [
   { value: 'sohag', label: 'Sohag - سوهاج' },
 ];
 
+function translatedCenterAccountStatus(
+  status: unknown,
+  tStatus: (key: string) => string,
+  tCommon: (key: string) => string,
+): string {
+  if (status == null || status === '') return tCommon('notSet');
+  const s = String(status).toLowerCase().replace(/-/g, '_');
+  if (s === 'pending_cancellation') return tStatus('pending');
+  const known = new Set([
+    'active',
+    'suspended',
+    'pending',
+    'trial',
+    'rejected',
+    'cancelled',
+    'pending_payment',
+    'paid',
+    'overdue',
+  ]);
+  if (known.has(s)) return tStatus(s);
+  return tStatus('active');
+}
+
 function statusBadgeClass(status: string | undefined): string {
   switch (status) {
     case 'active':
@@ -201,6 +224,7 @@ const CREATE_INVOICE_TYPES = [
 export default function CenterManagementClient({ centerId }: CenterManagementClientProps) {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
+  const tStatus = useTranslations('status');
   const locale = useLocale();
   const toast = useToast();
   const { closeMainSidebar } = useSidebar() ?? {};
@@ -1587,7 +1611,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         data.center.status as string | undefined,
                       )}`}
                     >
-                      {String(data.center.status ?? tCommon('notSet'))}
+                      {translatedCenterAccountStatus(data.center.status, tStatus, tCommon)}
                     </span>
                   </div>
                 </div>

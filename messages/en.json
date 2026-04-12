@@ -22,6 +22,15 @@
     "teacher": "Teacher",
     "super_admin": "Super Admin"
   },
+  "pipeline": {
+    "prospect": "Prospect",
+    "contacted": "Contacted",
+    "demo_scheduled": "Demo Scheduled",
+    "negotiating": "Negotiating",
+    "closed_won": "Closed Won",
+    "closed_lost": "Closed Lost",
+    "converted": "Converted"
+  },
   "toasts": {
     "saved": "Saved successfully",
     "deleted": "Deleted",
@@ -469,7 +478,7 @@
     "month": "month",
     "monthlyFee": "Monthly Fee",
     "monthlyRevenue": "Monthly Revenue",
-    "mrrAtRisk": "Mrr At Risk",
+    "mrrAtRisk": "MRR At Risk",
     "nameRequired": "Name Required",
     "net": "Net",
     "nextStepsTitle": "Next Steps Title",
@@ -2639,9 +2648,10 @@
     "healthZeroBilling": "Zero Billing",
     "loadError": "Load Error",
     "monthlyFee": "Monthly Fee",
-    "mrrAtRisk": "Mrr At Risk",
+    "mrrAtRisk": "MRR At Risk",
     "name": "Name",
     "notes": "Notes",
+    "noCenters": "No centers found",
     "noVendorYet": "No vendors added yet",
     "overdue": "Overdue",
     "overdueCentersCount": "Overdue Centers Count",
@@ -6041,7 +6051,8 @@
     "pending": "Pending",
     "suspended": "Suspended",
     "rejected": "Rejected",
-    "pending_payment": "Pending Payment"
+    "pending_payment": "Pending Payment",
+    "trial": "Trial"
   },
   "statusActiveShort": {},
   "statusCharged": {},

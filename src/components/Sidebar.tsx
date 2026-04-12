@@ -52,6 +52,7 @@ function navLinkClass(isActive: boolean) {
 
 export default function Sidebar({ onClose }: SidebarProps) {
   const t = useTranslations('nav');
+  const tRoles = useTranslations('roles');
   const tSettings = useTranslations('settings');
   const pathname = usePathname();
   const router = useRouter();
@@ -126,18 +127,12 @@ export default function Sidebar({ onClose }: SidebarProps) {
         })
       : [];
 
-  const roleLabelKey =
-    user?.role === 'owner'
-      ? 'roleOwner'
-      : user?.role === 'admin'
-        ? 'roleAdmin'
-        : user?.role === 'assistant'
-          ? 'roleAssistant'
-          : user?.role === 'teacher'
-            ? 'roleTeacher'
-            : isSuperAdminOnly
-              ? 'roleAdmin'
-              : null;
+  const roleLabelText =
+    user?.role && ['owner', 'admin', 'assistant', 'teacher', 'super_admin'].includes(user.role)
+      ? tRoles(user.role as 'owner' | 'admin' | 'assistant' | 'teacher' | 'super_admin')
+      : isSuperAdminOnly
+        ? tRoles('super_admin')
+        : null;
   const { branches, activeCenterId } = useBranchStore();
   const activeBranch = branches.find((b) => b.id === activeCenterId);
   const centerName = activeBranch?.name || user?.center?.name || user?.name || user?.phone || 'User';
@@ -222,7 +217,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-[var(--color-text-secondary)] truncate">{centerName}</p>
-                <p className="text-xs text-[var(--color-text-muted)]">{roleLabelKey ? t(roleLabelKey) : ''}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">{roleLabelText ?? ''}</p>
               </div>
             </div>
           )}

@@ -24,6 +24,7 @@ const getRoleBadge = (role: UserRole | string) => {
 
 export default function Navbar() {
   const t = useTranslations('nav');
+  const tRoles = useTranslations('roles');
   const pathname = usePathname();
   const router = useRouter();
   const { user, hasPermission } = useUser();
@@ -76,7 +77,12 @@ export default function Navbar() {
         })
       : [];
 
-  const roleLabelKey = user?.role === 'owner' ? 'roleOwner' : user?.role === 'admin' ? 'roleAdmin' : user?.role === 'assistant' ? 'roleAssistant' : user?.role === 'teacher' ? 'roleTeacher' : isSuperAdminOnly ? 'roleAdmin' : null;
+  const roleLabelText =
+    user?.role && ['owner', 'admin', 'assistant', 'teacher', 'super_admin'].includes(user.role)
+      ? tRoles(user.role as 'owner' | 'admin' | 'assistant' | 'teacher' | 'super_admin')
+      : isSuperAdminOnly
+        ? tRoles('super_admin')
+        : null;
   const roleBadgeClass = user?.role ? getRoleBadge(user.role) : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]';
   const isLimitedAccess = user?.role === 'assistant';
   const centerName = user?.center?.name || user?.name || user?.phone || 'User';
@@ -136,9 +142,9 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <span className="text-xs lg:text-sm text-text-secondary flex items-center gap-1.5">
                   <span className="truncate max-w-[100px]">{centerName}</span>
-                  {roleLabelKey && (
-                    <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`} title={`${centerName} (${t(roleLabelKey)})`}>
-                      ({t(roleLabelKey)})
+                  {roleLabelText && (
+                    <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`} title={`${centerName} (${roleLabelText})`}>
+                      ({roleLabelText})
                     </span>
                   )}
                 </span>
@@ -221,9 +227,9 @@ export default function Navbar() {
               <hr className="my-4 border-[var(--color-border-subtle)]" />
               <div className="px-4 py-2">
                 <p className="text-sm font-medium text-text-primary truncate">{centerName}</p>
-                {roleLabelKey && (
+                {roleLabelText && (
                   <span className={`inline-flex mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${roleBadgeClass}`}>
-                    {t(roleLabelKey)}
+                    {roleLabelText}
                   </span>
                 )}
               </div>

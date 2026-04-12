@@ -22,6 +22,15 @@
     "teacher": "معلم",
     "super_admin": "مدير النظام"
   },
+  "pipeline": {
+    "prospect": "عميل محتمل",
+    "contacted": "تم التواصل",
+    "demo_scheduled": "موعد عرض مجدول",
+    "negotiating": "قيد التفاوض",
+    "closed_won": "تم الإغلاق",
+    "closed_lost": "خسارة",
+    "converted": "تم التحويل"
+  },
   "toasts": {
     "saved": "تم الحفظ بنجاح",
     "deleted": "تم الحذف",
@@ -1492,6 +1501,7 @@
     "mrrAtRisk": "إيراد شهري متكرر عند خطر",
     "name": "الاسم",
     "notes": "ملاحظات",
+    "noCenters": "لا توجد مراكز",
     "noVendorYet": "لا يوجد موردون بعد",
     "overdue": "متأخر",
     "overdueCentersCount": "متأخر سناتر Count",
@@ -6041,7 +6051,8 @@
     "pending": "قيد المراجعة",
     "suspended": "موقوف",
     "rejected": "مرفوض",
-    "pending_payment": "في انتظار الدفع"
+    "pending_payment": "في انتظار الدفع",
+    "trial": "تجريبي"
   },
   "statusActiveShort": {},
   "statusCharged": {},
