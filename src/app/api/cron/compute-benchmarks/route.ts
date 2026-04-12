@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -59,6 +60,21 @@ export async function POST(request: Request) {
       records_processed: rowsAffected,
       metadata: { snapshot_date: snapshotDate },
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'compute-benchmarks',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[compute-benchmarks] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({ success: true, rows_affected: rowsAffected, snapshot_date: snapshotDate });
   } catch (error) {

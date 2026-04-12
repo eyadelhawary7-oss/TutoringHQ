@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createAction } from '@/lib/ceo';
 import { sendCeoBriefing, fetchCeoBriefingData } from '@/lib/whatsapp/flows/ceoBriefing';
 
@@ -49,6 +50,20 @@ export async function POST(request: Request) {
         records_processed: 0,
         metadata: { skipped: 'no_ceo_phone' },
       });
+      try {
+        if (supabaseAdmin) {
+          await supabaseAdmin.from('cron_health_log').upsert(
+            {
+              cron_name: 'ceo-briefing',
+              last_success_at: new Date().toISOString(),
+              failure_count: 0,
+            },
+            { onConflict: 'cron_name' },
+          );
+        }
+      } catch (healthLogErr) {
+        console.error('[ceo-briefing] cron_health_log:', healthLogErr);
+      }
       return NextResponse.json({ success: true, skipped: 'no_ceo_phone' });
     }
     const data = await fetchCeoBriefingData();
@@ -83,6 +98,21 @@ export async function POST(request: Request) {
       records_processed: recordsProcessed,
       metadata: { waSent },
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'ceo-briefing',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[ceo-briefing] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({ success: true, data, waSent });
   } catch (error) {

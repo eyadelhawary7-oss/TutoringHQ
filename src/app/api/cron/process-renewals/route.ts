@@ -9,6 +9,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { dateInNDays, todayISO } from '@/lib/parentPack';
 import {
   sendRenewalReminder,
@@ -123,6 +124,20 @@ export async function POST(request: Request) {
           lateFeeDormancy,
         },
       });
+      try {
+        if (supabaseAdmin) {
+          await supabaseAdmin.from('cron_health_log').upsert(
+            {
+              cron_name: 'process-renewals',
+              last_success_at: new Date().toISOString(),
+              failure_count: 0,
+            },
+            { onConflict: 'cron_name' },
+          );
+        }
+      } catch (healthLogErr) {
+        console.error('[process-renewals] cron_health_log:', healthLogErr);
+      }
       return NextResponse.json({
         success: true,
         processed: 0,
@@ -300,6 +315,21 @@ export async function POST(request: Request) {
         lateFeeDormancy,
       },
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'process-renewals',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[process-renewals] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({
       success: true,

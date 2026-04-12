@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin as supabaseAdminHealth } from '@/lib/supabase-admin';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
@@ -118,6 +119,20 @@ export async function POST(request: Request) {
         duration_ms: Date.now() - cronStart,
         records_processed: 0,
       });
+      try {
+        if (supabaseAdminHealth) {
+          await supabaseAdminHealth.from('cron_health_log').upsert(
+            {
+              cron_name: 'renewal-reminders',
+              last_success_at: new Date().toISOString(),
+              failure_count: 0,
+            },
+            { onConflict: 'cron_name' },
+          );
+        }
+      } catch (healthLogErr) {
+        console.error('[renewal-reminders] cron_health_log:', healthLogErr);
+      }
       return NextResponse.json({ success: true, sent: 0, message: 'No centers due today' });
     }
 
@@ -152,6 +167,21 @@ export async function POST(request: Request) {
       records_processed: sent + failed,
       metadata: { sent, failed, total: centers.length },
     });
+
+    try {
+      if (supabaseAdminHealth) {
+        await supabaseAdminHealth.from('cron_health_log').upsert(
+          {
+            cron_name: 'renewal-reminders',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[renewal-reminders] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({ success: true, sent, failed, total: centers.length });
   } catch (error) {

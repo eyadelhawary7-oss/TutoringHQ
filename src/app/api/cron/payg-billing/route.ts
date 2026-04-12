@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { todayISO, dateInNDays } from '@/lib/parentPack';
 import { calculatePaygBill, isLastDayOfMonthCairo } from '@/lib/paygBilling';
 import { isPaygCenter } from '@/lib/billingEngine';
@@ -67,6 +68,20 @@ export async function POST(request: Request) {
   if (!isLastDayOfMonthCairo()) {
     const s = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
     const t = ymdAddDays(s, 1);
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'payg-billing',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[payg-billing] cron_health_log:', healthLogErr);
+    }
     return NextResponse.json({
       skipped: 'not last day of month',
       cairoToday: s,
@@ -263,6 +278,21 @@ export async function POST(request: Request) {
         pendingSwitchRows: pendingSwitches?.length ?? 0,
       },
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'payg-billing',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[payg-billing] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({
       success: true,

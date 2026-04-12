@@ -5,6 +5,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -108,6 +109,21 @@ export async function POST(request: Request) {
       duration_ms: Date.now() - cronStart,
       records_processed: rows.length,
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'status-ping',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[status-ping] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({ success: true, pings: rows });
   } catch (error) {

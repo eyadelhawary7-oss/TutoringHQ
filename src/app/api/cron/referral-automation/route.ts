@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
 
@@ -197,6 +198,21 @@ export async function GET(request: Request) {
     error_message: errors.length > 0 ? errors.join('; ').slice(0, 10000) : null,
     metadata: { period_month: periodMonth, created, skipped },
   });
+
+  try {
+    if (supabaseAdmin) {
+      await supabaseAdmin.from('cron_health_log').upsert(
+        {
+          cron_name: 'referral-automation',
+          last_success_at: new Date().toISOString(),
+          failure_count: 0,
+        },
+        { onConflict: 'cron_name' },
+      );
+    }
+  } catch (healthLogErr) {
+    console.error('[referral-automation] cron_health_log:', healthLogErr);
+  }
 
   return NextResponse.json({
     success: true,

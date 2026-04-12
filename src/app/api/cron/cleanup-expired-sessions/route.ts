@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,6 +84,21 @@ export async function POST(request: Request) {
       records_processed: expired,
       metadata: { candidates: list.length, expired },
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'cleanup-expired-sessions',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[cleanup-expired-sessions] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({ success: true, expired, candidates: list.length });
   } catch (error) {

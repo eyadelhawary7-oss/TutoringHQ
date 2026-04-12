@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createAction } from '@/lib/ceo';
 
 export const dynamic = 'force-dynamic';
@@ -125,6 +126,21 @@ export async function POST(request: Request) {
       records_processed: 1,
       metadata: { snapshot_date, mrr, active_centers, new_centers, churned_centers },
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'mrr-snapshot',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[mrr-snapshot] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({
       success: true,

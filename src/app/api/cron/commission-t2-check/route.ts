@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   computeActiveDaysFromFirstPayment,
   parseClockPauseLog,
@@ -165,6 +166,21 @@ export async function GET(request: Request) {
       })),
     );
     unlocked = unlockPayload.length;
+  }
+
+  try {
+    if (supabaseAdmin) {
+      await supabaseAdmin.from('cron_health_log').upsert(
+        {
+          cron_name: 'commission-t2-check',
+          last_success_at: new Date().toISOString(),
+          failure_count: 0,
+        },
+        { onConflict: 'cron_name' },
+      );
+    }
+  } catch (healthLogErr) {
+    console.error('[commission-t2-check] cron_health_log:', healthLogErr);
   }
 
   return NextResponse.json({

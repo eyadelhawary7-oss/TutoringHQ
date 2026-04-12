@@ -131,16 +131,17 @@ export async function POST(request: Request) {
     }
   }
 
-  const { error: logErr } = await admin.from('cron_health_log').upsert(
-    {
-      cron_name: CRON_NAME,
-      last_success_at: nowIso,
-      failure_count: 0,
-    },
-    { onConflict: 'cron_name' },
-  );
-  if (logErr) {
-    console.error(`[${CRON_NAME}] cron_health_log:`, logErr.message);
+  try {
+    await admin.from('cron_health_log').upsert(
+      {
+        cron_name: CRON_NAME,
+        last_success_at: nowIso,
+        failure_count: 0,
+      },
+      { onConflict: 'cron_name' },
+    );
+  } catch (healthLogErr) {
+    console.error(`[${CRON_NAME}] cron_health_log:`, healthLogErr);
   }
 
   return NextResponse.json({

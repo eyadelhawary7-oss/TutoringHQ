@@ -128,18 +128,6 @@ async function runNoLoginReengagement14d(admin: SupabaseClient): Promise<number>
     sent += 1;
   }
 
-  const { error: logErr } = await admin.from('cron_health_log').upsert(
-    {
-      cron_name: 'detect-churn',
-      last_success_at: new Date().toISOString(),
-      failure_count: 0,
-    },
-    { onConflict: 'cron_name' },
-  );
-  if (logErr) {
-    console.error('[detect-churn] cron_health_log:', logErr.message);
-  }
-
   return sent;
 }
 
@@ -227,6 +215,20 @@ export async function POST(request: Request) {
         records_processed: 0,
         metadata: { inactivityTemplateSent, reengagementSent },
       });
+      try {
+        if (supabaseAdmin) {
+          await supabaseAdmin.from('cron_health_log').upsert(
+            {
+              cron_name: 'detect-churn',
+              last_success_at: new Date().toISOString(),
+              failure_count: 0,
+            },
+            { onConflict: 'cron_name' },
+          );
+        }
+      } catch (healthLogErr) {
+        console.error('[detect-churn] cron_health_log:', healthLogErr);
+      }
       return NextResponse.json({
         success: true,
         processed: 0,
@@ -333,6 +335,21 @@ export async function POST(request: Request) {
       records_processed: processed,
       metadata: { actionCount: actions.length, inactivityTemplateSent, reengagementSent },
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'detect-churn',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[detect-churn] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({
       success: true,

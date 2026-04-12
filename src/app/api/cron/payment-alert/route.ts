@@ -35,16 +35,17 @@ function embeddedCenter(row: InvoiceRow): CenterEmbed | null {
 }
 
 async function upsertCronHealth(admin: NonNullable<typeof supabaseAdmin>) {
-  const { error } = await admin.from('cron_health_log').upsert(
-    {
-      cron_name: CRON_NAME,
-      last_success_at: new Date().toISOString(),
-      failure_count: 0,
-    },
-    { onConflict: 'cron_name' },
-  );
-  if (error) {
-    console.error(`[${CRON_NAME}] cron_health_log:`, error.message);
+  try {
+    await admin.from('cron_health_log').upsert(
+      {
+        cron_name: CRON_NAME,
+        last_success_at: new Date().toISOString(),
+        failure_count: 0,
+      },
+      { onConflict: 'cron_name' },
+    );
+  } catch (healthLogErr) {
+    console.error(`[${CRON_NAME}] cron_health_log:`, healthLogErr);
   }
 }
 

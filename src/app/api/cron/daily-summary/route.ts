@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   sendDailySummary,
   getYesterdayCairo,
@@ -75,6 +76,20 @@ export async function POST(request: Request) {
         records_processed: 0,
         metadata: { message: 'No centers' },
       });
+      try {
+        if (supabaseAdmin) {
+          await supabaseAdmin.from('cron_health_log').upsert(
+            {
+              cron_name: 'daily-summary',
+              last_success_at: new Date().toISOString(),
+              failure_count: 0,
+            },
+            { onConflict: 'cron_name' },
+          );
+        }
+      } catch (healthLogErr) {
+        console.error('[daily-summary] cron_health_log:', healthLogErr);
+      }
       return NextResponse.json({ success: true, processed: 0, message: 'No centers' });
     }
 
@@ -239,6 +254,21 @@ export async function POST(request: Request) {
       records_processed: processed,
       metadata: { centersConsidered: centers.length },
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'daily-summary',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[daily-summary] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({ success: true, processed });
   } catch (error) {

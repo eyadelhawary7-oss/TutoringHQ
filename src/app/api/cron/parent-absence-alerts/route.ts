@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin as supabaseAdminHealth } from '@/lib/supabase-admin';
 import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import {
@@ -130,6 +131,21 @@ export async function POST(request: Request) {
       duration_ms: Date.now() - cronStart,
       records_processed: recordsProcessed,
     });
+
+    try {
+      if (supabaseAdminHealth) {
+        await supabaseAdminHealth.from('cron_health_log').upsert(
+          {
+            cron_name: 'parent-absence-alerts',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[parent-absence-alerts] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({ success: true, sent: recordsProcessed });
   } catch (error) {

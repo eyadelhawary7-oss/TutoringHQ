@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { notifyBackupComplete, runBackup } from '@/lib/googleDriveBackup';
 
@@ -45,6 +46,21 @@ export async function GET(request: Request) {
         date: result.date,
       },
     });
+
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from('cron_health_log').upsert(
+          {
+            cron_name: 'monthly-backup',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[monthly-backup] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({
       success: true,

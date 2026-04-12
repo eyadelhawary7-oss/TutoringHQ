@@ -63,6 +63,18 @@ export async function POST(request: Request) {
   const centers = (centerRows ?? []) as { id: string }[];
   const centerIds = centers.map((c) => c.id);
   if (centerIds.length === 0) {
+    try {
+      await admin.from('cron_health_log').upsert(
+        {
+          cron_name: 'recompute-health-scores',
+          last_success_at: new Date().toISOString(),
+          failure_count: 0,
+        },
+        { onConflict: 'cron_name' },
+      );
+    } catch (healthLogErr) {
+      console.error('[recompute-health-scores] cron_health_log:', healthLogErr);
+    }
     return NextResponse.json({ processed: 0, green: 0, amber: 0, red: 0 });
   }
 
@@ -159,16 +171,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const { error: logErr } = await admin.from('cron_health_log').upsert(
-    {
-      cron_name: 'recompute-health-scores',
-      last_success_at: nowIso,
-      failure_count: 0,
-    },
-    { onConflict: 'cron_name' },
-  );
-  if (logErr) {
-    console.error('[recompute-health-scores] cron_health_log:', logErr.message);
+  try {
+    await admin.from('cron_health_log').upsert(
+      {
+        cron_name: 'recompute-health-scores',
+        last_success_at: nowIso,
+        failure_count: 0,
+      },
+      { onConflict: 'cron_name' },
+    );
+  } catch (healthLogErr) {
+    console.error('[recompute-health-scores] cron_health_log:', healthLogErr);
   }
 
   return NextResponse.json({

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { supabaseAdmin as supabaseAdminHealth } from '@/lib/supabase-admin';
 import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import { toArabicNumerals, WA_TEMPLATES } from '@/lib/parentPack';
@@ -113,6 +114,21 @@ export async function POST(request: Request) {
       records_processed: sent + skipped,
       metadata: { sent, skipped },
     });
+
+    try {
+      if (supabaseAdminHealth) {
+        await supabaseAdminHealth.from('cron_health_log').upsert(
+          {
+            cron_name: 'parent-balance-alerts',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
+      }
+    } catch (healthLogErr) {
+      console.error('[parent-balance-alerts] cron_health_log:', healthLogErr);
+    }
 
     return NextResponse.json({ success: true, sent, skipped });
   } catch (error) {
