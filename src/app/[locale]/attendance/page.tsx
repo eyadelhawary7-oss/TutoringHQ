@@ -364,7 +364,7 @@ export default function AttendancePage() {
           onClick={handleExportCSV}
           className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
         >
-          <Download size={14} /> {t('exportCSV')}
+          <Download size={14} /> {tCommon('exportCsv')}
         </button>
       </div>
 

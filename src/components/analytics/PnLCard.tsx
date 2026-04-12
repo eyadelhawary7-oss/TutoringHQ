@@ -94,7 +94,7 @@ export default function PnLCard({
           className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)] transition-colors"
         >
           <Download className="h-4 w-4" />
-          {t('exportCsv')}
+          {tCommon('exportCsv')}
         </button>
       </div>
       <div className="p-4 space-y-4">

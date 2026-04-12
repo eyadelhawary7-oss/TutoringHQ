@@ -611,7 +611,7 @@ export default function PaymentsPage() {
               onClick={handleExportCSV}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-brand-500 hover:opacity-90 text-white text-sm font-semibold rounded-lg shrink-0 btn-press chq-focus"
             >
-              <Download size={14} /> {tp('exportCSV')}
+              <Download size={14} /> {tCommon('exportCsv')}
             </button>
           </div>
         </div>

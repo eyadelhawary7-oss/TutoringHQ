@@ -1028,9 +1028,9 @@ export default function ScanPage() {
             aria-label={ts('tab_bar_label')}
           >
             {[
-              { key: 'camera' as const, label: ts('tab_camera'), Icon: Camera },
-              { key: 'bluetooth' as const, label: ts('tab_bluetooth'), Icon: Bluetooth },
-              { key: 'manual' as const, label: ts('tab_manual'), Icon: Hash },
+              { key: 'camera' as const, label: t('modeCamera'), Icon: Camera },
+              { key: 'bluetooth' as const, label: t('modeBluetooth'), Icon: Bluetooth },
+              { key: 'manual' as const, label: t('modeManual'), Icon: Hash },
             ].map(({ key, label, Icon }) => (
               <button
                 key={key}

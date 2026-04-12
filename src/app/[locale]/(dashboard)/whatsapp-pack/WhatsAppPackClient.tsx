@@ -15,12 +15,12 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import { BLAST_PRICE_PER_PARENT, getAnnouncementCap } from '@/lib/parentPack';
+import { BLAST_PRICE_PER_PARENT, getAnnouncementCap, PACK_PRICE_PER_PARENT } from '@/lib/parentPack';
 import { supabase } from '@/lib/supabase';
 import { dbUpdate } from '@/lib/db-proxy';
 import { useToast } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
 const ANNOUNCEMENT_MESSAGE_MAX = 160;
 
@@ -117,6 +117,8 @@ export default function WhatsAppPackClient({
   const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0;
   const pendingBal = Number(packPendingBalance);
   const monthsAccum = Number(monthsWithoutInvoice);
+  const pricePerParentMonthly = PACK_PRICE_PER_PARENT;
+  const monthlyPackTotal = activeParents * pricePerParentMonthly;
   const blastCost = activeParents * BLAST_PRICE_PER_PARENT;
   const remainingAllowance = Math.max(0, cap - balance);
   const monthlyLimitReached = announcementsThisMonth >= 2;
@@ -254,8 +256,13 @@ export default function WhatsAppPackClient({
             </span>
           </div>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            {t('whatsapp.monthlyCost')}: {formatNumber(activeParents, locale)} × 12 ={' '}
-            {formatNumber(activeParents * 12, locale)} EGP
+            <span>{t('whatsapp.monthlyCost')}: </span>
+            <span className="font-semibold tabular-nums text-[var(--color-text-primary)]">
+              {formatCurrency(monthlyPackTotal, locale)}
+            </span>
+            <span className="text-[var(--color-text-muted)] ms-1">
+              ({formatNumber(activeParents, locale)} × {formatNumber(pricePerParentMonthly, locale)})
+            </span>
           </p>
 
           {pendingBal > 0 ? (

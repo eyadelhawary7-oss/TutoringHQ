@@ -157,6 +157,14 @@ type PlanRequestRow = {
   requested_at?: string | null;
 };
 
+const PLAN_ROOT_I18N_KEYS = new Set(['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers']);
+
+function planLabelFromMessages(raw: string | null | undefined, tPlan: (key: string) => string): string {
+  const k = String(raw ?? 'starter').toLowerCase().replace(/-/g, '_');
+  if (PLAN_ROOT_I18N_KEYS.has(k)) return tPlan(k);
+  return String(raw ?? '').trim() || tPlan('starter');
+}
+
 function maskInstapay(raw: string | null | undefined): string {
   const s = String(raw ?? '').replace(/\s/g, '');
   if (s.length < 7) return '••••••';
@@ -256,7 +264,7 @@ function PlanCard({
   fmtNum,
 }: {
   nameAr: string;
-  nameEn: string;
+  nameEn?: string | null;
   price: number;
   period: string;
   studentLimit: number;
@@ -283,7 +291,7 @@ function PlanCard({
           <p className="font-semibold text-slate-900 dark:text-white" style={cairoFont}>
             {nameAr}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{nameEn}</p>
+          {nameEn ? <p className="text-xs text-slate-500 dark:text-slate-400">{nameEn}</p> : null}
         </div>
         {isCurrent ? (
           <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-800 dark:bg-teal-900/40 dark:text-teal-200">
@@ -357,6 +365,7 @@ function PeriodCard({
 
 function PaygTab({
   t,
+  tPlan,
   toast,
   refresh,
   ownerOk,
@@ -372,6 +381,7 @@ function PaygTab({
   fmtNum,
 }: {
   t: (key: string, values?: Record<string, string | number | Date>) => string;
+  tPlan: (key: string) => string;
   toast: { success: (title: string, description?: string) => void; error: (title: string, description?: string) => void };
   refresh: () => void | Promise<void>;
   ownerOk: boolean;
@@ -496,7 +506,7 @@ function PaygTab({
                 className={tier.plan === b.plan ? 'font-bold text-teal-600' : ''}
                 style={cairoFont}
               >
-                {t(`planNames.${b.plan}` as 'billing.planNames.starter')}
+                {tPlan(b.plan)}
               </span>
               <br />
               {fmtNum(b.maxStudents)}
@@ -519,7 +529,7 @@ function PaygTab({
               style={cairoFont}
             >
               <p className={`text-xs font-semibold ${active ? 'text-teal-800 dark:text-teal-200' : 'text-slate-500'}`}>
-                {t(`planNames.${b.plan}` as 'billing.planNames.starter')}
+                {tPlan(b.plan)}
               </p>
               <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
                 {t(`payg.tierRange.${b.plan}` as 'billing.payg.tierRange.nano')}
@@ -556,7 +566,7 @@ function PaygTab({
               {t('payg.estimate.tier')}
             </dt>
             <dd className="font-medium" style={cairoFont}>
-              {t(`planNames.${tier.plan}` as 'billing.planNames.starter')}
+              {tPlan(tier.plan)}
             </dd>
           </div>
         </dl>
@@ -656,6 +666,7 @@ function PaygTab({
 
 export default function BillingPage() {
   const t = useTranslations('billing');
+  const tPlan = useTranslations('plan');
   const tToast = useTranslations('toasts');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -898,11 +909,6 @@ export default function BillingPage() {
   const isSuspendedCenter = (center?.status ?? '').toLowerCase() === 'suspended';
   const isOverdue = bsLower === 'overdue';
   const showSuspendBanner = isOverdue || subLower === 'suspended' || isSuspendedCenter;
-
-  const secondaryPlanName = useMemo(() => {
-    const pk = planKey;
-    return locale === 'ar' ? PLANS[pk].englishName : PLANS[pk].arabicName;
-  }, [planKey, locale]);
 
   const filteredInvoices = useMemo(
     () => invoices.filter((inv) => (inv.invoice_type ?? '').toLowerCase() !== 'payment_proof'),
@@ -1696,13 +1702,8 @@ export default function BillingPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p id="billing-hero-heading" className="text-2xl font-bold leading-tight md:text-3xl" style={cairoFont}>
-                  {t(`planNames.${planKey}` as 'billing.planNames.starter')}
+                  {planLabelFromMessages(planKey, tPlan)}
                 </p>
-                {locale === 'ar' && (
-                  <p className="mt-1 text-sm opacity-70" style={cairoFont}>
-                    {secondaryPlanName}
-                  </p>
-                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span
@@ -1877,6 +1878,7 @@ export default function BillingPage() {
             {activeTab === 'payg' ? (
               <PaygTab
                 t={t}
+                tPlan={tPlan}
                 toast={toast}
                 refresh={refresh}
                 ownerOk={ownerOk}
@@ -2006,8 +2008,8 @@ export default function BillingPage() {
                         return (
                           <PlanCard
                             key={pk}
-                            nameAr={t(`planNames.${pk}` as 'billing.planNames.starter')}
-                            nameEn={PLANS[pk].englishName}
+                            nameAr={tPlan(pk)}
+                            nameEn={locale === 'en' ? PLANS[pk].arabicName : undefined}
                             price={price}
                             period={periodLabel}
                             studentLimit={pr.students}
@@ -2037,7 +2039,7 @@ export default function BillingPage() {
                           {t('upgrade.newPlan')}
                         </dt>
                         <dd className="text-end font-medium text-slate-900 dark:text-slate-100" style={cairoFont}>
-                          {t(`planNames.${selectedPlan}` as 'billing.planNames.starter')} / {PLANS[selectedPlan].englishName}
+                          {planLabelFromMessages(selectedPlan, tPlan)}
                         </dd>
                       </div>
                       <div className="flex flex-wrap justify-between gap-2">
@@ -2128,8 +2130,8 @@ export default function BillingPage() {
                       return (
                         <PlanCard
                           key={pk}
-                          nameAr={t(`planNames.${pk}` as 'billing.planNames.starter')}
-                          nameEn={PLANS[pk].englishName}
+                          nameAr={tPlan(pk)}
+                          nameEn={locale === 'en' ? PLANS[pk].arabicName : undefined}
                           price={price}
                           period={t('perQuarter')}
                           studentLimit={pr.students}
@@ -2880,14 +2882,10 @@ export default function BillingPage() {
                           : tCommon('notSet')}
                       </td>
                       <td className="py-3 pe-4 text-slate-900 dark:text-white">
-                        {isPlanKey(req.current_plan)
-                          ? t(`planNames.${req.current_plan}` as 'billing.planNames.starter')
-                          : req.current_plan}
+                        {planLabelFromMessages(req.current_plan, tPlan)}
                       </td>
                       <td className="py-3 pe-4 text-slate-900 dark:text-white">
-                        {isPlanKey(req.requested_plan)
-                          ? t(`planNames.${req.requested_plan}` as 'billing.planNames.starter')
-                          : req.requested_plan}
+                        {planLabelFromMessages(req.requested_plan, tPlan)}
                       </td>
                       <td className="py-3">
                         <span

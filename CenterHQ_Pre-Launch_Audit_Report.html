@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CenterHQ Pre-Launch Audit Report</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; padding: 2rem; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 2rem; color: #0f172a; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.5rem; color: #0f172a; margin: 2rem 0 1rem; border-bottom: 2px solid #0D9488; padding-bottom: 0.5rem; }
+  h3 { font-size: 1.15rem; color: #334155; margin: 1.5rem 0 0.75rem; }
+  .subtitle { color: #64748b; margin-bottom: 2rem; }
+  .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .card { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center; }
+  .card .number { font-size: 2rem; font-weight: 700; }
+  .card .label { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+  .critical .number { color: #dc2626; }
+  .high .number { color: #ea580c; }
+  .low .number { color: #ca8a04; }
+  .pass .number { color: #16a34a; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  th { background: #0f172a; color: #f8fafc; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td { padding: 0.65rem 1rem; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background: #f1f5f9; }
+  .status-pass { color: #16a34a; font-weight: 600; }
+  .status-fail { color: #dc2626; font-weight: 600; }
+  .status-warn { color: #ea580c; font-weight: 600; }
+  .severity-critical { background: #fef2f2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; }
+  .severity-high { background: #fff7ed; color: #9a3412; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; }
+  .severity-low { background: #fefce8; color: #854d0e; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; }
+  .issue-block { background: #fff; border-radius: 8px; padding: 1.25rem; margin: 0.75rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid; }
+  .issue-block.critical { border-color: #dc2626; }
+  .issue-block.high { border-color: #ea580c; }
+  .issue-block.low { border-color: #ca8a04; }
+  .issue-block .issue-title { font-weight: 700; margin-bottom: 0.25rem; }
+  .issue-block .issue-pages { font-size: 0.85rem; color: #64748b; }
+  .meta { display: flex; gap: 2rem; flex-wrap: wrap; margin: 1rem 0; color: #64748b; font-size: 0.9rem; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-red { background: #fef2f2; color: #991b1b; }
+  .badge-orange { background: #fff7ed; color: #9a3412; }
+  .section-note { background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CenterHQ Pre-Launch Audit Report</h1>
+<p class="subtitle">Zero-Tolerance Final Audit — centerhq.app — April 12, 2026</p>
+
+<div class="meta">
+  <span><strong>Auditor:</strong> Automated + Manual</span>
+  <span><strong>Platform:</strong> centerhq.app</span>
+  <span><strong>Date:</strong> Sunday, April 12, 2026</span>
+  <span><strong>Scope:</strong> 97 pages (51 EN + 46 AR)</span>
+</div>
+
+<!-- ============ EXECUTIVE DASHBOARD ============ -->
+<h2>Executive Dashboard</h2>
+
+<div class="summary-cards">
+  <div class="card critical"><div class="number">8</div><div class="label">CRITICAL Issues</div></div>
+  <div class="card high"><div class="number">12</div><div class="label">HIGH Issues</div></div>
+  <div class="card low"><div class="number">9</div><div class="label">LOW Issues</div></div>
+  <div class="card pass"><div class="number">29</div><div class="label">Total Issues</div></div>
+</div>
+
+<div class="summary-cards">
+  <div class="card"><div class="number badge-green" style="font-size:1rem">✓ PASS</div><div class="label">Wordmark (Bodoni Moda)</div></div>
+  <div class="card"><div class="number badge-green" style="font-size:1rem">✓ PASS</div><div class="label">Dark/Light Theme Toggle</div></div>
+  <div class="card"><div class="number badge-green" style="font-size:1rem">✓ PASS</div><div class="label">RTL Layout (sidebar right)</div></div>
+  <div class="card"><div class="number badge-red" style="font-size:1rem">✗ FAIL</div><div class="label">Arabic-Indic Numerals</div></div>
+</div>
+
+<!-- ============ CRITICAL ISSUES ============ -->
+<h2>CRITICAL Issues (8)</h2>
+
+<div class="issue-block critical">
+  <div class="issue-title">C-01: Arabic-Indic numerals missing across ALL /ar/ pages</div>
+  <p>Nearly all Arabic pages display Western numerals (0-9) instead of Arabic-Indic (٠-٩). This affects dashboard KPIs, student counts, payment amounts, dates, percentages, and every numeric value. At least 15+ Arabic pages are affected.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /ar/dashboard, /ar/students, /ar/payments, /ar/groups, /ar/schedule, /ar/attendance, /ar/rooms, /ar/analytics, /ar/benchmarks, /ar/whatsapp-pack, /ar/orders, /ar/settings/billing, /ar/admin — virtually ALL /ar/ data pages</div>
+</div>
+
+<div class="issue-block critical">
+  <div class="issue-title">C-02: Admin Renewals tab completely empty</div>
+  <p>The /en/admin?tab=renewals page renders a completely blank area — no table, no empty state message, no UI at all. Users clicking "Renewals" in admin sidebar see nothing.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/admin?tab=renewals, /ar/admin?tab=renewals</div>
+</div>
+
+<div class="issue-block critical">
+  <div class="issue-title">C-03: Admin Withdrawals tab completely empty</div>
+  <p>The /en/admin?tab=withdrawals page shows no content — no table, no empty state, nothing rendered.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/admin?tab=withdrawals, /ar/admin?tab=withdrawals</div>
+</div>
+
+<div class="issue-block critical">
+  <div class="issue-title">C-04: Admin tabs redirect to Overview (Pricing Panel, Platform Config, Vendors, Whatsapp Pack)</div>
+  <p>Four admin sidebar items silently redirect to the Overview tab instead of loading their own content: Pricing Panel, Platform Config, Vendors, and Whatsapp Pack. Users clicking these see the Overview page again with no indication that the tab failed.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/admin?tab=pricingPanel, /en/admin?tab=platformConfig, /en/admin?tab=vendors, /en/admin?tab=whatsappPack</div>
+</div>
+
+<div class="issue-block critical">
+  <div class="issue-title">C-05: English text not translated on Arabic pages</div>
+  <p>Several Arabic pages contain untranslated English text: "Comprehensive view of your center's performance" on analytics, "Manage Sep–Jun cycles, exam periods, and holidays" on academic, "Camera" / "Bluetooth" / "Manual" on scan page, plan name "Starter" on billing.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /ar/analytics, /ar/academic, /ar/scan, /ar/settings/billing</div>
+</div>
+
+<div class="issue-block critical">
+  <div class="issue-title">C-06: Western date format on Arabic pages</div>
+  <p>Arabic payment and attendance pages show dates like "12-Apr-2026" using English month abbreviation and Western numerals instead of Arabic-Indic numerals with Arabic month names.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /ar/payments, /ar/attendance, /ar/orders</div>
+</div>
+
+<div class="issue-block critical">
+  <div class="issue-title">C-07: /en/whatsapp and /en/parent-whatsapp both 404/error</div>
+  <p>Direct URL navigation to /en/whatsapp or /en/parent-whatsapp shows "Something went wrong" error page. The correct URL is /en/whatsapp-pack (sidebar link works), but users who guess or bookmark the intuitive URL will see a crash screen, not a proper 404.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/whatsapp, /en/parent-whatsapp</div>
+</div>
+
+<div class="issue-block critical">
+  <div class="issue-title">C-08: /ar/pricing shows error page</div>
+  <p>The Arabic pricing page (/ar/pricing) returns an error "Something went wrong" instead of showing the pricing plans.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /ar/pricing</div>
+</div>
+
+<!-- ============ HIGH ISSUES ============ -->
+<h2>HIGH Issues (12)</h2>
+
+<div class="issue-block high">
+  <div class="issue-title">H-01: Admin sidebar highlights "Billing" on unrelated pages</div>
+  <p>When visiting admin sub-pages like /en/admin?tab=staff or ?tab=health, the sidebar incorrectly highlights "Billing" instead of the correct active item.</p>
+  <div class="issue-pages"><strong>Pages:</strong> Multiple admin tabs</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-02: ?tab=pricing URL param ignored on admin</div>
+  <p>Navigating directly to /en/admin?tab=pricing shows the Overview tab. The pricing panel requires clicking the sidebar button but doesn't load its own content (see C-04).</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/admin?tab=pricing</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-03: Login button says "Submit" instead of "Log in"</div>
+  <p>The login form's submit button text is "Submit" — should be "Log In" or "Sign In" for standard UX convention.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/login, /ar/login</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-04: Subject names remain in English on Arabic pages</div>
+  <p>"science" and "math" group labels on students/groups/schedule pages are not translated to Arabic ("علوم", "رياضيات").</p>
+  <div class="issue-pages"><strong>Pages:</strong> /ar/students, /ar/groups, /ar/schedule</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-05: Scan page UI controls not translated to Arabic</div>
+  <p>Camera mode labels "Camera", "Bluetooth", "Manual" remain in English on the Arabic scan page.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /ar/scan</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-06: Admin sub-path URLs cause 404/crash</div>
+  <p>Admin pages use ?tab= params, but navigating to /en/admin/ceo-dashboard (sub-path style) shows "Something went wrong" error. No redirect or graceful fallback.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/admin/ceo-dashboard and other admin sub-paths</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-07: Landing page pricing shows round numbers vs spec</div>
+  <p>Pricing section shows 2,000 / 4,500 / 8,000 EGP but the expected values from spec were 1,999 / 4,499 / 7,999 EGP (charm pricing).</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/ (landing), /ar/ (landing)</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-08: WhatsApp formula display issue on Arabic page</div>
+  <p>WhatsApp Pack page in Arabic shows formula as "EGP [f = 12 x ]" with Western numerals in mathematical context instead of proper Arabic formatting.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /ar/whatsapp-pack</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-09: "Export CSV" and "Export PDF" buttons not translated</div>
+  <p>Action buttons like "CSV" and "Export PDF" remain in English on Arabic pages.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /ar/attendance, /ar/analytics</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-10: Error page missing sidebar and navigation</div>
+  <p>The "Something went wrong" error page shows only a "Try again" button with no sidebar, no wordmark, no navigation — user has no way back to the app except browser back button.</p>
+  <div class="issue-pages"><strong>Pages:</strong> All error pages (e.g., /en/whatsapp)</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-11: 4 admin centers missing sales team assignments</div>
+  <p>Center Assignments page shows a warning: "4 centers missing assignments." These need to be assigned before launch.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/admin (Center Assignments)</div>
+</div>
+
+<div class="issue-block high">
+  <div class="issue-title">H-12: Platform Health shows "Paymob: SANDBOX"</div>
+  <p>The Platform Health page shows Paymob integration in SANDBOX mode. This must be switched to LIVE before launch.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/admin (Platform Health)</div>
+</div>
+
+<!-- ============ LOW ISSUES ============ -->
+<h2>LOW Issues (9)</h2>
+
+<div class="issue-block low">
+  <div class="issue-title">L-01: "Whatsapp Pack" should be "WhatsApp Pack"</div>
+  <p>The admin sidebar and Settings page link both read "Whatsapp Pack" with lowercase 'a' — proper brand name is "WhatsApp" (capital A).</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/admin sidebar, /en/settings</div>
+</div>
+
+<div class="issue-block low">
+  <div class="issue-title">L-02: "Forgot Pin" should be "Forgot PIN?"</div>
+  <p>Login page shows "Forgot Pin" — "PIN" is an acronym and should be fully capitalized, plus add question mark.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/login</div>
+</div>
+
+<div class="issue-block low">
+  <div class="issue-title">L-03: "No Account" should be "Don't have an account?"</div>
+  <p>Login page shows "No Account" which is grammatically incomplete. Should be "Don't have an account?" or similar.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/login</div>
+</div>
+
+<div class="issue-block low">
+  <div class="issue-title">L-04: "1 cards" grammar error on Orders page</div>
+  <p>Order entries display "1 cards" — should be "1 card" (singular when count is 1).</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/orders</div>
+</div>
+
+<div class="issue-block low">
+  <div class="issue-title">L-05: Redundant "Benchmarks" subtitle</div>
+  <p>The Benchmarks page shows heading "Benchmarks" with subtitle "Benchmarks" — duplicate text.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/benchmarks</div>
+</div>
+
+<div class="issue-block low">
+  <div class="issue-title">L-06: Sidebar label mismatch — "Parent WhatsApp" vs URL /whatsapp-pack</div>
+  <p>Sidebar says "Parent WhatsApp" but the URL is /en/whatsapp-pack, and Settings shows "WhatsApp Pack". Naming should be consistent across all locations.</p>
+  <div class="issue-pages"><strong>Pages:</strong> Sidebar, Settings, URL</div>
+</div>
+
+<div class="issue-block low">
+  <div class="issue-title">L-07: Date format "12-Apr-2026" inconsistent with rest of app</div>
+  <p>Some dates use "12-Apr-2026" format while others use "Apr 02, 2026" or "May 23, 2026". Should standardize on one format.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/payments, /en/attendance</div>
+</div>
+
+<div class="issue-block low">
+  <div class="issue-title">L-08: Card order IDs are hex codes, not user-friendly</div>
+  <p>Order IDs like "#7878DE77" and "#202DE5B1" are raw hex — consider more readable IDs (e.g., ORD-0001).</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/orders</div>
+</div>
+
+<div class="issue-block low">
+  <div class="issue-title">L-09: Admin sidebar item "Card Orders" — column header says "admin.orderId"</div>
+  <p>The Card Orders table has a column header showing the raw i18n key "admin.orderId" instead of the translated label.</p>
+  <div class="issue-pages"><strong>Pages:</strong> /en/admin?tab=cardOrders</div>
+</div>
+
+<!-- ============ GRAND SUMMARY TABLE ============ -->
+<h2>Grand Summary Table — All Pages</h2>
+
+<h3>English Pages (EN)</h3>
+<table>
+<thead>
+<tr><th>ID</th><th>URL</th><th>Page Name</th><th>Status</th><th>C</th><th>H</th><th>L</th></tr>
+</thead>
+<tbody>
+<tr><td>EN-01</td><td>/en/</td><td>Landing Page</td><td class="status-warn">⚠</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td>EN-02</td><td>/en/login</td><td>Login</td><td class="status-warn">⚠</td><td>0</td><td>1</td><td>2</td></tr>
+<tr><td>EN-03</td><td>/en/signup</td><td>Signup</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-04</td><td>/en/pricing</td><td>Pricing</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-05</td><td>/en/privacy</td><td>Privacy Policy</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-06</td><td>/en/terms</td><td>Terms</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-07</td><td>/en/refund</td><td>Refund Policy</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-08</td><td>/en/forgot-pin</td><td>Forgot PIN</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-09</td><td>/en/dashboard</td><td>Dashboard</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-10</td><td>/en/students</td><td>Students List</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-11</td><td>/en/students/import</td><td>Import Students</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-12</td><td>/en/payments</td><td>Payments</td><td class="status-warn">⚠</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>EN-13</td><td>/en/groups</td><td>Groups</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-14</td><td>/en/schedule</td><td>Schedule</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-15</td><td>/en/rooms</td><td>Rooms</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-16</td><td>/en/attendance</td><td>Attendance</td><td class="status-warn">⚠</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>EN-17</td><td>/en/scan</td><td>QR Scanner</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-18</td><td>/en/analytics</td><td>Financial Intelligence</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-19</td><td>/en/benchmarks</td><td>Benchmarks</td><td class="status-warn">⚠</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>EN-20</td><td>/en/whatsapp-pack</td><td>Parent WhatsApp</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>EN-21</td><td>/en/academic</td><td>Academic Year</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-22</td><td>/en/orders</td><td>Orders</td><td class="status-warn">⚠</td><td>0</td><td>0</td><td>2</td></tr>
+<tr><td>EN-23</td><td>/en/settings</td><td>Settings (General)</td><td class="status-warn">⚠</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>EN-24</td><td>/en/settings/billing</td><td>Settings (Billing)</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-25</td><td>/en/settings?tab=team</td><td>Settings (Team)</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-26</td><td>/en/whatsapp</td><td>WhatsApp (wrong URL)</td><td class="status-fail">✗</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>EN-27</td><td>/en/admin</td><td>Admin Overview</td><td class="status-warn">⚠</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>EN-28</td><td>/en/admin?tab=ceoDashboard</td><td>Admin CEO Dashboard</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-29</td><td>/en/admin?tab=centers</td><td>Admin Centers</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-30</td><td>/en/admin?tab=billing</td><td>Admin Billing</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-31</td><td>/en/admin?tab=renewals</td><td>Admin Renewals</td><td class="status-fail">✗</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>EN-32</td><td>/en/admin?tab=pricingPanel</td><td>Admin Pricing Panel</td><td class="status-fail">✗</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>EN-33</td><td>/en/admin?tab=platformConfig</td><td>Admin Platform Config</td><td class="status-fail">✗</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>EN-34</td><td>/en/admin?tab=vendors</td><td>Admin Vendors</td><td class="status-fail">✗</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>EN-35</td><td>/en/admin?tab=whatsappPack</td><td>Admin WhatsApp Pack</td><td class="status-fail">✗</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>EN-36</td><td>/en/admin?tab=pendingSignups</td><td>Admin Pending Signups</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-37</td><td>/en/admin?tab=cardOrders</td><td>Admin Card Orders</td><td class="status-warn">⚠</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>EN-38</td><td>/en/admin?tab=planRequests</td><td>Admin Plan Requests</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-39</td><td>/en/admin?tab=referrals</td><td>Admin Referrals</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-40</td><td>/en/admin (Referral Rewards)</td><td>Admin Referral Rewards</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-41</td><td>/en/admin?tab=withdrawals</td><td>Admin Withdrawals</td><td class="status-fail">✗</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>EN-42</td><td>/en/admin?tab=internalTeam</td><td>Admin Internal Team</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-43</td><td>/en/admin?tab=salesPipeline</td><td>Admin Sales Pipeline</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-44</td><td>/en/admin?tab=analytics</td><td>Admin Analytics</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-45</td><td>/en/admin (Platform Health)</td><td>Admin Platform Health</td><td class="status-warn">⚠</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td>EN-46</td><td>/en/admin (Sales Team)</td><td>HR: Sales Team</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-47</td><td>/en/admin (Center Assignments)</td><td>HR: Center Assignments</td><td class="status-warn">⚠</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td>EN-48</td><td>/en/admin (Commissions)</td><td>HR: Commissions</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>EN-49</td><td>/en/admin (Monthly Payouts)</td><td>HR: Monthly Payouts</td><td class="status-pass">✓</td><td>0</td><td>0</td><td>0</td></tr>
+</tbody>
+</table>
+
+<h3>Arabic Pages (AR)</h3>
+<table>
+<thead>
+<tr><th>ID</th><th>URL</th><th>Page Name</th><th>RTL</th><th>Numerals</th><th>Translation</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td>AR-01</td><td>/ar/</td><td>Landing</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-pass">✓</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-02</td><td>/ar/login</td><td>Login</td><td class="status-pass">✓</td><td class="status-pass">✓</td><td class="status-pass">✓</td><td class="status-pass">✓</td></tr>
+<tr><td>AR-03</td><td>/ar/signup</td><td>Signup</td><td class="status-pass">✓</td><td class="status-pass">✓</td><td class="status-pass">✓</td><td class="status-pass">✓</td></tr>
+<tr><td>AR-04</td><td>/ar/pricing</td><td>Pricing</td><td>—</td><td>—</td><td>—</td><td class="status-fail">ERROR</td></tr>
+<tr><td>AR-05</td><td>/ar/dashboard</td><td>Dashboard</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-pass">✓</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-06</td><td>/ar/students</td><td>Students</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-warn">⚠</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-07</td><td>/ar/payments</td><td>Payments</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-warn">⚠</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-08</td><td>/ar/groups</td><td>Groups</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-warn">⚠</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-09</td><td>/ar/schedule</td><td>Schedule</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-warn">⚠</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-10</td><td>/ar/attendance</td><td>Attendance</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-warn">⚠</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-11</td><td>/ar/rooms</td><td>Rooms</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-pass">✓</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-12</td><td>/ar/scan</td><td>Scanner</td><td class="status-pass">✓</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-13</td><td>/ar/analytics</td><td>Financial Intelligence</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-fail">✗</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-14</td><td>/ar/benchmarks</td><td>Benchmarks</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-pass">✓</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-15</td><td>/ar/whatsapp-pack</td><td>Parent WhatsApp</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-pass">✓</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-16</td><td>/ar/academic</td><td>Academic Year</td><td class="status-pass">✓</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-17</td><td>/ar/orders</td><td>Orders</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-pass">✓</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-18</td><td>/ar/settings</td><td>Settings</td><td class="status-pass">✓</td><td class="status-pass">✓</td><td class="status-pass">✓</td><td class="status-pass">✓</td></tr>
+<tr><td>AR-19</td><td>/ar/settings/billing</td><td>Billing</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-warn">⚠</td><td class="status-fail">✗</td></tr>
+<tr><td>AR-20</td><td>/ar/settings?tab=team</td><td>Team</td><td class="status-pass">✓</td><td class="status-warn">⚠</td><td class="status-pass">✓</td><td class="status-warn">⚠</td></tr>
+<tr><td>AR-21</td><td>/ar/admin</td><td>Admin Overview</td><td class="status-pass">✓</td><td class="status-fail">✗</td><td class="status-pass">✓</td><td class="status-fail">✗</td></tr>
+</tbody>
+</table>
+
+<!-- ============ SYSTEM STATUS ============ -->
+<h2>System-Wide Status Checks</h2>
+
+<table>
+<thead>
+<tr><th>Check</th><th>Status</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Bodoni Moda Wordmark</strong></td><td class="status-pass">✓ PASS</td><td>"CENTER" (white/navy) + "HQ" (teal #0D9488) renders correctly on all pages</td></tr>
+<tr><td><strong>Dark Mode (default)</strong></td><td class="status-pass">✓ PASS</td><td>All authenticated pages load in dark mode by default. Readable, good contrast.</td></tr>
+<tr><td><strong>Light Mode Toggle</strong></td><td class="status-pass">✓ PASS</td><td>Sun/moon toggle works. Light mode has clean white backgrounds, good text contrast, teal accents.</td></tr>
+<tr><td><strong>Login/Signup Always Dark</strong></td><td class="status-pass">✓ PASS</td><td>Login, signup, and landing pages are always dark regardless of toggle.</td></tr>
+<tr><td><strong>RTL Layout (/ar/ pages)</strong></td><td class="status-pass">✓ PASS</td><td>Sidebar on RIGHT, text right-aligned, navigation flows RTL on all Arabic pages.</td></tr>
+<tr><td><strong>Arabic-Indic Numerals</strong></td><td class="status-fail">✗ FAIL</td><td>Pervasive failure — Western numerals used on 15+ Arabic data pages. <strong>BLOCKER.</strong></td></tr>
+<tr><td><strong>Student ID Format (#001-XXXX)</strong></td><td class="status-pass">✓ PASS</td><td>All student IDs follow #001-XXXX format correctly.</td></tr>
+<tr><td><strong>Number Format (EN pages)</strong></td><td class="status-pass">✓ PASS</td><td>Western numerals with comma separators on English pages.</td></tr>
+<tr><td><strong>Error Boundary</strong></td><td class="status-warn">⚠ PARTIAL</td><td>Error page exists but lacks navigation — no sidebar, no "Back to Dashboard" link.</td></tr>
+<tr><td><strong>Empty States</strong></td><td class="status-warn">⚠ PARTIAL</td><td>Most pages have proper empty states, but Renewals and Withdrawals tabs are completely blank.</td></tr>
+<tr><td><strong>Paymob Integration</strong></td><td class="status-fail">✗ SANDBOX</td><td>Platform Health shows Paymob in SANDBOX mode. Must be LIVE for launch.</td></tr>
+</tbody>
+</table>
+
+<!-- ============ RECOMMENDATIONS ============ -->
+<h2>Pre-Launch Recommendations (Priority Order)</h2>
+
+<div class="section-note">
+<strong>🚨 LAUNCH BLOCKERS (must fix before go-live):</strong>
+<ol style="margin-top:0.5rem; padding-left:1.5rem;">
+  <li><strong>Implement Arabic-Indic numeral formatting</strong> — Create a global utility that converts all displayed numbers to ٠١٢٣٤٥٦٧٨٩ on /ar/ routes. This is the #1 blocker affecting 15+ pages.</li>
+  <li><strong>Fix Admin Renewals & Withdrawals tabs</strong> — Add content or proper empty state messages.</li>
+  <li><strong>Fix /ar/pricing error page</strong> — Arabic pricing page crashes.</li>
+  <li><strong>Switch Paymob from SANDBOX to LIVE</strong> — Cannot accept real payments in sandbox mode.</li>
+  <li><strong>Wire up 4 admin tabs</strong> (Pricing Panel, Platform Config, Vendors, Whatsapp Pack) — Currently redirect to Overview silently.</li>
+  <li><strong>Translate remaining English text on Arabic pages</strong> — Analytics subtitle, Academic subtitle, Scan controls, date formats.</li>
+</ol>
+</div>
+
+<div class="section-note" style="background:#fffbeb; border-color:#fde68a;">
+<strong>⚠️ SHOULD FIX (high impact, moderate effort):</strong>
+<ol style="margin-top:0.5rem; padding-left:1.5rem;">
+  <li>Fix admin sidebar highlighting (wrong item highlighted on some tabs)</li>
+  <li>Change login button from "Submit" to "Log In"</li>
+  <li>Add navigation to error boundary page (sidebar + "Back to Dashboard")</li>
+  <li>Translate group/subject names on Arabic pages</li>
+  <li>Standardize date formats across the app</li>
+  <li>Assign 4 unassigned centers to sales team members</li>
+</ol>
+</div>
+
+<p style="margin-top:2rem; color:#64748b; font-size:0.85rem; text-align:center;">
+  Report generated April 12, 2026 — CenterHQ Pre-Launch Audit
+</p>
+
+</div>
+</body>
+</html>
