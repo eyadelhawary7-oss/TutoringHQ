@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/shared';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/useToast';
 import { Calendar, Plus, Pencil, Trash2, Loader2, X, Send } from 'lucide-react';
+import { formatDate } from '@/lib/formatNumber';
 
 type PeriodType = 'exam' | 'holiday' | 'peak' | 'normal';
 
@@ -45,32 +46,7 @@ const PERIOD_COLORS: Record<PeriodType, string> = {
 };
 
 function formatHolidayDate(dateStr: string, locale: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  const loc = locale === 'ar' ? 'ar' : 'en-US';
-  return d.toLocaleDateString(loc, { day: 'numeric', month: 'long' });
-}
-
-function formatDateAr(dateStr: string): string {
-  try {
-    return new Date(dateStr + 'T12:00:00').toLocaleDateString('ar-SA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
-function formatDateShort(dateStr: string): string {
-  try {
-    return new Date(dateStr + 'T12:00:00').toLocaleDateString('ar-SA', {
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch {
-    return dateStr;
-  }
+  return formatDate(dateStr + 'T12:00:00', locale, { day: 'numeric', month: 'long' });
 }
 
 export default function AcademicPage() {
@@ -454,7 +430,8 @@ export default function AcademicPage() {
               <div>
                 <p className="text-xl font-semibold text-[var(--color-text-primary)]">{currentYear.name}</p>
                 <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                  {formatDateAr(currentYear.start_date)} - {formatDateAr(currentYear.end_date)}
+                  {formatDate(currentYear.start_date + 'T12:00:00', locale)} -{' '}
+                  {formatDate(currentYear.end_date + 'T12:00:00', locale)}
                 </p>
               </div>
               <button
@@ -543,7 +520,8 @@ export default function AcademicPage() {
                   <span className={`w-3 h-3 rounded shrink-0 ${PERIOD_COLORS[p.period_type]}`} />
                   <span className="font-medium text-[var(--color-text-primary)]">{p.name}</span>
                   <span className="text-[var(--color-text-secondary)] text-sm">
-                    {formatDateShort(p.start_date)} - {formatDateShort(p.end_date)}
+                    {formatDate(p.start_date + 'T12:00:00', locale, { month: 'short', day: 'numeric' })} -{' '}
+                    {formatDate(p.end_date + 'T12:00:00', locale, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
                 <div className="flex gap-2">

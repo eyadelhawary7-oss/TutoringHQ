@@ -1456,7 +1456,7 @@ function AdminPageContent() {
                         ) : null}
                       </span>
                       <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap ms-3">
-                        {a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}
+                        {a.created_at ? formatDate(a.created_at, locale) : ''}
                       </span>
                     </div>
                   ))}
@@ -1700,7 +1700,7 @@ function AdminPageContent() {
                         </td>
                         <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.usage_scans ?? 0}</td>
                         <td className="py-3.5 px-4 text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">
-                          {c.created_at ? new Date(c.created_at).toLocaleDateString() : tCommon('notSet')}
+                          {c.created_at ? formatDate(c.created_at, locale) : tCommon('notSet')}
                         </td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center justify-end gap-3">
@@ -1945,7 +1945,7 @@ function AdminPageContent() {
                     {paymentHistory.map((p, i) => (
                       <tr key={i} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
-                          {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : tCommon('notSet')}
+                          {p.paid_at ? formatDate(p.paid_at, locale) : tCommon('notSet')}
                         </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.centerName}</td>
                         <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">
@@ -1995,7 +1995,7 @@ function AdminPageContent() {
                           </div>
                         </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
-                          {pr.requested_at ? new Date(pr.requested_at).toLocaleDateString() : tCommon('notSet')}
+                          {pr.requested_at ? formatDate(pr.requested_at, locale) : tCommon('notSet')}
                         </td>
                         <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pr.status === 'pending' ? STATUS_STYLES.pending : pr.status === 'approved' ? STATUS_STYLES.active : STATUS_STYLES.rejected}`}>
@@ -2062,7 +2062,7 @@ function AdminPageContent() {
                           {ps.referral_code_used ?? ps.referring_center_name ?? tCommon('notSet')}
                         </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
-                          {ps.created_at ? new Date(ps.created_at).toLocaleDateString() : tCommon('notSet')}
+                          {ps.created_at ? formatDate(ps.created_at, locale) : tCommon('notSet')}
                         </td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2 flex-nowrap">
@@ -2158,7 +2158,7 @@ function AdminPageContent() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">
-                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : tCommon('notSet')}
+                              {order.created_at ? formatDate(order.created_at, locale) : tCommon('notSet')}
                             </td>
                             <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                               <span className="inline-flex">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
@@ -2279,7 +2279,7 @@ function AdminPageContent() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
-                        {m.created_at ? new Date(m.created_at).toLocaleDateString() : tCommon('notSet')}
+                        {m.created_at ? formatDate(m.created_at, locale) : tCommon('notSet')}
                       </td>
                       <td className="py-3.5 px-4">
                         {!['super_admin', 'admin'].includes(m.role) && (
@@ -2543,7 +2543,7 @@ function AdminPageContent() {
                   {
                     label: tAdmin('createdAt'),
                     value: detailCenter.created_at
-                      ? new Date(detailCenter.created_at).toLocaleDateString()
+                      ? formatDate(detailCenter.created_at, locale)
                       : null,
                     isPlan: false,
                     empty: () => (

@@ -22,6 +22,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import type { AdminCardOrderRow, CardOrderFulfillmentStatus } from '@/types/admin-card-orders';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
+import { formatDate, formatDateTime } from '@/lib/formatNumber';
 
 const STATUS_ORDER: CardOrderFulfillmentStatus[] = [
   'pending',
@@ -341,7 +342,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                         ) : null}
                       </td>
                       <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
-                        {new Date(order.created_at).toLocaleDateString('en-GB')}
+                        {formatDate(order.created_at, locale)}
                       </td>
                       <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                         <button
@@ -530,10 +531,12 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                   {slideOrder.vendor_sent_at ? (
                     <p className="text-xs text-teal-600 dark:text-teal-400 mt-2">
                       ✓ {tIdCards('sentToVendor')} -{' '}
-                      {new Date(slideOrder.vendor_sent_at).toLocaleString(
-                        locale === 'ar' ? 'en-US' : 'en-US',
-                        { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
-                      )}
+                      {formatDateTime(slideOrder.vendor_sent_at, locale, {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </p>
                   ) : null}
                 </div>

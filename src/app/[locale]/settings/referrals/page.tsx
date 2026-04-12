@@ -8,7 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Download, Gift, Link2 } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 const PLAN_LABELS_AR: Record<string, string> = {
   nano: 'ناشئ',
@@ -169,15 +169,6 @@ export default function SettingsReferralsPage() {
     );
   }
 
-  const formatDate = (d: string) => {
-    const date = new Date(d);
-    return date.toLocaleDateString(locale === 'ar' ? 'ar' : 'en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }).replace(/\//g, '/');
-  };
-
   const openPayoutPdf = async (payoutId: string) => {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
@@ -302,7 +293,11 @@ export default function SettingsReferralsPage() {
                           </td>
                           <td className="py-3 px-4">{p.status}</td>
                           <td className="py-3 px-4 text-[var(--color-text-secondary)]">
-                            {formatDate(p.requested_at)}
+                            {formatDate(p.requested_at, locale, {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                            })}
                           </td>
                           <td className="py-3 px-4 text-end">
                             {canPdf ? (
@@ -385,7 +380,13 @@ export default function SettingsReferralsPage() {
                         <td className="py-3 px-4 font-medium text-[var(--color-text-primary)]">
                           {(r.referred_center as { name?: string })?.name ?? '-'}
                         </td>
-                        <td className="py-3 px-4 text-[var(--color-text-secondary)]">{formatDate(r.created_at)}</td>
+                        <td className="py-3 px-4 text-[var(--color-text-secondary)]">
+                          {formatDate(r.created_at, locale, {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                          })}
+                        </td>
                         <td className="py-3 px-4 text-[var(--color-text-secondary)]">
                           {planToLabel((r.referred_center as { plan?: string })?.plan, locale)}
                         </td>

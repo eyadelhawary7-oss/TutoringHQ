@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
+import { formatDate } from '@/lib/formatNumber';
 
 type VendorRow = {
   id: string;
@@ -29,6 +30,7 @@ function cmpStr(a: string, b: string, asc: boolean): number {
 export default function AdminVendorsClient({ initialVendor }: { initialVendor: VendorRow | null }) {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const pathname = usePathname();
   const toast = useToast();
   const { closeMainSidebar } = useSidebar() ?? {};
@@ -303,7 +305,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-secondary)] tabular-nums" dir="ltr">
                         {row.created_at
-                          ? new Date(row.created_at).toLocaleDateString(undefined, {
+                          ? formatDate(row.created_at, locale, {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric',

@@ -10,7 +10,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { ArrowLeft, Gift, CheckCircle } from 'lucide-react';
-import { formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 function quarterOptions(): { value: string; label: string }[] {
   const out: { value: string; label: string }[] = [];
@@ -371,7 +371,7 @@ export default function AdminReferralsPage() {
                                 </span>
                               </td>
                               <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
-                                {r.created_at ? new Date(r.created_at).toLocaleDateString() : '-'}
+                                {r.created_at ? formatDate(r.created_at, locale) : '-'}
                               </td>
                             </tr>
                           ))}

@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { CardOrderModal } from '@/components/CardOrderModal';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Student {
@@ -36,12 +36,6 @@ interface CardOrderRow {
   delivery_address?: string | null;
   notes?: string | null;
   created_at: string;
-}
-
-function formatOrderDate(iso: string, locale: string): string {
-  const d = new Date(iso);
-  const loc = locale === 'ar' ? 'ar' : 'en-US';
-  return d.toLocaleDateString(loc, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function parseStudentLines(studentsJson: unknown): string[] {
@@ -271,7 +265,12 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <p className="text-xs text-[var(--color-text-tertiary)]">
-                        {t('orderDate')}: {formatOrderDate(order.created_at, locale)}
+                        {t('orderDate')}:{' '}
+                        {formatDate(order.created_at, locale, {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
                       </p>
                       <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                         {order.quantity} {t('cards')} · {t('orderTotal')}:{' '}

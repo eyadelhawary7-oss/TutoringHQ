@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 type HeatmapCell = {
   date: string;
@@ -86,8 +87,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   function getCellTooltip(dateStr: string): string {
     const present = cellMap[dateStr];
-    const dateLoc = locale === 'ar' ? 'ar' : 'en-US';
-    const formattedDate = new Date(dateStr + 'T12:00:00Z').toLocaleDateString(dateLoc, {
+    const formattedDate = formatDate(dateStr + 'T12:00:00Z', locale, {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
@@ -95,7 +95,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
     if (present === undefined || present === 0) {
       return `${formattedDate} - ${t('legend.none')}`;
     }
-    return `${formattedDate} - ${present} طالب حضر`;
+    return `${formattedDate} - ${formatNumber(present, locale)} طالب حضر`;
   }
 
   const dayHeaders = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];

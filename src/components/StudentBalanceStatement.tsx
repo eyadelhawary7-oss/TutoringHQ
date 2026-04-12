@@ -1,8 +1,7 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
-
-const AR = 'ar' as const;
 
 export interface StudentBalanceStatementProps {
   student: {
@@ -34,6 +33,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
     dateFrom,
     dateTo,
   } = props;
+  const locale = useLocale();
 
   const confirmedTotal = payments
     .filter((p) => p.status === 'confirmed')
@@ -98,14 +98,14 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
                 className={i % 2 === 0 ? 'bg-[var(--color-surface-1)]' : 'bg-[var(--color-surface-0)]'}
               >
                 <td className="py-1">
-                  {formatDate(p.paid_at, AR, {
+                  {formatDate(p.paid_at, locale, {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
                   })}
                 </td>
                 <td className="py-1 font-bold font-mono text-right">
-                  {formatNumber(p.amount, AR)}
+                  {formatNumber(p.amount, locale)}
                 </td>
                 <td className="py-1">{p.method}</td>
                 <td className="py-1">
@@ -120,9 +120,9 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
 
       {/* Summary */}
       <div className="border-t-2 border-black pt-3 text-right font-bold space-y-1">
-        <div>إجمالي المدفوع: {formatNumber(confirmedTotal, AR)} جنيه</div>
-        <div>إجمالي المعلق: {formatNumber(pendingTotal, AR)} جنيه</div>
-        <div>الرصيد الحالي: {formatNumber(student.balance_due, AR)} جنيه</div>
+        <div>إجمالي المدفوع: {formatNumber(confirmedTotal, locale)} جنيه</div>
+        <div>إجمالي المعلق: {formatNumber(pendingTotal, locale)} جنيه</div>
+        <div>الرصيد الحالي: {formatNumber(student.balance_due, locale)} جنيه</div>
       </div>
 
       {/* Footer */}
@@ -130,7 +130,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
         <div>CenterHQ - centerhq.com</div>
         <div>
           تاريخ الإصدار:{' '}
-          {formatDate(new Date(), AR, {
+          {formatDate(new Date(), locale, {
             day: 'numeric',
             month: 'long',
             year: 'numeric',

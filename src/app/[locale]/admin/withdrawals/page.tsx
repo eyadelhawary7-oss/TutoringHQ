@@ -254,9 +254,7 @@ export default function AdminWithdrawalsPage() {
                         </td>
                         <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
                           {r.requested_at
-                            ? new Date(r.requested_at).toLocaleString(
-                                'en-US',
-                              )
+                            ? formatDateTime(r.requested_at, locale)
                             : '-'}
                         </td>
                         <td className="px-3 py-2 text-slate-700 dark:text-slate-300">

@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import { getAnnouncementCap, PLAN_INVOICE_MINIMUMS } from '@/lib/parentPack'
 import type { NotificationTypes, WaPackBillingSummary, WaPackCenter } from '@/types/whatsapp-pack'
 import { useToast } from '@/hooks/useToast'
-import { formatNumber } from '@/lib/formatNumber'
+import { formatDate, formatNumber } from '@/lib/formatNumber'
 
 interface AdminWaPackClientProps {
   initialCenters: WaPackCenter[]
@@ -686,10 +686,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                             </td>
                             <td className="px-4 py-3 text-[var(--color-text-primary)]">
                               {c.pack_requested_at
-                                ? new Date(c.pack_requested_at).toLocaleDateString(
-                                    locale === 'ar' ? 'en-US' : 'en-US',
-                                    { day: 'numeric', month: 'long', year: 'numeric' },
-                                  )
+                                ? formatDate(c.pack_requested_at, locale)
                                 : '-'}
                             </td>
                             <td className="px-4 py-3">
@@ -752,8 +749,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                   ) : (
                                     <p className="text-sm text-[var(--color-text-secondary)]">
                                       {tRoot('admin.invoiceMinimumWillBe')}{' '}
-                                      {(PLAN_INVOICE_MINIMUMS[c.plan] ?? PLAN_INVOICE_MINIMUMS.starter).toLocaleString(
-                                        'en-US',
+                                      {formatNumber(
+                                        PLAN_INVOICE_MINIMUMS[c.plan] ?? PLAN_INVOICE_MINIMUMS.starter,
+                                        locale,
                                       )}{' '}
                                       EGP
                                     </p>

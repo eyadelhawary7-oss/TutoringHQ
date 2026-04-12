@@ -9,7 +9,7 @@ import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 type EmbedCenter = {
   id: string;
@@ -437,7 +437,7 @@ export default function ReferralRewardsPage() {
                       </td>
                       <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
                         {r.held_until
-                          ? new Date(r.held_until).toLocaleString(undefined, {
+                          ? formatDateTime(r.held_until, locale, {
                               dateStyle: 'short',
                               timeStyle: 'short',
                             })
