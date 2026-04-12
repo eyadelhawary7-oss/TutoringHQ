@@ -57,13 +57,13 @@ public/fonts/*.woff2
 public/fonts/*.woff
 supabase/.temp/.claude/
 *.code-workspace
-.claude/\n.cursor/
 
 # Local tool noise
 .cursor/
 .claude/
 
 # Local audit / pre-launch reports (do not commit)
+*.docx
 *-Audit-Report.*
 *Audit*.md
 PRELAUNCH_*.md
