@@ -204,24 +204,25 @@ export default function LocaleHomePage() {
   const locale = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [demoScreen, setDemoScreen] = useState<DemoScreen>('scanning');
-  const [demoInView, setDemoInView] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const phoneDemoRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const el = phoneDemoRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        setDemoInView(entry.isIntersecting);
-      },
-      { root: null, rootMargin: '80px 0px', threshold: 0 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), {
+      threshold: 0.1,
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
-    if (!demoInView) return;
+    if (!isVisible) return;
     const timings: Record<DemoScreen, number> = {
       scanning: 2500,
       scanned: 1800,
@@ -235,7 +236,7 @@ export default function LocaleHomePage() {
       setDemoScreen(SCREEN_SEQUENCE[next]);
     }, timings[demoScreen]);
     return () => clearTimeout(timer);
-  }, [demoScreen, demoInView]);
+  }, [demoScreen, isVisible]);
 
   const heroLines = t('heroTitle').split('\n').filter((line) => line.length > 0);
   const featureKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] as const;
@@ -429,6 +430,7 @@ export default function LocaleHomePage() {
             <div
               ref={phoneDemoRef}
               className="relative mx-auto h-[560px] w-[280px] shrink-0 [contain:layout_paint]"
+              style={{ willChange: 'transform', transform: 'translateZ(0)' }}
               aria-hidden
               dir="ltr"
             >
@@ -466,8 +468,14 @@ export default function LocaleHomePage() {
                   </span>
                 </div>
 
-                {/* Multi-screen demo */}
-                <div className="relative min-h-0 flex-1 overflow-hidden bg-[#080c14]">
+                {/* Multi-screen demo — pause CSS animations when mockup is off-screen */}
+                <div
+                  className={
+                    isVisible
+                      ? 'relative min-h-0 flex-1 overflow-hidden bg-[#080c14]'
+                      : 'relative min-h-0 flex-1 overflow-hidden bg-[#080c14] [&_.animate-pulse]:![animation-play-state:paused] [&_.chq-landing-scanline-bar]:![animation-play-state:paused]'
+                  }
+                >
                   {(demoScreen === 'scanning' || demoScreen === 'scanned') && <ScannerScreen demoScreen={demoScreen} />}
                   {demoScreen === 'dashboard' ? <DashboardScreen /> : null}
                   {demoScreen === 'whatsapp' ? <WhatsAppScreen /> : null}
@@ -475,7 +483,7 @@ export default function LocaleHomePage() {
                 </div>
 
                 {demoScreen === 'scanned' ? (
-                  <div className="mx-3 mb-2 rounded-2xl border border-teal-900 bg-slate-800/90 p-3 transition-all duration-500">
+                  <div className="mx-3 mb-2 rounded-2xl border border-teal-900 bg-slate-800/90 p-3 transition-[opacity,transform] duration-500">
                     <div className="flex items-center gap-3" dir="ltr">
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-teal-700 bg-teal-900/60">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
