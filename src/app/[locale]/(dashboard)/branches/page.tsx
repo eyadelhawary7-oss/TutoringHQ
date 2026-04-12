@@ -153,10 +153,10 @@ export default function BranchesPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('upgradeTitle')}</h2>
-              <p className="text-[var(--color-text-muted)] text-sm">{t('upgradeDescription')}</p>
+              <p className="text-[var(--color-text-muted)] text-sm">{t('upgradeBody')}</p>
             </div>
           </div>
-          <p className="text-[var(--color-text-secondary)] mb-6">{t('upgradeBenefits')}</p>
+          <p className="text-[var(--color-text-secondary)] mb-6">{t('upgradeDesc')}</p>
           <Link
             href="/settings"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-primary-foreground font-medium hover:bg-teal-700 transition-colors"
@@ -265,7 +265,7 @@ export default function BranchesPage() {
               xKey="name"
               height={220}
               color="teal"
-              prefix="EGP "
+              prefix={`${tCommon('egp')} `}
               showGrid
               rtl={locale === 'ar'}
             />

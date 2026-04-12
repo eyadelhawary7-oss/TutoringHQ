@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Download, Search, ClipboardList, BookOpen, X } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
+import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 import { formatDate, formatDateTime } from '@/lib/formatNumber';
 
 interface ScanRecord {
@@ -339,16 +340,16 @@ export default function AttendancePage() {
 
       {/* Filter bar */}
       <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
-        <input
-          type="date"
+        <LocalizedDateInput
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
+          locale={locale}
           className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
         />
-        <input
-          type="date"
+        <LocalizedDateInput
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
+          locale={locale}
           className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
         />
         <div className="relative flex-1 min-w-[160px]">

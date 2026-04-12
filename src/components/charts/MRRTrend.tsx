@@ -2,17 +2,8 @@
 
 import { useLocale } from 'next-intl';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
-
-const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-
-function formatMonth(monthStr: string, locale: string): string {
-  const [y, m] = monthStr.split('-').map(Number);
-  const idx = (m ?? 1) - 1;
-  if (locale === 'ar') return AR_MONTHS[idx] ?? monthStr;
-  const d = new Date(y ?? 0, idx, 1);
-  return formatDate(d, locale, { month: 'short' });
-}
+import { formatNumber } from '@/lib/formatNumber';
+import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
 
 function linearRegression(points: { x: number; y: number }[]): { slope: number; intercept: number } {
   const n = points.length;
@@ -47,7 +38,7 @@ export default function MRRTrend({ data = [] }: MRRTrendProps) {
 
   const chartData = data.map((d, i) => ({
     ...d,
-    label: formatMonth(d.month, locale),
+    label: formatChartMonthLabel(d.month, locale),
     index: i,
   }));
 

@@ -69,11 +69,7 @@ function utcMonthsInclusive(
     result.push({
       startYmd: d0.toISOString().slice(0, 10),
       nextYmd: next.toISOString().slice(0, 10),
-      label: d0.toLocaleDateString('en-US', {
-        month: 'short',
-        year: 'numeric',
-        timeZone: 'UTC',
-      }),
+      label: `${d0.getUTCFullYear()}-${String(d0.getUTCMonth() + 1).padStart(2, '0')}`,
     });
     cm0++;
     if (cm0 > 11) {

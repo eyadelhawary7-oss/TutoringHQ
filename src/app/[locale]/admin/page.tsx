@@ -59,7 +59,28 @@ import { ALL_ADMIN_PERMISSIONS } from '@/lib/admin-roles';
 import { PlanBadge, BillingStatusBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import type { AdminCardOrderRow } from '@/types/admin-card-orders';
+import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
+
+function formatAdminLastActiveDisplay(
+  raw: string | null | undefined,
+  locale: string,
+  tAdmin: (key: string, values?: Record<string, string>) => string,
+): string {
+  const s = raw?.trim() ?? '';
+  if (!s || /^never$/i.test(s)) return tAdmin('neverActive');
+  const m = s.match(/^(\d+)\s*days?\s*ago$/i);
+  if (m) {
+    const days = parseInt(m[1]!, 10);
+    return tAdmin('daysAgo', { days: formatNumber(days, locale) });
+  }
+  return s;
+}
+
+function isAdminLastActiveStaleRaw(raw: string | null | undefined): boolean {
+  const s = raw?.trim() ?? '';
+  return /^never$/i.test(s) || /\bdays?\s*ago$/i.test(s) || s.toLowerCase().includes('days');
+}
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -855,6 +876,11 @@ function AdminPageContent() {
     return Math.round(((last - prev) / prev) * 10000) / 100;
   }, [overview?.monthlyRevenue]);
 
+  const chartMonthAxisFormatter = useCallback(
+    (v: string | number) => formatChartMonthLabel(String(v), locale),
+    [locale],
+  );
+
   const adminPlanDonutData = useMemo(() => {
     const planIds = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
     const planColors = ['#94A3B8', '#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'] as const;
@@ -956,7 +982,7 @@ function AdminPageContent() {
 
   const analyticsAtRiskCount = useMemo(
     () =>
-      analyticsCenters.filter((c) => c.last_active?.includes('days') || c.last_active === 'Never')
+      analyticsCenters.filter((c) => isAdminLastActiveStaleRaw(c.last_active))
         .length,
     [analyticsCenters],
   );
@@ -1451,13 +1477,15 @@ function AdminPageContent() {
                     height={200}
                     color="teal"
                     showGrid={false}
+                    xTickFormatter={chartMonthAxisFormatter}
+                    tooltipLabelFormatter={chartMonthAxisFormatter}
                   />
                 </ChartCard>
               )}
               {(overview.monthlyRevenue?.length ?? 0) > 0 && overview.monthlyRevenue && (
                 <ChartCard
                   title={tCharts('monthlyRevenue')}
-                  valuePrefix="EGP "
+                  valuePrefix={`${tCommon('egp')} `}
                   value={Number(overview.monthlyRevenue[overview.monthlyRevenue.length - 1]?.revenue ?? 0)}
                   trend={monthlyRevTrendPct}
                   trendLabel={tCharts('vsLastMonth')}
@@ -1469,8 +1497,10 @@ function AdminPageContent() {
                     xKey="month"
                     height={200}
                     color="teal"
-                    prefix="EGP "
+                    prefix={`${tCommon('egp')} `}
                     showGrid
+                    xTickFormatter={chartMonthAxisFormatter}
+                    tooltipLabelFormatter={chartMonthAxisFormatter}
                   />
                 </ChartCard>
               )}
@@ -1724,12 +1754,12 @@ function AdminPageContent() {
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] font-mono hidden md:table-cell">{c.students_count ?? 0}</td>
                         <td
                           className={`py-3.5 px-4 text-xs hidden lg:table-cell ${
-                            (c.last_active?.includes('days') || c.last_active === 'Never')
+                            isAdminLastActiveStaleRaw(c.last_active)
                               ? 'text-red-600 font-semibold'
                               : 'text-[var(--color-text-secondary)]'
                           }`}
                         >
-                          {c.last_active ?? tCommon('never')}
+                          {formatAdminLastActiveDisplay(c.last_active, locale, tAdmin)}
                         </td>
                         <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">{c.usage_scans ?? 0}</td>
                         <td className="py-3.5 px-4 text-xs text-[var(--color-text-secondary)] hidden lg:table-cell">
@@ -2566,11 +2596,8 @@ function AdminPageContent() {
                   },
                   {
                     label: tAdmin('lastActive'),
-                    value: detailCenter.last_active ?? null,
+                    value: formatAdminLastActiveDisplay(detailCenter.last_active, locale, tAdmin),
                     isPlan: false,
-                    empty: () => (
-                      <span className="text-slate-500 text-xs italic">{tCommon('never')}</span>
-                    ),
                   },
                   { label: tAdmin('usage'), value: String(detailCenter.usage_scans ?? 0), isPlan: false },
                   {

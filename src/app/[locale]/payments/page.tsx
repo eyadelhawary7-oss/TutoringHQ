@@ -12,6 +12,7 @@ import EmptyState from '@/components/empty-states/EmptyState';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/ToastProvider';
+import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 import { formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 interface PaymentRecord {
@@ -585,16 +586,16 @@ export default function PaymentsPage() {
 
         <div className="px-4 max-w-3xl mx-auto w-full space-y-3 mb-4">
           <div className="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch">
-            <input
-              type="date"
+            <LocalizedDateInput
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
+              locale={locale}
               className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
             />
-            <input
-              type="date"
+            <LocalizedDateInput
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
+              locale={locale}
               className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
             />
             <div className="relative flex-1 min-w-[160px]">

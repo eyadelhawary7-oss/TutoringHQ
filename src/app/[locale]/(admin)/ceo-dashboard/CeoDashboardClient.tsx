@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import { ChartTooltip } from '@/components/charts/ChartTooltip';
 import { CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from '@/components/charts/ChartTokens';
+import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
 import { formatNumber } from '@/lib/formatNumber';
 
 interface DashboardData {
@@ -203,6 +204,7 @@ function CeoFinancialsBody({
                   }}
                   axisLine={false}
                   tickLine={false}
+                  tickFormatter={(v: string | number) => formatChartMonthLabel(String(v), locale)}
                 />
                 <YAxis
                   tick={{
@@ -231,7 +233,8 @@ function CeoFinancialsBody({
                         active={props.active}
                         payload={pl}
                         label={props.label}
-                        prefix="EGP "
+                        labelFormatter={(lab) => formatChartMonthLabel(String(lab ?? ''), locale)}
+                        prefix={`${tCommon('egp')} `}
                       />
                     );
                   }}
@@ -343,7 +346,7 @@ function CeoFinancialsBody({
             <div>
               <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelPackMrr')}</p>
               <p className="font-mono text-[var(--color-text-primary)]">
-                {formatNumber(nf(financials.whatsappPack?.packMRR), locale)} EGP
+                {formatNumber(nf(financials.whatsappPack?.packMRR), locale)} {tCommon('egp')}
               </p>
             </div>
             <div>
@@ -377,6 +380,7 @@ export default function CeoDashboardClient({
   rangeSelector: ReactNode;
 }) {
   const t = useTranslations('ceoDashboard');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const { setHideShell } = useLayout();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -547,8 +551,8 @@ export default function CeoDashboardClient({
 
   const metrics = [
     { label: t('totalActiveCenters'), value: fmt(d.totalActiveCenters), icon: Building2 },
-    { label: t('mrr'), value: `EGP ${fmt(d.mrr)}`, icon: DollarSign },
-    { label: t('arr'), value: `EGP ${fmt(d.arr)}`, icon: TrendingUp },
+    { label: t('mrr'), value: `${fmt(d.mrr)} ${tCommon('egp')}`, icon: DollarSign },
+    { label: t('arr'), value: `${fmt(d.arr)} ${tCommon('egp')}`, icon: TrendingUp },
     {
       label: t('netNew30d'),
       value: nf(d.netNew30d) >= 0 ? `+${fmt(d.netNew30d)}` : String(nf(d.netNew30d)),
@@ -611,7 +615,9 @@ export default function CeoDashboardClient({
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('briefingPreview')}</h2>
           <div className="space-y-2 text-sm text-[var(--color-text-secondary)]">
             <p>{t('activeCenters')}: {d.totalActiveCenters}</p>
-            <p>{t('mrr')}: EGP {fmt(d.mrr)}</p>
+            <p>
+              {t('mrr')}: {fmt(d.mrr)} {tCommon('egp')}
+            </p>
             <p>{t('newYesterday')}: {d.newYesterday}</p>
             <p>{t('churned')}: {d.churned}</p>
             <p className="flex items-center gap-1">
@@ -648,11 +654,11 @@ export default function CeoDashboardClient({
                 <tbody>
                   {d.cohortTable.slice(0, 12).map((row) => (
                     <tr key={row.month} className="border-b border-[var(--color-border-subtle)]">
-                      <td className="py-2">{row.month}</td>
-                      <td className="py-2">{row.total}</td>
+                      <td className="py-2">{formatChartMonthLabel(String(row.month), locale)}</td>
+                      <td className="py-2">{fmt(row.total)}</td>
                       {[0, 1, 2, 3, 4, 5, 6].map((m) => (
                         <td key={m} className="text-center py-2">
-                          {nf(row[`m${m}`])}%
+                          {formatNumber(nf(row[`m${m}`]), locale)}%
                         </td>
                       ))}
                     </tr>

@@ -317,7 +317,7 @@ export async function GET(request: Request) {
         .filter((inv) => inv.created_at && inv.created_at >= mStartStr && inv.created_at <= mEndStr)
         .reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
       monthlyRevenue.push({
-        month: mStart.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
+        month: `${mStart.getFullYear()}-${String(mStart.getMonth() + 1).padStart(2, '0')}`,
         revenue: mRevenue,
         centers: 0,
       });

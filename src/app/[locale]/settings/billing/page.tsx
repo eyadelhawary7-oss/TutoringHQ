@@ -262,6 +262,8 @@ function PlanCard({
   cairoFont,
   numFont,
   fmtNum,
+  currencySuffix,
+  perStudentLabel,
 }: {
   nameAr: string;
   nameEn?: string | null;
@@ -276,6 +278,8 @@ function PlanCard({
   cairoFont: CSSProperties;
   numFont: CSSProperties;
   fmtNum: (n: number | null | undefined) => string;
+  currencySuffix: string;
+  perStudentLabel: string;
 }) {
   const perStudent = studentLimit > 0 ? price / studentLimit : 0;
   return (
@@ -303,10 +307,10 @@ function PlanCard({
         {studentsLine}
       </p>
       <p className="mt-1 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
-        {fmtNum(price)} EGP / {period}
+        {fmtNum(price)} {currencySuffix} / {period}
       </p>
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums" style={numFont}>
-        {fmtNum(Math.round(perStudent * 100) / 100)} EGP / student
+        {fmtNum(Math.round(perStudent * 100) / 100)} {currencySuffix} / {perStudentLabel}
       </p>
     </button>
   );
@@ -323,6 +327,7 @@ function PeriodCard({
   cairoFont,
   numFont,
   fmtNum,
+  currencySuffix,
 }: {
   label: string;
   price: number;
@@ -334,6 +339,7 @@ function PeriodCard({
   cairoFont: CSSProperties;
   numFont: CSSProperties;
   fmtNum: (n: number | null | undefined) => string;
+  currencySuffix: string;
 }) {
   return (
     <button
@@ -357,7 +363,7 @@ function PeriodCard({
         <p className="mt-1 text-xs font-medium text-teal-600 dark:text-teal-400">{currentLabel}</p>
       ) : null}
       <p className="mt-2 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
-        {fmtNum(price)} EGP
+        {fmtNum(price)} {currencySuffix}
       </p>
     </button>
   );
@@ -366,6 +372,7 @@ function PeriodCard({
 function PaygTab({
   t,
   tPlan,
+  tCommon,
   toast,
   refresh,
   ownerOk,
@@ -382,6 +389,7 @@ function PaygTab({
 }: {
   t: (key: string, values?: Record<string, string | number | Date>) => string;
   tPlan: (key: string) => string;
+  tCommon: (key: string) => string;
   toast: { success: (title: string, description?: string) => void; error: (title: string, description?: string) => void };
   refresh: () => void | Promise<void>;
   ownerOk: boolean;
@@ -1879,6 +1887,7 @@ export default function BillingPage() {
               <PaygTab
                 t={t}
                 tPlan={tPlan}
+                tCommon={tCommon}
                 toast={toast}
                 refresh={refresh}
                 ownerOk={ownerOk}
@@ -1950,6 +1959,7 @@ export default function BillingPage() {
                       cairoFont={cairoFont}
                       numFont={numFont}
                       fmtNum={formatNum}
+                      currencySuffix={tCommon('egp')}
                     />
                     <PeriodCard
                       label={t('period.quarterly.label')}
@@ -1965,6 +1975,7 @@ export default function BillingPage() {
                       cairoFont={cairoFont}
                       numFont={numFont}
                       fmtNum={formatNum}
+                      currencySuffix={tCommon('egp')}
                     />
                     <PeriodCard
                       label={t('period.annual.label')}
@@ -1980,6 +1991,7 @@ export default function BillingPage() {
                       cairoFont={cairoFont}
                       numFont={numFont}
                       fmtNum={formatNum}
+                      currencySuffix={tCommon('egp')}
                     />
                   </div>
                 </div>
@@ -2021,6 +2033,8 @@ export default function BillingPage() {
                             cairoFont={cairoFont}
                             numFont={numFont}
                             fmtNum={formatNum}
+                            currencySuffix={tCommon('egp')}
+                            perStudentLabel={t('planCardPerStudent')}
                           />
                         );
                       })}
@@ -2086,7 +2100,7 @@ export default function BillingPage() {
                       {t('upgrade.newMonthlyRate')}
                     </p>
                     <p className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
-                      {formatNum(pricingForPlan(selectedPlan, pricingRows).allIn)} {t('egp')}
+                      {formatNum(pricingForPlan(selectedPlan, pricingRows).allIn)} {tCommon('egp')}
                     </p>
                     {planError ? (
                       <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
@@ -2146,6 +2160,8 @@ export default function BillingPage() {
                           cairoFont={cairoFont}
                           numFont={numFont}
                           fmtNum={formatNum}
+                          currencySuffix={tCommon('egp')}
+                          perStudentLabel={t('planCardPerStudent')}
                         />
                       );
                     })}
@@ -2173,6 +2189,7 @@ export default function BillingPage() {
                         cairoFont={cairoFont}
                         numFont={numFont}
                         fmtNum={formatNum}
+                        currencySuffix={tCommon('egp')}
                       />
                       <PeriodCard
                         label={t('period.quarterly.label')}
@@ -2189,6 +2206,7 @@ export default function BillingPage() {
                         cairoFont={cairoFont}
                         numFont={numFont}
                         fmtNum={formatNum}
+                        currencySuffix={tCommon('egp')}
                       />
                       <PeriodCard
                         label={t('period.annual.label')}
@@ -2205,6 +2223,7 @@ export default function BillingPage() {
                         cairoFont={cairoFont}
                         numFont={numFont}
                         fmtNum={formatNum}
+                        currencySuffix={tCommon('egp')}
                       />
                     </div>
                   </div>
