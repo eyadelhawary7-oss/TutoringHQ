@@ -133,6 +133,24 @@ export interface CeoCenterHealth {
   all_in_price: number | null
 }
 
+/** Tier table rows for CEO Center Health (automation score) */
+export interface CeoCenterHealthTierRow {
+  id: string
+  name: string
+  plan: string
+  health_score: number | null
+  days_since_owner_login: number | null
+  owner_phone: string | null
+}
+
+export interface CeoCenterHealthTiers {
+  green: number
+  amber: number
+  red: number
+  red_centers: CeoCenterHealthTierRow[]
+  amber_centers: CeoCenterHealthTierRow[]
+}
+
 export interface CeoCash {
   collected_this_quarter: number
   cash_collected_mtd: number
@@ -160,6 +178,7 @@ export interface CeoDashboardData {
   pipeline: PipelineSummary
   activation: { centers: CeoActivationCenter[] }
   centers_health: CeoCenterHealth[]
+  center_health_tiers: CeoCenterHealthTiers
   cash: CeoCash
   ops: CeoOps
 }

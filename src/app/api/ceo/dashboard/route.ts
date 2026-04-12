@@ -5,6 +5,7 @@ import { getCurrentBillingMonth } from '@/lib/parent-pack';
 import type {
   CeoActivationCenter,
   CeoCenterHealth,
+  CeoCenterHealthTierRow,
   CeoDashboardData,
 } from '@/types/ceo';
 import { NextRequest, NextResponse } from 'next/server';
@@ -58,7 +59,9 @@ export async function GET(request: NextRequest) {
     supabase.from('centers').select('health_score_band').eq('status', 'active').not('health_score_band', 'is', null),
     supabase
       .from('centers')
-      .select('id, name, phone, plan, status, health_score, health_score_band, subscription_renewal_date, all_in_price, billing_period, onboarding_completed, onboarding_step, district, created_at, next_payment_due, parent_pack_enabled')
+      .select(
+        'id, name, phone, plan, status, health_score, health_status, health_score_band, subscription_renewal_date, all_in_price, billing_period, onboarding_completed, onboarding_step, district, created_at, next_payment_due, parent_pack_enabled',
+      )
       .order('health_score', { ascending: true, nullsFirst: false }),
     supabase.from('admin_payments').select('amount').gte('paid_at', monthStart),
     supabase.from('admin_payments').select('amount').gte('paid_at', quarterStart),
@@ -247,6 +250,7 @@ export async function GET(request: NextRequest) {
     plan: string;
     status: string | null;
     health_score: number | null;
+    health_status: string | null;
     health_score_band: string | null;
     subscription_renewal_date: string | null;
     all_in_price: number | string | null;
@@ -260,6 +264,54 @@ export async function GET(request: NextRequest) {
   };
 
   const allCenters = (centersResult.data ?? []) as CenterRow[];
+
+  const { data: ownerListRaw } = await supabase
+    .from('users')
+    .select('id, center_id, phone')
+    .eq('role', 'owner');
+
+  const ownerByCenter = new Map<string, { id: string; phone: string | null }>();
+  for (const r of ownerListRaw ?? []) {
+    const row = r as { id: string; center_id: string | null; phone: string | null };
+    if (row.center_id && !ownerByCenter.has(row.center_id)) {
+      ownerByCenter.set(row.center_id, { id: row.id, phone: row.phone ?? null });
+    }
+  }
+
+  const MS_DAY = 86_400_000;
+  const activeCentersOnly = allCenters.filter((c) => c.status === 'active');
+
+  function pickTierCenters(tier: 'red' | 'amber'): CenterRow[] {
+    return activeCentersOnly
+      .filter((c) => c.health_status === tier)
+      .sort((a, b) => (a.health_score ?? 101) - (b.health_score ?? 101))
+      .slice(0, 10);
+  }
+
+  async function buildTierRows(rows: CenterRow[]): Promise<CeoCenterHealthTierRow[]> {
+    return Promise.all(
+      rows.map(async (c) => {
+        const o = ownerByCenter.get(c.id);
+        let days_since_owner_login: number | null = null;
+        if (o?.id) {
+          const { data, error } = await supabase.auth.admin.getUserById(o.id);
+          if (!error && data?.user?.last_sign_in_at) {
+            days_since_owner_login = Math.floor(
+              (Date.now() - new Date(data.user.last_sign_in_at).getTime()) / MS_DAY,
+            );
+          }
+        }
+        return {
+          id: c.id,
+          name: c.name,
+          plan: c.plan,
+          health_score: c.health_score,
+          days_since_owner_login,
+          owner_phone: o?.phone ?? null,
+        };
+      }),
+    );
+  }
 
   const atRiskCount = allCenters.filter(
     (c) => c.health_score_band === 'At Risk' || c.health_score_band === 'Critical',
@@ -313,10 +365,20 @@ export async function GET(request: NextRequest) {
       created_at: c.created_at,
     }));
 
-  const [actionQueue, pipeline] = await Promise.all([
+  const [actionQueue, pipeline, redTierRows, amberTierRows] = await Promise.all([
     getActionQueue(supabase, 20),
     getPipelineSummary(supabase),
+    buildTierRows(pickTierCenters('red')),
+    buildTierRows(pickTierCenters('amber')),
   ]);
+
+  const center_health_tiers = {
+    green: activeCentersOnly.filter((c) => c.health_status === 'green').length,
+    amber: activeCentersOnly.filter((c) => c.health_status === 'amber').length,
+    red: activeCentersOnly.filter((c) => c.health_status === 'red').length,
+    red_centers: redTierRows,
+    amber_centers: amberTierRows,
+  };
 
   const newDashboardFields: CeoDashboardData = {
     hero: {
@@ -330,6 +392,7 @@ export async function GET(request: NextRequest) {
     pipeline,
     activation: { centers: activationCenters },
     centers_health: centersHealth,
+    center_health_tiers,
     cash: {
       collected_this_quarter: cashQtd,
       cash_collected_mtd: cashMtd,

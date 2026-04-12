@@ -5,8 +5,9 @@ import { useLocale, useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import { ChartCard } from '@/components/charts';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
-import type { CeoDashboardData, LeadStage } from '@/types/ceo';
+import type { CeoCenterHealthTierRow, CeoDashboardData, LeadStage } from '@/types/ceo';
 import { ChevronDown } from 'lucide-react';
 
 const SECTION_IDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
@@ -39,6 +40,7 @@ export default function CeoDashboardPage() {
   const locale = useLocale();
   const t = useTranslations('ceo');
   const tCommon = useTranslations('common');
+  const th = useTranslations('health');
 
   const [data, setData] = useState<CeoDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,6 +131,14 @@ export default function CeoDashboardPage() {
     : null;
 
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const defaultTiers = {
+    green: 0,
+    amber: 0,
+    red: 0,
+    red_centers: [] as CeoCenterHealthTierRow[],
+    amber_centers: [] as CeoCenterHealthTierRow[],
+  };
 
   if (loading || !data) {
     return (
@@ -263,6 +273,12 @@ export default function CeoDashboardPage() {
     green: data.action_queue.actions.filter((a) => a.priority === 'green'),
   };
 
+  const tiers = data.center_health_tiers ?? defaultTiers;
+
+  function waDigits(phone: string | null): string {
+    return (phone ?? '').replace(/\D/g, '');
+  }
+
   return (
     <div className="flex min-h-[calc(100vh-56px)] md:min-h-screen w-full min-w-0 bg-[var(--color-surface-0)] pt-14 lg:pt-0 page-enter">
       <AdminSidebar activeRoute={pathname} />
@@ -339,6 +355,163 @@ export default function CeoDashboardPage() {
                   </p>
                 </div>
               </div>
+            </section>
+
+            <section id="section-center-health" aria-labelledby="center-health-heading">
+              <h2
+                id="center-health-heading"
+                className="text-sm font-semibold text-[var(--color-text-primary)] mb-3"
+              >
+                {th('title')}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <ChartCard title={th('green')} value={tiers.green} minHeight={88} loading={false}>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span
+                      className="size-3 rounded-full shrink-0"
+                      style={{ background: 'var(--color-brand-500)' }}
+                      aria-hidden
+                    />
+                  </div>
+                </ChartCard>
+                <ChartCard title={th('amber')} value={tiers.amber} minHeight={88} loading={false}>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span
+                      className="size-3 rounded-full shrink-0"
+                      style={{ background: 'var(--color-warning)' }}
+                      aria-hidden
+                    />
+                  </div>
+                </ChartCard>
+                <ChartCard title={th('red')} value={tiers.red} minHeight={88} loading={false}>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span
+                      className="size-3 rounded-full shrink-0"
+                      style={{ background: 'var(--color-danger)' }}
+                      aria-hidden
+                    />
+                  </div>
+                </ChartCard>
+              </div>
+
+              <ChartCard title={th('redTableTitle')} minHeight={120} loading={false}>
+                <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] -mx-1">
+                  <table className="w-full text-sm text-start">
+                    <thead className="bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">{th('colCenter')}</th>
+                        <th className="px-3 py-2 font-medium">{th('colPlan')}</th>
+                        <th className="px-3 py-2 font-medium">{th('colDaysSinceLogin')}</th>
+                        <th className="px-3 py-2 font-medium">{th('score')}</th>
+                        <th className="px-3 py-2 font-medium w-12">{th('whatsapp')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tiers.red_centers.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-3 py-4 text-[var(--color-text-secondary)]">
+                            {tCommon('empty')}
+                          </td>
+                        </tr>
+                      ) : (
+                        tiers.red_centers.map((row) => {
+                          const d = waDigits(row.owner_phone);
+                          return (
+                            <tr
+                              key={row.id}
+                              className="border-t border-[var(--color-border-subtle)] text-[var(--color-text-primary)]"
+                            >
+                              <td className="px-3 py-2 font-medium">{row.name}</td>
+                              <td className="px-3 py-2">{row.plan}</td>
+                              <td className="px-3 py-2">
+                                {row.days_since_owner_login == null
+                                  ? tCommon('notSet')
+                                  : th('daysAgo', {
+                                      days: row.days_since_owner_login.toLocaleString('en-US', {
+                                        useGrouping: false,
+                                      }),
+                                    })}
+                              </td>
+                              <td className="px-3 py-2 font-mono tabular-nums">
+                                {row.health_score == null
+                                  ? tCommon('notSet')
+                                  : row.health_score.toLocaleString('en-US')}
+                              </td>
+                              <td className="px-3 py-2">
+                                {d.length > 0 ? (
+                                  <a
+                                    href={`https://wa.me/${d}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[var(--color-brand-500)] font-medium underline"
+                                    aria-label={th('whatsapp')}
+                                  >
+                                    {th('whatsapp')}
+                                  </a>
+                                ) : (
+                                  <span className="text-[var(--color-text-tertiary)]">
+                                    {tCommon('notSet')}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </ChartCard>
+
+              <div className="h-4" />
+
+              <ChartCard title={th('amberTableTitle')} minHeight={120} loading={false}>
+                <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] -mx-1">
+                  <table className="w-full text-sm text-start">
+                    <thead className="bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">{th('colCenter')}</th>
+                        <th className="px-3 py-2 font-medium">{th('colPlan')}</th>
+                        <th className="px-3 py-2 font-medium">{th('colDaysSinceLogin')}</th>
+                        <th className="px-3 py-2 font-medium">{th('score')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tiers.amber_centers.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-3 py-4 text-[var(--color-text-secondary)]">
+                            {tCommon('empty')}
+                          </td>
+                        </tr>
+                      ) : (
+                        tiers.amber_centers.map((row) => (
+                          <tr
+                            key={row.id}
+                            className="border-t border-[var(--color-border-subtle)] text-[var(--color-text-primary)]"
+                          >
+                            <td className="px-3 py-2 font-medium">{row.name}</td>
+                            <td className="px-3 py-2">{row.plan}</td>
+                            <td className="px-3 py-2">
+                              {row.days_since_owner_login == null
+                                ? tCommon('notSet')
+                                : th('daysAgo', {
+                                    days: row.days_since_owner_login.toLocaleString('en-US', {
+                                      useGrouping: false,
+                                    }),
+                                  })}
+                            </td>
+                            <td className="px-3 py-2 font-mono tabular-nums">
+                              {row.health_score == null
+                                ? tCommon('notSet')
+                                : row.health_score.toLocaleString('en-US')}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </ChartCard>
             </section>
 
             <section id="section-b">
