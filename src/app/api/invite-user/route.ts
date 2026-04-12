@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       }, { status: 409 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
     const acceptInviteUrl = `${appUrl}/en/accept-invite`;
 
     const invitePayload: Record<string, unknown> = {

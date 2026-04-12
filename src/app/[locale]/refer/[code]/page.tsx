@@ -6,7 +6,7 @@ import { useRouter } from '@/i18n/routing';
 import { Link } from '@/i18n/routing';
 import { Gift, Loader2 } from 'lucide-react';
 
-const APP_URL = typeof window !== 'undefined' ? window.location.origin : 'https://center-hq.vercel.app';
+const APP_URL = typeof window !== 'undefined' ? window.location.origin : 'https://centerhq.app';
 
 export default function ReferPage() {
   const params = useParams();

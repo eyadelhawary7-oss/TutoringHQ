@@ -5,7 +5,7 @@ import fs from 'fs'
 export const AUTH_FILE = path.join(__dirname, '../../playwright/.auth/user.json')
 
 setup('authenticate once for all tests', async ({ page }) => {
-  const base = process.env.PLAYWRIGHT_BASE_URL || 'https://center-hq.vercel.app'
+  const base = process.env.PLAYWRIGHT_BASE_URL || 'https://centerhq.app'
 
   await page.goto(`${base}/ar/login`)
   await page.locator('input[type="tel"]').fill(process.env.TEST_PHONE!, { timeout: 30_000 })

@@ -379,7 +379,7 @@ export async function POST(request: Request) {
 
 🔗 View in admin panel.`;
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
     const adminWhatsAppUrl = `https://wa.me/201220601410?text=${encodeURIComponent(whatsappMessage)}`;
 
     return NextResponse.json({

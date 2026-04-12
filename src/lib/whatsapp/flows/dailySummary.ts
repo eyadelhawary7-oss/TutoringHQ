@@ -9,7 +9,7 @@ import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '../client';
 
 const TEMPLATE = 'chq_daily_summary';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

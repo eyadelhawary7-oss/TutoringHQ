@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const BASE_URL = process.env.BASE_URL ?? 'https://center-hq.vercel.app'
+const BASE_URL = process.env.BASE_URL ?? 'https://centerhq.app'
 
 test.describe('Admin Platform Pages', () => {
   test('CEO dashboard loads all three founder panels', async ({ page }) => {

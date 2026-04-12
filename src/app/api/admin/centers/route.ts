@@ -928,7 +928,7 @@ export async function PUT(request: Request) {
       // Email notifications not implemented — WhatsApp only
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://center-hq.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
     const credentialsMessage = `تم تفعيل حسابك في CenterHQ! 🎉
 
 🔐 بيانات الدخول:

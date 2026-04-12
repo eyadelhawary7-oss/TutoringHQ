@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 /** Production smoke tests: console listener filters 404/resource failures, next-intl MISSING_MESSAGE, and camera Permissions-Policy noise. */
-const BASE_URL = process.env.BASE_URL ?? 'https://center-hq.vercel.app'
+const BASE_URL = process.env.BASE_URL ?? 'https://centerhq.app'
 
 test.describe('Center Owner Pages', () => {
   test('dashboard loads', async ({ page }) => {

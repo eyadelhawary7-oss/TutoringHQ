@@ -28,7 +28,7 @@ const FAQ_PATTERNS = [
   {
     triggers: ['نسيت رمز', 'forgot pin', 'PIN', 'كلمة السر'],
     response:
-      'لإعادة تعيين الرمز: center-hq.vercel.app/ar/forgot-password — ستصلك رسالة على رقمك.',
+      'لإعادة تعيين الرمز: centerhq.app/ar/forgot-password — ستصلك رسالة على رقمك.',
     key: 'forgot_pin',
   },
   {
@@ -49,7 +49,7 @@ const FAQ_PATTERNS = [
   },
   {
     triggers: ['السعر', 'price', 'اشتراك', 'باقات'],
-    response: 'باقاتنا تبدأ من 1,999 جنيه/شهر. زور center-hq.vercel.app لتفاصيل كل باقة.',
+    response: 'باقاتنا تبدأ من 1,999 جنيه/شهر. زور centerhq.app لتفاصيل كل باقة.',
     key: 'pricing',
   },
   {

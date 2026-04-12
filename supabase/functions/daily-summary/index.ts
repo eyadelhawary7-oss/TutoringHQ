@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
   }
 
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const appUrl = Deno.env.get('APP_URL') || 'https://center-hq.vercel.app';
+  const appUrl = Deno.env.get('APP_URL') || 'https://centerhq.app';
 
   if (!supabaseServiceKey) {
     return new Response(

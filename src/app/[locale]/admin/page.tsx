@@ -1075,7 +1075,7 @@ function AdminPageContent() {
       `السلام عليكم ${centerName} 👋\n\n` +
       `نود تذكيركم بأن دفعة اشتراككم في CenterHQ بقيمة *${formattedAmount} ${locale === 'ar' ? 'ج.م' : 'EGP'}* مستحقة بتاريخ *${formattedDue}*.\n\n` +
       `يمكنكم تسوية الدفع ورفع إثبات الدفع من خلال:\n` +
-      `🔗 https://center-hq.vercel.app/settings/billing\n\n` +
+      `🔗 https://centerhq.app/settings/billing\n\n` +
       `شكراً لثقتكم بـ CenterHQ 🙏`
     );
     const waUrl = `https://wa.me/${phone}?text=${message}`;

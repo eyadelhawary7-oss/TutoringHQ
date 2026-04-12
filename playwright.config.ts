@@ -29,7 +29,7 @@ export default defineConfig({
     baseURL:
       process.env.PLAYWRIGHT_BASE_URL ??
       process.env.BASE_URL ??
-      'https://center-hq.vercel.app',
+      'https://centerhq.app',
 
     // Screenshot on failure only
     screenshot: 'only-on-failure',

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { dateInNDays } from '@/lib/parentPack';
 
-const PLATFORM_URL = 'https://center-hq.vercel.app';
+const PLATFORM_URL = 'https://centerhq.app';
 
 function publicAppBase(): string {
   return (process.env.NEXT_PUBLIC_APP_URL ?? PLATFORM_URL).replace(/\/$/, '');
