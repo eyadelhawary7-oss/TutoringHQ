@@ -1,10 +1,12 @@
 /**
  * Daily summary API — invoked by daily-summary Edge Function
  * Queries yesterday's data (Cairo time), sends chq_daily_summary template
+ * CEO: daily freeform briefing to ADMIN_WHATSAPP_NUMBER (Automation 9)
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { normalizeWhatsAppNumber, sendWhatsAppMessage } from '@/lib/whatsapp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   sendDailySummary,
@@ -22,6 +24,269 @@ function getEgyptDayOfWeek(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
   const jsDay = new Date(y, m - 1, d).getDay();
   return (jsDay + 1) % 7;
+}
+
+function utcTodayBounds(): { start: string; end: string; dateStr: string } {
+  const d = new Date();
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth();
+  const day = d.getUTCDate();
+  const start = new Date(Date.UTC(y, m, day, 0, 0, 0, 0)).toISOString();
+  const end = new Date(Date.UTC(y, m, day + 1, 0, 0, 0, 0)).toISOString();
+  const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return { start, end, dateStr };
+}
+
+type CronFailRow = { cron_name: string; last_failure_at: string | null };
+
+/** Sum MRR: centers.status = active; prefer centers.all_in_price, else pricing_plans.all_in_price when embed works. */
+async function ceoQueryMrr(admin: SupabaseClient): Promise<number> {
+  try {
+    const { data, error } = await admin
+      .from('centers')
+      .select('all_in_price, pricing_plans(all_in_price)')
+      .eq('status', 'active');
+    if (error) throw error;
+    let sum = 0;
+    for (const raw of data ?? []) {
+      const row = raw as {
+        all_in_price?: number | null;
+        pricing_plans?: { all_in_price?: number | null } | { all_in_price?: number | null }[] | null;
+      };
+      let v = Number(row.all_in_price ?? 0);
+      if (!v && row.pricing_plans != null) {
+        const pp = row.pricing_plans;
+        const planRow = Array.isArray(pp) ? pp[0] : pp;
+        v = Number(planRow?.all_in_price ?? 0);
+      }
+      sum += v;
+    }
+    return sum;
+  } catch (e) {
+    try {
+      const { data, error } = await admin.from('centers').select('all_in_price').eq('status', 'active');
+      if (error) throw error;
+      return (data ?? []).reduce(
+        (s, r) => s + Number((r as { all_in_price?: number | null }).all_in_price ?? 0),
+        0,
+      );
+    } catch (e2) {
+      console.error('[daily-summary] CEO MRR:', e2);
+      return 0;
+    }
+  }
+}
+
+async function ceoQueryCount(
+  label: string,
+  run: () => PromiseLike<{ count: number | null; error: { message: string } | null }>,
+): Promise<number> {
+  try {
+    const { count, error } = await run();
+    if (error) throw error;
+    return count ?? 0;
+  } catch (e) {
+    console.error(`[daily-summary] CEO ${label}:`, e);
+    return 0;
+  }
+}
+
+async function ceoQuerySumPaymentsToday(admin: SupabaseClient, start: string, end: string): Promise<number> {
+  try {
+    const { data, error } = await admin
+      .from('payments')
+      .select('amount')
+      .gte('paid_at', start)
+      .lt('paid_at', end)
+      .not('paid_at', 'is', null)
+      .in('status', ['paid', 'confirmed']);
+    if (error) throw error;
+    return (data ?? []).reduce((s, r) => s + Number((r as { amount?: unknown }).amount ?? 0), 0);
+  } catch (e) {
+    console.error('[daily-summary] CEO collected today:', e);
+    return 0;
+  }
+}
+
+async function ceoQueryFailedCrons(admin: SupabaseClient): Promise<CronFailRow[]> {
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await admin
+      .from('cron_health_log')
+      .select('cron_name, last_failure_at')
+      .gt('last_failure_at', since);
+    if (error) throw error;
+    return (data ?? []) as CronFailRow[];
+  } catch (e) {
+    console.error('[daily-summary] CEO failed crons:', e);
+    return [];
+  }
+}
+
+async function ceoQueryLastBackup(admin: SupabaseClient): Promise<string> {
+  try {
+    const { data, error } = await admin
+      .from('cron_health_log')
+      .select('last_success_at')
+      .eq('cron_name', 'weekly-backup')
+      .maybeSingle();
+    if (error) throw error;
+    const at = (data as { last_success_at?: string | null } | null)?.last_success_at;
+    if (!at) return 'None';
+    return new Date(at).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch (e) {
+    console.error('[daily-summary] CEO last backup:', e);
+    return 'None';
+  }
+}
+
+async function runCeoDailyBriefing(admin: SupabaseClient): Promise<void> {
+  try {
+    const { start, end, dateStr } = utcTodayBounds();
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [
+      mrr,
+      activeCount,
+      pendingPaymentCount,
+      redCount,
+      amberCount,
+      newToday,
+      churnedWeek,
+      collectedToday,
+      failedCount,
+      overdueCount,
+      failedCrons,
+      lastBackup,
+      inboundCount,
+      deflectedCount,
+      smCount,
+    ] = await Promise.all([
+      ceoQueryMrr(admin),
+      ceoQueryCount('active centers', () =>
+        admin.from('centers').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+      ),
+      ceoQueryCount('pending payment', () =>
+        admin.from('centers').select('*', { count: 'exact', head: true }).eq('status', 'pending_payment'),
+      ),
+      ceoQueryCount('red health', () =>
+        admin
+          .from('centers')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'active')
+          .eq('health_status', 'red'),
+      ),
+      ceoQueryCount('amber health', () =>
+        admin
+          .from('centers')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'active')
+          .eq('health_status', 'amber'),
+      ),
+      ceoQueryCount('new today', () =>
+        admin
+          .from('centers')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'active')
+          .gte('approved_at', start)
+          .lt('approved_at', end),
+      ),
+      ceoQueryCount('churned week', () =>
+        admin
+          .from('centers')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'suspended')
+          .gte('updated_at', sevenDaysAgo),
+      ),
+      ceoQuerySumPaymentsToday(admin, start, end),
+      ceoQueryCount('failed invoices', () =>
+        admin
+          .from('invoices')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'failed')
+          .gte('updated_at', start)
+          .lt('updated_at', end),
+      ),
+      ceoQueryCount('overdue invoices', () =>
+        admin.from('invoices').select('*', { count: 'exact', head: true }).eq('status', 'pending').lt('due_date', dateStr),
+      ),
+      ceoQueryFailedCrons(admin),
+      ceoQueryLastBackup(admin),
+      ceoQueryCount('inbound WA', () =>
+        admin
+          .from('whatsapp_inbound_log')
+          .select('*', { count: 'exact', head: true })
+          .gte('received_at', start)
+          .lt('received_at', end),
+      ),
+      ceoQueryCount('FAQ deflected', () =>
+        admin
+          .from('whatsapp_inbound_log')
+          .select('*', { count: 'exact', head: true })
+          .eq('matched_faq', true)
+          .gte('received_at', start)
+          .lt('received_at', end),
+      ),
+      ceoQueryCount('passed SM', () =>
+        admin
+          .from('whatsapp_inbound_log')
+          .select('*', { count: 'exact', head: true })
+          .eq('matched_faq', false)
+          .gte('received_at', start)
+          .lt('received_at', end),
+      ),
+    ]);
+
+    const today = new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const message =
+      `CenterHQ Daily Briefing - ${today}\n\n` +
+      `REVENUE\n` +
+      `MRR: ${mrr.toLocaleString('en-US')} EGP\n` +
+      `Active centers: ${activeCount.toLocaleString('en-US')}\n` +
+      `Pending payment: ${pendingPaymentCount.toLocaleString('en-US')}\n\n` +
+      `HEALTH\n` +
+      `Critical (red): ${redCount.toLocaleString('en-US')}\n` +
+      `At-risk (amber): ${amberCount.toLocaleString('en-US')}\n` +
+      `New today: ${newToday.toLocaleString('en-US')}\n` +
+      `Churned this week: ${churnedWeek.toLocaleString('en-US')}\n\n` +
+      `PAYMENTS\n` +
+      `Collected today: ${collectedToday.toLocaleString('en-US')} EGP\n` +
+      `Failed payments: ${failedCount.toLocaleString('en-US')}\n` +
+      `Overdue invoices: ${overdueCount.toLocaleString('en-US')}\n\n` +
+      `CRONS\n` +
+      `Failed (24h): ${
+        failedCrons.length === 0 ? 'None' : failedCrons.map((c) => c.cron_name).join(', ')
+      }\n` +
+      `Last backup: ${lastBackup}\n\n` +
+      `SUPPORT\n` +
+      `Inbound WA: ${inboundCount.toLocaleString('en-US')}\n` +
+      `FAQ deflected: ${deflectedCount.toLocaleString('en-US')}\n` +
+      `Passed to SM: ${smCount.toLocaleString('en-US')}`;
+
+    const raw = process.env.ADMIN_WHATSAPP_NUMBER?.trim();
+    if (!raw) {
+      console.warn('[daily-summary] CEO briefing skipped: ADMIN_WHATSAPP_NUMBER not set');
+      return;
+    }
+    const ok = await sendWhatsAppMessage(normalizeWhatsAppNumber(raw), message);
+    if (!ok) {
+      console.error('[daily-summary] CEO briefing WhatsApp send failed');
+    }
+  } catch (e) {
+    console.error('[daily-summary] CEO briefing:', e);
+  }
 }
 
 export async function POST(request: Request) {
@@ -53,6 +318,8 @@ export async function POST(request: Request) {
   }
 
   try {
+    await runCeoDailyBriefing(supabase);
+
     const yesterdayStr = getYesterdayCairo();
     const { start: rangeStart, end: rangeEnd } = getYesterdayCairoUtcRange();
     const egyptDay = getEgyptDayOfWeek(yesterdayStr);
