@@ -419,7 +419,7 @@ export default function SchedulePage() {
                         {session.group_name || tCommon('notAvailable')}
                       </div>
                       <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                        {session.room_name || tCommon('notAvailable')} • {session.member_count ?? 0} طالب
+                        {session.room_name || tCommon('notAvailable')} • {tCommon('studentCount', { count: session.member_count ?? 0 })}
                       </div>
                     </div>
                   ))}
@@ -446,7 +446,7 @@ export default function SchedulePage() {
                         {session.group_name || tCommon('notAvailable')}
                       </div>
                       <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                        {session.room_name || tCommon('notAvailable')} • {session.member_count ?? 0} طالب
+                        {session.room_name || tCommon('notAvailable')} • {tCommon('studentCount', { count: session.member_count ?? 0 })}
                       </div>
                     </div>
                   ))}

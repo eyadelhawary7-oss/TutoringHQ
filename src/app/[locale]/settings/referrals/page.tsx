@@ -170,7 +170,7 @@ export default function SettingsReferralsPage() {
 
   const formatDate = (d: string) => {
     const date = new Date(d);
-    return date.toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB', {
+    return date.toLocaleDateString(locale === 'ar' ? 'ar' : 'en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -198,12 +198,12 @@ export default function SettingsReferralsPage() {
 
   const getStatusBadge = (status: string) => {
     if (status === 'active') {
-      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">{locale === 'ar' ? 'نشط' : 'Active'}</span>;
+      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">{tRef('statusActiveShort')}</span>;
     }
     if (status === 'pending') {
-      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{locale === 'ar' ? 'قيد الانتظار' : 'Pending'}</span>;
+      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{tRef('statusPendingShort')}</span>;
     }
-    return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">{locale === 'ar' ? 'غير نشط' : 'Inactive'}</span>;
+    return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">{tRef('statusInactiveShort')}</span>;
   };
 
   return (
@@ -228,7 +228,7 @@ export default function SettingsReferralsPage() {
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
             <h2 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <Gift className="w-5 h-5 text-teal-600" />
-              {locale === 'ar' ? 'ملخص برنامج الإحالة' : 'Referral Program Summary'}
+              {tRef('programSummary')}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
@@ -256,7 +256,7 @@ export default function SettingsReferralsPage() {
                 ) : null}
               </div>
               <div>
-                <p className="text-xs text-[var(--color-text-secondary)] mb-1">{locale === 'ar' ? 'عدد السناتر المُحالة' : 'Referred Centers'}</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('referredCentersCountLabel')}</p>
                 <p className="text-xl font-bold text-[var(--color-text-primary)]">{referrals.length}</p>
               </div>
               <div>
@@ -270,7 +270,7 @@ export default function SettingsReferralsPage() {
             <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <div className="p-4 border-b border-[var(--color-border-subtle)]">
                 <h3 className="font-bold text-[var(--color-text-primary)]">
-                  {locale === 'ar' ? 'سجل طلبات الصرف' : 'Payout history'}
+                  {tRef('payoutHistoryTitle')}
                 </h3>
               </div>
               <div className="overflow-x-auto">
@@ -278,16 +278,16 @@ export default function SettingsReferralsPage() {
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
                       <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
-                        {locale === 'ar' ? 'المبلغ' : 'Amount'}
+                        {tRef('payoutAmountLabel')}
                       </th>
                       <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
-                        {locale === 'ar' ? 'الحالة' : 'Status'}
+                        {tRef('tableStatus')}
                       </th>
                       <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
-                        {locale === 'ar' ? 'تاريخ الطلب' : 'Requested'}
+                        {tRef('payoutRequestedCol')}
                       </th>
                       <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
-                        PDF
+                        {tRef('pdfColumn')}
                       </th>
                     </tr>
                   </thead>
@@ -311,7 +311,7 @@ export default function SettingsReferralsPage() {
                                 className="inline-flex items-center gap-1 rounded-lg border border-teal-600/60 px-2 py-1 text-xs font-semibold text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/30"
                               >
                                 <Download className="w-3.5 h-3.5" />
-                                {locale === 'ar' ? 'تحميل' : 'Download'}
+                                {tc('download')}
                               </button>
                             ) : (
                               <span className="text-xs text-[var(--color-text-secondary)]">—</span>
@@ -347,15 +347,13 @@ export default function SettingsReferralsPage() {
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
             <div className="p-4 border-b border-[var(--color-border-subtle)]">
               <h3 className="font-bold text-[var(--color-text-primary)]">
-                {locale === 'ar' ? 'قائمة الإحالات' : 'Referrals List'}
+                {tRef('referralListTitle')}
               </h3>
             </div>
             {referrals.length === 0 ? (
               <div className="p-12 text-center text-[var(--color-text-secondary)]">
                 <p className="font-medium">
-                  {locale === 'ar'
-                    ? 'لا توجد إحالات بعد. شارك كودك مع السناتر الأخرى!'
-                    : 'No referrals yet. Share your code with other centers!'}
+                  {tRef('noReferralsShareMessage')}
                 </p>
               </div>
             ) : (
@@ -364,19 +362,19 @@ export default function SettingsReferralsPage() {
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
                       <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
-                        {locale === 'ar' ? 'اسم السنتر' : 'Center Name'}
+                        {tRef('centerNameColumn')}
                       </th>
                       <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
-                        {locale === 'ar' ? 'تاريخ الانضمام' : 'Join Date'}
+                        {tRef('joinDateColumn')}
                       </th>
                       <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
-                        {locale === 'ar' ? 'الخطة' : 'Plan'}
+                        {t('plan')}
                       </th>
                       <th className="text-start py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
-                        {locale === 'ar' ? 'الحالة' : 'Status'}
+                        {tRef('tableStatus')}
                       </th>
                       <th className="text-end py-3 px-4 font-semibold text-[var(--color-text-secondary)]">
-                        {locale === 'ar' ? 'الأرباح المحققة' : 'Earned'}
+                        {tRef('earnedColumn')}
                       </th>
                     </tr>
                   </thead>

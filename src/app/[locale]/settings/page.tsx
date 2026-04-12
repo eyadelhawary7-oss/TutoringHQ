@@ -596,7 +596,7 @@ function SettingsPageContent() {
       });
       const result = await res.json();
       if (!res.ok) {
-        setInviteError(result.code === 'TEAM_LIMIT_REACHED' ? t('planLimitReached') : result.error || 'Failed');
+        setInviteError(result.code === 'TEAM_LIMIT_REACHED' ? t('planLimitReached') : result.error || tCommon('errorGeneric'));
         return;
       }
       if (result.success && result.member) {
@@ -618,7 +618,7 @@ function SettingsPageContent() {
         setShowInviteModal(false);
         setSavedMessage(result.message || t('inviteSuccess'));
         setTimeout(() => setSavedMessage(''), 5000);
-      } else setInviteError(result.error || 'Failed');
+      } else setInviteError(result.error || tCommon('errorGeneric'));
     } catch { setInviteError(tCommon('error')); }
     finally { setInviteSubmitting(false); }
   };
@@ -647,7 +647,7 @@ function SettingsPageContent() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, ...await getCsrfHeaders(session.access_token) },
         body: JSON.stringify({ targetUserId: member.id, permissions: { is_active: newStatus }, centerId }),
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) throw new Error('permission_update_failed');
       setTeamMembers(prev => prev.map(m => m.id === member.id ? { ...m, is_active: newStatus } : m));
       setSavedMessage(newStatus ? t('memberActivated') : t('memberDeactivated'));
       setTimeout(() => setSavedMessage(''), 2000);
@@ -816,7 +816,7 @@ function SettingsPageContent() {
                       {logoUrl ? (
                         <img
                           src={logoUrl}
-                          alt="Center logo"
+                          alt={t('centerLogoAlt')}
                           className="w-full h-full object-cover"
                           onError={() => setLogoUrl(null)}
                         />
@@ -944,7 +944,7 @@ function SettingsPageContent() {
                   <QrCode className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('scanner')}</h3>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('scannerTitle')}</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('defaultMode')}</p>
                 </div>
               </div>
@@ -1388,7 +1388,7 @@ function SettingsPageContent() {
               <form onSubmit={handleInvite} className="p-6 space-y-4">
                 {inviteError && <p className="text-sm text-red-500">{inviteError}</p>}
                 <div><label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('inviteName')}</label><input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder={t('inviteName')} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" /></div>
-                <div><label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('invitePhone')}</label><input type="tel" value={invitePhone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setInvitePhone(v); setInviteError(''); }} placeholder="01220601310" dir="ltr" className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" required /></div>
+                <div><label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('invitePhone')}</label><input type="tel" value={invitePhone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setInvitePhone(v); setInviteError(''); }} placeholder={t('phonePlaceholder')} dir="ltr" className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]" required /></div>
                 <div><label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('role')}</label><select value={inviteRole} onChange={(e) => { const v = e.target.value; if (v === 'assistant' || v === 'teacher') setInviteRole(v); }} className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"><option value="assistant">{t('assistant')}</option><option value="teacher">{tNav('roleTeacher')}</option></select></div>
                 {inviteRole === 'teacher' ? (
                   <>

@@ -177,6 +177,7 @@ function PaymobModal({
   sessionId,
   invoicePollId,
   title,
+  iframeTitle,
   closeLabel,
   onClose,
   onSuccess,
@@ -186,6 +187,7 @@ function PaymobModal({
   sessionId: string | null;
   invoicePollId: string | null;
   title: string;
+  iframeTitle: string;
   closeLabel: string;
   onClose: () => void;
   onSuccess: () => void;
@@ -235,7 +237,7 @@ function PaymobModal({
             ✕
           </button>
         </div>
-        <iframe src={iframeUrl} className="h-[600px] w-full" title="Paymob" />
+        <iframe src={iframeUrl} className="h-[600px] w-full" title={iframeTitle} />
       </div>
     </div>
   );
@@ -3030,6 +3032,7 @@ export default function BillingPage() {
           sessionId={paymobSessionId}
           invoicePollId={paymobInvoicePollId}
           title={t('completePayment')}
+          iframeTitle={t('paymobIframeTitle')}
           closeLabel={t('close')}
           onClose={closePaymob}
           onSuccess={onPaymobSuccess}

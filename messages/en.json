@@ -186,6 +186,7 @@
     "active": "Active",
     "inactive": "Inactive",
     "students": "students",
+    "student": "Student",
     "studentCount": "{count, plural, one {# student} other {# students}}",
     "all": "All",
     "amount": "Amount",
@@ -1111,7 +1112,18 @@
     "commissionTiersTitle": "Commission structure",
     "commissionTierMonth1": "Month 1: 25% — held for 1 month before withdrawal",
     "commissionTierMonths2to12": "Months 2–12: 10% per month",
-    "commissionTierMonth13Plus": "Month 13 onward: 5% per month (ongoing while the referred center stays subscribed)"
+    "commissionTierMonth13Plus": "Month 13 onward: 5% per month (ongoing while the referred center stays subscribed)",
+    "programSummary": "Referral program summary",
+    "referredCentersCountLabel": "Referred centers",
+    "payoutHistoryTitle": "Payout history",
+    "payoutRequestedCol": "Requested",
+    "referralListTitle": "Referrals list",
+    "noReferralsShareMessage": "No referrals yet. Share your code with other centers!",
+    "centerNameColumn": "Center name",
+    "joinDateColumn": "Join date",
+    "earnedColumn": "Earned",
+    "statusInactiveShort": "Inactive",
+    "pdfColumn": "PDF"
   },
   "referral": {
     "referralCodeOptional": "Referral Code (optional)",
@@ -1316,7 +1328,11 @@
     "viewQR": "View QR Code",
     "prevPage": "Previous",
     "nextPage": "Next",
-    "pageOf": "Page {page} of {total}"
+    "pageOf": "Page {page} of {total}",
+    "print_card_count": "{count} cards selected",
+    "print_cards": "Print Cards",
+    "printShowGroup": "Show Group",
+    "academicYear": "Academic Year"
   },
   "print": {
     "title": "Print Student Cards",
@@ -2027,9 +2043,10 @@
     "assistant": "Assistant",
     "invite": "Send Invite",
     "scanner": "Scanner Settings",
+    "scannerTitle": "Scanner Settings",
     "defaultMode": "Default Mode",
     "dailySummary": "Daily Summary",
-    "dailySummaryDesc": "Receive daily operations summary via WhatsApp (attendance, payments, balance)",
+    "dailySummaryDesc": "Receive daily operations summary via WhatsApp",
     "dailySummaryToggle": "Receive daily summary on WhatsApp",
     "summerMode": "Summer Mode",
     "summerModeDesc": "When enabled, renewal reminders include a note about new academic year pricing.",
@@ -3946,7 +3963,8 @@
     },
     "whatsappSupport": "WhatsApp Support",
     "contactSupportViaWhatsapp": "Contact support via WhatsApp",
-    "securityAndSignOut": "Security & Sign Out"
+    "securityAndSignOut": "Security & Sign Out",
+    "paymobIframeTitle": "Paymob checkout"
   },
   "cardOrders": {
     "orderIdCards": "Order ID Cards",
