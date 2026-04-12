@@ -24,6 +24,7 @@ interface Group {
 export default function ImportStudentsPage() {
   const t = useTranslations('import');
   const tCommon = useTranslations('common');
+  const tsStudents = useTranslations('students');
 
   const [step, setStep] = useState<ImportStep>('upload');
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
@@ -113,6 +114,21 @@ export default function ImportStudentsPage() {
 
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
+  const downloadTemplate = () => {
+    const headers = 'name,phone,group,notes\n';
+    const example = 'محمد أحمد,01012345678,الرياضيات,\n';
+    const csv = '\uFEFF' + headers + example;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'students_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const getMappedStudents = () => {
     if (!parsedData || !centerId) return [];
     const nameHeader = Object.keys(columnMap).find((k) => columnMap[k] === 'name');
@@ -192,6 +208,15 @@ export default function ImportStudentsPage() {
         {/* Step 1: Upload */}
         {step === 'upload' && (
           <div className="ch-card p-8">
+            <div className="mb-3 text-center">
+              <button
+                type="button"
+                onClick={downloadTemplate}
+                className="text-teal-500 underline text-sm btn-press chq-focus"
+              >
+                {tsStudents('downloadTemplate')}
+              </button>
+            </div>
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}

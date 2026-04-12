@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, auditLog } from '@/lib/db-proxy';
 import { Plus, DoorOpen, X, MoreVertical } from 'lucide-react';
+import { formatNumber } from '@/lib/formatNumber';
 
 interface Room {
   id: string;
@@ -141,7 +142,7 @@ export default function RoomsPage() {
                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                   {t('maxCapacity')}:{' '}
                   {r.capacity != null && Number.isFinite(Number(r.capacity))
-                    ? tCommon('studentCount', { count: Number(r.capacity) })
+                    ? formatNumber(Number(r.capacity), locale)
                     : '—'}
                 </p>
               </div>

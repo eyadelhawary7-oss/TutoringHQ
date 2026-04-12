@@ -129,6 +129,13 @@ function lifecycleFilterLabelKey(f: LifecycleFilter): FilterLabelKey {
   return 'filter_churned';
 }
 
+/** Prefix # for display when the stored value omits it (parity with detail views). */
+function displayStudentNumber(raw: string | null | undefined): string {
+  if (raw == null || String(raw).trim() === '') return '';
+  const s = String(raw).trim();
+  return s.startsWith('#') ? s : `#${s}`;
+}
+
 export default function StudentsPage() {
   const locale = useLocale();
   const ts = useTranslations('students');
@@ -441,7 +448,11 @@ export default function StudentsPage() {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchName = s.name?.toLowerCase().includes(q);
-        const matchNumber = s.student_number?.toUpperCase().includes(q.toUpperCase());
+        const qNum = q.replace(/^#/, '').toUpperCase();
+        const matchNumber = (s.student_number ?? '')
+          .replace(/^#/, '')
+          .toUpperCase()
+          .includes(qNum);
         const matchPhone = (s.phone || '').includes(q);
         if (!matchName && !matchNumber && !matchPhone) return false;
       }
@@ -585,7 +596,8 @@ export default function StudentsPage() {
   const downloadQR = () => {
     if (!qrDataUrl || !qrModalStudent) return;
     const link = document.createElement('a');
-    link.download = `QR-${qrModalStudent.name}-${qrModalStudent.student_number || qrModalStudent.id}.png`;
+    const numForFile = (qrModalStudent.student_number || qrModalStudent.id).replace(/^#/, '');
+    link.download = `QR-${qrModalStudent.name}-${numForFile}.png`;
     link.href = qrDataUrl;
     link.click();
   };
@@ -621,7 +633,7 @@ export default function StudentsPage() {
           <div class="center">
             <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR" /></div>
             <div class="name">${esc(qrModalStudent.name)}</div>
-            <div class="num">${esc(qrModalStudent.student_number || '')}</div>
+            <div class="num">${esc(displayStudentNumber(qrModalStudent.student_number))}</div>
           </div>
           <div class="bottom">CenterHQ</div>
         </div>
@@ -865,7 +877,7 @@ export default function StudentsPage() {
         }));
       }
       setStudents((prev) => [{ ...student, student_number: studentNumber } as Student, ...(prev ?? [])]);
-      toast.success(ts('addStudentSuccess', { name: addForm.name.trim(), studentNumber }));
+      toast.success(ts('addStudentSuccess', { name: addForm.name.trim(), studentNumber: displayStudentNumber(studentNumber) || studentNumber }));
       setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '', parentPackOptIn: false });
       setShowParentSectionAdd(false);
       setShowAddModal(false);
@@ -1244,7 +1256,7 @@ export default function StudentsPage() {
                                   </button>
                                 </td>
                                 <td className="px-4 py-4 align-top font-mono text-[var(--color-text-primary)]" dir="ltr">
-                                  {s.student_number ?? tCommon('notSet')}
+                                  {s.student_number ? displayStudentNumber(s.student_number) : tCommon('notSet')}
                                 </td>
                                 <td className="px-4 py-4 align-top relative">
                                   <div
@@ -1448,7 +1460,7 @@ export default function StudentsPage() {
                             </div>
                             {s.student_number ? (
                               <p className={`${idLineClass} mt-0.5`} dir="ltr">
-                                #{s.student_number}
+                                {displayStudentNumber(s.student_number)}
                               </p>
                             ) : null}
                             {s.phone ? (
@@ -1902,7 +1914,9 @@ export default function StudentsPage() {
             {/* Student details below card */}
             <div className="text-center mb-4">
               <div className="font-bold text-[var(--color-text-primary)]">{qrModalStudent.name}</div>
-              <div className="font-mono text-sm text-[var(--color-text-secondary)]">{qrModalStudent.student_number || ''}</div>
+              <div className="font-mono text-sm text-[var(--color-text-secondary)]">
+                {displayStudentNumber(qrModalStudent.student_number)}
+              </div>
               {(balanceByStudent[qrModalStudent.id] ?? 0) > 0 && (
                 <div className="mt-2 text-sm font-bold text-red-600">
                   {ts('balance')}: {formatCurrency(Math.round(balanceByStudent[qrModalStudent.id]!), locale)}
@@ -2112,7 +2126,7 @@ export default function StudentsPage() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{st?.name ?? tCommon('notAvailable')}</p>
                         <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
-                          {st?.student_number ?? ''}
+                          {displayStudentNumber(st?.student_number ?? '')}
                         </p>
                       </div>
                       <button

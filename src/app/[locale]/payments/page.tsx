@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, type Filter } from '@/lib/db-proxy';
+import { auditLog, dbInsert, dbSelect, type Filter } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { Download, Search } from 'lucide-react';
@@ -125,6 +125,10 @@ export default function PaymentsPage() {
   const router = useRouter();
   const { user, hasPermission } = useUser();
   const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
+  const canCollectPayment =
+    canViewPayments ||
+    user?.can_record_payments === true ||
+    hasPermission('can_record_payments');
 
   const [records, setRecords] = useState<PaymentRecord[] | null>(() => readPaymentsCache());
   const [paymentsFresh, setPaymentsFresh] = useState(false);
@@ -146,6 +150,13 @@ export default function PaymentsPage() {
     paidAt: string;
   } | null>(null);
   const [filterKey, setFilterKey] = useState(0);
+  const [centerId, setCenterId] = useState<string | null>(null);
+  const [centerStudents, setCenterStudents] = useState<{ id: string; name: string; student_number?: string }[]>([]);
+  const [showCollectModal, setShowCollectModal] = useState(false);
+  const [collectStudentId, setCollectStudentId] = useState('');
+  const [collectAmount, setCollectAmount] = useState('');
+  const [collectMethod, setCollectMethod] = useState<'cash' | 'instapay' | 'bank_transfer'>('cash');
+  const [collectSubmitting, setCollectSubmitting] = useState(false);
 
   const loadData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -188,6 +199,15 @@ export default function PaymentsPage() {
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
       });
       const allStudents = (allStudentsData || []) as { id: string; name: string; student_number?: string; balance_due?: number }[];
+
+      setCenterId(cid);
+      setCenterStudents(
+        allStudents.map((s) => ({
+          id: s.id,
+          name: s.name || tCommon('notAvailable'),
+          student_number: s.student_number,
+        })),
+      );
 
       if (studentIds.length > 0) {
         studentMap = Object.fromEntries(
@@ -342,6 +362,72 @@ export default function PaymentsPage() {
     }
   };
 
+  const handleCollectPayment = async () => {
+    if (!centerId || !user?.id || !collectStudentId) {
+      toast.error(tToast('error'), tp('collectSelectStudent'));
+      return;
+    }
+    const amount = Number.parseFloat(collectAmount.replace(/,/g, ''));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error(tToast('error'), tCommon('error'));
+      return;
+    }
+    const paidAt = new Date().toISOString();
+    const isCash = collectMethod === 'cash';
+    const method = collectMethod;
+    setCollectSubmitting(true);
+    try {
+      const { error: payErr } = await dbInsert({
+        table: 'payments',
+        data: {
+          student_id: collectStudentId,
+          center_id: centerId,
+          amount,
+          method,
+          recorded_by: user.id,
+          paid_at: paidAt,
+          status: isCash ? 'confirmed' : 'pending',
+          confirmed: isCash,
+          ...(isCash ? { confirmed_at: paidAt } : {}),
+          group_id: null,
+        },
+        select: false,
+      });
+      if (payErr) throw payErr;
+      const st = centerStudents.find((s) => s.id === collectStudentId);
+      void auditLog({
+        centerId,
+        userId: user.id,
+        action: 'payment_collect',
+        entityType: 'payments',
+        entityId: collectStudentId,
+        details: { amount, method },
+      });
+      toast.success(tToast('saved'));
+      setShowCollectModal(false);
+      setCollectStudentId('');
+      setCollectAmount('');
+      setCollectMethod('cash');
+      if (isCash) {
+        setReceipt({
+          studentName: st?.name ?? tCommon('notAvailable'),
+          amount,
+          method,
+          methodLabel: tp(methodTpKey(method)),
+          paidAt,
+        });
+      }
+      await loadData();
+    } catch (err) {
+      toast.error(
+        tToast('error'),
+        err instanceof Error ? err.message : tCommon('error'),
+      );
+    } finally {
+      setCollectSubmitting(false);
+    }
+  };
+
   const handleExportCSV = () => {
     const cols = [
       tp('csv_col_date'),
@@ -373,9 +459,20 @@ export default function PaymentsPage() {
   return (
     <>
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
-        <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
-          <h1 className="text-xl font-bold text-white">{tp('title')}</h1>
-          <p className="text-xs text-[var(--color-text-secondary)]">{tp('subtitle')}</p>
+        <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white">{tp('title')}</h1>
+            <p className="text-xs text-[var(--color-text-secondary)]">{tp('subtitle')}</p>
+          </div>
+          {canCollectPayment ? (
+            <button
+              type="button"
+              onClick={() => setShowCollectModal(true)}
+              className="bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-teal-700 transition shrink-0 btn-press chq-focus"
+            >
+              {tp('collectPayment')}
+            </button>
+          ) : null}
         </div>
 
         {loadFailed ? (
@@ -634,6 +731,96 @@ export default function PaymentsPage() {
           )}
         </div>
       </div>
+
+      {showCollectModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => !collectSubmitting && setShowCollectModal(false)}
+          role="presentation"
+        >
+          <div
+            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-md p-6 modal-spring-in"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="collect-payment-title"
+          >
+            <h3 id="collect-payment-title" className="text-lg font-bold text-[var(--color-text-primary)] mb-4">
+              {tp('collectPayment')}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tp('student')}</label>
+                <select
+                  value={collectStudentId}
+                  onChange={(e) => setCollectStudentId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
+                >
+                  <option value="">{tp('collectSelectStudent')}</option>
+                  {[...centerStudents]
+                    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                        {s.student_number ? ` · ${s.student_number.startsWith('#') ? s.student_number : `#${s.student_number}`}` : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tp('amount')}</label>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={collectAmount}
+                  onChange={(e) => setCollectAmount(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tp('paymentMethod')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {(['cash', 'instapay', 'bank_transfer'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setCollectMethod(m)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors btn-press chq-focus ${
+                        collectMethod === m
+                          ? 'border-teal-600 bg-teal-600/15 text-teal-700 dark:text-teal-300'
+                          : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)]'
+                      }`}
+                    >
+                      {tp(`method_${m}` as PaymentsMethodKey)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                type="button"
+                disabled={collectSubmitting}
+                onClick={() => setShowCollectModal(false)}
+                className="px-4 py-2 border border-[var(--color-border-default)] rounded-lg text-sm text-[var(--color-text-primary)] btn-press chq-focus disabled:opacity-50"
+              >
+                {tCommon('cancel')}
+              </button>
+              <LoadingButton
+                type="button"
+                variant="primary"
+                state={collectSubmitting ? 'loading' : 'idle'}
+                onClick={() => void handleCollectPayment()}
+                className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold"
+                loadingText={tCommon('loading')}
+              >
+                {tp('recordPayment')}
+              </LoadingButton>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmModal && (
         <div

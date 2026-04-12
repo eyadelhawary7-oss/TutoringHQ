@@ -9,6 +9,7 @@ import { Plus, BookOpen, X, Users, ChevronRight, Search } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
+import { formatNumber } from '@/lib/formatNumber';
 
 interface Group {
   id: string;
@@ -373,13 +374,15 @@ export default function GroupsPage() {
                 <div className="p-2 bg-teal-100 rounded-lg">
                   <BookOpen className="w-5 h-5 text-teal-600" />
                 </div>
-                <span className="text-xs text-slate-400">{tCommon('studentCount', { count: g.member_count ?? 0 })}</span>
+                <span className="text-xs text-slate-400 font-mono tabular-nums">
+                  {formatNumber(g.member_count ?? 0, locale)}
+                </span>
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject ?? '\u2014'}</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
-                  {g.fee != null ? `${tCommon('egp')} ${g.fee.toLocaleString('en-US')}` : '\u2014'}
+                  {g.fee != null ? `${tCommon('egp')} ${formatNumber(g.fee, locale)}` : '\u2014'}
                 </span>
                 <span className="text-xs text-slate-400">{t('perLesson')}</span>
               </div>
@@ -486,8 +489,21 @@ export default function GroupsPage() {
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 <div><p className="text-xs text-[var(--color-text-secondary)]">{t('subject')}</p><p className="font-semibold text-[var(--color-text-primary)]">{detailGroup.subject ?? '\u2014'}</p></div>
-                <div><p className="text-xs text-[var(--color-text-secondary)]">{t('feePerLesson')}</p><p className="font-semibold text-[var(--color-text-primary)] font-mono">{detailGroup.fee != null ? `${detailGroup.fee.toLocaleString('en-US')} ${tCommon('egp')}` : '\u2014'}</p></div>
-                <div><p className="text-xs text-[var(--color-text-secondary)]">{t('studentCount')}</p><p className="font-semibold text-[var(--color-text-primary)] font-mono">{detailGroup.member_count ?? 0}{detailGroup.max_capacity != null && detailGroup.max_capacity < 999 ? ` / ${detailGroup.max_capacity}` : ''}</p></div>
+                <div>
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('feePerLesson')}</p>
+                  <p className="font-semibold text-[var(--color-text-primary)] font-mono">
+                    {detailGroup.fee != null ? `${formatNumber(detailGroup.fee, locale)} ${tCommon('egp')}` : '\u2014'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('studentCount')}</p>
+                  <p className="font-semibold text-[var(--color-text-primary)] font-mono tabular-nums">
+                    {formatNumber(detailGroup.member_count ?? 0, locale)}
+                    {detailGroup.max_capacity != null && detailGroup.max_capacity < 999
+                      ? ` / ${formatNumber(detailGroup.max_capacity, locale)}`
+                      : ''}
+                  </p>
+                </div>
               </div>
               {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && (
                 <div className="flex gap-1 p-1 rounded-lg bg-muted/50">

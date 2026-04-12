@@ -4085,6 +4085,8 @@
     "totalBalanceDue": "مجموع المبلغ المستحق",
     "collectedThisMonth": "تم التحصيل هذا الشهر",
     "exportCSV": "تصدير ملف CSV",
+    "collectPayment": "تحصيل دفعة",
+    "collectSelectStudent": "اختر الطالب",
     "noPaymentsInPeriod": "لا توجد دفعات في هذه الفترة",
     "confirmPayment": "تأكيد الدفع:",
     "confirmReceipt": "تأكيد استلام",
@@ -4760,6 +4762,7 @@
   },
   "students": {
     "allGroups": "كل المجموعات",
+    "downloadTemplate": "تحميل نموذج CSV",
     "allSubjects": "كل المواد",
     "cardsPerPage": "بطاقات لكل Page",
     "closeModal": "إغلاق Modal",

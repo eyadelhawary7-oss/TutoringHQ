@@ -4,6 +4,12 @@
  * Professional ID card component (85.6mm × 54mm credit-card proportions).
  * Used in print page and View QR modal.
  */
+function studentNumberDisplay(raw: string | null | undefined): string {
+  if (raw == null || String(raw).trim() === '') return '-';
+  const s = String(raw).trim();
+  return s.startsWith('#') ? s : `#${s}`;
+}
+
 interface QRCardProps {
   student: { name: string; student_number?: string | null };
   qrDataUrl: string | null;
@@ -131,7 +137,7 @@ export function QRCard({
                 }
           }
         >
-          {student.student_number || '-'}
+          {studentNumberDisplay(student.student_number)}
         </div>
       </div>
 
