@@ -71,6 +71,15 @@ export default function SettingsReferralsPage() {
     [appUrl, localePrefix, referralCode],
   );
 
+  const referralPct = useMemo(
+    () => ({
+      p25: formatNumber(25, locale),
+      p10: formatNumber(10, locale),
+      p5: formatNumber(5, locale),
+    }),
+    [locale],
+  );
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -328,13 +337,13 @@ export default function SettingsReferralsPage() {
             </h2>
             <ul className="space-y-3 text-sm text-[var(--color-text-secondary)]">
               <li className="border-s-4 border-teal-600/80 ps-3">
-                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonth1')}</span>
+                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonth1', referralPct)}</span>
               </li>
               <li className="border-s-4 border-teal-600/50 ps-3">
-                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonths2to12')}</span>
+                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonths2to12', referralPct)}</span>
               </li>
               <li className="border-s-4 border-teal-600/30 ps-3">
-                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonth13Plus')}</span>
+                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonth13Plus', referralPct)}</span>
               </li>
             </ul>
           </div>

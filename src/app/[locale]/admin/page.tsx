@@ -1283,11 +1283,11 @@ function AdminPageContent() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
               {[
-                { label: tAdmin('totalCenters'), value: String(overview.totalCenters ?? 0), iconBg: 'bg-teal-100', iconColor: 'text-teal-600', Icon: Building2 },
-                { label: tAdmin('activeCenters'), value: String(overview.activeCenters ?? 0), iconBg: 'bg-green-100', iconColor: 'text-green-600', Icon: LayoutDashboard },
-                { label: tAdmin('pendingSignups'), value: String(overview.pendingSignups ?? 0), iconBg: 'bg-amber-100', iconColor: 'text-amber-600', Icon: Clock },
-                { label: tAdmin('suspendedCenters', { defaultValue: 'Suspended Centers' }), value: String(overview.suspendedCenters ?? 0), iconBg: 'bg-red-100', iconColor: 'text-red-600', Icon: AlertTriangle },
-                { label: tAdmin('totalStudents'), value: String(overview.totalStudents ?? 0), iconBg: 'bg-blue-100', iconColor: 'text-blue-600', Icon: Users },
+                { label: tAdmin('totalCenters'), value: formatNumber(overview.totalCenters ?? 0, locale), iconBg: 'bg-teal-100', iconColor: 'text-teal-600', Icon: Building2 },
+                { label: tAdmin('activeCenters'), value: formatNumber(overview.activeCenters ?? 0, locale), iconBg: 'bg-green-100', iconColor: 'text-green-600', Icon: LayoutDashboard },
+                { label: tAdmin('pendingSignups'), value: formatNumber(overview.pendingSignups ?? 0, locale), iconBg: 'bg-amber-100', iconColor: 'text-amber-600', Icon: Clock },
+                { label: tAdmin('suspendedCenters', { defaultValue: 'Suspended Centers' }), value: formatNumber(overview.suspendedCenters ?? 0, locale), iconBg: 'bg-red-100', iconColor: 'text-red-600', Icon: AlertTriangle },
+                { label: tAdmin('totalStudents'), value: formatNumber(overview.totalStudents ?? 0, locale), iconBg: 'bg-blue-100', iconColor: 'text-blue-600', Icon: Users },
               ].map(({ label, value, iconBg, iconColor, Icon }) => (
                 <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                   <div className="flex items-start justify-between">
@@ -1353,15 +1353,18 @@ function AdminPageContent() {
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('collectionRate')}</p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
-                      {overview.totalRevenueCollected != null &&
-                      overview.pendingRevenue != null &&
-                      overview.totalRevenueCollected + overview.pendingRevenue > 0
-                        ? Math.round(
-                            (overview.totalRevenueCollected /
-                              (overview.totalRevenueCollected + overview.pendingRevenue)) *
-                              100
-                          )
-                        : 0}
+                      {formatNumber(
+                        overview.totalRevenueCollected != null &&
+                          overview.pendingRevenue != null &&
+                          overview.totalRevenueCollected + overview.pendingRevenue > 0
+                          ? Math.round(
+                              (overview.totalRevenueCollected /
+                                (overview.totalRevenueCollected + overview.pendingRevenue)) *
+                                100,
+                            )
+                          : 0,
+                        locale,
+                      )}
                       %
                     </p>
                   </div>
@@ -1382,7 +1385,7 @@ function AdminPageContent() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('failedLogins24h')}</p>
-                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">0</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{formatNumber(0, locale)}</p>
                   </div>
                   <div className="p-3 rounded-full bg-orange-100">
                     <Shield className="w-5 h-5 text-orange-600" />
@@ -1393,7 +1396,9 @@ function AdminPageContent() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('newSignups7d')}</p>
-                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{overview.pendingSignups ?? 0}</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
+                      {formatNumber(overview.pendingSignups ?? 0, locale)}
+                    </p>
                   </div>
                   <div className="p-3 rounded-full bg-purple-100">
                     <Users className="w-5 h-5 text-purple-600" />
@@ -1404,7 +1409,7 @@ function AdminPageContent() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('flaggedActivity')}</p>
-                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">0</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{formatNumber(0, locale)}</p>
                   </div>
                   <div className="p-3 rounded-full bg-red-100">
                     <ShieldAlert className="w-5 h-5 text-red-600" />

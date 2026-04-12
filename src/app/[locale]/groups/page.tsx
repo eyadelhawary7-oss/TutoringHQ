@@ -336,7 +336,9 @@ export default function GroupsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{groups.length} {t('title')}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+            {formatNumber(groups.length, locale)} {t('title')}
+          </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -508,7 +510,7 @@ export default function GroupsPage() {
               {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && (
                 <div className="flex gap-1 p-1 rounded-lg bg-muted/50">
                   <button type="button" onClick={() => setActiveTab('members')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'members' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('members')}</button>
-                  <button type="button" onClick={() => setActiveTab('waitlist')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'waitlist' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('waitlist', { defaultValue: 'قائمة الانتظار' })} ({waitlist.length})</button>
+                  <button type="button" onClick={() => setActiveTab('waitlist')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'waitlist' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('waitlist', { defaultValue: 'قائمة الانتظار' })} ({formatNumber(waitlist.length, locale)})</button>
                 </div>
               )}
               <div className="border-t border-border pt-4">

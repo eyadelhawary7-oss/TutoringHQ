@@ -1107,7 +1107,13 @@ function SettingsPageContent() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{tReferral('title')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{tReferral('shareText')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                    {tReferral('shareText', {
+                      p25: formatNumber(25, locale),
+                      p10: formatNumber(10, locale),
+                      p5: formatNumber(5, locale),
+                    })}
+                  </p>
                 </div>
               </div>
               <div className="p-6">
@@ -1142,7 +1148,13 @@ function SettingsPageContent() {
                   >
                     {t('manageReferrals')}
                   </button>
-                  <p className="text-sm text-[var(--color-text-secondary)] mb-2">{tReferral('referralRateDescription')}</p>
+                  <p className="text-sm text-[var(--color-text-secondary)] mb-2">
+                    {tReferral('referralRateDescription', {
+                      p25: formatNumber(25, locale),
+                      p10: formatNumber(10, locale),
+                      p5: formatNumber(5, locale),
+                    })}
+                  </p>
                   <p className="text-xs text-[var(--color-text-secondary)] mb-2">
                     {t('totalReferrals')}: {formatNumber(referralData.rewards?.length ?? 0, locale)} | {t('totalEarned')}: {tCommon('egp')}{' '}
                     {formatNumber(Number(referralData.totalEarned || 0), locale)}
@@ -1266,7 +1278,14 @@ function SettingsPageContent() {
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
                   <div>
                     <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('teamMembers')}</h2>
-                    {limits && <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('teamMembersCount', { current: teamMembers.length, max: limits.maxTeachers })}</p>}
+                    {limits && (
+                      <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+                        {t('teamMembersCount', {
+                          current: formatNumber(teamMembers.length, locale),
+                          max: formatNumber(limits.maxTeachers, locale),
+                        })}
+                      </p>
+                    )}
                   </div>
                   <button onClick={() => { setInviteRole('assistant'); setInviteTeacherGroupIds([]); setInvitePerms({ can_scan: true, can_view_payments: true, can_view_dashboard: true, can_manage_students: false, can_manage_groups: false, can_view_settings: false }); setShowInviteModal(true); }} disabled={limits ? !limits.canAddTeacher : false} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"><UserPlus className="w-4 h-4" /> {t('inviteMemberPlus')}</button>
                 </div>

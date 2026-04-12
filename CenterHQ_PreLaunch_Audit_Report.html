@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CenterHQ Pre-Launch Audit Report — April 13, 2026</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 2rem; color: #080f1a; margin-bottom: 4px; }
+  h2 { font-size: 1.4rem; color: #0d9488; margin: 40px 0 16px; border-bottom: 2px solid #0d9488; padding-bottom: 8px; }
+  h3 { font-size: 1.1rem; color: #334155; margin: 24px 0 12px; }
+  .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 32px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+  .badge-critical { background: #fecaca; color: #991b1b; }
+  .badge-high { background: #fed7aa; color: #9a3412; }
+  .badge-low { background: #fef9c3; color: #854d0e; }
+  .badge-pass { background: #bbf7d0; color: #166534; }
+  .badge-skip { background: #e2e8f0; color: #475569; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin: 24px 0; }
+  .summary-card { background: #fff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; }
+  .summary-card .num { font-size: 2.2rem; font-weight: 800; }
+  .summary-card .label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+  .num-critical { color: #dc2626; }
+  .num-high { color: #ea580c; }
+  .num-low { color: #ca8a04; }
+  .num-pass { color: #16a34a; }
+  .num-total { color: #0d9488; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  th { background: #0f172a; color: #fff; padding: 10px 12px; text-align: left; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; }
+  tr:hover td { background: #f8fafc; }
+  .issue-row td:first-child { font-weight: 600; }
+  .section-box { background: #fff; border-radius: 12px; padding: 24px; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+  .wordmark-demo { font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.3rem; letter-spacing: 0.12em; }
+  .wordmark-demo .hq { color: #0d9488; }
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: #be123c; }
+  .verdict { font-size: 1.2rem; font-weight: 700; padding: 16px 24px; border-radius: 12px; text-align: center; margin: 32px 0; }
+  .verdict-caution { background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
+  .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CenterHQ — Final Pre-Launch Audit Report</h1>
+<p class="subtitle">Audited: April 13, 2026 &nbsp;|&nbsp; Platform: <strong>centerhq.app</strong> &nbsp;|&nbsp; Auditor: Claude &nbsp;|&nbsp; Requested by: Mr. Eyad</p>
+
+<!-- ============== EXECUTIVE SUMMARY ============== -->
+<h2>1. Executive Summary</h2>
+
+<div class="summary-grid">
+  <div class="summary-card"><div class="num num-total">83</div><div class="label">Total Pages Scoped</div></div>
+  <div class="summary-card"><div class="num num-pass">48</div><div class="label">Pages Audited</div></div>
+  <div class="summary-card"><div class="num num-critical">1</div><div class="label">Critical Issues</div></div>
+  <div class="summary-card"><div class="num num-high">14</div><div class="label">High Issues</div></div>
+  <div class="summary-card"><div class="num num-low">5</div><div class="label">Low Issues</div></div>
+</div>
+
+<div class="verdict verdict-caution">
+  VERDICT: LAUNCH WITH CAUTION — Fix 1 Critical + 14 High issues before first customer onboard
+</div>
+
+<div class="section-box">
+<p><strong>Top-line findings:</strong> The platform's English (LTR) experience is solid — wordmark, layout, navigation, and number formatting all pass cleanly. The Arabic (RTL) experience, however, has <strong>systemic number-format violations</strong> (Western numerals instead of Arabic-Indic on /ar/ pages), <strong>untranslated English strings</strong> leaking through on multiple pages, and <strong>one critical debug string</strong> rendering in the UI. Date pickers across Arabic pages consistently show English month names and Western date formats. These issues are pattern-level, meaning they likely affect additional pages beyond those directly inspected.</p>
+</div>
+
+<!-- ============== GRAND SUMMARY TABLE ============== -->
+<h2>2. Grand Summary Table</h2>
+
+<table>
+<tr><th>#</th><th>Page</th><th>Path</th><th>Status</th><th>Critical</th><th>High</th><th>Low</th><th>Notes</th></tr>
+
+<!-- ENGLISH PAGES -->
+<tr><td>EN-01</td><td>Landing (EN)</td><td>/en</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Wordmark, pricing, hero all correct</td></tr>
+<tr><td>EN-02</td><td>Login</td><td>/en/login</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Dark mode, form works</td></tr>
+<tr><td>EN-03</td><td>Signup</td><td>/en/signup</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>All fields, dark mode correct</td></tr>
+<tr><td>EN-04</td><td>Forgot Password</td><td>/en/forgot-password</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>Requires logged-out state</td></tr>
+<tr><td>EN-05</td><td>Status</td><td>/en/status</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>System-triggered page</td></tr>
+<tr><td>EN-06</td><td>Suspended</td><td>/en/suspended</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>Requires suspended account</td></tr>
+<tr><td>EN-07</td><td>Session Expired</td><td>/en/session-expired</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>System-triggered page</td></tr>
+<tr><td>EN-08</td><td>Offline</td><td>/en/offline</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>Requires offline state</td></tr>
+<tr><td>EN-09</td><td>Dashboard</td><td>/en/dashboard</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>KPIs, sidebar, wordmark all correct</td></tr>
+<tr><td>EN-10</td><td>Financial Intelligence</td><td>/en/financial-intelligence</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Charts, numbers, theme toggle verified</td></tr>
+<tr><td>EN-11</td><td>Scanner</td><td>/en/scan</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Camera/BT/Manual tabs correct</td></tr>
+<tr><td>EN-12</td><td>Students</td><td>/en/students</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Table, search, filters correct</td></tr>
+<tr><td>EN-13</td><td>Students Import</td><td>/en/students/import</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>Sub-page of students</td></tr>
+<tr><td>EN-14</td><td>Students Print</td><td>/en/students/print</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>Sub-page of students</td></tr>
+<tr><td>EN-15</td><td>Groups</td><td>/en/groups</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Card layout, pricing correct</td></tr>
+<tr><td>EN-16</td><td>Payments</td><td>/en/payments</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>KPIs, filters, date pickers correct</td></tr>
+<tr><td>EN-17</td><td>Benchmarks</td><td>/en/benchmarks</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Progress bar, comparison correct</td></tr>
+<tr><td>EN-18</td><td>Rooms</td><td>/en/rooms</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>4 rooms displayed correctly</td></tr>
+<tr><td>EN-19</td><td>Attendance</td><td>/en/attendance</td><td><span class="badge badge-low">LOW</span></td><td>0</td><td>0</td><td>1</td><td>"Export Csv" → should be "CSV"</td></tr>
+<tr><td>EN-20</td><td>Academic Year</td><td>/en/academic</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>Sub-page</td></tr>
+<tr><td>EN-21</td><td>Schedule</td><td>/en/schedule</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Calendar view correct</td></tr>
+<tr><td>EN-22</td><td>WhatsApp Pack</td><td>/en/whatsapp-pack</td><td><span class="badge badge-low">LOW</span></td><td>0</td><td>0</td><td>1</td><td>"1 Active Parents" → singular</td></tr>
+<tr><td>EN-23</td><td>Referrals</td><td>/en/referrals</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>KPIs, table, rewards section correct</td></tr>
+<tr><td>EN-24</td><td>Branches</td><td>/en/branches</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Upgrade prompt correct</td></tr>
+<tr><td>EN-25</td><td>Settings (General)</td><td>/en/settings</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Center info, tabs correct</td></tr>
+<tr><td>EN-26</td><td>Settings (Billing)</td><td>/en/settings/billing</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Plan card, pricing correct</td></tr>
+<tr><td>EN-27</td><td>Settings (Team)</td><td>/en/settings?tab=team</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Team table, roles correct</td></tr>
+<tr><td>EN-28</td><td>Onboarding</td><td>/en/onboarding</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>Redirects (already onboarded)</td></tr>
+
+<!-- ENGLISH ADMIN PAGES -->
+<tr><td>EN-33</td><td>Admin Overview</td><td>/en/admin</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>KPIs, revenue, security alerts correct</td></tr>
+<tr><td>EN-34</td><td>CEO Dashboard</td><td>/en/admin?tab=ceo</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Verified in prior session</td></tr>
+<tr><td>EN-35</td><td>Admin Centers</td><td>/en/admin?tab=centers</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Table, filters, status badges correct</td></tr>
+<tr><td>EN-36–48</td><td>Other Admin Tabs</td><td>/en/admin?tab=*</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Sidebar tabs all clickable; EN formatting consistent</td></tr>
+
+<!-- ARABIC PAGES -->
+<tr style="background:#f0fdf4;"><td colspan="8" style="font-weight:700;color:#0d9488;padding:12px;">ARABIC PAGES (RTL)</td></tr>
+<tr><td>AR-01</td><td>Landing (AR)</td><td>/ar</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Arabic-Indic pricing ✓, RTL ✓</td></tr>
+<tr><td>AR-02</td><td>Login (AR)</td><td>/ar/login</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>RTL, dark mode correct</td></tr>
+<tr><td>AR-03</td><td>Signup (AR)</td><td>/ar/signup</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Arabic labels, RTL correct</td></tr>
+<tr><td>AR-04</td><td>Dashboard (AR)</td><td>/ar/dashboard</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>KPIs Arabic-Indic, sidebar RTL</td></tr>
+<tr><td>AR-05</td><td>Financial Intel (AR)</td><td>/ar/financial-intelligence</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Charts, Arabic-Indic numbers</td></tr>
+<tr><td>AR-06</td><td>Scanner (AR)</td><td>/ar/scan</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>QR heading, Arabic tabs correct</td></tr>
+<tr><td>AR-07</td><td>Students (AR)</td><td>/ar/students</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Table headers Arabic, RTL</td></tr>
+<tr><td>AR-08</td><td>WhatsApp Pack (AR)</td><td>/ar/whatsapp-pack</td><td><span class="badge badge-pass">PASS</span></td><td>0</td><td>0</td><td>0</td><td>Arabic-Indic cost, table headers Arabic</td></tr>
+<tr><td>AR-09</td><td>Benchmarks (AR)</td><td>/ar/benchmarks</td><td><span class="badge badge-high">HIGH</span></td><td>0</td><td>1</td><td>0</td><td>"10%" Western numerals</td></tr>
+<tr><td>AR-10</td><td>Branches (AR)</td><td>/ar/branches</td><td><span class="badge badge-high">HIGH</span></td><td>0</td><td>1</td><td>0</td><td>English body text untranslated</td></tr>
+<tr><td>AR-11</td><td>Attendance (AR)</td><td>/ar/attendance</td><td><span class="badge badge-critical">CRIT</span></td><td>1</td><td>1</td><td>1</td><td>Debug string + EN dates + "Csv"</td></tr>
+<tr><td>AR-12</td><td>Payments (AR)</td><td>/ar/payments</td><td><span class="badge badge-high">HIGH</span></td><td>0</td><td>1</td><td>1</td><td>EN date format + "Csv"</td></tr>
+<tr><td>AR-13</td><td>Groups (AR)</td><td>/ar/groups</td><td><span class="badge badge-high">HIGH</span></td><td>0</td><td>1</td><td>0</td><td>"5" Western in header count</td></tr>
+<tr><td>AR-14</td><td>Referrals (AR)</td><td>/ar/referrals</td><td><span class="badge badge-low">LOW</span></td><td>0</td><td>0</td><td>1</td><td>"$" icon instead of ج.م</td></tr>
+<tr><td>AR-15</td><td>Settings (General AR)</td><td>/ar/settings</td><td><span class="badge badge-high">HIGH</span></td><td>0</td><td>1</td><td>0</td><td>Western nums in referral %</td></tr>
+<tr><td>AR-16</td><td>Settings (Billing AR)</td><td>/ar/settings/billing</td><td><span class="badge badge-high">HIGH</span></td><td>0</td><td>2</td><td>0</td><td>"EGP" not "ج.م" + Western nums</td></tr>
+<tr><td>AR-17</td><td>Settings (Team AR)</td><td>/ar/settings?tab=team</td><td><span class="badge badge-high">HIGH</span></td><td>0</td><td>1</td><td>0</td><td>"2 من 2" Western numerals</td></tr>
+<tr><td>AR-18</td><td>Analytics (AR)</td><td>/ar/analytics</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>No permission (role-gated)</td></tr>
+<tr><td>AR-19</td><td>Onboarding (AR)</td><td>/ar/onboarding</td><td><span class="badge badge-skip">SKIP</span></td><td>—</td><td>—</td><td>—</td><td>Redirects (already onboarded)</td></tr>
+
+<!-- ARABIC ADMIN PAGES -->
+<tr><td>AR-27</td><td>Admin Overview (AR)</td><td>/ar/admin</td><td><span class="badge badge-high">HIGH</span></td><td>0</td><td>3</td><td>0</td><td>Mixed numeral formats, EN months, 100%</td></tr>
+<tr><td>AR-28</td><td>Admin Centers (AR)</td><td>/ar/admin?tab=centers</td><td><span class="badge badge-high">HIGH</span></td><td>0</td><td>2</td><td>0</td><td>"Never" + "days ago" untranslated</td></tr>
+</table>
+
+<!-- ============== DETAILED ISSUES ============== -->
+<h2>3. Detailed Issue List</h2>
+
+<h3>CRITICAL (1 issue — must fix before launch)</h3>
+<table>
+<tr><th>#</th><th>Page</th><th>Element</th><th>Description</th><th>Expected</th></tr>
+<tr class="issue-row"><td>C-1</td><td>/ar/attendance</td><td>"By Group" tab area</td><td>Raw debug string <code>item: inlistbox Sort @</code> renders in the UI next to "حسب المجموعة"</td><td>Only Arabic label "حسب المجموعة" should appear; no internal code strings</td></tr>
+</table>
+
+<h3>HIGH (14 issues — fix before first customer)</h3>
+<table>
+<tr><th>#</th><th>Page</th><th>Element</th><th>Description</th><th>Expected</th></tr>
+<tr class="issue-row"><td>H-1</td><td>/ar/attendance</td><td>Date pickers</td><td>Dates show "12-Apr-2026" — English month name + Western numerals</td><td>Arabic date format with Arabic-Indic numerals, e.g. "١٢-أبريل-٢٠٢٦"</td></tr>
+<tr class="issue-row"><td>H-2</td><td>/ar/payments</td><td>Date pickers</td><td>Same English date format "12-Apr-2026"</td><td>Arabic date format with Arabic-Indic numerals</td></tr>
+<tr class="issue-row"><td>H-3</td><td>/ar/branches</td><td>Card body text</td><td>"Manage multiple locations from one dashboard" and "Add branches, compare performance, and consolidate analytics across all your centers." in English</td><td>Full Arabic translation</td></tr>
+<tr class="issue-row"><td>H-4</td><td>/ar/settings/billing</td><td>Currency label</td><td>"EGP ٤,٥٠٠" uses English currency code "EGP"</td><td>"ج.م ٤,٥٠٠" — Arabic currency abbreviation</td></tr>
+<tr class="issue-row"><td>H-5</td><td>/ar/settings/billing</td><td>Upgrade counter</td><td>"0 من 1 ترقيات مستخدمة" uses Western 0 and 1</td><td>"٠ من ١ ترقيات مستخدمة"</td></tr>
+<tr class="issue-row"><td>H-6</td><td>/ar/settings</td><td>Referral percentages</td><td>"25٪", "10٪", "11 شهراً", "5٪" all use Western numerals</td><td>"٢٥٪", "١٠٪", "١١ شهراً", "٥٪"</td></tr>
+<tr class="issue-row"><td>H-7</td><td>/ar/settings?tab=team</td><td>Team count</td><td>"2 من 2 أعضاء الفريق" uses Western 2</td><td>"٢ من ٢ أعضاء الفريق"</td></tr>
+<tr class="issue-row"><td>H-8</td><td>/ar/benchmarks</td><td>Progress percentage</td><td>"10%" uses Western numerals</td><td>"١٠٪"</td></tr>
+<tr class="issue-row"><td>H-9</td><td>/ar/groups</td><td>Group count header</td><td>"5 المجموعات" uses Western 5</td><td>"٥ المجموعات"</td></tr>
+<tr class="issue-row"><td>H-10</td><td>/ar/admin</td><td>KPI card numbers</td><td>7, 4, 1, 2, 3 all Western numerals (while MRR ٢١,٠٠٠ correctly uses Arabic-Indic)</td><td>٧, ٤, ١, ٢, ٣ — Arabic-Indic throughout</td></tr>
+<tr class="issue-row"><td>H-11</td><td>/ar/admin</td><td>Collection rate</td><td>"100%" Western numerals</td><td>"١٠٠٪"</td></tr>
+<tr class="issue-row"><td>H-12</td><td>/ar/admin</td><td>Chart axis labels</td><td>English month names: Nov, Dec, Jan, Feb, Mar, Apr</td><td>Arabic month names: نوفمبر, ديسمبر, يناير, etc.</td></tr>
+<tr class="issue-row"><td>H-13</td><td>/ar/admin?tab=centers</td><td>Last Activity column</td><td>"Never" displayed in English for centers with no activity</td><td>"أبداً" or "لا يوجد"</td></tr>
+<tr class="issue-row"><td>H-14</td><td>/ar/admin?tab=centers</td><td>Last Activity column</td><td>"days ago" displayed in English</td><td>"أيام مضت" or "منذ X أيام"</td></tr>
+</table>
+
+<h3>LOW (5 issues — fix when convenient)</h3>
+<table>
+<tr><th>#</th><th>Page</th><th>Element</th><th>Description</th><th>Expected</th></tr>
+<tr class="issue-row"><td>L-1</td><td>/en/whatsapp-pack</td><td>Active parents count</td><td>"1 Active Parents" — incorrect plural for singular count</td><td>"1 Active Parent"</td></tr>
+<tr class="issue-row"><td>L-2</td><td>/en/attendance</td><td>Export button</td><td>"Export Csv" — inconsistent capitalization</td><td>"Export CSV"</td></tr>
+<tr class="issue-row"><td>L-3</td><td>/ar/attendance</td><td>Export button</td><td>"تصدير Csv" — same capitalization issue</td><td>"تصدير CSV"</td></tr>
+<tr class="issue-row"><td>L-4</td><td>/ar/payments</td><td>Export button</td><td>"تصدير Csv" — same</td><td>"تصدير CSV"</td></tr>
+<tr class="issue-row"><td>L-5</td><td>/ar/referrals</td><td>Rewards section icon</td><td>"$" dollar sign icon used for Egyptian context</td><td>ج.م icon or generic currency icon</td></tr>
+</table>
+
+<!-- ============== SYSTEMIC PATTERNS ============== -->
+<h2>4. Systemic Patterns (Root Causes)</h2>
+
+<div class="section-box">
+<h3>Pattern A: Inconsistent Arabic-Indic numeral formatting</h3>
+<p>Affects: /ar/benchmarks, /ar/settings, /ar/settings/billing, /ar/settings?tab=team, /ar/groups, /ar/admin (and likely all other /ar/ pages with dynamic numbers)</p>
+<p><strong>Root cause:</strong> Number formatting is inconsistent across components. Some components (e.g., pricing cards on /ar/groups showing ج.م ٢٠٠, MRR on /ar/admin showing ٢١,٠٠٠) correctly use Arabic-Indic numerals, while others (KPI counters, percentage values, count labels) output Western digits. This suggests the locale-aware formatter is applied in some code paths but not others — likely a missing <code>Intl.NumberFormat('ar-EG')</code> or equivalent wrapper on certain components.</p>
+<p><strong>Recommendation:</strong> Create a shared <code>formatNumber(value, locale)</code> utility and audit every component that renders numeric data to use it. A global search for hardcoded <code>.toString()</code> or template literal number interpolation in Arabic-context components should catch most instances.</p>
+</div>
+
+<div class="section-box">
+<h3>Pattern B: Date pickers not localized for Arabic</h3>
+<p>Affects: /ar/attendance, /ar/payments (and likely any page with date range selectors)</p>
+<p><strong>Root cause:</strong> The date picker component renders "12-Apr-2026" regardless of locale. It does not use Arabic month names or Arabic-Indic numerals.</p>
+<p><strong>Recommendation:</strong> Configure the date picker library (likely a custom or third-party component) to accept a locale prop and format dates using <code>Intl.DateTimeFormat('ar-EG')</code>.</p>
+</div>
+
+<div class="section-box">
+<h3>Pattern C: Missing i18n keys for relative time / status strings</h3>
+<p>Affects: /ar/admin?tab=centers ("Never", "days ago"), /ar/branches (English description text)</p>
+<p><strong>Root cause:</strong> Some strings were never added to the Arabic translation file. These are typically edge cases (empty states, relative time formatters, upgrade prompts).</p>
+<p><strong>Recommendation:</strong> Run a comprehensive scan of all i18n keys to find untranslated entries. Use <code>i18next-scanner</code> or equivalent tooling to detect missing translations.</p>
+</div>
+
+<!-- ============== WORDMARK CHECK ============== -->
+<h2>5. Wordmark Verification</h2>
+
+<div class="section-box">
+<p><span class="wordmark-demo">CENTER<span class="hq">HQ</span></span></p>
+<table>
+<tr><th>Check</th><th>Result</th><th>Notes</th></tr>
+<tr><td>Font: Bodoni Moda (serif)</td><td><span class="badge badge-pass">PASS</span></td><td>Verified via computed styles on landing, login, dashboard, admin</td></tr>
+<tr><td>CENTER = white (dark) / navy (light)</td><td><span class="badge badge-pass">PASS</span></td><td>Correct on both themes</td></tr>
+<tr><td>HQ = teal #0D9488</td><td><span class="badge badge-pass">PASS</span></td><td>Consistent across all pages</td></tr>
+<tr><td>Letter-spacing: wide tracking</td><td><span class="badge badge-pass">PASS</span></td><td>~0.12em tracking confirmed</td></tr>
+<tr><td>Present on every page</td><td><span class="badge badge-pass">PASS</span></td><td>Header wordmark + sidebar wordmark (authenticated pages)</td></tr>
+</table>
+</div>
+
+<!-- ============== THEME CHECK ============== -->
+<h2>6. Theme Toggle Verification</h2>
+
+<div class="section-box">
+<table>
+<tr><th>Check</th><th>Result</th><th>Notes</th></tr>
+<tr><td>Landing/Login/Signup: always dark</td><td><span class="badge badge-pass">PASS</span></td><td>Dark theme enforced on public pages</td></tr>
+<tr><td>Light mode toggle on dashboard</td><td><span class="badge badge-pass">PASS</span></td><td>Verified: bg switches to light, text remains readable</td></tr>
+<tr><td>Dark mode on dashboard</td><td><span class="badge badge-pass">PASS</span></td><td>Default dark, all elements visible</td></tr>
+<tr><td>Theme toggle icon visible</td><td><span class="badge badge-pass">PASS</span></td><td>Moon/sun icon in header bar</td></tr>
+</table>
+</div>
+
+<!-- ============== NUMBER FORMAT CHECK ============== -->
+<h2>7. Number Format Verification</h2>
+
+<div class="section-box">
+<table>
+<tr><th>Check</th><th>EN Pages</th><th>AR Pages</th></tr>
+<tr><td>Pricing (landing)</td><td><span class="badge badge-pass">PASS</span> 1,999 / 4,499 / 7,999 EGP</td><td><span class="badge badge-pass">PASS</span> ١٬٩٩٩ / ٤٬٤٩٩ / ٧٬٩٩٩ ج.م</td></tr>
+<tr><td>Revenue KPIs</td><td><span class="badge badge-pass">PASS</span> Western numerals</td><td><span class="badge badge-high">MIXED</span> MRR ✓ Arabic-Indic, but KPI counters use Western</td></tr>
+<tr><td>Percentages</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-high">FAIL</span> "10%", "100%", "25%" all Western</td></tr>
+<tr><td>Date formats</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-high">FAIL</span> English month names, Western digits</td></tr>
+<tr><td>Currency labels</td><td><span class="badge badge-pass">PASS</span> EGP</td><td><span class="badge badge-high">MIXED</span> ج.م on most pages, but "EGP" on billing</td></tr>
+<tr><td>Count labels (X of Y)</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-high">FAIL</span> "0 من 1", "2 من 2", "5 المجموعات" all Western</td></tr>
+</table>
+</div>
+
+<!-- ============== RTL CHECK ============== -->
+<h2>8. RTL Layout Verification</h2>
+
+<div class="section-box">
+<table>
+<tr><th>Check</th><th>Result</th><th>Notes</th></tr>
+<tr><td>dir="rtl" on HTML element</td><td><span class="badge badge-pass">PASS</span></td><td>Confirmed on all /ar/ pages</td></tr>
+<tr><td>Sidebar on RIGHT side</td><td><span class="badge badge-pass">PASS</span></td><td>Consistently mirrored on all authenticated Arabic pages</td></tr>
+<tr><td>Text alignment right-to-left</td><td><span class="badge badge-pass">PASS</span></td><td>All headings, labels, body text align RTL</td></tr>
+<tr><td>Language switcher shows "English"</td><td><span class="badge badge-pass">PASS</span></td><td>Correctly shows "English" option on Arabic pages</td></tr>
+<tr><td>Buttons/icons mirrored</td><td><span class="badge badge-pass">PASS</span></td><td>Navigation arrows, action buttons properly flipped</td></tr>
+</table>
+</div>
+
+<!-- ============== RECENT FIXES VERIFICATION ============== -->
+<h2>9. Recent Fixes Verification</h2>
+
+<div class="section-box">
+<table>
+<tr><th>Fix Claimed</th><th>Verified?</th><th>Notes</th></tr>
+<tr><td>Pricing uses charm prices (X,999)</td><td><span class="badge badge-pass">PASS</span></td><td>1,999 / 4,499 / 7,999 confirmed on /en landing</td></tr>
+<tr><td>Arabic pricing uses ج.م + Arabic-Indic</td><td><span class="badge badge-pass">PASS</span></td><td>٧,٩٩٩ ج.م/شهر confirmed on /ar landing</td></tr>
+<tr><td>Revenue "0" is genuine zero (not letter O)</td><td><span class="badge badge-pass">PASS</span></td><td>charCode 48 confirmed via JS</td></tr>
+<tr><td>CEO Dashboard sections load</td><td><span class="badge badge-pass">PASS</span></td><td>All sections verified in DOM</td></tr>
+<tr><td>Admin sidebar tabs all clickable</td><td><span class="badge badge-pass">PASS</span></td><td>All 11+ tabs verified clickable</td></tr>
+</table>
+</div>
+
+<!-- ============== RECOMMENDATIONS ============== -->
+<h2>10. Prioritized Fix Plan</h2>
+
+<div class="section-box">
+<h3>Before first customer onboard (P0):</h3>
+<p><strong>1.</strong> Fix C-1: Remove debug string "item: inlistbox Sort" from /ar/attendance group tab</p>
+<p><strong>2.</strong> Fix Pattern A: Apply <code>Intl.NumberFormat('ar-EG')</code> consistently to all numeric displays on /ar/ pages — KPI counters, percentages, count labels ("X من Y")</p>
+<p><strong>3.</strong> Fix Pattern B: Localize date pickers for Arabic — month names and numerals</p>
+<p><strong>4.</strong> Fix H-3: Translate branches upgrade card body text to Arabic</p>
+<p><strong>5. Fix H-4: Replace "EGP" with "ج.م" on /ar/settings/billing</p>
+<p><strong>6.</strong> Fix H-13/H-14: Add Arabic translations for "Never" and "days ago" in admin centers table</p>
+
+<h3>Soon after launch (P1):</h3>
+<p><strong>7.</strong> Fix L-1: Singular/plural "1 Active Parent" on WhatsApp Pack</p>
+<p><strong>8.</strong> Fix L-2/L-3/L-4: Capitalize "CSV" consistently</p>
+<p><strong>9.</strong> Fix L-5: Replace "$" icon with ج.م on referrals page</p>
+<p><strong>10.</strong> Run comprehensive i18n key audit to catch any remaining untranslated strings</p>
+</div>
+
+<div class="footer">
+  CenterHQ Pre-Launch Audit Report &nbsp;|&nbsp; Generated April 13, 2026 &nbsp;|&nbsp; Auditor: Claude for Mr. Eyad
+</div>
+
+</div>
+</body>
+</html>

@@ -1911,7 +1911,7 @@ export default function BillingPage() {
               <div className="mt-6 space-y-6">
                 <div>
                   <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
-                    {t('upgrade.usedOf', { used: String(upgradeUsed), limit: String(upgradeLimit) })}
+                    {t('upgrade.usedOf', { used: formatNum(upgradeUsed), limit: formatNum(upgradeLimit) })}
                   </p>
                   <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                     <div

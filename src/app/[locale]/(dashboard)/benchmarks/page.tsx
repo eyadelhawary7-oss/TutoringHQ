@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { formatNumber } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
@@ -28,10 +28,6 @@ interface BenchmarksData {
   revenue_per_student?: BenchmarkMetric;
   retention_30d?: BenchmarkMetric;
   group_utilization?: BenchmarkMetric;
-}
-
-function formatPct(n: number): string {
-  return `${(n * 100).toFixed(1)}%`;
 }
 
 const DISTRICT_TARGET = 10;
@@ -99,6 +95,11 @@ export default function BenchmarksPage() {
   }, [loadData]);
 
   const formatEgp = (n: number) => `${formatNumber(n, locale)} ${tc('egp')}`;
+  const formatPct = useMemo(
+    () => (n: number) =>
+      `${formatNumber(Math.round(n * 1000) / 10, locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`,
+    [locale],
+  );
 
   if (loading && !data) {
     return (
@@ -142,7 +143,7 @@ export default function BenchmarksPage() {
                   total: formatNumber(DISTRICT_TARGET, locale),
                 })}
               </span>
-              <span className="tabular-nums">{progressPct}%</span>
+              <span className="tabular-nums">{formatNumber(progressPct, locale)}%</span>
             </div>
             <div className="h-2.5 rounded-full bg-[var(--color-surface-3)] overflow-hidden">
               <div
@@ -227,7 +228,9 @@ export default function BenchmarksPage() {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-3">{t(descKey, { percentile: pct.toFixed(0) })}</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+                {t(descKey, { percentile: formatNumber(pct, locale) })}
+              </p>
               {(() => {
                 const isMoney = key === 'revenue';
                 const youN = isMoney ? yourVal : yourVal * 100;

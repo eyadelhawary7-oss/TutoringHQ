@@ -113,6 +113,8 @@ export default function WhatsAppPackClient({
   const [parentsExpanded, setParentsExpanded] = useState(true);
   const [parentSearch, setParentSearch] = useState('');
 
+  const parentLabel = activeParents === 1 ? t('whatsappPack.activeParent') : t('whatsappPack.activeParents');
+
   const cap = getAnnouncementCap(center.plan);
   const pct = cap > 0 ? Math.min((balance / cap) * 100, 100) : 0;
   const pendingBal = Number(packPendingBalance);
@@ -252,7 +254,7 @@ export default function WhatsAppPackClient({
               {t('whatsapp.packActive')}
             </span>
             <span className="text-sm text-[var(--color-text-secondary)]">
-              {formatNumber(activeParents, locale)} {t('whatsapp.activeParents')}
+              {formatNumber(activeParents, locale)} {parentLabel}
             </span>
           </div>
           <p className="text-sm text-[var(--color-text-secondary)]">
