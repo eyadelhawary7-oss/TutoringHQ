@@ -108,6 +108,97 @@ async function postWhatsappTemplate(opts: {
   }
 }
 
+/** Meta test / sandbox phone number ID: do not send production freeform messages. */
+const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
+
+async function postWhatsappTextMessage(opts: { toDigits: string; body: string }): Promise<boolean> {
+  const phoneId = waPhoneNumberId();
+  const token = waToken();
+  if (!phoneId || !token) {
+    console.warn('[centerNotify] Missing PHONE_NUMBER_ID/WHATSAPP_PHONE_ID or WHATSAPP_TOKEN');
+    return false;
+  }
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: opts.toDigits,
+        type: 'text',
+        text: { preview_url: true, body: opts.body },
+      }),
+    });
+
+    if (!res.ok) {
+      console.error('[centerNotify] Text send failed:', res.status, await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[centerNotify] Text send error:', err);
+    return false;
+  }
+}
+
+/**
+ * Onboarding stall nudge (freeform Arabic + deep link). Never throws.
+ * Skips when Meta phone ID is the known test ID or WA is disabled.
+ */
+export async function sendOnboardingNudge(
+  supabase: SupabaseClient,
+  centerId: string,
+  step: 1 | 2 | 3 | 4,
+  ownerPhone: string | null,
+  centerName: string,
+): Promise<CenterNotifyResult> {
+  try {
+    const phoneId = waPhoneNumberId();
+    if (!phoneId || phoneId === WHATSAPP_META_TEST_PHONE_NUMBER_ID) {
+      return { skipped: true };
+    }
+
+    const { data: cfg } = await supabase
+      .from('platform_config')
+      .select('value')
+      .eq('key', 'wa_sending_enabled')
+      .maybeSingle();
+    if (cfg?.value === false) return { skipped: true };
+
+    const to = digitsOnly(ownerPhone ?? '');
+    if (!to) return { skipped: true };
+
+    const base = publicAppBase();
+    const links: Record<1 | 2 | 3 | 4, string> = {
+      1: `${base}/ar/students`,
+      2: `${base}/ar/groups`,
+      3: `${base}/ar/settings`,
+      4: `${base}/ar/scan`,
+    };
+    const lines: Record<1 | 2 | 3 | 4, string> = {
+      1: 'أضف أول طالب لك في المنصة',
+      2: 'أنشئ أول مجموعة دراسية',
+      3: 'فعّل إشعارات الواتساب',
+      4: 'سجّل أول حضور QR',
+    };
+
+    const body = `${lines[step]}\n${links[step]}`;
+    const ok = await postWhatsappTextMessage({ toDigits: to, body });
+    if (ok) {
+      console.info('[centerNotify] Onboarding nudge step', step, centerId, centerName);
+      return { success: true };
+    }
+    return { error: true };
+  } catch (err) {
+    console.error('[centerNotify] sendOnboardingNudge:', centerId, err);
+    return { error: true };
+  }
+}
+
 /** chq_renewal_overdue — used by subscription billing cron (Items 2–3). */
 export async function sendChqRenewalOverdueTemplate(
   supabase: SupabaseClient,
