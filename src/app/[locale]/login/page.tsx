@@ -527,8 +527,7 @@ export default function LoginPage() {
                 cursor: 'pointer',
               }}
             >
-              {t('noAccount')}{' '}
-              <span style={{ color: '#0D9488' }}>{t('register')}</span>
+              {t('noAccount')}
             </Link>
           </div>
         </form>

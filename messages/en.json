@@ -54,7 +54,7 @@
     "benchmarks": "Benchmarks",
     "newBadge": "New",
     "students": "Students",
-    "whatsappPack": "Parent WhatsApp",
+    "whatsappPack": "WhatsApp Pack",
     "scanner": "Scanner",
     "payments": "Payments",
     "attendance": "Attendance",
@@ -771,7 +771,7 @@
     "view_all": "View All",
     "view_student": "View Student",
     "waitlist": "Waitlist",
-    "whatsappPack": "Whatsapp Pack",
+    "whatsappPack": "WhatsApp Pack",
     "whatsappShareText": "Whatsapp Share Text",
     "withdrawable": "Withdrawable",
     "yearName": "Year Name",
@@ -937,9 +937,9 @@
     "verify": "Verify",
     "yourPin": "Your Pin",
     "contactSales": "Contact Sales",
-    "forgotPin": "Forgot Pin",
+    "forgotPin": "Forgot PIN?",
     "invalidCredentials": "Invalid Credentials",
-    "noAccount": "No Account",
+    "noAccount": "Don't have an account? Register your center",
     "phone": "Phone",
     "phoneHint": "Phone Hint",
     "phoneLabel": "Phone Label",
@@ -949,7 +949,7 @@
     "pinPlaceholder": "PIN",
     "registerLink": "Register new center",
     "sendOTP": "Send OTP",
-    "submit": "Submit",
+    "submit": "Log In",
     "title": "Title",
     "welcomeBack": "Welcome back",
     "headline": "Sign in to your center",
@@ -1253,7 +1253,7 @@
     "teamMembers": "Team Members",
     "teamMembersCount": "Team Members Count",
     "totalReferrals": "Total Referrals",
-    "whatsappPack": "Whatsapp Pack",
+    "whatsappPack": "WhatsApp Pack",
     "you": "You"
   },
   "import": {
@@ -1840,6 +1840,7 @@
   },
   "benchmarks": {
     "title": "Benchmarks",
+    "subtitle": "Compare your center's performance with your district",
     "insufficientData": "We need {count} more centers in your area to enable comparison",
     "noDistrict": "Please set your district in settings to enable benchmark comparison",
     "referralCta": "Refer other centers and earn rewards",
@@ -1860,6 +1861,10 @@
     "emptyBody": "We need more centers in your area to unlock comparisons. Help grow your district by referring other center owners.",
     "referEarnCta": "Refer a center and earn",
     "learnMore": "Learn more about benchmarks"
+  },
+  "orders": {
+    "card": "card",
+    "cards": "cards"
   },
   "branches": {
     "title": "Branches",
@@ -2525,6 +2530,7 @@
   },
   "admin": {
     "actionError": "Action Error",
+    "orderId": "Order ID",
     "colAction": "Col Action",
     "colActions": "Col Actions",
     "colAmount": "Col Amount",
@@ -2783,7 +2789,7 @@
     "vendorSaved": "Vendor Saved",
     "vendorsTitle": "Vendors",
     "vendorWhatsapp": "WhatsApp Number",
-    "whatsappPack": "Whatsapp Pack",
+    "whatsappPack": "WhatsApp Pack",
     "overview": "Overview",
     "ceoDashboard": "CEO Dashboard",
     "ceoDashboardLink": "The CEO Dashboard has its own dedicated page.",
@@ -3751,7 +3757,7 @@
     "topCentersLimit": "Top Centers Limit",
     "totalEarned": "Total Earned",
     "totalReferrals": "Total Referrals",
-    "whatsappPack": "Whatsapp Pack",
+    "whatsappPack": "WhatsApp Pack",
     "you": "You",
     "backToSettings": "Back To Settings",
     "billingPeriod": "Billing Period",
@@ -4158,7 +4164,7 @@
     "title": "Title",
     "totalEarned": "Total Earned",
     "totalReferrals": "Total Referrals",
-    "whatsappPack": "Whatsapp Pack",
+    "whatsappPack": "WhatsApp Pack",
     "you": "You"
   },
   "landing": {
@@ -4559,6 +4565,7 @@
       "f6Title": "Works offline",
       "f6Desc": "The scanner works even without a connection",
       "pricingSubtitle": "All plans include: QR attendance, invoicing, WhatsApp, financial reports",
+      "priceSuffixMo": "EGP/mo",
       "nanoName": "Nano",
       "nanoPrice": "EGP 2,000/mo",
       "nanoPeriod": "(quarterly billing)",

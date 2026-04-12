@@ -2133,7 +2133,7 @@ function AdminPageContent() {
                 <table className="w-full text-sm">
                   <thead className="bg-[var(--color-surface-2)]">
                     <tr>
-                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('orderId', { defaultValue: 'Order ID' })}</th>
+                      <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('orderId')}</th>
                       <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('centerName', { defaultValue: 'Center' })}</th>
                       <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tAdmin('studentsCount')}</th>
                       <th className="text-start px-4 py-3 font-medium text-[var(--color-text-secondary)]">{tCommon('amount')}</th>

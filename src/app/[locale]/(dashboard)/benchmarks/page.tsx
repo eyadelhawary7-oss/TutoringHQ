@@ -61,7 +61,6 @@ function BenchmarkLockIllustration() {
 
 export default function BenchmarksPage() {
   const t = useTranslations('benchmarks');
-  const tNav = useTranslations('nav');
   const tc = useTranslations('common');
   const locale = useLocale();
   const { activeCenterId } = useBranchStore();
@@ -112,7 +111,7 @@ export default function BenchmarksPage() {
   if (error) {
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
-        <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
+        <PageHeader title={t('title')} subtitle={t('subtitle')} />
         <p className="text-destructive">{error}</p>
       </div>
     );
@@ -129,7 +128,7 @@ export default function BenchmarksPage() {
 
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] px-4 py-6 md:py-10">
-        <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
+        <PageHeader title={t('title')} subtitle={t('subtitle')} />
         <div className="max-w-md mx-auto text-center pt-10 md:pt-16">
           <BenchmarkLockIllustration />
           <h2 className="text-xl font-bold text-[var(--color-text-primary)] mt-6">{t('districtTitle')}</h2>
@@ -201,7 +200,7 @@ export default function BenchmarksPage() {
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
-      <PageHeader title={t('title')} subtitle={tNav('benchmarks')} />
+      <PageHeader title={t('title')} subtitle={t('subtitle')} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {cards.map(({ key, icon: Icon, metric, format, descKey }) => {

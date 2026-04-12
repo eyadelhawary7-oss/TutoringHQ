@@ -3,9 +3,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
+import { formatNumber } from '@/lib/formatNumber';
 import { Menu, X } from 'lucide-react';
 
 const WA_SUPPORT = 'https://wa.me/201220601410';
+
+/** DB monthly EGP (landing display uses charm pricing: show value − 1). */
+const LANDING_PLAN_MONTHLY_EGP = {
+  nano: 2000,
+  starter: 4500,
+  pro: 8000,
+  business: 13000,
+  enterprise: 18500,
+} as const;
 
 type DemoScreen = 'scanning' | 'scanned' | 'dashboard' | 'whatsapp' | 'payment';
 
@@ -202,6 +212,7 @@ export default function LocaleHomePage() {
   const m = useTranslations('landing.marketing');
   const footerT = useTranslations('footer');
   const locale = useLocale();
+  const charmMonthly = (dbMonthly: number) => formatNumber(dbMonthly - 1, locale);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [demoScreen, setDemoScreen] = useState<DemoScreen>('scanning');
   const [isVisible, setIsVisible] = useState(false);
@@ -658,7 +669,9 @@ export default function LocaleHomePage() {
                 {m('nanoBadge')}
               </span>
               <p className="mt-3 text-base font-bold !text-white">{m('nanoName')}</p>
-              <p className="mt-2 text-2xl font-bold !text-white">{m('nanoPrice')}</p>
+              <p className="mt-2 text-2xl font-bold !text-white">
+                {charmMonthly(LANDING_PLAN_MONTHLY_EGP.nano)} {m('priceSuffixMo')}
+              </p>
               <p className="text-xs text-[var(--color-text-muted)]">{m('nanoPeriod')}</p>
               <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m('nanoStudents')}</p>
             </div>
@@ -670,7 +683,9 @@ export default function LocaleHomePage() {
                 {m('popularBadge')}
               </span>
               <p className="mt-3 text-base font-bold !text-white">{m('starterName')}</p>
-              <p className="mt-2 text-2xl font-bold !text-white">{m('starterPrice')}</p>
+              <p className="mt-2 text-2xl font-bold !text-white">
+                {charmMonthly(LANDING_PLAN_MONTHLY_EGP.starter)} {m('priceSuffixMo')}
+              </p>
               <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m('starterStudents')}</p>
             </div>
             <div
@@ -678,7 +693,9 @@ export default function LocaleHomePage() {
               style={{ color: '#ffffff' }}
             >
               <p className="mt-3 text-base font-bold !text-white">{m('proName')}</p>
-              <p className="mt-2 text-2xl font-bold !text-white">{m('proPrice')}</p>
+              <p className="mt-2 text-2xl font-bold !text-white">
+                {charmMonthly(LANDING_PLAN_MONTHLY_EGP.pro)} {m('priceSuffixMo')}
+              </p>
               <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m('proStudents')}</p>
             </div>
           </div>

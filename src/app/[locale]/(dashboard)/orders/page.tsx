@@ -89,6 +89,7 @@ function statusLabelKey(status: string): CardOrderStatusKey {
 
 export default function OrdersPage() {
   const t = useTranslations('cardOrders');
+  const tOrders = useTranslations('orders');
   const locale = useLocale();
   const [centerId, setCenterId] = useState<string | null>(null);
   const [centerInfo, setCenterInfo] = useState<CenterInfoState | null>(null);
@@ -273,7 +274,8 @@ export default function OrdersPage() {
                         })}
                       </p>
                       <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                        {order.quantity} {t('cards')} · {t('orderTotal')}:{' '}
+                        {order.quantity}{' '}
+                        {order.quantity === 1 ? tOrders('card') : tOrders('cards')} · {t('orderTotal')}:{' '}
                         {formatNumber(Number(order.total_amount), locale)} EGP
                       </p>
                     </div>

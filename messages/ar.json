@@ -54,7 +54,7 @@
     "benchmarks": "المقارنة المرجعية",
     "newBadge": "جديد",
     "students": "الطلاب",
-    "whatsappPack": "واتساب الأهالي",
+    "whatsappPack": "باقة الواتساب",
     "scanner": "الماسح",
     "payments": "المدفوعات",
     "attendance": "الحضور",
@@ -1303,6 +1303,7 @@
       "f6Title": "يعمل بدون إنترنت",
       "f6Desc": "الماسح يعمل حتى بدون اتصال",
       "pricingSubtitle": "كل الخطط تشمل: حضور QR، الفواتير، واتساب، تقارير مالية",
+      "priceSuffixMo": "ج.م/شهر",
       "nanoName": "ناشئ",
       "nanoPrice": "٢٬٠٠٠ ج.م/شهر",
       "nanoPeriod": "(ربع سنوي)",
@@ -1372,6 +1373,7 @@
   },
   "admin": {
     "actionError": "إجراء خطأ",
+    "orderId": "رقم الطلب",
     "colAction": "إجراء",
     "colActions": "إجراءات",
     "colAmount": "المبلغ",
@@ -2930,6 +2932,7 @@
   },
   "benchmarks": {
     "title": "الدول المعيارية",
+    "subtitle": "قارن أداء مركزك مع مراكز منطقتك",
     "insufficientData": "We need {count} more centers in your area to enable comparison",
     "noDistrict": "Please set your district in settings to enable benchmark comparison",
     "referralCta": "ادعُ مراكز أخرى واحصل على مكافآت",
@@ -2950,6 +2953,10 @@
     "emptyBody": "نحتاج سناتر أكتر في منطقتك عشان نفعّل المقارنة. ساعد المنطقة تكبر بدعوة مالكين سناتر تانيين.",
     "referEarnCta": "ادعُ سنتر واكسب",
     "learnMore": "تعرّف أكتر على المقارنة ←"
+  },
+  "orders": {
+    "card": "بطاقة",
+    "cards": "بطاقات"
   },
   "billing": {
     "account": "Account",
@@ -3905,7 +3912,7 @@
     "contactSales": "Contact المبيعات",
     "forgotPin": "نسيت الرمز السري؟",
     "invalidCredentials": "Invalid Credentials",
-    "noAccount": "ليس لديك حساب؟ ",
+    "noAccount": "ليس لديك حساب؟ سجل مركزك",
     "phone": "الهاتف",
     "phoneHint": "الهاتف تلميح",
     "phoneLabel": "الهاتف تسمية",
@@ -3915,7 +3922,7 @@
     "pinPlaceholder": "الرقم السري",
     "registerLink": "تسجيل سنتر جديد",
     "sendOTP": "Send OTP",
-    "submit": "إرسال",
+    "submit": "تسجيل الدخول",
     "title": "عنوان",
     "welcomeBack": "مرحباً بعودتك",
     "headline": "سجّل دخولك إلى مركزك",
