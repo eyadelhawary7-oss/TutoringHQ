@@ -24,7 +24,13 @@
     { "path": "/api/cron/monthly-backup", "schedule": "0 2 1 * *" },
     { "path": "/api/cron/cleanup-status-checks", "schedule": "0 1 * * 1" },
     { "path": "/api/cron/referral-automation", "schedule": "0 3 2 * *" },
-    { "path": "/api/cron/dormancy-warnings", "schedule": "0 4 2 * *" }
+    { "path": "/api/cron/dormancy-warnings", "schedule": "0 4 2 * *" },
+    { "path": "/api/cron/onboarding-stall", "schedule": "0 */6 * * *" },
+    { "path": "/api/cron/upgrade-nudge", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/weekly-owner-report", "schedule": "0 6 * * 0" },
+    { "path": "/api/cron/watchdog", "schedule": "0 * * * *" },
+    { "path": "/api/cron/payment-alert", "schedule": "0 */2 * * *" },
+    { "path": "/api/cron/payment-retry", "schedule": "0 7 * * *" }
   ],
   "functions": {
     "src/app/api/login/route.ts": { "maxDuration": 30 },
@@ -70,6 +76,13 @@
     "src/app/api/admin/payouts/[id]/pdf/route.ts": {
       "memory": 1024,
       "maxDuration": 60
-    }
+    },
+    "src/app/api/cron/recompute-health-scores/route.ts": { "maxDuration": 300 },
+    "src/app/api/cron/onboarding-stall/route.ts": { "maxDuration": 60 },
+    "src/app/api/cron/upgrade-nudge/route.ts": { "maxDuration": 60 },
+    "src/app/api/cron/weekly-owner-report/route.ts": { "maxDuration": 300 },
+    "src/app/api/cron/watchdog/route.ts": { "maxDuration": 30 },
+    "src/app/api/cron/payment-alert/route.ts": { "maxDuration": 60 },
+    "src/app/api/cron/payment-retry/route.ts": { "maxDuration": 120 }
   }
 }
