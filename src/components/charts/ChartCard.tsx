@@ -1,7 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useLocale } from 'next-intl';
 import { TrendingDown, TrendingUp } from 'lucide-react';
+import { formatNumber } from '@/lib/formatNumber';
 
 export interface ChartCardProps {
   title: string;
@@ -30,10 +32,11 @@ export function ChartCard({
   loading,
   minHeight = 240,
 }: ChartCardProps) {
+  const locale = useLocale();
   const valueStr =
     value !== undefined && value !== null
       ? typeof value === 'number'
-        ? value.toLocaleString('en-US')
+        ? formatNumber(value, locale)
         : value
       : '';
 
@@ -57,7 +60,7 @@ export function ChartCard({
               }`}
             >
               {trend >= 0 ? <TrendingUp className="w-3.5 h-3.5" aria-hidden /> : <TrendingDown className="w-3.5 h-3.5" aria-hidden />}
-              {`${Math.abs(trend).toLocaleString('en-US')}%`}
+              {`${formatNumber(Math.abs(trend), locale)}%`}
               {trendLabel ? <span className="ms-1 font-normal opacity-90">{trendLabel}</span> : null}
             </span>
           ) : null}

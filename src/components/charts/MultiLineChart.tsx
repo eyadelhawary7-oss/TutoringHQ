@@ -11,7 +11,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
 import { CHART_MARGIN, CHART_STYLE } from './ChartTokens';
 import { ChartTooltip } from './ChartTooltip';
 
@@ -48,6 +49,7 @@ export function MultiLineChart({
   tooltipLabelFormatter,
   showLegend = true,
 }: MultiLineChartProps) {
+  const locale = useLocale();
   const t = useTranslations('charts');
   const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
@@ -86,7 +88,7 @@ export function MultiLineChart({
           tickFormatter={
             yTickFormatter
               ? (v: number | string) => yTickFormatter(Number(v))
-              : (v: number | string) => Number(v).toLocaleString('en-US')
+              : (v: number | string) => formatNumber(Number(v), locale)
           }
         />
         <Tooltip

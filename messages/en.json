@@ -1,5 +1,27 @@
 {
-  "plan": {},
+  "plan": {
+    "nano": "Nano",
+    "starter": "Starter",
+    "pro": "Pro",
+    "business": "Business",
+    "enterprise": "Enterprise",
+    "top_centers": "Top Centers"
+  },
+  "paymentStatus": {
+    "completed": "Completed",
+    "pending": "Pending",
+    "failed": "Failed",
+    "overdue": "Overdue",
+    "paid": "Paid",
+    "confirmed": "Confirmed"
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "assistant": "Assistant",
+    "teacher": "Teacher",
+    "super_admin": "Super Admin"
+  },
   "toasts": {
     "saved": "Saved successfully",
     "deleted": "Deleted",
@@ -1256,6 +1278,7 @@
     "group": "Group"
   },
   "students": {
+    "allGroups": "All Groups",
     "allSubjects": "All Subjects",
     "cardsPerPage": "Cards Per Page",
     "closeModal": "Close Modal",
@@ -6013,7 +6036,9 @@
     "overdue": "Overdue",
     "paid": "Paid",
     "pending": "Pending",
-    "suspended": "Suspended"
+    "suspended": "Suspended",
+    "rejected": "Rejected",
+    "pending_payment": "Pending Payment"
   },
   "statusActiveShort": {},
   "statusCharged": {},

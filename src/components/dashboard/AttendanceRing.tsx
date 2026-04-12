@@ -1,5 +1,8 @@
 'use client';
 
+import { useLocale } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
+
 type Props = {
   rate: number; // 0–100 percentage
   todayCount: number; // raw scan count today
@@ -7,6 +10,7 @@ type Props = {
 };
 
 export function AttendanceRing({ rate, todayCount, label }: Props) {
+  const locale = useLocale();
   const radius = 44;
   const circumference = 2 * Math.PI * radius;
   const clampedRate = Math.min(100, Math.max(0, rate));
@@ -47,7 +51,7 @@ export function AttendanceRing({ rate, todayCount, label }: Props) {
       <div className="flex flex-col gap-1">
         <span className="text-sm text-[var(--color-text-secondary)]">{label}</span>
         <span className="text-2xl font-bold text-white">
-          {todayCount.toLocaleString('en-US')}
+          {formatNumber(todayCount, locale)}
         </span>
       </div>
     </div>

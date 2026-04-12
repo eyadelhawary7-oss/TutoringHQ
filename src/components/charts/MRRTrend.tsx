@@ -2,6 +2,7 @@
 
 import { useLocale } from 'next-intl';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 
@@ -10,7 +11,7 @@ function formatMonth(monthStr: string, locale: string): string {
   const idx = (m ?? 1) - 1;
   if (locale === 'ar') return AR_MONTHS[idx] ?? monthStr;
   const d = new Date(y ?? 0, idx, 1);
-  return d.toLocaleString('en-US', { month: 'short' });
+  return formatDate(d, locale, { month: 'short' });
 }
 
 function linearRegression(points: { x: number; y: number }[]): { slope: number; intercept: number } {
@@ -81,13 +82,13 @@ export default function MRRTrend({ data = [] }: MRRTrendProps) {
           className="fill-muted-foreground"
         />
         <YAxis
-          tickFormatter={(v) => v.toLocaleString('en-US')}
+          tickFormatter={(v) => formatNumber(Number(v), locale)}
           tick={{ fontSize: 11 }}
           className="fill-muted-foreground"
         />
         <Tooltip
           formatter={(v, name) => [
-            `${Number(v ?? 0).toLocaleString('en-US')} ${currencySuffix}`,
+            `${formatNumber(Number(v ?? 0), locale)} ${currencySuffix}`,
             name === 'projection' ? 'التوقع' : '',
           ]}
           labelFormatter={(label) => label}

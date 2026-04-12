@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useLocale } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
 
 type Props = {
   target: number;
@@ -13,6 +15,7 @@ export function AnimatedCounter({
   duration = 1500,
   className = '',
 }: Props) {
+  const locale = useLocale();
   const [current, setCurrent] = useState(0);
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -42,5 +45,5 @@ export function AnimatedCounter({
     };
   }, [target, duration]);
 
-  return <span className={className}>{current.toLocaleString('en-US')}</span>;
+  return <span className={className}>{formatNumber(current, locale)}</span>;
 }

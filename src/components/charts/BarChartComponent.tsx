@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useLocale } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
 import {
   Bar,
   BarChart,
@@ -64,6 +66,7 @@ export function BarChartComponent({
   showGrid = true,
   rtl = false,
 }: BarChartComponentProps) {
+  const locale = useLocale();
   const lineColor = LINE_BY_GRADIENT[color];
   const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
@@ -116,7 +119,7 @@ export function BarChartComponent({
               tickFormatter={
                 xTickFormatter
                   ? (v: number | string) => String(xTickFormatter(v))
-                  : (v: number | string) => Number(v).toLocaleString('en-US')
+                  : (v: number | string) => formatNumber(Number(v), locale)
               }
             />
             <YAxis
@@ -151,7 +154,7 @@ export function BarChartComponent({
                 tickFormatter={
                   yTickFormatter
                     ? (v: number | string) => yTickFormatter(Number(v))
-                    : (v: number | string) => Number(v).toLocaleString('en-US')
+                    : (v: number | string) => formatNumber(Number(v), locale)
                 }
               />
             ) : null}

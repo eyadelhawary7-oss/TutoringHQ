@@ -22,6 +22,7 @@ const DonutChart = dynamic(
   { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
 );
 import { useToast } from '@/components/ui/ToastProvider';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import {
   QrCode,
@@ -146,6 +147,7 @@ function KpiCommandCard({
   delayMs,
   sparkline,
   staleMetrics,
+  locale,
 }: {
   label: string;
   valueDisplay: ReactNode;
@@ -155,6 +157,7 @@ function KpiCommandCard({
   sparkline: { value: number }[];
   /** When true, main KPI value is dimmed until fresh data arrives (sessionStorage rehydrate). */
   staleMetrics?: boolean;
+  locale: string;
 }) {
   const showTrend = trendPct !== undefined && trendPct !== 0 && Number.isFinite(trendPct);
   return (
@@ -183,7 +186,7 @@ function KpiCommandCard({
           ) : (
             <TrendingDown className="h-3 w-3" aria-hidden />
           )}
-          {`${(trendPct ?? 0) >= 0 ? '+' : ''}${(trendPct ?? 0).toLocaleString('en-US')}%`}
+          {`${(trendPct ?? 0) >= 0 ? '+' : ''}${formatNumber(trendPct ?? 0, locale)}%`}
         </span>
       ) : null}
       <div className="mt-3 h-8 w-full opacity-95" aria-hidden>
@@ -977,7 +980,7 @@ export default function DashboardPage() {
               className={`mt-1 text-3xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${kpiStale ? 'opacity-70' : 'opacity-100'}`}
               style={{ fontFamily: 'Georgia, serif' }}
             >
-              {Number(safeData.unpaidCount).toLocaleString('en-US')}
+              {formatNumber(Number(safeData.unpaidCount), locale)}
             </p>
             <p className="mt-2 text-sm text-teal-400">{t('goToPayments')}</p>
           </Link>
@@ -988,7 +991,7 @@ export default function DashboardPage() {
             className={`mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${kpiStale ? 'opacity-70' : 'opacity-100'}`}
             style={{ fontFamily: 'Georgia, serif' }}
           >
-            {Number(safeData.todayAttendance).toLocaleString('en-US')}
+            {formatNumber(Number(safeData.todayAttendance), locale)}
           </p>
         </div>
       </div>
@@ -1022,7 +1025,7 @@ export default function DashboardPage() {
             {centerBilling?.name ?? 'CenterHQ'}
           </h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
+            {formatDate(new Date(), locale, {
               weekday: 'long',
               day: 'numeric',
               month: 'long',
@@ -1127,20 +1130,21 @@ export default function DashboardPage() {
           <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3 lg:grid-cols-4">
             <KpiCommandCard
               label={t('totalStudents')}
-              valueDisplay={Number(safeData.totalStudents).toLocaleString('en-US')}
+              valueDisplay={formatNumber(Number(safeData.totalStudents), locale)}
               trendPct={studentTrendPct}
               icon={Users}
               delayMs={0}
               sparkline={studentSparklinePoints}
               staleMetrics={kpiStale}
+              locale={locale}
             />
             <KpiCommandCard
               label={t('todayAttendance')}
               valueDisplay={
                 <>
-                  {Number(attendanceTodayCount).toLocaleString('en-US')}
+                  {formatNumber(Number(attendanceTodayCount), locale)}
                   <span className="ms-1 text-base font-semibold text-[var(--color-text-muted)]">
-                    ({Number(attendancePctOfTotal).toLocaleString('en-US')}%)
+                    ({formatNumber(Number(attendancePctOfTotal), locale)}%)
                   </span>
                 </>
               }
@@ -1149,13 +1153,14 @@ export default function DashboardPage() {
               delayMs={100}
               sparkline={attendanceSparklinePoints}
               staleMetrics={kpiStale}
+              locale={locale}
             />
             {canViewRevenue ? (
               <KpiCommandCard
                 label={t('monthlyRevenue')}
                 valueDisplay={
                   <>
-                    {Number(safeData.monthConfirmed).toLocaleString('en-US')}
+                    {formatNumber(Number(safeData.monthConfirmed), locale)}
                     <span className="ms-1 text-base font-normal text-[var(--color-text-muted)]">{egpSuffix}</span>
                   </>
                 }
@@ -1164,6 +1169,7 @@ export default function DashboardPage() {
                 delayMs={200}
                 sparkline={revenueMonthlySpark7}
                 staleMetrics={kpiStale}
+                locale={locale}
               />
             ) : (
               <KpiCommandCard
@@ -1177,15 +1183,17 @@ export default function DashboardPage() {
                 delayMs={200}
                 sparkline={[]}
                 staleMetrics={kpiStale}
+                locale={locale}
               />
             )}
             <KpiCommandCard
               label={t('pendingPayments')}
-              valueDisplay={Number(safeData.pendingInvoicesCount).toLocaleString('en-US')}
+              valueDisplay={formatNumber(Number(safeData.pendingInvoicesCount), locale)}
               icon={CreditCard}
               delayMs={300}
               sparkline={pendingInvoicesSpark7}
               staleMetrics={kpiStale}
+              locale={locale}
             />
           </div>
 
@@ -1193,7 +1201,7 @@ export default function DashboardPage() {
             <div className="md:col-span-3">
               <ChartCard
                 title={t('attendanceChart')}
-                value={Number(attendanceWeekTotal).toLocaleString('en-US')}
+                value={formatNumber(Number(attendanceWeekTotal), locale)}
                 trend={safeData.weeklyTrendPct !== 0 ? safeData.weeklyTrendPct : undefined}
                 trendLabel={t('vsLastWeek')}
                 minHeight={200}
@@ -1222,7 +1230,7 @@ export default function DashboardPage() {
                     centerLabel={t('collected')}
                     centerValue={
                       canViewRevenue
-                        ? Number(safeData.monthConfirmed).toLocaleString('en-US')
+                        ? formatNumber(Number(safeData.monthConfirmed), locale)
                         : tCommon('noData')
                     }
                     suffix={canViewRevenue ? ` ${egpSuffix}` : ''}
@@ -1276,7 +1284,7 @@ export default function DashboardPage() {
                             className="shrink-0 tabular-nums text-xs font-semibold text-[var(--color-text-secondary)]"
                             style={{ fontFamily: 'Georgia, serif' }}
                           >
-                            {pct.toLocaleString('en-US')}%
+                            {formatNumber(pct, locale)}%
                           </span>
                         </div>
                         <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-3)]">

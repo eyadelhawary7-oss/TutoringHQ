@@ -1,5 +1,7 @@
 'use client';
 
+import { useLocale } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
 import { CHART_STYLE } from './ChartTokens';
 
 interface ChartTooltipProps {
@@ -26,6 +28,7 @@ export function ChartTooltip({
   prefix = '',
   suffix = '',
 }: ChartTooltipProps) {
+  const locale = useLocale();
   if (!active || !payload?.length) return null;
   const displayLabel = labelFormatter ? labelFormatter(label ?? '') : String(label ?? '');
 
@@ -55,7 +58,7 @@ export function ChartTooltip({
       {payload.map((entry, i) => {
         const val = valueFormatter
           ? valueFormatter(entry.value, entry.name)
-          : `${prefix}${entry.value.toLocaleString('en-US')}${suffix}`;
+          : `${prefix}${formatNumber(entry.value, locale)}${suffix}`;
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div

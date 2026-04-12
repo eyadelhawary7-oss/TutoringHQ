@@ -1,5 +1,8 @@
 'use client';
 
+import { useLocale } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
+
 export interface ChartLegendItem {
   color: string;
   label: string;
@@ -14,6 +17,7 @@ export interface ChartLegendProps {
 }
 
 export function ChartLegend({ items, direction = 'horizontal' }: ChartLegendProps) {
+  const locale = useLocale();
   return (
     <div
       className={`flex gap-3 mt-3 ${direction === 'horizontal' ? 'flex-row flex-wrap' : 'flex-col'}`}
@@ -30,7 +34,7 @@ export function ChartLegend({ items, direction = 'horizontal' }: ChartLegendProp
             <span className="text-xs font-semibold text-[var(--color-text-primary)] tabular-nums shrink-0">
               {item.prefix ?? ''}
               {typeof item.value === 'number'
-                ? item.value.toLocaleString('en-US')
+                ? formatNumber(item.value, locale)
                 : item.value}
               {item.suffix ?? ''}
             </span>

@@ -1,5 +1,8 @@
 'use client';
 
+import { useLocale } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
+
 type Props = {
   confirmed: number;
   pending: number;
@@ -15,6 +18,7 @@ export function PaymentBar({
   pendingLabel,
   currencySuffix,
 }: Props) {
+  const locale = useLocale();
   const total = confirmed + pending;
   const confirmedPct = total > 0 ? (confirmed / total) * 100 : 0;
   const pendingPct = total > 0 ? (pending / total) * 100 : 0;
@@ -41,14 +45,14 @@ export function PaymentBar({
           <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-success)]" />
           <span className="text-[var(--color-text-secondary)]">{confirmedLabel}</span>
           <span className="font-semibold text-white ms-1">
-            {Number(confirmed).toLocaleString('en-US')} {currencySuffix}
+            {formatNumber(Number(confirmed), locale)} {currencySuffix}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-warning)]" />
           <span className="text-[var(--color-text-secondary)]">{pendingLabel}</span>
           <span className="font-semibold text-white ms-1">
-            {Number(pending).toLocaleString('en-US')} {currencySuffix}
+            {formatNumber(Number(pending), locale)} {currencySuffix}
           </span>
         </div>
       </div>

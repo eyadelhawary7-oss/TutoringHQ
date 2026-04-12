@@ -2,6 +2,8 @@
 // Single source of truth for CenterHQ subscription pricing.
 // `quarterlyAllIn` matches pricing_plans.all_in_price: EGP/month when billed quarterly (×3 = one quarter invoice).
 
+import { formatNumber } from '@/lib/formatNumber';
+
 export type PlanKey = 'nano' | 'starter' | 'pro' | 'business' | 'enterprise' | 'top_centers';
 export type BillingPeriod = 'monthly' | 'quarterly' | 'annual';
 
@@ -193,5 +195,5 @@ export function getPerStudentWeeklyCost(planKey: PlanKey): number | null {
 }
 
 export function formatPrice(amount: number, locale?: string): string {
-  return amount.toLocaleString(locale ?? 'en-US');
+  return formatNumber(amount, locale ?? 'en');
 }

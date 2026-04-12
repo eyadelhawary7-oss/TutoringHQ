@@ -58,6 +58,7 @@ import { ALL_ADMIN_PERMISSIONS } from '@/lib/admin-roles';
 import { PlanBadge, BillingStatusBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import type { AdminCardOrderRow } from '@/types/admin-card-orders';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -543,7 +544,7 @@ function AdminPageContent() {
       if (Array.isArray(data.errors) && data.errors.length > 0) {
         setBulkError(
           tAdmin('bulk.completedWithErrors', {
-            count: data.errors.length.toLocaleString('en-US'),
+            count: formatNumber(data.errors.length, locale),
           }),
         );
       }
@@ -556,7 +557,7 @@ function AdminPageContent() {
       setBulkError(tAdmin('bulk.errors.unknown'));
       setBulkLoading(false);
     }
-  }, [bulkAction, bulkMessage, getAuthHeaders, loadCenters, selectedIds, tAdmin]);
+  }, [bulkAction, bulkMessage, getAuthHeaders, loadCenters, locale, selectedIds, tAdmin]);
 
   const loadAnalyticsCenters = useCallback(async () => {
     const session = await getSession();
@@ -905,10 +906,10 @@ function AdminPageContent() {
 
   const analyticsAvgRevenuePerCenterCell = useMemo(() => {
     const active = analyticsCenters.filter((c) => (c.status ?? 'active') === 'active');
-    if (active.length === 0) return `${(0).toLocaleString('en-US')} ${tCommon('egp')}`;
+    if (active.length === 0) return formatCurrency(0, locale);
     const mrr = overview?.totalMRR ?? overview?.mrr ?? 0;
-    return `${Math.round(mrr / Math.max(1, active.length)).toLocaleString('en-US')} ${tCommon('egp')}`;
-  }, [analyticsCenters, overview?.totalMRR, overview?.mrr, tCommon]);
+    return formatCurrency(Math.round(mrr / Math.max(1, active.length)), locale);
+  }, [analyticsCenters, locale, overview?.totalMRR, overview?.mrr]);
 
   const analyticsZeroStudentsCount = useMemo(
     () => analyticsCenters.filter((c) => (c.students_count ?? 0) === 0).length,
@@ -1058,10 +1059,8 @@ function AdminPageContent() {
     // Ensure Egyptian country code
     if (phone.startsWith('0')) phone = '2' + phone; // 01x -> 201x
     if (!phone.startsWith('20')) phone = '20' + phone;
-    const formattedAmount = amount.toLocaleString('en-US');
-    const formattedDue = new Date(nextDue).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    });
+    const formattedAmount = formatNumber(amount, 'ar');
+    const formattedDue = formatDate(nextDue, 'ar');
     const message = encodeURIComponent(
       `السلام عليكم ${centerName} 👋\n\n` +
       `نود تذكيركم بأن دفعة اشتراككم في CenterHQ بقيمة *${formattedAmount} ${locale === 'ar' ? 'ج.م' : 'EGP'}* مستحقة بتاريخ *${formattedDue}*.\n\n` +
@@ -1276,7 +1275,9 @@ function AdminPageContent() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('mrr')}</p>
-                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{(overview.totalMRR ?? overview.mrr ?? 0).toLocaleString('en-US')} {tCommon('egp')}</p>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
+                      {formatCurrency(overview.totalMRR ?? overview.mrr ?? 0, locale)}
+                    </p>
                   </div>
                   <div className="p-3 rounded-full bg-green-100">
                     <TrendingUp className="w-5 h-5 text-green-600" />
@@ -1288,7 +1289,7 @@ function AdminPageContent() {
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('outstandingInvoices')}</p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
-                      {(overview.pendingRevenue ?? 0).toLocaleString('en-US')} {tCommon('egp')}
+                      {formatCurrency(overview.pendingRevenue ?? 0, locale)}
                     </p>
                   </div>
                   <div className="p-3 rounded-full bg-red-100">
@@ -1301,7 +1302,7 @@ function AdminPageContent() {
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('collectedThisMonth')}</p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
-                      {(overview.revenueThisMonth ?? 0).toLocaleString('en-US')} {tCommon('egp')}
+                      {formatCurrency(overview.revenueThisMonth ?? 0, locale)}
                     </p>
                   </div>
                   <div className="p-3 rounded-full bg-teal-100">
@@ -1559,7 +1560,7 @@ function AdminPageContent() {
             {selectedIds.size > 0 && (
               <div className="flex items-center gap-3 flex-wrap bg-primary/10 border border-primary/25 rounded-xl p-4 mb-4">
                 <span className="text-primary text-sm font-medium">
-                  {selectedIds.size.toLocaleString('en-US')} {tAdmin('selected')}
+                  {formatNumber(selectedIds.size, locale)} {tAdmin('selected')}
                 </span>
                 <select
                   value={bulkAction}
@@ -1803,7 +1804,9 @@ function AdminPageContent() {
                           <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
                             {b.billing_period ?? tCommon('notSet')}
                           </td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{(b.amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">
+                            {formatCurrency(b.amount ?? 0, locale)}
+                          </td>
                           <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
                             {nextDueStr || tCommon('notSet')}
                           </td>
@@ -1857,7 +1860,9 @@ function AdminPageContent() {
                         {pendingInvoices.map((inv) => (
                           <tr key={inv.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                             <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{inv.centerName}</td>
-                            <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{(inv.payment_amount ?? 0).toLocaleString('en-US')} {tCommon('egp')}</td>
+                            <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">
+                              {formatCurrency(inv.payment_amount ?? 0, locale)}
+                            </td>
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-2 flex-nowrap">
                                 {inv.payment_proof_url ? (
@@ -1923,7 +1928,9 @@ function AdminPageContent() {
                           {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : tCommon('notSet')}
                         </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.centerName}</td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">{p.amount.toLocaleString('en-US')} {tCommon('egp')}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">
+                          {formatCurrency(p.amount, locale)}
+                        </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
                           {p.billing_period ?? tCommon('notSet')}
                         </td>
@@ -2110,7 +2117,7 @@ function AdminPageContent() {
                             <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">{order.id.slice(0, 8)}…</td>
                             <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{order.center_name}</td>
                             <td className="px-4 py-3 font-mono">{order.quantity}</td>
-                            <td className="px-4 py-3 font-mono font-bold">{order.total_amount.toLocaleString('en-US')} {tCommon('egp')}</td>
+                            <td className="px-4 py-3 font-mono font-bold">{formatCurrency(order.total_amount, locale)}</td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${sc}`}>
                                 {order.status === 'pending'

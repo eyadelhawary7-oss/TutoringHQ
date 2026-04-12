@@ -10,7 +10,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
 import {
   CHART_MARGIN,
   CHART_STYLE,
@@ -51,6 +52,7 @@ export function AreaChartComponent({
   showGrid = false,
   showYAxis = true,
 }: AreaChartComponentProps) {
+  const locale = useLocale();
   const t = useTranslations('charts');
   const baseId = useId().replace(/:/g, '');
   const gradId = `area-grad-${color}-${baseId}`;
@@ -102,7 +104,7 @@ export function AreaChartComponent({
             tickFormatter={
               yTickFormatter
                 ? (v: number | string) => yTickFormatter(Number(v))
-                : (v: number | string) => Number(v).toLocaleString('en-US')
+                : (v: number | string) => formatNumber(Number(v), locale)
             }
           />
         ) : null}

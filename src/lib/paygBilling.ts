@@ -2,6 +2,8 @@
  * Authoritative PAYG (pay-as-you-go) billing: tier by active student count, monthly cap per tier.
  */
 
+import { formatNumber } from '@/lib/formatNumber';
+
 export const PAYG_RATES = {
   nano: { maxStudents: 100, ratePerStudent: 27.5 },
   starter: { maxStudents: 250, ratePerStudent: 22.88 },
@@ -29,8 +31,8 @@ export const PAYG_WEEKLY_DISPLAY_RATES = {
   enterprise: getWeeklyDisplayRate(PAYG_RATES.enterprise.ratePerStudent),
 } as const;
 
-export function formatWeeklyRate(monthlyRate: number): string {
-  return getWeeklyDisplayRate(monthlyRate).toLocaleString('en-US');
+export function formatWeeklyRate(monthlyRate: number, locale = 'en'): string {
+  return formatNumber(getWeeklyDisplayRate(monthlyRate), locale);
 }
 
 export function getPaygTier(studentCount: number) {
@@ -74,9 +76,9 @@ export function calculatePaygBill(studentCount: number): {
   };
 }
 
-export function getPaygEstimate(studentCount: number): string {
+export function getPaygEstimate(studentCount: number, locale = 'en'): string {
   const { cappedAmount } = calculatePaygBill(studentCount);
-  return cappedAmount.toLocaleString('en-US');
+  return formatNumber(cappedAmount, locale);
 }
 
 /** Tier breakpoints for sliders (labels are AR defaults; UI may override via i18n). */

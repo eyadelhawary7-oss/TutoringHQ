@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Download } from 'lucide-react';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 const AR_MONTHS: Record<string, string> = {
   '01': 'يناير', '02': 'فبراير', '03': 'مارس', '04': 'أبريل', '05': 'مايو', '06': 'يونيو',
@@ -19,7 +20,7 @@ function formatMonth(key: string, locale: string): string {
   const [y, m] = key.split('-');
   if (locale === 'ar') return `${AR_MONTHS[m ?? '01'] ?? m} ${y}`;
   const d = new Date(parseInt(y ?? '0', 10), parseInt(m ?? '1', 10) - 1, 1);
-  return d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+  return formatDate(d, locale, { month: 'short', year: 'numeric' });
 }
 
 export default function PnLCard({
@@ -54,24 +55,24 @@ export default function PnLCard({
       const exp = rent + salaries + utilities + other;
       rows.push([
         formatMonth(m, locale),
-        inc.toLocaleString('en-US'),
-        rent.toLocaleString('en-US'),
-        salaries.toLocaleString('en-US'),
-        utilities.toLocaleString('en-US'),
-        other.toLocaleString('en-US'),
-        exp.toLocaleString('en-US'),
-        (inc - exp).toLocaleString('en-US'),
+        formatNumber(inc, locale),
+        formatNumber(rent, locale),
+        formatNumber(salaries, locale),
+        formatNumber(utilities, locale),
+        formatNumber(other, locale),
+        formatNumber(exp, locale),
+        formatNumber(inc - exp, locale),
       ]);
     }
     rows.push([
       t('total'),
-      totalIncome.toLocaleString('en-US'),
+      formatNumber(totalIncome, locale),
       '',
       '',
       '',
       '',
-      totalExpenses.toLocaleString('en-US'),
-      net.toLocaleString('en-US'),
+      formatNumber(totalExpenses, locale),
+      formatNumber(net, locale),
     ]);
     const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
@@ -101,13 +102,13 @@ export default function PnLCard({
           <div>
             <p className="text-xs text-[var(--color-text-muted)]">{t('income')}</p>
             <p className="text-lg font-semibold text-green-400">
-              {totalIncome.toLocaleString('en-US')} {egp}
+              {formatNumber(totalIncome, locale)} {egp}
             </p>
           </div>
           <div>
             <p className="text-xs text-[var(--color-text-muted)]">{t('expenses')}</p>
             <p className="text-lg font-semibold text-red-400">
-              {totalExpenses.toLocaleString('en-US')} {egp}
+              {formatNumber(totalExpenses, locale)} {egp}
             </p>
           </div>
           <div>
@@ -117,7 +118,7 @@ export default function PnLCard({
                 net >= 0 ? 'text-green-400' : 'text-red-400'
               }`}
             >
-              {net.toLocaleString('en-US')} {egp}
+              {formatNumber(net, locale)} {egp}
             </p>
           </div>
         </div>
@@ -143,17 +144,17 @@ export default function PnLCard({
                     <tr key={m} className={`border-b border-[var(--color-border)] last:border-0 ${stripe}`}>
                       <td className="py-2.5 px-3 text-[var(--color-text-primary)]">{formatMonth(m, locale)}</td>
                       <td className="py-2.5 px-3 font-mono text-end text-green-400">
-                        {inc.toLocaleString('en-US')}
+                        {formatNumber(inc, locale)}
                       </td>
                       <td className="py-2.5 px-3 font-mono text-end text-red-400">
-                        {exp.toLocaleString('en-US')}
+                        {formatNumber(exp, locale)}
                       </td>
                       <td
                         className={`py-2.5 px-3 font-mono text-end ${
                           rowNet >= 0 ? 'text-green-400' : 'text-red-400'
                         }`}
                       >
-                        {rowNet.toLocaleString('en-US')}
+                        {formatNumber(rowNet, locale)}
                       </td>
                     </tr>
                   );

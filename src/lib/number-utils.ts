@@ -1,11 +1,8 @@
-/** Arabic numeral digits (٠-٩) */
-const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+import { formatNumber } from '@/lib/formatNumber';
 
 /**
- * Converts a number to Arabic-Indic numeral string.
- * e.g. 4000 -> "٤٬٠٠٠", 1500 -> "١٬٥٠٠"
+ * Converts a number to Arabic-Indic numeral string (ar-EG locale).
  */
 export function toAr(n: number): string {
-  const s = n.toLocaleString('en-US');
-  return s.replace(/\d/g, (d) => AR_DIGITS[Number(d)]).replace(/,/g, '٬');
+  return formatNumber(n, 'ar');
 }

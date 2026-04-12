@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useLocale } from 'next-intl';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { formatNumber } from '@/lib/formatNumber';
 import { CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from './ChartTokens';
 import { ChartTooltip } from './ChartTooltip';
 
@@ -47,6 +49,7 @@ export function DonutChart({
   centerValueFill = 'var(--color-text-primary)',
   centerLabelFill = 'var(--color-text-secondary)',
 }: DonutChartProps) {
+  const locale = useLocale();
   const chartData = useMemo(() => {
     const rows = (data ?? []).map((d, i) => ({
       name: d.name,
@@ -78,7 +81,7 @@ export function DonutChart({
   const centerValStr =
     centerValue !== undefined && centerValue !== null
       ? typeof centerValue === 'number'
-        ? centerValue.toLocaleString('en-US')
+        ? formatNumber(centerValue, locale)
         : centerValue
       : '';
 

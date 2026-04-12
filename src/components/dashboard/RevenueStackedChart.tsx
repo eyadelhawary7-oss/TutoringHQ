@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { formatNumber } from '@/lib/formatNumber';
 
 interface RevenueStackedChartProps {
   data: { date: string; day: string; cash: number; instapay: number; vodafone: number; orange: number; fawry: number; bank: number; other: number }[];
@@ -40,7 +41,7 @@ export default function RevenueStackedChart({ data = [] }: RevenueStackedChartPr
         <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
         <Tooltip
           formatter={(v: number | undefined) =>
-            `${Math.round((v ?? 0)).toLocaleString('en-US')} ${currencySuffix}`
+            `${formatNumber(Math.round(v ?? 0), locale)} ${currencySuffix}`
           }
         />
         <Legend />

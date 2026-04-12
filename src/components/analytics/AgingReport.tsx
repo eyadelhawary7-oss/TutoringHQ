@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
 import { MessageCircle, Loader2 } from 'lucide-react';
 
@@ -27,7 +28,6 @@ function getRowBg(days: number): string {
 export default function AgingReport({ data = [], onRefresh }: AgingReportProps) {
   const t = useTranslations('analytics');
   const locale = useLocale();
-  const currencySuffix = locale === 'ar' ? 'ج.م' : 'EGP';
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendingAll, setSendingAll] = useState(false);
 
@@ -118,10 +118,8 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
               <tr key={row.student_id} className={`border-b ${getRowBg(row.days_overdue)}`}>
                 <td className="py-2 px-4">{row.student_name}</td>
                 <td className="py-2 px-4">{row.group_name}</td>
-                <td className="py-2 px-4 font-mono">{row.days_overdue}</td>
-                <td className="py-2 px-4 font-mono">
-                  {row.amount.toLocaleString('en-US')} {currencySuffix}
-                </td>
+                <td className="py-2 px-4 font-mono">{formatNumber(row.days_overdue, locale)}</td>
+                <td className="py-2 px-4 font-mono">{formatCurrency(row.amount, locale)}</td>
                 <td className="py-2 px-2">
                   <button
                     type="button"

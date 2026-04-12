@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
@@ -23,6 +23,7 @@ import {
   BLAST_PRICE_PER_PARENT,
   getAnnouncementCap,
 } from '@/lib/parentPack';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 const STUDENTS_CACHE_KEY = 'chq_students_cache';
@@ -129,6 +130,7 @@ function lifecycleFilterLabelKey(f: LifecycleFilter): FilterLabelKey {
 }
 
 export default function StudentsPage() {
+  const locale = useLocale();
   const ts = useTranslations('students');
   const router = useRouter();
   const tCommon = useTranslations('common');
@@ -886,7 +888,7 @@ export default function StudentsPage() {
                 <span
                   className={`inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0 transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
                 >
-                  {students === null ? '–' : studentsList.length.toLocaleString('en-US')}
+                  {students === null ? '–' : formatNumber(studentsList.length, locale)}
                 </span>
               </div>
               <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ts('subtitle')}</p>
@@ -961,7 +963,7 @@ export default function StudentsPage() {
                   <span
                     className={`text-lg font-bold text-slate-900 dark:text-white tabular-nums transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
                   >
-                    {studentsList.length.toLocaleString('en-US')}
+                    {formatNumber(studentsList.length, locale)}
                   </span>
                 </div>
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
@@ -969,7 +971,10 @@ export default function StudentsPage() {
                   <span
                     className={`text-lg font-bold text-teal-600 dark:text-teal-400 tabular-nums transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
                   >
-                    {studentsList.filter((s) => s.lifecycle_status === 'active').length.toLocaleString('en-US')}
+                    {formatNumber(
+                      studentsList.filter((s) => s.lifecycle_status === 'active').length,
+                      locale,
+                    )}
                   </span>
                 </div>
               </>
@@ -1007,7 +1012,7 @@ export default function StudentsPage() {
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                 } btn-press chq-focus`}
               >
-                {tCommon('all', { defaultValue: 'All' })}
+                {ts('allGroups')}
               </button>
               {distinctSubjects.map((sub) => (
                 <button
@@ -1317,7 +1322,7 @@ export default function StudentsPage() {
                                 <td className="px-4 py-4 align-top">
                                   {balNum > 0 ? (
                                     <span className="text-sm font-medium text-red-600 dark:text-red-400 tabular-nums">
-                                      {balNum.toLocaleString('en-US')} {tCommon('egp')}
+                                      {formatCurrency(balNum, locale)}
                                     </span>
                                   ) : (
                                     <span className="text-sm text-slate-400 dark:text-slate-500">{ts('no_balance')}</span>
@@ -1554,7 +1559,7 @@ export default function StudentsPage() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs text-red-600 dark:text-red-400 font-medium">{ts('balance_due')}:</span>
                               <span className="text-xs font-semibold text-red-600 dark:text-red-400 tabular-nums">
-                                {balNum.toLocaleString('en-US')} {tCommon('egp')}
+                                {formatCurrency(balNum, locale)}
                               </span>
                             </div>
                             <div className="balance-bar">
@@ -1766,7 +1771,7 @@ export default function StudentsPage() {
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}
-                      {g.fee != null ? ` (EGP ${g.fee.toLocaleString('en-US')})` : ''}
+                      {g.fee != null ? ` (${formatCurrency(g.fee, locale)})` : ''}
                     </option>
                   ))}
                 </select>
@@ -1900,7 +1905,7 @@ export default function StudentsPage() {
               <div className="font-mono text-sm text-[var(--color-text-secondary)]">{qrModalStudent.student_number || ''}</div>
               {(balanceByStudent[qrModalStudent.id] ?? 0) > 0 && (
                 <div className="mt-2 text-sm font-bold text-red-600">
-                  {ts('balance')}: {Math.round(balanceByStudent[qrModalStudent.id]!).toLocaleString('en-US')} {tCommon('egp')}
+                  {ts('balance')}: {formatCurrency(Math.round(balanceByStudent[qrModalStudent.id]!), locale)}
                 </div>
               )}
             </div>
@@ -1997,13 +2002,13 @@ export default function StudentsPage() {
             </p>
             <p className="text-sm font-mono mt-1 text-[var(--color-text-primary)]" dir="ltr">
               {ts('announcementCost')}:{' '}
-              {(activeParentsForAnnounce * BLAST_PRICE_PER_PARENT).toLocaleString('en-US')} {tCommon('egp')}
+              {formatCurrency(activeParentsForAnnounce * BLAST_PRICE_PER_PARENT, locale)}
             </p>
             {announcementCapWarning && !announcementCapReached && (
               <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
                 {ts('announcementCapWarning', {
-                  balance: announcementBalanceNum.toLocaleString('en-US'),
-                  cap: announcementCap.toLocaleString('en-US'),
+                  balance: formatNumber(announcementBalanceNum, locale),
+                  cap: formatNumber(announcementCap, locale),
                 })}
               </p>
             )}
@@ -2046,7 +2051,7 @@ export default function StudentsPage() {
                   toast.success(
                     ts('announcementSentToast', {
                       count: j.sent ?? 0,
-                      cost: (j.totalCost ?? 0).toLocaleString('en-US'),
+                      cost: formatNumber(j.totalCost ?? 0, locale),
                     }),
                   );
                   await refreshUser();
