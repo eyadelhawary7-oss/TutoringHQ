@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
-import { Gift, Copy, Link2, DollarSign, Users, Banknote, MessageCircle } from 'lucide-react';
+import { Gift, Copy, Link2, Wallet, Users, Banknote, MessageCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
@@ -270,7 +270,7 @@ export default function ReferralsPage() {
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow overflow-hidden">
           <div className="p-4 border-b border-slate-200 dark:border-slate-700">
             <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <Wallet className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               {t('rewardHistory')}
             </h2>
           </div>
