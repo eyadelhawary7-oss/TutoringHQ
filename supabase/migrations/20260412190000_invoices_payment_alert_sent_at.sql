@@ -1,0 +1,1 @@
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_alert_sent_at TIMESTAMPTZ;
