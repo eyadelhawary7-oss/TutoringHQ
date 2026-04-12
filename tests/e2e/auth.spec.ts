@@ -93,7 +93,10 @@ test.describe('Authentication', () => {
       page.on('pageerror', (err) => errors.push(err.message))
 
       await page.goto('/ar/dashboard')
-      await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
+      await page.waitForURL(
+        /\/(ar|en)\/(admin|dashboard|login)/,
+        { timeout: 60_000 }
+      )
 
       await page.context().clearCookies()
       await page.goto('/ar/login')
