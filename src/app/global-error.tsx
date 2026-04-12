@@ -88,6 +88,23 @@ export default function GlobalError({
           >
             {err.tryAgain}
           </button>
+          <a
+            href={`/${locale}/dashboard`}
+            style={{
+              marginTop: '1.5rem',
+              display: 'inline-block',
+              padding: '0.75rem 2rem',
+              background: '#0D9488',
+              color: '#fff',
+              borderRadius: '0.75rem',
+              textDecoration: 'none',
+              fontFamily: 'system-ui, sans-serif',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            {err.backToDashboard}
+          </a>
         </div>
       </body>
     </html>

@@ -4871,7 +4871,8 @@
     "unexpectedTitle": "حدث خطأ غير متوقع",
     "unexpectedDesc": "تم تسجيل الخطأ تلقائياً. اضغط إعادة المحاولة أو عد للرئيسية.",
     "tryAgain": "إعادة المحاولة",
-    "goDashboard": "الرئيسية"
+    "goDashboard": "الرئيسية",
+    "backToDashboard": "العودة للوحة التحكم"
   },
   "sessionExpired": {
     "title": "انتهت جلسة العمل",

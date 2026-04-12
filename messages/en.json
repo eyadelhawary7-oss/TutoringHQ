@@ -3574,7 +3574,8 @@
     "unexpectedTitle": "Something went wrong",
     "unexpectedDesc": "The error was logged automatically. Try again or return to your dashboard.",
     "tryAgain": "Try again",
-    "goDashboard": "Dashboard"
+    "goDashboard": "Dashboard",
+    "backToDashboard": "Back to dashboard"
   },
   "sessionExpired": {
     "title": "Session expired",
