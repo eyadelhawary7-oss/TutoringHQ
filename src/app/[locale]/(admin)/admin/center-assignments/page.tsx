@@ -9,6 +9,7 @@ import { AdminSidebar } from '@/components/AdminSidebar'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { useLayout } from '@/contexts/LayoutContext'
+import { formatNumber } from '@/lib/formatNumber'
 
 interface Assignment {
   id: string
@@ -420,7 +421,7 @@ export default function CenterAssignmentsPage() {
           <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4">
             <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
             <p className="text-amber-800 dark:text-amber-300 text-sm">
-              <span className="font-semibold">{unassigned.length.toLocaleString('en-US')}</span>{' '}
+              <span className="font-semibold">{formatNumber(unassigned.length, locale)}</span>{' '}
               {t('centerAssignments.unassigned_warning')}:{' '}
               {unassigned
                 .slice(0, 5)
@@ -428,7 +429,7 @@ export default function CenterAssignmentsPage() {
                 .join(', ')}
               {unassigned.length > 5
                 ? ` ${t('centerAssignments.unassigned_more', {
-                    count: (unassigned.length - 5).toLocaleString('en-US'),
+                    count: formatNumber(unassigned.length - 5, locale),
                   })}`
                 : ''}
             </p>

@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Send, RefreshCw, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { AtRiskStudent } from '@/app/api/students/at-risk/route';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 export function AtRiskPanel() {
   const t = useTranslations('students');
@@ -130,7 +131,7 @@ export function AtRiskPanel() {
                       {s.at_risk_since && (
                         <span className="ms-2">
                           • {t('atRiskSince', { defaultValue: 'معرض منذ' })}{' '}
-                          {new Date(s.at_risk_since).toLocaleDateString(locale === 'ar' ? 'ar' : 'en-US', {
+                          {formatDate(s.at_risk_since, locale, {
                             day: 'numeric',
                             month: 'short',
                           })}
@@ -138,7 +139,7 @@ export function AtRiskPanel() {
                       )}
                     </p>
                     <p className="text-sm font-mono text-[var(--color-text-secondary)] mt-1">
-                      {t('balance', { defaultValue: 'المستحق' })}: {s.balance_due.toLocaleString('en-US')}{' '}
+                      {t('balance', { defaultValue: 'المستحق' })}: {formatNumber(s.balance_due, locale)}{' '}
                       {currencySuffix}
                     </p>
                   </div>

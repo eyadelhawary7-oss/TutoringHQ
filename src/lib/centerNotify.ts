@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { dateInNDays } from '@/lib/parentPack';
+import { formatNumber } from '@/lib/formatNumber';
 
 const PLATFORM_URL = 'https://centerhq.app';
 
@@ -281,7 +282,7 @@ export async function sendInactivityAlert(
 
     const owner = ownerName.trim() || centerName.trim() || '-';
     const center = centerName.trim() || '-';
-    const daysStr = daysInactive.toLocaleString('en-US');
+    const daysStr = formatNumber(daysInactive, 'ar');
 
     const ok = await postWhatsappTemplate({
       templateName: TEMPLATE,
@@ -333,7 +334,7 @@ export async function sendPaymentRetry(
     const to = digitsOnly(ownerPhone ?? '');
     if (!to) return { skipped: true };
 
-    const amountStr = amount.toLocaleString('en-US');
+    const amountStr = formatNumber(amount, 'ar');
 
     if (isUrgent) {
       try {
@@ -809,10 +810,10 @@ export async function sendWeeklyReport(
       return { skipped: true };
     }
 
-    const activeStr = activeStudents.toLocaleString('en-US');
-    const sessionsStr = sessions.toLocaleString('en-US');
-    const revenueStr = `${revenue.toLocaleString('en-US')} جنيه`;
-    const newStr = newStudents.toLocaleString('en-US');
+    const activeStr = formatNumber(activeStudents, 'ar');
+    const sessionsStr = formatNumber(sessions, 'ar');
+    const revenueStr = `${formatNumber(revenue, 'ar')} جنيه`;
+    const newStr = formatNumber(newStudents, 'ar');
 
     const ok = await postWhatsappTemplate({
       templateName: TEMPLATE_WEEKLY_SUMMARY,

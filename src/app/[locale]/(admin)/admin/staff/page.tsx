@@ -9,6 +9,7 @@ import { AdminSidebar } from '@/components/AdminSidebar'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { useLayout } from '@/contexts/LayoutContext'
+import { formatNumber } from '@/lib/formatNumber'
 
 interface StaffMember {
   id: string
@@ -346,7 +347,7 @@ export default function StaffPage() {
                 {t('staff.title')}
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {filtered.length.toLocaleString('en-US')}
+                {formatNumber(filtered.length, locale)}
               </p>
             </div>
           </div>
@@ -462,13 +463,13 @@ export default function StaffPage() {
                       {member.manager?.name ?? t('staff.dash')}
                     </td>
                     <td className="px-4 py-3 text-slate-900 dark:text-white font-medium">
-                      {member.center_count.toLocaleString('en-US')}
+                      {formatNumber(member.center_count, locale)}
                     </td>
                     <td className="px-4 py-3 text-teal-600 dark:text-teal-400 font-medium">
-                      {member.ytd_commission.toLocaleString('en-US')} {t('staff.currency_suffix')}
+                      {formatNumber(member.ytd_commission, locale)} {t('staff.currency_suffix')}
                     </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                      {Number(member.base_salary).toLocaleString('en-US')} {t('staff.currency_suffix')}
+                      {formatNumber(Number(member.base_salary), locale)} {t('staff.currency_suffix')}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-md text-xs ${statusBadge(member.status)}`}>

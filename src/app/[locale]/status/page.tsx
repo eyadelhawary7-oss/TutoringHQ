@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useLocale } from 'next-intl';
+import { formatDateTime, formatNumber } from '@/lib/formatNumber';
 import { CheckCircle, AlertTriangle, XCircle, RefreshCw, Loader2 } from 'lucide-react';
 
 const SERVICES = [
@@ -154,7 +155,7 @@ export default function StatusPage() {
         <section>
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
             {locale === 'ar'
-              ? `سجل الرفعية ${(90).toLocaleString('en-US')} يوم`
+              ? `سجل الرفعية ${formatNumber(90, locale)} يوم`
               : '90-Day Uptime History'}
           </h2>
           <div className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] p-4 overflow-x-auto">
@@ -200,7 +201,7 @@ export default function StatusPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-            {locale === 'ar' ? `آخر ${(5).toLocaleString('en-US')} حوادث` : 'Last 5 Incidents'}
+            {locale === 'ar' ? `آخر ${formatNumber(5, locale)} حوادث` : 'Last 5 Incidents'}
           </h2>
           <div className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] divide-y divide-slate-100">
             {d.incidents.length === 0 ? (
@@ -213,9 +214,9 @@ export default function StatusPage() {
                   <div>
                     <p className="font-medium text-[var(--color-text-primary)]">{inc.title}</p>
                     <p className="text-sm text-[var(--color-text-secondary)]">
-                      {new Date(inc.started_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}
+                      {formatDateTime(inc.started_at, locale)}
                       {inc.resolved_at && (
-                        <> - {pickLocale('تم الحل', 'Resolved')} {new Date(inc.resolved_at).toLocaleString(locale === 'ar' ? 'en-US' : 'en-US')}</>
+                        <> - {pickLocale('تم الحل', 'Resolved')} {formatDateTime(inc.resolved_at, locale)}</>
                       )}
                     </p>
                   </div>

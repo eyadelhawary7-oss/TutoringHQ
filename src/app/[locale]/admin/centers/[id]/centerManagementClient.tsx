@@ -12,6 +12,7 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { getAnnualChargeRounded } from '@/lib/pricing';
 import { useToast } from '@/hooks/useToast';
 import { Pin, Trash2 } from 'lucide-react';
+import { formatDate as formatDateI18n, formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 type CenterData = {
   center: Record<string, unknown>;
@@ -225,11 +226,32 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
   const tStatus = useTranslations('status');
+  const tPlan = useTranslations('plan');
   const locale = useLocale();
   const toast = useToast();
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
   const isRTL = locale === 'ar';
+
+  const formatPlanKey = (plan: unknown): string => {
+    const p = String(plan ?? '').trim().toLowerCase();
+    if (!p) return tCommon('notSet');
+    const keys = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
+    if ((keys as readonly string[]).includes(p)) return tPlan(p as (typeof keys)[number]);
+    return String(plan);
+  };
+
+  const formatPlanRequestStatus = (st: string): string => {
+    const s = st.toLowerCase();
+    if (
+      ['pending', 'pending_payment', 'active', 'cancelled', 'rejected', 'suspended', 'paid', 'overdue', 'trial'].includes(
+        s,
+      )
+    ) {
+      return tStatus(s as 'pending');
+    }
+    return st || tCommon('notSet');
+  };
 
   const [data, setData] = useState<CenterData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -538,7 +560,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     const d = new Date(val as string);
     return isNaN(d.getTime())
       ? String(val)
-      : d.toLocaleDateString('en-US', {
+      : formatDateI18n(d, locale, {
           year: 'numeric',
           month: 'short',
           day: 'numeric',
@@ -1962,16 +1984,16 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     {t('centerManagement.section3.effectiveMonthly')}:{' '}
                     <span className="text-slate-900 dark:text-white font-medium tabular-nums">
                       {!isNaN(billingNum)
-                        ? effectiveMonthly.toLocaleString('en-US')
-                        : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`}
+                        ? formatNumber(effectiveMonthly, locale)
+                        : `${formatNumber(0, locale)} ${tCommon('egp')}`}
                     </span>
                   </div>
                   <div>
                     {t('centerManagement.section3.annualEquivalent')}:{' '}
                     <span className="text-slate-900 dark:text-white font-medium tabular-nums">
                       {!isNaN(allInNum)
-                        ? Math.round(annualEquivalent).toLocaleString('en-US')
-                        : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`}
+                        ? formatNumber(Math.round(annualEquivalent), locale)
+                        : `${formatNumber(0, locale)} ${tCommon('egp')}`}
                     </span>
                   </div>
                 </div>
@@ -2120,7 +2142,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                 <td className="p-2 tabular-nums">
                                   {inv.total_amount != null
                                     ? String(inv.total_amount)
-                                    : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`}
+                                    : `${formatNumber(0, locale)} ${tCommon('egp')}`}
                                 </td>
                                 <td className="p-2">
                                   <span
@@ -2434,8 +2456,8 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           const ap = row.amount_paid;
                           const amt =
                             ap != null && !isNaN(Number(ap))
-                              ? `${Number(ap).toLocaleString('en-US')} ${tCommon('egp')}`
-                              : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`;
+                              ? `${formatNumber(Number(ap), locale)} ${tCommon('egp')}`
+                              : `${formatNumber(0, locale)} ${tCommon('egp')}`;
                           return (
                             <tr key={rk} className="border-t border-gray-200 dark:border-t-slate-700">
                               <td className="p-2 whitespace-nowrap">
@@ -2856,9 +2878,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           const canAct = st === 'pending' || st === 'pending_payment';
                           return (
                             <tr key={rid} className="border-t border-gray-200 dark:border-t-slate-700">
-                              <td className="p-2">{String(data.center.plan ?? tCommon('notSet'))}</td>
-                              <td className="p-2">{String(req.requested_plan ?? tCommon('notSet'))}</td>
-                              <td className="p-2 capitalize">{st || tCommon('notSet')}</td>
+                              <td className="p-2">{formatPlanKey(data.center.plan)}</td>
+                              <td className="p-2">{formatPlanKey(req.requested_plan)}</td>
+                              <td className="p-2 capitalize">{formatPlanRequestStatus(st)}</td>
                               <td className="p-2 whitespace-nowrap text-xs">
                                 {formatDate(req.requested_at)}
                               </td>
@@ -3142,7 +3164,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                               ? String(com.amount)
                               : com.commission_amount != null
                                 ? String(com.commission_amount)
-                                : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`;
+                                : `${formatNumber(0, locale)} ${tCommon('egp')}`;
                           return (
                             <tr key={cid} className="border-t border-gray-200 dark:border-t-slate-700">
                               <td className="p-2 tabular-nums">{amt}</td>
@@ -3226,8 +3248,8 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           const amtNum = Number(pr.amount);
                           const payoutAmt =
                             pr.amount != null && !Number.isNaN(amtNum)
-                              ? `${amtNum.toLocaleString('en-US')} ${tCommon('egp')}`
-                              : `${(0).toLocaleString('en-US')} ${tCommon('egp')}`;
+                              ? `${formatNumber(amtNum, locale)} ${tCommon('egp')}`
+                              : `${formatNumber(0, locale)} ${tCommon('egp')}`;
                           return (
                             <tr key={String(pr.id ?? m)} className="border-t border-gray-200 dark:border-t-slate-700">
                               <td className="p-2 font-mono text-xs">{shortUuid(pr.id)}</td>
@@ -3359,7 +3381,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                               <span className="font-medium text-slate-700 dark:text-slate-200">{authorName}</span>
                               {' · '}
                               {note.created_at
-                                ? new Date(String(note.created_at)).toLocaleString('en-US', {
+                                ? formatDateTime(String(note.created_at), locale, {
                                     dateStyle: 'medium',
                                     timeStyle: 'short',
                                   })
@@ -3493,7 +3515,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm resize-none mb-2"
                 />
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                  {t('manualWA.char_count', { count: opsWaText.length.toLocaleString('en-US') })}
+                  {t('manualWA.char_count', { count: formatNumber(opsWaText.length, locale) })}
                 </p>
                 <button
                   type="button"
@@ -3561,7 +3583,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           <tr key={String(log.id)} className="border-t border-gray-200 dark:border-t-slate-700">
                             <td className="p-2 whitespace-nowrap tabular-nums">
                               {log.created_at
-                                ? new Date(String(log.created_at)).toLocaleString('en-US', {
+                                ? formatDateTime(String(log.created_at), locale, {
                                     dateStyle: 'medium',
                                     timeStyle: 'short',
                                   })
@@ -3645,7 +3667,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.healthScore')}</div>
                     <div className="text-sm font-medium text-slate-900 dark:text-white">
                       {data.center.health_score != null && !isNaN(Number(data.center.health_score))
-                        ? Number(data.center.health_score).toLocaleString('en-US')
+                        ? formatNumber(Number(data.center.health_score), locale)
                         : tCommon('notSet')}
                     </div>
                   </div>
@@ -3687,7 +3709,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.studentSequence')}</div>
                     <div className="text-sm font-medium text-slate-900 dark:text-white">
                       {data.center.student_sequence != null && !isNaN(Number(data.center.student_sequence))
-                        ? Number(data.center.student_sequence).toLocaleString('en-US')
+                        ? formatNumber(Number(data.center.student_sequence), locale)
                         : tCommon('notSet')}
                     </div>
                   </div>

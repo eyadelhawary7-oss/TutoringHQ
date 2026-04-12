@@ -7,7 +7,7 @@ import { X, Search, ChevronRight, ChevronLeft, Check, CreditCard } from 'lucide-
 import QRCode from 'qrcode';
 import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
-import { toAr } from '@/lib/number-utils';
+import { formatNumber } from '@/lib/formatNumber';
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 
@@ -783,20 +783,20 @@ export function CardOrderModal({
                   <div className="flex justify-between text-sm">
                     <span>{t('pricePerCard')}:</span>
                     <span className="font-mono">
-                      {quantity} × EGP {PRICE_PER_CARD} = EGP {locale === 'ar' ? toAr(subtotal) : subtotal.toLocaleString('en-US')}
+                      {quantity} × EGP {PRICE_PER_CARD} = EGP {formatNumber(subtotal, locale)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>{t('deliveryFee')}:</span>
                     <span className="font-mono text-end">
-                      {deliveryFee === 0 ? t('deliveryFree') : `${deliveryFee.toLocaleString('en-US')} EGP`}
+                      {deliveryFee === 0 ? t('deliveryFree') : `${formatNumber(deliveryFee, locale)} EGP`}
                     </span>
                   </div>
                   <p className="text-xs text-[var(--color-text-tertiary)] -mt-1">{t('deliveryFeeNote')}</p>
                   <div className="flex justify-between font-bold text-teal-600 pt-2 border-t border-border">
                     <span>{t('totalAmount')}:</span>
                     <span className="font-mono">
-                      EGP {locale === 'ar' ? toAr(totalAmount) : totalAmount.toLocaleString('en-US')}
+                      EGP {formatNumber(totalAmount, locale)}
                     </span>
                   </div>
                 </div>
@@ -817,7 +817,7 @@ export function CardOrderModal({
                       className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 flex items-center justify-center gap-2"
                     >
                       <CreditCard size={18} aria-hidden />
-                      {t('payNow')} - {totalAmount.toLocaleString('en-US')} EGP
+                      {t('payNow')} - {formatNumber(totalAmount, locale)} EGP
                     </button>
                   )}
                   {paymentStatus === 'loading' && (

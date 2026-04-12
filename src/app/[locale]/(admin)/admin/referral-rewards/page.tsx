@@ -9,6 +9,7 @@ import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
+import { formatNumber } from '@/lib/formatNumber';
 
 type EmbedCenter = {
   id: string;
@@ -339,13 +340,13 @@ export default function ReferralRewardsPage() {
                         {row.center_name || '-'}
                       </td>
                       <td className="px-4 py-3 text-teal-600 dark:text-teal-400 font-mono">
-                        {Number(row.pending).toLocaleString('en-US')} {t('staff.currency_suffix')}
+                        {formatNumber(Number(row.pending), locale)} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-secondary)] font-mono">
-                        {Number(row.paid).toLocaleString('en-US')} {t('staff.currency_suffix')}
+                        {formatNumber(Number(row.paid), locale)} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-muted)] font-mono">
-                        {row.total_records.toLocaleString('en-US')}
+                        {formatNumber(row.total_records, locale)}
                       </td>
                     </tr>
                   ))}
@@ -417,16 +418,16 @@ export default function ReferralRewardsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
-                        {r.month_number.toLocaleString('en-US')}
+                        {formatNumber(r.month_number, locale)}
                       </td>
                       <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
-                        {pct.toLocaleString('en-US')}%
+                        {formatNumber(pct, locale)}%
                       </td>
                       <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
-                        {Number(r.base_amount).toLocaleString('en-US')} {t('staff.currency_suffix')}
+                        {formatNumber(Number(r.base_amount), locale)} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 font-mono text-teal-600 dark:text-teal-400 font-medium">
-                        {Number(r.reward_amount).toLocaleString('en-US')} {t('staff.currency_suffix')}
+                        {formatNumber(Number(r.reward_amount), locale)} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-secondary)]">{r.period_month}</td>
                       <td className="px-4 py-3">

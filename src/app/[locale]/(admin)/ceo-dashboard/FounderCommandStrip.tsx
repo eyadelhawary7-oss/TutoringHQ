@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { Clock, MessageSquare, AlertTriangle, Activity, CheckCircle } from 'lucide-react';
 import type { CommandStripResponse, ActionQueueItem } from '@/types/founder-dash';
+import { formatNumber, formatDate } from '@/lib/formatNumber';
 
 const PLAN_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 
@@ -65,7 +66,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             <span>{t('pendingApprovals')}</span>
           </div>
           <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-            {stats.pendingApprovals.toLocaleString('en-US')}
+            {formatNumber(stats.pendingApprovals, locale)}
           </p>
         </div>
 
@@ -81,7 +82,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             <span>{t('leadsNeedingReply')}</span>
           </div>
           <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-            {stats.leadsNeedingReply.toLocaleString('en-US')}
+            {formatNumber(stats.leadsNeedingReply, locale)}
           </p>
         </div>
 
@@ -97,7 +98,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             <span>{t('overduePayments')}</span>
           </div>
           <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-            {stats.overduePayments.toLocaleString('en-US')}
+            {formatNumber(stats.overduePayments, locale)}
           </p>
         </div>
 
@@ -113,7 +114,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             <span>{t('atRiskCenters')}</span>
           </div>
           <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-            {stats.atRiskCenters.toLocaleString('en-US')}
+            {formatNumber(stats.atRiskCenters, locale)}
           </p>
         </div>
       </section>
@@ -133,10 +134,10 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
           <span className="font-mono text-[var(--color-text-primary)]">
-            {`${activePayingCenters.toLocaleString('en-US')} / ${target} ${t('centers')}`}
+            {`${formatNumber(activePayingCenters, locale)} / ${formatNumber(target, locale)} ${t('centers')}`}
           </span>
           <span className="rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 px-2.5 py-0.5 text-xs font-medium font-mono">
-            {`${pct.toLocaleString('en-US')}%`}
+            {`${formatNumber(pct, locale)}%`}
           </span>
           {pct === 0 && (
             <span className="text-[var(--color-text-secondary)]">{t('breakevenNotStarted')}</span>
@@ -189,7 +190,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                     <div className="flex flex-wrap items-center gap-2">
                       {n(item.revenue_at_risk) > 0 && (
                         <span className="text-xs rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-1 font-mono">
-                          {n(item.revenue_at_risk).toLocaleString('en-US')} {t('egpAbbrev')}
+                          {formatNumber(n(item.revenue_at_risk), locale)} {t('egpAbbrev')}
                         </span>
                       )}
                       {item.action_label && item.action_url && (
@@ -271,7 +272,11 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                           </span>
                         </td>
                         <td className="py-2 pe-3 font-mono text-[var(--color-text-secondary)]">
-                          {new Date(center.created_at).toLocaleDateString('en-US')}
+                          {formatDate(center.created_at, locale, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
                         </td>
                         <td className="py-2 pe-3 text-[var(--color-text-secondary)] max-w-[200px]">
                           {notesPreview}
@@ -323,7 +328,11 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                       <span className="text-[var(--color-text-tertiary)] font-sans">
                         {t('colSignupDate')}:{' '}
                       </span>
-                      {new Date(center.created_at).toLocaleDateString('en-US')}
+                      {formatDate(center.created_at, locale, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     </div>
                     <div className="text-sm text-[var(--color-text-secondary)]">
                       <span className="text-[var(--color-text-tertiary)]">{t('colNotes')}: </span>

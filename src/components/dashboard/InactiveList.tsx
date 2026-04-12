@@ -1,6 +1,7 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 export type InactivePeriod = '7d' | '14d' | '30d' | '3mo' | '6mo' | '1yr';
 
@@ -22,6 +23,7 @@ const PERIODS: InactivePeriod[] = ['7d', '14d', '30d', '3mo', '6mo', '1yr'];
 
 export default function InactiveList({ students, period, onPeriodChange }: InactiveListProps) {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
 
   return (
     <div>
@@ -59,10 +61,16 @@ export default function InactiveList({ students, period, onPeriodChange }: Inact
                   <td className="px-3 py-3 font-mono italic text-[var(--text-secondary)]" dir="ltr">{s.student_number}</td>
                   <td className="px-3 py-3 text-[var(--text-secondary)]">
                     {s.last_scanned_at
-                      ? new Date(s.last_scanned_at).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })
+                      ? formatDate(s.last_scanned_at, locale, {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })
                       : '-'}
                   </td>
-                  <td className="px-3 py-3 text-end font-mono italic font-medium text-[var(--text-primary)]">{s.days_absent}</td>
+                  <td className="px-3 py-3 text-end font-mono italic font-medium text-[var(--text-primary)]">
+                    {formatNumber(s.days_absent, locale)}
+                  </td>
                 </tr>
               ))}
             </tbody>

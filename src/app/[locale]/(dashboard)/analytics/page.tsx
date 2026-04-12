@@ -11,6 +11,7 @@ import AnalyticsAiChatWidget from '@/components/analytics/AnalyticsAiChatWidget'
 import { chartColors, colors } from '@/lib/tokens';
 import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 import { ChartCard, ChartLegend } from '@/components/charts';
+import { formatNumber } from '@/lib/formatNumber';
 
 const RevenueByGroup = dynamic(() => import('@/components/charts/RevenueByGroup'), {
   ssr: false,
@@ -209,7 +210,7 @@ export default function AnalyticsPage() {
             <div className="min-w-0">
               <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('mrr')}</span>
               <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
-                {Number(d.mrr ?? 0).toLocaleString('en-US')}
+                {formatNumber(Number(d.mrr ?? 0), locale)}
                 <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">{egp}</span>
               </span>
               {mrrDelta !== undefined && (
@@ -226,7 +227,7 @@ export default function AnalyticsPage() {
                     </span>
                   )}
                   <span>
-                    {Number(Math.abs(mrrDelta)).toLocaleString('en-US')}% {ta('mrr_delta')}
+                    {formatNumber(Number(Math.abs(mrrDelta)), locale)}% {ta('mrr_delta')}
                   </span>
                 </span>
               )}
@@ -244,7 +245,7 @@ export default function AnalyticsPage() {
             <div className="min-w-0">
               <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('collection_rate')}</span>
               <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
-                {Number(d.collection_rate ?? 0).toLocaleString('en-US', { maximumFractionDigits: 1 })}%
+                {formatNumber(Number(d.collection_rate ?? 0), locale, { maximumFractionDigits: 1 })}%
               </span>
             </div>
             <div
@@ -260,7 +261,7 @@ export default function AnalyticsPage() {
             <div className="min-w-0">
               <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('avg_per_student')}</span>
               <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
-                {Number(d.avg_payment_per_student ?? 0).toLocaleString('en-US')}
+                {formatNumber(Number(d.avg_payment_per_student ?? 0), locale)}
                 <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">{egp}</span>
               </span>
             </div>
@@ -277,7 +278,7 @@ export default function AnalyticsPage() {
             <div className="min-w-0">
               <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('total_revenue')}</span>
               <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
-                {Number(totalRevenue).toLocaleString('en-US')}
+                {formatNumber(Number(totalRevenue), locale)}
                 <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">{egp}</span>
               </span>
             </div>
@@ -326,7 +327,7 @@ export default function AnalyticsPage() {
                   items={donutData.map((slice) => ({
                     color: slice.color ?? '#64748B',
                     label: slice.name,
-                    value: Number(slice.value).toLocaleString('en-US'),
+                    value: formatNumber(Number(slice.value), locale),
                     suffix: ` ${egp}`,
                   }))}
                 />

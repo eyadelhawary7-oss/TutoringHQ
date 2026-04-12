@@ -18,6 +18,7 @@ import {
   X,
   ArrowLeft,
 } from 'lucide-react';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 interface RenewalRow {
   id: string;
@@ -44,23 +45,14 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] dark:bg-gray-800 dark:text-[var(--color-text-tertiary)]',
 };
 
-function formatRenewalDate(dateStr: string | null, locale: string): string {
+function formatRenewalDate(dateStr: string | null, loc: string): string {
   if (!dateStr) return '\u2014';
-  const d = new Date(dateStr + 'T12:00:00');
-  const months: Record<string, string[]> = {
-    ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
-    en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-  };
-  const monthNames = months[locale] ?? months['en'];
-  const day = d.getDate().toLocaleString('en-US');
-  const month = monthNames[d.getMonth()];
-  const year = String(d.getFullYear());
-  return `${day} ${month} ${year}`;
+  return formatDate(`${dateStr}T12:00:00`, loc, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function formatAmount(amount: number | null): string {
-  if (amount == null || isNaN(amount)) return Number(0).toLocaleString('en-US');
-  return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+function formatAmount(amount: number | null, loc: string): string {
+  if (amount == null || isNaN(amount)) return formatNumber(0, loc, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return formatNumber(Number(amount), loc, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function subscriptionStatusLabel(
@@ -220,21 +212,21 @@ export default function AdminRenewalsPage() {
                   <Calendar size={16} />
                   {t('renewalsThisWeek')}
                 </div>
-                <div className="text-2xl font-bold text-[var(--color-text-primary)]">{summary.renewalsThisWeek.toLocaleString('en-US')}</div>
+                <div className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(summary.renewalsThisWeek, locale)}</div>
               </div>
               <div className="rounded-xl border border-border bg-[var(--color-surface-1)] p-4">
                 <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                   <AlertTriangle size={16} />
                   {t('overdueCentersCount')}
                 </div>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{summary.overdueCount.toLocaleString('en-US')}</div>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{formatNumber(summary.overdueCount, locale)}</div>
               </div>
               <div className="rounded-xl border border-border bg-[var(--color-surface-1)] p-4">
                 <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                   <TrendingDown size={16} />
                   {t('mrrAtRisk')}
                 </div>
-                <div className="text-2xl font-bold text-[var(--color-text-primary)]">{formatAmount(summary.mrrAtRisk)} {tCommon('egp')}</div>
+                <div className="text-2xl font-bold text-[var(--color-text-primary)]">{formatAmount(summary.mrrAtRisk, locale)} {tCommon('egp')}</div>
               </div>
             </div>
           )}
@@ -289,12 +281,12 @@ export default function AdminRenewalsPage() {
                         <td className="p-3">{formatRenewalDate(row.renewalDate, locale)}</td>
                         <td className="p-3">
                           {row.daysUntil >= 0 ? (
-                            <span className="text-green-600 dark:text-green-400">{row.daysUntil.toLocaleString('en-US')} {t('daysRemaining')}</span>
+                            <span className="text-green-600 dark:text-green-400">{formatNumber(row.daysUntil, locale)} {t('daysRemaining')}</span>
                           ) : (
-                            <span className="text-red-600 dark:text-red-400">{Math.abs(row.daysUntil).toLocaleString('en-US')} {t('daysOverdue')}</span>
+                            <span className="text-red-600 dark:text-red-400">{formatNumber(Math.abs(row.daysUntil), locale)} {t('daysOverdue')}</span>
                           )}
                         </td>
-                        <td className="p-3">{formatAmount(row.subscription_monthly_fee)} {tCommon('egp')}</td>
+                        <td className="p-3">{formatAmount(row.subscription_monthly_fee, locale)} {tCommon('egp')}</td>
                         <td className="p-3">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_STYLES[row.subscription_status ?? 'active'] ?? STATUS_STYLES.active}`}>
                             {subscriptionStatusLabel(row.subscription_status, tStatus)}

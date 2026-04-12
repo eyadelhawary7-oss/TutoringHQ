@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { getAnnouncementCap, PLAN_INVOICE_MINIMUMS } from '@/lib/parentPack'
 import type { NotificationTypes, WaPackBillingSummary, WaPackCenter } from '@/types/whatsapp-pack'
 import { useToast } from '@/hooks/useToast'
+import { formatNumber } from '@/lib/formatNumber'
 
 interface AdminWaPackClientProps {
   initialCenters: WaPackCenter[]
@@ -37,8 +38,8 @@ function asNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0
 }
 
-function fmtInt(v: unknown): string {
-  return asNum(v).toLocaleString('en-US')
+function fmtInt(v: unknown, loc: string): string {
+  return formatNumber(asNum(v), loc)
 }
 
 function billingStatusKey(s: string | undefined): WaPackBillingSummary['status'] {
@@ -355,19 +356,19 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('totalEnabled')}</p>
               <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">
-                {fmtInt(stats.totalEnabled)}
+                {fmtInt(stats.totalEnabled, locale)}
               </p>
             </div>
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('totalParents')}</p>
               <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">
-                {fmtInt(stats.totalActiveParents)}
+                {fmtInt(stats.totalActiveParents, locale)}
               </p>
             </div>
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('totalMrr')}</p>
               <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">
-                {fmtInt(stats.totalMRR)} {currencySuffix}
+                {fmtInt(stats.totalMRR, locale)} {currencySuffix}
               </p>
             </div>
           </section>
@@ -426,7 +427,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
               {tRoot('admin.packRequestsTab')}
               {localPendingCount > 0 ? (
                 <span className="ms-1.5 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                  {localPendingCount.toLocaleString('en-US')}
+                  {formatNumber(localPendingCount, locale)}
                 </span>
               ) : null}
             </button>
@@ -487,14 +488,14 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                             </span>
                           </td>
                           <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                            {fmtInt(parents)}
+                            {fmtInt(parents, locale)}
                           </td>
                           <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                            {fmtInt(parents * 10)} {currencySuffix}
+                            {fmtInt(parents * 10, locale)} {currencySuffix}
                           </td>
                           <td className="px-4 py-3">
                             <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
-                              {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
+                              {formatNumber(balance, locale)} / {formatNumber(cap, locale)} EGP
                             </p>
                             <div className="mt-1 h-[3px] w-full rounded bg-[var(--color-surface-3)]">
                               <div
@@ -508,10 +509,10 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                             {pend > 0 ? (
                               <>
                                 <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
-                                  {pend.toLocaleString('en-US')} EGP
+                                  {formatNumber(pend, locale)} EGP
                                 </p>
                                 <p className="text-[10px] text-[var(--color-text-tertiary)]">
-                                  {asNum(c.pack_months_without_invoice).toLocaleString('en-US')}mo
+                                  {formatNumber(asNum(c.pack_months_without_invoice), locale)}mo
                                 </p>
                               </>
                             ) : (
@@ -576,13 +577,13 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         <div>
                           <span className="text-[var(--color-text-tertiary)]">{t('activeParents')}: </span>
                           <span className="tabular-nums font-medium">
-                            {fmtInt(parents)}
+                            {fmtInt(parents, locale)}
                           </span>
                         </div>
                         <div>
                           <span className="text-[var(--color-text-tertiary)]">{t('monthlyAmount')}: </span>
                           <span className="tabular-nums font-medium">
-                            {fmtInt(parents * 10)} {currencySuffix}
+                            {fmtInt(parents * 10, locale)} {currencySuffix}
                           </span>
                         </div>
                       </div>
@@ -591,7 +592,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                           {tRoot('admin.announcementBalance')}
                         </p>
                         <p className="mt-0.5 text-xs tabular-nums text-[var(--color-text-primary)]">
-                          {balance.toLocaleString('en-US')} / {cap.toLocaleString('en-US')} EGP
+                          {formatNumber(balance, locale)} / {formatNumber(cap, locale)} EGP
                         </p>
                         <div className="mt-1 h-[3px] w-full rounded bg-[var(--color-surface-3)]">
                           <div
@@ -613,10 +614,10 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         {pend > 0 ? (
                           <>
                             <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
-                              {pend.toLocaleString('en-US')} EGP
+                              {formatNumber(pend, locale)} EGP
                             </p>
                             <p className="text-[10px] text-[var(--color-text-tertiary)]">
-                              {asNum(c.pack_months_without_invoice).toLocaleString('en-US')}mo
+                              {formatNumber(asNum(c.pack_months_without_invoice), locale)}mo
                             </p>
                           </>
                         ) : (

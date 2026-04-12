@@ -1,5 +1,9 @@
 'use client';
 
+import { formatDate, formatNumber } from '@/lib/formatNumber';
+
+const AR = 'ar' as const;
+
 export interface StudentBalanceStatementProps {
   student: {
     name: string;
@@ -94,14 +98,14 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
                 className={i % 2 === 0 ? 'bg-[var(--color-surface-1)]' : 'bg-[var(--color-surface-0)]'}
               >
                 <td className="py-1">
-                  {new Date(p.paid_at).toLocaleDateString('ar', {
+                  {formatDate(p.paid_at, AR, {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
                   })}
                 </td>
                 <td className="py-1 font-bold font-mono text-right">
-                  {p.amount.toLocaleString('en-US')}
+                  {formatNumber(p.amount, AR)}
                 </td>
                 <td className="py-1">{p.method}</td>
                 <td className="py-1">
@@ -116,9 +120,9 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
 
       {/* Summary */}
       <div className="border-t-2 border-black pt-3 text-right font-bold space-y-1">
-        <div>إجمالي المدفوع: {confirmedTotal.toLocaleString('en-US')} جنيه</div>
-        <div>إجمالي المعلق: {pendingTotal.toLocaleString('en-US')} جنيه</div>
-        <div>الرصيد الحالي: {student.balance_due.toLocaleString('en-US')} جنيه</div>
+        <div>إجمالي المدفوع: {formatNumber(confirmedTotal, AR)} جنيه</div>
+        <div>إجمالي المعلق: {formatNumber(pendingTotal, AR)} جنيه</div>
+        <div>الرصيد الحالي: {formatNumber(student.balance_due, AR)} جنيه</div>
       </div>
 
       {/* Footer */}
@@ -126,7 +130,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
         <div>CenterHQ - centerhq.com</div>
         <div>
           تاريخ الإصدار:{' '}
-          {new Date().toLocaleDateString('ar', {
+          {formatDate(new Date(), AR, {
             day: 'numeric',
             month: 'long',
             year: 'numeric',

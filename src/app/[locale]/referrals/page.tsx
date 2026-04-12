@@ -6,21 +6,18 @@ import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { Gift, Copy, Link2, DollarSign, Users, Banknote, MessageCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 function maskCenterName(name: string): string {
   if (!name || name.length < 2) return '***';
   return name.slice(0, 2) + '***';
 }
 
-function fmt(n: number): string {
-  return Number(n).toLocaleString('en-US');
-}
-
 function formatPeriodMonth(periodMonth: string, loc: string): string {
   const [y, m] = (periodMonth || '').split('-');
   if (!y || !m) return '-';
   const d = new Date(Number(y), Number(m) - 1, 1);
-  return d.toLocaleDateString(loc === 'ar' ? 'ar' : 'en-US', { month: 'short', year: 'numeric' });
+  return formatDate(d, loc, { month: 'short', year: 'numeric' });
 }
 
 type ActiveReferral = {
@@ -50,6 +47,7 @@ export default function ReferralsPage() {
   const t = useTranslations('referrals');
   const tc = useTranslations('common');
   const locale = useLocale();
+  const fmt = (n: number) => formatNumber(n, locale);
   const { user } = useUser();
   const [data, setData] = useState<{
     referralCode: string;

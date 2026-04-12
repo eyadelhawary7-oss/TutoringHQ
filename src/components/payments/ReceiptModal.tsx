@@ -1,6 +1,7 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 type Props = {
   isOpen: boolean;
@@ -22,10 +23,11 @@ export function ReceiptModal({
   methodLabel,
 }: Props) {
   const t = useTranslations('payments');
+  const locale = useLocale();
 
   if (!isOpen) return null;
 
-  const dateStr = new Date(paidAt).toLocaleString('en-US', {
+  const dateStr = formatDateTime(paidAt, locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -56,7 +58,7 @@ export function ReceiptModal({
             { label: t('receipt_student'), value: studentName },
             {
               label: t('receipt_amount'),
-              value: `${Number(amount).toLocaleString('en-US')} ${t('egp')}`,
+              value: `${formatNumber(Number(amount), locale)} ${t('egp')}`,
             },
             { label: t('receipt_method'), value: methodLabel },
             { label: t('receipt_date'), value: dateStr },

@@ -10,6 +10,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { ArrowLeft, Gift, CheckCircle } from 'lucide-react';
+import { formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 function quarterOptions(): { value: string; label: string }[] {
   const out: { value: string; label: string }[] = [];
@@ -261,7 +262,7 @@ export default function AdminReferralsPage() {
   const statusLabel = (row: CommissionRow): string => {
     const st = (row.status ?? '').toLowerCase();
     if (st === 'paid' && row.paid_at) {
-      return `${t('statusPaidRow')} · ${new Date(row.paid_at).toLocaleString('en-US')}`;
+      return `${t('statusPaidRow')} · ${formatDateTime(row.paid_at, locale)}`;
     }
     if (st === 'hold') return t('statusHold');
     if (st === 'withdrawable') return t('statusWithdrawable');
@@ -414,7 +415,7 @@ export default function AdminReferralsPage() {
                               </td>
                               <td className="py-3.5 px-4 font-mono text-sm text-[var(--color-text-primary)]">{p.code}</td>
                               <td className="py-3.5 px-4 font-mono font-bold text-teal-600">
-                                {p.amount.toLocaleString('en-US')} {tCommon('egp')}
+                                {formatNumber(p.amount, locale)} {tCommon('egp')}
                               </td>
                               <td className="py-3.5 px-4">
                                 <button
@@ -478,19 +479,19 @@ export default function AdminReferralsPage() {
                     <p>
                       <span className="text-[var(--color-text-secondary)]">{t('totalOwed')}: </span>
                       <span className="font-mono font-semibold">
-                        {summary.totalOwed.toLocaleString('en-US')} {tCommon('egp')}
+                        {formatNumber(summary.totalOwed, locale)} {tCommon('egp')}
                       </span>
                     </p>
                     <p>
                       <span className="text-[var(--color-text-secondary)]">{t('totalPaid')}: </span>
                       <span className="font-mono font-semibold">
-                        {summary.totalPaid.toLocaleString('en-US')} {tCommon('egp')}
+                        {formatNumber(summary.totalPaid, locale)} {tCommon('egp')}
                       </span>
                     </p>
                     <p>
                       <span className="text-[var(--color-text-secondary)]">{t('referrersOwed')}: </span>
                       <span className="font-mono font-semibold">
-                        {summary.referrersOwedCount.toLocaleString('en-US')}
+                        {formatNumber(summary.referrersOwedCount, locale)}
                       </span>
                     </p>
                   </div>
@@ -588,7 +589,7 @@ export default function AdminReferralsPage() {
                               </td>
                               <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{formatRatePct(row)}</td>
                               <td className="px-3 py-2 font-mono tabular-nums text-slate-800 dark:text-slate-200">
-                                {row.commission_amount.toLocaleString('en-US')} {tCommon('egp')}
+                                {formatNumber(row.commission_amount, locale)} {tCommon('egp')}
                               </td>
                               <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{statusLabel(row)}</td>
                               <td className="px-3 py-2">

@@ -8,6 +8,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import { BarChartComponent, ChartCard } from '@/components/charts';
 import { Building2, Plus, Loader2, TrendingUp, Users, DollarSign, UserCheck } from 'lucide-react';
 import { Link } from '@/i18n/routing';
+import { formatNumber } from '@/lib/formatNumber';
 
 interface BranchRow {
   id: string;
@@ -220,9 +221,9 @@ export default function BranchesPage() {
             {branches.map((b) => (
               <tr key={b.id} className="border-b last:border-0 hover:bg-[var(--color-surface-0)]/50">
                 <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{b.name}</td>
-                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{b.students.toLocaleString('en-US')}</td>
-                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{b.mrr.toLocaleString('en-US')} {tCommon('egp')}</td>
-                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{b.outstanding.toLocaleString('en-US')} {tCommon('egp')}</td>
+                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{formatNumber(b.students, locale)}</td>
+                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{formatNumber(b.mrr, locale)} {tCommon('egp')}</td>
+                <td className="px-4 py-3 text-[var(--color-text-secondary)]">{formatNumber(b.outstanding, locale)} {tCommon('egp')}</td>
                 <td className="px-4 py-3 text-[var(--color-text-secondary)]">{b.staff_count}</td>
               </tr>
             ))}
@@ -279,21 +280,21 @@ export default function BranchesPage() {
               <TrendingUp size={16} />
               {t('totalMrr')}
             </div>
-            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{consolidated.total_mrr.toLocaleString('en-US')} {tCommon('egp')}</p>
+            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(consolidated.total_mrr, locale)} {tCommon('egp')}</p>
           </div>
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
             <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
               <Users size={16} />
               {t('totalStudents')}
             </div>
-            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{consolidated.total_students.toLocaleString('en-US')}</p>
+            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(consolidated.total_students, locale)}</p>
           </div>
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
             <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
               <DollarSign size={16} />
               {t('totalOutstanding')}
             </div>
-            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{consolidated.total_outstanding.toLocaleString('en-US')} {tCommon('egp')}</p>
+            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(consolidated.total_outstanding, locale)} {tCommon('egp')}</p>
           </div>
         </div>
       )}

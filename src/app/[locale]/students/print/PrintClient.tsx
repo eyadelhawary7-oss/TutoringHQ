@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
 import QRCode from 'qrcode';
 
 export interface PrintStudentRow {
@@ -33,6 +34,7 @@ export default function PrintClient({
 }: PrintClientProps) {
   const t = useTranslations('print');
   const tStudents = useTranslations('students');
+  const locale = useLocale();
   const initializedSubjectsRef = useRef(false);
 
   const [subjects, setSubjects] = useState<string[]>([]);
@@ -118,7 +120,7 @@ export default function PrintClient({
               <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
               <p className="text-xs text-[var(--color-text-secondary)] mt-1">
                 {tStudents('print_card_count', {
-                  count: selectedStudents.length.toLocaleString('en-US'),
+                  count: formatNumber(selectedStudents.length, locale),
                 })}
               </p>
             </div>

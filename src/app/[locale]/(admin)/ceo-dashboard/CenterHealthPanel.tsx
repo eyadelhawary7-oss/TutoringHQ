@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { Activity } from 'lucide-react';
 import type { HealthPanelResponse, HealthSummary } from '@/types/founder-dash';
+import { formatNumber } from '@/lib/formatNumber';
 
 const PLAN_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 
@@ -56,12 +57,12 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
     if (diffDays === 1) return { label: t('yesterday'), color: 'teal' };
     if (diffDays <= 7) {
       return {
-        label: `${diffDays.toLocaleString('en-US')} ${t('daysAgo')}`,
+        label: `${formatNumber(diffDays, locale)} ${t('daysAgo')}`,
         color: 'amber',
       };
     }
     return {
-      label: `${diffDays.toLocaleString('en-US')} ${t('daysAgo')}`,
+      label: `${formatNumber(diffDays, locale)} ${t('daysAgo')}`,
       color: 'red',
     };
   };
@@ -151,7 +152,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
               >
                 <span className={active ? 'font-semibold' : 'font-normal'}>{label}</span>
                 <span className={`font-mono ${active ? 'font-bold' : ''}`}>
-                  {n(count).toLocaleString('en-US')}
+                  {formatNumber(n(count), locale)}
                 </span>
               </span>
             );
@@ -229,7 +230,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                                 />
                               </div>
                               <span className="font-mono text-[var(--color-text-primary)]">
-                                {healthScore.toLocaleString('en-US')}
+                                {formatNumber(healthScore, locale)}
                               </span>
                               <span
                                 className={`text-xs rounded-md px-2 py-0.5 font-medium ${bandBadgeClass(band)}`}
@@ -301,7 +302,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-mono text-[var(--color-text-primary)]">
-                            {healthScore.toLocaleString('en-US')}
+                            {formatNumber(healthScore, locale)}
                           </span>
                           <span
                             className={`text-xs rounded-md px-2 py-0.5 font-medium ${bandBadgeClass(band)}`}

@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Download, Search, ClipboardList, BookOpen, X } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
+import { formatDate, formatDateTime } from '@/lib/formatNumber';
 
 interface ScanRecord {
   id: string;
@@ -60,7 +61,7 @@ function formatRelativeTime(dateStr: string, locale: string): string {
     if (diffDays === 2) return 'منذ يومين';
     if (diffDays < 7) return `منذ ${diffDays} أيام`;
     if (diffDays < 30) return `منذ ${Math.floor(diffDays / 7)} أسبوع`;
-    return d.toLocaleDateString('ar', { dateStyle: 'short' });
+    return formatDate(d, locale, { dateStyle: 'short' });
   }
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
@@ -68,7 +69,7 @@ function formatRelativeTime(dateStr: string, locale: string): string {
   if (diffDays === 1) return '1 day ago';
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  return d.toLocaleDateString('en-GB', { dateStyle: 'short' });
+  return formatDate(d, locale, { dateStyle: 'short' });
 }
 
 function deriveResultBadge(scan: ScanRecord, t: (k: string) => string): { label: string; cls: string } {
@@ -293,7 +294,7 @@ export default function AttendancePage() {
         r.student.name || '',
         r.student.phone || '',
         String(r.totalScans),
-        r.lastScan ? new Date(r.lastScan).toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB') : '',
+        r.lastScan ? formatDate(r.lastScan, locale, { dateStyle: 'short' }) : '',
         r.expected > 0 ? `${Math.round((r.totalScans / r.expected) * 100)}%` : `${r.totalScans}`,
       ]);
       const csv = '\uFEFF' + [cols.join(','), ...rows.map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
@@ -494,10 +495,10 @@ export default function AttendancePage() {
                                         <tr key={sc.id} className="border-b border-[var(--color-border-subtle)]">
                                           <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end" dir="ltr">
                                             {sc.scanned_at
-                                              ? new Date(sc.scanned_at).toLocaleString(
-                                                  locale === 'ar' ? 'en-US' : 'en-GB',
-                                                  { dateStyle: 'short', timeStyle: 'short' },
-                                                )
+                                              ? formatDateTime(sc.scanned_at, locale, {
+                                                  dateStyle: 'short',
+                                                  timeStyle: 'short',
+                                                })
                                               : tCommon('notSet')}
                                           </td>
                                           <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end">
@@ -575,7 +576,7 @@ export default function AttendancePage() {
                         <td className="py-3.5 px-4 text-sm font-mono text-[var(--color-text-primary)] text-end">{r.avgAttendance}</td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] text-end" dir="ltr">
                           {r.lastSession
-                            ? new Date(r.lastSession).toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB')
+                            ? formatDate(r.lastSession, locale, { dateStyle: 'short' })
                             : tCommon('notSet')}
                         </td>
                         <td className="py-3.5 px-4 text-end">
@@ -617,7 +618,7 @@ export default function AttendancePage() {
                                     {r.sessionBreakdown.map((sb) => (
                                       <tr key={sb.date} className="border-b border-[var(--color-border-subtle)]">
                                         <td className="py-2 px-4 text-[var(--color-text-secondary)] text-end" dir="ltr">
-                                          {new Date(sb.date).toLocaleDateString(locale === 'ar' ? 'en-US' : 'en-GB')}
+                                          {formatDate(sb.date, locale, { dateStyle: 'short' })}
                                         </td>
                                         <td className="py-2 px-4 text-[var(--color-text-primary)] font-mono text-end">{sb.present}</td>
                                         <td className="py-2 px-4 text-end">

@@ -13,6 +13,7 @@ import { PACK_PLAN_MINIMUMS } from '@/lib/packBilling';
 import { getAnnualChargeRounded } from '@/lib/pricing';
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Banknote } from 'lucide-react';
+import { formatNumber } from '@/lib/formatNumber';
 
 type PlanRow = {
   plan_key: string;
@@ -33,9 +34,9 @@ type PlanDraft = {
   is_active: boolean;
 };
 
-function fmtMoney(n: number): string {
+function fmtMoney(n: number, loc: string): string {
   if (!Number.isFinite(n)) return '-';
-  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  return formatNumber(n, loc, { maximumFractionDigits: 0 });
 }
 
 function titleCaseToken(s: string): string {
@@ -381,8 +382,8 @@ export default function AdminPricingPage() {
                                 onChange={(e) => updateDraft(p.plan_key, { all_in_price: e.target.value })}
                               />
                             </td>
-                            <td className="p-3 tabular-nums text-[var(--color-text-secondary)]">{fmtMoney(annual)}</td>
-                            <td className="p-3 tabular-nums text-[var(--color-text-secondary)]">{fmtMoney(prem)}</td>
+                            <td className="p-3 tabular-nums text-[var(--color-text-secondary)]">{fmtMoney(annual, locale)}</td>
+                            <td className="p-3 tabular-nums text-[var(--color-text-secondary)]">{fmtMoney(prem, locale)}</td>
                             <td className="p-3">
                               <label className="inline-flex items-center gap-2 cursor-pointer">
                                 <input
@@ -458,7 +459,7 @@ export default function AdminPricingPage() {
                           {packMinimumsRows.map(([key, val]) => (
                             <tr key={key} className="border-t border-[var(--color-border-subtle)]">
                               <td className="p-2 text-[var(--color-text-primary)]">{formatPlanDisplayName(key)}</td>
-                              <td className="p-2 tabular-nums">{fmtMoney(val)}</td>
+                              <td className="p-2 tabular-nums">{fmtMoney(val, locale)}</td>
                             </tr>
                           ))}
                         </tbody>

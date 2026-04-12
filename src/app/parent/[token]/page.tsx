@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatCurrency } from '@/lib/formatNumber';
 
 interface StudentData {
   name: string;
@@ -102,7 +103,7 @@ export default function ParentPortalPage({ params }: { params: Promise<{ token: 
         <section className="bg-[var(--color-surface-1)] rounded-xl shadow-sm p-4 mb-4">
           <h2 className="font-semibold text-[var(--color-text-primary)] mb-2">المستحق</h2>
           <p className="text-2xl font-bold text-[var(--color-text-primary)]">
-            {data.balance_due.toLocaleString('en-US')} EGP
+            {formatCurrency(data.balance_due, 'ar')}
           </p>
         </section>
 

@@ -9,6 +9,7 @@ import { ChartCard } from '@/components/charts';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import type { CeoCenterHealthTierRow, CeoDashboardData, LeadStage } from '@/types/ceo';
 import { ChevronDown } from 'lucide-react';
+import { formatNumber, formatDateTime } from '@/lib/formatNumber';
 
 const SECTION_IDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
@@ -41,6 +42,15 @@ export default function CeoDashboardPage() {
   const t = useTranslations('ceo');
   const tCommon = useTranslations('common');
   const th = useTranslations('health');
+  const tPlan = useTranslations('plan');
+
+  const formatPlanCell = (plan: string | null | undefined) => {
+    const p = String(plan ?? '').trim().toLowerCase();
+    if (!p) return tCommon('notSet');
+    const keys = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
+    if ((keys as readonly string[]).includes(p)) return tPlan(p as (typeof keys)[number]);
+    return String(plan);
+  };
 
   const [data, setData] = useState<CeoDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -319,19 +329,19 @@ export default function CeoDashboardPage() {
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-[var(--color-brand-500)]">
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.activeCenters')}</p>
                   <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
-                    {data.hero.active_centers.toLocaleString('en-US')}
+                    {formatNumber(data.hero.active_centers, locale)}
                   </p>
                 </div>
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-amber-400">
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.cashMtd')}</p>
                   <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
-                    EGP {data.hero.cash_collected_mtd.toLocaleString('en-US')}
+                    EGP {formatNumber(data.hero.cash_collected_mtd, locale)}
                   </p>
                 </div>
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4">
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.liveTrials')}</p>
                   <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
-                    {data.hero.live_trials.toLocaleString('en-US')}
+                    {formatNumber(data.hero.live_trials, locale)}
                   </p>
                 </div>
                 <div
@@ -341,7 +351,7 @@ export default function CeoDashboardPage() {
                 >
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.atRisk')}</p>
                   <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
-                    {data.hero.at_risk_centers.toLocaleString('en-US')}
+                    {formatNumber(data.hero.at_risk_centers, locale)}
                   </p>
                 </div>
                 <div
@@ -351,7 +361,7 @@ export default function CeoDashboardPage() {
                 >
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.openAlerts')}</p>
                   <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
-                    {data.hero.open_alerts.toLocaleString('en-US')}
+                    {formatNumber(data.hero.open_alerts, locale)}
                   </p>
                 </div>
               </div>
@@ -422,12 +432,12 @@ export default function CeoDashboardPage() {
                               className="border-t border-[var(--color-border-subtle)] text-[var(--color-text-primary)]"
                             >
                               <td className="px-3 py-2 font-medium">{row.name}</td>
-                              <td className="px-3 py-2">{row.plan}</td>
+                              <td className="px-3 py-2">{formatPlanCell(row.plan)}</td>
                               <td className="px-3 py-2">
                                 {row.days_since_owner_login == null
                                   ? tCommon('notSet')
                                   : th('daysAgo', {
-                                      days: row.days_since_owner_login.toLocaleString('en-US', {
+                                      days: formatNumber(row.days_since_owner_login, locale, {
                                         useGrouping: false,
                                       }),
                                     })}
@@ -435,7 +445,7 @@ export default function CeoDashboardPage() {
                               <td className="px-3 py-2 font-mono tabular-nums">
                                 {row.health_score == null
                                   ? tCommon('notSet')
-                                  : row.health_score.toLocaleString('en-US')}
+                                  : formatNumber(row.health_score, locale)}
                               </td>
                               <td className="px-3 py-2">
                                 {d.length > 0 ? (
@@ -490,12 +500,12 @@ export default function CeoDashboardPage() {
                             className="border-t border-[var(--color-border-subtle)] text-[var(--color-text-primary)]"
                           >
                             <td className="px-3 py-2 font-medium">{row.name}</td>
-                            <td className="px-3 py-2">{row.plan}</td>
+                            <td className="px-3 py-2">{formatPlanCell(row.plan)}</td>
                             <td className="px-3 py-2">
                               {row.days_since_owner_login == null
                                 ? tCommon('notSet')
                                 : th('daysAgo', {
-                                    days: row.days_since_owner_login.toLocaleString('en-US', {
+                                    days: formatNumber(row.days_since_owner_login, locale, {
                                       useGrouping: false,
                                     }),
                                   })}
@@ -503,7 +513,7 @@ export default function CeoDashboardPage() {
                             <td className="px-3 py-2 font-mono tabular-nums">
                               {row.health_score == null
                                 ? tCommon('notSet')
-                                : row.health_score.toLocaleString('en-US')}
+                                : formatNumber(row.health_score, locale)}
                             </td>
                           </tr>
                         ))
@@ -542,7 +552,7 @@ export default function CeoDashboardPage() {
                           )}
                           {action.revenue_at_risk > 0 && (
                             <span className="inline-block mt-1 bg-amber-400/10 text-amber-400 text-xs px-2 py-0.5 rounded-full">
-                              EGP {Number(action.revenue_at_risk).toLocaleString('en-US')} {t('actions.revenueAtRisk')}
+                              EGP {formatNumber(Number(action.revenue_at_risk), locale)} {t('actions.revenueAtRisk')}
                             </span>
                           )}
                           <div className="flex flex-wrap gap-2 mt-2">
@@ -613,7 +623,7 @@ export default function CeoDashboardPage() {
                 <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('pipeline.title')}</h2>
                 {data.pipeline.overdue_followups > 0 && (
                   <span className="rounded-full bg-red-400/15 text-red-400 text-xs px-2 py-0.5">
-                    {t('pipeline.overdueFollowups')}: {data.pipeline.overdue_followups.toLocaleString('en-US')}
+                    {t('pipeline.overdueFollowups')}: {formatNumber(data.pipeline.overdue_followups, locale)}
                   </span>
                 )}
               </div>
@@ -625,7 +635,7 @@ export default function CeoDashboardPage() {
                   >
                     <p className="text-xs text-[var(--color-text-secondary)]">{t(`pipeline.stages.${st}`)}</p>
                     <p className="font-mono font-bold text-[var(--color-text-primary)]">
-                      {data.pipeline[st].toLocaleString('en-US')}
+                      {formatNumber(data.pipeline[st], locale)}
                     </p>
                   </div>
                 ))}
@@ -737,7 +747,7 @@ export default function CeoDashboardPage() {
                           }`}
                         >
                           <td className="px-3 py-2 text-[var(--color-text-primary)]">{row.name}</td>
-                          <td className="px-3 py-2">{row.plan}</td>
+                          <td className="px-3 py-2">{formatPlanCell(row.plan)}</td>
                           <td className="px-3 py-2 min-w-[120px]">
                             <div className="h-1.5 rounded-full bg-[var(--color-surface-3)] overflow-hidden">
                               <div
@@ -760,7 +770,7 @@ export default function CeoDashboardPage() {
                             </span>
                           </td>
                           <td className="px-3 py-2 text-[var(--color-text-secondary)] font-mono text-xs">
-                            {new Date(row.created_at).toLocaleString('en-US')}
+                            {formatDateTime(row.created_at, locale)}
                           </td>
                         </tr>
                       );
@@ -794,12 +804,12 @@ export default function CeoDashboardPage() {
                       return (
                         <tr key={row.id} className="border-t border-[var(--color-border-subtle)]">
                           <td className="px-3 py-2 text-[var(--color-text-primary)] font-medium">{row.name}</td>
-                          <td className="px-3 py-2">{row.plan}</td>
+                          <td className="px-3 py-2">{formatPlanCell(row.plan)}</td>
                           <td className="px-3 py-2">{row.status}</td>
                           <td className="px-3 py-2">
                             <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${hp.className}`}>{hp.label}</span>
                           </td>
-                          <td className="px-3 py-2 font-mono">{row.scans_today.toLocaleString('en-US')}</td>
+                          <td className="px-3 py-2 font-mono">{formatNumber(row.scans_today, locale)}</td>
                           <td className="px-3 py-2">
                             <span className={rp.className}>{rp.text}</span>
                           </td>
@@ -871,7 +881,7 @@ export default function CeoDashboardPage() {
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-teal-500">
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.quarter')}</p>
                   <p className="text-lg font-mono font-bold text-teal-600 dark:text-teal-400 mt-1">
-                    EGP {data.cash.collected_this_quarter.toLocaleString('en-US')}
+                    EGP {formatNumber(data.cash.collected_this_quarter, locale)}
                   </p>
                 </div>
                 <div
@@ -881,7 +891,7 @@ export default function CeoDashboardPage() {
                 >
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.overdue')}</p>
                   <p className={`text-lg font-mono font-bold mt-1 ${data.cash.overdue_count > 0 ? 'text-red-400' : 'text-[var(--color-text-primary)]'}`}>
-                    {data.cash.overdue_count.toLocaleString('en-US')}
+                    {formatNumber(data.cash.overdue_count, locale)}
                   </p>
                 </div>
                 <div
@@ -891,16 +901,16 @@ export default function CeoDashboardPage() {
                 >
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.dueSoon')}</p>
                   <p className={`text-lg font-mono font-bold mt-1 ${data.cash.due_soon_count > 0 ? 'text-amber-400' : 'text-[var(--color-text-primary)]'}`}>
-                    {data.cash.due_soon_count.toLocaleString('en-US')}
+                    {formatNumber(data.cash.due_soon_count, locale)}
                   </p>
                 </div>
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4">
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.packRevenue')}</p>
                   <p className="text-lg font-mono font-bold text-[var(--color-text-primary)] mt-1">
-                    EGP {data.cash.pack_revenue_mtd.toLocaleString('en-US')}
+                    EGP {formatNumber(data.cash.pack_revenue_mtd, locale)}
                   </p>
                   <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
-                    {t('cash.totalCentersHint')}: {data.cash.total_centers.toLocaleString('en-US')}
+                    {t('cash.totalCentersHint')}: {formatNumber(data.cash.total_centers, locale)}
                   </p>
                 </div>
               </div>
@@ -919,10 +929,10 @@ export default function CeoDashboardPage() {
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 space-y-4">
                   <div>
                     <p className={`text-sm ${data.ops.wa_queue_pending > 0 ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}>
-                      {t('ops.waPending')}: {data.ops.wa_queue_pending.toLocaleString('en-US')}
+                      {t('ops.waPending')}: {formatNumber(data.ops.wa_queue_pending, locale)}
                     </p>
                     <p className={`text-sm ${data.ops.wa_queue_failed > 0 ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}>
-                      {t('ops.waFailed')}: {data.ops.wa_queue_failed.toLocaleString('en-US')}
+                      {t('ops.waFailed')}: {formatNumber(data.ops.wa_queue_failed, locale)}
                     </p>
                   </div>
                   {data.ops.last_status_check && (

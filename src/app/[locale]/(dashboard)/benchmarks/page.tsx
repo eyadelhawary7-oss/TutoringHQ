@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatNumber } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
 import { useBranchStore } from '@/stores/branchStore';
 import PageHeader from '@/components/shared/PageHeader';
@@ -62,6 +63,7 @@ export default function BenchmarksPage() {
   const t = useTranslations('benchmarks');
   const tNav = useTranslations('nav');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const { activeCenterId } = useBranchStore();
   const [data, setData] = useState<BenchmarksData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ export default function BenchmarksPage() {
     loadData();
   }, [loadData]);
 
-  const formatEgp = (n: number) => `${n.toLocaleString('en-US')} ${tc('egp')}`;
+  const formatEgp = (n: number) => `${formatNumber(n, locale)} ${tc('egp')}`;
 
   if (loading && !data) {
     return (
@@ -137,8 +139,8 @@ export default function BenchmarksPage() {
             <div className="flex justify-between text-xs font-medium text-[var(--color-text-muted)] mb-1">
               <span>
                 {t('progressLabel', {
-                  current: currentCenters.toLocaleString('en-US'),
-                  total: DISTRICT_TARGET.toLocaleString('en-US'),
+                  current: formatNumber(currentCenters, locale),
+                  total: formatNumber(DISTRICT_TARGET, locale),
                 })}
               </span>
               <span className="tabular-nums">{progressPct}%</span>

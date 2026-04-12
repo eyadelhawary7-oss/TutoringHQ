@@ -1,6 +1,7 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatTime } from '@/lib/formatNumber';
 
 type Props = {
   sent: boolean;
@@ -10,6 +11,7 @@ type Props = {
 
 export function WhatsAppConfirmation({ sent, centerName, phoneNumber }: Props) {
   const t = useTranslations('onboarding');
+  const locale = useLocale();
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
@@ -43,10 +45,7 @@ export function WhatsAppConfirmation({ sent, centerName, phoneNumber }: Props) {
             </p>
             <div className="flex items-center justify-end gap-1 mt-1">
               <span className="text-[9px]" style={{ color: '#9CA3AF' }}>
-                {new Date().toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {formatTime(new Date(), locale)}
               </span>
               <svg width="14" height="8" viewBox="0 0 16 9" fill="none" aria-hidden="true">
                 <path

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Share2,
   Users,
@@ -14,6 +14,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import type { GrowthPanelResponse } from '@/types/founder-dash';
+import { formatNumber, formatPercent } from '@/lib/formatNumber';
 
 const ACTIVE_STAGES = ['lead', 'demo', 'trial', 'closed'] as const;
 
@@ -40,6 +41,7 @@ function formatDistrictLabel(raw: string): string {
 export default function FounderGrowthPanel(props: GrowthPanelResponse) {
   const t = useTranslations('founderDash');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
 
   const stages = Array.isArray(props.pipeline?.stages) ? props.pipeline.stages : [];
   const totalActive = n(props.pipeline?.totalActive);
@@ -63,7 +65,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
   };
 
   const convRate = (from: number, to: number): string =>
-    from === 0 ? '0%' : `${Math.round((to / from) * 100).toLocaleString('en-US')}%`;
+    from === 0 ? formatPercent(0, locale) : formatPercent(Math.round((to / from) * 100), locale);
 
   const lostCount = n(stages.find((s) => s.stage === 'lost')?.count);
   const lostLabel = stageLabels['lost'];
@@ -115,7 +117,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                       {stageLabels[stageKey]}
                     </p>
                     <p className="text-lg font-bold font-mono text-[var(--color-text-primary)]">
-                      {count.toLocaleString('en-US')}
+                      {formatNumber(count, locale)}
                     </p>
                   </div>
                 );
@@ -141,7 +143,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
             </div>
             <div className="flex justify-center">
               <span className="text-xs rounded-md bg-red-500/10 text-red-600 dark:text-red-400 px-3 py-1.5 font-mono">
-                {`${lostCount.toLocaleString('en-US')} ${lostLabel}`}
+                {`${formatNumber(lostCount, locale)} ${lostLabel}`}
               </span>
             </div>
           </div>
@@ -192,7 +194,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                             : 'text-[var(--color-text-tertiary)]'
                         }`}
                       >
-                        {centerCount.toLocaleString('en-US')}
+                        {formatNumber(centerCount, locale)}
                       </td>
                       <td
                         className={`py-2 pe-3 font-mono font-semibold ${
@@ -201,7 +203,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                             : 'text-[var(--color-text-tertiary)]'
                         }`}
                       >
-                        {leadCount.toLocaleString('en-US')}
+                        {formatNumber(leadCount, locale)}
                       </td>
                       <td className="py-2">
                         <span
@@ -237,7 +239,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                 {t('referralReferrers')}
               </div>
               <p className="text-xl font-bold font-mono text-[var(--color-text-primary)]">
-                {n(referral.totalReferrers).toLocaleString('en-US')}
+                {formatNumber(n(referral.totalReferrers), locale)}
               </p>
             </div>
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-4">
@@ -246,7 +248,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                 {t('referralTotal')}
               </div>
               <p className="text-xl font-bold font-mono text-[var(--color-text-primary)]">
-                {n(referral.totalReferrals).toLocaleString('en-US')}
+                {formatNumber(n(referral.totalReferrals), locale)}
               </p>
             </div>
             <div className="rounded-xl border border-teal-600/30 bg-teal-600/5 p-4">
@@ -255,7 +257,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                 {t('referralConverted')}
               </div>
               <p className="text-xl font-bold font-mono text-teal-700 dark:text-teal-300">
-                {n(referral.converted).toLocaleString('en-US')}
+                {formatNumber(n(referral.converted), locale)}
               </p>
             </div>
             <div
@@ -288,7 +290,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                       : 'text-red-600 dark:text-red-400'
                 }`}
               >
-                {n(referral.conversionRate).toLocaleString('en-US')}%
+                {formatPercent(n(referral.conversionRate), locale)}
               </p>
             </div>
             <div
@@ -315,7 +317,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                     : 'text-[var(--color-text-primary)]'
                 }`}
               >
-                {n(referral.commissionsOwed).toLocaleString('en-US')} {t('egpAbbrev')}
+                {formatNumber(n(referral.commissionsOwed), locale)} {t('egpAbbrev')}
               </p>
             </div>
             <div
@@ -342,7 +344,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                     : 'text-[var(--color-text-primary)]'
                 }`}
               >
-                {n(referral.commissionsPaid).toLocaleString('en-US')} {t('egpAbbrev')}
+                {formatNumber(n(referral.commissionsPaid), locale)} {t('egpAbbrev')}
               </p>
             </div>
           </div>

@@ -41,6 +41,7 @@ import {
   nextQuarterFirstOnOrAfter,
   nextProcessingQuarterStart,
 } from '@/lib/cairoBillingCalendar';
+import { formatDate as formatDateLocale, formatNumber } from '@/lib/formatNumber';
 
 const SUGGESTED_RESALE_EGP = 25;
 
@@ -156,10 +157,6 @@ type PlanRequestRow = {
   requested_at?: string | null;
 };
 
-function formatNum(n: number | null | undefined): string {
-  return (Number(n) || 0).toLocaleString('en-US');
-}
-
 function maskInstapay(raw: string | null | undefined): string {
   const s = String(raw ?? '').replace(/\s/g, '');
   if (s.length < 7) return '••••••';
@@ -256,6 +253,7 @@ function PlanCard({
   onClick,
   cairoFont,
   numFont,
+  fmtNum,
 }: {
   nameAr: string;
   nameEn: string;
@@ -269,6 +267,7 @@ function PlanCard({
   onClick: () => void;
   cairoFont: CSSProperties;
   numFont: CSSProperties;
+  fmtNum: (n: number | null | undefined) => string;
 }) {
   const perStudent = studentLimit > 0 ? price / studentLimit : 0;
   return (
@@ -296,10 +295,10 @@ function PlanCard({
         {studentsLine}
       </p>
       <p className="mt-1 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
-        {formatNum(price)} EGP / {period}
+        {fmtNum(price)} EGP / {period}
       </p>
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums" style={numFont}>
-        {formatNum(Math.round(perStudent * 100) / 100)} EGP / student
+        {fmtNum(Math.round(perStudent * 100) / 100)} EGP / student
       </p>
     </button>
   );
@@ -315,6 +314,7 @@ function PeriodCard({
   onClick,
   cairoFont,
   numFont,
+  fmtNum,
 }: {
   label: string;
   price: number;
@@ -325,6 +325,7 @@ function PeriodCard({
   onClick: () => void;
   cairoFont: CSSProperties;
   numFont: CSSProperties;
+  fmtNum: (n: number | null | undefined) => string;
 }) {
   return (
     <button
@@ -348,7 +349,7 @@ function PeriodCard({
         <p className="mt-1 text-xs font-medium text-teal-600 dark:text-teal-400">{currentLabel}</p>
       ) : null}
       <p className="mt-2 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
-        {formatNum(price)} EGP
+        {fmtNum(price)} EGP
       </p>
     </button>
   );
@@ -368,6 +369,7 @@ function PaygTab({
   cairoFont,
   numFont,
   locale,
+  fmtNum,
 }: {
   t: (key: string, values?: Record<string, string | number | Date>) => string;
   toast: { success: (title: string, description?: string) => void; error: (title: string, description?: string) => void };
@@ -382,6 +384,7 @@ function PaygTab({
   cairoFont: CSSProperties;
   numFont: CSSProperties;
   locale: string;
+  fmtNum: (n: number | null | undefined) => string;
 }) {
   const billingPayg =
     center?.billing_type === 'payg' || center?.pricing_type === 'payg';
@@ -392,7 +395,7 @@ function PaygTab({
     const d = new Date(`${effectiveYmd}T12:00:00`);
     return Number.isNaN(d.getTime())
       ? effectiveYmd
-      : d.toLocaleDateString('en-US');
+      : formatDateLocale(d, locale);
   })();
   const { tier, cappedAmount, isCapped, capAmount } = calculatePaygBill(paygStudentCount);
   const pk = isPlanKey(tier.plan) ? tier.plan : 'starter';
@@ -431,9 +434,7 @@ function PaygTab({
           <p>
             {t('payg.switch.pending', {
               date: pendingDate
-                ? new Date(`${pendingDate}T12:00:00`).toLocaleDateString(
-                    'en-US',
-                  )
+                ? formatDateLocale(`${pendingDate}T12:00:00`, locale)
                 : effectiveLabel,
             })}
           </p>
@@ -498,7 +499,7 @@ function PaygTab({
                 {t(`planNames.${b.plan}` as 'billing.planNames.starter')}
               </span>
               <br />
-              {b.maxStudents.toLocaleString('en-US')}
+              {fmtNum(b.maxStudents)}
             </span>
           ))}
         </div>
@@ -524,7 +525,7 @@ function PaygTab({
                 {t(`payg.tierRange.${b.plan}` as 'billing.payg.tierRange.nano')}
               </p>
               <p className="mt-1 text-xs tabular-nums text-slate-700 dark:text-slate-200" style={numFont}>
-                {b.weeklyDisplayRate.toLocaleString('en-US')} {t('payg.tier.rateUnit')}
+                {fmtNum(b.weeklyDisplayRate)} {t('payg.tier.rateUnit')}
               </p>
             </div>
           );
@@ -546,7 +547,7 @@ function PaygTab({
               {t('payg.estimate.rate')}
             </dt>
             <dd className="tabular-nums" style={numFont}>
-              {getWeeklyDisplayRate(tier.ratePerStudent).toLocaleString('en-US')}{' '}
+              {fmtNum(getWeeklyDisplayRate(tier.ratePerStudent))}{' '}
               {t('payg.estimate.rateUnit')}
             </dd>
           </div>
@@ -564,24 +565,24 @@ function PaygTab({
           {t('payg.estimate.total')}
         </p>
         <p className="text-3xl font-bold text-teal-600 tabular-nums dark:text-teal-400" style={numFont}>
-          {cappedAmount.toLocaleString('en-US')} {t('egp')}
+          {fmtNum(cappedAmount)} {t('egp')}
         </p>
         {isCapped ? (
           <p className="mt-2 text-xs text-slate-500" style={cairoFont}>
-            {t('payg.estimate.capped', { amount: capAmount.toLocaleString('en-US') })}
+            {t('payg.estimate.capped', { amount: fmtNum(capAmount) })}
           </p>
         ) : null}
         <div className="mt-4 space-y-1 text-xs text-slate-600 dark:text-slate-300" style={cairoFont}>
           <p>
             {t('payg.estimate.vsMonthly')}:{' '}
             <span className="tabular-nums font-medium" style={numFont}>
-              {vsMonthly.toLocaleString('en-US')} {t('egp')}
+              {fmtNum(vsMonthly)} {t('egp')}
             </span>
           </p>
           <p>
             {t('payg.estimate.vsQuarterly')}:{' '}
             <span className="tabular-nums font-medium" style={numFont}>
-              {vsQuarterlyMo.toLocaleString('en-US')} {t('egp')}
+              {fmtNum(vsQuarterlyMo)} {t('egp')}
             </span>
           </p>
         </div>
@@ -658,6 +659,7 @@ export default function BillingPage() {
   const tToast = useTranslations('toasts');
   const tCommon = useTranslations('common');
   const locale = useLocale();
+  const formatNum = useCallback((n: number | null | undefined) => formatNumber(Number(n) || 0, locale), [locale]);
   const { toast } = useToast();
 
   const [center, setCenter] = useState<CenterRow | null>(null);
@@ -930,7 +932,7 @@ export default function BillingPage() {
     const d = new Date(`${nextWithdrawalWindowYmd}T12:00:00`);
     return Number.isNaN(d.getTime())
       ? nextWithdrawalWindowYmd
-      : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      : formatDateLocale(d, locale, { year: 'numeric', month: 'short', day: 'numeric' });
   })();
 
   useEffect(() => {
@@ -1004,7 +1006,7 @@ export default function BillingPage() {
     const d = new Date(`${ymd}T12:00:00`);
     return Number.isNaN(d.getTime())
       ? ymd
-      : d.toLocaleDateString('en-US');
+      : formatDateLocale(d, locale);
   }, [center?.current_period_end, center?.next_payment_due, locale, tCommon]);
 
   const showCancelDanger =
@@ -1523,7 +1525,7 @@ export default function BillingPage() {
         '';
       const pe =
         ymd && !Number.isNaN(new Date(`${ymd}T12:00:00`).getTime())
-          ? new Date(`${ymd}T12:00:00`).toLocaleDateString('en-US')
+          ? formatDateLocale(`${ymd}T12:00:00`, locale)
           : billingPeriodEndLabel;
       toast.success(t('cancel.success', { date: pe }));
       setShowCancelModal(false);
@@ -1746,7 +1748,7 @@ export default function BillingPage() {
                 {billingIsPayg
                   ? t('payg.hero.billingDateValue')
                   : npdYmd
-                    ? new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US')
+                    ? formatDateLocale(`${npdYmd}T12:00:00`, locale)
                     : tCommon('notSet')}
               </span>
             </div>
@@ -1774,7 +1776,7 @@ export default function BillingPage() {
               <p>
                 <span className="opacity-80">{t('payg.hero.estimate')}: </span>
                 <span className="font-semibold tabular-nums text-white" style={numFont}>
-                  {paygHeroEstimate.toLocaleString('en-US')} {t('egp')}
+                  {formatNum(paygHeroEstimate)} {t('egp')}
                 </span>
               </p>
             </div>
@@ -1887,6 +1889,7 @@ export default function BillingPage() {
                 cairoFont={cairoFont}
                 numFont={numFont}
                 locale={locale}
+                fmtNum={formatNum}
               />
             ) : null}
 
@@ -1920,7 +1923,7 @@ export default function BillingPage() {
                     <p className="mt-2 text-sm text-amber-700 dark:text-amber-300" style={cairoFont}>
                       {t('upgrade.limitReached')}
                       {npdYmd
-                        ? ` - ${new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US')}`
+                        ? ` - ${formatDateLocale(`${npdYmd}T12:00:00`, locale)}`
                         : ''}
                     </p>
                   ) : null}
@@ -1944,6 +1947,7 @@ export default function BillingPage() {
                       }}
                       cairoFont={cairoFont}
                       numFont={numFont}
+                      fmtNum={formatNum}
                     />
                     <PeriodCard
                       label={t('period.quarterly.label')}
@@ -1958,6 +1962,7 @@ export default function BillingPage() {
                       }}
                       cairoFont={cairoFont}
                       numFont={numFont}
+                      fmtNum={formatNum}
                     />
                     <PeriodCard
                       label={t('period.annual.label')}
@@ -1972,6 +1977,7 @@ export default function BillingPage() {
                       }}
                       cairoFont={cairoFont}
                       numFont={numFont}
+                      fmtNum={formatNum}
                     />
                   </div>
                 </div>
@@ -2012,6 +2018,7 @@ export default function BillingPage() {
                             onClick={() => setSelectedPlan(pk)}
                             cairoFont={cairoFont}
                             numFont={numFont}
+                            fmtNum={formatNum}
                           />
                         );
                       })}
@@ -2070,7 +2077,7 @@ export default function BillingPage() {
                     </p>
                     <p className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
                       {npdYmd
-                        ? new Date(`${npdYmd}T12:00:00`).toLocaleDateString('en-US')
+                        ? formatDateLocale(`${npdYmd}T12:00:00`, locale)
                         : tCommon('notSet')}
                     </p>
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
@@ -2136,6 +2143,7 @@ export default function BillingPage() {
                           }}
                           cairoFont={cairoFont}
                           numFont={numFont}
+                          fmtNum={formatNum}
                         />
                       );
                     })}
@@ -2162,6 +2170,7 @@ export default function BillingPage() {
                         onClick={() => setSelectedPeriod('monthly')}
                         cairoFont={cairoFont}
                         numFont={numFont}
+                        fmtNum={formatNum}
                       />
                       <PeriodCard
                         label={t('period.quarterly.label')}
@@ -2177,6 +2186,7 @@ export default function BillingPage() {
                         onClick={() => setSelectedPeriod('quarterly')}
                         cairoFont={cairoFont}
                         numFont={numFont}
+                        fmtNum={formatNum}
                       />
                       <PeriodCard
                         label={t('period.annual.label')}
@@ -2192,6 +2202,7 @@ export default function BillingPage() {
                         onClick={() => setSelectedPeriod('annual')}
                         cairoFont={cairoFont}
                         numFont={numFont}
+                        fmtNum={formatNum}
                       />
                     </div>
                   </div>
@@ -2436,10 +2447,11 @@ export default function BillingPage() {
                       </p>
                       <p className="mt-1">
                         {t('withdrawal.successDate', {
-                          date: new Date(`${withdrawalSuccess.processingDate}T12:00:00`).toLocaleDateString(
-                            'en-US',
-                            { year: 'numeric', month: 'short', day: 'numeric' },
-                          ),
+                          date: formatDateLocale(`${withdrawalSuccess.processingDate}T12:00:00`, locale, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          }),
                         })}
                       </p>
                     </div>
@@ -2523,7 +2535,7 @@ export default function BillingPage() {
               </div>
               <p className="mt-2 text-sm text-slate-600" style={cairoFont}>
                 {t('reactivation.suspendedSince', {
-                  date: new Date(center.suspended_at).toLocaleDateString('en-US'),
+                  date: formatDateLocale(center.suspended_at, locale),
                 })}
               </p>
               <div className="mt-3">
@@ -2753,7 +2765,7 @@ export default function BillingPage() {
                         <span className="text-slate-500">{t('history.date')}</span>
                         <span className="tabular-nums text-slate-900 dark:text-white" style={numFont}>
                           {inv.created_at
-                            ? new Date(inv.created_at).toLocaleDateString('en-US')
+                            ? formatDateLocale(inv.created_at, locale)
                             : tCommon('notSet')}
                         </span>
                       </div>
@@ -2811,7 +2823,7 @@ export default function BillingPage() {
                         <tr key={inv.id} className="border-b border-slate-100 dark:border-slate-700/80">
                           <td className="py-3 pe-4 tabular-nums text-slate-900 dark:text-white" style={numFont}>
                             {inv.created_at
-                              ? new Date(inv.created_at).toLocaleDateString('en-US')
+                              ? formatDateLocale(inv.created_at, locale)
                               : tCommon('notSet')}
                           </td>
                           <td className="py-3 pe-4 font-mono text-slate-800 dark:text-slate-200">{ref}</td>
@@ -2864,7 +2876,7 @@ export default function BillingPage() {
                     <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700/80">
                       <td className="py-3 pe-4 tabular-nums text-slate-700 dark:text-slate-300" style={numFont}>
                         {req.requested_at
-                          ? new Date(req.requested_at).toLocaleDateString('en-US')
+                          ? formatDateLocale(req.requested_at, locale)
                           : tCommon('notSet')}
                       </td>
                       <td className="py-3 pe-4 text-slate-900 dark:text-white">

@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabase';
 import { dbUpdate } from '@/lib/db-proxy';
 import { useToast } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 const ANNOUNCEMENT_MESSAGE_MAX = 160;
 
@@ -183,9 +184,9 @@ export default function WhatsAppPackClient({
       const days = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
       if (days === 0) return t('whatsapp.today');
       if (days === 1) return t('whatsapp.yesterday');
-      return `${days.toLocaleString('en-US')} ${t('whatsapp.daysAgo')}`;
+      return `${formatNumber(days, locale)} ${t('whatsapp.daysAgo')}`;
     },
-    [lastAlertMap, t],
+    [lastAlertMap, t, locale],
   );
 
   const grouped = new Map<string, StudentRow[]>();
@@ -249,12 +250,12 @@ export default function WhatsAppPackClient({
               {t('whatsapp.packActive')}
             </span>
             <span className="text-sm text-[var(--color-text-secondary)]">
-              {activeParents.toLocaleString('en-US')} {t('whatsapp.activeParents')}
+              {formatNumber(activeParents, locale)} {t('whatsapp.activeParents')}
             </span>
           </div>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            {t('whatsapp.monthlyCost')}: {activeParents.toLocaleString('en-US')} × 12 ={' '}
-            {(activeParents * 12).toLocaleString('en-US')} EGP
+            {t('whatsapp.monthlyCost')}: {formatNumber(activeParents, locale)} × 12 ={' '}
+            {formatNumber(activeParents * 12, locale)} EGP
           </p>
 
           {pendingBal > 0 ? (
@@ -262,14 +263,14 @@ export default function WhatsAppPackClient({
               <div>
                 <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('whatsapp.pendingBalance')}</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums text-[var(--color-text-primary)]">
-                  {pendingBal.toLocaleString('en-US')} EGP
+                  {formatNumber(pendingBal, locale)} EGP
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">{t('whatsapp.pendingBalanceNote')}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('whatsapp.monthsAccumulating')}</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums text-[var(--color-text-primary)]">
-                  {monthsAccum.toLocaleString('en-US')}
+                  {formatNumber(monthsAccum, locale)}
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">{t('whatsapp.monthsAccumulatingNote')}</p>
               </div>
@@ -544,7 +545,7 @@ export default function WhatsAppPackClient({
 
           <p className="text-sm font-medium text-[var(--color-text-primary)]">
             {t('whatsapp.announcementBalanceRemaining', {
-              remaining: remainingAllowance.toLocaleString('en-US'),
+              remaining: formatNumber(remainingAllowance, locale),
             })}
           </p>
           {remainingAllowance <= 0 ? (
@@ -567,7 +568,7 @@ export default function WhatsAppPackClient({
 
           <div>
             <p className="text-xs text-[var(--color-text-tertiary)] mb-1">
-              {balance.toLocaleString('en-US')} EGP / {cap.toLocaleString('en-US')} EGP {t('whatsapp.announcementUsedOfCap')}
+              {formatNumber(balance, locale)} EGP / {formatNumber(cap, locale)} EGP {t('whatsapp.announcementUsedOfCap')}
             </p>
             <div className="w-full h-1 rounded bg-[var(--color-surface-3)] overflow-hidden" aria-hidden>
               <div
@@ -637,13 +638,13 @@ export default function WhatsAppPackClient({
           <div className="space-y-1 text-sm text-[var(--color-text-secondary)]">
             <p>
               {t('whatsapp.announcementCostLine', {
-                cost: blastCost.toLocaleString('en-US'),
-                parents: activeParents.toLocaleString('en-US'),
-                price: BLAST_PRICE_PER_PARENT.toLocaleString('en-US'),
+                cost: formatNumber(blastCost, locale),
+                parents: formatNumber(activeParents, locale),
+                price: formatNumber(BLAST_PRICE_PER_PARENT, locale),
               })}
             </p>
             <p className="text-xs text-[var(--color-text-tertiary)]">
-              {t('whatsapp.announcementCostBalanceNote', { cost: blastCost.toLocaleString('en-US') })}
+              {t('whatsapp.announcementCostBalanceNote', { cost: formatNumber(blastCost, locale) })}
             </p>
           </div>
 
@@ -695,12 +696,12 @@ export default function WhatsAppPackClient({
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 id="announcement-confirm-title" className="text-lg font-semibold text-[var(--color-text-primary)]">
-                  {t('whatsapp.announcementConfirmTitle', { parents: activeParents.toLocaleString('en-US') })}
+                  {t('whatsapp.announcementConfirmTitle', { parents: formatNumber(activeParents, locale) })}
                 </h3>
                 <p className="text-sm text-[var(--color-text-secondary)]">
                   {t('whatsapp.announcementConfirmCost', {
-                    cost: blastCost.toLocaleString('en-US'),
-                    after: (balance + blastCost).toLocaleString('en-US'),
+                    cost: formatNumber(blastCost, locale),
+                    after: formatNumber(balance + blastCost, locale),
                   })}
                 </p>
                 <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
@@ -742,10 +743,11 @@ export default function WhatsAppPackClient({
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs text-[var(--color-text-tertiary)]">
-                        {new Date(blast.created_at).toLocaleDateString(
-                          locale === 'ar' ? 'en-US' : 'en-US',
-                          { day: 'numeric', month: 'long', year: 'numeric' },
-                        )}
+                        {formatDate(blast.created_at, locale, {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
                       </span>
                       <span
                         className={cn(
@@ -762,8 +764,8 @@ export default function WhatsAppPackClient({
                       {blast.message.length > 60 ? `${blast.message.slice(0, 60)}...` : blast.message}
                     </p>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      {blast.parents_notified.toLocaleString('en-US')} ·{' '}
-                      {`${Number(blast.total_amount).toLocaleString('en-US')} EGP`}
+                      {formatNumber(blast.parents_notified, locale)} ·{' '}
+                      {`${formatNumber(Number(blast.total_amount), locale)} EGP`}
                     </p>
                   </div>
                 </li>
@@ -785,10 +787,11 @@ export default function WhatsAppPackClient({
           {packRequestedAtState ? (
             <p className="mt-3 text-xs text-[var(--color-text-tertiary)]">
               {t('whatsapp.requestedOn')}{' '}
-              {new Date(packRequestedAtState).toLocaleDateString(
-                locale === 'ar' ? 'en-US' : 'en-US',
-                { day: 'numeric', month: 'long', year: 'numeric' },
-              )}
+              {formatDate(packRequestedAtState, locale, {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
             </p>
           ) : null}
         </div>

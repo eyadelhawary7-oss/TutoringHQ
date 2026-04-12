@@ -9,6 +9,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
+import { formatDateTime, formatNumber } from '@/lib/formatNumber';
 import { ArrowLeft, Wallet } from 'lucide-react';
 import { getTodayCairo } from '@/lib/cairoBillingCalendar';
 
@@ -191,8 +192,8 @@ export default function AdminWithdrawalsPage() {
                 {t('summary', {
                   quarter: String(quarter),
                   year: String(year),
-                  count: summaryCount.toLocaleString('en-US'),
-                  sum: summarySum.toLocaleString('en-US'),
+                  count: formatNumber(summaryCount, locale),
+                  sum: formatNumber(summarySum, locale),
                 })}
               </p>
             </div>
@@ -243,10 +244,10 @@ export default function AdminWithdrawalsPage() {
                           {r.center_name ?? '-'}
                         </td>
                         <td className="px-3 py-2 tabular-nums text-slate-800 dark:text-slate-200">
-                          {r.credits_deducted.toLocaleString('en-US')}
+                          {formatNumber(r.credits_deducted, locale)}
                         </td>
                         <td className="px-3 py-2 tabular-nums text-slate-800 dark:text-slate-200">
-                          {r.cash_amount.toLocaleString('en-US')} {tCommon('egp')}
+                          {formatNumber(r.cash_amount, locale)} {tCommon('egp')}
                         </td>
                         <td className="px-3 py-2 font-mono text-slate-700 dark:text-slate-300" dir="ltr">
                           {r.instapay_number ?? '-'}
@@ -260,9 +261,9 @@ export default function AdminWithdrawalsPage() {
                         </td>
                         <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
                           {st === 'paid' && r.processed_at
-                            ? `${t('statusPaid')} · ${new Date(r.processed_at).toLocaleString('en-US')}`
+                            ? `${t('statusPaid')} · ${formatDateTime(r.processed_at, locale)}`
                             : st === 'rejected' && r.processed_at
-                              ? `${t('statusRejected')} · ${new Date(r.processed_at).toLocaleString('en-US')}`
+                              ? `${t('statusRejected')} · ${formatDateTime(r.processed_at, locale)}`
                               : t('statusPending')}
                         </td>
                         <td className="px-3 py-2">

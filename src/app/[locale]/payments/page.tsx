@@ -12,6 +12,7 @@ import EmptyState from '@/components/empty-states/EmptyState';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/ToastProvider';
+import { formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 interface PaymentRecord {
   id: string;
@@ -438,7 +439,7 @@ export default function PaymentsPage() {
       tp('csv_col_recorded_by'),
     ];
     const rows = filteredPayments.map((r) => [
-      r.paid_at ? new Date(r.paid_at).toLocaleString('en-US') : '',
+      r.paid_at ? formatDateTime(r.paid_at, locale) : '',
       r.student_name ?? '',
       String(r.amount ?? 0),
       tp(methodTpKey(r.method)),
@@ -512,17 +513,17 @@ export default function PaymentsPage() {
             >
               <div className="card p-3 flex flex-col gap-1">
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_today')}</span>
-                <span className="text-base font-bold text-[var(--color-success)]">{totalToday.toLocaleString('en-US')}</span>
+                <span className="text-base font-bold text-[var(--color-success)]">{formatNumber(totalToday, locale)}</span>
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
               </div>
               <div className="card p-3 flex flex-col gap-1">
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_pending')}</span>
-                <span className="text-base font-bold text-[var(--color-warning)]">{totalPending.toLocaleString('en-US')}</span>
+                <span className="text-base font-bold text-[var(--color-warning)]">{formatNumber(totalPending, locale)}</span>
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
               </div>
               <div className="card p-3 flex flex-col gap-1">
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_month')}</span>
-                <span className="text-base font-bold text-[var(--color-text-primary)]">{totalMonth.toLocaleString('en-US')}</span>
+                <span className="text-base font-bold text-[var(--color-text-primary)]">{formatNumber(totalMonth, locale)}</span>
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
               </div>
             </div>
@@ -675,7 +676,7 @@ export default function PaymentsPage() {
                     </span>
                     <div className="flex items-center gap-2 ms-auto min-w-0 text-end tabular-nums">
                       <span className="text-base font-bold text-[var(--color-text-primary)]">
-                        {Number(payment.amount).toLocaleString('en-US')}
+                        {formatNumber(Number(payment.amount), locale)}
                         <span className="text-xs font-normal text-[var(--color-text-tertiary)] ms-1">{tp('egp')}</span>
                       </span>
                       {isPaymentConfirmed(payment) ? (
@@ -696,7 +697,7 @@ export default function PaymentsPage() {
                       ) : null}
                     </div>
                     <p className="text-xs text-[var(--color-text-tertiary)] shrink-0" dir="ltr">
-                      {new Date(payment.paid_at ?? '').toLocaleString('en-US', {
+                      {formatDateTime(payment.paid_at ?? '', locale, {
                         month: 'short',
                         day: 'numeric',
                         hour: '2-digit',
@@ -833,7 +834,7 @@ export default function PaymentsPage() {
           >
             <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tp('confirmPayment')}</h3>
             <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-              {Number(confirmModal.amount).toLocaleString('en-US')} {tp('egp')} · {tp(methodTpKey(confirmModal.method))} · {confirmModal.student_name}
+              {formatNumber(Number(confirmModal.amount), locale)} {tp('egp')} · {tp(methodTpKey(confirmModal.method))} · {confirmModal.student_name}
             </p>
             <div className="flex gap-3 justify-end">
               <button

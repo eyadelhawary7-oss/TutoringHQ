@@ -9,6 +9,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Activity, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { formatDateTime } from '@/lib/formatNumber';
 
 type CronStatus = {
   path: string;
@@ -45,7 +46,7 @@ function formatRanAt(iso: string | null, locale: string): string {
   if (!iso) return '-';
   try {
     const d = new Date(iso);
-    return d.toLocaleString('en-US', {
+    return formatDateTime(d, locale, {
       dateStyle: 'short',
       timeStyle: 'medium',
     });
@@ -191,7 +192,7 @@ export default function AdminHealthPage() {
             {updatedAt ? (
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono" suppressHydrationWarning>
                 {t('healthLastUpdated')}{' '}
-                {updatedAt.toLocaleTimeString('en-US', {
+                {formatDateTime(updatedAt, locale, {
                   timeStyle: 'medium',
                 })}
               </p>

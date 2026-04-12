@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { Globe } from 'lucide-react';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 const PLAYFAIR = {
   fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
@@ -116,25 +117,25 @@ function getTotalAmount(plan: SignupPlan | undefined, period: string): number {
   return display99Price(plan.allInPrice * 3);
 }
 
-function getPerStudentCost(plan: SignupPlan, period: string): string {
+function getPerStudentCost(plan: SignupPlan, period: string, loc: string): string {
   const monthly = getDisplayPrice(plan, period);
   const weekly = monthly / 4.33;
   const perStudent = weekly / plan.students;
-  return perStudent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatNumber(perStudent, loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function getBilledAmount(plan: SignupPlan, period: string): number {
   return getTotalAmount(plan, period);
 }
 
-const getPeriodDateRange = (period: string): string => {
+const getPeriodDateRange = (period: string, loc: string): string => {
   const now = new Date();
-  const start = now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const start = formatDate(now, loc, { month: 'short', year: 'numeric' });
   const end = new Date(now);
   if (period === 'monthly') end.setMonth(end.getMonth() + 1);
   else if (period === 'quarterly') end.setMonth(end.getMonth() + 3);
   else end.setFullYear(end.getFullYear() + 1);
-  const endStr = end.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const endStr = formatDate(end, loc, { month: 'short', year: 'numeric' });
   return `${start} - ${endStr}`;
 };
 
@@ -322,7 +323,7 @@ export default function SignupPage() {
         ? 'renewsAnnually'
         : 'renewsQuarterly';
   const renewsAmount = selectedPlan
-    ? getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')
+    ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod), locale)
     : '0';
   const slideAnim = direction === 'forward' ? 'slideIn' : 'slideInBack';
 
@@ -388,7 +389,7 @@ export default function SignupPage() {
       lineId: 'students',
       label: t('studentsLabel'),
       val: selectedPlan
-        ? `${t('upTo')} ${selectedPlan.students.toLocaleString('en-US')} ${t('studentsPerWeek')}`
+        ? `${t('upTo')} ${formatNumber(selectedPlan.students, locale)} ${t('studentsPerWeek')}`
         : '',
       serif: false,
     },
@@ -401,7 +402,7 @@ export default function SignupPage() {
     {
       lineId: 'periodRange',
       label: t('periodLabel'),
-      val: getPeriodDateRange(form.billingPeriod),
+      val: getPeriodDateRange(form.billingPeriod, locale),
       serif: false,
     },
   ];
@@ -410,7 +411,7 @@ export default function SignupPage() {
     {
       taxKey: 'subtotal',
       label: t('subtotal'),
-      val: selectedPlan ? `${getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')} EGP` : '',
+      val: selectedPlan ? `${formatNumber(getTotalAmount(selectedPlan, form.billingPeriod), locale)} EGP` : '',
       teal: false,
     },
     { taxKey: 'vat', label: 'VAT 14%', val: t('included'), teal: true },
@@ -655,7 +656,7 @@ export default function SignupPage() {
                     }}
                   >
                     {selectedPlan
-                      ? getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')
+                      ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod), locale)
                       : '0'}
                   </div>
                   <div
@@ -829,7 +830,7 @@ export default function SignupPage() {
             >
               {t('authNote', {
                 amount: selectedPlan
-                  ? getTotalAmount(selectedPlan, form.billingPeriod).toLocaleString('en-US')
+                  ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod), locale)
                   : '0',
                 period: tb(`period.${form.billingPeriod}.label` as 'billing.period.monthly.label'),
               })}
@@ -1091,7 +1092,7 @@ export default function SignupPage() {
                               {locale === 'ar' ? plan.arabicName : plan.name}
                             </div>
                             <div className="mt-0.5 text-[11px] text-slate-600" style={SANS}>
-                              {t('upTo')} {plan.students.toLocaleString('en-US')} {t('studentsPerWeek')}
+                              {t('upTo')} {formatNumber(plan.students, locale)} {t('studentsPerWeek')}
                             </div>
                           </div>
                         </div>
@@ -1103,7 +1104,7 @@ export default function SignupPage() {
                             }`}
                             style={PLAYFAIR}
                           >
-                            {price.toLocaleString('en-US')}
+                            {formatNumber(price, locale)}
                           </div>
                           <div className="mt-0.5 text-[9px] text-slate-600" style={SANS}>
                             EGP / {t('month')}
@@ -1114,10 +1115,10 @@ export default function SignupPage() {
                       {selected ? (
                         <div className="mt-2 flex items-center gap-4 ps-12">
                           <span className="text-[10px] text-slate-600" style={SANS}>
-                            {getBilledAmount(plan, form.billingPeriod).toLocaleString('en-US')} EGP {t('billedLabel')}
+                            {formatNumber(getBilledAmount(plan, form.billingPeriod), locale)} EGP {t('billedLabel')}
                           </span>
                           <span className="text-[10px] text-teal-600" style={SANS}>
-                            {tb('perStudentWeekly', { price: getPerStudentCost(plan, form.billingPeriod) })}
+                            {tb('perStudentWeekly', { price: getPerStudentCost(plan, form.billingPeriod, locale) })}
                           </span>
                         </div>
                       ) : null}

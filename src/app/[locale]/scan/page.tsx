@@ -20,6 +20,7 @@ import ScanResultScreen from '@/components/ScanResultScreen';
 import { Camera, Bluetooth, Hash, BookOpen, ChevronRight, Search, QrCode } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/useToast';
+import { formatNumber, formatTime } from '@/lib/formatNumber';
 
 type ScanMode = 'camera' | 'bluetooth' | 'manual';
 
@@ -996,7 +997,7 @@ export default function ScanPage() {
             </button>
             {pendingCount > 0 && (
               <span className="text-xs text-[var(--color-warning)] font-medium">
-                ({Number(pendingCount).toLocaleString('en-US')} {t('pending')})
+                ({formatNumber(Number(pendingCount), locale)} {t('pending')})
               </span>
             )}
             {isSyncing ? (
@@ -1066,7 +1067,7 @@ export default function ScanPage() {
             {scanCount > 0 ? (
               <div className="mb-2 w-full max-w-sm text-center text-xs text-slate-400">
                 <span className="rounded-full border border-teal-800/40 bg-teal-900/40 px-2 py-0.5 text-xs text-teal-400">
-                  {scanCount.toLocaleString('en-US')} {ts('scansToday')}
+                  {formatNumber(scanCount, locale)} {ts('scansToday')}
                 </span>
               </div>
             ) : null}
@@ -1198,10 +1199,7 @@ export default function ScanPage() {
                           {scan.studentName}
                         </p>
                         <p className="text-xs text-[var(--color-text-tertiary)]">
-                          {scan.time.toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {formatTime(scan.time, locale)}
                         </p>
                       </div>
                       <span className={`badge text-xs shrink-0 ${scan.status === 'success' || scan.status === 'duplicate' ? 'badge-success' : 'badge-danger'}`}>
@@ -1265,8 +1263,8 @@ export default function ScanPage() {
                     <p className="text-xs font-medium text-teal-600 mt-1">
                       {t('perLesson')} ·{' '}
                       {g.fee != null
-                        ? `${tCommon('egp')} ${g.fee.toLocaleString('en-US')}`
-                        : `${tCommon('egp')} ${(0).toLocaleString('en-US')}`}
+                        ? `${tCommon('egp')} ${formatNumber(g.fee, locale)}`
+                        : `${tCommon('egp')} ${formatNumber(0, locale)}`}
                     </p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />

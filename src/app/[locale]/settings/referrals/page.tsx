@@ -8,6 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Download, Gift, Link2 } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
+import { formatNumber } from '@/lib/formatNumber';
 
 const PLAN_LABELS_AR: Record<string, string> = {
   nano: 'ناشئ',
@@ -261,7 +262,7 @@ export default function SettingsReferralsPage() {
               </div>
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('totalEarned')}</p>
-                <p className="text-xl font-bold text-teal-600 font-mono">{totalEarned.toLocaleString('en-US')} {tc('egp')}</p>
+                <p className="text-xl font-bold text-teal-600 font-mono">{formatNumber(totalEarned, locale)} {tc('egp')}</p>
               </div>
             </div>
           </div>
@@ -297,7 +298,7 @@ export default function SettingsReferralsPage() {
                       return (
                         <tr key={p.id} className="border-b border-[var(--color-border-subtle)]">
                           <td className="py-3 px-4 font-mono font-semibold">
-                            {Number(p.amount_requested ?? 0).toLocaleString('en-US')} {tc('egp')}
+                            {formatNumber(Number(p.amount_requested ?? 0), locale)} {tc('egp')}
                           </td>
                           <td className="py-3 px-4">{p.status}</td>
                           <td className="py-3 px-4 text-[var(--color-text-secondary)]">
@@ -392,7 +393,7 @@ export default function SettingsReferralsPage() {
                           {getStatusBadge(r.status)}
                         </td>
                         <td className="py-3 px-4 text-end font-mono font-semibold text-[var(--color-text-primary)]">
-                          {(r.total_earned_egp ?? 0).toLocaleString('en-US')} {tc('egp')}
+                          {formatNumber(r.total_earned_egp ?? 0, locale)} {tc('egp')}
                         </td>
                       </tr>
                     ))}

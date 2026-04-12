@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import { ChartTooltip } from '@/components/charts/ChartTooltip';
 import { CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from '@/components/charts/ChartTokens';
+import { formatNumber } from '@/lib/formatNumber';
 
 interface DashboardData {
   totalActiveCenters: number;
@@ -59,10 +60,6 @@ interface DashboardData {
 function nf(v: unknown): number {
   const x = Number(v);
   return Number.isFinite(x) ? x : 0;
-}
-
-function fmt(n: unknown): string {
-  return nf(n).toLocaleString('en-US');
 }
 
 function FinancialSkeletons() {
@@ -154,6 +151,7 @@ function CeoFinancialsBody({
   financials: FinancialsResponse;
   tFinancials: CeoFinancialsT;
 }) {
+  const locale = useLocale();
   const tCharts = useTranslations('charts');
   const tCommon = useTranslations('common');
   const g = nf(financials.whatsappPack?.growthVsLastMonth);
@@ -168,22 +166,22 @@ function CeoFinancialsBody({
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] card-shadow p-4 border-s-4 border-teal-500">
             <p className="text-xs text-[var(--color-text-muted)]">{tFinancials('financials.cardTotalTitle')}</p>
             <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
-              {nf(financials.currentMonth?.totalRevenue).toLocaleString('en-US')} {tCommon('egp')}
+              {formatNumber(nf(financials.currentMonth?.totalRevenue), locale)} {tCommon('egp')}
             </p>
             <div className="mt-2 space-y-0.5 text-[11px] text-[var(--color-text-muted)]">
               <p>
                 {tFinancials('financials.cardTotalSubSubscriptions', {
-                  amount: nf(financials.currentMonth?.subscriptionRevenue).toLocaleString('en-US'),
+                  amount: formatNumber(nf(financials.currentMonth?.subscriptionRevenue), locale),
                 })}
               </p>
               <p>
                 {tFinancials('financials.cardTotalSubCards', {
-                  amount: nf(financials.currentMonth?.cardOrderRevenue).toLocaleString('en-US'),
+                  amount: formatNumber(nf(financials.currentMonth?.cardOrderRevenue), locale),
                 })}
               </p>
               <p>
                 {tFinancials('financials.cardTotalSubWa', {
-                  amount: nf(financials.currentMonth?.whatsappPackRevenue).toLocaleString('en-US'),
+                  amount: formatNumber(nf(financials.currentMonth?.whatsappPackRevenue), locale),
                 })}
               </p>
             </div>
@@ -215,7 +213,7 @@ function CeoFinancialsBody({
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(value: number | string) =>
-                    Number(value ?? 0).toLocaleString('en-US')
+                    formatNumber(Number(value ?? 0), locale)
                   }
                 />
                 <Tooltip
@@ -298,36 +296,36 @@ function CeoFinancialsBody({
               <div>
                 <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelTotalCardsSold')}</p>
                 <p className="font-mono text-[var(--color-text-primary)]">
-                  {nf(financials.cardOrders?.totalCardsSold).toLocaleString('en-US')}
+                  {formatNumber(nf(financials.cardOrders?.totalCardsSold), locale)}
                 </p>
               </div>
               <div>
                 <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelRevenueAllTime')}</p>
                 <p className="font-mono text-[var(--color-text-primary)]">
-                  {nf(financials.cardOrders?.revenueAllTime).toLocaleString('en-US')} EGP
+                  {formatNumber(nf(financials.cardOrders?.revenueAllTime), locale)} EGP
                 </p>
               </div>
               <div>
                 <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelRevenueThisMonth')}</p>
                 <p className="font-mono text-[var(--color-text-primary)]">
-                  {nf(financials.cardOrders?.revenueThisMonth).toLocaleString('en-US')} EGP
+                  {formatNumber(nf(financials.cardOrders?.revenueThisMonth), locale)} EGP
                 </p>
               </div>
               <div>
                 <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelAverageOrderValue')}</p>
                 <p className="font-mono text-[var(--color-text-primary)]">
-                  {nf(financials.cardOrders?.averageOrderValue).toLocaleString('en-US')} EGP
+                  {formatNumber(nf(financials.cardOrders?.averageOrderValue), locale)} EGP
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3 items-start content-start">
               <span className="rounded-full bg-amber-500/20 text-amber-400 text-xs px-3 py-1 font-medium">
                 {tFinancials('financials.badgePending')}:{' '}
-                {nf(financials.cardOrders?.pendingOrders).toLocaleString('en-US')}
+                {formatNumber(nf(financials.cardOrders?.pendingOrders), locale)}
               </span>
               <span className="rounded-full bg-teal-500/20 text-teal-700 dark:text-teal-300 text-xs px-3 py-1 font-medium">
                 {tFinancials('financials.badgePaid')}:{' '}
-                {nf(financials.cardOrders?.paidOrders).toLocaleString('en-US')}
+                {formatNumber(nf(financials.cardOrders?.paidOrders), locale)}
               </span>
             </div>
           </div>
@@ -339,13 +337,13 @@ function CeoFinancialsBody({
             <div>
               <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelActiveParents')}</p>
               <p className="font-mono text-[var(--color-text-primary)]">
-                {nf(financials.whatsappPack?.activeParents).toLocaleString('en-US')}
+                {formatNumber(nf(financials.whatsappPack?.activeParents), locale)}
               </p>
             </div>
             <div>
               <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelPackMrr')}</p>
               <p className="font-mono text-[var(--color-text-primary)]">
-                {nf(financials.whatsappPack?.packMRR).toLocaleString('en-US')} EGP
+                {formatNumber(nf(financials.whatsappPack?.packMRR), locale)} EGP
               </p>
             </div>
             <div>
@@ -516,6 +514,7 @@ export default function CeoDashboardClient({
   const retryFinancials = () => setFinancialsRetry((c) => c + 1);
 
   const isRTL = locale === 'ar';
+  const fmt = (n: unknown) => formatNumber(nf(n), locale);
 
   if (loading && !data) {
     return (

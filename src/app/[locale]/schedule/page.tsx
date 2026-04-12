@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/shared';
 import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
+import { formatTime } from '@/lib/formatNumber';
 
 interface Room {
   id: string;
@@ -321,7 +322,7 @@ export default function SchedulePage() {
             {HOURS.map(hour => (
               <div key={hour} className="grid grid-cols-8 border-b border-[var(--color-border-subtle)] min-h-[60px]">
                 <div className="py-3 px-3 text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface-0)]/50 border-e border-[var(--color-border-subtle)] self-start pt-2">
-                  {formatHour(hour)}
+                  {formatTime(formatHour(hour), locale)}
                 </div>
                 {DAY_ORDER.map(day => {
                   const cellSlots = getSlotsInCell(day, hour);
@@ -363,7 +364,7 @@ export default function SchedulePage() {
                                 isConflict ? 'text-red-600 dark:text-red-400' : 'text-[var(--color-text-tertiary)]'
                               }`}
                             >
-                              <span dir="ltr">{formatTimeForDisplay(slot.start_time)} – {formatTimeForDisplay(slot.end_time)}</span>
+                              <span dir="ltr">{formatTime(formatTimeForDisplay(slot.start_time), locale)} – {formatTime(formatTimeForDisplay(slot.end_time), locale)}</span>
                             </p>
                             {canEdit && (
                               <button
@@ -413,7 +414,7 @@ export default function SchedulePage() {
                       dir="rtl"
                     >
                       <div className="font-mono text-teal-600 dark:text-teal-400 text-sm">
-                        <span dir="ltr">{formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}</span>
+                        <span dir="ltr">{formatTime(formatTimeForDisplay(session.start_time), locale)} – {formatTime(formatTimeForDisplay(session.end_time), locale)}</span>
                       </div>
                       <div className="font-bold text-sm mt-0.5 text-[var(--color-text-primary)]">
                         {session.group_name || tCommon('notAvailable')}
@@ -440,7 +441,7 @@ export default function SchedulePage() {
                       dir="rtl"
                     >
                       <div className="font-mono text-teal-600 dark:text-teal-400 text-sm">
-                        <span dir="ltr">{formatTimeForDisplay(session.start_time)} – {formatTimeForDisplay(session.end_time)}</span>
+                        <span dir="ltr">{formatTime(formatTimeForDisplay(session.start_time), locale)} – {formatTime(formatTimeForDisplay(session.end_time), locale)}</span>
                       </div>
                       <div className="font-bold text-sm mt-0.5 text-[var(--color-text-primary)]">
                         {session.group_name || tCommon('notAvailable')}

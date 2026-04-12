@@ -8,6 +8,7 @@ import { dbSelect, auditLog } from '@/lib/db-proxy';
 import { LoadingButton } from '@/components/ui/LoadingButton';
 import { SuccessCheck } from '@/components/ui/SuccessCheck';
 import { Lock } from 'lucide-react';
+import { formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 const TOTAL_STEPS = 4;
 
@@ -35,10 +36,6 @@ interface StudentRow {
 interface Group {
   id: string;
   name: string;
-}
-
-function formatArabicIndic(n: number): string {
-  return n.toLocaleString('en-US');
 }
 
 export default function OnboardingPage() {
@@ -380,12 +377,10 @@ export default function OnboardingPage() {
 
   const progressWidthPct = useMemo(() => (step / TOTAL_STEPS) * 100, [step]);
 
-  const stepCounterText = useMemo(() => {
-    if (locale === 'ar') {
-      return `${formatArabicIndic(step)} / ${formatArabicIndic(TOTAL_STEPS)}`;
-    }
-    return `${step} / ${TOTAL_STEPS}`;
-  }, [locale, step]);
+  const stepCounterText = useMemo(
+    () => `${formatNumber(step, locale)} / ${formatNumber(TOTAL_STEPS, locale)}`,
+    [locale, step],
+  );
 
   const governorateOptions = useMemo(() => {
     const labels: Record<(typeof GOVERNORATE_KEYS)[number], string> = {
@@ -654,7 +649,7 @@ export default function OnboardingPage() {
                         )}
                         {waSentAt ? (
                           <span className="text-[var(--color-text-muted)] ms-2 tabular-nums">
-                            {new Date(waSentAt).toLocaleString('en-US', {
+                            {formatDateTime(new Date(waSentAt), locale, {
                               hour: '2-digit',
                               minute: '2-digit',
                               hour12: true,
@@ -720,7 +715,7 @@ export default function OnboardingPage() {
                 style={{ animationDelay: '0ms' }}
               >
                 <p className="text-teal-400 text-xl font-medium tabular-nums">
-                  {animatedCount.toLocaleString('en-US')}
+                  {formatNumber(animatedCount, locale)}
                 </p>
                 <p className="text-[var(--color-text-muted)] text-xs mt-1">{to('statStudents')}</p>
               </div>
@@ -729,7 +724,7 @@ export default function OnboardingPage() {
                 style={{ animationDelay: '100ms' }}
               >
                 <p className="text-teal-400 text-xl font-medium tabular-nums">
-                  {groups.length.toLocaleString('en-US')}
+                  {formatNumber(groups.length, locale)}
                 </p>
                 <p className="text-[var(--color-text-muted)] text-xs mt-1">{to('statGroups')}</p>
               </div>

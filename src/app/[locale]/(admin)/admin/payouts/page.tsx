@@ -9,6 +9,7 @@ import { AdminSidebar } from '@/components/AdminSidebar'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { useLayout } from '@/contexts/LayoutContext'
+import { formatDate, formatNumber } from '@/lib/formatNumber'
 
 type StaffEmbed = { id: string; name: string; role: string; base_salary: number } | null
 
@@ -296,7 +297,7 @@ export default function PayoutsPage() {
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {t('payouts.record_count', {
-                  count: payouts.length.toLocaleString('en-US'),
+                  count: formatNumber(payouts.length, locale),
                 })}
               </p>
             </div>
@@ -363,7 +364,7 @@ export default function PayoutsPage() {
                     ) : null}
                   </div>
                   <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-                    {Number(payout.total_amount).toLocaleString('en-US')}{' '}
+                    {formatNumber(Number(payout.total_amount), locale)}{' '}
                     {t('staff.currency_suffix')}
                   </div>
                 </div>
@@ -386,7 +387,7 @@ export default function PayoutsPage() {
                         {item.label}
                       </div>
                       <div className="text-slate-900 dark:text-white font-medium text-sm">
-                        {Number(item.value).toLocaleString('en-US')} {t('staff.currency_suffix')}
+                        {formatNumber(Number(item.value), locale)} {t('staff.currency_suffix')}
                       </div>
                     </div>
                   ))}
@@ -395,7 +396,7 @@ export default function PayoutsPage() {
                 {Number(payout.adjustment_amount) !== 0 ? (
                   <div className="text-sm text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
                     {t('payouts.adjustment')}:{' '}
-                    {Number(payout.adjustment_amount).toLocaleString('en-US')}{' '}
+                    {formatNumber(Number(payout.adjustment_amount), locale)}{' '}
                     {t('staff.currency_suffix')}
                     {payout.adjustment_reason
                       ? ` - ${payout.adjustment_reason}`
@@ -460,7 +461,7 @@ export default function PayoutsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 justify-end">
                     <Clock className="w-3 h-3 shrink-0" aria-hidden />
                     {t('payouts.paid_at_label', {
-                      date: new Date(payout.paid_at).toLocaleDateString('en-US'),
+                      date: formatDate(payout.paid_at, locale),
                     })}
                   </div>
                 ) : null}

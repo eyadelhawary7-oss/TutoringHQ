@@ -9,6 +9,7 @@ import { AdminSidebar } from '@/components/AdminSidebar'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { useLayout } from '@/contexts/LayoutContext'
+import { formatNumber } from '@/lib/formatNumber'
 
 /** Matches product rule T2 eligibility window (see commission schema). */
 const T2_ACTIVE_DAYS = 180
@@ -305,7 +306,7 @@ export default function CommissionsPage() {
             </h1>
             <p className="text-sm text-[var(--color-text-muted)]">
               {t('commissions.record_count', {
-                count: commissions.length.toLocaleString('en-US'),
+                count: formatNumber(commissions.length, locale),
               })}
             </p>
           </div>
@@ -410,7 +411,7 @@ export default function CommissionsPage() {
                         {c.plan_at_signing}
                       </td>
                       <td className="px-4 py-3 text-teal-600 dark:text-teal-400 font-medium">
-                        {Number(c.total_commission).toLocaleString('en-US')}{' '}
+                        {formatNumber(Number(c.total_commission), locale)}{' '}
                         {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3">
@@ -421,7 +422,7 @@ export default function CommissionsPage() {
                             {t(`commissions.t1_${c.t1_status}` as 'commissions.t1_pending')}
                           </span>
                           <span className="text-xs text-[var(--color-text-muted)]">
-                            {Number(c.t1_amount).toLocaleString('en-US')}{' '}
+                            {formatNumber(Number(c.t1_amount), locale)}{' '}
                             {t('staff.currency_suffix')}
                           </span>
                         </div>
@@ -434,13 +435,13 @@ export default function CommissionsPage() {
                             {t(`commissions.t2_${c.t2_status}` as 'commissions.t2_locked')}
                           </span>
                           <span className="text-xs text-[var(--color-text-muted)]">
-                            {Number(c.t2_amount).toLocaleString('en-US')}{' '}
+                            {formatNumber(Number(c.t2_amount), locale)}{' '}
                             {t('staff.currency_suffix')}
                           </span>
                           {c.t2_status === 'locked' && c.center_first_payment_date ? (
                             <span className="text-xs text-[var(--color-text-muted)]">
                               {t('commissions.days_until_t2', {
-                                count: daysUntilT2(c).toLocaleString('en-US'),
+                                count: formatNumber(daysUntilT2(c), locale),
                               })}
                             </span>
                           ) : null}
@@ -470,7 +471,7 @@ export default function CommissionsPage() {
                                 : 'text-[var(--color-text-primary)]'
                             }`}
                           >
-                            {(c.active_days ?? 0).toLocaleString('en-US')}
+                            {formatNumber(c.active_days ?? 0, locale)}
                           </span>
                         </div>
                       </td>
@@ -508,7 +509,7 @@ export default function CommissionsPage() {
                 <div>{relCenters(unlockModal)?.name ?? t('staff.dash')}</div>
                 <div className="text-[var(--color-text-muted)]">
                   {staffDisplayName(unlockModal)} -{' '}
-                  {Number(unlockModal.t2_amount).toLocaleString('en-US')}{' '}
+                  {formatNumber(Number(unlockModal.t2_amount), locale)}{' '}
                   {t('staff.currency_suffix')}
                 </div>
               </div>
@@ -530,8 +531,8 @@ export default function CommissionsPage() {
                 />
                 <div className="text-xs text-[var(--color-text-muted)] mt-1">
                   {t('commissions.unlock_reason_counter', {
-                    current: unlockReason.length.toLocaleString('en-US'),
-                    min: (10).toLocaleString('en-US'),
+                    current: formatNumber(unlockReason.length, locale),
+                    min: formatNumber(10, locale),
                   })}
                 </div>
               </div>

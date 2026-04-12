@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { CardOrderModal } from '@/components/CardOrderModal';
+import { formatNumber } from '@/lib/formatNumber';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Student {
@@ -274,7 +275,7 @@ export default function OrdersPage() {
                       </p>
                       <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                         {order.quantity} {t('cards')} · {t('orderTotal')}:{' '}
-                        {Number(order.total_amount).toLocaleString('en-US')} EGP
+                        {formatNumber(Number(order.total_amount), locale)} EGP
                       </p>
                     </div>
                     {expanded ? (
@@ -311,7 +312,7 @@ export default function OrdersPage() {
                         {t('pricePerCard')}: {pricePer} EGP
                       </p>
                       <p className="text-[var(--color-text-secondary)]">
-                        {t('deliveryFee')}: {deliveryFee.toLocaleString('en-US')} EGP
+                        {t('deliveryFee')}: {formatNumber(deliveryFee, locale)} EGP
                       </p>
                       {order.notes?.trim() ? (
                         <div>
