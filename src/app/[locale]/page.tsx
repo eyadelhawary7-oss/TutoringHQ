@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { formatNumber } from '@/lib/formatNumber';
@@ -218,22 +218,28 @@ export default function LocaleHomePage() {
   const [isVisible, setIsVisible] = useState(false);
   const phoneDemoRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  // Observe after layout so ref is always attached; avoid setState churn while intersecting.
+  useLayoutEffect(() => {
     const el = phoneDemoRef.current;
-    if (!el) return;
     if (typeof IntersectionObserver === 'undefined') {
       setIsVisible(true);
       return;
     }
-    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), {
-      threshold: 0.1,
-    });
+    if (!el) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      const next = entry?.isIntersecting ?? false;
+      setIsVisible((prev) => (prev === next ? prev : next));
+    }, { threshold: 0.1 });
+
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
+  // Per-screen delays; single timeout with cleanup — no timers while off-screen.
   useEffect(() => {
     if (!isVisible) return;
+
     const timings: Record<DemoScreen, number> = {
       scanning: 2500,
       scanned: 1800,
@@ -241,12 +247,16 @@ export default function LocaleHomePage() {
       whatsapp: 3000,
       payment: 3000,
     };
-    const timer = setTimeout(() => {
-      const idx = SCREEN_SEQUENCE.indexOf(demoScreen);
-      const next = (idx + 1) % SCREEN_SEQUENCE.length;
-      setDemoScreen(SCREEN_SEQUENCE[next]);
+
+    const timerId = window.setTimeout(() => {
+      setDemoScreen((current) => {
+        const idx = SCREEN_SEQUENCE.indexOf(current);
+        const next = (idx + 1) % SCREEN_SEQUENCE.length;
+        return SCREEN_SEQUENCE[next];
+      });
     }, timings[demoScreen]);
-    return () => clearTimeout(timer);
+
+    return () => window.clearTimeout(timerId);
   }, [demoScreen, isVisible]);
 
   const heroLines = t('heroTitle').split('\n').filter((line) => line.length > 0);
@@ -501,6 +511,7 @@ export default function LocaleHomePage() {
                       ? 'relative min-h-0 flex-1 overflow-hidden bg-[#080c14]'
                       : 'relative min-h-0 flex-1 overflow-hidden bg-[#080c14] [&_.animate-pulse]:![animation-play-state:paused] [&_.chq-landing-scanline-bar]:![animation-play-state:paused]'
                   }
+                  style={{ willChange: 'transform', transform: 'translateZ(0)' }}
                 >
                   {(demoScreen === 'scanning' || demoScreen === 'scanned') && <ScannerScreen demoScreen={demoScreen} />}
                   {demoScreen === 'dashboard' ? <DashboardScreen /> : null}
