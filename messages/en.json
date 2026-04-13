@@ -684,8 +684,6 @@
     "step4": "Step4",
     "streetAddress": "Street Address",
     "streetPlaceholder": "Street Placeholder",
-    "student": "Student",
-    "studentCount": "Student Count",
     "studentCreated": "Student Created",
     "studentNotFound": "Student Not Found",
     "studentNumber": "Student Number",
@@ -1365,7 +1363,7 @@
     "prevPage": "Previous",
     "nextPage": "Next",
     "pageOf": "Page {page} of {total}",
-    "print_card_count": "{count} cards selected",
+    "print_card_count": "Card count: {count}",
     "print_cards": "Print Cards",
     "printShowGroup": "Show Group",
     "academicYear": "Academic Year"

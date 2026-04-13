@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/shared';
 import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatTime } from '@/lib/formatNumber';
+import { formatTime, formatNumber } from '@/lib/formatNumber';
 
 interface Room {
   id: string;
@@ -93,6 +93,9 @@ export default function SchedulePage() {
   const isReadOnly = user?.role === 'teacher' || user?.role === 'assistant';
   const isTeacher = user?.role === 'teacher';
   const canEdit = user?.role === 'owner' || user?.role === 'admin';
+
+  const formatMemberCount = (n: number) =>
+    `${formatNumber(n, locale)} ${n === 1 ? tCommon('student') : tCommon('students')}`;
 
   // Teacher group filter: schedule_slots has teacher_id column
   const displaySlots = useMemo(() => {
@@ -420,7 +423,7 @@ export default function SchedulePage() {
                         {session.group_name || tCommon('notAvailable')}
                       </div>
                       <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                        {session.room_name || tCommon('notAvailable')} • {tCommon('studentCount', { count: session.member_count ?? 0 })}
+                        {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
                       </div>
                     </div>
                   ))}
@@ -447,7 +450,7 @@ export default function SchedulePage() {
                         {session.group_name || tCommon('notAvailable')}
                       </div>
                       <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                        {session.room_name || tCommon('notAvailable')} • {tCommon('studentCount', { count: session.member_count ?? 0 })}
+                        {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
                       </div>
                     </div>
                   ))}
