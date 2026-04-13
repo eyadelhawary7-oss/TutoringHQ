@@ -21,6 +21,7 @@ import { dbUpdate } from '@/lib/db-proxy';
 import { useToast } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 const ANNOUNCEMENT_MESSAGE_MAX = 160;
 
@@ -425,7 +426,7 @@ export default function WhatsAppPackClient({
                             <tr key={student.id} className="border-b border-[var(--color-border-subtle)]">
                               <td className="px-3 py-2 font-medium text-[var(--color-text-primary)]">{student.name}</td>
                               <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)] tabular-nums">
-                                #{student.student_number ?? '-'}
+                                {student.student_number ? formatStudentNumberForDisplay(student.student_number) : '-'}
                               </td>
                               <td className="px-3 py-2">
                                 <button

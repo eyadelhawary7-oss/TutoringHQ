@@ -8,6 +8,7 @@ import QRCode from 'qrcode';
 import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
 import { formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 
@@ -586,7 +587,9 @@ export function CardOrderModal({
                         className="rounded accent-primary"
                       />
                       <span className="text-sm font-medium">{s.name}</span>
-                      <span className="text-xs text-[var(--color-text-secondary)] font-mono">{s.student_number || ''}</span>
+                      <span className="text-xs text-[var(--color-text-secondary)] font-mono">
+                        {s.student_number ? formatStudentNumberForDisplay(s.student_number) : ''}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -643,7 +646,9 @@ export function CardOrderModal({
                             {selectedStudents[0]?.name ?? '-'}
                           </div>
                           <div className="text-[10px] font-mono text-teal-600">
-                            {selectedStudents[0]?.student_number ?? '-'}
+                            {selectedStudents[0]?.student_number
+                              ? formatStudentNumberForDisplay(selectedStudents[0].student_number)
+                              : '-'}
                           </div>
                         </div>
                       </div>
@@ -775,7 +780,9 @@ export function CardOrderModal({
                   {selectedStudents.map((s) => (
                     <div key={s.id} className="flex justify-between text-sm py-1 border-b border-border last:border-0">
                       <span className="font-medium">{s.name}</span>
-                      <span className="font-mono text-[var(--color-text-secondary)]">{s.student_number || '-'}</span>
+                      <span className="font-mono text-[var(--color-text-secondary)]">
+                        {s.student_number ? formatStudentNumberForDisplay(s.student_number) : '-'}
+                      </span>
                     </div>
                   ))}
                 </div>

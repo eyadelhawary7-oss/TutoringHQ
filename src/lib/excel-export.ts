@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { formatDate, formatDateTime } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 const XLS_LOCALE = 'ar';
 
@@ -104,7 +105,7 @@ export function exportPaymentsToExcel(records: PaymentExportRecord[], filename?:
     records.map(r => ({
       'التاريخ': r.paid_at ? formatDate(r.paid_at, XLS_LOCALE) : '',
       'اسم الطالب': r.student_name || '',
-      'رقم الطالب': r.student_number || '',
+      'رقم الطالب': r.student_number ? formatStudentNumberForDisplay(r.student_number) : '',
       'المجموعة': r.group_name || '',
       'المبلغ': r.amount,
       'طريقة الدفع': METHOD_LABELS[r.method] || r.method,

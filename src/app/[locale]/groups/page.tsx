@@ -10,13 +10,17 @@ import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 interface Group {
   id: string;
   name: string;
   subject: string | null;
   fee?: number;
+  /** Member count (same as student_count; kept for mutations). */
   member_count?: number;
+  /** Display count for UI (synced with member_count). */
+  student_count?: number;
   teacher_name?: string | null;
   max_capacity?: number | null;
 }
@@ -130,12 +134,16 @@ export default function GroupsPage() {
       }
     }
 
-    setGroups(groupsData.map((g, i) => ({
-      ...g,
-      subject: g.subject ?? null,
-      member_count: memberCounts[i],
-      teacher_name: groupToTeacher[g.id] ?? null,
-    })));
+    setGroups(groupsData.map((g, i) => {
+      const n = memberCounts[i] ?? 0;
+      return {
+        ...g,
+        subject: g.subject ?? null,
+        member_count: n,
+        student_count: n,
+        teacher_name: groupToTeacher[g.id] ?? null,
+      };
+    }));
     setStudents(studentsData);
     setSubjects(subjectsData);
     setIsLoading(false);
@@ -262,7 +270,8 @@ export default function GroupsPage() {
         for (const sid of addForm.studentIds) {
           await dbInsert({ table: 'student_group_members', data: { group_id: inserted.id, student_id: sid }, select: false });
         }
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addForm.studentIds.length, teacher_name: null, max_capacity: maxCap }]);
+        const addN = addForm.studentIds.length;
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap }]);
         setShowAddModal(false);
         setAddForm({ name: '', subjectId: '', fee: '', studentIds: [], maxCapacity: '' });
         toast.success(tToast('saved'));
@@ -295,7 +304,13 @@ export default function GroupsPage() {
     });
     if (!error) {
       setMembers(prev => [...prev, { student_id: studentId, student_name: student?.name || '', student_number: student?.student_number ?? undefined }]);
-      setGroups(prev => prev.map(g => g.id === detailGroup.id ? { ...g, member_count: (g.member_count ?? 0) + 1 } : g));
+      setGroups(prev =>
+        prev.map((g) =>
+          g.id === detailGroup.id
+            ? { ...g, member_count: (g.member_count ?? 0) + 1, student_count: (g.student_count ?? g.member_count ?? 0) + 1 }
+            : g,
+        ),
+      );
     }
   };
 
@@ -306,9 +321,15 @@ export default function GroupsPage() {
       filters: [{ column: 'group_id', op: 'eq', value: detailGroup.id }, { column: 'student_id', op: 'eq', value: studentId }],
     });
     setMembers(prev => prev.filter(m => m.student_id !== studentId));
-    setGroups(prev => prev.map(g => g.id === detailGroup.id ? { ...g, member_count: Math.max(0, (g.member_count ?? 1) - 1) } : g));
+    setGroups(prev =>
+      prev.map((g) => {
+        if (g.id !== detailGroup.id) return g;
+        const next = Math.max(0, (g.member_count ?? 1) - 1);
+        return { ...g, member_count: next, student_count: next };
+      }),
+    );
     const maxCap = detailGroup.max_capacity ?? 999;
-    const newCount = (detailGroup.member_count ?? 1) - 1;
+    const newCount = (detailGroup.student_count ?? detailGroup.member_count ?? 1) - 1;
     if (maxCap < 999 && newCount < maxCap) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -376,8 +397,11 @@ export default function GroupsPage() {
                 <div className="p-2 bg-teal-100 rounded-lg">
                   <BookOpen className="w-5 h-5 text-teal-600" />
                 </div>
-                <span className="text-xs text-slate-400 font-mono tabular-nums">
-                  {formatNumber(g.member_count ?? 0, locale)}
+                <span
+                  className="text-xs text-slate-400 font-mono tabular-nums"
+                  title={t('studentCount')}
+                >
+                  {formatNumber(g.student_count ?? g.member_count ?? 0, locale)}
                 </span>
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
@@ -463,7 +487,7 @@ export default function GroupsPage() {
                       <span className="flex flex-col min-w-0 flex-1">
                         <span className="text-sm text-[var(--color-text-primary)]">{s.name}</span>
                         {s.student_number ? (
-                          <span className="text-xs text-slate-400" dir="ltr">#{s.student_number}</span>
+                          <span className="text-xs text-slate-400" dir="ltr">{formatStudentNumberForDisplay(s.student_number)}</span>
                         ) : null}
                       </span>
                     </label>
@@ -500,7 +524,7 @@ export default function GroupsPage() {
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('studentCount')}</p>
                   <p className="font-semibold text-[var(--color-text-primary)] font-mono tabular-nums">
-                    {formatNumber(detailGroup.member_count ?? 0, locale)}
+                    {formatNumber(detailGroup.student_count ?? detailGroup.member_count ?? 0, locale)}
                     {detailGroup.max_capacity != null && detailGroup.max_capacity < 999
                       ? ` / ${formatNumber(detailGroup.max_capacity, locale)}`
                       : ''}
@@ -524,7 +548,7 @@ export default function GroupsPage() {
                 {expandedHeatmapId === detailGroup.id && (
                   <AttendanceHeatmap
                     groupId={detailGroup.id}
-                    groupSize={detailGroup.member_count ?? 0}
+                    groupSize={detailGroup.student_count ?? detailGroup.member_count ?? 0}
                     weeks={8}
                   />
                 )}
@@ -539,7 +563,7 @@ export default function GroupsPage() {
                           <div>
                             <div className="text-sm font-medium text-[var(--color-text-primary)]">#{i + 1} {w.name}</div>
                             {w.student_number ? (
-                              <div className="text-xs text-slate-400 mt-0.5" dir="ltr">#{w.student_number}</div>
+                              <div className="text-xs text-slate-400 mt-0.5" dir="ltr">{formatStudentNumberForDisplay(w.student_number)}</div>
                             ) : w.parent_phone ? (
                               <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">{w.parent_phone}</div>
                             ) : (
@@ -577,7 +601,7 @@ export default function GroupsPage() {
                       <div>
                         <div className="text-sm font-medium text-[var(--color-text-primary)]">{m.student_name}</div>
                         {m.student_number ? (
-                          <div className="text-xs text-slate-400 mt-0.5" dir="ltr">#{m.student_number}</div>
+                          <div className="text-xs text-slate-400 mt-0.5" dir="ltr">{formatStudentNumberForDisplay(m.student_number)}</div>
                         ) : (
                           <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">-</div>
                         )}

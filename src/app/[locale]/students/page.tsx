@@ -24,6 +24,7 @@ import {
   getAnnouncementCap,
 } from '@/lib/parentPack';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 const STUDENTS_CACHE_KEY = 'chq_students_cache';
@@ -127,13 +128,6 @@ function lifecycleFilterLabelKey(f: LifecycleFilter): FilterLabelKey {
   if (f === 'inactive') return 'filter_inactive';
   if (f === 'enrolled') return 'filter_enrolled';
   return 'filter_churned';
-}
-
-/** Prefix # for display when the stored value omits it (parity with detail views). */
-function displayStudentNumber(raw: string | null | undefined): string {
-  if (raw == null || String(raw).trim() === '') return '';
-  const s = String(raw).trim();
-  return s.startsWith('#') ? s : `#${s}`;
 }
 
 export default function StudentsPage() {
@@ -633,7 +627,7 @@ export default function StudentsPage() {
           <div class="center">
             <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR" /></div>
             <div class="name">${esc(qrModalStudent.name)}</div>
-            <div class="num">${esc(displayStudentNumber(qrModalStudent.student_number))}</div>
+            <div class="num">${esc(formatStudentNumberForDisplay(qrModalStudent.student_number))}</div>
           </div>
           <div class="bottom">CenterHQ</div>
         </div>
@@ -877,7 +871,7 @@ export default function StudentsPage() {
         }));
       }
       setStudents((prev) => [{ ...student, student_number: studentNumber } as Student, ...(prev ?? [])]);
-      toast.success(ts('addStudentSuccess', { name: addForm.name.trim(), studentNumber: displayStudentNumber(studentNumber) || studentNumber }));
+      toast.success(ts('addStudentSuccess', { name: addForm.name.trim(), studentNumber: formatStudentNumberForDisplay(studentNumber) || studentNumber }));
       setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '', parentPackOptIn: false });
       setShowParentSectionAdd(false);
       setShowAddModal(false);
@@ -1256,7 +1250,7 @@ export default function StudentsPage() {
                                   </button>
                                 </td>
                                 <td className="px-4 py-4 align-top font-mono text-[var(--color-text-primary)]" dir="ltr">
-                                  {s.student_number ? displayStudentNumber(s.student_number) : tCommon('notSet')}
+                                  {s.student_number ? formatStudentNumberForDisplay(s.student_number) : tCommon('notSet')}
                                 </td>
                                 <td className="px-4 py-4 align-top relative">
                                   <div
@@ -1460,7 +1454,7 @@ export default function StudentsPage() {
                             </div>
                             {s.student_number ? (
                               <p className={`${idLineClass} mt-0.5`} dir="ltr">
-                                {displayStudentNumber(s.student_number)}
+                                {formatStudentNumberForDisplay(s.student_number)}
                               </p>
                             ) : null}
                             {s.phone ? (
@@ -1915,7 +1909,7 @@ export default function StudentsPage() {
             <div className="text-center mb-4">
               <div className="font-bold text-[var(--color-text-primary)]">{qrModalStudent.name}</div>
               <div className="font-mono text-sm text-[var(--color-text-secondary)]">
-                {displayStudentNumber(qrModalStudent.student_number)}
+                {formatStudentNumberForDisplay(qrModalStudent.student_number)}
               </div>
               {(balanceByStudent[qrModalStudent.id] ?? 0) > 0 && (
                 <div className="mt-2 text-sm font-bold text-red-600">
@@ -2126,7 +2120,7 @@ export default function StudentsPage() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{st?.name ?? tCommon('notAvailable')}</p>
                         <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
-                          {displayStudentNumber(st?.student_number ?? '')}
+                          {formatStudentNumberForDisplay(st?.student_number ?? '')}
                         </p>
                       </div>
                       <button

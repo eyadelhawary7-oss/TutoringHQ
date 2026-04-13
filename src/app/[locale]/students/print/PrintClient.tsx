@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import QRCode from 'qrcode';
 
 export interface PrintStudentRow {
@@ -205,7 +206,7 @@ export default function PrintClient({
                   <div className="min-w-0 flex-1">
                     <div className="font-medium text-[var(--color-text-primary)] truncate">{student.name}</div>
                     <div className="text-xs font-mono text-[var(--color-text-secondary)] truncate" dir="ltr">
-                      {student.student_number ? `#${student.student_number}` : '-'}
+                      {student.student_number ? formatStudentNumberForDisplay(student.student_number) : '-'}
                     </div>
                   </div>
                 </label>
@@ -263,7 +264,7 @@ export default function PrintClient({
                       <p className="qr-card-name">{student.name}</p>
                       {sn ? (
                         <p className="qr-card-number" dir="ltr">
-                          #{sn}
+                          {formatStudentNumberForDisplay(sn)}
                         </p>
                       ) : null}
                       <p className="text-[9px] opacity-75" dir="ltr">

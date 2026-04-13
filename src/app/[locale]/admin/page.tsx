@@ -61,6 +61,7 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import type { AdminCardOrderRow } from '@/types/admin-card-orders';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 function formatAdminLastActiveDisplay(
   raw: string | null | undefined,
@@ -242,7 +243,9 @@ function CardOrderPreview({
               <div className="mt-1 text-xs font-bold text-[var(--color-text-primary)] truncate max-w-full px-1">
                 {first?.name ?? tCommon('notAvailable')}
               </div>
-              <div className="text-[9px] font-mono text-teal-600">{first?.student_number ?? tCommon('notSet')}</div>
+              <div className="text-[9px] font-mono text-teal-600">
+                {first?.student_number ? formatStudentNumberForDisplay(first.student_number) : tCommon('notSet')}
+              </div>
             </div>
           </>
         ) : (
@@ -2265,7 +2268,10 @@ function AdminPageContent() {
                                     <div className="flex flex-wrap gap-2">
                                       {order.students.map((s) => (
                                         <span key={s.id} className="px-2 py-1 rounded-lg bg-[var(--color-surface-0)] border border-border text-sm">
-                                          {s.name} <span className="font-mono text-[var(--color-text-secondary)]">{s.student_number || ''}</span>
+                                          {s.name}{' '}
+                                          <span className="font-mono text-[var(--color-text-secondary)]">
+                                            {s.student_number ? formatStudentNumberForDisplay(s.student_number) : ''}
+                                          </span>
                                         </span>
                                       ))}
                                     </div>

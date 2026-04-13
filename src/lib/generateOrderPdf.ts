@@ -2,6 +2,7 @@ import chromium from '@sparticuz/chromium-min';
 import puppeteer from 'puppeteer-core';
 import type { Browser } from 'puppeteer-core';
 import { formatDate } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ function buildCardHtml(input: GeneratePdfInput): string {
           <div class="front-body">
             <img class="qr" src="${s.qr_code}" alt="QR" />
             <div class="student-name">${s.name}</div>
-            <div class="student-num">#${s.student_number}</div>
+            <div class="student-num">${formatStudentNumberForDisplay(s.student_number)}</div>
             <div class="acad-year">${academicYear}</div>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { useLocale } from 'next-intl';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 export interface StudentBalanceStatementProps {
   student: {
@@ -59,7 +60,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
         <span className="text-[var(--color-text-secondary)]">الاسم</span>
         <span>{student.name}</span>
         <span className="text-[var(--color-text-secondary)]">رقم الطالب</span>
-        <span className="font-mono">{student.student_number}</span>
+        <span className="font-mono">{formatStudentNumberForDisplay(student.student_number)}</span>
         <span className="text-[var(--color-text-secondary)]">التليفون</span>
         <span>{student.phone}</span>
         <span className="text-[var(--color-text-secondary)]">المجموعات</span>

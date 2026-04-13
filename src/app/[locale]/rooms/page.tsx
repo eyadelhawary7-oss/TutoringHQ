@@ -103,7 +103,9 @@ export default function RoomsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{rooms.length} {t('title')}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+            {formatNumber(rooms.length, locale)} {t('title')}
+          </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -140,10 +142,9 @@ export default function RoomsPage() {
                 </div>
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{r.name}</h3>
                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                  {t('maxCapacity')}:{' '}
                   {r.capacity != null && Number.isFinite(Number(r.capacity))
-                    ? formatNumber(Number(r.capacity), locale)
-                    : '—'}
+                    ? t('maxCapacityValue', { count: formatNumber(Number(r.capacity), locale) })
+                    : `${t('maxCapacity')}: —`}
                 </p>
               </div>
             ))}

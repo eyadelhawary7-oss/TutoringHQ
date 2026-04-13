@@ -23,6 +23,7 @@ import type { AdminCardOrderRow, CardOrderFulfillmentStatus } from '@/types/admi
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
 import { formatDate, formatDateTime } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 const STATUS_ORDER: CardOrderFulfillmentStatus[] = [
   'pending',
@@ -417,7 +418,11 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                       centerName={slideOrder.center_name}
                       centerLogo={slideOrder.center_logo_url}
                       studentName={slideOrder.students[0]?.name || '-'}
-                      studentNumber={slideOrder.students[0]?.student_number || '-'}
+                      studentNumber={
+                        slideOrder.students[0]?.student_number
+                          ? formatStudentNumberForDisplay(slideOrder.students[0].student_number)
+                          : '-'
+                      }
                       qrCode={slideOrder.students[0]?.qr_code}
                       color={slideOrder.card_color}
                       className="scale-[0.85] origin-top"
@@ -446,7 +451,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                       <div key={s.id} className="flex items-center gap-2 py-1">
                         <span className="text-sm text-[var(--color-text-primary)]">{s.name}</span>
                         <span className="font-mono text-[10px] text-[var(--color-text-secondary)] ms-auto">
-                          {s.student_number}
+                          {s.student_number ? formatStudentNumberForDisplay(s.student_number) : ''}
                         </span>
                       </div>
                     ))}

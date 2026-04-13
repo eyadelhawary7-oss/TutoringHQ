@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 interface Subject {
   id: string;
@@ -192,7 +193,7 @@ export default function AddStudentModal({
             {createdStudent.name}
           </p>
           <p className="text-lg font-mono font-bold text-indigo-600 text-center mb-4">
-            {createdStudent.student_number}
+            {formatStudentNumberForDisplay(createdStudent.student_number)}
           </p>
           {createdStudent.qr_code && (
             <div className="flex justify-center mb-4">

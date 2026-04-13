@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 export type InactivePeriod = '7d' | '14d' | '30d' | '3mo' | '6mo' | '1yr';
 
@@ -58,7 +59,9 @@ export default function InactiveList({ students, period, onPeriodChange }: Inact
               {students.map((s) => (
                 <tr key={s.id} className="border-b border-[var(--border-color)]">
                   <td className="px-3 py-3 font-medium text-[var(--text-primary)]">{s.name}</td>
-                  <td className="px-3 py-3 font-mono italic text-[var(--text-secondary)]" dir="ltr">{s.student_number}</td>
+                  <td className="px-3 py-3 font-mono italic text-[var(--text-secondary)]" dir="ltr">
+                    {formatStudentNumberForDisplay(s.student_number)}
+                  </td>
                   <td className="px-3 py-3 text-[var(--text-secondary)]">
                     {s.last_scanned_at
                       ? formatDate(s.last_scanned_at, locale, {

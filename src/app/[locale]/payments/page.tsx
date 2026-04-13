@@ -14,6 +14,7 @@ import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/ToastProvider';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 import { formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 interface PaymentRecord {
   id: string;
@@ -295,8 +296,9 @@ export default function PaymentsPage() {
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         const name = (p.student_name ?? '').toLowerCase();
-        const num = (p.student_number ?? '').toLowerCase();
-        if (!name.includes(q) && !num.includes(q)) return false;
+        const num = (p.student_number ?? '').replace(/^#/, '').toLowerCase();
+        const qNum = q.replace(/^#/, '').toLowerCase();
+        if (!name.includes(q) && !num.includes(qNum)) return false;
       }
 
       const matchStatus =
@@ -693,7 +695,7 @@ export default function PaymentsPage() {
                       <p className="text-sm text-[var(--color-text-secondary)] truncate">{payment.student_name}</p>
                       {payment.student_number && payment.student_number !== tCommon('notSet') ? (
                         <p className="text-xs text-slate-400 truncate" dir="ltr">
-                          #{payment.student_number}
+                          {formatStudentNumberForDisplay(payment.student_number)}
                         </p>
                       ) : null}
                     </div>
@@ -763,7 +765,7 @@ export default function PaymentsPage() {
                     .map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
-                        {s.student_number ? ` · ${s.student_number.startsWith('#') ? s.student_number : `#${s.student_number}`}` : ''}
+                        {s.student_number ? ` · ${formatStudentNumberForDisplay(s.student_number)}` : ''}
                       </option>
                     ))}
                 </select>

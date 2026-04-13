@@ -23,6 +23,7 @@ const DonutChart = dynamic(
 );
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import {
   QrCode,
@@ -1274,7 +1275,7 @@ export default function DashboardPage() {
                             <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{student.name}</p>
                             <p className="truncate font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
                               {student.student_number ? (
-                                student.student_number
+                                formatStudentNumberForDisplay(student.student_number)
                               ) : (
                                 <span className="text-[var(--color-text-muted)] text-xs">-</span>
                               )}

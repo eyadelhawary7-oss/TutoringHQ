@@ -10,6 +10,7 @@ import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 import { formatDate, formatDateTime } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 interface ScanRecord {
   id: string;
@@ -226,10 +227,11 @@ export default function AttendancePage() {
       .filter((r) => {
         if (!searchQuery.trim()) return true;
         const q = searchQuery.trim().toLowerCase();
+        const qNum = q.replace(/^#/, '');
         const name = (r.student.name || '').toLowerCase();
         const phone = (r.student.phone || '').replace(/\D/g, '');
-        const num = (r.student.student_number || '').toLowerCase();
-        return name.includes(q) || num.includes(q) || phone.includes(searchQuery.replace(/\D/g, ''));
+        const num = (r.student.student_number || '').replace(/^#/, '').toLowerCase();
+        return name.includes(q) || num.includes(qNum) || phone.includes(searchQuery.replace(/\D/g, ''));
       })
       .sort((a, b) => (b.lastScan > a.lastScan ? 1 : -1));
   }, [scans, students, studentGroupMap, searchQuery]);
@@ -430,7 +432,7 @@ export default function AttendancePage() {
                           <div className="font-medium text-[var(--color-text-primary)]">{r.student.name}</div>
                           {r.student.student_number ? (
                             <div className="text-xs text-slate-400 mt-0.5" dir="ltr">
-                              #{r.student.student_number}
+                              {formatStudentNumberForDisplay(r.student.student_number)}
                             </div>
                           ) : null}
                           {r.student.phone ? (
