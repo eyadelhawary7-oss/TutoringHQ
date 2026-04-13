@@ -17,6 +17,7 @@ import {
 } from '@/lib/paymob';
 import { isFeatureEnabled } from '@/lib/features';
 import { todayISO } from '@/lib/parentPack';
+import { formatNumber } from '@/lib/formatNumber';
 
 const SIGNUP_PLAN_AMOUNTS = [
   { key: 'nano', allInPrice: 2000, monthlyPrice: 2500, annualPrice: 20399 },
@@ -371,9 +372,9 @@ export async function POST(request: Request) {
 - Billing period: ${periodResolved}
 
 💰 *Payment Required (all-inclusive):*
-- Selected period total: EGP ${periodAmount.toLocaleString('en-US')}
-- Setup Fee: EGP ${setup.toLocaleString('en-US')}
-- *First Payment: EGP ${firstPayment.toLocaleString('en-US')}*
+- Selected period total: EGP ${formatNumber(periodAmount, 'en')}
+- Setup Fee: EGP ${formatNumber(setup, 'en')}
+- *First Payment: EGP ${formatNumber(firstPayment, 'en')}*
 
 📝 Notes: ${notes || 'None'}
 

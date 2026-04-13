@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { dateInNDays } from '@/lib/parentPack';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 const PLATFORM_URL = 'https://centerhq.app';
 
@@ -17,7 +17,7 @@ function formatDateArEg(ymd: string): string {
   const ymd10 = ymd.slice(0, 10);
   const d = new Date(`${ymd10}T12:00:00`);
   if (Number.isNaN(d.getTime())) return ymd10;
-  return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+  return formatDate(d, 'ar', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function addMonthsYmd(ymd: string, months: number): string {

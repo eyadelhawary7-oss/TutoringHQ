@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
+import { formatDate } from '@/lib/formatNumber';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
         extra = { status: 'ok', expires_at: expiresAt };
         recordsProcessed = 1;
       } else {
-        const dateAr = new Date(expiresAt * 1000).toLocaleDateString('en-US', {
+        const dateAr = formatDate(new Date(expiresAt * 1000), 'ar', {
           weekday: 'long',
           year: 'numeric',
           month: 'long',

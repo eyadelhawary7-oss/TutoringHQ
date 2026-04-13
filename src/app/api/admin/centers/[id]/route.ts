@@ -6,6 +6,7 @@ import { getAdminPermissions } from '@/lib/admin-roles';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
+import { formatDate } from '@/lib/formatNumber';
 import { createCommissionsForCenter, clawbackCommissions } from '@/lib/commissions';
 
 const STRIP = [
@@ -596,7 +597,7 @@ export async function PATCH(
     const peLabel = peRaw
       ? (() => {
           const d = new Date(`${peRaw}T12:00:00`);
-          return Number.isNaN(d.getTime()) ? peRaw : d.toLocaleDateString('en-GB');
+          return Number.isNaN(d.getTime()) ? peRaw : formatDate(d, 'ar');
         })()
       : '—';
     const phone = String(r.phone ?? '').trim();

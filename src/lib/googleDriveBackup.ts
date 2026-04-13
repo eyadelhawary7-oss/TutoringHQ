@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 import { tCronBackup as tBackup } from '@/lib/cronBackupI18n';
+import { formatNumber } from '@/lib/formatNumber';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -213,7 +214,7 @@ export async function notifyBackupComplete(result: BackupResult): Promise<void> 
     result.errors.length === 0 ? tBackup('waTitleSuccess') : tBackup('waTitlePartial');
   const duration = (result.durationMs / 1000).toFixed(1);
   const fileCount = result.files.length;
-  const totalRows = result.totalRows.toLocaleString('en-US');
+  const totalRows = formatNumber(result.totalRows, 'ar');
 
   const lines = [
     title,

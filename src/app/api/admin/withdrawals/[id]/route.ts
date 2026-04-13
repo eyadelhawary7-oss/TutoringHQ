@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { requireSuperAdminRow } from '@/lib/admin-access';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
+import { formatNumber } from '@/lib/formatNumber';
+
+const WA_AR = 'ar';
 
 export const dynamic = 'force-dynamic';
 
@@ -111,7 +114,7 @@ export async function PATCH(
 
     const phone = String((center as { phone?: string | null } | null)?.phone ?? '').trim();
     if (phone) {
-      const cashStr = cashAmount.toLocaleString('en-US');
+      const cashStr = formatNumber(cashAmount, WA_AR);
       const msg = `تم معالجة طلب سحب رصيدك. ستصل ${cashStr} جنيه على رقم ${instapay || '—'} خلال 24 ساعة.`;
       try {
         await sendFreeformMessage(w.center_id, phone, msg);
@@ -157,7 +160,7 @@ export async function PATCH(
 
   const phone = String((center as { phone?: string | null } | null)?.phone ?? '').trim();
   if (phone) {
-    const cr = credits.toLocaleString('en-US');
+    const cr = formatNumber(credits, WA_AR);
     const msg = `عذراً، تم رفض طلب سحب رصيدك. تم إعادة ${cr} نقطة لرصيدك.`;
     try {
       await sendFreeformMessage(w.center_id, phone, msg);

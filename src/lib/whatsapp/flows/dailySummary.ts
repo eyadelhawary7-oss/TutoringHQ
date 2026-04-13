@@ -6,7 +6,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { isTemplateApproved } from '@/lib/centerNotify';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { sendTemplateMessage } from '../client';
+
+const WA_AR = 'ar';
 
 const TEMPLATE = 'chq_daily_summary';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
@@ -51,7 +54,7 @@ export function formatYesterdayArabic(): string {
   const yesterday = getYesterdayCairo();
   const [y, m, d] = yesterday.split('-').map(Number);
   const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString('en-US', {
+  return formatDate(date, WA_AR, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -81,11 +84,11 @@ export async function sendDailySummary(data: DailySummaryData): Promise<{ succes
   const variables: Record<string, string> = {
     '1': data.centerName,
     '2': formatYesterdayArabic(),
-    '3': String(data.attendedCount),
-    '4': String(data.absentCount),
-    '5': Number(data.paymentsCollected).toLocaleString('en-US'),
-    '6': Number(data.pendingPayments).toLocaleString('en-US'),
-    '7': Number(data.pendingBalanceTotal).toLocaleString('en-US'),
+    '3': formatNumber(data.attendedCount, WA_AR),
+    '4': formatNumber(data.absentCount, WA_AR),
+    '5': formatNumber(Number(data.paymentsCollected), WA_AR),
+    '6': formatNumber(Number(data.pendingPayments), WA_AR),
+    '7': formatNumber(Number(data.pendingBalanceTotal), WA_AR),
     '8': dashboardUrl,
   };
 

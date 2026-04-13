@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { sendUpgradeNudge } from '@/lib/centerNotify';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { formatNumber } from '@/lib/formatNumber';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -138,8 +139,8 @@ export async function POST(request: Request) {
         c.owner_name ?? '',
         c.name ?? '',
         planKey,
-        activeStudentCount.toLocaleString('en-US'),
-        cap.toLocaleString('en-US'),
+        formatNumber(activeStudentCount, 'ar'),
+        formatNumber(cap, 'ar'),
         nextPlanAr,
         nextPlanPrice,
       );

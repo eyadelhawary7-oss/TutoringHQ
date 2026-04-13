@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { createAction } from '@/lib/ceo';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
+import { formatDate } from '@/lib/formatNumber';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ const ALLOWED_REASONS = new Set([
 function periodEndLabel(ymd: string | null | undefined): string {
   if (!ymd) return '—';
   const d = new Date(`${ymd.slice(0, 10)}T12:00:00`);
-  return Number.isNaN(d.getTime()) ? ymd.slice(0, 10) : d.toLocaleDateString('en-GB');
+  return Number.isNaN(d.getTime()) ? ymd.slice(0, 10) : formatDate(d, 'ar');
 }
 
 export async function POST(request: NextRequest) {

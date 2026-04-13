@@ -1,6 +1,7 @@
 import chromium from '@sparticuz/chromium-min';
 import puppeteer from 'puppeteer-core';
 import type { Browser } from 'puppeteer-core';
+import { formatDate } from '@/lib/formatNumber';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -42,7 +43,7 @@ function buildCardHtml(input: GeneratePdfInput): string {
   const textColor = getContrastColor(safeColor);
   const initial = (centerName || 'C').charAt(0).toUpperCase();
   const displayNotes = notes || 'لا يوجد';
-  const displayDate = new Date().toLocaleDateString('en-US', {
+  const displayDate = formatDate(new Date(), 'ar', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

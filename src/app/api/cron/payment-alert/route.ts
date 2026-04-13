@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { formatNumber } from '@/lib/formatNumber';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -143,7 +144,7 @@ export async function POST(request: Request) {
 
   const message =
     `[CenterHQ PAYMENT ALERT] ` +
-    `${alertList.length.toLocaleString('en-US')} فاتورة متأخرة بدون دفع. ` +
+    `${formatNumber(alertList.length, 'ar')} فاتورة متأخرة بدون دفع. ` +
     `المراكز: ${centerList}. ` +
     `تحقق من Paymob dashboard.`;
 

@@ -1,3 +1,12 @@
+/**
+ * Locale rule for all numeric and date/time display:
+ * - `locale === 'ar'` → Arabic-Indic numerals via `Intl` with `ar-EG`
+ * - otherwise → Western numerals via `en-US`
+ *
+ * Use `useLocale()` from next-intl in client components, or `getLocale()`
+ * from `next-intl/server` in server components / route handlers when the
+ * viewer’s locale is known; otherwise pass `'en'` for operator-only output.
+ */
 export function formatNumber(
   value: number,
   locale: string,

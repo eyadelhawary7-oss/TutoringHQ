@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabaseAdminHealth } from '@/lib/supabase-admin';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
+import { formatNumber } from '@/lib/formatNumber';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,7 @@ function normalizePhoneForMeta(phone: string): string {
 }
 
 function formatAmount(amount: number): string {
-  return amount.toLocaleString('en-US');
+  return formatNumber(amount, 'ar');
 }
 
 function buildReminderMessage(

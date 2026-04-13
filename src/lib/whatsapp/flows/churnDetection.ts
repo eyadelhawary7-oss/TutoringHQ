@@ -7,7 +7,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { isTemplateApproved } from '@/lib/centerNotify';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { sendTemplateMessage } from '../client';
+
+const WA_AR = 'ar';
 
 const TEMPLATE_DAY3 = 'chq_inactivity_day3';
 const TEMPLATE_SALES_ALERT = 'chq_internal_churn_alert';
@@ -37,7 +40,7 @@ export async function sendDay3InactivityAlert(params: Day3Params): Promise<{ suc
   const { centerId, centerName, toPhone, daysInactive } = params;
   const variables: Record<string, string> = {
     center_name: centerName,
-    days: String(daysInactive),
+    days: formatNumber(daysInactive, WA_AR),
   };
   const result = await sendTemplateMessage(centerId, toPhone, TEMPLATE_DAY3, variables);
   return { success: result.success, error: result.error };
@@ -65,9 +68,9 @@ export async function sendDay7SalesManagerAlert(params: SalesManagerParams): Pro
 
   const { centerId, centerName, lastScanAt, monthlyFee, daysInactive, alertType } = params;
   const lastScanStr = lastScanAt
-    ? new Date(lastScanAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    ? formatDate(new Date(lastScanAt), WA_AR, { year: 'numeric', month: 'short', day: 'numeric' })
     : 'لا يوجد';
-  const mrrStr = `${Number(monthlyFee).toLocaleString('en-US')} ج.م`;
+  const mrrStr = `${formatNumber(Number(monthlyFee), WA_AR)} ج.م`;
 
   const admin = getSupabaseAdmin();
   if (!(await isTemplateApproved(TEMPLATE_SALES_ALERT, admin))) {
@@ -78,7 +81,7 @@ export async function sendDay7SalesManagerAlert(params: SalesManagerParams): Pro
     center_name: centerName,
     last_scan: lastScanStr,
     mrr_at_risk: mrrStr,
-    days_inactive: String(daysInactive),
+    days_inactive: formatNumber(daysInactive, WA_AR),
     alert_type: alertType === 'day14' ? '14+ يوم' : '7-14 يوم',
   };
 
@@ -99,10 +102,10 @@ export interface FlagDay14Params {
 export async function flagDay14InAdminPanel(params: FlagDay14Params): Promise<{ success: boolean; error?: string }> {
   const { centerId, centerName, lastScanAt, daysInactive } = params;
   const lastScanStr = lastScanAt
-    ? new Date(lastScanAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    ? formatDate(new Date(lastScanAt), WA_AR, { year: 'numeric', month: 'short', day: 'numeric' })
     : 'لا يوجد';
 
-  const message = `سنتر "${centerName}" بدون استخدام للماسح منذ ${daysInactive} يوم. آخر مسح: ${lastScanStr}`;
+  const message = `سنتر "${centerName}" بدون استخدام للماسح منذ ${formatNumber(daysInactive, WA_AR)} يوم. آخر مسح: ${lastScanStr}`;
 
   const admin = getSupabaseAdmin();
   const { error } = await (admin as unknown as {

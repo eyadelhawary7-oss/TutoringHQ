@@ -3,6 +3,9 @@ import puppeteer from 'puppeteer-core';
 import type { Browser } from 'puppeteer-core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import QRCode from 'qrcode';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/formatNumber';
+
+const PDF_NUM_LOCALE = 'ar';
 
 const CHROMIUM_URL =
   'https://github.com/Sparticuz/chromium/releases/download/v123.0.0/chromium-v123.0.0-pack.tar';
@@ -64,21 +67,21 @@ function esc(s: string): string {
 }
 
 function fmtEgp(n: number): string {
-  return `${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} EGP`;
+  return formatNumber(n, PDF_NUM_LOCALE, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ج.م';
 }
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso.includes('T') ? iso : `${iso}T12:00:00`);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(d, PDF_NUM_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function fmtDateTime(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString('en-US', {
+  return formatDateTime(d, PDF_NUM_LOCALE, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

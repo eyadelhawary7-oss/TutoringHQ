@@ -15,6 +15,9 @@ import {
   type DailySummaryData,
 } from '@/lib/whatsapp/flows/dailySummary';
 import { tCronBackup } from '@/lib/cronBackupI18n';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/formatNumber';
+
+const CEO_LOCALE = 'en';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -133,7 +136,7 @@ async function ceoQueryLastBackup(admin: SupabaseClient): Promise<string> {
     if (error) throw error;
     const at = (data as { last_success_at?: string | null } | null)?.last_success_at;
     if (!at) return 'None';
-    return new Date(at).toLocaleString('en-US', {
+    return formatDateTime(new Date(at), CEO_LOCALE, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -243,7 +246,7 @@ async function runCeoDailyBriefing(admin: SupabaseClient): Promise<void> {
       ),
     ]);
 
-    const today = new Date().toLocaleDateString('en-US', {
+    const today = formatDate(new Date(), CEO_LOCALE, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -253,27 +256,27 @@ async function runCeoDailyBriefing(admin: SupabaseClient): Promise<void> {
     const message =
       `CenterHQ Daily Briefing - ${today}\n\n` +
       `REVENUE\n` +
-      `MRR: ${mrr.toLocaleString('en-US')} EGP\n` +
-      `Active centers: ${activeCount.toLocaleString('en-US')}\n` +
-      `Pending payment: ${pendingPaymentCount.toLocaleString('en-US')}\n\n` +
+      `MRR: ${formatNumber(mrr, CEO_LOCALE)} EGP\n` +
+      `Active centers: ${formatNumber(activeCount, CEO_LOCALE)}\n` +
+      `Pending payment: ${formatNumber(pendingPaymentCount, CEO_LOCALE)}\n\n` +
       `HEALTH\n` +
-      `Critical (red): ${redCount.toLocaleString('en-US')}\n` +
-      `At-risk (amber): ${amberCount.toLocaleString('en-US')}\n` +
-      `New today: ${newToday.toLocaleString('en-US')}\n` +
-      `Churned this week: ${churnedWeek.toLocaleString('en-US')}\n\n` +
+      `Critical (red): ${formatNumber(redCount, CEO_LOCALE)}\n` +
+      `At-risk (amber): ${formatNumber(amberCount, CEO_LOCALE)}\n` +
+      `New today: ${formatNumber(newToday, CEO_LOCALE)}\n` +
+      `Churned this week: ${formatNumber(churnedWeek, CEO_LOCALE)}\n\n` +
       `PAYMENTS\n` +
-      `Collected today: ${collectedToday.toLocaleString('en-US')} EGP\n` +
-      `Failed payments: ${failedCount.toLocaleString('en-US')}\n` +
-      `Overdue invoices: ${overdueCount.toLocaleString('en-US')}\n\n` +
+      `Collected today: ${formatNumber(collectedToday, CEO_LOCALE)} EGP\n` +
+      `Failed payments: ${formatNumber(failedCount, CEO_LOCALE)}\n` +
+      `Overdue invoices: ${formatNumber(overdueCount, CEO_LOCALE)}\n\n` +
       `CRONS\n` +
       `Failed (24h): ${
         failedCrons.length === 0 ? 'None' : failedCrons.map((c) => c.cron_name).join(', ')
       }\n` +
       `Last backup: ${lastBackup}\n\n` +
       `SUPPORT\n` +
-      `Inbound WA: ${inboundCount.toLocaleString('en-US')}\n` +
-      `FAQ deflected: ${deflectedCount.toLocaleString('en-US')}\n` +
-      `Passed to SM: ${smCount.toLocaleString('en-US')}`;
+      `Inbound WA: ${formatNumber(inboundCount, CEO_LOCALE)}\n` +
+      `FAQ deflected: ${formatNumber(deflectedCount, CEO_LOCALE)}\n` +
+      `Passed to SM: ${formatNumber(smCount, CEO_LOCALE)}`;
 
     const raw = process.env.ADMIN_WHATSAPP_NUMBER?.trim();
     if (!raw) {

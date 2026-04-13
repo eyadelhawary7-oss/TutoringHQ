@@ -47,7 +47,7 @@ export function formatChartMonthLabel(raw: string | number, locale: string): str
   if (!Number.isNaN(parsed)) {
     const d = new Date(parsed);
     if (locale === 'ar') return ARABIC_MONTHS[d.getMonth()] ?? s;
-    return d.toLocaleDateString('en-US', { month: 'short' });
+    return formatDate(d, locale, { month: 'short' });
   }
 
   return s;

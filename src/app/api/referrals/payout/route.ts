@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { formatNumber } from '@/lib/formatNumber';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     if (amountRequested > available) {
       return NextResponse.json(
-        { error: `Amount requested exceeds available balance (${available.toLocaleString('en-US')} EGP)` },
+        { error: `Amount requested exceeds available balance (${formatNumber(available, 'en')} EGP)` },
         { status: 400 }
       );
     }

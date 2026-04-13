@@ -4,6 +4,10 @@ import { adminPlanRequestsSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { getImpliedMonthlyMrr, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
+import { formatNumber } from '@/lib/formatNumber';
+
+const ADMIN_UI_LOCALE = 'en';
+const WA_AR_LOCALE = 'ar';
 
 function monthlyEquivFromCenter(
   plan: string | undefined,
@@ -87,7 +91,12 @@ export async function GET(request: Request) {
         currentPrice,
         requestedPrice,
         priceDiff,
-        priceDiffFormatted: priceDiff > 0 ? `+${priceDiff.toLocaleString('en-US')} EGP/mo` : priceDiff < 0 ? `${priceDiff.toLocaleString('en-US')} EGP/mo` : '—',
+        priceDiffFormatted:
+          priceDiff > 0
+            ? `+${formatNumber(priceDiff, ADMIN_UI_LOCALE)} EGP/mo`
+            : priceDiff < 0
+              ? `${formatNumber(priceDiff, ADMIN_UI_LOCALE)} EGP/mo`
+              : '—',
       };
     });
 
@@ -268,7 +277,7 @@ export async function PUT(request: Request) {
     };
     const requestedLabel = PLAN_LABELS[rp] || rp;
     const phone = ((centerRow as { phone?: string }).phone || '').trim();
-    const waMessage = `مرحباً، تمت الموافقة على ترقية خطتك إلى ${requestedLabel}. يرجى سداد فرق الترقية (${difference.toLocaleString('en-US')} ج.م) من صفحة الفواتير لإكمال التفعيل.`;
+    const waMessage = `مرحباً، تمت الموافقة على ترقية خطتك إلى ${requestedLabel}. يرجى سداد فرق الترقية (${formatNumber(difference, WA_AR_LOCALE)} ج.م) من صفحة الفواتير لإكمال التفعيل.`;
     const waLink = phone
       ? `https://wa.me/${phone.startsWith('+') ? phone.slice(1).replace(/\D/g, '') : '20' + phone.replace(/^0/, '').replace(/\D/g, '')}?text=${encodeURIComponent(waMessage)}`
       : null;

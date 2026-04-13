@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { formatNumber } from '@/lib/formatNumber';
 import { sendTemplateMessage, normalizePhone } from '../client';
 
 const TEMPLATE_SCAN = 'chq_scan_notification';
@@ -206,7 +207,7 @@ export async function sendBalanceAlert(
 
   const variables: Record<string, string> = {
     '1': s.name ?? '',
-    '2': String(params.balanceDue.toLocaleString('en-US')),
+    '2': formatNumber(params.balanceDue, 'ar'),
   };
 
   const result = await sendTemplateMessage(s.center_id!, s.parent_phone, TEMPLATE_BALANCE, variables);

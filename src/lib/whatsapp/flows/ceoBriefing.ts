@@ -6,8 +6,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { isTemplateApproved } from '@/lib/centerNotify';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { sendTemplateMessage } from '../client';
 import { getImpliedMonthlyMrr, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
+
+const WA_AR = 'ar';
 
 const TEMPLATE = 'chq_ceo_briefing';
 
@@ -21,8 +24,7 @@ function getSupabaseAdmin() {
 }
 
 function formatDateArabic(): string {
-  const now = new Date();
-  return now.toLocaleDateString('en-US', {
+  return formatDate(new Date(), WA_AR, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -58,12 +60,12 @@ export async function sendCeoBriefing(data: CeoBriefingData): Promise<{ success:
 
   const variables: Record<string, string> = {
     '1': formatDateArabic(),
-    '2': String(data.activeCenters),
-    '3': data.mrr.toLocaleString('en-US'),
-    '4': String(data.newYesterday),
-    '5': String(data.churned),
-    '6': String(data.atRisk),
-    '7': String(data.renewalsThisWeek),
+    '2': formatNumber(data.activeCenters, WA_AR),
+    '3': formatNumber(data.mrr, WA_AR),
+    '4': formatNumber(data.newYesterday, WA_AR),
+    '5': formatNumber(data.churned, WA_AR),
+    '6': formatNumber(data.atRisk, WA_AR),
+    '7': formatNumber(data.renewalsThisWeek, WA_AR),
   };
 
   const result = await sendTemplateMessage(centerId, ceoPhone, TEMPLATE, variables);

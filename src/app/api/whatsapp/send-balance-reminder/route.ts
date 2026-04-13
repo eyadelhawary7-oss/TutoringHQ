@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
+import { formatNumber } from '@/lib/formatNumber';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
 
       const variables: Record<string, string> = {
         '1': st.name ?? '',
-        '2': String(Number(st.balance_due).toLocaleString('en-US')),
+        '2': formatNumber(Number(st.balance_due), 'ar'),
       };
 
       const result = await sendTemplateMessage(centerId, phone, BALANCE_REMINDER_TEMPLATE, variables);

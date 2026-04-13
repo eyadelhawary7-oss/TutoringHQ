@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -220,16 +221,16 @@ export async function GET(request: NextRequest) {
       const diffDays = Math.floor(diffMs / 86400000);
       if (locale === 'ar') {
         if (diffMins < 1) return 'الآن';
-        if (diffMins < 60) return `منذ ${diffMins} د`;
-        if (diffHours < 24) return `منذ ${diffHours} س`;
-        if (diffDays < 7) return `منذ ${diffDays} يوم`;
-        return d.toLocaleDateString('en-US', { dateStyle: 'short' });
+        if (diffMins < 60) return `منذ ${formatNumber(diffMins, locale)} د`;
+        if (diffHours < 24) return `منذ ${formatNumber(diffHours, locale)} س`;
+        if (diffDays < 7) return `منذ ${formatNumber(diffDays, locale)} يوم`;
+        return formatDate(d, locale, { dateStyle: 'short' });
       }
       if (diffMins < 1) return 'Just now';
-      if (diffMins < 60) return `${diffMins}m ago`;
-      if (diffHours < 24) return `${diffHours}h ago`;
-      if (diffDays < 7) return `${diffDays}d ago`;
-      return d.toLocaleDateString('en-GB', { dateStyle: 'short' });
+      if (diffMins < 60) return `${formatNumber(diffMins, locale)}m ago`;
+      if (diffHours < 24) return `${formatNumber(diffHours, locale)}h ago`;
+      if (diffDays < 7) return `${formatNumber(diffDays, locale)}d ago`;
+      return formatDate(d, locale, { dateStyle: 'short' });
     };
 
     const locale = request.headers.get('accept-language')?.includes('ar') ? 'ar' : 'en';

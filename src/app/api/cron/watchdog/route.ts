@@ -5,6 +5,9 @@
 import { NextResponse } from 'next/server';
 import { normalizeWhatsAppNumber, sendWhatsAppMessage } from '@/lib/whatsapp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { formatNumber } from '@/lib/formatNumber';
+
+const OP_LOCALE = 'en';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -102,13 +105,13 @@ async function runWatchdog(): Promise<{ overdue: number; alerted: number }> {
       const hoursAgo = Math.floor(
         (Date.now() - new Date(c.last_success_at).getTime()) / (1000 * 60 * 60),
       );
-      return `${c.cron_name} (${hoursAgo.toLocaleString('en-US')}h ago)`;
+      return `${c.cron_name} (${formatNumber(hoursAgo, OP_LOCALE)}h ago)`;
     })
     .join('\n');
 
   const message =
     `[CenterHQ ALERT] ` +
-    `${toAlert.length.toLocaleString('en-US')} cron(s) overdue:\n${overdueList}\n` +
+    `${formatNumber(toAlert.length, OP_LOCALE)} cron(s) overdue:\n${overdueList}\n` +
     `Check Vercel logs immediately.`;
 
   const adminPhone = process.env.ADMIN_WHATSAPP_NUMBER?.trim();

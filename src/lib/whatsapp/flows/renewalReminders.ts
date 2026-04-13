@@ -5,8 +5,10 @@
  * Consider creating chq_renewal_* templates in Meta Business Manager.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { formatDate as formatDateDisplay, formatNumber } from '@/lib/formatNumber';
 import { sendFreeformMessage, normalizePhone } from '../client';
+
+const WA_AR = 'ar';
 
 const BANK_IBAN = process.env.RENEWAL_BANK_IBAN || 'EG38XXXX0000000000000000000000';
 const SUMMER_NOTE = '\n\n📌 ملاحظة: يرجى مراجعة أسعار العام الدراسي الجديد.';
@@ -32,14 +34,14 @@ export interface CenterForRenewal {
 }
 
 function formatAmount(amount: number | null): string {
-  if (amount == null || isNaN(amount)) return '0';
-  return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  if (amount == null || isNaN(amount)) return formatNumber(0, WA_AR);
+  return formatNumber(Number(amount), WA_AR, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-function formatDate(dateStr: string | null): string {
+function formatRenewalDate(dateStr: string | null): string {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
+    return formatDateDisplay(new Date(dateStr + 'T12:00:00'), WA_AR, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -51,22 +53,22 @@ function formatDate(dateStr: string | null): string {
 
 const STAGE_MESSAGES: Record<RenewalStage, (c: CenterForRenewal) => string> = {
   T_MINUS_7: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 7 أيام.\n📅 موعد التجديد: ${formatDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nشكراً لثقتكم!`,
+    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nشكراً لثقتكم!`,
 
   T_MINUS_3: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 3 أيام.\n📅 موعد التجديد: ${formatDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_ZERO: (c) =>
-    `مرحباً ${c.name} 👋\n\nموعد تجديد اشتراك CenterHQ اليوم.\n📅 موعد التجديد: ${formatDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع اليوم لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nموعد تجديد اشتراك CenterHQ اليوم.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع اليوم لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_PLUS_3: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير: اشتراك CenterHQ متأخر 3 أيام.\n📅 موعد التجديد: ${formatDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع في أقرب وقت لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير: اشتراك CenterHQ متأخر 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع في أقرب وقت لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_PLUS_7: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير عاجل: اشتراك CenterHQ متأخر 7 أيام.\n📅 موعد التجديد: ${formatDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير عاجل: اشتراك CenterHQ متأخر 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_PLUS_9: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير نهائي: اشتراك CenterHQ متأخر 9 أيام.\n📅 موعد التجديد: ${formatDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nسيتم إيقاف الخدمة قريباً. يرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير نهائي: اشتراك CenterHQ متأخر 9 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nسيتم إيقاف الخدمة قريباً. يرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 };
 
 export interface SendRenewalReminderParams {
@@ -112,7 +114,7 @@ export async function sendRenewalSalesManagerAlert(
     return { success: false, error: 'SALES_MANAGER_PHONE not set' };
   }
 
-  const body = `⚠️ تنبيه تجديد: سنتر "${params.centerName}" متأخر ${params.daysOverdue} يوم.\nموعد التجديد: ${formatDate(params.renewalDate)}\nMRR: ${formatAmount(params.monthlyFee)} ج.م\nيرجى المتابعة.`;
+  const body = `⚠️ تنبيه تجديد: سنتر "${params.centerName}" متأخر ${params.daysOverdue} يوم.\nموعد التجديد: ${formatRenewalDate(params.renewalDate)}\nMRR: ${formatAmount(params.monthlyFee)} ج.م\nيرجى المتابعة.`;
   const result = await sendFreeformMessage(params.centerId, salesPhone, body);
   return { success: result.success, error: result.error };
 }
