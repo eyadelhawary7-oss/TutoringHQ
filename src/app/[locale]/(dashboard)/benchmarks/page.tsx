@@ -206,9 +206,9 @@ export default function BenchmarksPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {cards.map(({ key, icon: Icon, metric, format, descKey }) => {
           if (!metric) return null;
-          const yourVal = metric.your_value;
-          const avgVal = metric.district_avg ?? 0;
-          const pct = Math.min(100, Math.max(0, metric.percentile));
+          const yourVal = Number(metric.your_value ?? 0);
+          const avgVal = Number(metric.district_avg ?? 0);
+          const pct = Math.min(100, Math.max(0, Number(metric.percentile ?? 0)));
           return (
             <div
               key={key}
@@ -234,7 +234,7 @@ export default function BenchmarksPage() {
               {(() => {
                 const isMoney = key === 'revenue';
                 const youN = isMoney ? yourVal : yourVal * 100;
-                const distN = isMoney ? avgVal : (metric.district_avg ?? 0) * 100;
+                const distN = isMoney ? avgVal : avgVal * 100;
                 const barData = [
                   { label: t('comparisonYou'), v: youN },
                   { label: t('districtAvg'), v: distN },

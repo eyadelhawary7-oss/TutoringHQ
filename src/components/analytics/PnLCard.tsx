@@ -24,9 +24,9 @@ function formatMonth(key: string, locale: string): string {
 }
 
 export default function PnLCard({
-  incomeByMonth,
-  expensesByMonth,
-  pnlMonths,
+  incomeByMonth = {},
+  expensesByMonth = {},
+  pnlMonths = [],
   locale = 'ar',
 }: PnLCardProps) {
   const t = useTranslations('analytics');

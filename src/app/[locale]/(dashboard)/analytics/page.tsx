@@ -45,6 +45,44 @@ interface AnalyticsData {
   pnl_months: string[];
 }
 
+const EMPTY_ANALYTICS: AnalyticsData = {
+  mrr: 0,
+  outstanding_total: 0,
+  collection_rate: 0,
+  avg_payment_per_student: 0,
+  revenue_by_group: [],
+  mrr_trend: [],
+  payment_method_distribution: [],
+  attendance_heatmap: [],
+  aging_report: [],
+  income_by_month: {},
+  expenses_by_month: {},
+  pnl_months: [],
+};
+
+function normalizeAnalyticsPayload(raw: unknown): AnalyticsData {
+  if (!raw || typeof raw !== 'object') return { ...EMPTY_ANALYTICS };
+  const o = raw as Partial<AnalyticsData>;
+  const income = o.income_by_month;
+  const expenses = o.expenses_by_month;
+  return {
+    ...EMPTY_ANALYTICS,
+    ...o,
+    revenue_by_group: Array.isArray(o.revenue_by_group) ? o.revenue_by_group : [],
+    mrr_trend: Array.isArray(o.mrr_trend) ? o.mrr_trend : [],
+    payment_method_distribution: Array.isArray(o.payment_method_distribution)
+      ? o.payment_method_distribution
+      : [],
+    attendance_heatmap: Array.isArray(o.attendance_heatmap) ? o.attendance_heatmap : [],
+    aging_report: Array.isArray(o.aging_report) ? o.aging_report : [],
+    income_by_month:
+      income && typeof income === 'object' && !Array.isArray(income) ? income : {},
+    expenses_by_month:
+      expenses && typeof expenses === 'object' && !Array.isArray(expenses) ? expenses : {},
+    pnl_months: Array.isArray(o.pnl_months) ? o.pnl_months : [],
+  };
+}
+
 const DONUT_PALETTE = [
   chartColors.primary,
   chartColors.secondary,
@@ -54,6 +92,21 @@ const DONUT_PALETTE = [
   colors.brand[400],
   colors.gold[400],
   colors.brand[300],
+];
+
+const FALLBACK_MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 export default function AnalyticsPage() {
@@ -85,7 +138,7 @@ export default function AnalyticsPage() {
         throw new Error(err?.error ?? `HTTP ${res.status}`);
       }
       const json = await res.json();
-      setData(json);
+      setData(normalizeAnalyticsPayload(json));
     } catch (e) {
       setError(e instanceof Error ? e.message : tCommon('errorGeneric'));
     } finally {
@@ -98,35 +151,26 @@ export default function AnalyticsPage() {
     loadData();
   }, [canViewRevenue, loadData]);
 
-  const d = useMemo(
-    () =>
-      data ?? {
-        mrr: 0,
-        outstanding_total: 0,
-        collection_rate: 0,
-        avg_payment_per_student: 0,
-        revenue_by_group: [],
-        mrr_trend: [],
-        payment_method_distribution: [],
-        attendance_heatmap: [],
-        aging_report: [],
-        income_by_month: {},
-        expenses_by_month: {},
-        pnl_months: [],
-      },
-    [data]
-  );
+  const d = useMemo(() => (data ? normalizeAnalyticsPayload(data) : { ...EMPTY_ANALYTICS }), [data]);
 
-  const months = ta.raw('months') as string[];
+  const months = useMemo(() => {
+    const raw = ta.raw('months');
+    return Array.isArray(raw) && raw.length > 0 ? (raw as string[]) : FALLBACK_MONTH_LABELS;
+  }, [ta]);
 
   const revenueData = useMemo(() => {
-    return d.mrr_trend.map(({ month, amount }) => {
-      const parts = month.split('-');
-      const y = parts[0];
-      const m = parts[1] ? parseInt(parts[1], 10) - 1 : -1;
-      const label = m >= 0 && months[m] != null ? `${months[m]} ${y}` : month;
-      return { month: label, revenue: amount };
-    });
+    return d.mrr_trend
+      .filter(
+        (row): row is { month: string; amount: number } =>
+          row != null && typeof row.month === 'string' && row.month.length > 0,
+      )
+      .map(({ month, amount }) => {
+        const parts = month.split('-');
+        const y = parts[0];
+        const m = parts[1] ? parseInt(parts[1], 10) - 1 : -1;
+        const label = m >= 0 && months[m] != null ? `${months[m]} ${y}` : month;
+        return { month: label, revenue: Number(amount) || 0 };
+      });
   }, [d.mrr_trend, months]);
 
   const mrrDelta = useMemo(() => {
@@ -340,7 +384,12 @@ export default function AnalyticsPage() {
         <div className="card p-4 chart-animate chart-animate-delay-3">
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{ta('attendance_heatmap')}</h2>
           {heatmapCells.length > 0 ? (
-            <AttendanceHeatmap cells={heatmapCells} weekLabels={ta.raw('week_days') as string[]} />
+            <AttendanceHeatmap
+              cells={heatmapCells}
+              weekLabels={
+                Array.isArray(ta.raw('week_days')) ? (ta.raw('week_days') as string[]) : undefined
+              }
+            />
           ) : (
             <p className="text-sm text-[var(--color-text-secondary)] py-8 text-center">{ta('no_data')}</p>
           )}

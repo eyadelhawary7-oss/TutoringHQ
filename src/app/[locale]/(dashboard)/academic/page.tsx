@@ -45,7 +45,8 @@ const PERIOD_COLORS: Record<PeriodType, string> = {
   peak: 'bg-teal-300',
 };
 
-function formatHolidayDate(dateStr: string, locale: string): string {
+function formatHolidayDate(dateStr: string | null | undefined, locale: string): string {
+  if (!dateStr?.trim()) return '—';
   return formatDate(dateStr + 'T12:00:00', locale, { day: 'numeric', month: 'long' });
 }
 
@@ -124,13 +125,21 @@ export default function AcademicPage() {
       setTermGroups([]);
       return;
     }
-    const { data } = await dbSelect({
-      table: 'student_groups',
-      select: 'id, name',
-      filters: [{ column: 'center_id', op: 'eq', value: centerId }],
-      order: { column: 'name' },
-    });
-    setTermGroups((data as { id: string; name: string }[]) ?? []);
+    try {
+      const { data, error } = await dbSelect({
+        table: 'student_groups',
+        select: 'id, name',
+        filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+        order: { column: 'name' },
+      });
+      if (error) {
+        setTermGroups([]);
+        return;
+      }
+      setTermGroups(Array.isArray(data) ? (data as { id: string; name: string }[]) : []);
+    } catch {
+      setTermGroups([]);
+    }
   }, [centerId, periodsSorted]);
 
   useEffect(() => {
@@ -155,7 +164,10 @@ export default function AcademicPage() {
             { column: 'center_id', op: 'eq', value: centerId },
           ],
         });
-        for (const row of (members || []) as { students: Record<string, unknown> | null }[]) {
+        const memberRows = Array.isArray(members)
+          ? (members as { students: Record<string, unknown> | null }[])
+          : [];
+        for (const row of memberRows) {
           const s = row.students as {
             id: string;
             parent_pack_opted_in?: boolean | null;
@@ -460,12 +472,13 @@ export default function AcademicPage() {
           <h2 className="font-bold text-[var(--color-text-primary)] mb-4">{t('timeline')}</h2>
           <div className="relative h-10 rounded-lg overflow-hidden bg-[var(--color-surface-2)]">
             {currentYearPeriods.map((p) => {
-              const style = getSegmentStyle(p.start_date, p.end_date, p.period_type);
+              const typeKey = p.period_type in PERIOD_COLORS ? p.period_type : 'normal';
+              const style = getSegmentStyle(p.start_date, p.end_date, typeKey);
               const isCurrent = isCurrentWeek(p.start_date, p.end_date);
               return (
                 <div
                   key={p.id}
-                  className={`absolute top-0 h-full ${PERIOD_COLORS[p.period_type]} ${isCurrent ? 'animate-pulse ring-2 ring-teal-500 ring-offset-1' : ''}`}
+                  className={`absolute top-0 h-full ${PERIOD_COLORS[typeKey]} ${isCurrent ? 'animate-pulse ring-2 ring-teal-500 ring-offset-1' : ''}`}
                   style={style}
                   title={p.name}
                 />
@@ -517,7 +530,9 @@ export default function AcademicPage() {
                 className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-0)]"
               >
                 <div className="flex items-center gap-3">
-                  <span className={`w-3 h-3 rounded shrink-0 ${PERIOD_COLORS[p.period_type]}`} />
+                  <span
+                    className={`w-3 h-3 rounded shrink-0 ${PERIOD_COLORS[p.period_type in PERIOD_COLORS ? p.period_type : 'normal']}`}
+                  />
                   <span className="font-medium text-[var(--color-text-primary)]">{p.name}</span>
                   <span className="text-[var(--color-text-secondary)] text-sm">
                     {formatDate(p.start_date + 'T12:00:00', locale, { month: 'short', day: 'numeric' })} -{' '}
