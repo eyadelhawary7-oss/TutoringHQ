@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { Link, useRouter } from '@/i18n/routing';
+import { Eye, EyeOff } from 'lucide-react';
+
+function digitsOnly(value: string, maxLen: number): string {
+  const v = value.replace(/[^0-9]/g, '');
+  return v.length <= maxLen ? v : v.slice(0, maxLen);
+}
 
 export default function ResetPasswordPage() {
   const t = useTranslations('resetPassword');
@@ -11,18 +17,25 @@ export default function ResetPasswordPage() {
   const isRTL = locale === 'ar';
   const router = useRouter();
 
+  const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  const pinInputClass =
+    'w-full ps-4 pe-12 py-3 bg-[var(--color-surface-0)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] rounded-lg text-center text-2xl tracking-widest font-mono';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (newPin !== confirmPin) {
-      setError(t('errorPinMismatch'));
+    if (currentPin.length !== 6) {
+      setError(t('errorPinLength'));
       return;
     }
 
@@ -31,8 +44,34 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    if (newPin !== confirmPin) {
+      setError(t('errorPinMismatch'));
+      return;
+    }
+
     setLoading(true);
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const email = session?.user?.email;
+      if (!email) {
+        setError(t('errorUpdateFailed'));
+        setLoading(false);
+        return;
+      }
+
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPin,
+      });
+
+      if (verifyError) {
+        setError(t('errorCurrentIncorrect'));
+        setLoading(false);
+        return;
+      }
+
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPin,
       });
@@ -51,6 +90,8 @@ export default function ResetPasswordPage() {
       setLoading(false);
     }
   };
+
+  const canSubmit = currentPin.length === 6 && newPin.length === 6 && confirmPin.length === 6;
 
   if (success) {
     return (
@@ -80,63 +121,101 @@ export default function ResetPasswordPage() {
 
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                {t('currentPinLabel')}
+              </label>
+              <div className="relative">
+                <input
+                  type={showCurrent ? 'text' : 'password'}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="current-password"
+                  value={currentPin}
+                  onChange={(e) => setCurrentPin(digitsOnly(e.target.value, 6))}
+                  placeholder={t('currentPin')}
+                  maxLength={6}
+                  required
+                  dir="ltr"
+                  className={pinInputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent((s) => !s)}
+                  className="absolute top-1/2 -translate-y-1/2 end-3 p-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]"
+                  aria-label={showCurrent ? t('pinHideAria') : t('pinShowAria')}
+                >
+                  {showCurrent ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                 {t('newPinLabel')}
               </label>
-              <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={newPin}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  if (value.length <= 6) setNewPin(value);
-                }}
-                placeholder="••••••"
-                maxLength={6}
-                required
-                className="w-full px-4 py-3 bg-[var(--color-surface-0)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] rounded-lg text-center text-2xl tracking-widest font-mono"
-                autoComplete="off"
-                dir="ltr"
-              />
-              <p className="text-text-tertiary text-sm mt-1 text-center">
-                {t('pinHelper')}
-              </p>
+              <div className="relative">
+                <input
+                  type={showNew ? 'text' : 'password'}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="new-password"
+                  value={newPin}
+                  onChange={(e) => setNewPin(digitsOnly(e.target.value, 6))}
+                  placeholder="••••••"
+                  maxLength={6}
+                  required
+                  dir="ltr"
+                  className={pinInputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew((s) => !s)}
+                  className="absolute top-1/2 -translate-y-1/2 end-3 p-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]"
+                  aria-label={showNew ? t('pinHideAria') : t('pinShowAria')}
+                >
+                  {showNew ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
+                </button>
+              </div>
+              <p className="text-text-tertiary text-sm mt-1 text-center">{t('pinHelper')}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                 {t('confirmPinLabel')}
               </label>
-              <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={confirmPin}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  if (value.length <= 6) setConfirmPin(value);
-                }}
-                placeholder="••••••"
-                maxLength={6}
-                required
-                className="w-full px-4 py-3 bg-[var(--color-surface-0)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] rounded-lg text-center text-2xl tracking-widest font-mono"
-                autoComplete="off"
-                dir="ltr"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirm ? 'text' : 'password'}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="new-password"
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(digitsOnly(e.target.value, 6))}
+                  placeholder="••••••"
+                  maxLength={6}
+                  required
+                  dir="ltr"
+                  className={pinInputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm((s) => !s)}
+                  className="absolute top-1/2 -translate-y-1/2 end-3 p-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]"
+                  aria-label={showConfirm ? t('pinHideAria') : t('pinShowAria')}
+                >
+                  {showConfirm ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
-              disabled={loading || !newPin || !confirmPin}
+              disabled={loading || !canSubmit}
               className="w-full px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg disabled:opacity-50 transition-colors"
             >
               {loading ? t('updating') : t('updateButton')}
             </button>
 
-            <Link
-              href="/settings"
-              className="block text-center text-sm text-teal-600 hover:underline"
-            >
+            <Link href="/settings" className="block text-center text-sm text-teal-600 hover:underline">
               {t('backToSettings')}
             </Link>
           </form>

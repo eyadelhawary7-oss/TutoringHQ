@@ -30,7 +30,6 @@ export default function BranchesPage() {
   const t = useTranslations('branches');
   const tCharts = useTranslations('charts');
   const tCommon = useTranslations('common');
-  const tNav = useTranslations('nav');
   const locale = useLocale();
   const { user } = useUser();
   const isOwner = user?.role === 'owner';
@@ -145,7 +144,7 @@ export default function BranchesPage() {
   if (plan === 'single') {
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-        <PageHeader title={t('title')} subtitle={tNav('branches')} />
+        <PageHeader title={t('title')} subtitle={t('upgradeBody')} />
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 max-w-lg">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-14 h-14 rounded-xl bg-teal-900/40 flex items-center justify-center">
@@ -177,7 +176,7 @@ export default function BranchesPage() {
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <PageHeader title={t('title')} subtitle={tNav('branches')} />
+      <PageHeader title={t('title')} subtitle={t('upgradeBody')} />
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">{error}</div>
