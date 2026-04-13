@@ -29,7 +29,9 @@
     "negotiating": "قيد التفاوض",
     "closed_won": "تم الإغلاق",
     "closed_lost": "خسارة",
-    "converted": "تم التحويل"
+    "converted": "تم التحويل",
+    "totalLeads": "إجمالي العملاء المحتملين",
+    "conversionRate": "معدل التحويل"
   },
   "toasts": {
     "saved": "تم الحفظ بنجاح",
@@ -880,6 +882,7 @@
     "statusPaid": "تم الدفع",
     "statusReadyPickup": "جاهز للاستلام",
     "statusFailed": "فشل الدفع",
+    "orderStatusFallback": "{status}",
     "sentToVendor": "أُرسل للمورد",
     "bookCourier": "حجز مندوب الشحن",
     "bookingCourier": "جاري الحجز...",

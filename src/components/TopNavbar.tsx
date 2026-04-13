@@ -114,7 +114,7 @@ export default function TopNavbar() {
         borderBottom: '1px solid var(--glass-border, rgba(255, 255, 255, 0.08))',
       }}
     >
-      {/* Left: Hamburger (mobile only) / Logo + Brand */}
+      {/* Start: Hamburger (mobile only) / Logo + Brand */}
       <div className="flex items-center gap-2 shrink-0">
         <button
           type="button"
@@ -169,7 +169,7 @@ export default function TopNavbar() {
         )}
       </div>
 
-      {/* Right: Center name, role, theme, language, app mode toggle, logout (hidden on mobile) */}
+      {/* End: Center name, role, theme, language, app mode toggle, logout (hidden on mobile) */}
       <div className="hidden md:flex items-center gap-2 shrink-0">
         {user && (
           <div className="hidden lg:flex items-center gap-2">

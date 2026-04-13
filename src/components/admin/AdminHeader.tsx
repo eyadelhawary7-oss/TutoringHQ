@@ -69,7 +69,7 @@ export function AdminHeader() {
 
   return (
     <>
-      <header className="hidden lg:flex fixed top-0 left-0 right-0 h-14 z-30 items-center justify-between px-4 md:px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
+      <header className="hidden lg:flex fixed top-0 inset-x-0 h-14 z-30 items-center justify-between px-4 md:px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
         <span
           className="text-lg"
           style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}

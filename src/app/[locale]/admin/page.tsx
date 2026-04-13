@@ -56,7 +56,7 @@ import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { AdminSidebar, type AdminTab } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { ALL_ADMIN_PERMISSIONS } from '@/lib/admin-roles';
-import { PlanBadge, BillingStatusBadge } from '@/components/shared';
+import { PlanBadge, BillingStatusBadge, RoleBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import type { AdminCardOrderRow } from '@/types/admin-card-orders';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
@@ -383,7 +383,6 @@ function AdminPageContent() {
   const tAdmin = useTranslations('admin');
   const tCommon = useTranslations('common');
   const tStatus = useTranslations('status');
-  const tRoles = useTranslations('roles');
   const tPipeline = useTranslations('pipeline');
   const tIdCards = useTranslations('idCards');
   const tCharts = useTranslations('charts');
@@ -2249,7 +2248,7 @@ function AdminPageContent() {
                                             ? tIdCards('statusDelivered')
                                             : order.status === 'confirmed'
                                               ? tIdCards('statusConfirmed')
-                                              : order.status}
+                                              : tIdCards('orderStatusFallback', { status: order.status })}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">
@@ -2370,11 +2369,7 @@ function AdminPageContent() {
                         {m.phone ?? m.email ?? tCommon('notSet')}
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">
-                          {['owner', 'admin', 'assistant', 'teacher', 'super_admin'].includes(m.role)
-                            ? tRoles(m.role as 'owner' | 'admin' | 'assistant' | 'teacher' | 'super_admin')
-                            : m.role}
-                        </span>
+                        <RoleBadge role={m.role} />
                       </td>
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
                         {m.created_at ? formatDate(m.created_at, locale) : tCommon('notSet')}
@@ -2404,16 +2399,21 @@ function AdminPageContent() {
               </button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-              {[
-                { label: 'Total Leads', value: leads.length },
-                { label: 'Contacted', value: salesPipelineStats.contacted },
-                { label: 'Demo Scheduled', value: salesPipelineStats.demo_scheduled },
-                { label: 'Converted', value: salesPipelineStats.converted },
-                { label: 'Conversion Rate', value: salesPipelineStats.conversionRate },
-              ].map(({ label, value }) => (
-                <div key={label} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
+              {(
+                [
+                  { statKey: 'totalLeads' as const, value: leads.length },
+                  { statKey: 'contacted' as const, value: salesPipelineStats.contacted },
+                  { statKey: 'demo_scheduled' as const, value: salesPipelineStats.demo_scheduled },
+                  { statKey: 'converted' as const, value: salesPipelineStats.converted },
+                  { statKey: 'conversionRate' as const, value: salesPipelineStats.conversionRate },
+                ] as const
+              ).map(({ statKey, value }) => (
+                <div
+                  key={statKey}
+                  className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6"
+                >
                   <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>
-                  <div className="text-sm text-[var(--color-text-secondary)]">{label}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">{tPipeline(statKey)}</div>
                 </div>
               ))}
             </div>
@@ -2607,7 +2607,10 @@ function AdminPageContent() {
                   { label: tAdmin('studentsCount'), value: String(detailCenter.students_count ?? 0), isPlan: false },
                   {
                     label: tCommon('status'),
-                    value: detailCenter.status ?? null,
+                    value:
+                      detailCenter.status != null && detailCenter.status !== ''
+                        ? centerStatusLabel(detailCenter.status, tStatus)
+                        : null,
                     isPlan: false,
                     empty: () => (
                       <span className="text-slate-500 text-xs italic">{tCommon('notSet')}</span>

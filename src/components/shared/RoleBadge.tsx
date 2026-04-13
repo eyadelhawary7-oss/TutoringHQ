@@ -12,13 +12,21 @@ const styles: Record<string, string> = {
 
 const KNOWN_ROLES = ['owner', 'admin', 'assistant', 'teacher', 'super_admin'] as const;
 
+function titleCaseSnake(raw: string): string {
+  return raw
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default function RoleBadge({ role }: { role: string }) {
   const tRoles = useTranslations('roles');
-  const key = role?.toLowerCase() ?? '';
+  const key = role?.toLowerCase().trim() ?? '';
   const label =
     role && (KNOWN_ROLES as readonly string[]).includes(key)
       ? tRoles(key as (typeof KNOWN_ROLES)[number])
-      : role;
+      : role
+        ? titleCaseSnake(key || role)
+        : '';
   return (
     <span
       className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[key] ?? 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'}`}

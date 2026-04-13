@@ -43,7 +43,7 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
             <span className="text-white">CENTER</span>
             <span className="text-teal-600">HQ</span>
           </span>
-          <span className="ml-auto text-[7px] text-teal-200">طالب</span>
+          <span className="ms-auto text-[7px] text-teal-200">طالب</span>
         </div>
         <div className="flex gap-2 p-2">
           <div className="flex h-14 w-12 shrink-0 items-center justify-center rounded-md border border-slate-500 bg-slate-600">
@@ -297,91 +297,93 @@ export default function LocaleHomePage() {
       className="min-h-screen bg-[#080f1a] text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-[var(--color-text-secondary)]"
     >
       <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-[#080f1a]/90 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 md:h-16 md:px-6">
-          <Link
-            href="/"
-            locale={locale}
-            className="flex items-center gap-2 btn-press chq-focus rounded-lg"
+        <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 md:h-16 md:px-6">
+          <button
+            type="button"
+            className="absolute start-4 top-1/2 z-10 inline-flex -translate-y-1/2 rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white md:hidden btn-press chq-focus [&_svg]:text-slate-300"
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setMobileOpen((o) => !o)}
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-600 text-xs font-bold text-white">
-              CH
-            </span>
-            <span className="text-lg tracking-tight">
-              <span
-                style={{
-                  fontFamily: 'var(--font-bodoni)',
-                  fontWeight: 700,
-                  letterSpacing: '2px',
-                  color: '#f8fafc',
-                }}
-              >
-                CENTER
-              </span>
-              <span
-                style={{
-                  fontFamily: 'var(--font-bodoni)',
-                  fontWeight: 700,
-                  letterSpacing: '2px',
-                  color: '#0D9488',
-                }}
-              >
-                HQ
-              </span>
-            </span>
-          </Link>
-
-          <nav className="hidden items-center gap-8 md:flex" aria-label="Main">
-            <a
-              href="#features"
-              className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
-            >
-              {m('navFeatures')}
-            </a>
-            <a
-              href="#pricing-preview"
-              className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
-            >
-              {m('navPricing')}
-            </a>
-            <a
-              href={WA_SUPPORT}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
-            >
-              {m('navContact')}
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-2">
+            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+          <div className="mx-auto flex w-full max-w-full items-center justify-center gap-4 md:mx-0 md:justify-between">
             <Link
               href="/"
-              locale={locale === 'ar' ? 'en' : 'ar'}
-              className="hidden rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-300 hover:text-white md:inline-flex btn-press chq-focus"
+              locale={locale}
+              className="flex items-center gap-2 btn-press chq-focus rounded-lg"
             >
-              {locale === 'ar' ? 'EN' : 'عر'}
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-600 text-xs font-bold text-white">
+                CH
+              </span>
+              <span className="text-lg tracking-tight">
+                <span
+                  style={{
+                    fontFamily: 'var(--font-bodoni)',
+                    fontWeight: 700,
+                    letterSpacing: '2px',
+                    color: '#f8fafc',
+                  }}
+                >
+                  CENTER
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-bodoni)',
+                    fontWeight: 700,
+                    letterSpacing: '2px',
+                    color: '#0D9488',
+                  }}
+                >
+                  HQ
+                </span>
+              </span>
             </Link>
-            <Link
-              href="/login"
-              className="hidden text-sm text-slate-300 hover:text-white md:inline btn-press chq-focus rounded-lg px-2 py-1"
-            >
-              {m('login')}
-            </Link>
-            <Link
-              href="/signup"
-              className="hidden rounded-xl bg-teal-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-500 md:inline-flex btn-press chq-focus"
-            >
-              {t('navSignup')}
-            </Link>
-            <button
-              type="button"
-              className="inline-flex rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white md:hidden btn-press chq-focus [&_svg]:text-slate-300"
-              aria-expanded={mobileOpen}
-              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-              onClick={() => setMobileOpen((o) => !o)}
-            >
-              {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+
+            <nav className="hidden flex-1 items-center justify-center gap-8 md:flex" aria-label="Main">
+              <a
+                href="#features"
+                className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
+              >
+                {m('navFeatures')}
+              </a>
+              <a
+                href="#pricing-preview"
+                className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
+              >
+                {m('navPricing')}
+              </a>
+              <a
+                href={WA_SUPPORT}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
+              >
+                {m('navContact')}
+              </a>
+            </nav>
+
+            <div className="hidden items-center gap-2 md:flex">
+              <Link
+                href="/"
+                locale={locale === 'ar' ? 'en' : 'ar'}
+                className="inline-flex rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-300 hover:text-white btn-press chq-focus"
+              >
+                {locale === 'ar' ? 'EN' : 'عر'}
+              </Link>
+              <Link
+                href="/login"
+                className="text-sm text-slate-300 hover:text-white btn-press chq-focus rounded-lg px-2 py-1"
+              >
+                {m('login')}
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-xl bg-teal-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-500 inline-flex btn-press chq-focus"
+              >
+                {t('navSignup')}
+              </Link>
+            </div>
           </div>
         </div>
 
