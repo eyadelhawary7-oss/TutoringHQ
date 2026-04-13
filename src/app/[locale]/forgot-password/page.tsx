@@ -149,7 +149,28 @@ export default function ForgotPasswordPage() {
           >
             CH
           </div>
-          <h1 className="text-2xl font-black text-white">CenterHQ</h1>
+          <h1 className="text-2xl font-black text-white flex items-center justify-center gap-0">
+            <span
+              style={{
+                fontFamily: 'var(--font-bodoni)',
+                fontWeight: 700,
+                letterSpacing: '2px',
+                color: '#f8fafc',
+              }}
+            >
+              CENTER
+            </span>
+            <span
+              style={{
+                fontFamily: 'var(--font-bodoni)',
+                fontWeight: 700,
+                letterSpacing: '2px',
+                color: '#0D9488',
+              }}
+            >
+              HQ
+            </span>
+          </h1>
           <p className="text-white/50 text-sm mt-1 text-center">{t('title')}</p>
         </div>
 
@@ -177,7 +198,12 @@ export default function ForgotPasswordPage() {
 
           {step === 'phone' && (
             <>
-              <PhoneInput onSubmit={handleSendOTP} isLoading={loading} error={error} />
+              <PhoneInput
+                onSubmit={handleSendOTP}
+                isLoading={loading}
+                error={error}
+                submitLabel={t('sendOtp')}
+              />
               <div className="text-center mt-4">
                 <Link href="/login" className="text-sm hover:underline" style={{ color: 'hsl(var(--primary))' }}>
                   {t('backToLogin')}

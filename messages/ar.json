@@ -1663,8 +1663,8 @@
     "collectedThisMonth": "المحصل هذا الشهر",
     "collectionRate": "معدل التحصيل",
     "securityAlerts": "تنبيهات الأمان",
-    "failedLogins24h": "محاولات دخول فاشلة (24 ساعة)",
-    "newSignups7d": "تسجيلات جديدة (7 أيام)",
+    "failedLogins24h": "محاولات دخول فاشلة ({hours} ساعة)",
+    "newRegistrations7d": "تسجيلات جديدة ({days} أيام)",
     "flaggedActivity": "نشاط مشبوه",
     "systemStatus": "حالة النظام",
     "allSystemsOperational": "جميع الأنظمة تعمل",
@@ -2417,6 +2417,14 @@
     "title": "لوحة تحكم المؤسس",
     "lastSync": "آخر تحديث",
     "lastSyncMinutes": "منذ {minutes} دقيقة",
+    "range7d": "٧ أيام",
+    "range30d": "٣٠ يوم",
+    "range90d": "٩٠ يوم",
+    "range6m": "٦ أشهر",
+    "range1y": "سنة",
+    "rangeMtd": "هذا الشهر",
+    "rangeQtd": "هذا الربع",
+    "rangeYtd": "هذا العام",
     "sections": {
       "a": "المؤشرات",
       "b": "الإجراءات",
@@ -2727,7 +2735,9 @@
     "notifScan": "تنبيهات المسح",
     "notifAbsence": "تنبيهات الغياب",
     "notifBalance": "تنبيهات الرصيد",
-    "notifAnnouncement": "تنبيهات الإعلانات"
+    "notifAnnouncement": "تنبيهات الإعلانات",
+    "blastOps": "إرسال تشغيلي",
+    "blastPromo": "إرسال ترويجي"
   },
   "adminWaPack": {
     "title": "إدارة باقة واتساب",
@@ -3716,6 +3726,7 @@
   "forgotPassword": {
     "title": "إعادة تعيين كلمة المرور",
     "phoneLabel": "رقم الهاتف",
+    "sendOtp": "إرسال رمز التحقق",
     "sendOTP": "أرسل رمز التفعيل",
     "sending": "جاري الإرسال ...",
     "otpSent": "تم إرسال الرمز إلى {phone}",
@@ -3743,7 +3754,7 @@
     "atRiskCenters": "المراكز المعرضة للخطر",
     "centers": "الإيواء",
     "breakevenTitle": "تقدم نقطة التعادل",
-    "breakevenSubtitle": "77 centers = fixed costs covered every month",
+    "breakevenSubtitle": "مركز يغطي التكاليف الثابتة كل شهر",
     "breakevenNotStarted": "لم تبدأ بعد",
     "breakevenSelfFunded": "التمويل الذاتي",
     "actionQueueTitle": "قائمة انتظار الإجراءات الخاصة بك اليوم",

@@ -958,6 +958,7 @@
   "forgotPassword": {
     "title": "Reset Password",
     "phoneLabel": "Phone Number",
+    "sendOtp": "Send OTP",
     "sendOTP": "Send Verification Code",
     "sending": "Sending...",
     "otpSent": "Code sent to {phone}",
@@ -1764,7 +1765,7 @@
     "atRiskCenters": "At-Risk Centers",
     "centers": "centers",
     "breakevenTitle": "Break-even Progress",
-    "breakevenSubtitle": "77 centers = fixed costs covered every month",
+    "breakevenSubtitle": "Centers cover fixed costs every month",
     "breakevenNotStarted": "Not started yet",
     "breakevenSelfFunded": "✓ Self-Funded",
     "actionQueueTitle": "Your Action Queue Today",
@@ -2822,8 +2823,8 @@
     "collectedThisMonth": "Collected This Month",
     "collectionRate": "Collection Rate",
     "securityAlerts": "Security Alerts",
-    "failedLogins24h": "Failed Logins (24h)",
-    "newSignups7d": "New Signups (7 days)",
+    "failedLogins24h": "Failed logins ({hours} hours)",
+    "newRegistrations7d": "New registrations ({days} days)",
     "flaggedActivity": "Flagged Activity",
     "systemStatus": "System Status",
     "allSystemsOperational": "All Systems Operational",
@@ -4596,6 +4597,14 @@
     "title": "Founder dashboard",
     "lastSync": "Last updated",
     "lastSyncMinutes": "{minutes} min ago",
+    "range7d": "7D",
+    "range30d": "30D",
+    "range90d": "90D",
+    "range6m": "6M",
+    "range1y": "1Y",
+    "rangeMtd": "MTD",
+    "rangeQtd": "QTD",
+    "rangeYtd": "YTD",
     "sections": {
       "a": "KPIs",
       "b": "Actions",
@@ -4906,7 +4915,9 @@
     "notifScan": "Scan Notifications",
     "notifAbsence": "Absence Notifications",
     "notifBalance": "Balance Notifications",
-    "notifAnnouncement": "Announcement Notifications"
+    "notifAnnouncement": "Announcement Notifications",
+    "blastOps": "Blast Ops",
+    "blastPromo": "Blast Promo"
   },
   "adminWaPack": {
     "title": "WhatsApp Pack Management",

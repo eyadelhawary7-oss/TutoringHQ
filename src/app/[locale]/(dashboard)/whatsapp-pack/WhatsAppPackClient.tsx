@@ -577,7 +577,8 @@ export default function WhatsAppPackClient({
 
           <div>
             <p className="text-xs text-[var(--color-text-tertiary)] mb-1">
-              {formatNumber(balance, locale)} EGP / {formatNumber(cap, locale)} EGP {t('whatsapp.announcementUsedOfCap')}
+              {formatCurrency(Number(balance), locale)} / {formatCurrency(Number(cap), locale)}{' '}
+              {t('whatsapp.announcementUsedOfCap')}
             </p>
             <div className="w-full h-1 rounded bg-[var(--color-surface-3)] overflow-hidden" aria-hidden>
               <div
@@ -599,7 +600,7 @@ export default function WhatsAppPackClient({
                 blastType === 'ops' ? 'ring-2 ring-teal-500 bg-teal-600 text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]',
               )}
             >
-              {t('billing.blastOps')}
+              {t('whatsappPack.blastOps')}
             </button>
             <button
               type="button"
@@ -612,7 +613,7 @@ export default function WhatsAppPackClient({
                 blastType === 'promo' ? 'ring-2 ring-teal-500 bg-teal-600 text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]',
               )}
             >
-              {t('billing.blastPromo')}
+              {t('whatsappPack.blastPromo')}
             </button>
           </div>
 
@@ -766,15 +767,14 @@ export default function WhatsAppPackClient({
                             : 'bg-amber-500/15 text-amber-800 dark:text-amber-200',
                         )}
                       >
-                        {blast.blast_type === 'ops' ? t('billing.blastOps') : t('billing.blastPromo')}
+                        {blast.blast_type === 'ops' ? t('whatsappPack.blastOps') : t('whatsappPack.blastPromo')}
                       </span>
                     </div>
                     <p className="text-sm text-[var(--color-text-primary)] break-words">
                       {blast.message.length > 60 ? `${blast.message.slice(0, 60)}...` : blast.message}
                     </p>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      {formatNumber(blast.parents_notified, locale)} ·{' '}
-                      {`${formatNumber(Number(blast.total_amount), locale)} EGP`}
+                      {formatNumber(blast.parents_notified, locale)} · {formatCurrency(Number(blast.total_amount), locale)}
                     </p>
                   </div>
                 </li>

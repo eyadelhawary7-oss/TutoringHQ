@@ -8,9 +8,11 @@ interface PhoneInputProps {
   onSubmit: (phone: string) => void;
   isLoading: boolean;
   error?: string;
+  /** Overrides default login.sendOTP label (e.g. forgot-password flow). */
+  submitLabel?: string;
 }
 
-export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputProps) {
+export default function PhoneInput({ onSubmit, isLoading, error, submitLabel }: PhoneInputProps) {
   const t = useTranslations('login');
   const tc = useTranslations('common');
   const [phone, setPhone] = useState('');
@@ -88,7 +90,7 @@ export default function PhoneInput({ onSubmit, isLoading, error }: PhoneInputPro
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         ) : null}
-        {isLoading ? tc('loading') : t('sendOTP')}
+        {isLoading ? tc('loading') : (submitLabel ?? t('sendOTP'))}
       </button>
     </form>
   );

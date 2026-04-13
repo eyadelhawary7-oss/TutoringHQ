@@ -1410,7 +1410,9 @@ function AdminPageContent() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('failedLogins24h')}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">
+                      {tAdmin('failedLogins24h', { hours: formatNumber(24, locale) })}
+                    </p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{formatNumber(0, locale)}</p>
                   </div>
                   <div className="p-3 rounded-full bg-orange-100">
@@ -1421,7 +1423,9 @@ function AdminPageContent() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('newSignups7d')}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">
+                      {tAdmin('newRegistrations7d', { days: formatNumber(7, locale) })}
+                    </p>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
                       {formatNumber(overview.pendingSignups ?? 0, locale)}
                     </p>
