@@ -2161,6 +2161,15 @@ html.light {
   animation: chq-fade-in 200ms ease forwards;
 }
 
+/* Landing (marketing home): dark canvas so fast scroll never shows light body gaps */
+[data-chq-landing] {
+  background-color: #080f1a;
+}
+html:has([data-chq-landing]),
+body:has([data-chq-landing]) {
+  background-color: #080f1a;
+}
+
 @keyframes chq-shimmer {
   from { background-position: -200% 0; }
   to   { background-position: 200% 0; }

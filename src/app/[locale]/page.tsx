@@ -284,9 +284,9 @@ export default function LocaleHomePage() {
   return (
     <main
       data-chq-landing
-      className="bg-[var(--color-surface-0)] min-h-screen text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-[var(--color-text-secondary)]"
+      className="min-h-screen bg-[#080f1a] text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-[var(--color-text-secondary)]"
     >
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-[var(--color-surface-0)]/90 backdrop-blur-md">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-[#080f1a]/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 md:h-16 md:px-6">
           <Link
             href="/"
@@ -376,7 +376,7 @@ export default function LocaleHomePage() {
         </div>
 
         {mobileOpen ? (
-          <div className="border-t border-slate-800/60 bg-[var(--color-surface-0)]/95 px-4 py-4 md:hidden">
+          <div className="border-t border-slate-800/60 bg-[#080f1a]/95 px-4 py-4 md:hidden">
             <div className="flex flex-col gap-1">
               <a
                 href="#features"
@@ -421,7 +421,7 @@ export default function LocaleHomePage() {
       </header>
 
       <section
-        className="chq-fade-in bg-[#080f1a] px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28"
+        className="bg-[#080f1a] px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28"
         style={{
           background:
             'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), #080f1a',
@@ -561,7 +561,7 @@ export default function LocaleHomePage() {
         </div>
       </section>
 
-      <section className="chq-fade-in border-y border-slate-800/40 bg-[#080f1a] px-4 py-12 md:px-6">
+      <section className="border-y border-slate-800/40 bg-[#080f1a] px-4 py-12 md:px-6">
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
           {[
             { v: m('stat1Value'), l: m('stat1Label') },
@@ -581,7 +581,7 @@ export default function LocaleHomePage() {
 
       <section
         id="how-it-works"
-        className="chq-fade-in scroll-mt-20 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
+        className="scroll-mt-20 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
       >
         <div className="mx-auto max-w-5xl">
           <h2 className="mb-10 text-center text-2xl font-bold !text-white md:mb-14 md:text-3xl">
@@ -623,7 +623,7 @@ export default function LocaleHomePage() {
 
       <section
         id="features"
-        className="chq-fade-in scroll-mt-20 border-t border-slate-800/40 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
+        className="scroll-mt-20 border-t border-slate-800/40 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
       >
         <div className="mx-auto max-w-6xl">
           <h2 className="mb-10 text-center text-2xl font-bold !text-white md:mb-14 md:text-3xl">
@@ -653,7 +653,7 @@ export default function LocaleHomePage() {
 
       <section
         id="pricing-preview"
-        className="chq-fade-in scroll-mt-20 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
+        className="scroll-mt-20 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
       >
         <div className="mx-auto max-w-5xl text-center">
           <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('pricingTitle')}</h2>
@@ -708,7 +708,7 @@ export default function LocaleHomePage() {
         </div>
       </section>
 
-      <section className="chq-fade-in bg-[#080f1a] bg-gradient-to-b from-[#080f1a] via-[#0f172a] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
+      <section className="bg-[#080f1a] bg-gradient-to-b from-[#080f1a] via-[#0f172a] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('finalCtaTitle')}</h2>
           <p className="mt-3 text-sm text-[var(--color-text-secondary)] md:text-base">{t('finalCtaDesc')}</p>
@@ -721,7 +721,7 @@ export default function LocaleHomePage() {
         </div>
       </section>
 
-      <footer className="chq-fade-in border-t border-slate-800/60 px-4 py-10 md:px-6">
+      <footer className="border-t border-slate-800/60 bg-[#080f1a] px-4 py-10 md:px-6">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center text-sm text-slate-400">
           <p>{m('footerTagline')}</p>
           <p className="text-xs">{footerT('ehgProduct')}</p>
