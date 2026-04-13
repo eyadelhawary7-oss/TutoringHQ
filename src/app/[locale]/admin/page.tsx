@@ -315,6 +315,26 @@ const ADMIN_QUERY_TAB_WHITELIST = new Set<string>([
   'analytics',
 ]);
 
+/** Case-insensitive / alias mapping for `?tab=` (bookmarks, typos). */
+const ADMIN_TAB_QUERY_ALIASES: Record<string, AdminTab> = {
+  overview: 'overview',
+  ceo: 'ceoDashboard',
+  ceodashboard: 'ceoDashboard',
+  centers: 'centers',
+  billing: 'billing',
+  cardorders: 'cardOrders',
+  planrequests: 'planRequests',
+  pendingsignups: 'pendingSignups',
+  pending: 'pendingSignups',
+  'pending-signups': 'pendingSignups',
+  pending_signups: 'pendingSignups',
+  referral: 'referrals',
+  referrals: 'referrals',
+  internalteam: 'internalTeam',
+  salespipeline: 'salesPipeline',
+  analytics: 'analytics',
+};
+
 /** `?tab=` values that map to full admin sub-routes (not inline panels). */
 const ADMIN_TAB_REDIRECTS: Record<string, string> = {
   renewals: '/admin/renewals',
@@ -327,9 +347,11 @@ const ADMIN_TAB_REDIRECTS: Record<string, string> = {
 
 function parseAdminTabParam(raw: string | null): AdminTab {
   if (!raw) return 'overview';
-  if (raw === 'pending') return 'pendingSignups';
-  if (ADMIN_TAB_REDIRECTS[raw]) return 'overview';
-  if (ADMIN_QUERY_TAB_WHITELIST.has(raw)) return raw as AdminTab;
+  const trimmed = raw.trim();
+  if (ADMIN_TAB_REDIRECTS[trimmed]) return 'overview';
+  const alias = ADMIN_TAB_QUERY_ALIASES[trimmed.toLowerCase()];
+  if (alias) return alias;
+  if (ADMIN_QUERY_TAB_WHITELIST.has(trimmed)) return trimmed as AdminTab;
   return 'overview';
 }
 
@@ -369,10 +391,12 @@ function AdminPageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get('tab') ?? null;
-  const basePath = pathname ?? '/admin';
   const { setHideShell } = useLayout();
 
   const [tab, setTab] = useState<AdminTab>(() => parseAdminTabParam(tabParam));
+
+  /** Inline admin tabs always live on `/[locale]/admin` — never on e.g. `/admin/centers`. */
+  const ADMIN_HOME = '/admin';
 
   useLayoutEffect(() => {
     if (!tabParam) return;
@@ -382,9 +406,10 @@ function AdminPageContent() {
     }
   }, [tabParam, router]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (tabParam && ADMIN_TAB_REDIRECTS[tabParam]) return;
-    setTab(parseAdminTabParam(tabParam));
+    const next = parseAdminTabParam(tabParam);
+    setTab((prev) => (prev === next ? prev : next));
   }, [tabParam]);
 
   const handleTabChange = useCallback(
@@ -400,12 +425,12 @@ function AdminPageContent() {
       setTab(next);
       const q = adminTabToQueryParam(next);
       if (q == null) {
-        router.replace(basePath, { scroll: false });
+        router.replace(ADMIN_HOME, { scroll: false });
       } else {
-        router.replace(`${basePath}?tab=${encodeURIComponent(q)}`, { scroll: false });
+        router.replace(`${ADMIN_HOME}?tab=${encodeURIComponent(q)}`, { scroll: false });
       }
     },
-    [basePath, router],
+    [router],
   );
 
   const [viewingProof, setViewingProof] = useState<string | null>(null);
@@ -1535,10 +1560,10 @@ function AdminPageContent() {
 
         {tab === 'ceoDashboard' && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <p className="text-[var(--color-text-secondary)]">{tAdmin('ceoDashboardLink')}</p>
+            <p className="text-[var(--color-text-secondary)] text-center max-w-md">{tAdmin('ceoDashboardLink')}</p>
             <Link
               href="/ceo-dashboard"
-              className="bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-teal-700 transition"
+              className="bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-teal-700 transition text-center"
             >
               {tAdmin('openCeoDashboard')}
             </Link>
