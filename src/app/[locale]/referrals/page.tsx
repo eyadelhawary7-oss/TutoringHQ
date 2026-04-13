@@ -145,7 +145,7 @@ export default function ReferralsPage() {
     }
   };
 
-  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://centerhq.com';
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://centerhq.app';
   const localePrefix = locale === 'ar' ? '' : `/${locale}`;
   const referLink = `${appUrl}${localePrefix}/refer/${data?.referralCode ?? ''}`;
   const whatsappShare = useMemo(() => {
