@@ -11,7 +11,7 @@ import AnalyticsAiChatWidget from '@/components/analytics/AnalyticsAiChatWidget'
 import { chartColors, colors } from '@/lib/tokens';
 import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 import { ChartCard, ChartLegend } from '@/components/charts';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 
 const RevenueByGroup = dynamic(() => import('@/components/charts/RevenueByGroup'), {
   ssr: false,
@@ -167,11 +167,15 @@ export default function AnalyticsPage() {
       .map(({ month, amount }) => {
         const parts = month.split('-');
         const y = parts[0];
+        const yNum = y != null && y !== '' ? Number(y) : NaN;
         const m = parts[1] ? parseInt(parts[1], 10) - 1 : -1;
-        const label = m >= 0 && months[m] != null ? `${months[m]} ${y}` : month;
+        const label =
+          m >= 0 && months[m] != null && Number.isFinite(yNum)
+            ? `${months[m]} ${formatNumber(yNum, locale)}`
+            : month;
         return { month: label, revenue: Number(amount) || 0 };
       });
-  }, [d.mrr_trend, months]);
+  }, [d.mrr_trend, months, locale]);
 
   const mrrDelta = useMemo(() => {
     const t = d.mrr_trend;
@@ -225,8 +229,6 @@ export default function AnalyticsPage() {
     );
   }
 
-  const egp = tCommon('egp');
-
   return (
     <div className="bg-[var(--color-surface-0)] min-h-screen w-full page-enter max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px)+0.5rem)] md:pb-28">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-4 pt-4 pb-4 no-print border-b border-[var(--color-border)]">
@@ -254,8 +256,7 @@ export default function AnalyticsPage() {
             <div className="min-w-0">
               <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('mrr')}</span>
               <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
-                {formatNumber(Number(d.mrr ?? 0), locale)}
-                <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">{egp}</span>
+                {formatCurrency(Number(d.mrr ?? 0), locale)}
               </span>
               {mrrDelta !== undefined && (
                 <span
@@ -305,8 +306,7 @@ export default function AnalyticsPage() {
             <div className="min-w-0">
               <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('avg_per_student')}</span>
               <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
-                {formatNumber(Number(d.avg_payment_per_student ?? 0), locale)}
-                <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">{egp}</span>
+                {formatCurrency(Number(d.avg_payment_per_student ?? 0), locale)}
               </span>
             </div>
             <div
@@ -322,8 +322,7 @@ export default function AnalyticsPage() {
             <div className="min-w-0">
               <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('total_revenue')}</span>
               <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
-                {formatNumber(Number(totalRevenue), locale)}
-                <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">{egp}</span>
+                {formatCurrency(Number(totalRevenue), locale)}
               </span>
             </div>
             <div
@@ -339,8 +338,7 @@ export default function AnalyticsPage() {
       <div className="mx-4 mb-4 chart-animate chart-animate-delay-1">
         <ChartCard
           title={tCharts('monthlyRevenue')}
-          valuePrefix="EGP "
-          value={Number(d.mrr ?? 0)}
+          value={formatCurrency(Number(d.mrr ?? 0), locale)}
           trend={mrrDelta}
           trendLabel={tCharts('vsLastMonth')}
           loading={loading && !data}
@@ -371,8 +369,8 @@ export default function AnalyticsPage() {
                   items={donutData.map((slice) => ({
                     color: slice.color ?? '#64748B',
                     label: slice.name,
-                    value: formatNumber(Number(slice.value), locale),
-                    suffix: ` ${egp}`,
+                    value: formatCurrency(Number(slice.value), locale),
+                    suffix: '',
                   }))}
                 />
               </>

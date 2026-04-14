@@ -104,7 +104,7 @@ export default function RoomsPage() {
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-            {formatNumber(rooms.length, locale)} {t('title')}
+            {t('subtitleCount', { count: formatNumber(rooms.length, locale) })}
           </p>
         </div>
         <button
@@ -153,7 +153,7 @@ export default function RoomsPage() {
 
         {rooms.length === 0 && !isLoading && (
           <div className="text-center py-16">
-            <DoorOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <DoorOpen className="w-12 h-12 text-[var(--color-text-secondary)] mx-auto mb-4" />
             <p className="text-[var(--color-text-secondary)] font-medium">{t('noRooms')}</p>
           </div>
         )}

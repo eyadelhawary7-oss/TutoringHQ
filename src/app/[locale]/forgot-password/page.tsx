@@ -203,6 +203,8 @@ export default function ForgotPasswordPage() {
                 isLoading={loading}
                 error={error}
                 submitLabel={t('sendOtp')}
+                phoneLabel={t('phoneLabel')}
+                phoneHint={t('phoneHint')}
               />
               <div className="text-center mt-4">
                 <Link href="/login" className="text-sm hover:underline" style={{ color: 'hsl(var(--primary))' }}>

@@ -37,6 +37,7 @@ export interface BarChartComponentProps {
   height?: number;
   prefix?: string;
   suffix?: string;
+  tooltipValueFormatter?: (value: number) => string;
   xTickFormatter?: (v: string | number) => string;
   yTickFormatter?: (v: number) => string;
   tooltipLabelFormatter?: (v: string | number) => string;
@@ -58,6 +59,7 @@ export function BarChartComponent({
   height = 200,
   prefix = '',
   suffix = '',
+  tooltipValueFormatter,
   xTickFormatter,
   yTickFormatter,
   tooltipLabelFormatter,
@@ -178,6 +180,7 @@ export function BarChartComponent({
                 labelFormatter={tooltipLabelFormatter}
                 prefix={prefix}
                 suffix={suffix}
+                valueFormatter={tooltipValueFormatter ? (v) => tooltipValueFormatter(v) : undefined}
               />
             );
           }}

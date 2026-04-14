@@ -157,7 +157,7 @@ export default function PrintClient({
               {allSelected ? t('deselectAll') : t('selectAll')}
             </button>
             <span className="text-sm text-[var(--color-text-secondary)]">
-              {t('selectedCount', { count: selectedStudents.length })}
+              {t('selectedCount', { count: formatNumber(selectedStudents.length, locale) })}
             </span>
             <select
               value={selectedSubject}
@@ -184,7 +184,9 @@ export default function PrintClient({
               {tStudents('printShowGroup')}
             </label>
           </div>
-          <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t('cardsPerPage')}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+            {t('cardsPerPage', { count: formatNumber(6, locale) })}
+          </p>
 
           {selectableStudents.length === 0 ? (
             <div className="text-center py-16">

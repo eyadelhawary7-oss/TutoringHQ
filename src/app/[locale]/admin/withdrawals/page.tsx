@@ -9,7 +9,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDateTime, formatNumber } from '@/lib/formatNumber';
 import { ArrowLeft, Wallet } from 'lucide-react';
 import { getTodayCairo } from '@/lib/cairoBillingCalendar';
 
@@ -190,10 +190,10 @@ export default function AdminWithdrawalsPage() {
             <div className="mb-6 rounded-xl border border-teal-500/30 bg-teal-950/20 p-4 dark:bg-teal-950/30">
               <p className="text-sm font-medium text-slate-800 dark:text-teal-100">
                 {t('summary', {
-                  quarter: String(quarter),
-                  year: String(year),
+                  quarter: formatNumber(quarter, locale),
+                  year: formatNumber(year, locale),
                   count: formatNumber(summaryCount, locale),
-                  sum: formatNumber(summarySum, locale),
+                  sum: formatCurrency(summarySum, locale),
                 })}
               </p>
             </div>

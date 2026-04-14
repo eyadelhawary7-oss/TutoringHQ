@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { CardOrderModal } from '@/components/CardOrderModal';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Student {
@@ -274,9 +274,9 @@ export default function OrdersPage() {
                         })}
                       </p>
                       <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                        {order.quantity}{' '}
+                        {formatNumber(order.quantity, locale)}{' '}
                         {order.quantity === 1 ? tOrders('card') : tOrders('cards')} · {t('orderTotal')}:{' '}
-                        {formatNumber(Number(order.total_amount), locale)} EGP
+                        {formatCurrency(Number(order.total_amount), locale)}
                       </p>
                     </div>
                     {expanded ? (
@@ -310,10 +310,10 @@ export default function OrdersPage() {
                         </div>
                       ) : null}
                       <p className="text-[var(--color-text-secondary)]">
-                        {t('pricePerCard')}: {pricePer} EGP
+                        {t('pricePerCard')}: {formatCurrency(Number(pricePer), locale)}
                       </p>
                       <p className="text-[var(--color-text-secondary)]">
-                        {t('deliveryFee')}: {formatNumber(deliveryFee, locale)} EGP
+                        {t('deliveryFee')}: {formatCurrency(deliveryFee, locale)}
                       </p>
                       {order.notes?.trim() ? (
                         <div>

@@ -9,7 +9,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Activity, ArrowLeft, AlertTriangle } from 'lucide-react';
-import { formatDateTime } from '@/lib/formatNumber';
+import { formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 type CronStatus = {
   path: string;
@@ -279,7 +279,7 @@ export default function AdminHealthPage() {
                               : 'text-slate-800 dark:text-white'
                         }`}
                       >
-                        {c.value}
+                        {formatNumber(Number(c.value), locale)}
                       </p>
                     </div>
                   );

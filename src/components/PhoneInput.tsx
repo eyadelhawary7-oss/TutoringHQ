@@ -10,9 +10,19 @@ interface PhoneInputProps {
   error?: string;
   /** Overrides default login.sendOTP label (e.g. forgot-password flow). */
   submitLabel?: string;
+  /** When set, overrides `login` namespace phone label/hint (e.g. forgot-password). */
+  phoneLabel?: string;
+  phoneHint?: string;
 }
 
-export default function PhoneInput({ onSubmit, isLoading, error, submitLabel }: PhoneInputProps) {
+export default function PhoneInput({
+  onSubmit,
+  isLoading,
+  error,
+  submitLabel,
+  phoneLabel: phoneLabelOverride,
+  phoneHint: phoneHintOverride,
+}: PhoneInputProps) {
   const t = useTranslations('login');
   const tc = useTranslations('common');
   const [phone, setPhone] = useState('');
@@ -45,7 +55,7 @@ export default function PhoneInput({ onSubmit, isLoading, error, submitLabel }: 
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="phone" className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">
-          {t('phoneLabel')}
+          {phoneLabelOverride ?? t('phoneLabel')}
         </label>
         <div className="relative" dir="ltr">
           <Phone size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-secondary)] pointer-events-none" />
@@ -69,7 +79,7 @@ export default function PhoneInput({ onSubmit, isLoading, error, submitLabel }: 
           </div>
         </div>
         <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-          {t('phoneHint', { defaultValue: 'Enter without the leading zero' })}
+          {phoneHintOverride ?? t('phoneHint')}
         </p>
         {(validationError || error) && (
           <p className="mt-2 text-sm" style={{ color: 'hsl(var(--destructive))' }}>

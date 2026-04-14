@@ -10,19 +10,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { ArrowLeft, Gift, CheckCircle } from 'lucide-react';
-import { formatDate, formatDateTime, formatNumber } from '@/lib/formatNumber';
-
-function quarterOptions(): { value: string; label: string }[] {
-  const out: { value: string; label: string }[] = [];
-  const d = new Date();
-  for (let i = 0; i < 5; i++) {
-    const y = d.getFullYear();
-    const q = Math.floor(d.getMonth() / 3) + 1;
-    out.push({ value: `${y}-Q${q}`, label: `Q${q} ${y}` });
-    d.setMonth(d.getMonth() - 3);
-  }
-  return out;
-}
+import { formatCurrency, formatDate, formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 function formatRatePct(row: {
   commission_rate: number | string | null;
@@ -84,12 +72,29 @@ export default function AdminReferralsPage() {
   const t = useTranslations('admin.referralsAdminPage');
   const tAdmin = useTranslations('admin');
   const tCommon = useTranslations('common');
+  const tStatus = useTranslations('status');
   const locale = useLocale();
   const router = useRouter();
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
 
-  const qOpts = useMemo(() => quarterOptions(), []);
+  const qOpts = useMemo(() => {
+    const out: { value: string; label: string }[] = [];
+    const d = new Date();
+    for (let i = 0; i < 5; i++) {
+      const y = d.getFullYear();
+      const q = Math.floor(d.getMonth() / 3) + 1;
+      out.push({
+        value: `${y}-Q${q}`,
+        label: t('quarterOptionLabel', {
+          quarter: formatNumber(q, locale),
+          year: formatNumber(y, locale),
+        }),
+      });
+      d.setMonth(d.getMonth() - 3);
+    }
+    return out;
+  }, [locale, t]);
   const defaultQuarter = qOpts[0]?.value ?? '';
 
   const [mainTab, setMainTab] = useState<'referrals' | 'commissions'>('referrals');
@@ -267,7 +272,19 @@ export default function AdminReferralsPage() {
     if (st === 'hold') return t('statusHold');
     if (st === 'withdrawable') return t('statusWithdrawable');
     if (st === 'forfeited') return t('statusForfeited');
+    if (st === 'pending') return tStatus('pending');
+    if (st === 'active') return tStatus('active');
+    if (st === 'paid') return tStatus('paid');
+    if (st === 'cancelled') return tStatus('cancelled');
+    if (st === 'suspended') return tStatus('suspended');
     return row.status ?? '-';
+  };
+
+  const referralRowStatusLabel = (raw: string) => {
+    const s = raw.toLowerCase();
+    if (s === 'active') return tStatus('active');
+    if (s === 'pending') return tStatus('pending');
+    return raw;
   };
 
   return (
@@ -367,7 +384,7 @@ export default function AdminReferralsPage() {
                                         : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]'
                                   }`}
                                 >
-                                  {r.status}
+                                  {referralRowStatusLabel(r.status)}
                                 </span>
                               </td>
                               <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
@@ -415,7 +432,7 @@ export default function AdminReferralsPage() {
                               </td>
                               <td className="py-3.5 px-4 font-mono text-sm text-[var(--color-text-primary)]">{p.code}</td>
                               <td className="py-3.5 px-4 font-mono font-bold text-teal-600">
-                                {formatNumber(p.amount, locale)} {tCommon('egp')}
+                                {formatCurrency(p.amount, locale)}
                               </td>
                               <td className="py-3.5 px-4">
                                 <button
@@ -470,8 +487,8 @@ export default function AdminReferralsPage() {
                   <p className="text-sm font-semibold text-slate-900 dark:text-teal-100 mb-2">
                     {!summary.quarterAll && summary.quarter != null && summary.year != null
                       ? t('commissionSummaryTitle', {
-                          quarter: String(summary.quarter),
-                          year: String(summary.year),
+                          quarter: formatNumber(summary.quarter, locale),
+                          year: formatNumber(summary.year, locale),
                         })
                       : t('commissionSummaryAll')}
                   </p>
@@ -479,13 +496,13 @@ export default function AdminReferralsPage() {
                     <p>
                       <span className="text-[var(--color-text-secondary)]">{t('totalOwed')}: </span>
                       <span className="font-mono font-semibold">
-                        {formatNumber(summary.totalOwed, locale)} {tCommon('egp')}
+                        {formatCurrency(summary.totalOwed, locale)}
                       </span>
                     </p>
                     <p>
                       <span className="text-[var(--color-text-secondary)]">{t('totalPaid')}: </span>
                       <span className="font-mono font-semibold">
-                        {formatNumber(summary.totalPaid, locale)} {tCommon('egp')}
+                        {formatCurrency(summary.totalPaid, locale)}
                       </span>
                     </p>
                     <p>
@@ -589,7 +606,7 @@ export default function AdminReferralsPage() {
                               </td>
                               <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{formatRatePct(row)}</td>
                               <td className="px-3 py-2 font-mono tabular-nums text-slate-800 dark:text-slate-200">
-                                {formatNumber(row.commission_amount, locale)} {tCommon('egp')}
+                                {formatCurrency(row.commission_amount, locale)}
                               </td>
                               <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{statusLabel(row)}</td>
                               <td className="px-3 py-2">

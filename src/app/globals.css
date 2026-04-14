@@ -1317,6 +1317,17 @@ html.light .text-white\/70 {
   color: var(--color-text-secondary) !important;
 }
 
+/* Light mode — slate muted text on white surfaces (Tailwind slate-* utilities) */
+html.light .text-slate-300,
+html.light [class*='text-slate-3'] {
+  color: var(--color-text-secondary) !important;
+}
+
+html.light .text-slate-400,
+html.light [class*='text-slate-4'] {
+  color: var(--color-text-muted) !important;
+}
+
 /* Signup (#080D14) — plan cards stay readable in html.light (text-white remap) */
 [data-chq-signup] .text-white,
 [data-chq-signup] .\!text-white {

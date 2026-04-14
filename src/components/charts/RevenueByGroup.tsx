@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
+import { formatCurrency } from '@/lib/formatNumber';
 import { BarChartComponent } from '@/components/charts';
 
 export interface RevenueByGroupProps {
@@ -9,7 +10,6 @@ export interface RevenueByGroupProps {
 
 export default function RevenueByGroup({ data = [] }: RevenueByGroupProps) {
   const locale = useLocale();
-  const tCommon = useTranslations('common');
   const tAnalytics = useTranslations('analytics');
 
   if (!data || !Array.isArray(data) || data.length < 2) {
@@ -38,7 +38,10 @@ export default function RevenueByGroup({ data = [] }: RevenueByGroupProps) {
       categoryKey="group_name"
       color="teal"
       height={Math.max(200, chartData.length * 36)}
-      suffix={` ${tCommon('egp')}`}
+      prefix=""
+      suffix=""
+      xTickFormatter={(v) => formatCurrency(Number(v), locale)}
+      tooltipValueFormatter={(v) => formatCurrency(v, locale)}
       rtl={locale === 'ar'}
     />
   );

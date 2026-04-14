@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import PrintClient, { type PrintStudentRow } from './PrintClient';
 
 export default async function PrintStudentsPage({
@@ -10,10 +10,7 @@ export default async function PrintStudentsPage({
 }) {
   const { locale } = await params;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
+  if (!supabaseAdmin) {
     redirect(`/${locale}/students`);
   }
 
@@ -25,10 +22,6 @@ export default async function PrintStudentsPage({
   if (!user) {
     redirect(`/${locale}/login`);
   }
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   const { data: userRow } = await supabaseAdmin
     .from('users')

@@ -434,7 +434,7 @@ export default function ReferralsPage() {
                 className="rounded-xl border border-slate-700 bg-[var(--color-surface-2)] p-4 flex flex-col gap-2"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-white text-sm font-bold shrink-0">
-                  {step.n}
+                  {formatNumber(step.n, locale)}
                 </div>
                 <p className="font-semibold text-slate-900 dark:text-white">{step.title}</p>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-snug">{step.desc}</p>

@@ -31,6 +31,8 @@ export interface AreaChartComponentProps {
   height?: number;
   prefix?: string;
   suffix?: string;
+  /** Full value line in tooltip (overrides prefix + formatNumber + suffix). */
+  tooltipValueFormatter?: (value: number) => string;
   xTickFormatter?: (v: string | number) => string;
   yTickFormatter?: (v: number) => string;
   tooltipLabelFormatter?: (v: string | number) => string;
@@ -46,6 +48,7 @@ export function AreaChartComponent({
   height = 200,
   prefix = '',
   suffix = '',
+  tooltipValueFormatter,
   xTickFormatter,
   yTickFormatter,
   tooltipLabelFormatter,
@@ -126,6 +129,7 @@ export function AreaChartComponent({
                 labelFormatter={tooltipLabelFormatter}
                 prefix={prefix}
                 suffix={suffix}
+                valueFormatter={tooltipValueFormatter ? (v) => tooltipValueFormatter(v) : undefined}
               />
             );
           }}

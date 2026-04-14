@@ -29,6 +29,8 @@ export interface DonutChartProps {
   outerRadius?: number;
   prefix?: string;
   suffix?: string;
+  /** Tooltip value line (overrides prefix + number + suffix). */
+  tooltipValueFormatter?: (value: number) => string;
   centerLabel?: string;
   centerValue?: string | number;
   /** Recharts <text> fill for the center amount (theme-aware). */
@@ -44,6 +46,7 @@ export function DonutChart({
   outerRadius = 80,
   prefix = '',
   suffix = '',
+  tooltipValueFormatter,
   centerLabel,
   centerValue,
   centerValueFill = 'var(--color-text-primary)',
@@ -127,6 +130,7 @@ export function DonutChart({
                 label={props.label}
                 prefix={prefix}
                 suffix={suffix}
+                valueFormatter={tooltipValueFormatter ? (v) => tooltipValueFormatter(v) : undefined}
               />
             );
           }}

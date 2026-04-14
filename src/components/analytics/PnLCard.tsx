@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Download } from 'lucide-react';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
 const AR_MONTHS: Record<string, string> = {
   '01': 'يناير', '02': 'فبراير', '03': 'مارس', '04': 'أبريل', '05': 'مايو', '06': 'يونيو',
@@ -18,7 +18,10 @@ export interface PnLCardProps {
 
 function formatMonth(key: string, locale: string): string {
   const [y, m] = key.split('-');
-  if (locale === 'ar') return `${AR_MONTHS[m ?? '01'] ?? m} ${y}`;
+  const yNum = parseInt(y ?? '0', 10);
+  if (locale === 'ar') {
+    return `${AR_MONTHS[m ?? '01'] ?? m} ${Number.isFinite(yNum) ? formatNumber(yNum, locale) : y ?? ''}`;
+  }
   const d = new Date(parseInt(y ?? '0', 10), parseInt(m ?? '1', 10) - 1, 1);
   return formatDate(d, locale, { month: 'short', year: 'numeric' });
 }
@@ -31,7 +34,6 @@ export default function PnLCard({
 }: PnLCardProps) {
   const t = useTranslations('analytics');
   const tCommon = useTranslations('common');
-  const egp = tCommon('egp');
 
   const totalIncome = pnlMonths.reduce((s, m) => s + (incomeByMonth[m] ?? 0), 0);
   const totalExpenses = pnlMonths.reduce((s, m) => {
@@ -101,15 +103,11 @@ export default function PnLCard({
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-xs text-[var(--color-text-muted)]">{t('income')}</p>
-            <p className="text-lg font-semibold text-green-400">
-              {formatNumber(totalIncome, locale)} {egp}
-            </p>
+            <p className="text-lg font-semibold text-green-400">{formatCurrency(totalIncome, locale)}</p>
           </div>
           <div>
             <p className="text-xs text-[var(--color-text-muted)]">{t('expenses')}</p>
-            <p className="text-lg font-semibold text-red-400">
-              {formatNumber(totalExpenses, locale)} {egp}
-            </p>
+            <p className="text-lg font-semibold text-red-400">{formatCurrency(totalExpenses, locale)}</p>
           </div>
           <div>
             <p className="text-xs text-[var(--color-text-muted)]">{t('net')}</p>
@@ -118,7 +116,7 @@ export default function PnLCard({
                 net >= 0 ? 'text-green-400' : 'text-red-400'
               }`}
             >
-              {formatNumber(net, locale)} {egp}
+              {formatCurrency(net, locale)}
             </p>
           </div>
         </div>
@@ -144,17 +142,17 @@ export default function PnLCard({
                     <tr key={m} className={`border-b border-[var(--color-border)] last:border-0 ${stripe}`}>
                       <td className="py-2.5 px-3 text-[var(--color-text-primary)]">{formatMonth(m, locale)}</td>
                       <td className="py-2.5 px-3 font-mono text-end text-green-400">
-                        {formatNumber(inc, locale)}
+                        {formatCurrency(inc, locale)}
                       </td>
                       <td className="py-2.5 px-3 font-mono text-end text-red-400">
-                        {formatNumber(exp, locale)}
+                        {formatCurrency(exp, locale)}
                       </td>
                       <td
                         className={`py-2.5 px-3 font-mono text-end ${
                           rowNet >= 0 ? 'text-green-400' : 'text-red-400'
                         }`}
                       >
-                        {formatNumber(rowNet, locale)}
+                        {formatCurrency(rowNet, locale)}
                       </td>
                     </tr>
                   );
