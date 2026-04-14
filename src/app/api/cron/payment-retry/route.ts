@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { createPaymentLink } from '@/lib/paymob';
 import { sendPaymentRetry } from '@/lib/centerNotify';
 import { FEATURES } from '@/lib/features';
+import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,6 @@ type CenterEmbed = {
   id: string;
   name: string | null;
   owner_name: string | null;
-  owner_phone: string | null;
   phone: string | null;
   plan: string | null;
   status: string | null;
@@ -81,7 +81,6 @@ export async function POST(request: Request) {
           id,
           name,
           owner_name,
-          owner_phone,
           phone,
           plan,
           status
@@ -106,6 +105,16 @@ export async function POST(request: Request) {
   let retried = 0;
   let skipped = 0;
 
+  const centerIds = [
+    ...new Set(
+      rows
+        .map((r) => embeddedCenter(r)?.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
+    ),
+  ];
+  const ownerByCenter = await ownerContactByCenterId(admin, centerIds);
+  const ownerPhoneCache = new Map<string, string | null>();
+
   for (const raw of rows) {
     const center = embeddedCenter(raw);
     if (!center || center.status !== 'active') {
@@ -119,7 +128,16 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const ownerPhone = (center.owner_phone ?? center.phone ?? '').trim();
+    const oc = ownerByCenter.get(center.id);
+    const ownerPhone = (
+      await resolveOwnerWaPhoneCached(
+        admin,
+        oc?.authId ?? null,
+        oc?.userPhone,
+        center.phone,
+        ownerPhoneCache,
+      )
+    )?.trim();
     if (!ownerPhone) {
       skipped += 1;
       continue;

@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { sendWeeklyReport } from '@/lib/centerNotify';
+import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -46,7 +47,6 @@ type CenterRow = {
   id: string;
   name: string | null;
   owner_name: string | null;
-  owner_phone: string | null;
   phone: string | null;
 };
 
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
 
   const { data: centerRows, error: centersErr } = await admin
     .from('centers')
-    .select('id, name, owner_name, owner_phone, phone')
+    .select('id, name, owner_name, phone')
     .eq('status', 'active');
 
   if (centersErr) {
@@ -91,8 +91,23 @@ export async function POST(request: Request) {
   let sent = 0;
   let skipped = 0;
 
+  const ownerByCenter = await ownerContactByCenterId(
+    admin,
+    centers.map((c) => c.id),
+  );
+  const ownerPhoneCache = new Map<string, string | null>();
+
   async function handleOne(center: CenterRow): Promise<void> {
-    const ownerPhone = (center.owner_phone ?? center.phone ?? '').trim();
+    const oc = ownerByCenter.get(center.id);
+    const ownerPhone = (
+      await resolveOwnerWaPhoneCached(
+        admin,
+        oc?.authId ?? null,
+        oc?.userPhone,
+        center.phone,
+        ownerPhoneCache,
+      )
+    )?.trim();
     if (!ownerPhone) {
       skipped += 1;
       return;

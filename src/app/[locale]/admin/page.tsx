@@ -1,7 +1,16 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense, useState, useEffect, useLayoutEffect, useCallback, useMemo, type ReactNode } from 'react';
+import {
+  Suspense,
+  Fragment,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useMemo,
+  type ReactNode,
+} from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useRouter, usePathname } from '@/i18n/routing';
@@ -532,13 +541,17 @@ function AdminPageContent() {
         setLoadError(err?.error || 'Failed to load');
         return;
       }
-      const data = await res.json();
-      setOverview(data);
+      const data = await res.json().catch(() => null);
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        setLoadError(tAdmin('overviewInvalidResponse', { defaultValue: 'Invalid overview response' }));
+        return;
+      }
+      setOverview(data as OverviewData);
       setLoadError(null);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Network error');
     }
-  }, [getSession, router]);
+  }, [getSession, router, tAdmin]);
 
   const loadCenters = useCallback(async () => {
     const session = await getSession();
@@ -556,8 +569,11 @@ function AdminPageContent() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) return;
-      const data = await res.json();
-      setCenters(data.centers ?? []);
+      const data = (await res.json().catch(() => ({}))) as {
+        centers?: unknown;
+        pagination?: { total_pages?: number };
+      };
+      setCenters(Array.isArray(data.centers) ? (data.centers as CenterRow[]) : []);
       const tp = data.pagination?.total_pages ?? 0;
       setCentersTotalPages(Math.max(1, tp || 1));
     } catch {
@@ -659,8 +675,11 @@ function AdminPageContent() {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (!res.ok) break;
-        const data = await res.json();
-        const batch = (data.centers ?? []) as CenterRow[];
+        const data = (await res.json().catch(() => ({}))) as {
+          centers?: unknown;
+          pagination?: { has_next?: boolean };
+        };
+        const batch = (Array.isArray(data.centers) ? data.centers : []) as CenterRow[];
         all.push(...batch);
         hasNext = Boolean(data.pagination?.has_next);
         pageNum += 1;
@@ -681,10 +700,14 @@ function AdminPageContent() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) return;
-      const data = await res.json();
-      setBillingData(data.centers || []);
-      setPaymentHistory(data.paymentHistory || []);
-      setPendingInvoices(data.pendingInvoices || []);
+      const data = (await res.json().catch(() => ({}))) as {
+        centers?: unknown;
+        paymentHistory?: unknown;
+        pendingInvoices?: unknown;
+      };
+      setBillingData(Array.isArray(data.centers) ? (data.centers as BillingRow[]) : []);
+      setPaymentHistory(Array.isArray(data.paymentHistory) ? data.paymentHistory : []);
+      setPendingInvoices(Array.isArray(data.pendingInvoices) ? data.pendingInvoices : []);
     } catch {
       // ignore
     }
@@ -698,8 +721,8 @@ function AdminPageContent() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) return;
-      const data = await res.json();
-      setPendingSignups(data.signups || []);
+      const data = (await res.json().catch(() => ({}))) as { signups?: unknown };
+      setPendingSignups(Array.isArray(data.signups) ? (data.signups as PendingSignup[]) : []);
     } catch {
       // ignore
     }
@@ -713,8 +736,8 @@ function AdminPageContent() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) return;
-      const data = await res.json();
-      setPlanRequests(data.requests || []);
+      const data = (await res.json().catch(() => ({}))) as { requests?: unknown };
+      setPlanRequests(Array.isArray(data.requests) ? (data.requests as PlanRequest[]) : []);
     } catch {
       // ignore
     }
@@ -728,8 +751,8 @@ function AdminPageContent() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) return;
-      const data = await res.json();
-      setInternalTeam(data.team || []);
+      const data = (await res.json().catch(() => ({}))) as { team?: unknown };
+      setInternalTeam(Array.isArray(data.team) ? (data.team as TeamMember[]) : []);
     } catch {
       // ignore
     }
@@ -743,8 +766,16 @@ function AdminPageContent() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) return;
-      const data = await res.json();
-      setCardOrders(data.orders || []);
+      const data = (await res.json().catch(() => ({}))) as { orders?: unknown };
+      const raw = Array.isArray(data.orders) ? data.orders : [];
+      setCardOrders(
+        raw
+          .filter((o) => o && typeof (o as AdminCardOrderRow).id === 'string' && (o as AdminCardOrderRow).id.length > 0)
+          .map((o) => {
+            const row = o as AdminCardOrderRow;
+            return { ...row, students: Array.isArray(row.students) ? row.students : [] };
+          }),
+      );
     } catch {
       // ignore
     }
@@ -1326,6 +1357,11 @@ function AdminPageContent() {
 
       {/* Main content */}
       <div className="flex-1 min-w-0 p-4 md:p-6 overflow-auto lg:ms-56">
+        {tab === 'overview' && !overview && !isLoading && (
+          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-8 text-center text-[var(--color-text-secondary)] text-sm">
+            {tAdmin('overviewUnavailable', { defaultValue: 'Overview data is not available. Try refreshing the page.' })}
+          </div>
+        )}
         {/* Overview */}
         {tab === 'overview' && overview && (
           <>
@@ -1541,7 +1577,7 @@ function AdminPageContent() {
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
                 <h3 className="font-bold text-[var(--color-text-primary)] mb-3">{tAdmin('recentActivity')}</h3>
                 <div className="space-y-3">
-                  {overview.recentActivity!.slice(0, 5).map((a, i) => (
+                  {(overview.recentActivity ?? []).slice(0, 5).map((a, i) => (
                     <div key={a.id || i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                       <span className="text-sm text-[var(--color-text-primary)]">
                         {activityActionLabel[a.action ?? ''] ?? formatActivitySummary(a.action || '', a.details, tAdmin)}
@@ -1907,7 +1943,14 @@ function AdminPageContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                    {billingData.map((b) => {
+                    {billingData.filter((b) => b && typeof b.id === 'string' && b.id.length > 0).length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 px-4 text-center text-[var(--color-text-secondary)] text-sm">
+                          {tAdmin('noBillingRows', { defaultValue: 'No billing records to show.' })}
+                        </td>
+                      </tr>
+                    ) : null}
+                    {billingData.filter((b) => b && typeof b.id === 'string' && b.id.length > 0).map((b) => {
                       const isPaid = b.billing_status === 'paid';
                       const nextDueStr = b.nextDue ?? b.next_payment_due ?? '';
                       const billingStatus = b.billing_status ?? b.status ?? 'active';
@@ -2041,9 +2084,11 @@ function AdminPageContent() {
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
                           {p.paid_at ? formatDate(p.paid_at, locale) : tCommon('notSet')}
                         </td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{p.centerName}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">
+                          {p.centerName ?? tCommon('notAvailable')}
+                        </td>
                         <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">
-                          {formatCurrency(p.amount, locale)}
+                          {formatCurrency(Number(p.amount ?? 0), locale)}
                         </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
                           {p.billing_period ?? tCommon('notSet')}
@@ -2077,9 +2122,20 @@ function AdminPageContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                    {planRequests.map((pr) => (
+                    {planRequests.filter((pr) => pr && typeof pr.id === 'string' && pr.id.length > 0).length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 px-4 text-center text-[var(--color-text-secondary)] text-sm">
+                          {tAdmin('noPlanRequests', { defaultValue: 'No plan requests.' })}
+                        </td>
+                      </tr>
+                    ) : null}
+                    {planRequests
+                      .filter((pr) => pr && typeof pr.id === 'string' && pr.id.length > 0)
+                      .map((pr) => (
                       <tr key={pr.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{pr.centerName}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">
+                          {pr.centerName ?? tCommon('notAvailable')}
+                        </td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
                             <PlanBadge plan={pr.current_plan} />
@@ -2221,17 +2277,25 @@ function AdminPageContent() {
                       };
                       const sc = statusColors[order.status] || statusColors.pending;
                       const isExpanded = expandedOrderId === order.id;
+                      const studentsSafe = Array.isArray(order.students) ? order.students : [];
                       return (
-                        <>
+                        <Fragment key={order.id}>
                           <tr
-                            key={order.id}
                             className="border-t border-border hover:bg-[var(--color-surface-0)] cursor-pointer"
                             onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
                           >
-                            <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">{order.id.slice(0, 8)}…</td>
-                            <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{order.center_name}</td>
-                            <td className="px-4 py-3 font-mono">{order.quantity}</td>
-                            <td className="px-4 py-3 font-mono font-bold">{formatCurrency(order.total_amount, locale)}</td>
+                            <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">
+                              {order.id && order.id.length >= 8
+                                ? `${order.id.slice(0, 8)}…`
+                                : (order.id || '—')}
+                            </td>
+                            <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">
+                              {order.center_name ?? tCommon('notAvailable')}
+                            </td>
+                            <td className="px-4 py-3 font-mono">{Number(order.quantity ?? 0)}</td>
+                            <td className="px-4 py-3 font-mono font-bold">
+                              {formatCurrency(Number(order.total_amount ?? 0), locale)}
+                            </td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${sc}`}>
                                 {order.status === 'pending'
@@ -2265,7 +2329,7 @@ function AdminPageContent() {
                                   <div>
                                     <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">{tAdmin('studentsInOrder', { defaultValue: 'Students' })}</p>
                                     <div className="flex flex-wrap gap-2">
-                                      {order.students.map((s) => (
+                                      {studentsSafe.map((s) => (
                                         <span key={s.id} className="px-2 py-1 rounded-lg bg-[var(--color-surface-0)] border border-border text-sm">
                                           {s.name}{' '}
                                           <span className="font-mono text-[var(--color-text-secondary)]">
@@ -2306,7 +2370,7 @@ function AdminPageContent() {
                                       </div>
                                       {order.center_phone && (
                                         <a
-                                          href={`https://wa.me/20${order.center_phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(tIdCards('whatsappOrderReadyMessage', { orderNumber: order.id.slice(0, 8) }))}`}
+                                          href={`https://wa.me/20${order.center_phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(tIdCards('whatsappOrderReadyMessage', { orderNumber: order.id.length >= 8 ? order.id.slice(0, 8) : order.id }))}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700"
@@ -2319,8 +2383,8 @@ function AdminPageContent() {
                                   <div className="pt-2">
                                     <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">{tAdmin('cardPreview', { defaultValue: 'Card Preview' })}</p>
                                     <CardOrderPreview
-                                      students={order.students}
-                                      centerName={order.center_name}
+                                      students={studentsSafe}
+                                      centerName={order.center_name ?? ''}
                                       centerLogo={order.center_logo_url ?? null}
                                     />
                                   </div>
@@ -2328,7 +2392,7 @@ function AdminPageContent() {
                               </td>
                             </tr>
                           )}
-                        </>
+                        </Fragment>
                       );
                     })}
                     {cardOrders.length === 0 && (
@@ -2362,7 +2426,16 @@ function AdminPageContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                  {internalTeam.map((m) => (
+                  {internalTeam.filter((m) => m && typeof m.id === 'string' && m.id.length > 0).length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 px-4 text-center text-[var(--color-text-secondary)] text-sm">
+                        {tAdmin('noTeamMembers', { defaultValue: 'No team members loaded.' })}
+                      </td>
+                    </tr>
+                  ) : null}
+                  {internalTeam
+                    .filter((m) => m && typeof m.id === 'string' && m.id.length > 0)
+                    .map((m) => (
                     <tr key={m.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{m.name}</td>
                       <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">

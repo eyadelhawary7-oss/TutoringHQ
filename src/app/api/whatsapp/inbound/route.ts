@@ -129,7 +129,7 @@ async function resolveCenterForInbound(
   const { data: centerRow, error: cErr } = await admin
     .from('centers')
     .select('id')
-    .or(`owner_phone.ilike.${pattern},phone.ilike.${pattern}`)
+    .ilike('phone', pattern)
     .limit(1)
     .maybeSingle();
   if (cErr) {

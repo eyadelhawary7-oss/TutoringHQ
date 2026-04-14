@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { sendOnboardingNudge } from '@/lib/centerNotify';
 import { getOnboardingStep } from '@/lib/onboardingStatus';
+import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,6 @@ const CRON_NAME = 'onboarding-stall';
 type CenterStallRow = {
   id: string;
   owner_name: string | null;
-  owner_phone: string | null;
   phone: string | null;
   name: string | null;
   onboarding_step: number | null;
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   const { data: candidates, error: qErr } = await admin
     .from('centers')
     .select(
-      'id, owner_name, owner_phone, phone, name, onboarding_step, onboarding_nudge_sent_at, onboarding_step_updated_at',
+      'id, owner_name, phone, name, onboarding_step, onboarding_nudge_sent_at, onboarding_step_updated_at',
     )
     .eq('status', 'active')
     .eq('onboarding_completed', false)
@@ -67,6 +67,12 @@ export async function POST(request: Request) {
   }
 
   const stalled = ((candidates ?? []) as CenterStallRow[]).filter((r) => isStalled(r, now));
+
+  const ownerByCenter = await ownerContactByCenterId(
+    admin,
+    stalled.map((r) => r.id),
+  );
+  const ownerPhoneCache = new Map<string, string | null>();
 
   let nudgesSent = 0;
   let completed = 0;
@@ -100,13 +106,22 @@ export async function POST(request: Request) {
 
     if (step < 1 || step > 4) continue;
 
+    const oc = ownerByCenter.get(row.id);
+    const ownerPhone = await resolveOwnerWaPhoneCached(
+      admin,
+      oc?.authId ?? null,
+      oc?.userPhone,
+      row.phone,
+      ownerPhoneCache,
+    );
+
     let sendRes: { success?: boolean; skipped?: boolean; error?: boolean };
     try {
       sendRes = await sendOnboardingNudge(
         admin,
         row.id,
         step as 1 | 2 | 3 | 4,
-        row.owner_phone ?? row.phone,
+        ownerPhone,
         row.name ?? '',
       );
     } catch (e) {

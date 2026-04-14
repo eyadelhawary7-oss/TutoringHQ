@@ -13,6 +13,7 @@ import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-acce
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
+import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 
 function calendarAddDays(baseYmd: string, delta: number): string {
   const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
@@ -100,12 +101,45 @@ async function enrichCentersList(
 
   const { data: owners } = await adminClient
     .from('users')
-    .select('center_id, phone')
+    .select('id, center_id, phone')
     .eq('role', 'owner')
     .in('center_id', centerIds);
-  const ownerMap = new Map(
-    (owners || []).map((o: { center_id: string; phone?: string }) => [o.center_id, { name: o.phone, phone: o.phone }]),
+  const ownerRowByCenter = new Map<string, { id: string; phone: string | null }>();
+  for (const row of (owners || []) as { id: string; center_id: string | null; phone: string | null }[]) {
+    if (row.center_id && !ownerRowByCenter.has(row.center_id)) {
+      ownerRowByCenter.set(row.center_id, { id: row.id, phone: row.phone ?? null });
+    }
+  }
+  const uniqueOwnerAuthIds = [...new Set(Array.from(ownerRowByCenter.values()).map((v) => v.id))];
+  const waPhoneByAuthId = new Map<string, string | null>();
+  await Promise.all(
+    uniqueOwnerAuthIds.map(async (authId) => {
+      try {
+        const { data, error } = await adminClient.auth.admin.getUserById(authId);
+        if (error || !data?.user?.email) {
+          waPhoneByAuthId.set(authId, null);
+          return;
+        }
+        waPhoneByAuthId.set(authId, phoneFromCenterhqAuthEmail(data.user.email));
+      } catch {
+        waPhoneByAuthId.set(authId, null);
+      }
+    }),
   );
+  const centerById = new Map(centers.map((c) => [String((c as { id: string }).id), c as Record<string, unknown>]));
+  const ownerMap = new Map<string, { name: string; phone: string | null }>();
+  for (const [cid, row] of ownerRowByCenter) {
+    const fromAuth = waPhoneByAuthId.get(row.id) ?? null;
+    const phone =
+      (fromAuth && fromAuth.length > 0 ? fromAuth : null) ?? (row.phone && row.phone.trim() ? row.phone : null);
+    const cr = centerById.get(cid) as { owner_name?: string | null } | undefined;
+    const dispName =
+      (cr?.owner_name && String(cr.owner_name).trim()) ||
+      (row.phone && String(row.phone).trim()) ||
+      (phone && String(phone).trim()) ||
+      '—';
+    ownerMap.set(cid, { name: dispName, phone });
+  }
 
   const lastPaymentByCenter: Record<string, string> = {};
   const { data: latestPayments } = await adminClient

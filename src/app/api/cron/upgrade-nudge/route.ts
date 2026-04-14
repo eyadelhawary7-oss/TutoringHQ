@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { sendUpgradeNudge } from '@/lib/centerNotify';
+import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { formatNumber } from '@/lib/formatNumber';
 
@@ -47,7 +48,6 @@ type CenterRow = {
   name: string | null;
   plan: string | null;
   owner_name: string | null;
-  owner_phone: string | null;
   phone: string | null;
   upgrade_nudge_sent_at: string | null;
 };
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
 
   const { data: centerRows, error: cErr } = await admin
     .from('centers')
-    .select('id, name, plan, owner_name, owner_phone, phone, upgrade_nudge_sent_at')
+    .select('id, name, plan, owner_name, phone, upgrade_nudge_sent_at')
     .eq('status', 'active');
 
   if (cErr) {
@@ -88,6 +88,12 @@ export async function POST(request: Request) {
 
   const centers = (centerRows ?? []) as CenterRow[];
   const eligible = centers.filter((c) => !isExcludedPlan(normalizePlanKey(c.plan)));
+
+  const ownerByCenter = await ownerContactByCenterId(
+    admin,
+    eligible.map((c) => c.id),
+  );
+  const ownerPhoneCache = new Map<string, string | null>();
 
   const { data: studentRows, error: sErr } = await admin
     .from('students')
@@ -129,7 +135,14 @@ export async function POST(request: Request) {
     const last = c.upgrade_nudge_sent_at ? new Date(c.upgrade_nudge_sent_at).getTime() : null;
     if (last != null && now - last < THIRTY_DAYS_MS) continue;
 
-    const ownerPhone = c.owner_phone ?? c.phone;
+    const oc = ownerByCenter.get(c.id);
+    const ownerPhone = await resolveOwnerWaPhoneCached(
+      admin,
+      oc?.authId ?? null,
+      oc?.userPhone,
+      c.phone,
+      ownerPhoneCache,
+    );
     let sendRes: { success?: boolean; skipped?: boolean; error?: boolean };
     try {
       sendRes = await sendUpgradeNudge(

@@ -3,7 +3,7 @@
  * Executes WhatsApp sends and admin_alerts inserts via churnDetection flows
  */
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import {
   sendDay3InactivityAlert,
@@ -12,6 +12,7 @@ import {
 } from '@/lib/whatsapp/flows/churnDetection';
 import { runChqInactivityAlertTemplates, sendInactivityAlert } from '@/lib/centerNotify';
 import { tCronBackup } from '@/lib/cronBackupI18n';
+import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ async function runNoLoginReengagement14d(admin: SupabaseClient): Promise<number>
 
   const { data: centers, error: cErr } = await admin
     .from('centers')
-    .select('id, name, owner_name, owner_phone, phone')
+    .select('id, name, owner_name, phone')
     .eq('status', 'active');
 
   if (cErr) {
@@ -61,7 +62,6 @@ async function runNoLoginReengagement14d(admin: SupabaseClient): Promise<number>
       id: string;
       name: string | null;
       owner_name: string | null;
-      owner_phone: string | null;
       phone: string | null;
     };
 
@@ -95,7 +95,8 @@ async function runNoLoginReengagement14d(admin: SupabaseClient): Promise<number>
       ? Math.floor((Date.now() - new Date(lastSignIn).getTime()) / MS_PER_DAY)
       : 999;
 
-    const ownerPhone = c.owner_phone ?? ow.phone ?? c.phone;
+    const ownerPhone =
+      phoneFromCenterhqAuthEmail(authData.user.email) ?? ow.phone ?? c.phone;
 
     const sendRes = await sendInactivityAlert(
       admin,
@@ -140,19 +141,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json({ success: false }, { status: 200 });
+  if (!supabaseAdmin) {
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = supabaseAdmin;
 
-  const reAdmin = supabaseAdmin ?? supabase;
-
-  const { data: pausedRow } = await supabase
+  const { data: pausedRow } = await admin
     .from('platform_config')
     .select('value')
     .eq('key', 'cron_paused')
@@ -195,20 +190,20 @@ export async function POST(request: Request) {
 
     let inactivityTemplateSent = 0;
     try {
-      inactivityTemplateSent = await runChqInactivityAlertTemplates(supabase);
+      inactivityTemplateSent = await runChqInactivityAlertTemplates(admin);
     } catch (err) {
       console.error('[detect-churn] runChqInactivityAlertTemplates:', err);
     }
 
     let reengagementSent = 0;
     try {
-      reengagementSent = await runNoLoginReengagement14d(reAdmin);
+      reengagementSent = await runNoLoginReengagement14d(admin);
     } catch (err) {
       console.error('[detect-churn] runNoLoginReengagement14d:', err);
     }
 
     if (actions.length === 0) {
-      await supabase.from('cron_log').insert({
+      await admin.from('cron_log').insert({
         cron_name: CRON_NAME,
         status: 'success',
         duration_ms: Date.now() - cronStart,
@@ -216,16 +211,14 @@ export async function POST(request: Request) {
         metadata: { inactivityTemplateSent, reengagementSent },
       });
       try {
-        if (supabaseAdmin) {
-          await supabaseAdmin.from('cron_health_log').upsert(
-            {
-              cron_name: 'detect-churn',
-              last_success_at: new Date().toISOString(),
-              failure_count: 0,
-            },
-            { onConflict: 'cron_name' },
-          );
-        }
+        await admin.from('cron_health_log').upsert(
+          {
+            cron_name: 'detect-churn',
+            last_success_at: new Date().toISOString(),
+            failure_count: 0,
+          },
+          { onConflict: 'cron_name' },
+        );
       } catch (healthLogErr) {
         console.error('[detect-churn] cron_health_log:', healthLogErr);
       }
@@ -328,7 +321,7 @@ export async function POST(request: Request) {
 
     const processed = results.filter((r) => r.success).length;
 
-    await supabase.from('cron_log').insert({
+    await admin.from('cron_log').insert({
       cron_name: CRON_NAME,
       status: 'success',
       duration_ms: Date.now() - cronStart,
@@ -337,16 +330,14 @@ export async function POST(request: Request) {
     });
 
     try {
-      if (supabaseAdmin) {
-        await supabaseAdmin.from('cron_health_log').upsert(
-          {
-            cron_name: 'detect-churn',
-            last_success_at: new Date().toISOString(),
-            failure_count: 0,
-          },
-          { onConflict: 'cron_name' },
-        );
-      }
+      await admin.from('cron_health_log').upsert(
+        {
+          cron_name: 'detect-churn',
+          last_success_at: new Date().toISOString(),
+          failure_count: 0,
+        },
+        { onConflict: 'cron_name' },
+      );
     } catch (healthLogErr) {
       console.error('[detect-churn] cron_health_log:', healthLogErr);
     }
@@ -361,7 +352,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error(`[${CRON_NAME}] Error:`, error);
     try {
-      await supabase.from('cron_log').insert({
+      await admin.from('cron_log').insert({
         cron_name: CRON_NAME,
         status: 'failure',
         duration_ms: Date.now() - cronStart,

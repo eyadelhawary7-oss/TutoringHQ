@@ -15,7 +15,6 @@ const INVOICE_TYPES = ['subscription', 'signup_first_payment', 'pack_billing'] a
 
 type CenterEmbed = {
   name: string | null;
-  owner_phone: string | null;
   phone: string | null;
 };
 
@@ -68,7 +67,7 @@ export async function POST(request: Request) {
 
   const { data: rawRows, error: invErr } = await admin
     .from('invoices')
-    .select('id, invoice_number, due_date, invoice_type, created_at, center_id, centers(name, owner_phone, phone)')
+    .select('id, invoice_number, due_date, invoice_type, created_at, center_id, centers(name, phone)')
     .eq('status', 'pending')
     .lte('due_date', today)
     .lt('created_at', twoHoursAgo)
