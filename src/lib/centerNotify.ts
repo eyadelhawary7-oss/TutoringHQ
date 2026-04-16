@@ -1335,6 +1335,7 @@ export async function sendParentTermSummary(
  * Stub only: do not call from routes until SIM is live.
  */
 export async function sendPinDelivery(phone: string, otpCode: string): Promise<boolean> {
+  // TODO: Wire to PIN reset flow after Vodafone SIM activated
   try {
     if (shouldSkipWaForTestPhoneId()) return false;
     const supabase = serviceSupabase();
