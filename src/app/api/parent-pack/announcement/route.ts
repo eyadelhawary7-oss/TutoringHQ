@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendTemplateMessage } from '@/lib/whatsapp/client';
+import { sendParentAnnouncementOps, sendParentAnnouncementPromo } from '@/lib/centerNotify';
 import {
   BLAST_BASE_PER_PARENT,
   BLAST_PRICE_PER_PARENT,
@@ -144,12 +144,14 @@ export async function POST(request: NextRequest) {
   }
 
   const centerName = center.name ?? '';
+  const msgBody = body.message.trim();
   for (const p of parents ?? []) {
     if (!p.parent_phone) continue;
-    await sendTemplateMessage(centerId, p.parent_phone, templateName, {
-      '1': centerName,
-      '2': body.message.trim(),
-    });
+    if (body.blast_type === 'promo') {
+      await sendParentAnnouncementPromo(p.parent_phone, centerName, msgBody);
+    } else {
+      await sendParentAnnouncementOps(p.parent_phone, centerName, msgBody);
+    }
   }
 
   return NextResponse.json({

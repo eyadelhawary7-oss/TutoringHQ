@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { requireSuperAdminRow } from '@/lib/admin-access';
-import { sendFreeformMessage } from '@/lib/whatsapp/client';
+import { sendWithdrawalProcessed } from '@/lib/centerNotify';
 import { formatNumber } from '@/lib/formatNumber';
+import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 
 const WA_AR = 'ar';
 
@@ -108,16 +109,24 @@ export async function PATCH(
 
     const { data: center } = await auth.supabaseAdmin
       .from('centers')
-      .select('phone')
+      .select('phone, owner_name, name')
       .eq('id', w.center_id)
       .maybeSingle();
 
-    const phone = String((center as { phone?: string | null } | null)?.phone ?? '').trim();
-    if (phone) {
-      const cashStr = formatNumber(cashAmount, WA_AR);
-      const msg = `تم معالجة طلب سحب رصيدك. ستصل ${cashStr} جنيه على رقم ${instapay || '—'} خلال 24 ساعة.`;
+    const cRow = center as { phone?: string | null; owner_name?: string | null; name?: string | null } | null;
+    const ownerMap = await ownerContactByCenterId(auth.supabaseAdmin, [w.center_id]);
+    const oc = ownerMap.get(w.center_id);
+    const ownerPhone = await resolveOwnerWaPhone(
+      auth.supabaseAdmin,
+      oc?.authId ?? null,
+      oc?.userPhone,
+      cRow?.phone,
+    );
+    if (ownerPhone) {
+      const ownerName = (cRow?.owner_name ?? '').trim() || (cRow?.name ?? '').trim() || '—';
+      const note = notesUpdate ?? `إنستاباي: ${instapay || '—'}`;
       try {
-        await sendFreeformMessage(w.center_id, phone, msg);
+        await sendWithdrawalProcessed(ownerPhone, ownerName, 'قبول', cashAmount, note);
       } catch (e) {
         console.error('[admin/withdrawals] mark_paid WA:', e);
       }
@@ -154,16 +163,24 @@ export async function PATCH(
 
   const { data: center } = await auth.supabaseAdmin
     .from('centers')
-    .select('phone')
+    .select('phone, owner_name, name')
     .eq('id', w.center_id)
     .maybeSingle();
 
-  const phone = String((center as { phone?: string | null } | null)?.phone ?? '').trim();
-  if (phone) {
-    const cr = formatNumber(credits, WA_AR);
-    const msg = `عذراً، تم رفض طلب سحب رصيدك. تم إعادة ${cr} نقطة لرصيدك.`;
+  const cRow2 = center as { phone?: string | null; owner_name?: string | null; name?: string | null } | null;
+  const ownerMap2 = await ownerContactByCenterId(auth.supabaseAdmin, [w.center_id]);
+  const oc2 = ownerMap2.get(w.center_id);
+  const ownerPhone2 = await resolveOwnerWaPhone(
+    auth.supabaseAdmin,
+    oc2?.authId ?? null,
+    oc2?.userPhone,
+    cRow2?.phone,
+  );
+  if (ownerPhone2) {
+    const ownerName = (cRow2?.owner_name ?? '').trim() || (cRow2?.name ?? '').trim() || '—';
+    const note = notesUpdate ?? formatNumber(credits, WA_AR) + ' نقطة أُعيدت للرصيد';
     try {
-      await sendFreeformMessage(w.center_id, phone, msg);
+      await sendWithdrawalProcessed(ownerPhone2, ownerName, 'رفض', credits, note);
     } catch (e) {
       console.error('[admin/withdrawals] reject WA:', e);
     }

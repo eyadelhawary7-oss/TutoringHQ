@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
+import { sendReferralCommission } from '@/lib/centerNotify';
+import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -32,15 +33,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseServiceKey) {
+  if (!supabaseAdmin) {
     return NextResponse.json({ success: false, error: tCronBackup('errorServerMisconfigured') }, { status: 500 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supabase = supabaseAdmin;
 
   const now = new Date();
   const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -61,6 +58,7 @@ export async function GET(request: Request) {
       referred_first_paid_at,
       referred_center:centers!referrals_referred_center_id_fkey(
         id,
+        name,
         plan,
         all_in_price,
         billing_status,
@@ -92,6 +90,7 @@ export async function GET(request: Request) {
     try {
       const referred = row.referred_center as {
         id: string;
+        name: string | null;
         plan: string;
         all_in_price: number | string | null;
         billing_status: string | null;
@@ -182,6 +181,44 @@ export async function GET(request: Request) {
       }
       if (monthNumber === 1) {
         await supabase.from('referrals').update({ status: 'active' }).eq('id', row.id as string);
+      }
+      if (commission_amount > 0) {
+        try {
+          const referredName = String(referred.name ?? '').trim() || '—';
+          const { data: sumRows } = await supabase
+            .from('referral_commissions')
+            .select('commission_amount')
+            .eq('referrer_center_id', row.referrer_center_id as string)
+            .in('status', ['hold', 'withdrawable']);
+          const totalBalance = (sumRows ?? []).reduce(
+            (s, r) => s + Number((r as { commission_amount?: number | string | null }).commission_amount ?? 0),
+            0,
+          );
+          const { data: refOwnerCenter } = await supabase
+            .from('centers')
+            .select('owner_name, name, phone')
+            .eq('id', row.referrer_center_id as string)
+            .maybeSingle();
+          const rc = refOwnerCenter as {
+            owner_name?: string | null;
+            name?: string | null;
+            phone?: string | null;
+          } | null;
+          const ownerMap = await ownerContactByCenterId(supabase, [row.referrer_center_id as string]);
+          const oc = ownerMap.get(row.referrer_center_id as string);
+          const ownerPhone = await resolveOwnerWaPhone(
+            supabase,
+            oc?.authId ?? null,
+            oc?.userPhone,
+            rc?.phone,
+          );
+          if (ownerPhone) {
+            const ownerName = (rc?.owner_name ?? '').trim() || (rc?.name ?? '').trim() || '—';
+            await sendReferralCommission(ownerPhone, ownerName, referredName, commission_amount, totalBalance);
+          }
+        } catch (waErr) {
+          console.error('[referral-automation] referral WA:', refId, waErr);
+        }
       }
       created++;
     } catch (err) {

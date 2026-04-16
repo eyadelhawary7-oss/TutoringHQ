@@ -1,18 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import arMessages from '../../messages/ar.json';
 import { generateOrderPdf, type GeneratePdfInput } from '@/lib/generateOrderPdf';
 import { uploadOrderPdf } from '@/lib/pdfStorage';
 import { notifyAdminOfVendorFailure } from '@/lib/notifyAdminFailure';
-
-function getSupabaseAdmin(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+import { sendVendorNewOrder } from '@/lib/centerNotify';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 function interpolate(template: string, vars: Record<string, string | number>): string {
   let s = template;
@@ -94,7 +85,6 @@ function buildFallbackBodyText(
 
 export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
   try {
-    const supabaseAdmin = getSupabaseAdmin();
     if (!supabaseAdmin) {
       console.warn('[vendorNotify] Missing Supabase admin');
       return;
@@ -107,18 +97,6 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
       .maybeSingle();
 
     if (existing && (existing as { vendor_sent_at?: string | null }).vendor_sent_at) {
-      return;
-    }
-
-    const { data: vendor } = await supabaseAdmin
-      .from('vendors')
-      .select('id, name, whatsapp_number')
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
-
-    if (!vendor?.whatsapp_number) {
-      console.warn('[vendorNotify] No active vendor configured');
       return;
     }
 
@@ -142,6 +120,43 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
     const notesVal =
       order.notes != null && String(order.notes).trim() !== '' ? String(order.notes) : null;
 
+    const notesForTemplate =
+      order.notes != null && String(order.notes).trim() !== '' ? String(order.notes) : 'لا يوجد';
+
+    let skipLegacyVendorMessage = false;
+    if (process.env.VENDOR_WHATSAPP_NUMBER?.trim()) {
+      try {
+        const ok = await sendVendorNewOrder(
+          ref,
+          Number(order.quantity ?? 0),
+          notesForTemplate === 'لا يوجد' ? '' : notesForTemplate,
+        );
+        if (ok) skipLegacyVendorMessage = true;
+      } catch (e) {
+        console.error('[vendorNotify] sendVendorNewOrder:', e);
+      }
+    }
+
+    const { data: vendor } = await supabaseAdmin
+      .from('vendors')
+      .select('id, name, whatsapp_number')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (!skipLegacyVendorMessage && !vendor?.whatsapp_number) {
+      console.warn('[vendorNotify] No active vendor configured');
+      return;
+    }
+
+    const to = String(
+      (vendor?.whatsapp_number ?? process.env.VENDOR_WHATSAPP_NUMBER ?? '') as string,
+    ).replace(/[^0-9]/g, '');
+    if (!to) {
+      console.warn('[vendorNotify] No vendor WhatsApp recipient');
+      return;
+    }
+
     const phoneNumberId = process.env.PHONE_NUMBER_ID;
     const waToken = process.env.WHATSAPP_TOKEN;
     if (!phoneNumberId || !waToken) {
@@ -154,72 +169,75 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
       Authorization: `Bearer ${waToken}`,
       'Content-Type': 'application/json',
     };
-    const to = String(vendor.whatsapp_number).replace(/[^0-9]/g, '');
 
     const templateName = process.env.WHATSAPP_VENDOR_TEMPLATE_NAME?.trim();
-    const notesForTemplate =
-      order.notes != null && String(order.notes).trim() !== ''
-        ? String(order.notes)
-        : 'لا يوجد';
+    const notesTplLegacy =
+      order.notes != null && String(order.notes).trim() !== '' ? String(order.notes) : 'لا يوجد';
 
-    const primaryBody = templateName
-      ? JSON.stringify({
-          messaging_product: 'whatsapp',
-          to,
-          type: 'template',
-          template: {
-            name: templateName,
-            language: { code: 'ar' },
-            components: [
-              {
-                type: 'body',
-                parameters: [
-                  { type: 'text', text: ref },
-                  { type: 'text', text: String(order.quantity ?? 0) },
-                  { type: 'text', text: notesForTemplate },
-                ],
-              },
-              {
-                type: 'button',
-                sub_type: 'quick_reply',
-                index: '0',
-                parameters: [{ type: 'payload', payload: readyButtonId }],
-              },
-            ],
-          },
-        })
-      : (() => {
-          const x = vn();
-          return JSON.stringify({
+    let primaryBody: string | null = null;
+    if (!skipLegacyVendorMessage) {
+      primaryBody = templateName
+        ? JSON.stringify({
             messaging_product: 'whatsapp',
             to,
-            type: 'interactive',
-            interactive: {
-              type: 'button',
-              body: {
-                text: buildInteractiveBodyText(ref, Number(order.quantity ?? 0), centerName, notesVal),
-              },
-              footer: {
-                text: x.platformFooter,
-              },
-              action: {
-                buttons: [
-                  {
-                    type: 'reply',
-                    reply: {
-                      id: readyButtonId,
-                      title: x.buttonTitle,
-                    },
-                  },
-                ],
-              },
+            type: 'template',
+            template: {
+              name: templateName,
+              language: { code: 'ar' },
+              components: [
+                {
+                  type: 'body',
+                  parameters: [
+                    { type: 'text', text: ref },
+                    { type: 'text', text: String(order.quantity ?? 0) },
+                    { type: 'text', text: notesTplLegacy },
+                  ],
+                },
+                {
+                  type: 'button',
+                  sub_type: 'quick_reply',
+                  index: '0',
+                  parameters: [{ type: 'payload', payload: readyButtonId }],
+                },
+              ],
             },
-          });
-        })();
+          })
+        : (() => {
+            const x = vn();
+            return JSON.stringify({
+              messaging_product: 'whatsapp',
+              to,
+              type: 'interactive',
+              interactive: {
+                type: 'button',
+                body: {
+                  text: buildInteractiveBodyText(ref, Number(order.quantity ?? 0), centerName, notesVal),
+                },
+                footer: {
+                  text: x.platformFooter,
+                },
+                action: {
+                  buttons: [
+                    {
+                      type: 'reply',
+                      reply: {
+                        id: readyButtonId,
+                        title: x.buttonTitle,
+                      },
+                    },
+                  ],
+                },
+              },
+            });
+          })();
+    }
 
-    const res = await fetch(waUrl, { method: 'POST', headers, body: primaryBody });
+    let res: Response | null = null;
+    if (primaryBody) {
+      res = await fetch(waUrl, { method: 'POST', headers, body: primaryBody });
+    }
 
-    if (!res.ok) {
+    if (primaryBody && res && !res.ok) {
       const fallbackText = buildFallbackBodyText(
         ref,
         Number(order.quantity ?? 0),
@@ -261,13 +279,15 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
         return;
       }
       console.warn('[vendorNotify] Sent plain text fallback for', ref);
-    } else {
+    } else if (primaryBody && res?.ok) {
       console.info(
         templateName
           ? '[vendorNotify] Sent WhatsApp template for'
           : '[vendorNotify] Sent interactive button for',
         ref,
       );
+    } else if (skipLegacyVendorMessage) {
+      console.info('[vendorNotify] Sent chq_vendor_new_order template for', ref);
     }
 
     const { data: pdfOrderData } = await supabaseAdmin
@@ -363,7 +383,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
     const { error: upErr } = await supabaseAdmin
       .from('card_orders')
       .update({
-        vendor_id: vendor.id,
+        vendor_id: vendor?.id ?? null,
         vendor_sent_at: new Date().toISOString(),
         vendor_notify_failed: vendorNotifyFailed,
       })

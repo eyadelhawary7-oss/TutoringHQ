@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { dateInNDays } from '@/lib/parentPack';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 const PLATFORM_URL = 'https://centerhq.app';
 
@@ -51,6 +52,58 @@ function waPhoneNumberId(): string | null {
 
 function waToken(): string | null {
   return process.env.WHATSAPP_TOKEN || null;
+}
+
+/** Meta test / sandbox phone number ID: do not send production freeform messages. */
+const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
+
+const TEMPLATE_ONBOARDING_STEP2 = 'chq_onboarding_step2';
+const TEMPLATE_ONBOARDING_STEP3 = 'chq_onboarding_step3';
+const TEMPLATE_ONBOARDING_STEP4 = 'chq_onboarding_step4';
+const TEMPLATE_TEAM_INVITE = 'chq_team_invite';
+const TEMPLATE_ORDER_SHIPPED = 'chq_order_shipped';
+const TEMPLATE_REFERRAL_COMMISSION = 'chq_referral_commission';
+const TEMPLATE_WITHDRAWAL_PROCESSED = 'chq_withdrawal_processed';
+const TEMPLATE_VENDOR_NEW_ORDER = 'chq_vendor_new_order';
+const TEMPLATE_PARENT_ANNOUNCEMENT_PROMO = 'chq_parent_announcement_promo';
+const TEMPLATE_PARENT_ANNOUNCEMENT_OPS = 'chq_parent_announcement_ops';
+const TEMPLATE_PARENT_TERM_SUMMARY = 'chq_parent_term_summary';
+const TEMPLATE_PIN_DELIVERY = 'chq_pin_delivery';
+
+function serviceSupabase(): SupabaseClient | null {
+  return supabaseAdmin;
+}
+
+async function waSendingEnabled(supabase: SupabaseClient): Promise<boolean> {
+  const { data: cfg } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  return cfg?.value !== false;
+}
+
+/** Meta test / sandbox phone number ID: skip production template sends. */
+function shouldSkipWaForTestPhoneId(): boolean {
+  const phoneId = waPhoneNumberId();
+  return !phoneId || phoneId === WHATSAPP_META_TEST_PHONE_NUMBER_ID;
+}
+
+async function canSendApprovedTemplate(
+  supabase: SupabaseClient,
+  templateName: string,
+): Promise<boolean> {
+  if (!(await waSendingEnabled(supabase))) return false;
+  const approved = await isTemplateApproved(templateName, supabase);
+  if (!approved) {
+    console.warn(`[centerNotify] Skipping ${templateName} — not approved`);
+    return false;
+  }
+  return true;
+}
+
+function onboardingTemplateLang(_locale?: string): 'ar_EG' {
+  return 'ar_EG';
 }
 
 function digitsOnly(phone: string): string {
@@ -108,9 +161,6 @@ async function postWhatsappTemplate(opts: {
     return false;
   }
 }
-
-/** Meta test / sandbox phone number ID: do not send production freeform messages. */
-const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
 
 async function postWhatsappTextMessage(opts: { toDigits: string; body: string }): Promise<boolean> {
   const phoneId = waPhoneNumberId();
@@ -951,6 +1001,357 @@ export async function sendOnboardingStep1Template(
   } catch (err) {
     console.error(`[centerNotify] ${TEMPLATE} send failed:`, err);
     return { error: true };
+  }
+}
+
+export async function sendOnboardingStep2(
+  phone: string,
+  ownerName: string,
+  centerName: string,
+  locale?: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_ONBOARDING_STEP2))) return false;
+    const to = digitsOnly(phone);
+    if (!to) return false;
+    const base = publicAppBase();
+    const groupsUrl = `${base}/ar/groups`;
+    const owner = ownerName.trim() || centerName.trim() || '—';
+    const center = centerName.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_ONBOARDING_STEP2,
+      languageCode: onboardingTemplateLang(locale),
+      toDigits: to,
+      bodyParameters: [owner, center, groupsUrl],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendOnboardingStep2:', err);
+    return false;
+  }
+}
+
+export async function sendOnboardingStep3(
+  phone: string,
+  ownerName: string,
+  centerName: string,
+  locale?: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_ONBOARDING_STEP3))) return false;
+    const to = digitsOnly(phone);
+    if (!to) return false;
+    const base = publicAppBase();
+    const settingsUrl = `${base}/ar/settings`;
+    const owner = ownerName.trim() || centerName.trim() || '—';
+    const center = centerName.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_ONBOARDING_STEP3,
+      languageCode: onboardingTemplateLang(locale),
+      toDigits: to,
+      bodyParameters: [owner, center, settingsUrl],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendOnboardingStep3:', err);
+    return false;
+  }
+}
+
+export async function sendOnboardingStep4(
+  phone: string,
+  ownerName: string,
+  centerName: string,
+  locale?: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_ONBOARDING_STEP4))) return false;
+    const to = digitsOnly(phone);
+    if (!to) return false;
+    const base = publicAppBase();
+    const scanUrl = `${base}/ar/scan`;
+    const owner = ownerName.trim() || centerName.trim() || '—';
+    const center = centerName.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_ONBOARDING_STEP4,
+      languageCode: onboardingTemplateLang(locale),
+      toDigits: to,
+      bodyParameters: [owner, center, scanUrl],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendOnboardingStep4:', err);
+    return false;
+  }
+}
+
+export async function sendTeamInvite(
+  phone: string,
+  inviteeName: string,
+  centerName: string,
+  role: string,
+  inviteToken: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_TEAM_INVITE))) return false;
+    const to = digitsOnly(phone);
+    if (!to) return false;
+    const base = publicAppBase();
+    const inviteUrl = `${base}/ar/accept-invite?token=${encodeURIComponent(inviteToken)}`;
+    const name = inviteeName.trim() || '—';
+    const center = centerName.trim() || '—';
+    const roleLabel = role.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_TEAM_INVITE,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [name, center, roleLabel, inviteUrl],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendTeamInvite:', err);
+    return false;
+  }
+}
+
+export async function sendOrderShipped(
+  phone: string,
+  ownerName: string,
+  centerName: string,
+  cardCount: number,
+  trackingUrl: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_ORDER_SHIPPED))) return false;
+    const to = digitsOnly(phone);
+    if (!to) return false;
+    const owner = ownerName.trim() || centerName.trim() || '—';
+    const center = centerName.trim() || '—';
+    const countStr = formatNumber(cardCount, 'ar');
+    const track = trackingUrl.trim() || publicAppBase();
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_ORDER_SHIPPED,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [owner, center, countStr, track],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendOrderShipped:', err);
+    return false;
+  }
+}
+
+export async function sendReferralCommission(
+  phone: string,
+  ownerName: string,
+  referredCenterName: string,
+  commissionAmount: number,
+  totalBalance: number,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_REFERRAL_COMMISSION))) return false;
+    const to = digitsOnly(phone);
+    if (!to) return false;
+    const owner = ownerName.trim() || '—';
+    const referred = referredCenterName.trim() || '—';
+    const amt = formatNumber(commissionAmount, 'ar');
+    const total = formatNumber(totalBalance, 'ar');
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_REFERRAL_COMMISSION,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [owner, referred, amt, total],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendReferralCommission:', err);
+    return false;
+  }
+}
+
+export async function sendWithdrawalProcessed(
+  phone: string,
+  ownerName: string,
+  decision: string,
+  amount: number,
+  note: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_WITHDRAWAL_PROCESSED))) return false;
+    const to = digitsOnly(phone);
+    if (!to) return false;
+    const owner = ownerName.trim() || '—';
+    const dec = decision.trim() || '—';
+    const amtStr = formatNumber(amount, 'ar');
+    const noteText = note.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_WITHDRAWAL_PROCESSED,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [owner, dec, amtStr, noteText],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendWithdrawalProcessed:', err);
+    return false;
+  }
+}
+
+export async function sendVendorNewOrder(
+  orderNumber: string,
+  cardCount: number,
+  notes: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_VENDOR_NEW_ORDER))) return false;
+    const vendorRaw = process.env.VENDOR_WHATSAPP_NUMBER?.trim();
+    if (!vendorRaw) {
+      console.warn('[centerNotify] sendVendorNewOrder: VENDOR_WHATSAPP_NUMBER not set');
+      return false;
+    }
+    const to = digitsOnly(vendorRaw);
+    if (!to) return false;
+    const ord = orderNumber.trim() || '—';
+    const countStr = formatNumber(cardCount, 'ar');
+    const notesText = notes.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_VENDOR_NEW_ORDER,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [ord, countStr, notesText],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendVendorNewOrder:', err);
+    return false;
+  }
+}
+
+export async function sendParentAnnouncementPromo(
+  parentPhone: string,
+  centerName: string,
+  messageBody: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_PARENT_ANNOUNCEMENT_PROMO))) return false;
+    const to = digitsOnly(parentPhone);
+    if (!to) return false;
+    const center = centerName.trim() || '—';
+    const body = messageBody.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_PARENT_ANNOUNCEMENT_PROMO,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [center, body],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendParentAnnouncementPromo:', err);
+    return false;
+  }
+}
+
+export async function sendParentAnnouncementOps(
+  parentPhone: string,
+  centerName: string,
+  messageBody: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_PARENT_ANNOUNCEMENT_OPS))) return false;
+    const to = digitsOnly(parentPhone);
+    if (!to) return false;
+    const center = centerName.trim() || '—';
+    const body = messageBody.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_PARENT_ANNOUNCEMENT_OPS,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [center, body],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendParentAnnouncementOps:', err);
+    return false;
+  }
+}
+
+export async function sendParentTermSummary(
+  parentPhone: string,
+  studentName: string,
+  groupName: string,
+  attendedSessions: number,
+  totalSessions: number,
+  balance: number,
+  centerName: string,
+): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_PARENT_TERM_SUMMARY))) return false;
+    const to = digitsOnly(parentPhone);
+    if (!to) return false;
+    const student = studentName.trim() || '—';
+    const group = groupName.trim() || '—';
+    const attendedStr = formatNumber(attendedSessions, 'ar');
+    const totalStr = formatNumber(totalSessions, 'ar');
+    const balanceStr = formatNumber(balance, 'ar');
+    const center = centerName.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_PARENT_TERM_SUMMARY,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [student, group, attendedStr, totalStr, balanceStr, center],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendParentTermSummary:', err);
+    return false;
+  }
+}
+
+/**
+ * TODO: Wire to PIN reset flow after Vodafone SIM activated
+ * Stub only: do not call from routes until SIM is live.
+ */
+export async function sendPinDelivery(phone: string, otpCode: string): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_PIN_DELIVERY))) return false;
+    const to = digitsOnly(phone);
+    if (!to) return false;
+    const code = otpCode.trim() || '—';
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_PIN_DELIVERY,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [code],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendPinDelivery:', err);
+    return false;
   }
 }
 

@@ -3,9 +3,14 @@
  */
 
 import { NextResponse } from 'next/server';
-import { sendOnboardingNudge } from '@/lib/centerNotify';
+import {
+  sendOnboardingStep1Template,
+  sendOnboardingStep2,
+  sendOnboardingStep3,
+  sendOnboardingStep4,
+} from '@/lib/centerNotify';
 import { getOnboardingStep } from '@/lib/onboardingStatus';
-import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
+import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -72,7 +77,6 @@ export async function POST(request: Request) {
     admin,
     stalled.map((r) => r.id),
   );
-  const ownerPhoneCache = new Map<string, string | null>();
 
   let nudgesSent = 0;
   let completed = 0;
@@ -106,30 +110,43 @@ export async function POST(request: Request) {
 
     if (step < 1 || step > 4) continue;
 
+    const dbStep = row.onboarding_step ?? 0;
+    if (dbStep >= 4) continue;
+
     const oc = ownerByCenter.get(row.id);
-    const ownerPhone = await resolveOwnerWaPhoneCached(
+    const ownerPhone = await resolveOwnerWaPhone(
       admin,
       oc?.authId ?? null,
       oc?.userPhone,
       row.phone,
-      ownerPhoneCache,
     );
+    if (!ownerPhone) continue;
 
-    let sendRes: { success?: boolean; skipped?: boolean; error?: boolean };
+    const ownerName = (row.owner_name ?? '').trim() || (row.name ?? '').trim() || '—';
+    const centerName = (row.name ?? '').trim() || '—';
+
+    let sent = false;
     try {
-      sendRes = await sendOnboardingNudge(
-        admin,
-        row.id,
-        step as 1 | 2 | 3 | 4,
-        ownerPhone,
-        row.name ?? '',
-      );
+      if (dbStep === 0) {
+        const r = await sendOnboardingStep1Template(admin, {
+          id: row.id,
+          name: centerName,
+          phone: ownerPhone,
+        });
+        sent = !!r.success;
+      } else if (dbStep === 1) {
+        sent = await sendOnboardingStep2(ownerPhone, ownerName, centerName);
+      } else if (dbStep === 2) {
+        sent = await sendOnboardingStep3(ownerPhone, ownerName, centerName);
+      } else if (dbStep === 3) {
+        sent = await sendOnboardingStep4(ownerPhone, ownerName, centerName);
+      }
     } catch (e) {
-      console.error(`[${CRON_NAME}] sendOnboardingNudge`, row.id, e);
+      console.error(`[${CRON_NAME}] onboarding template`, row.id, e);
       continue;
     }
 
-    if (!sendRes.success) continue;
+    if (!sent) continue;
 
     const { error: upErr } = await admin
       .from('centers')

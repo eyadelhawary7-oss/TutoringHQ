@@ -1,9 +1,12 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { sendOrderShipped } from '@/lib/centerNotify';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { createAction } from '@/lib/ceo';
 import { notifyVendorOfNewOrder } from '@/lib/vendorNotify';
+import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,9 +45,63 @@ type CardOrderRow = {
   quantity: number;
   total_amount: number;
   bosta_status: string | null;
+  tracking_number: string | null;
 };
 
-const ORDER_LOOKUP_SELECT = 'id, center_id, quantity, total_amount, bosta_status';
+const ORDER_LOOKUP_SELECT = 'id, center_id, quantity, total_amount, bosta_status, tracking_number';
+
+function bostaTrackingUrl(trackingNumber: string | null): string {
+  const t = (trackingNumber ?? '').trim();
+  if (!t) return (process.env.NEXT_PUBLIC_APP_URL ?? 'https://centerhq.app').replace(/\/$/, '');
+  return `https://bosta.co/en/track-shipment?trackingNumber=${encodeURIComponent(t)}`;
+}
+
+function shouldNotifyOrderShipped(prevStatus: string | null, stateCode: string): boolean {
+  const prev = (prevStatus ?? '').toUpperCase().replace(/-/g, '_');
+  const code = stateCode.toUpperCase().replace(/-/g, '_');
+  if (code === 'OUT_FOR_DELIVERY') {
+    return prev !== 'OUT_FOR_DELIVERY';
+  }
+  if (code === 'DELIVERED' || code === 'DELIVERED_TO_SENDER') {
+    return prev !== 'OUT_FOR_DELIVERY' && prev !== 'DELIVERED' && prev !== 'DELIVERED_TO_SENDER';
+  }
+  return false;
+}
+
+async function notifyOwnerOrderShipped(
+  admin: SupabaseClient,
+  order: CardOrderRow,
+  trackingUrl: string,
+): Promise<void> {
+  try {
+    const { data: center } = await admin
+      .from('centers')
+      .select('id, name, owner_name, phone')
+      .eq('id', order.center_id)
+      .maybeSingle();
+    if (!center) return;
+    const c = center as {
+      id: string;
+      name: string | null;
+      owner_name: string | null;
+      phone: string | null;
+    };
+    const ownerMap = await ownerContactByCenterId(admin, [c.id]);
+    const oc = ownerMap.get(c.id);
+    const ownerPhone = await resolveOwnerWaPhone(
+      admin,
+      oc?.authId ?? null,
+      oc?.userPhone,
+      c.phone,
+    );
+    if (!ownerPhone) return;
+    const ownerName = (c.owner_name ?? '').trim() || (c.name ?? '').trim() || '—';
+    const centerName = (c.name ?? '').trim() || '—';
+    await sendOrderShipped(ownerPhone, ownerName, centerName, order.quantity, trackingUrl);
+  } catch (e) {
+    console.error('[bosta-webhook] notifyOwnerOrderShipped:', e);
+  }
+}
 
 async function findCardOrder(
   admin: SupabaseClient,
@@ -107,16 +164,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) {
-    console.error('[bosta-webhook] Missing Supabase env');
+  if (!supabaseAdmin) {
+    console.error('[bosta-webhook] Missing Supabase admin');
     return NextResponse.json({ received: true });
   }
 
-  const supabase = createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supabase = supabaseAdmin;
 
   const shipment = body.shipment as Record<string, unknown> | undefined;
   const state = shipment?.state as Record<string, unknown> | undefined;
@@ -175,10 +228,31 @@ export async function POST(request: Request) {
   }
 
   const now = new Date().toISOString();
+  const prevBostaStatus = order.bosta_status;
+  const trackingUrl = bostaTrackingUrl(order.tracking_number);
 
   switch (stateCode) {
+    case 'OUT_FOR_DELIVERY': {
+      if (shouldNotifyOrderShipped(prevBostaStatus, stateCode)) {
+        void notifyOwnerOrderShipped(supabase, order, trackingUrl);
+      }
+      const { error } = await supabase
+        .from('card_orders')
+        .update({
+          status: 'shipped',
+          bosta_status: stateCode,
+          bosta_updated_at: now,
+        })
+        .eq('id', order.id);
+      if (error) console.error('[bosta-webhook] OUT_FOR_DELIVERY update:', error);
+      break;
+    }
+
     case 'DELIVERED':
     case 'DELIVERED_TO_SENDER': {
+      if (shouldNotifyOrderShipped(prevBostaStatus, stateCode)) {
+        void notifyOwnerOrderShipped(supabase, order, trackingUrl);
+      }
       const { error } = await supabase
         .from('card_orders')
         .update({
@@ -188,7 +262,7 @@ export async function POST(request: Request) {
           delivered_at: now,
         })
         .eq('id', order.id);
-      if (error) console.error('[bosta-webhook] DELIVERED update:', error);
+      if (error) console.error('[bosta-webhook] DELIVERED/DELIVERED_TO_SENDER update:', error);
       break;
     }
 
@@ -314,7 +388,7 @@ export async function POST(request: Request) {
         .update({
           bosta_status: 'RETURNED',
           bosta_updated_at: now,
-          bosta_notes: 'Package returned to origin — center may have refused delivery',
+          bosta_notes: 'Package returned to origin - center may have refused delivery',
         })
         .eq('id', order.id);
       if (error) console.error('[bosta-webhook] RETURNED update:', error);

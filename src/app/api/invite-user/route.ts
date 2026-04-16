@@ -1,36 +1,20 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { inviteUserSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { normalizePhone } from '@/lib/utils/phone';
+import { requireOwnerAdminCenter } from '@/lib/requireOwnerAdminCenter';
+import { sendTeamInvite } from '@/lib/centerNotify';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: Request) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    const authHeader = request.headers.get('Authorization');
-    const accessToken = authHeader?.replace('Bearer ', '');
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    if (!validateCSRFRequest(request, user.id)) {
+    const ctx = await requireOwnerAdminCenter(request);
+    if (ctx instanceof NextResponse) return ctx;
+    if (!validateCSRFRequest(request, ctx.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
     const body = await request.json();
@@ -43,14 +27,10 @@ export async function POST(request: Request) {
 
     const phoneE164 = normalizePhone(String(phone).trim());
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
     const { data: currentUser, error: currentUserError } = await supabaseAdmin
       .from('users')
       .select('center_id, role, phone')
-      .eq('id', user.id)
+      .eq('id', ctx.userId)
       .single();
 
     if (currentUserError || !currentUser?.center_id) {
@@ -59,9 +39,8 @@ export async function POST(request: Request) {
       }, { status: 404 });
     }
 
-    // CRITICAL: Users cannot invite themselves (privilege escalation protection)
     const digitsOf = (p: string) => p.replace(/\D/g, '').replace(/^0/, '').replace(/^20/, '');
-    const currentPhoneNorm = digitsOf(currentUser.phone || user.phone || '');
+    const currentPhoneNorm = digitsOf(currentUser.phone || '');
     const inviteePhoneNorm = digitsOf(phoneE164);
     if (currentPhoneNorm && inviteePhoneNorm && currentPhoneNorm === inviteePhoneNorm) {
       return NextResponse.json({ error: 'Cannot invite yourself to the team' }, { status: 403 });
@@ -71,19 +50,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Only center owners and admins can invite team members' }, { status: 403 });
     }
 
-    // Check team member limit
-    const { data: centerRow } = await supabaseAdmin
+    const { data: centerPlanRow } = await supabaseAdmin
       .from('centers')
       .select('plan, max_teachers')
       .eq('id', currentUser.center_id)
       .single();
-    const maxTeam = Number((centerRow as { max_teachers?: number })?.max_teachers ?? 2);
+    const maxTeam = Number((centerPlanRow as { max_teachers?: number })?.max_teachers ?? 2);
     const { count: teamCount } = await supabaseAdmin
       .from('users')
       .select('*', { count: 'exact', head: true })
       .eq('center_id', currentUser.center_id);
     if ((teamCount ?? 0) >= maxTeam) {
-      const planName = (centerRow as { plan?: string })?.plan || 'Starter';
+      const planName = (centerPlanRow as { plan?: string })?.plan || 'Starter';
       return NextResponse.json({
         error: `You've reached your team member limit for the ${planName} plan. Upgrade to add more team members.`,
         code: 'TEAM_LIMIT_REACHED',
@@ -133,10 +111,35 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
+    const { data: inviteRow } = await supabaseAdmin
+      .from('center_invites')
+      .select('id')
+      .eq('center_id', currentUser.center_id)
+      .eq('phone', phoneE164)
+      .maybeSingle();
+
+    const inviteToken = String((inviteRow as { id?: string } | null)?.id ?? '').trim();
+    const { data: centerNameRow } = await supabaseAdmin
+      .from('centers')
+      .select('name')
+      .eq('id', currentUser.center_id)
+      .maybeSingle();
+    const centerName = String((centerNameRow as { name?: string | null } | null)?.name ?? '').trim() || '—';
+    const inviteeName = name.trim() || '—';
+    const roleLabel = role === 'teacher' ? 'معلم' : role === 'assistant' ? 'مساعد' : role || 'assistant';
+
+    if (inviteToken) {
+      try {
+        await sendTeamInvite(phoneE164, inviteeName, centerName, roleLabel, inviteToken);
+      } catch (waErr) {
+        console.error('[invite-user] sendTeamInvite:', waErr);
+      }
+    }
+
     try {
       await supabaseAdmin.from('audit_log').insert({
         center_id: currentUser.center_id,
-        user_id: user.id,
+        user_id: ctx.userId,
         action: 'team_member_invited_pending',
         entity_type: 'center_invites',
         details: { invited_phone: phoneE164, invited_name: name, invited_role: role },
@@ -149,6 +152,7 @@ export async function POST(request: Request) {
       success: true,
       pendingInvite: true,
       acceptInviteUrl,
+      inviteToken: inviteToken || undefined,
       message: 'تم إرسال الدعوة / Invitation sent! The person should go to the accept-invite page, enter their phone number to receive a verification code, verify, and create their login credentials.',
     });
   } catch (error) {
