@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type MouseEvent,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
@@ -722,6 +714,7 @@ export default function BillingPage() {
   const [cancelConfirmText, setCancelConfirmText] = useState('');
   const [cancelSubmitError, setCancelSubmitError] = useState<string | null>(null);
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState<Record<string, boolean>>({});
 
   const refresh = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -877,6 +870,45 @@ export default function BillingPage() {
   }, [activeTab]);
 
   const ownerOk = userRole === 'owner';
+
+  const handleDownloadPdf = useCallback(
+    async (invoiceId: string, invoiceNumber: string | null) => {
+      if (!ownerOk) return;
+      setPdfLoading((prev) => ({ ...prev, [invoiceId]: true }));
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) {
+          toast.error(t('loadError'));
+          return;
+        }
+        const res = await fetch(`/api/invoices/${invoiceId}/pdf`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          toast.error(t('history.pdfError'));
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const safe =
+          invoiceNumber?.trim().replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 80) ||
+          `invoice-${invoiceId.slice(0, 8)}`;
+        a.download = `${safe}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch {
+        toast.error(t('history.pdfError'));
+      } finally {
+        setPdfLoading((prev) => ({ ...prev, [invoiceId]: false }));
+      }
+    },
+    [ownerOk, toast, t, supabase],
+  );
 
   const planKey: PlanKey = useMemo(() => {
     const p = center?.plan ?? 'starter';
@@ -1413,41 +1445,6 @@ export default function BillingPage() {
   const cairoFont = { fontFamily: 'var(--font-cairo), Cairo, sans-serif' } as const;
   const numFont = { fontFamily: 'ui-sans-serif, system-ui, sans-serif' } as const;
 
-  const openInvoicePdf = useCallback(
-    async (e: MouseEvent<HTMLAnchorElement>, invoiceId: string) => {
-      e.preventDefault();
-      if (!ownerOk) return;
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
-        if (!token) {
-          toast.error(t('loadError'));
-          return;
-        }
-        const res = await fetch(`/api/invoices/${invoiceId}/pdf`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
-          const j = (await res.json().catch(() => ({}))) as { error?: string };
-          toast.error(typeof j.error === 'string' ? j.error : t('paymentFailed'));
-          return;
-        }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const opened = window.open(url, '_blank', 'noopener,noreferrer');
-        if (!opened) {
-          toast.error(t('loadError'));
-          URL.revokeObjectURL(url);
-          return;
-        }
-        setTimeout(() => URL.revokeObjectURL(url), 120_000);
-      } catch {
-        toast.error(t('paymentFailed'));
-      }
-    },
-    [ownerOk, toast, t],
-  );
-
   const handleWithdrawalSubmit = useCallback(async () => {
     if (!ownerOk || !withdrawalWindowOpen || !String(center?.instapay_number ?? '').trim()) return;
     const amt = Math.floor(Number(withdrawAmount));
@@ -1602,27 +1599,43 @@ export default function BillingPage() {
     );
   };
 
-  const invoicePdfDownloadClass =
-    'inline-block rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#0D9488] hover:bg-teal-50 dark:border-slate-600 dark:hover:bg-teal-950/30';
-
-  const renderInvoicePdfLink = (inv: InvoiceRow) => {
+  const renderInvoicePdfButton = (inv: InvoiceRow) => {
     if (!ownerOk) {
       return (
-        <span className="text-slate-600 text-xs" aria-hidden>
+        <span className="text-[var(--color-text-muted)] text-xs" aria-hidden>
           -
         </span>
       );
     }
+    const loading = !!pdfLoading[inv.id];
     return (
-      <a
-        href={`/api/invoices/${inv.id}/pdf`}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={(e) => void openInvoicePdf(e, inv.id)}
-        className={invoicePdfDownloadClass}
+      <button
+        type="button"
+        onClick={() => void handleDownloadPdf(inv.id, inv.invoice_number ?? null)}
+        disabled={loading}
+        className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-2 py-1 text-xs font-semibold text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-teal)]/40 hover:text-[var(--color-teal)] disabled:opacity-50 chq-focus"
       >
-        {t('history.downloadPdf')}
-      </a>
+        {loading ? (
+          <span>{t('history.downloadingPdf')}</span>
+        ) : (
+          <>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>{t('history.downloadPdf')}</span>
+          </>
+        )}
+      </button>
     );
   };
 
@@ -1639,14 +1652,14 @@ export default function BillingPage() {
           >
             {payingInvoiceId === inv.id ? t('loadingShort') : t('history.payNow')}
           </button>
-          {renderInvoicePdfLink(inv)}
+          {renderInvoicePdfButton(inv)}
         </div>
       );
     }
     if (st === 'paid' || st === 'approved') {
-      return renderInvoicePdfLink(inv);
+      return renderInvoicePdfButton(inv);
     }
-    return renderInvoicePdfLink(inv);
+    return renderInvoicePdfButton(inv);
   };
 
   if (loading) {

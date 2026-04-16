@@ -299,6 +299,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   // Section 4
   const [s4Invoices, setS4Invoices] = useState<Record<string, unknown>[]>([]);
   const [s4ExpandedId, setS4ExpandedId] = useState<string | null>(null);
+  const [s4PdfLoading, setS4PdfLoading] = useState<Record<string, boolean>>({});
   const [s4StatusChanges, setS4StatusChanges] = useState<Record<string, string>>({});
   const [s4DiscountInputs, setS4DiscountInputs] = useState<Record<string, string>>({});
   const [s4MarkPaidId, setS4MarkPaidId] = useState<string | null>(null);
@@ -411,6 +412,44 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     Object.assign(headers, csrf);
     return headers;
   }, [getSession]);
+
+  const handleAdminInvoicePdfDownload = useCallback(
+    async (invoiceId: string, invoiceNumber: string | null) => {
+      setS4PdfLoading((prev) => ({ ...prev, [invoiceId]: true }));
+      try {
+        const session = await getSession();
+        const token = session?.access_token;
+        if (!token) {
+          toast.error(tCommon('error'));
+          return;
+        }
+        const res = await fetch(`/api/admin/invoices/${invoiceId}/pdf`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          toast.error(tCommon('pdfError'));
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const safe =
+          (invoiceNumber && String(invoiceNumber).trim().replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 80)) ||
+          `invoice-${invoiceId.slice(0, 8)}`;
+        a.download = `${safe}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch {
+        toast.error(tCommon('pdfError'));
+      } finally {
+        setS4PdfLoading((prev) => ({ ...prev, [invoiceId]: false }));
+      }
+    },
+    [getSession, toast, tCommon],
+  );
 
   const showApiError = useCallback(
     (j: Record<string, unknown>) => {
@@ -2164,14 +2203,38 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     : tCommon('notSet')}
                                 </td>
                                 <td className="p-2">
-                                  <a
-                                    href={`/api/admin/invoices/${invId}/pdf`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[var(--color-teal)] text-sm hover:underline"
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleAdminInvoicePdfDownload(
+                                        invId,
+                                        inv.invoice_number != null ? String(inv.invoice_number) : null,
+                                      )
+                                    }
+                                    disabled={!!s4PdfLoading[invId]}
+                                    className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-teal)] disabled:opacity-50 chq-focus rounded-md border border-[var(--color-border)] px-2 py-1 hover:border-[var(--color-teal)]/40"
                                   >
-                                    {tCommon('downloadPdf')}
-                                  </a>
+                                    {s4PdfLoading[invId] ? (
+                                      <span>{tCommon('downloadingPdf')}</span>
+                                    ) : (
+                                      <>
+                                        <svg
+                                          width="14"
+                                          height="14"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          aria-hidden
+                                        >
+                                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                          <polyline points="7 10 12 15 17 10" />
+                                          <line x1="12" y1="15" x2="12" y2="3" />
+                                        </svg>
+                                        <span>{tCommon('downloadPdf')}</span>
+                                      </>
+                                    )}
+                                  </button>
                                 </td>
                                 <td className="p-2">
                                   <button

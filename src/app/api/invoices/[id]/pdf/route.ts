@@ -1,5 +1,8 @@
+import 'server-only';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { generateInvoicePdf } from '@/lib/generateInvoicePdf';
 
 export const dynamic = 'force-dynamic';
@@ -16,51 +19,48 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     }
 
     const auth = await requireCenterAuth(request);
-    if (!auth.ok) return auth.response;
-    if (auth.role !== 'owner') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!auth.ok) {
+      return auth.response;
     }
 
-    const { data: invoice, error: invErr } = await auth.supabaseAdmin
+    const admin = getSupabaseAdmin();
+    const { data: invoice, error } = await admin
       .from('invoices')
-      .select('id, center_id, invoice_number')
+      .select('id, invoice_number, invoice_type, center_id')
       .eq('id', invoiceId.trim())
       .maybeSingle();
 
-    if (invErr || !invoice) {
+    if (error || !invoice) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    const inv = invoice as { center_id: string; invoice_number: string | null };
-    if (inv.center_id !== auth.centerId) {
+    const inv = invoice as { id: string; center_id: string; invoice_number: string | null };
+    const isSuperAdmin = auth.role === 'super_admin';
+    if (!isSuperAdmin && (auth.role !== 'owner' || inv.center_id !== auth.centerId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    let pdfBuf: Buffer;
+    let pdfBuffer: Buffer;
     try {
-      pdfBuf = await generateInvoicePdf(invoiceId.trim());
+      pdfBuffer = await generateInvoicePdf(invoiceId.trim());
     } catch (e) {
-      console.error('[invoices/pdf]', e);
-      return NextResponse.json(
-        { error: e instanceof Error ? e.message : 'PDF generation failed' },
-        { status: 500 },
-      );
+      console.error('[invoice-pdf]', e);
+      return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
     }
 
-    const invNo = String(inv.invoice_number ?? inv.center_id.slice(0, 8));
-    const fname = safeFilenamePart(invNo);
+    const filename = inv.invoice_number
+      ? `${safeFilenamePart(inv.invoice_number)}.pdf`
+      : `invoice-${safeFilenamePart(inv.id)}.pdf`;
 
-    return new NextResponse(new Uint8Array(pdfBuf), {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="INV-${fname}.pdf"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'private, no-cache',
       },
     });
-  } catch (e) {
-    console.error('[invoices/pdf]', e);
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'PDF generation failed' },
-      { status: 500 },
-    );
+  } catch (err) {
+    console.error('[invoice-pdf]', err);
+    return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
   }
 }
