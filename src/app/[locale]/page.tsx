@@ -236,7 +236,7 @@ export default function LocaleHomePage() {
     return () => observer.disconnect();
   }, []);
 
-  // Per-screen delays; single timeout with cleanup — no timers while off-screen.
+  // Per-screen delays; single timeout with cleanup - no timers while off-screen.
   useEffect(() => {
     if (!isVisible) return;
 
@@ -506,7 +506,7 @@ export default function LocaleHomePage() {
                   </span>
                 </div>
 
-                {/* Multi-screen demo — pause CSS animations when mockup is off-screen */}
+                {/* Multi-screen demo - pause CSS animations when mockup is off-screen */}
                 <div
                   className={
                     isVisible

@@ -62,7 +62,8 @@ export default function MobileTopBar({ openMenu, setOpenMenu }: MobileTopBarProp
         ) : (
           <Image src="/logo-icon.png" alt="CenterHQ" width={28} height={28} className="w-7 h-7 rounded-lg shrink-0 object-contain" />
         )}
-        <span className="font-bold text-sm text-[var(--color-text-primary)]">CenterHQ</span>
+        <span className="font-bold text-sm text-[var(--color-text-primary)]">CENTER</span>
+        <span className="font-bold text-sm text-[var(--color-teal)]">HQ</span>
       </Link>
 
       <div className="absolute end-4 top-1/2 -translate-y-1/2 flex items-center gap-2">

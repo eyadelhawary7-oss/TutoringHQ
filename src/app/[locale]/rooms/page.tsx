@@ -144,7 +144,7 @@ export default function RoomsPage() {
                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                   {r.capacity != null && Number.isFinite(Number(r.capacity))
                     ? t('maxCapacityValue', { count: formatNumber(Number(r.capacity), locale) })
-                    : `${t('maxCapacity')}: —`}
+                    : `${t('maxCapacity')}: -`}
                 </p>
               </div>
             ))}

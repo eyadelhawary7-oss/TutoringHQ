@@ -310,7 +310,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
                               month: 'short',
                               day: 'numeric',
                             })
-                          : '—'}
+                          : '-'}
                       </td>
                     </tr>
                   ))

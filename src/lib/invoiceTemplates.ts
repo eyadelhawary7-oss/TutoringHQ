@@ -673,7 +673,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       <div class="meta-value" style="color:#64748b;font-size:11px;">${esc(paymentTs)}</div>`
       : invoiceType === 'announcement_settlement'
         ? `<div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">طريقة الدفع</div>
-      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">رصيد الإعلانات — خُصم عند كل إرسال</div>
+      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">رصيد الإعلانات - خُصم عند كل إرسال</div>
       <div class="meta-value" style="color:#64748b;font-size:11px;">${esc(paymentTs)}</div>`
         : `<div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">طريقة الدفع</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(paymentMethod)}</div>
@@ -734,7 +734,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       });
     totalsInner = `${totalsRow(`${active} ولي أمر × ${fmtMoney(packPer)} ج.م`, `${fmtMoney(round2(active * packPer))} EGP`)}
     ${totalsRow(`${inactive} غير نشطين (مُعفى)`, `0 EGP`)}
-    ${totalsRow('ضريبة القيمة المضافة 14%', 'مدمجة')}
+    ${taxRowsBlock()}
     ${totalsRowBold('إجمالي المخصوم', `${fmtMoney(total)} EGP`)}`;
   } else if (invoiceType === 'announcement_settlement') {
     const blasts = r.settlementBlasts ?? [];

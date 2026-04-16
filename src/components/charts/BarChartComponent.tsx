@@ -78,7 +78,7 @@ export function BarChartComponent({
         className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-sm"
         style={{ height }}
       >
-        {/* empty state — not enough data */}
+        {/* empty state - not enough data */}
       </div>
     );
   }

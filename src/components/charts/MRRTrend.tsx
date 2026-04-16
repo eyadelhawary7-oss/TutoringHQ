@@ -31,7 +31,7 @@ export default function MRRTrend({ data = [] }: MRRTrendProps) {
   if (!data || data.length < 2) {
     return (
       <div className="flex items-center justify-center h-[260px] text-[var(--color-text-muted)] text-sm">
-        {/* empty state — not enough data */}
+        {/* empty state - not enough data */}
       </div>
     );
   }

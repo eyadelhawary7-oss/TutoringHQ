@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   if (!FEATURES.PAYMOB_ENABLED) {
     return NextResponse.json({
       skipped: true,
-      reason: 'PAYMOB_ENABLED is false',
+      reason: 'Paymob disabled',
     });
   }
 

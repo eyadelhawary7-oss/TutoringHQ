@@ -46,7 +46,7 @@ const PERIOD_COLORS: Record<PeriodType, string> = {
 };
 
 function formatHolidayDate(dateStr: string | null | undefined, locale: string): string {
-  if (!dateStr?.trim()) return '—';
+  if (!dateStr?.trim()) return '-';
   return formatDate(dateStr + 'T12:00:00', locale, { day: 'numeric', month: 'long' });
 }
 

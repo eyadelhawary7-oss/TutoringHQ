@@ -143,7 +143,7 @@ function SettingsPageContent() {
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  /** Platform admin (e.g. super_admin) with no center — center settings UI does not apply */
+  /** Platform admin (e.g. super_admin) with no center - center settings UI does not apply */
   const [isPlatformAdminNoCenter, setIsPlatformAdminNoCenter] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
 

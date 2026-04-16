@@ -120,7 +120,7 @@ export function AdminSidebar({
   const isCommissions = activeRoute?.includes('admin/commissions');
   const isPayouts = activeRoute?.includes('admin/payouts');
 
-  /** Sub-routes under admin — main `?tab=` items must not stay highlighted as Overview, etc. */
+  /** Sub-routes under admin - main `?tab=` items must not stay highlighted as Overview, etc. */
   const onDedicatedAdminSubpage =
     isWithdrawals ||
     isRenewals ||

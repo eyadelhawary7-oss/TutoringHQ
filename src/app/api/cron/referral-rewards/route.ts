@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -31,15 +31,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseServiceKey) {
+  if (!supabaseAdmin) {
     return NextResponse.json({ success: false, error: tCronBackup('errorServerMisconfigured') }, { status: 500 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supabase = supabaseAdmin;
 
   const now = new Date();
   const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -191,6 +187,19 @@ export async function GET(request: Request) {
     error_message: errors.length > 0 ? errors.join('; ').slice(0, 10000) : null,
     metadata: { period_month: periodMonth, created, skipped },
   });
+
+  try {
+    await supabase.from('cron_health_log').upsert(
+      {
+        cron_name: CRON_NAME,
+        last_success_at: new Date().toISOString(),
+        failure_count: 0,
+      },
+      { onConflict: 'cron_name' },
+    );
+  } catch (healthLogErr) {
+    console.error(`[${CRON_NAME}] cron_health_log:`, healthLogErr);
+  }
 
   return NextResponse.json({
     success: true,

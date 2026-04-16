@@ -319,7 +319,7 @@ export default function SettingsReferralsPage() {
                                 {tc('download')}
                               </button>
                             ) : (
-                              <span className="text-xs text-[var(--color-text-secondary)]">—</span>
+                              <span className="text-xs text-[var(--color-text-secondary)]">-</span>
                             )}
                           </td>
                         </tr>

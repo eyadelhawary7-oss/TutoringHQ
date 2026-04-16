@@ -823,7 +823,7 @@ export function CardOrderModal({
                       className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 flex items-center justify-center gap-2"
                     >
                       <CreditCard size={18} aria-hidden />
-                      {t('payNow')} — {formatCurrency(totalAmount, locale)}
+                      {t('payNow')} - {formatCurrency(totalAmount, locale)}
                     </button>
                   )}
                   {paymentStatus === 'loading' && (

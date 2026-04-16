@@ -406,7 +406,7 @@ function AdminPageContent() {
 
   const [tab, setTab] = useState<AdminTab>(() => parseAdminTabParam(tabParam));
 
-  /** Inline admin tabs always live on `/[locale]/admin` — never on e.g. `/admin/centers`. */
+  /** Inline admin tabs always live on `/[locale]/admin` - never on e.g. `/admin/centers`. */
   const ADMIN_HOME = '/admin';
 
   useLayoutEffect(() => {
@@ -2287,7 +2287,7 @@ function AdminPageContent() {
                             <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]">
                               {order.id && order.id.length >= 8
                                 ? `${order.id.slice(0, 8)}…`
-                                : (order.id || '—')}
+                                : (order.id || '-')}
                             </td>
                             <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">
                               {order.center_name ?? tCommon('notAvailable')}
