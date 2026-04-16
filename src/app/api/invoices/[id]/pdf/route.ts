@@ -36,9 +36,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const pdfBuf = await generateInvoicePdf(invoiceId.trim(), auth.supabaseAdmin);
-    if (!pdfBuf) {
-      return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
+    let pdfBuf: Buffer;
+    try {
+      pdfBuf = await generateInvoicePdf(invoiceId.trim());
+    } catch (e) {
+      console.error('[invoices/pdf]', e);
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : 'PDF generation failed' },
+        { status: 500 },
+      );
     }
 
     const invNo = String(inv.invoice_number ?? inv.center_id.slice(0, 8));
