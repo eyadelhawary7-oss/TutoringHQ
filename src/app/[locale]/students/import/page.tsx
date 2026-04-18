@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase';
 import { dbInsert, dbUpdate, auditLog } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
 import { parseFile, autoDetectMapping, type ParsedData, type ColumnMapping } from '@/lib/excel-parser';
-import { dbSelect } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
 import { Upload, Check, ArrowLeft } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -14,12 +13,6 @@ import { Progress } from '@/components/ui/progress';
 type ImportStep = 'upload' | 'map' | 'preview' | 'importing' | 'success';
 
 type ColumnMapValue = 'name' | 'phone' | 'group' | 'skip';
-
-interface Group {
-  id: string;
-  name: string;
-  fee?: number;
-}
 
 export default function ImportStudentsPage() {
   const t = useTranslations('import');
@@ -35,8 +28,6 @@ export default function ImportStudentsPage() {
   const [importedCount, setImportedCount] = useState(0);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [studentCountStart, setStudentCountStart] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const acceptedExtensions = ['.csv', '.xlsx', '.xls'];
@@ -50,18 +41,6 @@ export default function ImportStudentsPage() {
       const meData = await meRes.json();
       if (meData?.user?.center_id) {
         setCenterId(meData.user.center_id);
-        const { data: groupsData } = await dbSelect({
-          table: 'student_groups',
-          select: 'id, name, fee',
-          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
-        });
-        if (groupsData) setGroups(groupsData as Group[]);
-        const { data: countData } = await dbSelect({
-          table: 'students',
-          select: 'id',
-          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
-        });
-        setStudentCountStart(Array.isArray(countData) ? countData.length : 0);
       }
       if (meData?.user?.id) setUserId(meData.user.id);
     };
@@ -133,7 +112,6 @@ export default function ImportStudentsPage() {
     if (!parsedData || !centerId) return [];
     const nameHeader = Object.keys(columnMap).find((k) => columnMap[k] === 'name');
     const phoneHeader = Object.keys(columnMap).find((k) => columnMap[k] === 'phone');
-    const groupHeader = Object.keys(columnMap).find((k) => columnMap[k] === 'group');
     if (!nameHeader) return [];
 
     // Fee comes from group (groups.fee), not from students table
@@ -148,12 +126,11 @@ export default function ImportStudentsPage() {
         payment_status: 'unpaid',
       });
     }
-    return base.map((s, i) => ({ ...s, student_number: `STU-${String(studentCountStart + i + 1).padStart(5, '0')}` }));
+    return base;
   };
 
   const mappedStudents = getMappedStudents();
   const hasNameMapping = Object.values(columnMap).includes('name');
-  const getPreviewStudentNumber = (index: number) => `STU-${String(studentCountStart + index + 1).padStart(5, '0')}`;
 
   const handleImport = async () => {
     if (!centerId || !userId || mappedStudents.length === 0) return;
@@ -164,7 +141,11 @@ export default function ImportStudentsPage() {
       let insertedTotal = 0;
       for (let i = 0; i < mappedStudents.length; i += 50) {
         const batch = mappedStudents.slice(i, i + 50);
-        const { data: inserted, error: insertError } = await dbInsert({ table: 'students', data: batch, select: '*' });
+        const { data: inserted, error: insertError } = await dbInsert({
+          table: 'students',
+          data: batch,
+          select: 'id, student_number, name, phone, payment_status, center_id',
+        });
         if (insertError) throw insertError;
         const insertedList = (inserted || []) as { id: string }[];
         for (const student of insertedList) {
@@ -329,7 +310,7 @@ export default function ImportStudentsPage() {
                     <tr key={i} className="border-t border-border">
                       <td className="px-3 py-2 text-[var(--color-text-primary)]">{s.name}</td>
                       <td className="px-3 py-2 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{s.phone || ''}</td>
-                      <td className="px-3 py-2 font-mono text-xs text-[var(--color-text-secondary)]">{getPreviewStudentNumber(i)}</td>
+                      <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">{t('studentNumberPending')}</td>
                     </tr>
                   ))}
                 </tbody>

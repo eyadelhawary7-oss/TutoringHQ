@@ -1292,6 +1292,7 @@
     "stepMap": "Map Columns",
     "stepPreview": "Preview & Import",
     "studentNumber": "Student #",
+    "studentNumberPending": "Assigned when you import (from your center sequence)",
     "group": "Group"
   },
   "students": {
