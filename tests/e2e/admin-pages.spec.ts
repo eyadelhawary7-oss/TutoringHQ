@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { gotoWithRetry } from './goto-with-retry'
 
 const BASE_URL = process.env.BASE_URL ?? 'https://centerhq.app'
 
@@ -7,7 +8,7 @@ test.describe('Admin Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/ceo-dashboard`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/ceo-dashboard`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -18,7 +19,7 @@ test.describe('Admin Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/en/ceo-dashboard`)
+    await gotoWithRetry(page, `${BASE_URL}/en/ceo-dashboard`)
     await page.waitForLoadState('networkidle')
 
     const pill = page.getByRole('button', { name: 'Last Month' })
@@ -38,7 +39,7 @@ test.describe('Admin Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/en/ceo-dashboard`)
+    await gotoWithRetry(page, `${BASE_URL}/en/ceo-dashboard`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -49,7 +50,7 @@ test.describe('Admin Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/admin`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/admin`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -60,7 +61,7 @@ test.describe('Admin Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/admin/whatsapp-pack`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/admin/whatsapp-pack`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -71,7 +72,7 @@ test.describe('Admin Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/admin/orders`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/admin/orders`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -82,7 +83,7 @@ test.describe('Admin Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/admin/renewals`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/admin/renewals`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -95,7 +96,7 @@ test.describe('Admin Platform Pages — public', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/status`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/status`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\/(status|login)/)

@@ -1,52 +1,24 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCSRFRequest } from '@/lib/csrf';
-
-async function getUserContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const { data: { user }, error } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, can_view_payments, can_record_payments')
-    .eq('id', user.id)
-    .single();
-
-  if (!userRecord?.center_id) return null;
-
-  return { user: userRecord, supabaseAdmin };
-}
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
 
-    const canConfirm = ctx.user.can_view_payments === true || ctx.user.can_record_payments === true;
+    const { data: permRow } = await auth.supabaseAdmin
+      .from('users')
+      .select('can_view_payments, can_record_payments')
+      .eq('id', auth.userId)
+      .single();
+    const canConfirm =
+      permRow?.can_view_payments === true || permRow?.can_record_payments === true;
     if (!canConfirm) {
       return NextResponse.json({ error: 'Forbidden - insufficient permissions' }, { status: 403 });
     }
 
-    if (!validateCSRFRequest(request, ctx.user.id)) {
+    if (!validateCSRFRequest(request, auth.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
@@ -56,7 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'payment_id is required' }, { status: 400 });
     }
 
-    const { data: payment, error: payErr } = await ctx.supabaseAdmin
+    const { data: payment, error: payErr } = await auth.supabaseAdmin
       .from('payments')
       .select('id, student_id, center_id, amount, status')
       .eq('id', paymentId)
@@ -66,7 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
 
-    if ((payment as { center_id?: string }).center_id !== ctx.user.center_id) {
+    if ((payment as { center_id?: string }).center_id !== auth.centerId) {
       return NextResponse.json({ error: 'Payment does not belong to your center' }, { status: 403 });
     }
 
@@ -78,12 +50,12 @@ export async function POST(request: NextRequest) {
     const amount = Number((payment as { amount?: number }).amount ?? 0);
     const studentId = (payment as { student_id?: string }).student_id;
 
-    const { error: updateErr } = await ctx.supabaseAdmin
+    const { error: updateErr } = await auth.supabaseAdmin
       .from('payments')
       .update({
         status: 'confirmed',
         confirmed: true,
-        confirmed_by: ctx.user.id,
+        confirmed_by: auth.userId,
         confirmed_at: new Date().toISOString(),
       })
       .eq('id', paymentId);
@@ -94,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (studentId && amount > 0) {
-      const { data: student } = await ctx.supabaseAdmin
+      const { data: student } = await auth.supabaseAdmin
         .from('students')
         .select('balance_due')
         .eq('id', studentId)
@@ -103,7 +75,7 @@ export async function POST(request: NextRequest) {
       if (student && typeof (student as { balance_due?: number }).balance_due === 'number') {
         const currentBalance = (student as { balance_due: number }).balance_due;
         const newBalance = Math.max(0, currentBalance - amount);
-        await ctx.supabaseAdmin
+        await auth.supabaseAdmin
           .from('students')
           .update({ balance_due: newBalance })
           .eq('id', studentId);

@@ -1,7 +1,7 @@
 // Force rebuild: 2026-02-15
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { requireCenterAuth } from '@/lib/centerAuth';
 import { getPlanPrice, normalizeBillingPeriod, type BillingPeriod, type PlanKey } from '@/lib/pricing';
 import { getAnnouncementCap } from '@/lib/parentPack';
 
@@ -26,40 +26,6 @@ function calculatePaygCost(studentsPerWeek: number) {
   return { weekly: weeklyCost, monthly, effectiveRate, tiers };
 }
 
-async function getUserContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const { data: { user }, error } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (!userRecord?.center_id) return null;
-
-  return { user: userRecord, supabaseAdmin };
-}
-
 function getMonthBounds() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -72,10 +38,10 @@ function getMonthBounds() {
 
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
 
-    const { data: center, error: centerError } = await ctx.supabaseAdmin
+    const { data: center, error: centerError } = await auth.supabaseAdmin
       .from('centers')
       .select(`
         id, name, plan, pricing_type, weekly_student_limit,
@@ -86,7 +52,7 @@ export async function GET(request: NextRequest) {
         parent_pack_active_parents, announcement_balance,
         next_payment_due, billing_status, billing_amount
       `)
-      .eq('id', ctx.user.center_id)
+      .eq('id', auth.centerId)
       .single();
 
     if (centerError || !center) {
@@ -98,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     let plans: unknown[] = [];
     try {
-      const { data: plansData } = await ctx.supabaseAdmin.from('pricing_plans').select('*').order('sort_order', { ascending: true });
+      const { data: plansData } = await auth.supabaseAdmin.from('pricing_plans').select('*').order('sort_order', { ascending: true });
       if (plansData) {
         const hiddenPlanKey = ['pro', '_plus'].join('');
         plans = plansData.filter((p: { id?: string; plan_key?: string }) => {
@@ -110,16 +76,16 @@ export async function GET(request: NextRequest) {
 
     let paygRates: unknown[] = [];
     try {
-      const { data: paygData } = await ctx.supabaseAdmin.from('payg_rates').select('*').order('sort_order', { ascending: true });
+      const { data: paygData } = await auth.supabaseAdmin.from('payg_rates').select('*').order('sort_order', { ascending: true });
       if (paygData) paygRates = paygData;
     } catch { /* payg_rates query failed, using empty */ }
 
     const { start: monthStart, end: monthEnd } = getMonthBounds();
 
-    const { data: scans } = await ctx.supabaseAdmin
+    const { data: scans } = await auth.supabaseAdmin
       .from('attendance_scans')
       .select('student_id, scanned_at')
-      .eq('center_id', ctx.user.center_id)
+      .eq('center_id', auth.centerId)
       .gte('scanned_at', `${monthStart}T00:00:00`)
       .lte('scanned_at', `${monthEnd}T23:59:59`);
 
@@ -135,10 +101,10 @@ export async function GET(request: NextRequest) {
     weekStart.setHours(0, 0, 0, 0);
     const weekStartStr = weekStart.toISOString().slice(0, 10);
     const weekEndStr = now.toISOString().slice(0, 10);
-    const { data: thisWeekScans } = await ctx.supabaseAdmin
+    const { data: thisWeekScans } = await auth.supabaseAdmin
       .from('attendance_scans')
       .select('student_id')
-      .eq('center_id', ctx.user.center_id)
+      .eq('center_id', auth.centerId)
       .gte('scanned_at', `${weekStartStr}T00:00:00`)
       .lte('scanned_at', `${weekEndStr}T23:59:59`);
     const thisWeekUnique = new Set((thisWeekScans || []).map((s: { student_id: string }) => s.student_id)).size;
@@ -149,10 +115,10 @@ export async function GET(request: NextRequest) {
     try {
       const fourWeeksAgo = new Date(now);
       fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-      const { data: charges } = await ctx.supabaseAdmin
+      const { data: charges } = await auth.supabaseAdmin
         .from('payg_weekly_charges')
         .select('week_start_date, week_end_date, student_count, total_charge, paid')
-        .eq('center_id', ctx.user.center_id)
+        .eq('center_id', auth.centerId)
         .gte('week_start_date', fourWeeksAgo.toISOString().slice(0, 10))
         .order('week_start_date', { ascending: false })
         .limit(4);
@@ -177,10 +143,10 @@ export async function GET(request: NextRequest) {
 
     let invoices: unknown[] = [];
     try {
-      const { data: invData } = await ctx.supabaseAdmin
+      const { data: invData } = await auth.supabaseAdmin
         .from('invoices')
         .select('*')
-        .eq('center_id', ctx.user.center_id)
+        .eq('center_id', auth.centerId)
         .order('created_at', { ascending: false })
         .limit(20);
       if (invData) invoices = invData;
@@ -194,10 +160,10 @@ export async function GET(request: NextRequest) {
       created_at: string;
     }[] = [];
     try {
-      const { data: blasts } = await ctx.supabaseAdmin
+      const { data: blasts } = await auth.supabaseAdmin
         .from('announcement_blasts')
         .select('id, blast_type, parents_notified, total_amount, created_at')
-        .eq('center_id', ctx.user.center_id)
+        .eq('center_id', auth.centerId)
         .order('created_at', { ascending: false })
         .limit(3);
       if (blasts) recentAnnouncementBlasts = blasts as typeof recentAnnouncementBlasts;
@@ -278,10 +244,10 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (ctx.user.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!validateCSRFRequest(request, ctx.user.id)) {
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
+    if (auth.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!validateCSRFRequest(request, auth.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
@@ -301,20 +267,20 @@ export async function PUT(request: NextRequest) {
       if (new_plan) updates.pending_plan_change = new_plan;
       if (new_billing_type) updates.pending_billing_type = new_billing_type;
 
-      const { error } = await ctx.supabaseAdmin
+      const { error } = await auth.supabaseAdmin
         .from('centers')
         .update(updates)
-        .eq('id', ctx.user.center_id);
+        .eq('id', auth.centerId);
 
       if (error) throw error;
       return NextResponse.json({ success: true });
     }
 
     if (action === 'cancel_change') {
-      const { error } = await ctx.supabaseAdmin
+      const { error } = await auth.supabaseAdmin
         .from('centers')
         .update({ pending_plan_change: null, pending_billing_type: null })
-        .eq('id', ctx.user.center_id);
+        .eq('id', auth.centerId);
 
       if (error) throw error;
       return NextResponse.json({ success: true });
@@ -333,7 +299,7 @@ export async function PUT(request: NextRequest) {
       const invoiceNumber = `PAYPROOF-${today}-${Date.now().toString(36)}`;
 
       const insertPayload = {
-        center_id: ctx.user.center_id,
+        center_id: auth.centerId,
         invoice_type: 'payment_proof',
         payment_amount: numAmount,
         total_amount: numAmount,
@@ -348,7 +314,7 @@ export async function PUT(request: NextRequest) {
         invoice_number: invoiceNumber,
       };
 
-      const { data: insertData, error: insertErr } = await ctx.supabaseAdmin
+      const { data: insertData, error: insertErr } = await auth.supabaseAdmin
         .from('invoices')
         .insert(insertPayload)
         .select('id');
@@ -361,17 +327,17 @@ export async function PUT(request: NextRequest) {
     }
 
     if (action === 'submit_payment_reference' && reference) {
-      const { data: pendingInvoice } = await ctx.supabaseAdmin
+      const { data: pendingInvoice } = await auth.supabaseAdmin
         .from('invoices')
         .select('id')
-        .eq('center_id', ctx.user.center_id)
+        .eq('center_id', auth.centerId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
       if (pendingInvoice) {
-        await ctx.supabaseAdmin
+        await auth.supabaseAdmin
           .from('invoices')
           .update({ payment_reference: String(reference).trim() })
           .eq('id', (pendingInvoice as { id: string }).id);
@@ -391,10 +357,10 @@ export async function PUT(request: NextRequest) {
 /** POST handler for submitting payment proof (alternative to PUT) */
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (ctx.user.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!validateCSRFRequest(request, ctx.user.id)) {
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
+    if (auth.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!validateCSRFRequest(request, auth.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
@@ -417,7 +383,7 @@ export async function POST(request: NextRequest) {
     const invoiceNumber = `PAYPROOF-${today}-${Date.now().toString(36)}`;
 
     const insertPayload = {
-      center_id: ctx.user.center_id,
+      center_id: auth.centerId,
       invoice_type: 'payment_proof',
       payment_amount: amount,
       total_amount: amount,
@@ -432,7 +398,7 @@ export async function POST(request: NextRequest) {
       invoice_number: invoiceNumber,
     };
 
-    const { error: insertErr } = await ctx.supabaseAdmin
+    const { error: insertErr } = await auth.supabaseAdmin
       .from('invoices')
       .insert(insertPayload)
       .select('id');

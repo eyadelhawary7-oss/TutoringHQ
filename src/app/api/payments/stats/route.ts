@@ -1,46 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-
-async function getUserContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const { data: { user }, error } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, can_view_payments')
-    .eq('id', user.id)
-    .single();
-
-  if (!userRecord?.center_id) return null;
-
-  return { user: userRecord, supabaseAdmin };
-}
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
 
-    const centerId = ctx.user.center_id as string;
+    const centerId = auth.centerId;
 
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
@@ -55,7 +21,7 @@ export async function GET(request: NextRequest) {
     const monthEndISO = monthEnd.toISOString().slice(0, 10);
 
     // Collected today: (confirmed=true OR method IN ('cash','نقدي')) AND paid_at today
-    const { data: todayPayments } = await ctx.supabaseAdmin
+    const { data: todayPayments } = await auth.supabaseAdmin
       .from('payments')
       .select('amount, confirmed, method')
       .eq('center_id', centerId)
@@ -69,7 +35,7 @@ export async function GET(request: NextRequest) {
     }, 0);
 
     // Collected this month: same logic
-    const { data: monthPayments } = await ctx.supabaseAdmin
+    const { data: monthPayments } = await auth.supabaseAdmin
       .from('payments')
       .select('amount, confirmed, method')
       .eq('center_id', centerId)
@@ -83,7 +49,7 @@ export async function GET(request: NextRequest) {
     }, 0);
 
     // Pending digital: confirmed=false AND method NOT IN ('cash','نقدي','كاش')
-    const { data: pendingRaw } = await ctx.supabaseAdmin
+    const { data: pendingRaw } = await auth.supabaseAdmin
       .from('payments')
       .select('amount, method')
       .eq('center_id', centerId)
@@ -95,7 +61,7 @@ export async function GET(request: NextRequest) {
     const pendingCount = pendingPayments.length;
 
     // Total balance due: SUM balance_due from students WHERE center_id AND is_active
-    const { data: students } = await ctx.supabaseAdmin
+    const { data: students } = await auth.supabaseAdmin
       .from('students')
       .select('balance_due')
       .eq('center_id', centerId)

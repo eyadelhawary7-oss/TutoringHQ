@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { gotoWithRetry } from './goto-with-retry'
 
 const BASE_URL = process.env.BASE_URL ?? 'https://centerhq.app'
 
@@ -7,7 +8,7 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/dashboard`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/dashboard`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -18,7 +19,7 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/scan`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/scan`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -29,7 +30,7 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/students`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/students`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -40,7 +41,7 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/payments`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/payments`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -51,7 +52,7 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/settings`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/settings`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -62,7 +63,7 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/whatsapp-pack`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/whatsapp-pack`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -73,7 +74,7 @@ test.describe('Center Platform Pages', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    await page.goto(`${BASE_URL}/ar/orders`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/orders`)
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/(ar|en)\//)
@@ -95,7 +96,7 @@ test.describe('Center Platform Pages', () => {
       const errors: string[] = []
       page.on('pageerror', (err) => errors.push(err.message))
 
-      await page.goto(`${BASE_URL}${path}`)
+      await gotoWithRetry(page, `${BASE_URL}${path}`)
       await page.waitForLoadState('networkidle')
 
       await expect(page.locator('body')).not.toBeEmpty()
@@ -109,7 +110,7 @@ test.describe('Center Platform Pages — unauthenticated', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
 
-    const response = await page.goto('/ar/this-route-does-not-exist-xyz')
+    const response = await gotoWithRetry(page, '/ar/this-route-does-not-exist-xyz')
     expect(response?.status()).toBe(404)
     expect(errors).toHaveLength(0)
   })

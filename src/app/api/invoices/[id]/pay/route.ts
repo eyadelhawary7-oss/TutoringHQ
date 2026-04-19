@@ -1,44 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
-
-async function getUserContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (!userRecord?.center_id) return null;
-
-  return { user: userRecord, supabaseAdmin };
-}
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -47,11 +10,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Invalid invoice id' }, { status: 400 });
     }
 
-    const ctx = await getUserContext(request);
-    if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    if (ctx.user.role !== 'owner') {
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
+    if (auth.role !== 'owner') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -62,7 +23,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Paymob is not configured' }, { status: 500 });
     }
 
-    const { data: invoice, error: invErr } = await ctx.supabaseAdmin
+    const { data: invoice, error: invErr } = await auth.supabaseAdmin
       .from('invoices')
       .select('id, center_id, status, invoice_type, total_amount, paymob_order_id, paymob_iframe_url')
       .eq('id', invoiceId.trim())
@@ -82,7 +43,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       paymob_iframe_url: string | null;
     };
 
-    if (row.center_id !== ctx.user.center_id) {
+    if (row.center_id !== auth.centerId) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
@@ -115,7 +76,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Invalid invoice amount' }, { status: 400 });
     }
 
-    const { data: center } = await ctx.supabaseAdmin
+    const { data: center } = await auth.supabaseAdmin
       .from('centers')
       .select('name, phone')
       .eq('id', row.center_id)
@@ -208,14 +169,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
     const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${encodeURIComponent(keyJson.token)}`;
 
-    const { error: updateErr } = await ctx.supabaseAdmin
+    const { error: updateErr } = await auth.supabaseAdmin
       .from('invoices')
       .update({
         paymob_order_id: paymobOrderId,
         paymob_iframe_url: iframeUrl,
       })
       .eq('id', row.id)
-      .eq('center_id', ctx.user.center_id)
+      .eq('center_id', auth.centerId)
       .in('status', ['pending', 'overdue']);
 
     if (updateErr) {

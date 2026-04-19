@@ -149,7 +149,8 @@ export async function POST(request: Request) {
       sigBuf.length !== expectedBuf.length ||
       !timingSafeEqual(sigBuf, expectedBuf)
     ) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      console.warn('[bosta-webhook] Invalid signature');
+      return NextResponse.json({ received: true, error: 'invalid_signature' }, { status: 200 });
     }
   } else {
     console.warn(
@@ -161,7 +162,8 @@ export async function POST(request: Request) {
   try {
     body = JSON.parse(rawBody) as Record<string, unknown>;
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    console.warn('[bosta-webhook] Invalid JSON body');
+    return NextResponse.json({ received: true, error: 'invalid_json' }, { status: 200 });
   }
 
   if (!supabaseAdmin) {
@@ -194,7 +196,8 @@ export async function POST(request: Request) {
     (typeof body._id === 'string' ? body._id : null);
 
   if (!shipmentId && !trackingNumber) {
-    return NextResponse.json({ error: 'No shipment identifier' }, { status: 400 });
+    console.warn('[bosta-webhook] No shipment identifier');
+    return NextResponse.json({ received: true, error: 'no_shipment' }, { status: 200 });
   }
 
   const order = await findCardOrder(supabase, shipmentId, trackingNumber);

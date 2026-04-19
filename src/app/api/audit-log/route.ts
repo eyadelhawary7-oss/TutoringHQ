@@ -1,50 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { validateCSRFRequest } from '@/lib/csrf';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 /**
  * Append one audit_log row using the service role. Callers must be authenticated
- * center users; centerId must match their users.center_id.
+ * center users; center_id is always taken from the session (requireCenterAuth).
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    const authHeader = request.headers.get('Authorization');
-    const accessToken = authHeader?.replace(/^Bearer\s+/i, '')?.trim();
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAuth.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    if (!validateCSRFRequest(request, user.id)) {
+    if (!validateCSRFRequest(request, auth.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
     let body: {
-      centerId?: unknown;
       action?: unknown;
       entityType?: unknown;
       entityId?: unknown;
@@ -56,24 +27,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
-    const centerId = body.centerId;
     const action = body.action;
     const entityType = body.entityType;
-    if (typeof centerId !== 'string' || typeof action !== 'string' || typeof entityType !== 'string') {
+    if (typeof action !== 'string' || typeof entityType !== 'string') {
       return NextResponse.json(
-        { error: 'centerId, action, and entityType are required strings' },
+        { error: 'action and entityType are required strings' },
         { status: 400 },
       );
-    }
-
-    const { data: userRecord } = await supabaseAdmin
-      .from('users')
-      .select('center_id')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (!userRecord?.center_id || userRecord.center_id !== centerId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const entityId = body.entityId;
@@ -82,9 +42,9 @@ export async function POST(request: NextRequest) {
         ? (body.details as Record<string, unknown>)
         : {};
 
-    const { error: insertError } = await supabaseAdmin.from('audit_log').insert({
-      center_id: centerId,
-      user_id: user.id,
+    const { error: insertError } = await auth.supabaseAdmin.from('audit_log').insert({
+      center_id: auth.centerId,
+      user_id: auth.userId,
       action,
       entity_type: entityType,
       entity_id: typeof entityId === 'string' ? entityId : null,

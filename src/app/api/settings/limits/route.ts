@@ -1,39 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-async function getUserContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const { data: { user }, error } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (!userRecord?.center_id) return null;
-
-  return { user: userRecord, supabaseAdmin };
-}
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 /**
  * GET /api/settings/limits
@@ -42,14 +8,12 @@ async function getUserContext(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
-    if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
 
-    const centerId = ctx.user.center_id;
+    const centerId = auth.centerId;
 
-    const { data: center, error: centerError } = await ctx.supabaseAdmin
+    const { data: center, error: centerError } = await auth.supabaseAdmin
       .from('centers')
       .select('max_teachers, max_students, plan')
       .eq('id', centerId)
@@ -63,12 +27,12 @@ export async function GET(request: NextRequest) {
     const maxStudents = Number(center.max_students ?? 150);
 
     // Count all team members (owner, admin, assistant, teacher)
-    const { count: currentTeamMembers } = await ctx.supabaseAdmin
+    const { count: currentTeamMembers } = await auth.supabaseAdmin
       .from('users')
       .select('*', { count: 'exact', head: true })
       .eq('center_id', centerId);
 
-    const { count: currentStudents } = await ctx.supabaseAdmin
+    const { count: currentStudents } = await auth.supabaseAdmin
       .from('students')
       .select('*', { count: 'exact', head: true })
       .eq('center_id', centerId);
@@ -76,7 +40,7 @@ export async function GET(request: NextRequest) {
     // Weekly active students (unique students scanned in past 7 days)
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const { data: weeklyScans } = await ctx.supabaseAdmin
+    const { data: weeklyScans } = await auth.supabaseAdmin
       .from('attendance_scans')
       .select('student_id')
       .eq('center_id', centerId)

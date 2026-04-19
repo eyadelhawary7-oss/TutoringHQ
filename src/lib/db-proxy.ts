@@ -155,8 +155,6 @@ export async function auditLog(params: {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        centerId: params.centerId,
-        userId: params.userId,
         action: params.action,
         entityType: params.entityType,
         entityId: params.entityId ?? null,

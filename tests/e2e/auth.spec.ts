@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { gotoWithRetry } from './goto-with-retry'
 
 test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -16,7 +17,7 @@ test.describe('Authentication', () => {
   test('login page loads and renders correctly', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
-    await page.goto('/ar/login')
+    await gotoWithRetry(page, '/ar/login')
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveTitle(/.+/)
@@ -31,7 +32,7 @@ test.describe('Authentication', () => {
 
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
-    await page.goto('/ar/login')
+    await gotoWithRetry(page, '/ar/login')
     await page.waitForLoadState('networkidle')
 
     await fillLoginForm(page, TEST_PHONE, TEST_PIN)
@@ -52,7 +53,7 @@ test.describe('Authentication', () => {
 
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
-    await page.goto('/ar/login')
+    await gotoWithRetry(page, '/ar/login')
     await page.waitForLoadState('networkidle')
 
     await fillLoginForm(page, TEST_PHONE, '000000')
@@ -68,7 +69,7 @@ test.describe('Authentication', () => {
   test('unauthenticated visit to /dashboard redirects to login', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
-    await page.goto('/ar/dashboard')
+    await gotoWithRetry(page, '/ar/dashboard')
     await page.waitForURL(/\/(ar|en)\/login/)
     await expect(page).toHaveURL(/\/(ar|en)\/login/)
     expect(errors).toHaveLength(0)
@@ -77,7 +78,7 @@ test.describe('Authentication', () => {
   test('unauthenticated visit to /ceo-dashboard redirects to login', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
-    await page.goto('/ar/ceo-dashboard')
+    await gotoWithRetry(page, '/ar/ceo-dashboard')
     await page.waitForURL(/\/(ar|en)\/login/)
     await expect(page).toHaveURL(/\/(ar|en)\/login/)
     expect(errors).toHaveLength(0)
@@ -92,14 +93,14 @@ test.describe('Authentication', () => {
       const errors: string[] = []
       page.on('pageerror', (err) => errors.push(err.message))
 
-      await page.goto('/ar/dashboard')
+      await gotoWithRetry(page, '/ar/dashboard')
       await page.waitForURL(
         /\/(ar|en)\/(admin|dashboard|login)/,
         { timeout: 60_000 }
       )
 
       await page.context().clearCookies()
-      await page.goto('/ar/login')
+      await gotoWithRetry(page, '/ar/login')
       await page.waitForLoadState('networkidle')
 
       await expect(page).toHaveURL(/\/(ar|en)\/login/)

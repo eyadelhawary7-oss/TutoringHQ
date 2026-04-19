@@ -43,3 +43,8 @@ export function normalizePhone(phone: string): string {
   // Fallback: prepend +20
   return '+20' + digits;
 }
+
+/** True when `normalized` is +20 followed by a valid Egyptian mobile (10, 11, 12, 15). */
+export function isValidEgyptianMobileE164(normalized: string): boolean {
+  return /^\+20(1[0125]\d{8})$/.test(normalized);
+}

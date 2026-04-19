@@ -1,47 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { planRequestSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
-
-async function getUserContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const { data: { user }, error } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (!userRecord?.center_id || userRecord.role !== 'owner') return null;
-
-  return { user: userRecord, supabaseAdmin };
-}
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!validateCSRFRequest(request, ctx.user.id)) {
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
+    if (auth.role !== 'owner') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (!validateCSRFRequest(request, auth.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
@@ -53,18 +22,18 @@ export async function POST(request: NextRequest) {
     }
     const { requested_plan } = parsed.data;
 
-    const { data: center } = await ctx.supabaseAdmin
+    const { data: center } = await auth.supabaseAdmin
       .from('centers')
       .select('id, plan, pricing_type')
-      .eq('id', ctx.user.center_id)
+      .eq('id', auth.centerId)
       .single();
 
     if (!center) return NextResponse.json({ error: 'Center not found' }, { status: 404 });
 
     const currentPlan = center.plan || 'starter';
 
-    const { error: insertErr } = await ctx.supabaseAdmin.from('plan_requests').insert({
-      center_id: ctx.user.center_id,
+    const { error: insertErr } = await auth.supabaseAdmin.from('plan_requests').insert({
+      center_id: auth.centerId,
       current_plan: currentPlan,
       requested_plan,
       status: 'pending',

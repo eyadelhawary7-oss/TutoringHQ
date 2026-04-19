@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { gotoWithRetry } from './goto-with-retry'
 
 /** Production smoke tests: console listener filters 404/resource failures, next-intl MISSING_MESSAGE, and camera Permissions-Policy noise. */
 const BASE_URL = process.env.BASE_URL ?? 'https://centerhq.app'
@@ -18,7 +19,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/dashboard`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/dashboard`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -39,7 +40,7 @@ test.describe('Center Owner Pages', () => {
     })
 
     await page.context().grantPermissions(['camera'], { origin: new URL(BASE_URL).origin })
-    await page.goto(`${BASE_URL}/ar/scan`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/scan`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -59,7 +60,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/students`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/students`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -79,7 +80,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/payments`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/payments`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -99,7 +100,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/groups`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/groups`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -119,7 +120,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/schedule`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/schedule`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -139,7 +140,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/rooms`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/rooms`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -159,7 +160,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/attendance`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/attendance`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -179,7 +180,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/settings`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/settings`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -199,7 +200,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/settings/billing`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/settings/billing`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -219,7 +220,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/orders`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/orders`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -239,7 +240,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/analytics`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/analytics`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -259,7 +260,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/referrals`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/referrals`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -279,7 +280,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/academic`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/academic`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
     expect(errors).toHaveLength(0)
@@ -299,7 +300,7 @@ test.describe('Center Owner Pages', () => {
       }
     })
 
-    await page.goto(`${BASE_URL}/ar/onboarding`)
+    await gotoWithRetry(page, `${BASE_URL}/ar/onboarding`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/(ar|en)\//)
   })

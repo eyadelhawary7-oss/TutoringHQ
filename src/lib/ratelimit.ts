@@ -56,6 +56,26 @@ export const scanRatelimit = redis
     })
   : null;
 
+// PIN reset: 3 OTP sends per phone per 15 minutes (WhatsApp + DB OTP)
+export const resetPinPhoneRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(3, '15 m'),
+      prefix: 'rl:reset-pin:phone',
+      analytics: false,
+    })
+  : null;
+
+// PIN reset verify: 5 attempts per phone per 15 minutes
+export const verifyPinResetPhoneRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, '15 m'),
+      prefix: 'rl:verify-pin-reset:phone',
+      analytics: false,
+    })
+  : null;
+
 // ── Helper: extract client IP from request headers ────────────────────────
 // Next.js App Router behind Vercel CDN — use x-forwarded-for first
 export function getClientIp(request: Request): string {

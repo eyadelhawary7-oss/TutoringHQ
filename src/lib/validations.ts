@@ -126,6 +126,8 @@ export const studentInsertSchema = z.object({
   parent_pack_opted_in: z.boolean().optional(),
   parent_consent_given: z.boolean().optional(),
   parent_consent_at: z.string().nullable().optional(),
+  group_id: z.string().uuid().nullable().optional(),
+  notes: z.string().max(5000).optional().nullable(),
 }).transform((data) => {
   const { fee: _f, monthly_fee: _m, ...rest } = data as Record<string, unknown> & { fee?: unknown; monthly_fee?: unknown };
   return rest;

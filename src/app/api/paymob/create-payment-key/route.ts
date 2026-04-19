@@ -1,51 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
-async function getUserContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!userRecord?.center_id) return null;
-
-  return { user: userRecord, supabaseAdmin };
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
-    if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
 
     const apiKey = process.env.PAYMOB_API_KEY;
     const integrationId = process.env.PAYMOB_INTEGRATION_ID;
@@ -59,8 +20,6 @@ export async function POST(request: NextRequest) {
 
     let body: {
       amount?: unknown;
-      centerName?: unknown;
-      centerPhone?: unknown;
       cardOrderId?: unknown;
     };
     try {
@@ -70,24 +29,28 @@ export async function POST(request: NextRequest) {
     }
 
     const amount = typeof body.amount === 'number' ? body.amount : NaN;
-    const centerName =
-      typeof body.centerName === 'string' ? body.centerName.trim() : '';
-    const centerPhone =
-      typeof body.centerPhone === 'string' ? body.centerPhone.trim() : '';
     const cardOrderId =
       typeof body.cardOrderId === 'string' ? body.cardOrderId.trim() : '';
+
+    const { data: centerRow } = await auth.supabaseAdmin
+      .from('centers')
+      .select('name, phone')
+      .eq('id', auth.centerId)
+      .maybeSingle();
+    const centerName = String((centerRow as { name?: string | null } | null)?.name ?? '').trim();
+    const centerPhone = String((centerRow as { phone?: string | null } | null)?.phone ?? '').trim();
 
     if (!Number.isFinite(amount) || amount < 0 || !centerName || !centerPhone || !cardOrderId) {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
 
-    const { data: orderRow, error: orderErr } = await ctx.supabaseAdmin
+    const { data: orderRow, error: orderErr } = await auth.supabaseAdmin
       .from('card_orders')
       .select('id, center_id, total_amount, payment_status')
       .eq('id', cardOrderId)
       .maybeSingle();
 
-    if (orderErr || !orderRow || orderRow.center_id !== ctx.user.center_id) {
+    if (orderErr || !orderRow || orderRow.center_id !== auth.centerId) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
@@ -178,11 +141,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { error: updateErr } = await ctx.supabaseAdmin
+    const { error: updateErr } = await auth.supabaseAdmin
       .from('card_orders')
       .update({ paymob_order_id: String(paymobOrderId) })
       .eq('id', cardOrderId)
-      .eq('center_id', ctx.user.center_id);
+      .eq('center_id', auth.centerId);
 
     if (updateErr) {
       console.error('[create-payment-key] Failed to save paymob_order_id:', updateErr);

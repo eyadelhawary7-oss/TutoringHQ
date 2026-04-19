@@ -1,4 +1,5 @@
 import { test as setup, expect } from '@playwright/test'
+import { gotoWithRetry } from './goto-with-retry'
 import path from 'path'
 import fs from 'fs'
 
@@ -7,7 +8,7 @@ export const AUTH_FILE = path.join(__dirname, '../../playwright/.auth/user.json'
 setup('authenticate once for all tests', async ({ page }) => {
   const base = process.env.PLAYWRIGHT_BASE_URL || 'https://centerhq.app'
 
-  await page.goto(`${base}/ar/login`)
+  await gotoWithRetry(page, `${base}/ar/login`)
   await page.locator('input[type="tel"]').fill(process.env.TEST_PHONE!, { timeout: 30_000 })
   await page.locator('input[type="password"]').fill(process.env.TEST_PIN!, { timeout: 30_000 })
   await page.getByRole('button', { name: /إرسال|تسجيل/ }).click()

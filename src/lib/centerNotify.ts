@@ -696,6 +696,22 @@ export async function sendDataDeletionNotice(
   });
 }
 
+/** WhatsApp owner confirmation after Paymob subscription payment (wraps chq_payment_confirmed). */
+export async function sendPaymentConfirmed(
+  supabase: SupabaseClient,
+  ownerPhone: string,
+  centerName: string,
+  periodStr: string,
+  amountStr: string,
+): Promise<CenterNotifyResult> {
+  return sendChqPaymentConfirmedTemplate(supabase, {
+    name: centerName,
+    phone: ownerPhone,
+    billingPeriodLabel: periodStr,
+    billingAmountStr: amountStr,
+  });
+}
+
 /** chq_payment_confirmed — Paymob subscription / renewal success (Item 7). */
 export async function sendChqPaymentConfirmedTemplate(
   supabase: SupabaseClient,
@@ -1330,12 +1346,8 @@ export async function sendParentTermSummary(
   }
 }
 
-/**
- * TODO: Wire to PIN reset flow after Vodafone SIM activated
- * Stub only: do not call from routes until SIM is live.
- */
+/** Sends WhatsApp template `chq_pin_delivery` with the OTP (requires approved template + WA). */
 export async function sendPinDelivery(phone: string, otpCode: string): Promise<boolean> {
-  // TODO: Wire to PIN reset flow after Vodafone SIM activated
   try {
     if (shouldSkipWaForTestPhoneId()) return false;
     const supabase = serviceSupabase();

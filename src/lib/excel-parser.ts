@@ -51,6 +51,7 @@ export interface ColumnMapping {
   studentName: string | null;
   phone: string | null;
   parentPhone: string | null;
+  notes: string | null;
   subject: string | null;
   group: string | null;
   monthlyFee: string | null;
@@ -61,6 +62,7 @@ export function autoDetectMapping(headers: string[]): ColumnMapping {
     studentName: null,
     phone: null,
     parentPhone: null,
+    notes: null,
     subject: null,
     group: null,
     monthlyFee: null,
@@ -69,6 +71,7 @@ export function autoDetectMapping(headers: string[]): ColumnMapping {
   const namePatterns = ['name', 'اسم', 'الاسم', 'اسم الطالب', 'student', 'الطالب', 'الاسم_الكامل'];
   const phonePatterns = ['phone', 'هاتف', 'الهاتف', 'رقم', 'موبايل', 'تليفون', 'mobile', 'رقم الطالب', 'رقم الهاتف'];
   const parentPatterns = ['parent', 'ولي', 'ولي الأمر', 'رقم ولي', 'parent phone', 'رقم ولي الأمر'];
+  const notesPatterns = ['notes', 'ملاحظات', 'note', 'تعليق', 'comment'];
   const subjectPatterns = ['subject', 'مادة', 'المادة', 'الماده', 'course'];
   const groupPatterns = ['group', 'مجموعة', 'المجموعة', 'شعبة'];
   const feePatterns = ['fee', 'اشتراك', 'رسوم', 'مبلغ', 'monthly', 'الاشتراك', 'المبلغ'];
@@ -78,6 +81,8 @@ export function autoDetectMapping(headers: string[]): ColumnMapping {
 
     if (!mapping.parentPhone && parentPatterns.some(p => lower.includes(p))) {
       mapping.parentPhone = header;
+    } else if (!mapping.notes && notesPatterns.some(p => lower.includes(p))) {
+      mapping.notes = header;
     } else if (!mapping.phone && phonePatterns.some(p => lower.includes(p))) {
       mapping.phone = header;
     } else if (!mapping.studentName && namePatterns.some(p => lower.includes(p))) {
