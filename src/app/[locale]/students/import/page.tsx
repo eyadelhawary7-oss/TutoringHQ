@@ -17,7 +17,7 @@ type ColumnMapValue = 'name' | 'phone' | 'parentPhone' | 'group' | 'notes' | 'sk
 
 type CenterGroup = { id: string; name: string; subject: string | null };
 
-function findCaseInsensitiveGroupMatch(csvName: string, groups: CenterGroup[]): string | null {
+function findMatch(csvName: string, groups: CenterGroup[]): string | null {
   return groups.find((g) => g.name.toLowerCase().trim() === csvName.toLowerCase().trim())?.id ?? null;
 }
 
@@ -248,6 +248,7 @@ export default function ImportStudentsPage() {
     setIsLoading(true);
     setError('');
     try {
+      // CenterHQ stores class groups in `student_groups` (same role as "groups" in the product).
       const { data, error: selErr } = await dbSelect({
         table: 'student_groups',
         select: 'id, name, subject',
@@ -265,7 +266,7 @@ export default function ImportStudentsPage() {
 
       const initial: Record<string, string | null> = {};
       for (const u of unique) {
-        initial[u] = findCaseInsensitiveGroupMatch(u, list);
+        initial[u] = findMatch(u, list);
       }
       setGroupMapping(initial);
       setStep('resolveGroups');
@@ -455,15 +456,13 @@ export default function ImportStudentsPage() {
             <h3 className="font-bold text-[var(--color-text-primary)]">{t('groupResolution')}</h3>
             <p className="text-sm text-[var(--color-text-secondary)]">{t('groupResolutionHint')}</p>
             {centerGroups.length === 0 && (
-              <div className="p-3 rounded-xl text-sm border border-border bg-muted text-[var(--color-text-primary)]">
-                {t('importWithoutGroupsBody')}
+              <div className="p-3 rounded-xl text-sm border border-border bg-muted text-[var(--color-text-primary)] space-y-2">
+                <p>{t('importWithoutGroupsBody')}</p>
+                {csvGroupOrder.length > 0 ? <p className="text-[var(--color-text-secondary)]">{t('noGroupsFound')}</p> : null}
               </div>
             )}
-            {centerGroups.length === 0 && csvGroupOrder.length > 0 && (
-              <p className="text-xs text-[var(--color-text-secondary)]">{t('noGroupsFound')}</p>
-            )}
             {csvGroupOrder.length === 0 && (
-              <p className="text-sm text-[var(--color-text-secondary)]">{t('skipGroup')}</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('noCsvGroupValues')}</p>
             )}
             {csvGroupOrder.length > 0 && (
               <div className="space-y-3">

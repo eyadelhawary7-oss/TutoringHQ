@@ -1,4 +1,23 @@
-import { NextResponse } from 'next/server';
+/**
+ * PIN Reset Route
+ *
+ * Production flow: OTP sent via chq_pin_delivery WhatsApp template.
+ * Blocked until: Vodafone postpaid SIM active + Meta approves chq_pin_delivery.
+ *
+ * Manual admin fallback (use while WA is not live):
+ * 1. User contacts support
+ * 2. Admin runs in Supabase SQL Editor:
+ *    SELECT id, otp_hash, expires_at FROM pin_reset_otps
+ *    WHERE phone = '+20XXXXXXXXXX'
+ *    ORDER BY created_at DESC LIMIT 1;
+ * 3. Admin reads OTP hash — bcrypt compare externally to find the 6-digit code
+ *    OR: Admin directly resets PIN:
+ *    UPDATE users SET pin_code = '$2a$10$[hash_of_new_pin]'
+ *    WHERE phone = '+20XXXXXXXXXX';
+ * 4. Generate a bcrypt hash for any 6-digit PIN at: https://bcrypt-generator.com (cost 10)
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { sendPinDelivery } from '@/lib/centerNotify';
@@ -12,19 +31,26 @@ function generateSixDigitOtp(): string {
 
 /**
  * POST /api/auth/reset-pin
- * Public. Always returns { success: true } on valid input to avoid phone enumeration.
+ * Public. No requireCenterAuth. Always returns { success: true } when not rate limited,
+ * to avoid phone enumeration (invalid or unknown phones behave the same).
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const rawPhone = typeof body?.phone === 'string' ? body.phone.trim() : '';
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ success: true });
+    }
+
+    const rawPhone = typeof (body as { phone?: unknown })?.phone === 'string' ? (body as { phone: string }).phone.trim() : '';
     if (!rawPhone) {
-      return NextResponse.json({ error: 'phone_required' }, { status: 400 });
+      return NextResponse.json({ success: true });
     }
 
     const normalizedPhone = normalizePhone(rawPhone);
     if (!isValidEgyptianMobileE164(normalizedPhone)) {
-      return NextResponse.json({ error: 'invalid_phone' }, { status: 400 });
+      return NextResponse.json({ success: true });
     }
 
     if (resetPinPhoneRatelimit) {
@@ -41,6 +67,7 @@ export async function POST(request: Request) {
       .from('users')
       .select('id')
       .eq('phone', normalizedPhone)
+      .eq('is_active', true)
       .maybeSingle();
 
     if (userErr) {
@@ -67,11 +94,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    const sent = await sendPinDelivery(normalizedPhone, otp);
-    if (!sent) {
-      console.error('[reset-pin] sendPinDelivery returned false', {
-        phone: normalizedPhone,
-      });
+    try {
+      await sendPinDelivery(normalizedPhone, otp);
+    } catch {
+      console.error('[reset-pin] sendPinDelivery failed — WA not yet live');
     }
 
     return NextResponse.json({ success: true });

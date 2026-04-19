@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 export type OwnerAdminContext = {
   supabaseAdmin: SupabaseClient;
@@ -22,6 +23,13 @@ export async function requireOwnerAdminCenter(
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
+  let supabaseAdmin: SupabaseClient;
+  try {
+    supabaseAdmin = getSupabaseAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+
   const token = request.headers.get('Authorization')?.replace('Bearer ', '');
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -40,10 +48,6 @@ export async function requireOwnerAdminCenter(
   if (authErr || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   const { data: userRow } = await supabaseAdmin
     .from('users')

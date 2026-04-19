@@ -1,12 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
+  if (!supabaseUrl || !supabaseAnonKey) return null;
+
+  let supabaseAdmin;
+  try {
+    supabaseAdmin = getSupabaseAdmin();
+  } catch {
+    return null;
+  }
 
   const authHeader = request.headers.get('Authorization');
   const accessToken = authHeader?.replace('Bearer ', '');
@@ -19,10 +26,6 @@ async function getUserContext(request: NextRequest) {
 
   const { data: { user }, error } = await supabaseAuth.auth.getUser();
   if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
 
   const { data: userRecord } = await supabaseAdmin
     .from('users')

@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 const ALLOWED_PATCH = new Set([
   'name',
@@ -11,49 +11,11 @@ const ALLOWED_PATCH = new Set([
   'onboarding_started_at',
 ]);
 
-async function getUserCenterContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id')
-    .eq('id', user.id)
-    .single();
-
-  const centerId = userRecord?.center_id as string | undefined;
-  if (!centerId) return null;
-
-  return { centerId, supabaseAdmin };
-}
-
 export async function PATCH(request: NextRequest) {
   try {
-    const ctx = await getUserCenterContext(request);
-    if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) {
+      return auth.response;
     }
 
     let body: Record<string, unknown>;
@@ -84,7 +46,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
-    const { error: upErr } = await ctx.supabaseAdmin.from('centers').update(patch).eq('id', ctx.centerId);
+    const { error: upErr } = await auth.supabaseAdmin.from('centers').update(patch).eq('id', auth.centerId);
 
     if (upErr) {
       return NextResponse.json({ error: upErr.message }, { status: 500 });
@@ -95,7 +57,7 @@ export async function PATCH(request: NextRequest) {
     console.error('[centers/me PATCH]', e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Unknown error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

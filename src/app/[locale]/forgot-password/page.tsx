@@ -47,6 +47,11 @@ export default function ForgotPasswordPage() {
         return;
       }
 
+      if (!res.ok) {
+        setError(t('otpSendFailed'));
+        return;
+      }
+
       setPhone(internationalPhone);
       setMessage(t('otpSent'));
       setStep('pinReset');
@@ -145,6 +150,10 @@ export default function ForgotPasswordPage() {
       if (!res.ok) {
         if (data.error === 'invalid_otp') {
           setError(t('invalidOtp'));
+        } else if (data.error === 'invalid_input') {
+          setError(t('invalidPin'));
+        } else if (data.error === 'update_failed') {
+          setError(t('resetFailed'));
         } else {
           setError(t('resetFailed'));
         }
@@ -195,7 +204,7 @@ export default function ForgotPasswordPage() {
                 fontFamily: 'var(--font-bodoni)',
                 fontWeight: 700,
                 letterSpacing: '2px',
-                color: '#f8fafc',
+                color: 'hsl(var(--foreground))',
               }}
             >
               CENTER
@@ -205,7 +214,7 @@ export default function ForgotPasswordPage() {
                 fontFamily: 'var(--font-bodoni)',
                 fontWeight: 700,
                 letterSpacing: '2px',
-                color: '#0D9488',
+                color: 'hsl(var(--primary))',
               }}
             >
               HQ

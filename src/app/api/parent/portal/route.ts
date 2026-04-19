@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token');
@@ -7,10 +7,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Token required' }, { status: 400 });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  let supabase;
+  try {
+    supabase = getSupabaseAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
 
   const { data: row, error } = await supabase
     .from('parent_portal_tokens')

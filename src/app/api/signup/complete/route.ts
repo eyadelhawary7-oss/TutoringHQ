@@ -1,7 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/utils/phone';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 function generatePin(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -33,38 +34,55 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const centerId = body.centerId;
+    const body = (await request.json()) as { centerId?: unknown };
 
-    if (typeof centerId !== 'string' || !/^[0-9a-f-]{36}$/i.test(centerId)) {
-      return NextResponse.json(
-        { error: 'Invalid center ID.' },
-        { status: 400 }
-      );
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    const { data: center } = await supabaseAdmin
-      .from('centers')
-      .select('id, phone, status, name')
-      .eq('id', centerId)
-      .single();
-
-    if (!center) {
-      return NextResponse.json({ error: 'Center not found' }, { status: 404 });
+    let supabaseAdmin: SupabaseClient;
+    try {
+      supabaseAdmin = getSupabaseAdmin();
+    } catch {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
     const normPhone = (p: string) => normalizePhone(p).replace(/\D/g, '');
     const userDigits = normPhone(user.phone || '');
-    const centerDigits = normPhone(center.phone || '');
-    if (!userDigits || !centerDigits || userDigits !== centerDigits) {
+    if (!userDigits) {
+      return NextResponse.json({ error: 'Phone number is required on your account to complete signup.' }, { status: 400 });
+    }
+
+    const { data: pendingCenters, error: pendingErr } = await supabaseAdmin
+      .from('centers')
+      .select('id, phone, status, name')
+      .eq('status', 'pending_verification');
+
+    if (pendingErr) {
+      console.error('Signup complete pending centers:', pendingErr);
+      return NextResponse.json({ error: 'Failed to resolve center' }, { status: 500 });
+    }
+
+    const matching = (pendingCenters ?? []).filter((row) => {
+      const cd = normPhone((row as { phone?: string | null }).phone || '');
+      return cd && cd === userDigits;
+    });
+
+    if (matching.length === 0) {
       return NextResponse.json(
-        { error: 'Phone number does not match the center. Please use the same phone you used to receive the OTP.' },
-        { status: 403 }
+        { error: 'No pending center found for this phone. Please start signup again.' },
+        { status: 404 },
       );
+    }
+
+    if (matching.length > 1) {
+      return NextResponse.json(
+        { error: 'Multiple pending signups share this phone. Please contact support.' },
+        { status: 409 },
+      );
+    }
+
+    const center = matching[0] as { id: string; phone: string | null; status: string; name: string | null };
+    const centerId = center.id;
+
+    if (typeof body.centerId === 'string' && /^[0-9a-f-]{36}$/i.test(body.centerId) && body.centerId !== centerId) {
+      return NextResponse.json({ error: 'Center selection does not match your verified signup.' }, { status: 403 });
     }
 
     if (center.status !== 'pending_verification') {

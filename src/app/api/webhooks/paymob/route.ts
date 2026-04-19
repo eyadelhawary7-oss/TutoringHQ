@@ -3,9 +3,14 @@ import { isFeatureEnabled } from '@/lib/features';
 import { verifyPaymobHmac } from '@/lib/paymob';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
+/** Paymob and proxies expect HTTP 200 on all outcomes to limit retries. */
+function ack(body: Record<string, unknown> = {}) {
+  return NextResponse.json({ received: true, ...body }, { status: 200 });
+}
+
 export async function POST(request: NextRequest) {
   if (!isFeatureEnabled('PAYMOB_ENABLED')) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return ack({ error: 'disabled' });
   }
 
   try {
@@ -14,11 +19,18 @@ export async function POST(request: NextRequest) {
     const obj = body.obj;
 
     if (!hmac || !obj) {
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+      return ack({ error: 'invalid_payload' });
     }
 
     if (!verifyPaymobHmac(obj, hmac)) {
-      return NextResponse.json({ error: 'Invalid HMAC' }, { status: 401 });
+      return ack({ error: 'invalid_hmac' });
+    }
+
+    let supabase;
+    try {
+      supabase = getSupabaseAdmin();
+    } catch {
+      return ack({ error: 'misconfigured' });
     }
 
     const transaction = obj;
@@ -32,10 +44,8 @@ export async function POST(request: NextRequest) {
     const amountCents = parseInt(String(transaction.amount_cents ?? 0), 10);
 
     if (!centerId) {
-      return NextResponse.json({ error: 'No center ID' }, { status: 400 });
+      return ack({ error: 'no_center_id' });
     }
-
-    const supabase = getSupabaseAdmin();
 
     if (success) {
       const nextBillingDate = new Date();
@@ -51,17 +61,13 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', centerId);
 
-      // Note: student_id is intentionally null here.
-      // Paymob processes center subscription payments, not student sessions.
-      // The payments table allows null student_id for this use case.
-      // See migration: ALTER TABLE payments ALTER COLUMN student_id DROP NOT NULL
       await supabase.from('payments').insert({
         center_id: centerId,
         amount: amountCents / 100,
         method: 'bank_transfer',
         status: 'confirmed',
         paid_at: new Date().toISOString(),
-        student_id: null, // Paymob is a center billing payment, not student
+        student_id: null,
         notes: `Paymob transaction ${transaction.id}`,
       });
     } else {
@@ -73,12 +79,9 @@ export async function POST(request: NextRequest) {
         .eq('id', centerId);
     }
 
-    return NextResponse.json({ received: true });
+    return ack();
   } catch (err) {
     console.error('Paymob webhook error:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Webhook failed' },
-      { status: 500 }
-    );
+    return ack({ error: 'exception' });
   }
 }

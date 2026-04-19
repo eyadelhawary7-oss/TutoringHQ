@@ -141,6 +141,12 @@ export async function POST(request: Request) {
   // BOSTA_WEBHOOK_SECRET — Set in Vercel env vars — get from Bosta dashboard
   const secret = process.env.BOSTA_WEBHOOK_SECRET ?? '';
   const sig = request.headers.get('Bosta-Signature') ?? '';
+  const requireSecret =
+    process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+  if (requireSecret && !secret) {
+    console.error('[bosta-webhook] BOSTA_WEBHOOK_SECRET is required in production');
+    return NextResponse.json({ received: true, error: 'misconfigured' }, { status: 200 });
+  }
   if (secret) {
     const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
     const sigBuf = Buffer.from(sig);
@@ -154,7 +160,7 @@ export async function POST(request: Request) {
     }
   } else {
     console.warn(
-      '[bosta-webhook] BOSTA_WEBHOOK_SECRET is not set; webhook HMAC verification skipped',
+      '[bosta-webhook] BOSTA_WEBHOOK_SECRET is not set; webhook HMAC verification skipped (non-production only)',
     );
   }
 

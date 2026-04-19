@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
@@ -11,22 +11,31 @@ const SIX_DIGITS = /^\d{6}$/;
 
 /**
  * POST /api/auth/verify-pin-reset
- * Public. Validates OTP hash and sets auth password to the new 6-digit PIN.
+ * Public. No requireCenterAuth.
+ * 1) Bcrypt-hash new PIN into public.users.pin_code (cost 10). This is the stored PIN hash.
+ * 2) Sets the same digits on the Supabase Auth user so /login signInWithPassword still works.
+ *    (Calling updateUserById updates auth password only, not pin_code; it does not replace step 1.)
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const rawPhone = typeof body?.phone === 'string' ? body.phone.trim() : '';
-    const otp = typeof body?.otp === 'string' ? body.otp.trim() : '';
-    const newPin = typeof body?.newPin === 'string' ? body.newPin.trim() : '';
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+    }
+
+    const rawPhone = typeof (body as { phone?: unknown })?.phone === 'string' ? (body as { phone: string }).phone.trim() : '';
+    const otp = typeof (body as { otp?: unknown })?.otp === 'string' ? (body as { otp: string }).otp.trim() : '';
+    const newPin = typeof (body as { newPin?: unknown })?.newPin === 'string' ? (body as { newPin: string }).newPin.trim() : '';
 
     if (!rawPhone || !SIX_DIGITS.test(otp) || !SIX_DIGITS.test(newPin)) {
-      return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
+      return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
     }
 
     const normalizedPhone = normalizePhone(rawPhone);
     if (!isValidEgyptianMobileE164(normalizedPhone)) {
-      return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
+      return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
     }
 
     if (verifyPinResetPhoneRatelimit) {
@@ -74,25 +83,37 @@ export async function POST(request: Request) {
       .from('users')
       .select('id')
       .eq('phone', normalizedPhone)
+      .eq('is_active', true)
       .maybeSingle();
 
     if (userErr || !user) {
       console.error('[verify-pin-reset] user missing after valid OTP', userErr);
-      return NextResponse.json({ error: 'invalid_otp' }, { status: 400 });
+      return NextResponse.json({ error: 'user_not_found' }, { status: 404 });
+    }
+
+    const newPinHash = await bcrypt.hash(newPin, 10);
+
+    const { error: updateError } = await admin
+      .from('users')
+      .update({ pin_code: newPinHash })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('[verify-pin-reset] failed to update pin_code:', updateError);
+      return NextResponse.json({ error: 'update_failed' }, { status: 500 });
     }
 
     const { error: authErr } = await admin.auth.admin.updateUserById(user.id, {
       password: newPin,
     });
-
     if (authErr) {
-      console.error('[verify-pin-reset] updateUserById:', authErr);
-      return NextResponse.json({ error: 'reset_failed' }, { status: 500 });
+      console.error('[verify-pin-reset] Supabase Auth password sync failed:', authErr);
+      return NextResponse.json({ error: 'update_failed' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error('[verify-pin-reset]', e);
-    return NextResponse.json({ error: 'reset_failed' }, { status: 500 });
+    return NextResponse.json({ error: 'update_failed' }, { status: 500 });
   }
 }

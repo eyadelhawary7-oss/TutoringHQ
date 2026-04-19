@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 export type CenterAuthOk = {
   ok: true;
@@ -45,11 +46,17 @@ export async function requireCenterAuth(request: NextRequest): Promise<CenterAut
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }
 
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  let admin: SupabaseClient;
+  try {
+    admin = getSupabaseAdmin();
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Server misconfigured' }, { status: 500 }),
+    };
+  }
 
-  const { data: userRecord } = await supabaseAdmin
+  const { data: userRecord } = await admin
     .from('users')
     .select('id, center_id, role')
     .eq('id', user.id)
@@ -64,6 +71,6 @@ export async function requireCenterAuth(request: NextRequest): Promise<CenterAut
     userId: user.id,
     centerId: userRecord.center_id as string,
     role: String((userRecord as { role?: string }).role ?? ''),
-    supabaseAdmin,
+    supabaseAdmin: admin,
   };
 }

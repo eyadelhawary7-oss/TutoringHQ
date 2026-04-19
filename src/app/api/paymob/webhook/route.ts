@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { verifyCardOrderPaymobHmac } from '@/lib/paymob';
 import { triggerT1Eligible, resumeCommissionClocks } from '@/lib/commissions';
 import { sendPaymentConfirmed } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 const paymentFailedEnabled = true; // chq_payment_failed — set to false if template gets rejected
 
@@ -13,9 +13,10 @@ function paymobAck(body: Record<string, unknown> = {}) {
 }
 
 export async function POST(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) {
+  let supabaseAdmin;
+  try {
+    supabaseAdmin = getSupabaseAdmin();
+  } catch {
     return paymobAck({ error: 'misconfigured' });
   }
 
@@ -39,10 +40,6 @@ export async function POST(request: NextRequest) {
     console.warn('[paymob/webhook] Invalid HMAC');
     return paymobAck({ error: 'invalid_hmac' });
   }
-
-  const supabaseAdmin = createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   // IDEMPOTENCY GUARD — Paymob order id is the idempotency key (not transaction_id)
   const orderForIdem = obj.order as { id?: unknown } | null | undefined;
@@ -170,6 +167,46 @@ export async function POST(request: NextRequest) {
                 periodStr,
                 String((invRow as { total_amount?: unknown }).total_amount ?? ''),
               );
+            }
+          }
+        } else {
+          const { data: sessRow } = await supabaseAdmin
+            .from('combined_payment_sessions')
+            .select('center_id, total_amount, metadata')
+            .eq('paymob_order_id', orderId)
+            .eq('status', 'paid')
+            .maybeSingle();
+          const sessionCenterId = (sessRow as { center_id?: string } | null)?.center_id;
+          if (sessionCenterId) {
+            const { data: center } = await supabaseAdmin
+              .from('centers')
+              .select('id, name, phone')
+              .eq('id', sessionCenterId)
+              .maybeSingle();
+            if (center) {
+              const ownerMap = await ownerContactByCenterId(supabaseAdmin, [sessionCenterId]);
+              const contact = ownerMap.get(sessionCenterId);
+              const ownerPhone = await resolveOwnerWaPhone(
+                supabaseAdmin,
+                contact?.authId ?? null,
+                contact?.userPhone ?? null,
+                (center as { phone?: string | null }).phone ?? null,
+              );
+              if (ownerPhone) {
+                const meta = (sessRow as { metadata?: unknown }).metadata;
+                const anchor =
+                  meta && typeof meta === 'object' && meta !== null && 'billingAnchorYmd' in meta
+                    ? String((meta as { billingAnchorYmd?: unknown }).billingAnchorYmd ?? '')
+                    : '';
+                const periodStr = anchor ? anchor.slice(0, 10) : new Date().toISOString().slice(0, 10);
+                await sendPaymentConfirmed(
+                  supabaseAdmin,
+                  ownerPhone,
+                  String((center as { name?: string | null }).name ?? ''),
+                  periodStr,
+                  String((sessRow as { total_amount?: unknown }).total_amount ?? ''),
+                );
+              }
             }
           }
         }
