@@ -2343,7 +2343,8 @@
     "pleaseWait": "Please Wait",
     "subjectRequired": "Subject Required",
     "validFeeRequired": "Valid Fee Required",
-    "waitlist": "Waitlist"
+    "waitlist": "Waitlist",
+    "linkCopied": "Link copied to clipboard"
   },
   "rooms": {
     "title": "Rooms",

@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
-import { Plus, BookOpen, X, Users, ChevronRight, Search } from 'lucide-react';
+import { Plus, BookOpen, X, Users, ChevronRight, Search, Link as LinkIcon } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -50,6 +50,7 @@ export default function GroupsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
+  const [centerCode, setCenterCode] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
@@ -74,6 +75,16 @@ export default function GroupsPage() {
     const cid = meData.user.center_id;
     setCenterId(cid);
     setUserId(meData.user.id);
+
+    const { data: centerRow } = await dbSelect({
+      table: 'centers',
+      select: 'center_code',
+      filters: [{ column: 'id', op: 'eq', value: cid }],
+      single: true,
+    });
+    const centerInfo = Array.isArray(centerRow) ? centerRow[0] : centerRow;
+    const code = (centerInfo as { center_code?: string | null } | null)?.center_code ?? null;
+    setCenterCode(code);
 
     const [groupsRes, studentsRes, subjectsRes, slotsRes] = await Promise.all([
       dbSelect({
@@ -344,6 +355,21 @@ export default function GroupsPage() {
     }
   };
 
+  const handleCopyInviteLink = async (groupId: string) => {
+    const code = centerCode ?? centerId;
+    if (!code) {
+      toast.error(tToast('error'));
+      return;
+    }
+    const url = `https://centerhq.app/${locale}/join/${code}/${groupId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(t('linkCopied'));
+    } catch {
+      toast.error(tToast('error'));
+    }
+  };
+
   const toggleAddFormStudent = (studentId: string) => {
     setAddForm(prev => ({
       ...prev,
@@ -397,12 +423,26 @@ export default function GroupsPage() {
                 <div className="p-2 bg-teal-100 rounded-lg">
                   <BookOpen className="w-5 h-5 text-teal-600" />
                 </div>
-                <span
-                  className="text-xs text-slate-400 font-mono tabular-nums"
-                  title={t('studentCount')}
-                >
-                  {formatNumber(g.student_count ?? g.member_count ?? 0, locale)}
-                </span>
+                <div className="flex items-center">
+                  <span
+                    className="text-xs text-slate-400 font-mono tabular-nums"
+                    title={t('studentCount')}
+                  >
+                    {formatNumber(g.student_count ?? g.member_count ?? 0, locale)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyInviteLink(g.id);
+                    }}
+                    className="ms-3 p-1 text-[var(--color-text-muted)] hover:text-[var(--color-teal)] transition-colors"
+                    aria-label={t('linkCopied')}
+                    title={t('linkCopied')}
+                  >
+                    <LinkIcon size={16} />
+                  </button>
+                </div>
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject ?? '\u2014'}</p>

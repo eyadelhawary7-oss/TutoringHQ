@@ -3870,7 +3870,8 @@
     "pleaseWait": "Please Wait",
     "subjectRequired": "مادة مطلوب",
     "validFeeRequired": "Valid رسوم مطلوب",
-    "waitlist": "قائمة الانتظار"
+    "waitlist": "قائمة الانتظار",
+    "linkCopied": "تم نسخ الرابط"
   },
   "import": {
     "title": "استيراد بالجملة",
