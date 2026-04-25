@@ -6,7 +6,7 @@ import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer, ShoppingCart, Phone, Pencil } from 'lucide-react';
+import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer, ShoppingCart, Phone, Pencil, Inbox } from 'lucide-react';
 import { CardOrderModal } from '@/components/CardOrderModal';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
@@ -184,6 +184,7 @@ export default function StudentsPage() {
   const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
+  const [pendingCount, setPendingCount] = useState<number>(0);
   const [centerInfo, setCenterInfo] = useState<{
     name?: string;
     logo_url?: string;
@@ -315,6 +316,29 @@ export default function StudentsPage() {
 
     loadStudents();
   }, []);
+
+  useEffect(() => {
+    if (!centerId) return;
+    let cancelled = false;
+    const loadPendingCount = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch('/api/students/pending', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { pending?: unknown[] };
+        if (!cancelled) setPendingCount(Array.isArray(data.pending) ? data.pending.length : 0);
+      } catch {
+        /* ignore */
+      }
+    };
+    loadPendingCount();
+    return () => {
+      cancelled = true;
+    };
+  }, [centerId]);
 
   useEffect(() => {
     if (groups.length === 0) return;
@@ -926,6 +950,18 @@ export default function StudentsPage() {
               >
                 <CreditCard size={16} /> {ts('order_cards')}
               </button>
+              <Link
+                href="/students/pending"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
+                aria-label={ts('pendingRequests')}
+              >
+                <Inbox size={16} /> {ts('pendingRequests')}
+                {pendingCount > 0 ? (
+                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </span>
+                ) : null}
+              </Link>
               {(user?.role === 'owner' || user?.role === 'admin') && (
                 <button
                   type="button"
