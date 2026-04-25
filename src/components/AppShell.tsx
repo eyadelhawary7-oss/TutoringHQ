@@ -29,6 +29,7 @@ const PUBLIC_PATHS = [
   '/session-expired',
   '/auth/callback',
   '/status',
+  '/join',
 ];
 function stripLocale(path: string): string {
   return path.replace(/^\/(ar|en)(\/|$)/, '$2') || '/';

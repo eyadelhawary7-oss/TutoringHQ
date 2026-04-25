@@ -2346,6 +2346,28 @@
     "waitlist": "Waitlist",
     "linkCopied": "Link copied to clipboard"
   },
+  "join": {
+    "eyebrow": "Student Self-Registration",
+    "loading": "Loading...",
+    "loadError": "We couldn't load this invitation. Please try again later.",
+    "notFoundTitle": "Link not valid",
+    "notFoundDescription": "This invitation link is invalid or has expired. Please contact the center for a new link.",
+    "studentName": "Student Name",
+    "studentNamePlaceholder": "Full name",
+    "studentPhone": "Student Phone",
+    "parentPhone": "Parent Phone",
+    "notes": "Notes",
+    "notesPlaceholder": "Anything the center should know...",
+    "optional": "optional",
+    "submit": "Send Request",
+    "submitting": "Sending...",
+    "submitError": "Couldn't send your request. Please try again.",
+    "nameRequired": "Please enter the student name.",
+    "phoneRequired": "Please enter a phone number.",
+    "successTitle": "Request sent",
+    "successMessage": "Your registration request has been sent to the center.",
+    "footerNote": "The center will contact you to confirm your enrollment."
+  },
   "rooms": {
     "title": "Rooms",
     "subtitleCount": "{count} rooms",
