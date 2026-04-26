@@ -117,56 +117,85 @@ export async function POST(
 
   const subjectValue = (groupRow as { subject?: string | null } | null)?.subject ?? null;
 
-  const insertPayload = {
-    center_id: centerId,
-    name: row.student_name,
-    phone: row.student_phone || null,
-    parent_phone: parentPhone,
-    subject: subjectValue,
-    payment_status: 'unpaid' as const,
-    parent_pack_opted_in: enrollInPack,
-    parent_consent_given: enrollInPack,
-    parent_consent_at: enrollInPack ? new Date().toISOString() : null,
-  };
-
-  const { data: insertedRaw, error: insertError } = await supabaseAdmin
+  const { data: existingStudent } = await supabaseAdmin
     .from('students')
-    .insert(insertPayload)
     .select('id, name, parent_phone, parent_pack_opted_in, student_number, center_id')
-    .single();
+    .eq('center_id', centerId)
+    .eq('phone', row.student_phone)
+    .maybeSingle();
 
-  if (insertError || !insertedRaw) {
-    return NextResponse.json(
-      {
-        error: 'Failed to create student',
-        details: insertError?.message,
-      },
-      { status: 500 },
-    );
-  }
-  const inserted = insertedRaw as {
+  let student = existingStudent as {
     id: string;
     name: string;
     parent_phone: string | null;
     parent_pack_opted_in: boolean | null;
     student_number: string | null;
     center_id: string;
-  };
+  } | null;
+
+  if (!student) {
+    const insertPayload = {
+      center_id: centerId,
+      name: row.student_name,
+      phone: row.student_phone || null,
+      parent_phone: parentPhone,
+      subject: subjectValue,
+      payment_status: 'unpaid' as const,
+      parent_pack_opted_in: enrollInPack,
+      parent_consent_given: enrollInPack,
+      parent_consent_at: enrollInPack ? new Date().toISOString() : null,
+    };
+
+    const { data: insertedRaw, error: insertError } = await supabaseAdmin
+      .from('students')
+      .insert(insertPayload)
+      .select('id, name, parent_phone, parent_pack_opted_in, student_number, center_id')
+      .single();
+
+    if (insertError || !insertedRaw) {
+      return NextResponse.json(
+        {
+          error: 'Failed to create student',
+          details: insertError?.message,
+        },
+        { status: 500 },
+      );
+    }
+
+    student = insertedRaw as {
+      id: string;
+      name: string;
+      parent_phone: string | null;
+      parent_pack_opted_in: boolean | null;
+      student_number: string | null;
+      center_id: string;
+    };
+  }
 
   if (groupRow?.id) {
-    await supabaseAdmin
+    const { error: membershipError } = await supabaseAdmin
       .from('student_group_members')
-      .insert({ group_id: row.group_id, student_id: inserted.id });
+      .insert({ group_id: row.group_id, student_id: student.id });
+
+    if (membershipError && membershipError.code !== '23505') {
+      return NextResponse.json(
+        {
+          error: 'Failed to link student to group',
+          details: membershipError.message,
+        },
+        { status: 500 },
+      );
+    }
   }
 
   await afterStudentWriteParentPackEffects(supabaseAdmin, {
     kind: 'insert',
     centerId,
     row: {
-      id: inserted.id,
-      name: inserted.name,
-      parent_phone: inserted.parent_phone,
-      parent_pack_opted_in: inserted.parent_pack_opted_in,
+      id: student.id,
+      name: student.name,
+      parent_phone: student.parent_phone,
+      parent_pack_opted_in: student.parent_pack_opted_in,
     },
   });
 
@@ -175,7 +204,7 @@ export async function POST(
       {
         center_id: centerId,
         billing_period: currentBillingPeriod(),
-        student_id: inserted.id,
+        student_id: student.id,
         parent_phone: parentPhone,
         opted_in_at: new Date().toISOString(),
       },
@@ -198,9 +227,9 @@ export async function POST(
   return NextResponse.json({
     success: true,
     student: {
-      id: inserted.id,
-      name: inserted.name,
-      student_number: inserted.student_number,
+      id: student.id,
+      name: student.name,
+      student_number: student.student_number,
     },
   });
 }

@@ -54,6 +54,7 @@ export default function PendingEnrollmentsPage() {
   const [enrollInPack, setEnrollInPack] = useState(false);
   const [sellingPrice, setSellingPrice] = useState<string>(String(SUGGESTED_SELLING_PRICE));
   const [submitting, setSubmitting] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const [modalError, setModalError] = useState('');
 
   const loadPending = async () => {
@@ -96,7 +97,7 @@ export default function PendingEnrollmentsPage() {
   };
 
   const closeReview = () => {
-    if (submitting) return;
+    if (submitting || rejecting) return;
     setReviewing(null);
     setModalError('');
   };
@@ -165,6 +166,44 @@ export default function PendingEnrollmentsPage() {
       setModalError(t('approveError'));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!reviewing) return;
+    setModalError('');
+    setRejecting(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setModalError(t('loadError'));
+        setRejecting(false);
+        return;
+      }
+
+      const res = await fetch(`/api/students/pending/${reviewing.id}/reject`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setModalError(data.error || 'Failed to reject registration request');
+        return;
+      }
+
+      toast.success('Registration request rejected');
+      setList((prev) => (prev ?? []).filter((p) => p.id !== reviewing.id));
+      setReviewing(null);
+    } catch {
+      setModalError('Failed to reject registration request');
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -413,14 +452,29 @@ export default function PendingEnrollmentsPage() {
               <button
                 type="button"
                 onClick={closeReview}
-                disabled={submitting}
+                disabled={submitting || rejecting}
                 className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] disabled:opacity-60"
               >
                 {t('cancel')}
               </button>
               <button
+                type="button"
+                onClick={handleReject}
+                disabled={submitting || rejecting}
+                className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-500/15 disabled:opacity-60"
+              >
+                {rejecting ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Rejecting...</span>
+                  </>
+                ) : (
+                  'Reject'
+                )}
+              </button>
+              <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || rejecting}
                 className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:opacity-60"
               >
                 {submitting ? (
