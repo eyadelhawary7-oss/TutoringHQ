@@ -209,36 +209,50 @@ export async function POST(
     }
   }
 
-  await afterStudentWriteParentPackEffects(supabaseAdmin, {
-    kind: 'insert',
-    centerId,
-    row: {
-      id: student.id,
-      name: student.name,
-      parent_phone: student.parent_phone,
-      parent_pack_opted_in: student.parent_pack_opted_in,
-    },
-  });
+  const postProcessingTasks: Promise<unknown>[] = [
+    afterStudentWriteParentPackEffects(supabaseAdmin, {
+      kind: 'insert',
+      centerId,
+      row: {
+        id: student.id,
+        name: student.name,
+        parent_phone: student.parent_phone,
+        parent_pack_opted_in: student.parent_pack_opted_in,
+      },
+    }),
+  ];
 
   if (enrollInPack && parentPhone) {
-    await supabaseAdmin.from('parent_pack_monthly_counts').upsert(
-      {
-        center_id: centerId,
-        billing_period: currentBillingPeriod(),
-        student_id: student.id,
-        parent_phone: parentPhone,
-        opted_in_at: new Date().toISOString(),
-      },
-      { onConflict: 'center_id,billing_period,student_id', ignoreDuplicates: true },
+    postProcessingTasks.push(
+      Promise.resolve(
+        supabaseAdmin
+          .from('parent_pack_monthly_counts')
+          .upsert(
+            {
+              center_id: centerId,
+              billing_period: currentBillingPeriod(),
+              student_id: student.id,
+              parent_phone: parentPhone,
+              opted_in_at: new Date().toISOString(),
+            },
+            { onConflict: 'center_id,billing_period,student_id', ignoreDuplicates: true },
+          ),
+      ),
     );
 
     if (sellingPrice != null) {
-      await supabaseAdmin
-        .from('centers')
-        .update({ pack_price_per_parent: sellingPrice })
-        .eq('id', centerId);
+      postProcessingTasks.push(
+        Promise.resolve(
+          supabaseAdmin
+            .from('centers')
+            .update({ pack_price_per_parent: sellingPrice })
+            .eq('id', centerId),
+        ),
+      );
     }
   }
+
+  await Promise.all(postProcessingTasks);
 
   await supabaseAdmin
     .from('pending_enrollments')
