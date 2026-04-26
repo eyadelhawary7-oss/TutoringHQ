@@ -9,8 +9,10 @@ import { useRouter, usePathname } from '@/i18n/routing';
 
 interface JoinInfo {
   center_id: string;
+  centerId?: string;
   center_name: string;
   group_id: string;
+  groupId?: string;
   group_name: string;
   group_subject: string | null;
 }
@@ -92,7 +94,7 @@ export default function JoinPage({ params }: PageProps) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!info || !groupId) return;
+    if (!info) return;
     setError('');
 
     if (!studentName.trim()) {
@@ -106,16 +108,17 @@ export default function JoinPage({ params }: PageProps) {
 
     setSubmitting(true);
     try {
-      // Bulletproof recovery: If the API swapped the variables, info.center_id will match the URL's groupId.
-      // We detect that and pull the real center UUID out of info.group_id. 
-      // We also check for camelCase (centerId) just in case.
-      const actualCenterId = (info.center_id === groupId) 
-        ? info.group_id 
-        : (info.center_id || (info as any).centerId);
+      const centerId = info.center_id || info.centerId;
+      const groupUuid = info.group_id || info.groupId;
+
+      console.log('pending_enrollments insert IDs', {
+        center_id: centerId,
+        group_id: groupUuid,
+      });
 
       const { error: insertError } = await supabase.from('pending_enrollments').insert({
-        center_id: actualCenterId,
-        group_id: groupId, // Force exact URL parameter, bypassing API potential mistakes
+        center_id: centerId,
+        group_id: groupUuid,
         student_name: studentName.trim(),
         student_phone: studentPhone.trim(),
         parent_phone: parentPhone.trim() || null,
