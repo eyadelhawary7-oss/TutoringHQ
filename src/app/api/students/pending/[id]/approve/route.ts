@@ -117,12 +117,33 @@ export async function POST(
 
   const subjectValue = (groupRow as { subject?: string | null } | null)?.subject ?? null;
 
-  const { data: existingStudent } = await supabaseAdmin
-    .from('students')
-    .select('id, name, parent_phone, parent_pack_opted_in, student_number, center_id')
-    .eq('center_id', centerId)
-    .eq('phone', row.student_phone)
-    .maybeSingle();
+  let existingStudent: {
+    id: string;
+    name: string;
+    parent_phone?: string | null;
+    parent_pack_opted_in: boolean | null;
+    student_number: string | null;
+    center_id?: string;
+  } | null = null;
+
+  if (row.student_phone) {
+    const cleanPhone = row.student_phone.replace(/\D/g, '');
+    const phoneTail = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+
+    const { data } = await supabaseAdmin
+      .from('students')
+      .select('id, name, student_number, parent_pack_opted_in')
+      .eq('center_id', centerId)
+      .ilike('phone', `%${phoneTail}%`)
+      .maybeSingle();
+
+    existingStudent = data as {
+      id: string;
+      name: string;
+      student_number: string | null;
+      parent_pack_opted_in: boolean | null;
+    } | null;
+  }
 
   let student = existingStudent as {
     id: string;
