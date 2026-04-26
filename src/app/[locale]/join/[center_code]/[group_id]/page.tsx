@@ -92,7 +92,7 @@ export default function JoinPage({ params }: PageProps) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!info) return;
+    if (!info || !groupId) return;
     setError('');
 
     if (!studentName.trim()) {
@@ -106,9 +106,16 @@ export default function JoinPage({ params }: PageProps) {
 
     setSubmitting(true);
     try {
+      // Bulletproof recovery: If the API swapped the variables, info.center_id will match the URL's groupId.
+      // We detect that and pull the real center UUID out of info.group_id. 
+      // We also check for camelCase (centerId) just in case.
+      const actualCenterId = (info.center_id === groupId) 
+        ? info.group_id 
+        : (info.center_id || (info as any).centerId);
+
       const { error: insertError } = await supabase.from('pending_enrollments').insert({
-        center_id: info.center_id,
-        group_id: info.group_id,
+        center_id: actualCenterId,
+        group_id: groupId, // Force exact URL parameter, bypassing API potential mistakes
         student_name: studentName.trim(),
         student_phone: studentPhone.trim(),
         parent_phone: parentPhone.trim() || null,
@@ -117,11 +124,13 @@ export default function JoinPage({ params }: PageProps) {
       });
 
       if (insertError) {
+        console.error("Supabase Insert Error:", insertError);
         setError(t('submitError'));
         return;
       }
       setSubmitted(true);
-    } catch {
+    } catch (err) {
+      console.error("Catch Error:", err);
       setError(t('submitError'));
     } finally {
       setSubmitting(false);
