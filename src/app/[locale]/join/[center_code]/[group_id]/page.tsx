@@ -29,6 +29,7 @@ export default function JoinPage({ params }: PageProps) {
 
   const [centerCode, setCenterCode] = useState<string>('');
   const [groupId, setGroupId] = useState<string>('');
+  const [mounted, setMounted] = useState(false);
   const [info, setInfo] = useState<JoinInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -41,6 +42,10 @@ export default function JoinPage({ params }: PageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     params.then((p) => {
@@ -137,7 +142,7 @@ export default function JoinPage({ params }: PageProps) {
           <span className="text-[var(--color-teal)]">HQ</span>
         </span>
         <div className="flex items-center gap-1.5">
-          <ThemeToggle />
+          {mounted && <ThemeToggle />}
           <button
             type="button"
             onClick={handleLocaleToggle}
