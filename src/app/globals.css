@@ -562,7 +562,11 @@ html.light {
 }
 
 html [data-chq-landing],
-html.light [data-chq-landing] {
+html.light [data-chq-landing],
+html [data-chq-signup],
+html.light [data-chq-signup],
+html [data-chq-forgot-password],
+html.light [data-chq-forgot-password] {
   --color-surface-0: #080f1a !important;
   --color-surface-1: #0f172a !important;
   --color-surface-2: #1e293b !important;
@@ -2172,12 +2176,18 @@ html.light {
   animation: chq-fade-in 200ms ease forwards;
 }
 
-/* Landing (marketing home): dark canvas so fast scroll never shows light body gaps */
-[data-chq-landing] {
+/* Landing / signup / forgot-password: dark canvas so fast scroll never shows light body gaps */
+[data-chq-landing],
+[data-chq-signup],
+[data-chq-forgot-password] {
   background-color: #080f1a;
 }
 html:has([data-chq-landing]),
-body:has([data-chq-landing]) {
+body:has([data-chq-landing]),
+html:has([data-chq-signup]),
+body:has([data-chq-signup]),
+html:has([data-chq-forgot-password]),
+body:has([data-chq-forgot-password]) {
   background-color: #080f1a;
 }
 

@@ -384,7 +384,10 @@ export default function SignupPage() {
   ];
 
   return (
-    <div data-chq-signup className="relative min-h-screen bg-[#080D14] font-['Cairo',sans-serif]">
+    <div
+      data-chq-signup
+      className="relative min-h-screen w-full bg-[#080f1a] font-['Cairo',sans-serif]"
+    >
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
         <div
           className="absolute top-[-20%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full"

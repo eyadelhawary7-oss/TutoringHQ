@@ -177,7 +177,10 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: 'var(--gradient-hero)' }}>
+    <div
+      data-chq-forgot-password
+      className="flex min-h-screen w-full flex-col items-center justify-center bg-[#080f1a] px-4 py-12"
+    >
       <div className="absolute top-4 end-4">
         <button
           type="button"
