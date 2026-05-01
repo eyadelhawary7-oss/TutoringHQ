@@ -9,7 +9,7 @@ import { Download, Search, ClipboardList, BookOpen, X } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
-import { formatDate, formatDateTime } from '@/lib/formatNumber';
+import { formatDate, formatDateTime, formatPercent } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 interface ScanRecord {
@@ -298,7 +298,7 @@ export default function AttendancePage() {
         r.student.phone || '',
         String(r.totalScans),
         r.lastScan ? formatDate(r.lastScan, locale, { dateStyle: 'short' }) : '',
-        r.expected > 0 ? `${Math.round((r.totalScans / r.expected) * 100)}%` : `${r.totalScans}`,
+        r.expected > 0 ? formatPercent(Math.round((r.totalScans / r.expected) * 100), locale) : `${r.totalScans}`,
       ]);
       const csv = '\uFEFF' + [cols.join(','), ...rows.map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -318,7 +318,7 @@ export default function AttendancePage() {
             r.group.subject || '',
             sb.date,
             String(sb.present),
-            r.sessionsCount > 0 ? `${Math.round((sb.present / r.avgAttendance) * 100)}%` : tCommon('notSet'),
+            r.sessionsCount > 0 ? formatPercent(Math.round((sb.present / r.avgAttendance) * 100), locale) : tCommon('notSet'),
           ]);
         });
       });
@@ -455,7 +455,9 @@ export default function AttendancePage() {
                                   style={{ width: `${Math.min(100, (r.totalScans / r.expected) * 100)}%` }}
                                 />
                               </div>
-                              <span className="text-sm font-mono font-semibold">{Math.round((r.totalScans / r.expected) * 100)}%</span>
+                              <span className="text-sm font-mono font-semibold">
+                                {formatPercent(Math.round((r.totalScans / r.expected) * 100), locale)}
+                              </span>
                             </div>
                           ) : (
                             <span className="text-sm font-mono">{r.totalScans}</span>
@@ -626,7 +628,7 @@ export default function AttendancePage() {
                                         <td className="py-2 px-4 text-[var(--color-text-primary)] font-mono text-end">{sb.present}</td>
                                         <td className="py-2 px-4 text-end">
                                           {r.avgAttendance > 0
-                                            ? `${Math.round((sb.present / r.avgAttendance) * 100)}%`
+                                            ? formatPercent(Math.round((sb.present / r.avgAttendance) * 100), locale)
                                             : tCommon('notSet')}
                                         </td>
                                       </tr>

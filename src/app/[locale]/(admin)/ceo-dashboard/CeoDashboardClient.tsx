@@ -41,7 +41,7 @@ import {
 import { ChartTooltip } from '@/components/charts/ChartTooltip';
 import { CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from '@/components/charts/ChartTokens';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatNumber, formatPercent } from '@/lib/formatNumber';
 
 interface DashboardData {
   totalActiveCenters: number;
@@ -353,11 +353,11 @@ function CeoFinancialsBody({
               <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelGrowthVsLastMonth')}</p>
               {g > 0 ? (
                 <p className="text-green-400 font-mono" aria-label={tFinancials('financials.growthUp')}>
-                  ↑ {g.toFixed(1)}%
+                  ↑ {formatPercent(Math.round(g * 10) / 10, locale)}
                 </p>
               ) : g < 0 ? (
                 <p className="text-red-400 font-mono" aria-label={tFinancials('financials.growthDown')}>
-                  ↓ {Math.abs(g).toFixed(1)}%
+                  ↓ {formatPercent(Math.round(Math.abs(g) * 10) / 10, locale)}
                 </p>
               ) : (
                 <p className="text-[var(--color-text-muted)] font-mono">{tFinancials('financials.growthNeutral')}</p>
@@ -558,9 +558,9 @@ export default function CeoDashboardClient({
       value: nf(d.netNew30d) >= 0 ? `+${fmt(d.netNew30d)}` : String(nf(d.netNew30d)),
       icon: Users,
     },
-    { label: t('monthlyChurnRate'), value: `${nf(d.monthlyChurnRate).toFixed(1)}%`, icon: TrendingDown },
-    { label: t('collectionRate'), value: `${nf(d.collectionRate).toFixed(1)}%`, icon: CreditCard },
-    { label: t('referralRate'), value: `${nf(d.referralRate).toFixed(1)}%`, icon: Gift },
+    { label: t('monthlyChurnRate'), value: formatPercent(Math.round(nf(d.monthlyChurnRate) * 10) / 10, locale), icon: TrendingDown },
+    { label: t('collectionRate'), value: formatPercent(Math.round(nf(d.collectionRate) * 10) / 10, locale), icon: CreditCard },
+    { label: t('referralRate'), value: formatPercent(Math.round(nf(d.referralRate) * 10) / 10, locale), icon: Gift },
   ];
 
   return (
@@ -658,7 +658,7 @@ export default function CeoDashboardClient({
                       <td className="py-2">{fmt(row.total)}</td>
                       {[0, 1, 2, 3, 4, 5, 6].map((m) => (
                         <td key={m} className="text-center py-2">
-                          {formatNumber(nf(row[`m${m}`]), locale)}%
+                          {formatPercent(nf(row[`m${m}`]), locale)}
                         </td>
                       ))}
                     </tr>

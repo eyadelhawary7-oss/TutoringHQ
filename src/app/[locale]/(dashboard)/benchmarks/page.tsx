@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatNumber, formatPercent } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
 import { useBranchStore } from '@/stores/branchStore';
 import PageHeader from '@/components/shared/PageHeader';
@@ -96,8 +96,7 @@ export default function BenchmarksPage() {
 
   const formatEgp = (n: number) => `${formatNumber(n, locale)} ${tc('egp')}`;
   const formatPct = useMemo(
-    () => (n: number) =>
-      `${formatNumber(Math.round(n * 1000) / 10, locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`,
+    () => (n: number) => formatPercent(Math.round(n * 1000) / 10, locale),
     [locale],
   );
 
@@ -143,7 +142,7 @@ export default function BenchmarksPage() {
                   total: formatNumber(DISTRICT_TARGET, locale),
                 })}
               </span>
-              <span className="tabular-nums">{formatNumber(progressPct, locale)}%</span>
+              <span className="tabular-nums">{formatPercent(progressPct, locale)}</span>
             </div>
             <div className="h-2.5 rounded-full bg-[var(--color-surface-3)] overflow-hidden">
               <div
@@ -249,7 +248,7 @@ export default function BenchmarksPage() {
                     showGrid={false}
                     radius={6}
                     prefix={isMoney ? 'EGP ' : ''}
-                    suffix={isMoney ? '' : '%'}
+                    suffix={isMoney ? '' : locale === 'ar' ? '\u066A' : '%'}
                   />
                 );
               })()}

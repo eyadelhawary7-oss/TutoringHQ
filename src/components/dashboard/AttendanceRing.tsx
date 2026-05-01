@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale } from 'next-intl';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatNumber, formatPercent } from '@/lib/formatNumber';
 
 type Props = {
   rate: number; // 0–100 percentage
@@ -43,7 +43,7 @@ export function AttendanceRing({ rate, todayCount, label }: Props) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl font-bold text-white leading-none">
-            {clampedRate.toFixed(0)}%
+            {formatPercent(clampedRate, locale)}
           </span>
         </div>
       </div>

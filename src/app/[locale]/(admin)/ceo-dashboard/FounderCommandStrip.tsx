@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { Clock, MessageSquare, AlertTriangle, Activity, CheckCircle } from 'lucide-react';
 import type { CommandStripResponse, ActionQueueItem } from '@/types/founder-dash';
-import { formatNumber, formatDate } from '@/lib/formatNumber';
+import { formatNumber, formatDate, formatPercent } from '@/lib/formatNumber';
 
 const PLAN_KEYS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 
@@ -137,7 +137,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
             {`${formatNumber(activePayingCenters, locale)} / ${formatNumber(target, locale)} ${t('centers')}`}
           </span>
           <span className="rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 px-2.5 py-0.5 text-xs font-medium font-mono">
-            {`${formatNumber(pct, locale)}%`}
+            {formatPercent(pct, locale)}
           </span>
           {pct === 0 && (
             <span className="text-[var(--color-text-secondary)]">{t('breakevenNotStarted')}</span>

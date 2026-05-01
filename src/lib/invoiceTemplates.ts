@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime, formatNumber, formatTime } from '@/lib/formatNumber';
+import { formatDate, formatDateTime, formatNumber, formatPercent, formatTime } from '@/lib/formatNumber';
 
 const PDF_LOCALE = 'ar';
 
@@ -638,7 +638,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">أيام التأخير</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(String(num(lf.days_overdue) || daysLate))} أيام</div>
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">نسبة الغرامة</div>
-      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(String(pct || 0))}%</div>`;
+      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(formatPercent(pct || 0, PDF_LOCALE))}</div>`;
   } else if (invoiceType === 'referral_payout') {
     const rc = r.referralCount ?? r.referralCommissions?.length ?? 0;
     const inst = r.referralInstapay ?? String(meta.instapay_number ?? '—');
@@ -868,12 +868,12 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       lineRowHtml({
         amount: feeAmt,
         detail: `استحق ${dueYmd ? fmtDateAr(dueYmd) : '—'} · صدر ${issueDate}`,
-        title: `غرامة التأخر في السداد (${pct}%)`,
-        subtitle: `${pct}% من المبلغ المستحق`,
+        title: `غرامة التأخر في السداد (${formatPercent(pct, PDF_LOCALE)})`,
+        subtitle: `${formatPercent(pct, PDF_LOCALE)} من المبلغ المستحق`,
         amountAmber: true,
       });
     totalsInner = `${totalsRow(`الخطة ${planAr}`, `${fmtMoney(base)} EGP`)}
-    ${totalsRow(`غرامة التأخر ${pct}%`, `${fmtMoney(feeAmt)} EGP`)}
+    ${totalsRow(`غرامة التأخر ${formatPercent(pct, PDF_LOCALE)}`, `${fmtMoney(feeAmt)} EGP`)}
     ${taxRowsBlock()}
     ${totalsRowBold('إجمالي المستحق', `${fmtMoney(total)} EGP`)}`;
   } else if (invoiceType === 'referral_payout') {
@@ -894,7 +894,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
           lineRowHtml({
             amount: x.commissionAmount,
             detail: `${x.monthLabel} · الشهر ${x.monthIndex}`,
-            title: `عمولة إحالة - الشهر ${x.monthIndex} (${x.commissionPercent}%)`,
+            title: `عمولة إحالة - الشهر ${x.monthIndex} (${formatPercent(Number(x.commissionPercent) || 0, PDF_LOCALE)})`,
             subtitle: x.referredCenterName,
           }),
         )

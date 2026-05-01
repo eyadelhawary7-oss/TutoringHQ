@@ -1,7 +1,8 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { DonutChart } from '@/components/charts';
+import { formatPercent } from '@/lib/formatNumber';
 
 interface PaymentDonutProps {
   paid: number;
@@ -11,6 +12,7 @@ interface PaymentDonutProps {
 
 export default function PaymentDonut({ paid, unpaid, pending = 0 }: PaymentDonutProps) {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
 
   const data = [
     { name: t('paid'), value: paid, color: '#0D9488' },
@@ -27,8 +29,7 @@ export default function PaymentDonut({ paid, unpaid, pending = 0 }: PaymentDonut
       height={250}
       innerRadius={55}
       outerRadius={90}
-      centerValue={paidPct}
-      suffix="%"
+      centerValue={formatPercent(paidPct, locale)}
     />
   );
 }

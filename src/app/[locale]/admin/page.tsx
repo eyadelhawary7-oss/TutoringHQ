@@ -69,7 +69,7 @@ import { PlanBadge, BillingStatusBadge, RoleBadge } from '@/components/shared';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import type { AdminCardOrderRow } from '@/types/admin-card-orders';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
-import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 function formatAdminLastActiveDisplay(
@@ -1016,9 +1016,11 @@ function AdminPageContent() {
     const demo_scheduled = leads.filter((l) => l.stage === 'demo_scheduled').length;
     const converted = leads.filter((l) => l.stage === 'converted').length;
     const conversionRate =
-      leads.length > 0 ? `${Math.round((converted / leads.length) * 100)}%` : '0%';
+      leads.length > 0
+        ? formatPercent(Math.round((converted / leads.length) * 100), locale)
+        : formatPercent(0, locale);
     return { contacted, demo_scheduled, converted, conversionRate };
-  }, [leads]);
+  }, [leads, locale]);
 
   const analyticsAvgStudentsPerCenter = useMemo(() => {
     if (analyticsCenters.length === 0) return 0;

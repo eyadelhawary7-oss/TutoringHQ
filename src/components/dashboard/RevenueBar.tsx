@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { toAr } from '@/lib/number-utils';
+import { formatPercent } from '@/lib/formatNumber';
 
 interface RevenueBarProps {
   data: { method: string; amount: number }[];
@@ -46,7 +46,7 @@ export default function RevenueBar({ data }: RevenueBarProps) {
                 />
               </div>
               <span className="text-sm font-mono text-[var(--text-secondary)] w-10 text-end" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
-                {locale === 'ar' ? toAr(0) : 0}%
+                {formatPercent(0, locale)}
               </span>
             </div>
           ))}
@@ -72,7 +72,7 @@ export default function RevenueBar({ data }: RevenueBarProps) {
               />
             </div>
             <span className="text-sm font-mono text-[var(--text-secondary)] w-10 text-end" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
-              {locale === 'ar' ? toAr(pct) : pct}%
+              {formatPercent(pct, locale)}
             </span>
           </div>
         );

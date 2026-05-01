@@ -1,7 +1,8 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { formatPercent } from '@/lib/formatNumber';
 
 interface PaymentMethodsDonutProps {
   data: { method: string; amount: number }[];
@@ -34,6 +35,7 @@ const METHOD_KEYS: Record<string, string> = {
 
 export default function PaymentMethodsDonut({ data = [] }: PaymentMethodsDonutProps) {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
 
   const safeData = data ?? [];
   const total = safeData.reduce((sum, d) => sum + (d.amount || 0), 0);
@@ -75,7 +77,7 @@ export default function PaymentMethodsDonut({ data = [] }: PaymentMethodsDonutPr
               <Cell key={i} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip formatter={(v: number | undefined) => `${v ?? 0}%`} />
+          <Tooltip formatter={(v: number | undefined) => formatPercent(v ?? 0, locale)} />
         </PieChart>
       </ResponsiveContainer>
       <div className="grid grid-cols-2 gap-2 flex-1">
@@ -83,7 +85,7 @@ export default function PaymentMethodsDonut({ data = [] }: PaymentMethodsDonutPr
           <div key={name} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full shrink-0" style={{ background: color }} />
             <span className="text-sm text-[var(--color-text-secondary)] flex-1 truncate">{name}</span>
-            <span className="text-sm font-bold font-mono">{value}%</span>
+            <span className="text-sm font-bold font-mono">{formatPercent(value, locale)}</span>
           </div>
         ))}
       </div>

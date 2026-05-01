@@ -10,21 +10,24 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { ArrowLeft, Gift, CheckCircle } from 'lucide-react';
-import { formatCurrency, formatDate, formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatDateTime, formatNumber, formatPercent } from '@/lib/formatNumber';
 
-function formatRatePct(row: {
-  commission_rate: number | string | null;
-  commission_amount: number;
-  referred_plan_fee: number | null;
-}): string {
+function formatRatePct(
+  row: {
+    commission_rate: number | string | null;
+    commission_amount: number;
+    referred_plan_fee: number | null;
+  },
+  locale: string,
+): string {
   const r = row.commission_rate != null ? Number(row.commission_rate) : NaN;
   if (Number.isFinite(r)) {
-    if (r > 1) return `${r}%`;
-    return `${(r * 100).toFixed(0)}%`;
+    if (r > 1) return formatPercent(r, locale);
+    return formatPercent(r * 100, locale);
   }
   const fee = row.referred_plan_fee != null ? Number(row.referred_plan_fee) : 0;
   const amt = row.commission_amount;
-  if (fee > 0 && amt >= 0) return `${((amt / fee) * 100).toFixed(1)}%`;
+  if (fee > 0 && amt >= 0) return formatPercent((amt / fee) * 100, locale);
   return '-';
 }
 
@@ -604,7 +607,7 @@ export default function AdminReferralsPage() {
                               <td className="px-3 py-2 tabular-nums text-slate-700 dark:text-slate-300">
                                 {(row.period_month || '').slice(0, 7)}
                               </td>
-                              <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{formatRatePct(row)}</td>
+                              <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{formatRatePct(row, locale)}</td>
                               <td className="px-3 py-2 font-mono tabular-nums text-slate-800 dark:text-slate-200">
                                 {formatCurrency(row.commission_amount, locale)}
                               </td>

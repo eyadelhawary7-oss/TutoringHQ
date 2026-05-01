@@ -2,7 +2,7 @@ import chromium from '@sparticuz/chromium-min';
 import puppeteer from 'puppeteer-core';
 import type { Browser } from 'puppeteer-core';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { formatDate, formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatDateTime, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
   buildInvoiceHtml,
@@ -872,7 +872,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
       const cname = cid ? names.get(cid) ?? '—' : '—';
       const pct = Math.round(Number(r.commission_rate ?? 0) * 100);
       return {
-        titleAr: `عمولة ${pct}% — ${cname}`,
+        titleAr: `عمولة ${formatPercent(pct, PDF_NUM_LOCALE)} — ${cname}`,
         subAr: 'عمولة إحالة',
         mid: monthLabel(r),
         amount: Number(r.commission_amount ?? 0),

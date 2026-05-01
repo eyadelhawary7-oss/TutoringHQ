@@ -9,7 +9,7 @@ import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
-import { formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { formatDateTime, formatNumber, formatPercent } from '@/lib/formatNumber';
 
 type EmbedCenter = {
   id: string;
@@ -421,7 +421,7 @@ export default function ReferralRewardsPage() {
                         {formatNumber(r.month_number, locale)}
                       </td>
                       <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
-                        {formatNumber(pct, locale)}%
+                        {formatPercent(pct, locale)}
                       </td>
                       <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
                         {formatNumber(Number(r.base_amount), locale)} {t('staff.currency_suffix')}

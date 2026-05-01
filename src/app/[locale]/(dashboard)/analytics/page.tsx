@@ -12,7 +12,7 @@ import AnalyticsAiChatWidget from '@/components/analytics/AnalyticsAiChatWidget'
 import { chartColors, colors } from '@/lib/tokens';
 import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 import { ChartCard, ChartLegend } from '@/components/charts';
-import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
 
 const RevenueByGroup = dynamic(() => import('@/components/charts/RevenueByGroup'), {
   ssr: false,
@@ -280,7 +280,7 @@ export default function AnalyticsPage() {
                     </span>
                   )}
                   <span>
-                    {formatNumber(Number(Math.abs(mrrDelta)), locale)}% {ta('mrr_delta')}
+                    {formatPercent(Number(Math.abs(mrrDelta)), locale)} {ta('mrr_delta')}
                   </span>
                 </span>
               )}
@@ -298,7 +298,7 @@ export default function AnalyticsPage() {
             <div className="min-w-0">
               <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{ta('collection_rate')}</span>
               <span className="block text-xl font-bold text-[var(--color-text-primary)] mt-1 tabular-nums">
-                {formatNumber(Number(d.collection_rate ?? 0), locale, { maximumFractionDigits: 1 })}%
+                {formatPercent(Number(d.collection_rate ?? 0), locale)}
               </span>
             </div>
             <div
