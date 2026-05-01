@@ -1,94 +1,49 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-
-async function getUserCenterContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, can_manage_groups')
-    .eq('id', user.id)
-    .single();
-
-  const centerId = userRecord?.center_id as string | undefined;
-  if (!centerId) return null;
-
-  return {
-    userId: user.id,
-    centerId,
-    canManage: (userRecord as { can_manage_groups?: boolean }).can_manage_groups !== false,
-    supabaseAdmin,
-  };
-}
+import { requireCenterAuth } from '@/lib/centerAuth';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: NextRequest) {
-  try {
-    const ctx = await getUserCenterContext(request);
-    if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    if (!ctx.canManage) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    let body: { name?: string; subject?: string | null };
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-    }
-
-    const name = typeof body.name === 'string' ? body.name.trim() : '';
-    if (name.length < 2) {
-      return NextResponse.json({ error: 'Name must be at least 2 characters' }, { status: 400 });
-    }
-
-    const subject =
-      typeof body.subject === 'string' && body.subject.trim()
-        ? body.subject.trim()
-        : null;
-
-    const { error } = await ctx.supabaseAdmin.from('student_groups').insert({
-      center_id: ctx.centerId,
-      name,
-      subject,
-      fee: 0,
-      created_by: ctx.userId,
-    });
-
-    if (error) {
-      return NextResponse.json({ error: error.message ?? 'Insert failed' }, { status: 500 });
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error('[onboarding/create-group]', e);
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'Unknown error' },
-      { status: 500 },
-    );
+  const auth = await requireCenterAuth(request);
+  if (!auth.ok) return auth.response;
+  if (!supabaseAdmin) {
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
+
+  let body: { name?: string; subject?: string | null };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const name = typeof body.name === 'string' ? body.name : '';
+  if (!name?.trim()) {
+    return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+  }
+
+  const subject =
+    typeof body.subject === 'string' && body.subject.trim()
+      ? body.subject.trim()
+      : null;
+
+  const { error: insertErr } = await supabaseAdmin.from('student_groups').insert({
+    center_id: auth.centerId,
+    name: name.trim(),
+    subject,
+  });
+
+  if (insertErr) {
+    return NextResponse.json({ error: insertErr.message }, { status: 500 });
+  }
+
+  const { error: rpcErr } = await supabaseAdmin.rpc('complete_onboarding_step_rpc', {
+    p_center_id: auth.centerId,
+    p_step: 2,
+  });
+
+  if (rpcErr) {
+    return NextResponse.json({ error: rpcErr.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }
