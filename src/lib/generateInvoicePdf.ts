@@ -96,7 +96,7 @@ function planPresentation(planRaw: string | null | undefined): { en: string; ar:
   const k = (planRaw ?? 'starter').toLowerCase().replace(/-/g, '_');
   const table: Record<string, { en: string; ar: string }> = {
     solo: { en: 'Solo', ar: 'فردي' },
-    nano: { en: 'Nano', ar: 'ناشئ' },
+    nano: { en: 'Nano', ar: 'سنتر نانو' },
     starter: { en: 'Starter', ar: 'أساسي' },
     pro: { en: 'Pro', ar: 'محترف' },
     business: { en: 'Business', ar: 'أعمال' },

@@ -34,7 +34,7 @@ const NEXT_PLAN: Record<string, string> = {
 
 const NEXT_PLAN_AR: Record<string, string> = {
   solo: 'فردي',
-  nano: 'ناشئ',
+  nano: 'سنتر نانو',
   starter: 'أساسي',
   pro: 'محترف',
   business: 'أعمال',

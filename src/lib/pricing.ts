@@ -51,7 +51,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   },
   nano: {
     key: 'nano',
-    arabicName: 'ناشئ',
+    arabicName: 'سنتر نانو',
     englishName: 'Nano',
     weeklyStudentLimit: 75,
     quarterlyAllIn: 1999,

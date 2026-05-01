@@ -1,7 +1,7 @@
 {
   "plan": {
     "solo": "فردي",
-    "nano": "ناشئ",
+    "nano": "سنتر نانو",
     "starter": "أساسي",
     "pro": "محترف",
     "business": "أعمال",
@@ -957,15 +957,15 @@
       "students_unit": "طالب / أسبوع",
       "plans": {
         "nano": {
-          "name": "ناشئ",
-          "students": "100",
+          "name": "سنتر نانو",
+          "students": "75",
           "price_month": "2,000",
           "price_per": "4.62",
           "early_price": "1,200"
         },
         "starter": {
           "name": "أساسي",
-          "students": "250",
+          "students": "150",
           "price_month": "4,500",
           "price_per": "4.15",
           "early_price": "2,700"
@@ -1313,7 +1313,7 @@
       "soloName": "فردي",
       "soloStudents": "حتى ٥٠ طالب",
       "priceSuffixMo": "ج.م/شهر",
-      "nanoName": "ناشئ",
+      "nanoName": "سنتر نانو",
       "nanoPrice": "٢٬٠٠٠ ج.م/شهر",
       "nanoPeriod": "(ربع سنوي)",
       "nanoStudents": "حتى ٧٥ طالب",
@@ -3066,7 +3066,7 @@
     "planLimitReached": "باقة الحد تم الوصول",
     "planNames": {
       "solo": "فردي",
-      "nano": "ناشئ",
+      "nano": "سنتر نانو",
       "starter": "أساسي",
       "pro": "محترف",
       "business": "أعمال",

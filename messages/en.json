@@ -4322,14 +4322,14 @@
       "plans": {
         "nano": {
           "name": "Nano",
-          "students": "100",
+          "students": "75",
           "price_month": "2,000",
           "price_per": "4.62",
           "early_price": "1,200"
         },
         "starter": {
           "name": "Starter",
-          "students": "250",
+          "students": "150",
           "price_month": "4,500",
           "price_per": "4.15",
           "early_price": "2,700"

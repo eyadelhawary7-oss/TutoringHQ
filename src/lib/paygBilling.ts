@@ -99,7 +99,7 @@ export const PAYG_TIER_BREAKPOINTS = [
   },
   {
     plan: 'nano' as const,
-    label: 'ناشئ',
+    label: 'سنتر نانو',
     maxStudents: 75,
     ratePerStudent: 27.5,
     weeklyDisplayRate: PAYG_WEEKLY_DISPLAY_RATES.nano,

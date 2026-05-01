@@ -676,8 +676,14 @@ export default function LocaleHomePage() {
             {ORDERED_SUBSCRIPTION_PLAN_KEYS.map((planKey) => {
               const p = PLANS[planKey];
               const priceLine = `${formatCurrency(p.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
-              const nameKey = `${planKey}Name` as 'marketing.soloName';
-              const studentsKey = `${planKey}Students` as 'marketing.soloStudents';
+              const planTitle = locale === 'ar' ? p.arabicName : p.englishName;
+              const cap = p.weeklyStudentLimit;
+              const studentsLine =
+                cap != null
+                  ? locale === 'ar'
+                    ? `حتى ${formatNumber(cap, locale)} طالب`
+                    : `Up to ${formatNumber(cap, locale)} students`
+                  : '';
               const isStarter = planKey === 'starter';
               const isSolo = planKey === 'solo';
               return (
@@ -702,9 +708,9 @@ export default function LocaleHomePage() {
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-3 text-base font-bold !text-white">{m(nameKey)}</p>
+                  <p className="mt-3 text-base font-bold !text-white">{planTitle}</p>
                   <p className="mt-2 text-2xl font-bold !text-white">{priceLine}</p>
-                  <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m(studentsKey)}</p>
+                  <p className="mt-3 text-xs text-[var(--color-text-muted)]">{studentsLine}</p>
                 </div>
               );
             })}

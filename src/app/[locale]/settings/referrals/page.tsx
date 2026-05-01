@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/shared';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 const PLAN_LABELS_AR: Record<string, string> = {
-  nano: 'ناشئ',
+  nano: 'سنتر نانو',
   starter: 'سنتر صغير',
   pro: 'سنتر متوسط',
   business: 'سنتر كبير',
