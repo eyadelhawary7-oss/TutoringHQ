@@ -3,7 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { formatCurrency } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { PLANS, ORDERED_SUBSCRIPTION_PLAN_KEYS } from '@/lib/pricing';
 import { Menu, X } from 'lucide-react';
 
@@ -89,25 +89,27 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
   </div>
 );
 
-const DashboardScreen = () => (
+const DashboardScreen = ({ locale }: { locale: string }) => (
   <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[var(--color-surface-0)] p-3">
     <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">لوحة التحكم</div>
     <div className="grid grid-cols-2 gap-1.5">
       <div className="rounded-lg bg-slate-800 p-2">
         <div className="text-[8px] text-slate-500">الطلاب</div>
-        <div className="text-sm font-bold text-white">247</div>
-        <div className="text-[8px] text-teal-400">↑ 12 هذا الشهر</div>
+        <div className="text-sm font-bold text-white">{formatNumber(247, locale)}</div>
+        <div className="text-[8px] text-teal-400">
+          ↑ {formatNumber(12, locale)} هذا الشهر
+        </div>
       </div>
       <div className="rounded-lg bg-slate-800 p-2">
         <div className="text-[8px] text-slate-500">الإيرادات</div>
-        <div className="text-sm font-bold text-white">21K</div>
-        <div className="text-[8px] text-teal-400">EGP شهرياً</div>
+        <div className="text-sm font-bold text-white leading-tight">{formatCurrency(21000, locale)}</div>
+        <div className="text-[8px] text-teal-400">{locale === 'ar' ? 'شهرياً' : '/mo'}</div>
       </div>
     </div>
     <div className="rounded-lg bg-slate-800 p-2">
       <div className="mb-1 flex justify-between">
         <span className="text-[8px] text-slate-500">حضور اليوم</span>
-        <span className="text-[8px] text-teal-400">87%</span>
+        <span className="text-[8px] text-teal-400">{formatPercent(87, locale)}</span>
       </div>
       <div className="h-1.5 rounded-full bg-slate-700">
         <div className="h-full w-[87%] rounded-full bg-teal-500" />
@@ -163,7 +165,7 @@ const WhatsAppScreen = () => (
   </div>
 );
 
-const PaymentScreen = () => (
+const PaymentScreen = ({ locale }: { locale: string }) => (
   <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[var(--color-surface-0)] p-3">
     <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">المدفوعات</div>
     <div className="flex items-center gap-3 rounded-xl border border-teal-700/50 bg-teal-900/40 p-3">
@@ -174,27 +176,27 @@ const PaymentScreen = () => (
       </div>
       <div>
         <div className="text-[9px] font-bold text-teal-300">تم استلام الدفعة</div>
-        <div className="text-xs font-bold text-white">1,500 EGP</div>
+        <div className="text-xs font-bold text-white">{formatCurrency(1500, locale)}</div>
         <div className="text-[8px] text-slate-500">سنتر النخبة للغات</div>
       </div>
     </div>
     <div className="flex flex-1 flex-col rounded-xl bg-slate-800 p-2">
       <div className="mb-2 text-[8px] text-slate-500">آخر المدفوعات</div>
       {[
-        { name: 'Ahmed K.', amount: '500', status: 'paid' as const },
-        { name: 'Sara M.', amount: '500', status: 'paid' as const },
-        { name: 'Omar H.', amount: '500', status: 'pending' as const },
+        { name: 'Ahmed K.', amount: 500, status: 'paid' as const },
+        { name: 'Sara M.', amount: 500, status: 'paid' as const },
+        { name: 'Omar H.', amount: 500, status: 'pending' as const },
       ].map((p, i) => (
         <div key={`${p.name}-${i}`} className="mb-1.5 flex items-center gap-2">
           <div className={`h-1.5 w-1.5 rounded-full ${p.status === 'paid' ? 'bg-teal-500' : 'bg-amber-500'}`} />
           <span className="flex-1 text-[8px] text-slate-300">{p.name}</span>
-          <span className="text-[8px] font-semibold text-white">{p.amount} EGP</span>
+          <span className="text-[8px] font-semibold text-white">{formatCurrency(p.amount, locale)}</span>
         </div>
       ))}
     </div>
     <div className="flex items-center justify-between rounded-lg bg-slate-800 p-2">
       <span className="text-[8px] text-slate-500">إجمالي الشهر</span>
-      <span className="text-xs font-bold text-teal-400">21,000 EGP</span>
+      <span className="text-xs font-bold text-teal-400">{formatCurrency(21000, locale)}</span>
     </div>
   </div>
 );
@@ -507,9 +509,9 @@ export default function LocaleHomePage() {
                   style={{ willChange: 'transform', transform: 'translateZ(0)' }}
                 >
                   {(demoScreen === 'scanning' || demoScreen === 'scanned') && <ScannerScreen demoScreen={demoScreen} />}
-                  {demoScreen === 'dashboard' ? <DashboardScreen /> : null}
+                  {demoScreen === 'dashboard' ? <DashboardScreen locale={locale} /> : null}
                   {demoScreen === 'whatsapp' ? <WhatsAppScreen /> : null}
-                  {demoScreen === 'payment' ? <PaymentScreen /> : null}
+                  {demoScreen === 'payment' ? <PaymentScreen locale={locale} /> : null}
                 </div>
 
                 {demoScreen === 'scanned' ? (
@@ -532,7 +534,9 @@ export default function LocaleHomePage() {
                   <div className="mx-3 mb-2 rounded-2xl border border-slate-700 bg-slate-800/90 p-3">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 animate-pulse rounded-full bg-teal-500" />
-                      <p className="text-[10px] text-[var(--color-text-secondary)]">247 طالب نشط اليوم</p>
+                      <p className="text-[10px] text-[var(--color-text-secondary)]">
+                        {formatNumber(247, locale)} طالب نشط اليوم
+                      </p>
                     </div>
                   </div>
                 ) : null}
@@ -540,7 +544,9 @@ export default function LocaleHomePage() {
                   <div className="mx-3 mb-2 rounded-2xl border border-[#128C7E]/40 bg-[#128C7E]/20 p-3">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-                      <p className="text-[10px] text-green-300">تم إرسال 12 رسالة واتساب</p>
+                      <p className="text-[10px] text-green-300">
+                        تم إرسال {formatNumber(12, locale)} رسالة واتساب
+                      </p>
                     </div>
                   </div>
                 ) : null}
@@ -548,7 +554,9 @@ export default function LocaleHomePage() {
                   <div className="mx-3 mb-2 rounded-2xl border border-teal-800/50 bg-teal-900/30 p-3">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-teal-400" />
-                      <p className="text-[10px] text-teal-300">تم تحصيل 21,000 EGP هذا الشهر</p>
+                      <p className="text-[10px] text-teal-300">
+                        تم تحصيل {formatCurrency(21000, locale)} هذا الشهر
+                      </p>
                     </div>
                   </div>
                 ) : null}
