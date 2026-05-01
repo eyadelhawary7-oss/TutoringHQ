@@ -118,6 +118,21 @@ type MetaMessage = {
   text?: { body?: string };
 };
 
+function extractMetaMessageId(payload: Record<string, unknown>): string | null {
+  try {
+    const entry = (payload.entry as unknown[])?.[0] as Record<string, unknown> | undefined;
+    const changes = (entry?.changes as unknown[])?.[0] as Record<string, unknown> | undefined;
+    const value = changes?.value as Record<string, unknown> | undefined;
+    const messages = value?.messages as unknown[] | undefined;
+    const msg0 = messages?.[0] as Record<string, unknown> | undefined;
+    const id = msg0?.id;
+    if (id === null || id === undefined) return null;
+    return typeof id === 'string' ? id : String(id);
+  } catch {
+    return null;
+  }
+}
+
 async function resolveCenterForInbound(
   admin: NonNullable<typeof supabaseAdmin>,
   fromRaw: string,
@@ -170,26 +185,8 @@ async function sendInboundText(centerId: string | null, toRaw: string, body: str
   }
 }
 
-export async function POST(request: Request) {
-  let rawBody: string;
-  try {
-    rawBody = await request.text();
-  } catch {
-    return postOk();
-  }
-
-  if (!verifyMetaSignature(rawBody, request)) {
-    return postOk();
-  }
-
-  let body: unknown;
-  try {
-    body = JSON.parse(rawBody) as unknown;
-  } catch {
-    return postOk();
-  }
-
-  const b = body as {
+async function processInboundMessage(payload: Record<string, unknown>): Promise<void> {
+  const b = payload as {
     entry?: Array<{
       changes?: Array<{
         value?: { messages?: MetaMessage[] };
@@ -202,7 +199,7 @@ export async function POST(request: Request) {
   const message = change?.value?.messages?.[0];
 
   if (!message) {
-    return postOk();
+    return;
   }
 
   const fromPhone = String(message.from ?? '');
@@ -236,7 +233,7 @@ export async function POST(request: Request) {
 
   if (message.type !== 'text') {
     await insertLog({ messageText: '', centerId: null });
-    return postOk();
+    return;
   }
 
   const messageText = message.text?.body ?? '';
@@ -279,6 +276,68 @@ export async function POST(request: Request) {
       await sendInboundText(centerId, salesPhone, forwardBody);
     }
   }
+}
 
-  return postOk();
+export async function POST(request: Request) {
+  try {
+    let rawBody: string;
+    try {
+      rawBody = await request.text();
+    } catch {
+      return postOk();
+    }
+
+    if (!verifyMetaSignature(rawBody, request)) {
+      return postOk();
+    }
+
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch {
+      return postOk();
+    }
+
+    const messageId = extractMetaMessageId(payload);
+
+    if (messageId && supabaseAdmin) {
+      const idempotencyKey = 'meta:' + messageId;
+
+      const { data: existing } = await supabaseAdmin
+        .from('webhook_inbox')
+        .select('id, processed')
+        .eq('idempotency_key', idempotencyKey)
+        .maybeSingle();
+
+      if (existing && (existing as { processed?: boolean }).processed === true) {
+        return postOk();
+      }
+
+      await supabaseAdmin.from('webhook_inbox').upsert(
+        {
+          idempotency_key: idempotencyKey,
+          source: 'meta',
+          payload,
+          processed: false,
+        },
+        { onConflict: 'idempotency_key' },
+      );
+
+      await processInboundMessage(payload);
+
+      await supabaseAdmin
+        .from('webhook_inbox')
+        .update({
+          processed: true,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('idempotency_key', idempotencyKey);
+    } else {
+      await processInboundMessage(payload);
+    }
+
+    return postOk();
+  } catch {
+    return postOk();
+  }
 }

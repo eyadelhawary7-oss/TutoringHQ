@@ -135,82 +135,46 @@ async function findCardOrder(
   return null;
 }
 
-export async function POST(request: Request) {
-  const rawBody = await request.text();
-
-  // BOSTA_WEBHOOK_SECRET — Set in Vercel env vars — get from Bosta dashboard
-  const secret = process.env.BOSTA_WEBHOOK_SECRET ?? '';
-  const sig = request.headers.get('Bosta-Signature') ?? '';
-  const requireSecret =
-    process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-  if (requireSecret && !secret) {
-    console.error('[bosta-webhook] BOSTA_WEBHOOK_SECRET is required in production');
-    return NextResponse.json({ received: true, error: 'misconfigured' }, { status: 200 });
-  }
-  if (secret) {
-    const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-    const sigBuf = Buffer.from(sig);
-    const expectedBuf = Buffer.from(expected);
-    if (
-      sigBuf.length !== expectedBuf.length ||
-      !timingSafeEqual(sigBuf, expectedBuf)
-    ) {
-      console.warn('[bosta-webhook] Invalid signature');
-      return NextResponse.json({ received: true, error: 'invalid_signature' }, { status: 200 });
-    }
-  } else {
-    console.warn(
-      '[bosta-webhook] BOSTA_WEBHOOK_SECRET is not set; webhook HMAC verification skipped (non-production only)',
-    );
-  }
-
-  let body: Record<string, unknown>;
-  try {
-    body = JSON.parse(rawBody) as Record<string, unknown>;
-  } catch {
-    console.warn('[bosta-webhook] Invalid JSON body');
-    return NextResponse.json({ received: true, error: 'invalid_json' }, { status: 200 });
-  }
-
+async function processBostaEvent(payload: Record<string, unknown>): Promise<void> {
   if (!supabaseAdmin) {
     console.error('[bosta-webhook] Missing Supabase admin');
-    return NextResponse.json({ received: true });
+    return;
   }
 
   const supabase = supabaseAdmin;
 
-  const shipment = body.shipment as Record<string, unknown> | undefined;
+  const shipment = payload.shipment as Record<string, unknown> | undefined;
   const state = shipment?.state as Record<string, unknown> | undefined;
 
   const shipmentId =
     (typeof shipment?._id === 'string' ? shipment._id : null) ??
-    (typeof body._id === 'string' ? body._id : null) ??
-    (typeof body.id === 'string' ? body.id : null);
+    (typeof payload._id === 'string' ? payload._id : null) ??
+    (typeof payload.id === 'string' ? payload.id : null);
 
   const trackingNumber =
     (typeof shipment?.trackingNumber === 'string' ? shipment.trackingNumber : null) ??
-    (typeof body.trackingNumber === 'string' ? body.trackingNumber : null);
+    (typeof payload.trackingNumber === 'string' ? payload.trackingNumber : null);
 
   const stateCode =
     normalizeStateCode(state?.code) ||
     normalizeStateCode(state?.value) ||
-    normalizeStateCode(body.state) ||
-    normalizeStateCode(body.type);
+    normalizeStateCode(payload.state) ||
+    normalizeStateCode(payload.type);
 
   const eventId =
-    (typeof body.eventId === 'string' ? body.eventId : null) ??
-    (typeof body._id === 'string' ? body._id : null);
+    (typeof payload.eventId === 'string' ? payload.eventId : null) ??
+    (typeof payload._id === 'string' ? payload._id : null);
 
   if (!shipmentId && !trackingNumber) {
     console.warn('[bosta-webhook] No shipment identifier');
-    return NextResponse.json({ received: true, error: 'no_shipment' }, { status: 200 });
+    return;
   }
 
   const order = await findCardOrder(supabase, shipmentId, trackingNumber);
 
   if (!order) {
     console.error('[bosta-webhook] Unknown shipment:', shipmentId ?? trackingNumber);
-    return NextResponse.json({ received: true });
+    return;
   }
 
   const dedupeKey = eventId?.trim() || null;
@@ -219,7 +183,7 @@ export async function POST(request: Request) {
     card_order_id: order.id,
     event_type: stateCode || 'UNKNOWN',
     bosta_event_id: dedupeKey,
-    payload: body,
+    payload,
   });
   if (eventErr) {
     console.error('[bosta-webhook] card_order_events insert:', eventErr);
@@ -232,7 +196,7 @@ export async function POST(request: Request) {
       .eq('card_order_id', order.id)
       .eq('bosta_event_id', dedupeKey);
     if (!cntErr && (count ?? 0) > 1) {
-      return NextResponse.json({ received: true });
+      return;
     }
   }
 
@@ -434,6 +398,91 @@ export async function POST(request: Request) {
       break;
     }
   }
+}
 
-  return NextResponse.json({ received: true });
+export async function POST(request: Request) {
+  try {
+    const rawBody = await request.text();
+
+    // BOSTA_WEBHOOK_SECRET — Set in Vercel env vars — get from Bosta dashboard
+    const secret = process.env.BOSTA_WEBHOOK_SECRET ?? '';
+    const sig = request.headers.get('Bosta-Signature') ?? '';
+    const requireSecret =
+      process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+    if (requireSecret && !secret) {
+      console.error('[bosta-webhook] BOSTA_WEBHOOK_SECRET is required in production');
+      return NextResponse.json({ received: true, error: 'misconfigured' }, { status: 200 });
+    }
+    if (secret) {
+      const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+      const sigBuf = Buffer.from(sig);
+      const expectedBuf = Buffer.from(expected);
+      if (
+        sigBuf.length !== expectedBuf.length ||
+        !timingSafeEqual(sigBuf, expectedBuf)
+      ) {
+        console.warn('[bosta-webhook] Invalid signature');
+        return NextResponse.json({ received: true, error: 'invalid_signature' }, { status: 200 });
+      }
+    } else {
+      console.warn(
+        '[bosta-webhook] BOSTA_WEBHOOK_SECRET is not set; webhook HMAC verification skipped (non-production only)',
+      );
+    }
+
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch {
+      console.warn('[bosta-webhook] Invalid JSON body');
+      return NextResponse.json({ received: true, error: 'invalid_json' }, { status: 200 });
+    }
+
+    const o1 = payload.order_id;
+    const o2 = payload.trackingNumber;
+    const orderId =
+      (typeof o1 === 'string' ? o1 : o1 != null ? String(o1) : null) ??
+      (typeof o2 === 'string' ? o2 : o2 != null ? String(o2) : null) ??
+      null;
+
+    if (orderId && supabaseAdmin) {
+      const idempotencyKey = 'bosta:' + orderId;
+
+      const { data: existing } = await supabaseAdmin
+        .from('webhook_inbox')
+        .select('id, processed')
+        .eq('idempotency_key', idempotencyKey)
+        .maybeSingle();
+
+      if (existing && (existing as { processed?: boolean }).processed === true) {
+        return NextResponse.json({ received: true });
+      }
+
+      await supabaseAdmin.from('webhook_inbox').upsert(
+        {
+          idempotency_key: idempotencyKey,
+          source: 'bosta',
+          payload,
+          processed: false,
+        },
+        { onConflict: 'idempotency_key' },
+      );
+
+      await processBostaEvent(payload);
+
+      await supabaseAdmin
+        .from('webhook_inbox')
+        .update({
+          processed: true,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('idempotency_key', idempotencyKey);
+    } else {
+      await processBostaEvent(payload);
+    }
+
+    return NextResponse.json({ received: true });
+  } catch {
+    return NextResponse.json({ received: true });
+  }
 }

@@ -4,6 +4,9 @@ import { triggerT1Eligible, resumeCommissionClocks } from '@/lib/commissions';
 import { sendPaymentConfirmed } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+
+export const dynamic = 'force-dynamic';
 
 const paymentFailedEnabled = true; // chq_payment_failed — set to false if template gets rejected
 
@@ -12,56 +15,42 @@ function paymobAck(body: Record<string, unknown> = {}) {
   return NextResponse.json({ received: true, ...body }, { status: 200 });
 }
 
-export async function POST(request: NextRequest) {
-  let supabaseAdmin;
+async function processPaymobEvent(payload: Record<string, unknown>): Promise<void> {
+  let supabaseAdminLocal;
   try {
-    supabaseAdmin = getSupabaseAdmin();
+    supabaseAdminLocal = getSupabaseAdmin();
   } catch {
-    return paymobAck({ error: 'misconfigured' });
+    return;
   }
 
-  const hmacFromQuery = request.nextUrl.searchParams.get('hmac') ?? '';
-
-  let parsed: { obj?: Record<string, unknown>; hmac?: string };
-  try {
-    parsed = (await request.json()) as { obj?: Record<string, unknown>; hmac?: string };
-  } catch {
-    return paymobAck({ error: 'invalid_json' });
+  const obj = payload.obj;
+  if (!obj || typeof obj !== 'object') {
+    return;
   }
 
-  const hmac = hmacFromQuery || (typeof parsed.hmac === 'string' ? parsed.hmac : '');
-  const obj = parsed.obj;
-
-  if (!hmac || !obj || typeof obj !== 'object') {
-    return paymobAck({ error: 'invalid_payload' });
-  }
-
-  if (!verifyCardOrderPaymobHmac(obj, hmac)) {
-    console.warn('[paymob/webhook] Invalid HMAC');
-    return paymobAck({ error: 'invalid_hmac' });
-  }
+  const objRec = obj as Record<string, unknown>;
 
   // IDEMPOTENCY GUARD — Paymob order id is the idempotency key (not transaction_id)
-  const orderForIdem = obj.order as { id?: unknown } | null | undefined;
+  const orderForIdem = objRec.order as { id?: unknown } | null | undefined;
   const orderId =
     orderForIdem?.id !== null && orderForIdem?.id !== undefined
       ? String(orderForIdem.id)
       : '';
   if (!orderId) {
-    return paymobAck({ error: 'no_order_id' });
+    return;
   }
 
-  const { data: existingSession } = await supabaseAdmin
+  const { data: existingSession } = await supabaseAdminLocal
     .from('combined_payment_sessions')
     .select('id, status')
     .eq('paymob_order_id', orderId)
     .maybeSingle();
 
   if (existingSession?.status === 'paid') {
-    return paymobAck();
+    return;
   }
 
-  const { data: existingInvoice } = await supabaseAdmin
+  const { data: existingInvoice } = await supabaseAdminLocal
     .from('invoices')
     .select('id, status')
     .eq('paymob_order_id', orderId)
@@ -69,23 +58,23 @@ export async function POST(request: NextRequest) {
 
   const sessionPending = existingSession?.status === 'pending';
   if (existingInvoice?.status === 'paid' && !sessionPending) {
-    return paymobAck();
+    return;
   }
 
   try {
-    const success = obj.success === true || obj.success === 'true';
-    const transactionId = String(obj.id ?? '');
+    const success = objRec.success === true || objRec.success === 'true';
+    const transactionId = String(objRec.id ?? '');
 
     /** Paymob HMAC object includes is_voided / is_refunded — used for chargebacks after capture. */
     const isChargebackLike =
-      obj.is_voided === true ||
-      obj.is_voided === 'true' ||
-      obj.is_refunded === true ||
-      obj.is_refunded === 'true';
+      objRec.is_voided === true ||
+      objRec.is_voided === 'true' ||
+      objRec.is_refunded === true ||
+      objRec.is_refunded === 'true';
 
     if (isChargebackLike) {
       const { finalizeInvoiceChargeback } = await import('@/lib/invoicePaymobPayment');
-      await finalizeInvoiceChargeback(supabaseAdmin, orderId, transactionId);
+      await finalizeInvoiceChargeback(supabaseAdminLocal, orderId, transactionId);
     } else if (success) {
       const { tryFinalizeCombinedPaymentSession } = await import('@/lib/combinedPaymentFinalize');
       const combo = existingSession as { id?: string; status?: string } | null;
@@ -93,25 +82,29 @@ export async function POST(request: NextRequest) {
         combo?.id && combo.status === 'pending'
           ? await tryFinalizeCombinedPaymentSession(
               combo.id,
-              supabaseAdmin,
+              supabaseAdminLocal,
               'webhook',
               transactionId,
             )
           : false;
       if (!combined) {
         const { finalizeCardOrderPaymentSuccess } = await import('@/lib/cardOrderPayment');
-        const cardResult = await finalizeCardOrderPaymentSuccess(supabaseAdmin, orderId, transactionId);
+        const cardResult = await finalizeCardOrderPaymentSuccess(
+          supabaseAdminLocal,
+          orderId,
+          transactionId,
+        );
         if (!cardResult) {
           const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
           // Includes invoice_type signup_first_payment: pending_payment centers are finalized in processInvoiceSignupAfterPaymobSuccess.
-          await finalizeInvoicePaymentSuccess(supabaseAdmin, orderId, transactionId);
+          await finalizeInvoicePaymentSuccess(supabaseAdminLocal, orderId, transactionId);
         }
       }
       // Signup flow: platform_config keys auto_approve_signups, pause_new_signups (see signupPaymobAutoApprove).
       const { processSignupAutoApprovalAfterPaymobSuccess } = await import('@/lib/signupPaymobAutoApprove');
-      await processSignupAutoApprovalAfterPaymobSuccess(supabaseAdmin, orderId, transactionId);
+      await processSignupAutoApprovalAfterPaymobSuccess(supabaseAdminLocal, orderId, transactionId);
 
-      const { data: paidInv } = await supabaseAdmin
+      const { data: paidInv } = await supabaseAdminLocal
         .from('invoices')
         .select('center_id')
         .eq('paymob_order_id', orderId)
@@ -120,7 +113,7 @@ export async function POST(request: NextRequest) {
       let centerId: string | null =
         (paidInv as { center_id?: string } | null)?.center_id ?? null;
       if (!centerId) {
-        const { data: paidSess } = await supabaseAdmin
+        const { data: paidSess } = await supabaseAdminLocal
           .from('combined_payment_sessions')
           .select('center_id')
           .eq('paymob_order_id', orderId)
@@ -134,7 +127,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const { data: invRow } = await supabaseAdmin
+        const { data: invRow } = await supabaseAdminLocal
           .from('invoices')
           .select('center_id, total_amount, billing_period_start, billing_period_end')
           .eq('paymob_order_id', orderId)
@@ -142,16 +135,16 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
         const cid = (invRow as { center_id?: string } | null)?.center_id;
         if (cid) {
-          const { data: center } = await supabaseAdmin
+          const { data: center } = await supabaseAdminLocal
             .from('centers')
             .select('id, name, phone')
             .eq('id', cid)
             .maybeSingle();
           if (center) {
-            const ownerMap = await ownerContactByCenterId(supabaseAdmin, [cid]);
+            const ownerMap = await ownerContactByCenterId(supabaseAdminLocal, [cid]);
             const contact = ownerMap.get(cid);
             const ownerPhone = await resolveOwnerWaPhone(
-              supabaseAdmin,
+              supabaseAdminLocal,
               contact?.authId ?? null,
               contact?.userPhone ?? null,
               (center as { phone?: string | null }).phone ?? null,
@@ -161,7 +154,7 @@ export async function POST(request: NextRequest) {
               const end = String((invRow as { billing_period_end?: string | null }).billing_period_end ?? '');
               const periodStr = start && end ? `${start} - ${end}` : start || end || '';
               await sendPaymentConfirmed(
-                supabaseAdmin,
+                supabaseAdminLocal,
                 ownerPhone,
                 String((center as { name?: string | null }).name ?? ''),
                 periodStr,
@@ -170,7 +163,7 @@ export async function POST(request: NextRequest) {
             }
           }
         } else {
-          const { data: sessRow } = await supabaseAdmin
+          const { data: sessRow } = await supabaseAdminLocal
             .from('combined_payment_sessions')
             .select('center_id, total_amount, metadata')
             .eq('paymob_order_id', orderId)
@@ -178,16 +171,16 @@ export async function POST(request: NextRequest) {
             .maybeSingle();
           const sessionCenterId = (sessRow as { center_id?: string } | null)?.center_id;
           if (sessionCenterId) {
-            const { data: center } = await supabaseAdmin
+            const { data: center } = await supabaseAdminLocal
               .from('centers')
               .select('id, name, phone')
               .eq('id', sessionCenterId)
               .maybeSingle();
             if (center) {
-              const ownerMap = await ownerContactByCenterId(supabaseAdmin, [sessionCenterId]);
+              const ownerMap = await ownerContactByCenterId(supabaseAdminLocal, [sessionCenterId]);
               const contact = ownerMap.get(sessionCenterId);
               const ownerPhone = await resolveOwnerWaPhone(
-                supabaseAdmin,
+                supabaseAdminLocal,
                 contact?.authId ?? null,
                 contact?.userPhone ?? null,
                 (center as { phone?: string | null }).phone ?? null,
@@ -200,7 +193,7 @@ export async function POST(request: NextRequest) {
                     : '';
                 const periodStr = anchor ? anchor.slice(0, 10) : new Date().toISOString().slice(0, 10);
                 await sendPaymentConfirmed(
-                  supabaseAdmin,
+                  supabaseAdminLocal,
                   ownerPhone,
                   String((center as { name?: string | null }).name ?? ''),
                   periodStr,
@@ -215,16 +208,91 @@ export async function POST(request: NextRequest) {
       }
     } else {
       const { finalizeCardOrderPaymentFailure } = await import('@/lib/cardOrderPayment');
-      await finalizeCardOrderPaymentFailure(supabaseAdmin, orderId);
+      await finalizeCardOrderPaymentFailure(supabaseAdminLocal, orderId);
       const { finalizeInvoicePaymentFailure, notifySubscriptionInvoicePaymentFailed } = await import(
         '@/lib/invoicePaymobPayment'
       );
-      await finalizeInvoicePaymentFailure(supabaseAdmin, orderId);
-      await notifySubscriptionInvoicePaymentFailed(supabaseAdmin, orderId, paymentFailedEnabled);
+      await finalizeInvoicePaymentFailure(supabaseAdminLocal, orderId);
+      await notifySubscriptionInvoicePaymentFailed(supabaseAdminLocal, orderId, paymentFailedEnabled);
     }
   } catch (e) {
     console.error('[paymob/webhook]', e);
   }
+}
 
-  return paymobAck();
+export async function POST(request: NextRequest) {
+  try {
+    const rawBody = await request.text();
+
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ received: true });
+    }
+
+    const hmacFromQuery = request.nextUrl.searchParams.get('hmac') ?? '';
+
+    const hmac = hmacFromQuery || (typeof payload.hmac === 'string' ? payload.hmac : '');
+    const obj = payload.obj;
+
+    if (!hmac || !obj || typeof obj !== 'object') {
+      return paymobAck({ error: 'invalid_payload' });
+    }
+
+    if (!verifyCardOrderPaymobHmac(obj as Record<string, unknown>, hmac)) {
+      console.warn('[paymob/webhook] Invalid HMAC');
+      return paymobAck({ error: 'invalid_hmac' });
+    }
+
+    const objAsRec = payload.obj as Record<string, unknown>;
+    const transactionId =
+      (objAsRec?.id as string | number | null | undefined) ??
+      (payload.id as string | number | null | undefined) ??
+      null;
+
+    if (transactionId != null && transactionId !== '') {
+      const idempotencyKey = 'paymob:' + String(transactionId);
+
+      if (supabaseAdmin) {
+        const { data: existing } = await supabaseAdmin
+          .from('webhook_inbox')
+          .select('id, processed')
+          .eq('idempotency_key', idempotencyKey)
+          .maybeSingle();
+
+        if (existing && (existing as { processed?: boolean }).processed === true) {
+          return NextResponse.json({ received: true });
+        }
+
+        await supabaseAdmin.from('webhook_inbox').upsert(
+          {
+            idempotency_key: idempotencyKey,
+            source: 'paymob',
+            payload,
+            processed: false,
+          },
+          { onConflict: 'idempotency_key', ignoreDuplicates: true },
+        );
+
+        await processPaymobEvent(payload);
+
+        await supabaseAdmin
+          .from('webhook_inbox')
+          .update({
+            processed: true,
+            processed_at: new Date().toISOString(),
+          })
+          .eq('idempotency_key', idempotencyKey);
+      } else {
+        await processPaymobEvent(payload);
+      }
+    } else {
+      await processPaymobEvent(payload);
+    }
+
+    return NextResponse.json({ received: true });
+  } catch {
+    return NextResponse.json({ received: true });
+  }
 }
