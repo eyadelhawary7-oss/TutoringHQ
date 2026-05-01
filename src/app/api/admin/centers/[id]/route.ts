@@ -36,7 +36,7 @@ const VALID_INVOICE_TYPES = [
   'reactivation_fee',
 ] as const;
 
-const VALID_PLANS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
+const VALID_PLANS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 
 const PATCH_ACTIONS = new Set([
   'update_invoice',

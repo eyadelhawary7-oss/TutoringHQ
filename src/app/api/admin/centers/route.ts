@@ -741,7 +741,7 @@ export async function PUT(request: Request) {
     }
 
     if (action === 'change_plan') {
-      if (!newPlan || !['starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'].includes(newPlan as string)) {
+      if (!newPlan || !['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'].includes(newPlan as string)) {
         return NextResponse.json({ error: 'Valid newPlan required' }, { status: 400 });
       }
       const oldPlan = center.plan || 'starter';
@@ -896,7 +896,7 @@ export async function PUT(request: Request) {
     const plan = (center.plan as string) || 'starter';
     const planKey = (plan in PLANS ? plan : 'starter') as PlanKey;
     const listAllInPerMonth = PLANS[planKey]?.quarterlyAllIn ?? PLANS.starter.quarterlyAllIn;
-    const earlyAdopterEligiblePlans = new Set(['nano', 'starter', 'pro', 'business', 'enterprise']);
+    const earlyAdopterEligiblePlans = new Set(['solo', 'nano', 'starter', 'pro', 'business', 'enterprise']);
     const { count: earlyAdopterCount } = await supabaseAdmin
       .from('centers')
       .select('*', { count: 'exact', head: true })

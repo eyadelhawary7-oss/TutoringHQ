@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 
 const styles: Record<string, string> = {
+  solo: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-slate-300',
   nano: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-slate-300',
   starter: 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border border-slate-300',
   pro: 'bg-blue-100 text-blue-700 border border-blue-300',
@@ -13,6 +14,7 @@ const styles: Record<string, string> = {
 };
 
 const PLAN_LABEL_KEYS = [
+  'solo',
   'nano',
   'starter',
   'pro',

@@ -3,19 +3,11 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatCurrency } from '@/lib/formatNumber';
+import { PLANS, ORDERED_SUBSCRIPTION_PLAN_KEYS } from '@/lib/pricing';
 import { Menu, X } from 'lucide-react';
 
 const WA_SUPPORT = 'https://wa.me/201220601410';
-
-/** DB monthly EGP (landing display uses charm pricing: show value − 1). */
-const LANDING_PLAN_MONTHLY_EGP = {
-  nano: 2000,
-  starter: 4500,
-  pro: 8000,
-  business: 13000,
-  enterprise: 18500,
-} as const;
 
 type DemoScreen = 'scanning' | 'scanned' | 'dashboard' | 'whatsapp' | 'payment';
 
@@ -212,7 +204,6 @@ export default function LocaleHomePage() {
   const m = useTranslations('landing.marketing');
   const footerT = useTranslations('footer');
   const locale = useLocale();
-  const charmMonthly = (dbMonthly: number) => formatNumber(dbMonthly - 1, locale);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [demoScreen, setDemoScreen] = useState<DemoScreen>('scanning');
   const [isVisible, setIsVisible] = useState(false);
@@ -673,44 +664,42 @@ export default function LocaleHomePage() {
           <p className="mx-auto mt-3 max-w-xl text-sm text-[var(--color-text-muted)] md:text-base">
             {m('pricingSubtitle')}
           </p>
-          <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
-            <div
-              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-2)] p-6 text-start !text-white"
-              style={{ color: '#ffffff' }}
-            >
-              <span className="inline-block rounded-full border border-slate-600 bg-[var(--color-surface-2)] px-2 py-0.5 text-xs !text-[var(--color-text-muted)]">
-                {m('nanoBadge')}
-              </span>
-              <p className="mt-3 text-base font-bold !text-white">{m('nanoName')}</p>
-              <p className="mt-2 text-2xl font-bold !text-white">
-                {charmMonthly(LANDING_PLAN_MONTHLY_EGP.nano)} {m('priceSuffixMo')}
-              </p>
-              <p className="text-xs text-[var(--color-text-muted)]">{m('nanoPeriod')}</p>
-              <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m('nanoStudents')}</p>
-            </div>
-            <div
-              className="rounded-2xl border border-teal-600/60 bg-slate-800 p-6 text-start !text-white ring-1 ring-teal-600/30"
-              style={{ color: '#ffffff' }}
-            >
-              <span className="inline-block rounded-full border border-teal-700/50 bg-teal-900/30 px-2 py-0.5 text-xs font-medium !text-teal-400">
-                {m('popularBadge')}
-              </span>
-              <p className="mt-3 text-base font-bold !text-white">{m('starterName')}</p>
-              <p className="mt-2 text-2xl font-bold !text-white">
-                {charmMonthly(LANDING_PLAN_MONTHLY_EGP.starter)} {m('priceSuffixMo')}
-              </p>
-              <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m('starterStudents')}</p>
-            </div>
-            <div
-              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-2)] p-6 text-start !text-white"
-              style={{ color: '#ffffff' }}
-            >
-              <p className="mt-3 text-base font-bold !text-white">{m('proName')}</p>
-              <p className="mt-2 text-2xl font-bold !text-white">
-                {charmMonthly(LANDING_PLAN_MONTHLY_EGP.pro)} {m('priceSuffixMo')}
-              </p>
-              <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m('proStudents')}</p>
-            </div>
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {ORDERED_SUBSCRIPTION_PLAN_KEYS.map((planKey) => {
+              const p = PLANS[planKey];
+              const priceLine = `${formatCurrency(p.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
+              const nameKey = `${planKey}Name` as 'marketing.soloName';
+              const studentsKey = `${planKey}Students` as 'marketing.soloStudents';
+              const isStarter = planKey === 'starter';
+              const isSolo = planKey === 'solo';
+              return (
+                <div
+                  key={planKey}
+                  className={`rounded-2xl border p-6 text-start !text-white ${
+                    isStarter
+                      ? 'border-teal-600/60 bg-slate-800 ring-1 ring-teal-600/30'
+                      : 'border-slate-700 bg-[var(--color-surface-2)]'
+                  }`}
+                  style={{ color: '#ffffff' }}
+                >
+                  <div className="flex min-h-[28px] flex-wrap items-center gap-2">
+                    {isSolo ? (
+                      <span className="inline-block rounded-full border border-slate-600 bg-[var(--color-surface-2)] px-2 py-0.5 text-xs !text-[var(--color-text-muted)]">
+                        {m('soloBadge')}
+                      </span>
+                    ) : null}
+                    {isStarter ? (
+                      <span className="inline-block rounded-full border border-teal-700/50 bg-teal-900/30 px-2 py-0.5 text-xs font-medium !text-teal-400">
+                        {m('popularBadge')}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 text-base font-bold !text-white">{m(nameKey)}</p>
+                  <p className="mt-2 text-2xl font-bold !text-white">{priceLine}</p>
+                  <p className="mt-3 text-xs text-[var(--color-text-muted)]">{m(studentsKey)}</p>
+                </div>
+              );
+            })}
           </div>
           <Link
             href="/signup"

@@ -1,5 +1,6 @@
 {
   "plan": {
+    "solo": "فردي",
     "nano": "ناشئ",
     "starter": "أساسي",
     "pro": "محترف",
@@ -1307,19 +1308,27 @@
       "f6Title": "يعمل بدون إنترنت",
       "f6Desc": "الماسح يعمل حتى بدون اتصال",
       "pricingSubtitle": "كل الخطط تشمل: حضور QR، الفواتير، واتساب، تقارير مالية",
+      "soloBadge": "للسناتر الصغيرة",
+      "pricePerMonthSuffix": "/شهر",
+      "soloName": "فردي",
+      "soloStudents": "حتى ٥٠ طالب",
       "priceSuffixMo": "ج.م/شهر",
       "nanoName": "ناشئ",
       "nanoPrice": "٢٬٠٠٠ ج.م/شهر",
       "nanoPeriod": "(ربع سنوي)",
-      "nanoStudents": "حتى ١٠٠ طالب",
+      "nanoStudents": "حتى ٧٥ طالب",
       "nanoBadge": "للمراكز الناشئة",
       "starterName": "أساسي",
       "starterPrice": "٤٬٥٠٠ ج.م/شهر",
-      "starterStudents": "حتى ٢٥٠ طالب",
+      "starterStudents": "حتى ١٥٠ طالب",
       "popularBadge": "الأكثر شيوعاً",
       "proName": "محترف",
       "proPrice": "٨٬٠٠٠ ج.م/شهر",
       "proStudents": "حتى ٥٠٠ طالب",
+      "businessName": "أعمال",
+      "businessStudents": "حتى ١٬٠٠٠ طالب",
+      "enterpriseName": "مؤسسات",
+      "enterpriseStudents": "حتى ٢٬٠٠٠ طالب",
       "pricingCta": "عرض جميع الخطط والمقارنة",
       "finalCtaButton": "ابدأ الآن",
       "footerTagline": "CenterHQ، منصة إدارة السناتر التعليمية",
@@ -2451,6 +2460,7 @@
     },
     "pipeline": {
       "title": "خط المبيعات",
+      "planSolo": "فردي",
       "planNano": "نانو",
       "planStarter": "أساسي",
       "planPro": "محترف",
@@ -3055,6 +3065,7 @@
     "phonePlaceholder": "الهاتف Placeholder",
     "planLimitReached": "باقة الحد تم الوصول",
     "planNames": {
+      "solo": "فردي",
       "nano": "ناشئ",
       "starter": "أساسي",
       "pro": "محترف",
@@ -3356,11 +3367,12 @@
         "estimate": "تقدير هذا الشهر"
       },
       "tierRange": {
-        "nano": "0–100",
-        "starter": "101–250",
-        "pro": "251–500",
-        "business": "501–1,000",
-        "enterprise": "1,001–2,000"
+        "solo": "١–٥٠",
+        "nano": "٥١–٧٥",
+        "starter": "٧٦–١٥٠",
+        "pro": "١٥١–٥٠٠",
+        "business": "٥٠١–١٬٠٠٠",
+        "enterprise": "١٬٠٠١–٢٬٠٠٠"
       },
       "tier": {
         "rateUnit": "جنيه/أسبوع"

@@ -236,7 +236,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const formatPlanKey = (plan: unknown): string => {
     const p = String(plan ?? '').trim().toLowerCase();
     if (!p) return tCommon('notSet');
-    const keys = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
+    const keys = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
     if ((keys as readonly string[]).includes(p)) return tPlan(p as (typeof keys)[number]);
     return String(plan);
   };

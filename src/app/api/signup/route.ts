@@ -5,6 +5,7 @@ import { normalizePhone } from '@/lib/utils/phone';
 import {
   PLANS,
   getPlanPrice,
+  isPlanKey,
   normalizeBillingPeriod,
   type BillingPeriod,
   type PlanKey,
@@ -19,25 +20,8 @@ import { isFeatureEnabled } from '@/lib/features';
 import { todayISO } from '@/lib/parentPack';
 import { formatNumber } from '@/lib/formatNumber';
 
-const SIGNUP_PLAN_AMOUNTS = [
-  { key: 'nano', allInPrice: 2000, monthlyPrice: 2500, annualPrice: 20399 },
-  { key: 'starter', allInPrice: 4500, monthlyPrice: 5200, annualPrice: 45899 },
-  { key: 'pro', allInPrice: 8000, monthlyPrice: 9200, annualPrice: 81599 },
-  { key: 'business', allInPrice: 13000, monthlyPrice: 15000, annualPrice: 132599 },
-  { key: 'enterprise', allInPrice: 18500, monthlyPrice: 21300, annualPrice: 188699 },
-] as const;
-
-function display99Price(price: number): number {
-  if (!Number.isFinite(price) || price <= 1) return price;
-  return price - 1;
-}
-
-function getTotalSignupAmount(planKey: string, period: string): number {
-  const plan = SIGNUP_PLAN_AMOUNTS.find((p) => p.key === planKey);
-  if (!plan) return 0;
-  if (period === 'monthly') return display99Price(plan.monthlyPrice);
-  if (period === 'annual') return display99Price(plan.annualPrice);
-  return display99Price(plan.allInPrice * 3);
+function getTotalSignupAmount(planKey: PlanKey, period: BillingPeriod): number {
+  return getPlanPrice(planKey, period);
 }
 
 const CITY_ID_TO_DB: Record<string, string> = {
@@ -141,14 +125,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const validPlans = ['NANO', 'STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE'];
     const normalizedPlan = String(plan).toUpperCase();
-    if (!validPlans.includes(normalizedPlan)) {
+    const planLower = normalizedPlan.toLowerCase();
+    if (!isPlanKey(planLower) || planLower === 'top_centers') {
       return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 });
     }
 
-    const planLower = normalizedPlan.toLowerCase() as PlanKey;
-    const planKey: PlanKey = planLower in PLANS ? planLower : 'starter';
+    const planKey = planLower as PlanKey;
 
     const formattedPhone = normalizePhone(String(phone).trim());
 
@@ -196,6 +179,7 @@ export async function POST(request: Request) {
     }
 
     const setupFees: Record<string, number> = {
+      SOLO: 200,
       NANO: 500,
       STARTER: 1000,
       PRO: 2000,
@@ -205,7 +189,7 @@ export async function POST(request: Request) {
     const setup = setupFees[normalizedPlan] ?? 1000;
 
     const allInPerMonth = PLANS[planKey].quarterlyAllIn;
-    const defaultQuarterlyInvoice = Math.round(allInPerMonth * 3);
+    const defaultQuarterlyInvoice = allInPerMonth * 3;
     const periodAmount = getPlanPrice(planKey, periodResolved);
 
     const cityDb = mapCityToDb(city);
@@ -280,7 +264,7 @@ export async function POST(request: Request) {
     }
 
     if (initiatePayment && center?.id) {
-      const amountEgp = getTotalSignupAmount(planLower, periodResolved);
+      const amountEgp = getTotalSignupAmount(planKey, periodResolved);
       if (!Number.isFinite(amountEgp) || amountEgp <= 0) {
         return NextResponse.json({ error: 'Invalid payment amount' }, { status: 400 });
       }

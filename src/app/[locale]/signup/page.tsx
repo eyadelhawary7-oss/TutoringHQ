@@ -5,6 +5,14 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { Globe } from 'lucide-react';
+import {
+  PLANS,
+  ORDERED_SUBSCRIPTION_PLAN_KEYS,
+  getPlanPrice,
+  getSignupDisplayMonthlyPrice,
+  type BillingPeriod,
+  type PlanKey,
+} from '@/lib/pricing';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 const PLAYFAIR = {
@@ -44,83 +52,39 @@ const SIGNUP_CITIES = [
   { id: 'other', ar: 'أخرى', en: 'Other' },
 ] as const;
 
-const SIGNUP_PLANS = [
-  {
-    key: 'nano',
-    name: 'Nano',
-    arabicName: 'ناشئ',
-    students: 100,
-    allInPrice: 2000,
-    monthlyPrice: 2500,
-    annualPrice: 20399,
-  },
-  {
-    key: 'starter',
-    name: 'Starter',
-    arabicName: 'أساسي',
-    students: 250,
-    allInPrice: 4500,
-    monthlyPrice: 5200,
-    annualPrice: 45899,
-  },
-  {
-    key: 'pro',
-    name: 'Pro',
-    arabicName: 'محترف',
-    students: 500,
-    allInPrice: 8000,
-    monthlyPrice: 9200,
-    annualPrice: 81599,
-  },
-  {
-    key: 'business',
-    name: 'Business',
-    arabicName: 'أعمال',
-    students: 1000,
-    allInPrice: 13000,
-    monthlyPrice: 15000,
-    annualPrice: 132599,
-  },
-  {
-    key: 'enterprise',
-    name: 'Enterprise',
-    arabicName: 'مؤسسات',
-    students: 2000,
-    allInPrice: 18500,
-    monthlyPrice: 21300,
-    annualPrice: 188699,
-  },
-] as const;
+const SIGNUP_PLANS = ORDERED_SUBSCRIPTION_PLAN_KEYS.map((key) => {
+  const p = PLANS[key];
+  return {
+    key,
+    name: p.englishName,
+    arabicName: p.arabicName,
+    students: p.weeklyStudentLimit ?? 0,
+    allInPrice: p.quarterlyAllIn,
+    monthlyPrice: p.monthlyListPrice,
+    annualPrice: getPlanPrice(key, 'annual'),
+  };
+});
 
 type SignupPlan = (typeof SIGNUP_PLANS)[number];
-type BillingPeriodUi = 'monthly' | 'quarterly' | 'annual';
 
-function display99Price(price: number): number {
-  if (!Number.isFinite(price) || price <= 1) return price;
-  return price - 1;
+function billingPeriodFromUi(period: string): BillingPeriod {
+  if (period === 'monthly' || period === 'annual') return period;
+  return 'quarterly';
 }
 
 function getDisplayPrice(plan: SignupPlan, period: string): number {
-  const base =
-    period === 'monthly'
-      ? plan.monthlyPrice
-      : period === 'annual'
-        ? Math.round(plan.annualPrice / 12)
-        : plan.allInPrice;
-  return display99Price(base);
+  return getSignupDisplayMonthlyPrice(plan.key as PlanKey, billingPeriodFromUi(period));
 }
 
 function getTotalAmount(plan: SignupPlan | undefined, period: string): number {
   if (!plan) return 0;
-  if (period === 'monthly') return display99Price(plan.monthlyPrice);
-  if (period === 'annual') return display99Price(plan.annualPrice);
-  return display99Price(plan.allInPrice * 3);
+  return getPlanPrice(plan.key as PlanKey, billingPeriodFromUi(period));
 }
 
 function getPerStudentCost(plan: SignupPlan, period: string, loc: string): string {
   const monthly = getDisplayPrice(plan, period);
   const weekly = monthly / 4.33;
-  const perStudent = weekly / plan.students;
+  const perStudent = plan.students > 0 ? weekly / plan.students : 0;
   return formatNumber(perStudent, loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -239,7 +203,7 @@ export default function SignupPage() {
     email: '',
     city: '',
     plan: 'starter',
-    billingPeriod: 'quarterly' as BillingPeriodUi,
+    billingPeriod: 'quarterly' as BillingPeriod,
     referralCode: '',
     notes: '',
     agreeTerms: false,

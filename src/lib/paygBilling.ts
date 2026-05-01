@@ -3,10 +3,13 @@
  */
 
 import { formatNumber } from '@/lib/formatNumber';
+import { PLANS } from '@/lib/pricing';
 
+/** Tier caps align with fixed-plan `weekly_student_limit` (solo → enterprise). */
 export const PAYG_RATES = {
-  nano: { maxStudents: 100, ratePerStudent: 27.5 },
-  starter: { maxStudents: 250, ratePerStudent: 22.88 },
+  solo: { maxStudents: 50, ratePerStudent: 30 },
+  nano: { maxStudents: 75, ratePerStudent: 27.5 },
+  starter: { maxStudents: 150, ratePerStudent: 22.88 },
   pro: { maxStudents: 500, ratePerStudent: 20.24 },
   business: { maxStudents: 1000, ratePerStudent: 16.5 },
   enterprise: { maxStudents: 2000, ratePerStudent: 11.72 },
@@ -24,6 +27,7 @@ export function getWeeklyDisplayRate(monthlyRate: number): number {
 
 /** Weekly display rates (monthly ÷ 4, rounded) — convenience for UI. */
 export const PAYG_WEEKLY_DISPLAY_RATES = {
+  solo: getWeeklyDisplayRate(PAYG_RATES.solo.ratePerStudent),
   nano: getWeeklyDisplayRate(PAYG_RATES.nano.ratePerStudent),
   starter: getWeeklyDisplayRate(PAYG_RATES.starter.ratePerStudent),
   pro: getWeeklyDisplayRate(PAYG_RATES.pro.ratePerStudent),
@@ -36,24 +40,27 @@ export function formatWeeklyRate(monthlyRate: number, locale = 'en'): string {
 }
 
 export function getPaygTier(studentCount: number) {
-  if (studentCount <= 100)
-    return { plan: 'nano' as const, ratePerStudent: 27.5, maxStudents: 100 };
-  if (studentCount <= 250)
-    return { plan: 'starter' as const, ratePerStudent: 22.88, maxStudents: 250 };
+  if (studentCount <= 50)
+    return { plan: 'solo' as const, ratePerStudent: PAYG_RATES.solo.ratePerStudent, maxStudents: 50 };
+  if (studentCount <= 75)
+    return { plan: 'nano' as const, ratePerStudent: PAYG_RATES.nano.ratePerStudent, maxStudents: 75 };
+  if (studentCount <= 150)
+    return { plan: 'starter' as const, ratePerStudent: PAYG_RATES.starter.ratePerStudent, maxStudents: 150 };
   if (studentCount <= 500)
-    return { plan: 'pro' as const, ratePerStudent: 20.24, maxStudents: 500 };
+    return { plan: 'pro' as const, ratePerStudent: PAYG_RATES.pro.ratePerStudent, maxStudents: 500 };
   if (studentCount <= 1000)
-    return { plan: 'business' as const, ratePerStudent: 16.5, maxStudents: 1000 };
-  return { plan: 'enterprise' as const, ratePerStudent: 11.72, maxStudents: 2000 };
+    return { plan: 'business' as const, ratePerStudent: PAYG_RATES.business.ratePerStudent, maxStudents: 1000 };
+  return { plan: 'enterprise' as const, ratePerStudent: PAYG_RATES.enterprise.ratePerStudent, maxStudents: 2000 };
 }
 
 /** Monthly list ceilings (EGP) × 1.10 — same tier keys as PAYG_RATES. */
 const MONTHLY_CAPS: Record<PaygTierPlan, number> = {
-  nano: 2500 * 1.1,
-  starter: 5200 * 1.1,
-  pro: 9200 * 1.1,
-  business: 15000 * 1.1,
-  enterprise: 21300 * 1.1,
+  solo: PLANS.solo.monthlyListPrice * 1.1,
+  nano: PLANS.nano.monthlyListPrice * 1.1,
+  starter: PLANS.starter.monthlyListPrice * 1.1,
+  pro: PLANS.pro.monthlyListPrice * 1.1,
+  business: PLANS.business.monthlyListPrice * 1.1,
+  enterprise: PLANS.enterprise.monthlyListPrice * 1.1,
 };
 
 export function calculatePaygBill(studentCount: number): {
@@ -84,16 +91,23 @@ export function getPaygEstimate(studentCount: number, locale = 'en'): string {
 /** Tier breakpoints for sliders (labels are AR defaults; UI may override via i18n). */
 export const PAYG_TIER_BREAKPOINTS = [
   {
+    plan: 'solo' as const,
+    label: 'فردي',
+    maxStudents: 50,
+    ratePerStudent: PAYG_RATES.solo.ratePerStudent,
+    weeklyDisplayRate: PAYG_WEEKLY_DISPLAY_RATES.solo,
+  },
+  {
     plan: 'nano' as const,
     label: 'ناشئ',
-    maxStudents: 100,
+    maxStudents: 75,
     ratePerStudent: 27.5,
     weeklyDisplayRate: PAYG_WEEKLY_DISPLAY_RATES.nano,
   },
   {
     plan: 'starter' as const,
     label: 'أساسي',
-    maxStudents: 250,
+    maxStudents: 150,
     ratePerStudent: 22.88,
     weeklyDisplayRate: PAYG_WEEKLY_DISPLAY_RATES.starter,
   },

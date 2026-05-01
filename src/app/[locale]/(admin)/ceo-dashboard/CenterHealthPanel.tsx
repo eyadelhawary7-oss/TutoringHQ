@@ -6,7 +6,7 @@ import { Activity } from 'lucide-react';
 import type { HealthPanelResponse, HealthSummary } from '@/types/founder-dash';
 import { formatNumber } from '@/lib/formatNumber';
 
-const PLAN_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
+const PLAN_KEYS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 
 function n(v: unknown): number {
   const x = Number(v);

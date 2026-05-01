@@ -4,7 +4,18 @@
 
 import { formatNumber } from '@/lib/formatNumber';
 
-export type PlanKey = 'nano' | 'starter' | 'pro' | 'business' | 'enterprise' | 'top_centers';
+/** Fixed tiers (excludes `top_centers`), lowest → highest for UI and ranking. */
+export const ORDERED_SUBSCRIPTION_PLAN_KEYS = [
+  'solo',
+  'nano',
+  'starter',
+  'pro',
+  'business',
+  'enterprise',
+] as const;
+export type SubscriptionPlanKey = (typeof ORDERED_SUBSCRIPTION_PLAN_KEYS)[number];
+
+export type PlanKey = SubscriptionPlanKey | 'top_centers';
 export type BillingPeriod = 'monthly' | 'quarterly' | 'annual';
 
 /** DB/UI legacy → canonical billing period */
@@ -30,11 +41,19 @@ export interface PlanConfig {
 }
 
 export const PLANS: Record<PlanKey, PlanConfig> = {
+  solo: {
+    key: 'solo',
+    arabicName: 'فردي',
+    englishName: 'Solo',
+    weeklyStudentLimit: 50,
+    quarterlyAllIn: 999,
+    monthlyListPrice: 1149,
+  },
   nano: {
     key: 'nano',
     arabicName: 'ناشئ',
     englishName: 'Nano',
-    weeklyStudentLimit: 100,
+    weeklyStudentLimit: 75,
     quarterlyAllIn: 1999,
     monthlyListPrice: 2499,
   },
@@ -42,7 +61,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     key: 'starter',
     arabicName: 'أساسي',
     englishName: 'Starter',
-    weeklyStudentLimit: 250,
+    weeklyStudentLimit: 150,
     quarterlyAllIn: 4499,
     monthlyListPrice: 5199,
   },

@@ -940,9 +940,10 @@ function AdminPageContent() {
   );
 
   const adminPlanDonutData = useMemo(() => {
-    const planIds = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
-    const planColors = ['#94A3B8', '#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'] as const;
+    const planIds = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
+    const planColors = ['#64748B', '#94A3B8', '#6B7280', '#3B82F6', '#0D9488', '#7C3AED', '#F59E0B'] as const;
     const label: Record<(typeof planIds)[number], string> = {
+      solo: tBilling('planNames.solo'),
       nano: tBilling('planNames.nano'),
       starter: tBilling('planNames.starter'),
       pro: tBilling('planNames.pro'),

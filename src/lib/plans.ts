@@ -3,7 +3,7 @@
  * Plans: nano | starter | pro | business | enterprise | top_centers | payg
  */
 
-export const PLAN_ORDER = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'] as const;
+export const PLAN_ORDER = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'] as const;
 export type PlanId = (typeof PLAN_ORDER)[number];
 
 /** Legacy merged tier; treat like business for limits/ordering. */
@@ -14,8 +14,9 @@ export function canonicalPlanId(plan: string | null | undefined): string {
 }
 
 export const PLAN_STUDENT_LIMITS: Record<string, number> = {
-  nano: 100,
-  starter: 250,
+  solo: 50,
+  nano: 75,
+  starter: 150,
   pro: 500,
   business: 1000,
   enterprise: 2000,
@@ -24,6 +25,7 @@ export const PLAN_STUDENT_LIMITS: Record<string, number> = {
 };
 
 export const PLAN_TEAM_LIMITS: Record<string, number> = {
+  solo: 2,
   nano: 2,
   starter: 2,
   pro: 5,
@@ -35,13 +37,14 @@ export const PLAN_TEAM_LIMITS: Record<string, number> = {
 
 /** Plan level for comparison (higher = more features) */
 const PLAN_LEVEL: Record<string, number> = {
-  nano: 1,
-  starter: 2,
-  pro: 3,
-  business: 4,
-  enterprise: 5,
-  top_centers: 6,
-  payg: 3, // PAYG treated as pro-level for features
+  solo: 1,
+  nano: 2,
+  starter: 3,
+  pro: 4,
+  business: 5,
+  enterprise: 6,
+  top_centers: 7,
+  payg: 4, // PAYG treated as pro-level for features
 };
 
 /** Minimum plan required for each feature */

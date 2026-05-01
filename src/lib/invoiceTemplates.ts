@@ -215,6 +215,7 @@ function blastTypeAr(bt: string): string {
 function planPresentation(planRaw: string | null | undefined): { en: string; ar: string } {
   const k = (planRaw ?? 'starter').toLowerCase().replace(/-/g, '_');
   const table: Record<string, { en: string; ar: string }> = {
+    solo: { en: 'Solo', ar: 'فردي' },
     nano: { en: 'Nano', ar: 'ناشئ' },
     starter: { en: 'Starter', ar: 'أساسي' },
     pro: { en: 'Pro', ar: 'محترف' },

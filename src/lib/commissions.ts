@@ -8,6 +8,7 @@ const supabaseAdmin = createClient(
 
 export const COMMISSION_TABLE = {
   sr: {
+    solo: 200,
     nano: 500,
     starter: 1000,
     pro: 2000,
@@ -16,6 +17,7 @@ export const COMMISSION_TABLE = {
     top_centers: 5000,
   },
   sm: {
+    solo: 400,
     nano: 800,
     starter: 1800,
     pro: 3200,

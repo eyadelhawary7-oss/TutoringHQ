@@ -2,15 +2,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { getPlanPrice, normalizeBillingPeriod, type BillingPeriod, type PlanKey } from '@/lib/pricing';
+import {
+  getPlanPrice,
+  normalizeBillingPeriod,
+  ORDERED_SUBSCRIPTION_PLAN_KEYS,
+  type BillingPeriod,
+  type PlanKey,
+} from '@/lib/pricing';
 import { getAnnouncementCap } from '@/lib/parentPack';
 
 const MONTHLY_MULTIPLIER = 4.333;
 
-/** Flat rate per bracket: entire student count uses the rate of the bracket it falls into. 5 brackets matching fixed plans. */
+/** Flat rate per bracket: entire student count uses the rate of the bracket it falls into. */
 function getBracketRate(students: number): number {
-  if (students <= 100) return 4;
-  if (students <= 250) return 3;
+  if (students <= 50) return 4;
+  if (students <= 75) return 4;
+  if (students <= 150) return 3;
   if (students <= 500) return 2.5;
   if (students <= 1000) return 2;
   if (students <= 2000) return 2;
@@ -129,7 +136,7 @@ export async function GET(request: NextRequest) {
 
     const fixedPlanComparison = { plan: '', price: 0, savings: 0 };
     if (thisWeekPayg.monthly > 0) {
-      const order: PlanKey[] = ['nano', 'starter', 'pro', 'business', 'enterprise'];
+      const order: PlanKey[] = [...ORDERED_SUBSCRIPTION_PLAN_KEYS];
       for (const p of order) {
         const price = getPlanPrice(p, 'monthly' as BillingPeriod);
         if (price > 0 && price < thisWeekPayg.monthly) {

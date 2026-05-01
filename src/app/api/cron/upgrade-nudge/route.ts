@@ -7,6 +7,7 @@ import { sendUpgradeNudge } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { formatNumber } from '@/lib/formatNumber';
+import { PLANS, type PlanKey } from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -15,14 +16,16 @@ const CRON_NAME = 'upgrade-nudge';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 const CAPS: Record<string, number> = {
-  nano: 100,
-  starter: 250,
-  pro: 500,
-  business: 1000,
-  enterprise: 2000,
+  solo: PLANS.solo.weeklyStudentLimit ?? 50,
+  nano: PLANS.nano.weeklyStudentLimit ?? 75,
+  starter: PLANS.starter.weeklyStudentLimit ?? 150,
+  pro: PLANS.pro.weeklyStudentLimit ?? 500,
+  business: PLANS.business.weeklyStudentLimit ?? 1000,
+  enterprise: PLANS.enterprise.weeklyStudentLimit ?? 2000,
 };
 
 const NEXT_PLAN: Record<string, string> = {
+  solo: 'nano',
   nano: 'starter',
   starter: 'pro',
   pro: 'business',
@@ -30,17 +33,12 @@ const NEXT_PLAN: Record<string, string> = {
 };
 
 const NEXT_PLAN_AR: Record<string, string> = {
+  solo: 'فردي',
+  nano: 'ناشئ',
   starter: 'أساسي',
   pro: 'محترف',
   business: 'أعمال',
   enterprise: 'مؤسسات',
-};
-
-const NEXT_PLAN_PRICE: Record<string, string> = {
-  starter: '4,499',
-  pro: '7,999',
-  business: '12,999',
-  enterprise: '18,499',
 };
 
 type CenterRow = {
@@ -125,7 +123,7 @@ export async function POST(request: Request) {
     if (!nextKey) continue;
 
     const nextPlanAr = NEXT_PLAN_AR[nextKey];
-    const nextPlanPrice = NEXT_PLAN_PRICE[nextKey];
+    const nextPlanPrice = formatNumber(PLANS[nextKey as PlanKey].quarterlyAllIn, 'ar');
     if (!nextPlanAr || !nextPlanPrice) continue;
 
     const activeStudentCount = countByCenter.get(c.id) ?? 0;

@@ -951,7 +951,7 @@ export default function DashboardPage() {
   };
 
   const planKeyRaw = (centerBilling?.plan ?? 'starter').toLowerCase();
-  const CENTER_PLAN_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise'] as const;
+  const CENTER_PLAN_KEYS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise'] as const;
   const planKeyForI18n = CENTER_PLAN_KEYS.includes(planKeyRaw as (typeof CENTER_PLAN_KEYS)[number])
     ? planKeyRaw
     : 'starter';

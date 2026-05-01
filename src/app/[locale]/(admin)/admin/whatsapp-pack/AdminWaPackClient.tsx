@@ -82,7 +82,7 @@ function normalizeCenter(raw: Partial<WaPackCenter> & { id?: string }): WaPackCe
   }
 }
 
-const PLAN_NAME_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const
+const PLAN_NAME_KEYS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const
 type PlanNameKey = (typeof PLAN_NAME_KEYS)[number]
 
 function isPlanNameKey(p: string): p is PlanNameKey {

@@ -49,9 +49,10 @@ const CANCEL_REASON_KEYS = [
   'other',
 ] as const;
 
-type CenterPlanKey = 'nano' | 'starter' | 'pro' | 'business' | 'enterprise';
+type CenterPlanKey = 'solo' | 'nano' | 'starter' | 'pro' | 'business' | 'enterprise';
 
 const CENTER_PLAN_KEYS: readonly CenterPlanKey[] = [
+  'solo',
   'nano',
   'starter',
   'pro',
@@ -153,7 +154,15 @@ type PlanRequestRow = {
   requested_at?: string | null;
 };
 
-const PLAN_ROOT_I18N_KEYS = new Set(['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers']);
+const PLAN_ROOT_I18N_KEYS = new Set([
+  'solo',
+  'nano',
+  'starter',
+  'pro',
+  'business',
+  'enterprise',
+  'top_centers',
+]);
 
 function planLabelFromMessages(raw: string | null | undefined, tPlan: (key: string) => string): string {
   const k = String(raw ?? 'starter').toLowerCase().replace(/-/g, '_');
@@ -1081,7 +1090,7 @@ export default function BillingPage() {
 
   const downgradePlanOptions = useMemo(() => {
     const cp = center?.plan ?? 'starter';
-    if (cp === 'nano') return [];
+    if (cp === 'solo') return [];
     const cr = planRank(cp);
     return CENTER_PLAN_KEYS.filter((k) => planRank(k) < cr);
   }, [center?.plan]);

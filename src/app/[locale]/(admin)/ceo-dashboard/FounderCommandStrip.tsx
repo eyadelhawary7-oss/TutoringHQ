@@ -6,7 +6,7 @@ import { Clock, MessageSquare, AlertTriangle, Activity, CheckCircle } from 'luci
 import type { CommandStripResponse, ActionQueueItem } from '@/types/founder-dash';
 import { formatNumber, formatDate } from '@/lib/formatNumber';
 
-const PLAN_KEYS = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
+const PLAN_KEYS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 
 function n(v: unknown): number {
   const x = Number(v);

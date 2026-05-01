@@ -22,9 +22,18 @@ const BOOL_CONFIG_ORDER = [
 
 const PIPELINE_STAGES: LeadStage[] = ['lead', 'demo', 'trial', 'closed', 'lost'];
 
-const PLAN_VALUES = ['nano', 'starter', 'pro', 'business', 'enterprise'] as const;
+const PLAN_VALUES = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise'] as const;
 
-const PLAN_LABEL_KEYS: Record<(typeof PLAN_VALUES)[number], 'pipeline.planNano' | 'pipeline.planStarter' | 'pipeline.planPro' | 'pipeline.planBusiness' | 'pipeline.planEnterprise'> = {
+const PLAN_LABEL_KEYS: Record<
+  (typeof PLAN_VALUES)[number],
+  | 'pipeline.planSolo'
+  | 'pipeline.planNano'
+  | 'pipeline.planStarter'
+  | 'pipeline.planPro'
+  | 'pipeline.planBusiness'
+  | 'pipeline.planEnterprise'
+> = {
+  solo: 'pipeline.planSolo',
   nano: 'pipeline.planNano',
   starter: 'pipeline.planStarter',
   pro: 'pipeline.planPro',
@@ -47,7 +56,7 @@ export default function CeoDashboardPage() {
   const formatPlanCell = (plan: string | null | undefined) => {
     const p = String(plan ?? '').trim().toLowerCase();
     if (!p) return tCommon('notSet');
-    const keys = ['nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
+    const keys = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
     if ((keys as readonly string[]).includes(p)) return tPlan(p as (typeof keys)[number]);
     return String(plan);
   };
