@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   const { data: rows, error } = await supabaseAdmin
     .from('pending_enrollments')
-    .select('id, group_id, student_name, student_phone, parent_phone, notes, status, created_at')
+    .select('id, student_id, group_id, student_name, student_phone, parent_phone, notes, status, created_at')
     .eq('center_id', centerId)
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
 
   const list = (rows ?? []) as Array<{
     id: string;
+    student_id: string | null;
     group_id: string;
     student_name: string;
     student_phone: string;

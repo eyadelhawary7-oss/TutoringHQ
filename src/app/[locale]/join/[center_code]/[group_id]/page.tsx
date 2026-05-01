@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Globe } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useRouter, usePathname } from '@/i18n/routing';
 
@@ -111,23 +110,21 @@ export default function JoinPage({ params }: PageProps) {
       const centerId = info.center_id || info.centerId;
       const groupUuid = info.group_id || info.groupId;
 
-      console.log('pending_enrollments insert IDs', {
-        center_id: centerId,
-        group_id: groupUuid,
+      const res = await fetch('/api/join/pending-enrollment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          center_id: centerId,
+          group_id: groupUuid,
+          student_name: studentName.trim(),
+          student_phone: studentPhone.trim(),
+          parent_phone: parentPhone.trim() || null,
+          notes: notes.trim() || null,
+        }),
       });
 
-      const { error: insertError } = await supabase.from('pending_enrollments').insert({
-        center_id: centerId,
-        group_id: groupUuid,
-        student_name: studentName.trim(),
-        student_phone: studentPhone.trim(),
-        parent_phone: parentPhone.trim() || null,
-        notes: notes.trim() || null,
-        status: 'pending',
-      });
-
-      if (insertError) {
-        console.error("Supabase Insert Error:", insertError);
+      if (!res.ok) {
+        console.error('pending-enrollment API', await res.text().catch(() => ''));
         setError(t('submitError'));
         return;
       }

@@ -1,270 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { requireCenterAuth } from '@/lib/centerAuth';
 import { afterStudentWriteParentPackEffects } from '@/lib/studentParentPackWelcome';
-import { currentBillingPeriod } from '@/lib/parentPack';
 
-async function getOwnerAdminContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data: userRow } = await supabaseAdmin
-    .from('users')
-    .select('role, center_id')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (!userRow || !['owner', 'admin'].includes((userRow.role as string) ?? '') || !userRow.center_id) {
-    return { unauthorized: true as const };
-  }
-
-  return {
-    supabaseAdmin,
-    centerId: userRow.center_id as string,
-    userId: user.id,
-  };
-}
+type ApproveStudentRpcRow = {
+  new_student_count?: number | null;
+};
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const ctx = await getOwnerAdminContext(request);
-  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if ('unauthorized' in ctx) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireCenterAuth(request);
+  if (!auth.ok) {
+    return auth.response;
   }
 
-  const { supabaseAdmin, centerId } = ctx;
-  const { id } = await context.params;
+  const { supabaseAdmin, centerId, userId } = auth;
+  const { id: studentId } = await context.params;
 
-  let body: {
-    parent_phone?: string | null;
-    enroll_in_pack?: boolean;
-    selling_price?: number | null;
-  };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  const body = (await request.json().catch(() => ({}))) as { groupIds?: string[] };
+  const groupIds: string[] = body.groupIds ?? [];
+
+  const { data: rpcResult, error: rpcErr } = await supabaseAdmin.rpc('approve_student_rpc', {
+    p_student_id: studentId,
+    p_center_id: centerId,
+    p_group_ids: groupIds,
+    p_approved_by: userId ?? null,
+  });
+
+  if (rpcErr) {
+    if (rpcErr.message === 'student_not_found') {
+      return NextResponse.json({ error: 'student_not_found' }, { status: 404 });
+    }
+    if (rpcErr.message === 'student_already_active') {
+      return NextResponse.json({ error: 'already_active' }, { status: 409 });
+    }
+    return NextResponse.json({ error: rpcErr.message }, { status: 500 });
   }
 
-  const enrollInPack = body.enroll_in_pack === true;
-  const sellingPrice =
-    typeof body.selling_price === 'number' && Number.isFinite(body.selling_price) && body.selling_price >= 0
-      ? body.selling_price
-      : null;
-  const parentPhone =
-    typeof body.parent_phone === 'string' && body.parent_phone.trim().length > 0
-      ? body.parent_phone.trim()
-      : null;
-
-  if (enrollInPack && !parentPhone) {
-    return NextResponse.json({ error: 'parent_phone_required' }, { status: 400 });
-  }
-
-  const { data: enrollment, error: fetchError } = await supabaseAdmin
-    .from('pending_enrollments')
-    .select('id, center_id, group_id, student_name, student_phone, parent_phone, notes, status')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (fetchError || !enrollment) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
-  const row = enrollment as {
-    id: string;
-    center_id: string;
-    group_id: string;
-    student_name: string;
-    student_phone: string;
-    parent_phone: string | null;
-    notes: string | null;
-    status: string;
-  };
-  if (row.center_id !== centerId) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-  if (row.status !== 'pending') {
-    return NextResponse.json({ error: 'Already processed' }, { status: 409 });
-  }
-
-  const { data: groupRow } = await supabaseAdmin
-    .from('student_groups')
-    .select('id, name, subject')
-    .eq('id', row.group_id)
+  const { data: studentRow } = await supabaseAdmin
+    .from('students')
+    .select('id, name, parent_phone, parent_pack_opted_in')
+    .eq('id', studentId)
     .eq('center_id', centerId)
     .maybeSingle();
 
-  const subjectValue = (groupRow as { subject?: string | null } | null)?.subject ?? null;
-
-  let existingStudent: {
-    id: string;
-    name: string;
-    parent_phone?: string | null;
-    parent_pack_opted_in: boolean | null;
-    student_number: string | null;
-    center_id?: string;
-  } | null = null;
-
-  if (row.student_phone) {
-    const cleanPhone = row.student_phone.replace(/\D/g, '');
-    const phoneTail = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
-
-    const { data } = await supabaseAdmin
-      .from('students')
-      .select('id, name, student_number, parent_pack_opted_in')
-      .eq('center_id', centerId)
-      .ilike('phone', `%${phoneTail}%`)
-      .maybeSingle();
-
-    existingStudent = data as {
-      id: string;
-      name: string;
-      student_number: string | null;
-      parent_pack_opted_in: boolean | null;
-    } | null;
-  }
-
-  let student = existingStudent as {
-    id: string;
-    name: string;
-    parent_phone: string | null;
-    parent_pack_opted_in: boolean | null;
-    student_number: string | null;
-    center_id: string;
-  } | null;
-
-  if (!student) {
-    const insertPayload = {
-      center_id: centerId,
-      name: row.student_name,
-      phone: row.student_phone || null,
-      parent_phone: parentPhone,
-      subject: subjectValue,
-      payment_status: 'unpaid' as const,
-      parent_pack_opted_in: enrollInPack,
-      parent_consent_given: enrollInPack,
-      parent_consent_at: enrollInPack ? new Date().toISOString() : null,
-    };
-
-    const { data: insertedRaw, error: insertError } = await supabaseAdmin
-      .from('students')
-      .insert(insertPayload)
-      .select('id, name, parent_phone, parent_pack_opted_in, student_number, center_id')
-      .single();
-
-    if (insertError || !insertedRaw) {
-      return NextResponse.json(
-        {
-          error: 'Failed to create student',
-          details: insertError?.message,
-        },
-        { status: 500 },
-      );
-    }
-
-    student = insertedRaw as {
-      id: string;
-      name: string;
-      parent_phone: string | null;
-      parent_pack_opted_in: boolean | null;
-      student_number: string | null;
-      center_id: string;
-    };
-  }
-
-  if (groupRow?.id) {
-    const { error: membershipError } = await supabaseAdmin
-      .from('student_group_members')
-      .insert({ group_id: row.group_id, student_id: student.id });
-
-    if (membershipError && membershipError.code !== '23505') {
-      return NextResponse.json(
-        {
-          error: 'Failed to link student to group',
-          details: membershipError.message,
-        },
-        { status: 500 },
-      );
-    }
-  }
-
-  const postProcessingTasks: Promise<unknown>[] = [
-    afterStudentWriteParentPackEffects(supabaseAdmin, {
-      kind: 'insert',
-      centerId,
-      row: {
-        id: student.id,
-        name: student.name,
-        parent_phone: student.parent_phone,
-        parent_pack_opted_in: student.parent_pack_opted_in,
-      },
-    }),
-  ];
-
-  if (enrollInPack && parentPhone) {
+  const postProcessingTasks: Promise<unknown>[] = [];
+  if (studentRow) {
     postProcessingTasks.push(
-      Promise.resolve(
-        supabaseAdmin
-          .from('parent_pack_monthly_counts')
-          .upsert(
-            {
-              center_id: centerId,
-              billing_period: currentBillingPeriod(),
-              student_id: student.id,
-              parent_phone: parentPhone,
-              opted_in_at: new Date().toISOString(),
-            },
-            { onConflict: 'center_id,billing_period,student_id', ignoreDuplicates: true },
-          ),
-      ),
+      afterStudentWriteParentPackEffects(supabaseAdmin, {
+        kind: 'insert',
+        centerId,
+        row: {
+          id: studentRow.id,
+          name: studentRow.name,
+          parent_phone: studentRow.parent_phone,
+          parent_pack_opted_in: studentRow.parent_pack_opted_in,
+        },
+      }),
     );
-
-    if (sellingPrice != null) {
-      postProcessingTasks.push(
-        Promise.resolve(
-          supabaseAdmin
-            .from('centers')
-            .update({ pack_price_per_parent: sellingPrice })
-            .eq('id', centerId),
-        ),
-      );
-    }
   }
 
   await Promise.all(postProcessingTasks);
 
-  await supabaseAdmin
-    .from('pending_enrollments')
-    .update({ status: 'approved' })
-    .eq('id', id);
-
+  const row = rpcResult as ApproveStudentRpcRow | null;
   return NextResponse.json({
     success: true,
-    student: {
-      id: student.id,
-      name: student.name,
-      student_number: student.student_number,
-    },
+    studentId,
+    newStudentCount: row?.new_student_count ?? null,
   });
 }

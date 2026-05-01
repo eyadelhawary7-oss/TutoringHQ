@@ -12,6 +12,7 @@ import { PACK_PRICE_PER_PARENT } from '@/lib/parentPack';
 
 interface PendingEnrollment {
   id: string;
+  student_id: string | null;
   group_id: string;
   group_name: string;
   student_name: string;
@@ -107,6 +108,11 @@ export default function PendingEnrollmentsPage() {
     if (!reviewing) return;
     setModalError('');
 
+    if (!reviewing.student_id) {
+      setModalError(t('approveError'));
+      return;
+    }
+
     const cleanedParentPhone = parentPhoneEdit.trim();
     if (enrollInPack && !cleanedParentPhone) {
       setModalError(t('parentPhoneRequiredForPack'));
@@ -133,13 +139,14 @@ export default function PendingEnrollmentsPage() {
         setSubmitting(false);
         return;
       }
-      const res = await fetch(`/api/students/pending/${reviewing.id}/approve`, {
+      const res = await fetch(`/api/students/pending/${reviewing.student_id}/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
+          groupIds: [reviewing.group_id],
           parent_phone: cleanedParentPhone || null,
           enroll_in_pack: enrollInPack,
           selling_price: priceVal,
