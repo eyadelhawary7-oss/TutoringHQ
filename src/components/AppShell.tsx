@@ -134,17 +134,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <div
         className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute ? '' : 'lg:ms-60 transition-[margin] duration-300'}`}
       >
-        {/* Desktop topbar */}
-        <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30">
-          <div className="flex items-center gap-3">
-            <span
-              className="text-lg"
-              style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
-            >
-              <span className="text-[var(--color-text-primary)]">CENTER</span>
-              <span className="text-teal-600">HQ</span>
-            </span>
-          </div>
+        <header
+          className={`hidden lg:flex items-center h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30 ${
+            isAdminRoute ? 'justify-between' : 'justify-end'
+          }`}
+        >
+          {isAdminRoute ? (
+            <div className="flex items-center gap-3">
+              <span
+                className="text-lg"
+                style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+              >
+                <span className="text-[var(--color-text-primary)]">CENTER</span>
+                <span className="text-teal-600">HQ</span>
+              </span>
+            </div>
+          ) : null}
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <button
