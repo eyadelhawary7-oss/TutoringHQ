@@ -1,4 +1,16 @@
 import * as XLSX from 'xlsx';
+// SECURITY NOTE — SheetJS (xlsx) Dependabot HIGH alerts #1 and #2
+// CVE: Prototype Pollution + ReDoS in SheetJS
+// ASSESSED: LOW RISK for this codebase.
+// Reason: xlsx is used exclusively for WRITING/EXPORTING files (json_to_sheet, writeFile).
+// It is never used to READ or PARSE user-uploaded files.
+// The vulnerabilities (Prototype Pollution, ReDoS) are only exploitable via the
+// input parsing path (read, readFile, XLSX.read) which is not used anywhere in this project.
+// Student CSV import uses a separate parsing library, not xlsx.
+// No patched version exists on npm as of May 2026.
+// Resolution: Replace with exceljs after Customer 1 onboarding. Track in backlog.
+// Dismissed on Dependabot: justified as not exploitable given current usage pattern.
+
 import { formatDate, formatDateTime } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
