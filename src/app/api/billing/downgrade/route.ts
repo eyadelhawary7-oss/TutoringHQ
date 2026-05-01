@@ -15,12 +15,13 @@ import { todayISO } from '@/lib/parentPack';
 export const dynamic = 'force-dynamic';
 
 const PLAN_RANK: Record<string, number> = {
-  nano: 1,
-  starter: 2,
-  pro: 3,
-  business: 4,
-  enterprise: 5,
-  top_centers: 6,
+  solo: 1,
+  nano: 2,
+  starter: 3,
+  pro: 4,
+  business: 5,
+  enterprise: 6,
+  top_centers: 7,
 };
 
 export async function POST(request: NextRequest) {
