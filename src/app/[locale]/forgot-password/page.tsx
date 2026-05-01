@@ -198,29 +198,29 @@ export default function ForgotPasswordPage() {
           >
             CH
           </div>
-          <h1 className="text-2xl font-black text-white flex items-center justify-center gap-0">
+          <h1 className="text-2xl font-black flex items-center justify-center gap-0">
             <span
               style={{
-                fontFamily: 'var(--font-bodoni)',
+                fontFamily: 'var(--font-bodoni), Georgia, serif',
                 fontWeight: 700,
                 letterSpacing: '2px',
-                color: 'hsl(var(--foreground))',
+                color: '#f8fafc',
               }}
             >
               CENTER
             </span>
             <span
               style={{
-                fontFamily: 'var(--font-bodoni)',
+                fontFamily: 'var(--font-bodoni), Georgia, serif',
                 fontWeight: 700,
                 letterSpacing: '2px',
-                color: 'hsl(var(--primary))',
+                color: '#0D9488',
               }}
             >
               HQ
             </span>
           </h1>
-          <p className="text-white/50 text-sm mt-1 text-center">{t('title')}</p>
+          <p className="text-white/50 text-sm mt-1 text-center">{t('subtitle')}</p>
         </div>
 
         <div
@@ -254,6 +254,7 @@ export default function ForgotPasswordPage() {
                 submitLabel={t('sendOtp')}
                 phoneLabel={t('phoneLabel')}
                 phoneHint={t('phoneHint')}
+                phonePlaceholder={t('phonePlaceholder')}
               />
               <div className="text-center mt-4">
                 <Link href="/login" className="text-sm hover:underline" style={{ color: 'hsl(var(--primary))' }}>

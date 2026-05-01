@@ -962,9 +962,11 @@
   },
   "forgotPassword": {
     "title": "Reset PIN",
+    "subtitle": "Reset your PIN",
     "phoneLabel": "Phone Number",
     "phoneHint": "Enter your registered phone number",
-    "sendOtp": "Send Reset Code",
+    "phonePlaceholder": "Enter your mobile number",
+    "sendOtp": "Send OTP",
     "sendOTP": "Send Verification Code",
     "sending": "Sending...",
     "otpSent": "A reset code has been sent to your WhatsApp.",
