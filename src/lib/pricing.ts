@@ -35,40 +35,40 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     arabicName: 'ناشئ',
     englishName: 'Nano',
     weeklyStudentLimit: 100,
-    quarterlyAllIn: 2000,
-    monthlyListPrice: 2500,
+    quarterlyAllIn: 1999,
+    monthlyListPrice: 2499,
   },
   starter: {
     key: 'starter',
     arabicName: 'أساسي',
     englishName: 'Starter',
     weeklyStudentLimit: 250,
-    quarterlyAllIn: 4500,
-    monthlyListPrice: 5200,
+    quarterlyAllIn: 4499,
+    monthlyListPrice: 5199,
   },
   pro: {
     key: 'pro',
     arabicName: 'محترف',
     englishName: 'Pro',
     weeklyStudentLimit: 500,
-    quarterlyAllIn: 8000,
-    monthlyListPrice: 9200,
+    quarterlyAllIn: 7999,
+    monthlyListPrice: 9199,
   },
   business: {
     key: 'business',
     arabicName: 'أعمال',
     englishName: 'Business',
     weeklyStudentLimit: 1000,
-    quarterlyAllIn: 13000,
-    monthlyListPrice: 15000,
+    quarterlyAllIn: 12999,
+    monthlyListPrice: 14999,
   },
   enterprise: {
     key: 'enterprise',
     arabicName: 'مؤسسات',
     englishName: 'Enterprise',
     weeklyStudentLimit: 2000,
-    quarterlyAllIn: 18500,
-    monthlyListPrice: 21300,
+    quarterlyAllIn: 18499,
+    monthlyListPrice: 21299,
     isMegaCenter: true,
   },
   top_centers: {
@@ -114,15 +114,15 @@ export function getChargeFromQuarterlyAllIn(
 
   switch (p) {
     case 'quarterly':
-      return Math.round(allInPerMonth * 3);
+      return allInPerMonth * 3;
     case 'monthly': {
-      const list = def?.monthlyListPrice ?? Math.round(allInPerMonth * 1.15);
-      return Math.max(1, Math.round(list * scale));
+      const list = def?.monthlyListPrice ?? allInPerMonth * 1.15;
+      return Math.max(1, list * scale);
     }
     case 'annual':
       return getAnnualChargeRounded(allInPerMonth);
     default:
-      return Math.round(allInPerMonth * 3);
+      return allInPerMonth * 3;
   }
 }
 
@@ -134,11 +134,11 @@ export function getImpliedMonthlyMrr(
 ): number {
   if (allInPerMonth <= 0) return 0;
   const p = normalizeBillingPeriod(period);
-  if (p === 'quarterly') return Math.round(allInPerMonth);
+  if (p === 'quarterly') return allInPerMonth;
   if (p === 'monthly') {
     return getChargeFromQuarterlyAllIn(allInPerMonth, 'monthly', planKey);
   }
-  return Math.round(getAnnualChargeRounded(allInPerMonth) / 12);
+  return getAnnualChargeRounded(allInPerMonth) / 12;
 }
 
 /**
@@ -160,13 +160,13 @@ export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
   const p = normalizeBillingPeriod(period);
   switch (p) {
     case 'quarterly':
-      return Math.round(plan.quarterlyAllIn * 3);
+      return plan.quarterlyAllIn * 3;
     case 'monthly':
       return plan.monthlyListPrice;
     case 'annual':
       return getAnnualChargeRounded(plan.quarterlyAllIn);
     default:
-      return Math.round(plan.quarterlyAllIn * 3);
+      return plan.quarterlyAllIn * 3;
   }
 }
 
@@ -174,7 +174,7 @@ export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
 export function getAnnualMonthlyEquivalent(planKey: PlanKey): number {
   const plan = PLANS[planKey];
   if (!plan || planKey === 'top_centers') return 0;
-  return Math.round(getAnnualChargeRounded(plan.quarterlyAllIn) / 12);
+  return getAnnualChargeRounded(plan.quarterlyAllIn) / 12;
 }
 
 export function getQuarterlyCharge(planKey: PlanKey, period: BillingPeriod): number {

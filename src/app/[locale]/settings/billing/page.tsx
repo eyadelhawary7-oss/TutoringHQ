@@ -33,7 +33,11 @@ import {
   nextQuarterFirstOnOrAfter,
   nextProcessingQuarterStart,
 } from '@/lib/cairoBillingCalendar';
-import { formatDate as formatDateLocale, formatNumber } from '@/lib/formatNumber';
+import {
+  formatCurrency,
+  formatDate as formatDateLocale,
+  formatNumber,
+} from '@/lib/formatNumber';
 
 const SUGGESTED_RESALE_EGP = 25;
 
@@ -253,7 +257,8 @@ function PlanCard({
   onClick,
   cairoFont,
   numFont,
-  fmtNum,
+  fmtCurrency,
+  fmtPerStudentAmount,
   currencySuffix,
   perStudentLabel,
 }: {
@@ -269,7 +274,8 @@ function PlanCard({
   onClick: () => void;
   cairoFont: CSSProperties;
   numFont: CSSProperties;
-  fmtNum: (n: number | null | undefined) => string;
+  fmtCurrency: (n: number) => string;
+  fmtPerStudentAmount: (n: number) => string;
   currencySuffix: string;
   perStudentLabel: string;
 }) {
@@ -299,10 +305,10 @@ function PlanCard({
         {studentsLine}
       </p>
       <p className="mt-1 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
-        {fmtNum(price)} {currencySuffix} / {period}
+        {fmtCurrency(price)} / {period}
       </p>
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums" style={numFont}>
-        {fmtNum(Math.round(perStudent * 100) / 100)} {currencySuffix} / {perStudentLabel}
+        {fmtPerStudentAmount(perStudent)} {currencySuffix} / {perStudentLabel}
       </p>
     </button>
   );
@@ -318,8 +324,7 @@ function PeriodCard({
   onClick,
   cairoFont,
   numFont,
-  fmtNum,
-  currencySuffix,
+  fmtCurrency,
 }: {
   label: string;
   price: number;
@@ -330,8 +335,7 @@ function PeriodCard({
   onClick: () => void;
   cairoFont: CSSProperties;
   numFont: CSSProperties;
-  fmtNum: (n: number | null | undefined) => string;
-  currencySuffix: string;
+  fmtCurrency: (n: number) => string;
 }) {
   return (
     <button
@@ -355,7 +359,7 @@ function PeriodCard({
         <p className="mt-1 text-xs font-medium text-teal-600 dark:text-teal-400">{currentLabel}</p>
       ) : null}
       <p className="mt-2 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
-        {fmtNum(price)} {currencySuffix}
+        {fmtCurrency(price)}
       </p>
     </button>
   );
@@ -378,6 +382,7 @@ function PaygTab({
   numFont,
   locale,
   fmtNum,
+  fmtCurrency,
 }: {
   t: (key: string, values?: Record<string, string | number | Date>) => string;
   tPlan: (key: string) => string;
@@ -395,6 +400,7 @@ function PaygTab({
   numFont: CSSProperties;
   locale: string;
   fmtNum: (n: number | null | undefined) => string;
+  fmtCurrency: (n: number) => string;
 }) {
   const billingPayg =
     center?.billing_type === 'payg' || center?.pricing_type === 'payg';
@@ -586,13 +592,13 @@ function PaygTab({
           <p>
             {t('payg.estimate.vsMonthly')}:{' '}
             <span className="tabular-nums font-medium" style={numFont}>
-              {fmtNum(vsMonthly)} {t('egp')}
+              {fmtCurrency(vsMonthly)}
             </span>
           </p>
           <p>
             {t('payg.estimate.vsQuarterly')}:{' '}
             <span className="tabular-nums font-medium" style={numFont}>
-              {fmtNum(vsQuarterlyMo)} {t('egp')}
+              {fmtCurrency(vsQuarterlyMo)}
             </span>
           </p>
         </div>
@@ -671,6 +677,11 @@ export default function BillingPage() {
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const formatNum = useCallback((n: number | null | undefined) => formatNumber(Number(n) || 0, locale), [locale]);
+  const formatCurrencyLocale = useCallback((n: number) => formatCurrency(Number(n), locale), [locale]);
+  const formatPerStudentShare = useCallback(
+    (n: number) => formatNumber(n, locale, { maximumFractionDigits: 2, minimumFractionDigits: 0 }),
+    [locale],
+  );
   const { toast } = useToast();
 
   const [center, setCenter] = useState<CenterRow | null>(null);
@@ -1759,7 +1770,7 @@ export default function BillingPage() {
               <span className="text-lg font-semibold tabular-nums text-white" style={numFont}>
                 {billingIsPayg
                   ? `${formatNum(paygHeroWeeklyDisplay)} ${t('payg.estimate.rateUnit')}`
-                  : `${formatNum(Number(center?.all_in_price ?? 0))} ${t('egp')}`}
+                  : formatCurrencyLocale(Number(center?.all_in_price ?? 0))}
               </span>
             </div>
             <div className="flex flex-col gap-1 border-b border-white/15 py-4 md:border-b-0 md:border-e md:py-3 md:px-4">
@@ -1914,6 +1925,7 @@ export default function BillingPage() {
                 numFont={numFont}
                 locale={locale}
                 fmtNum={formatNum}
+                fmtCurrency={formatCurrencyLocale}
               />
             ) : null}
 
@@ -1971,8 +1983,7 @@ export default function BillingPage() {
                       }}
                       cairoFont={cairoFont}
                       numFont={numFont}
-                      fmtNum={formatNum}
-                      currencySuffix={tCommon('egp')}
+                      fmtCurrency={formatCurrencyLocale}
                     />
                     <PeriodCard
                       label={t('period.quarterly.label')}
@@ -1987,8 +1998,7 @@ export default function BillingPage() {
                       }}
                       cairoFont={cairoFont}
                       numFont={numFont}
-                      fmtNum={formatNum}
-                      currencySuffix={tCommon('egp')}
+                      fmtCurrency={formatCurrencyLocale}
                     />
                     <PeriodCard
                       label={t('period.annual.label')}
@@ -2003,8 +2013,7 @@ export default function BillingPage() {
                       }}
                       cairoFont={cairoFont}
                       numFont={numFont}
-                      fmtNum={formatNum}
-                      currencySuffix={tCommon('egp')}
+                      fmtCurrency={formatCurrencyLocale}
                     />
                   </div>
                 </div>
@@ -2045,7 +2054,8 @@ export default function BillingPage() {
                             onClick={() => setSelectedPlan(pk)}
                             cairoFont={cairoFont}
                             numFont={numFont}
-                            fmtNum={formatNum}
+                            fmtCurrency={formatCurrencyLocale}
+                            fmtPerStudentAmount={formatPerStudentShare}
                             currencySuffix={tCommon('egp')}
                             perStudentLabel={t('planCardPerStudent')}
                           />
@@ -2113,7 +2123,7 @@ export default function BillingPage() {
                       {t('upgrade.newMonthlyRate')}
                     </p>
                     <p className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
-                      {formatNum(pricingForPlan(selectedPlan, pricingRows).allIn)} {tCommon('egp')}
+                      {formatCurrencyLocale(pricingForPlan(selectedPlan, pricingRows).allIn)}
                     </p>
                     {planError ? (
                       <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
@@ -2172,7 +2182,8 @@ export default function BillingPage() {
                           }}
                           cairoFont={cairoFont}
                           numFont={numFont}
-                          fmtNum={formatNum}
+                          fmtCurrency={formatCurrencyLocale}
+                          fmtPerStudentAmount={formatPerStudentShare}
                           currencySuffix={tCommon('egp')}
                           perStudentLabel={t('planCardPerStudent')}
                         />
@@ -2201,8 +2212,7 @@ export default function BillingPage() {
                         onClick={() => setSelectedPeriod('monthly')}
                         cairoFont={cairoFont}
                         numFont={numFont}
-                        fmtNum={formatNum}
-                        currencySuffix={tCommon('egp')}
+                        fmtCurrency={formatCurrencyLocale}
                       />
                       <PeriodCard
                         label={t('period.quarterly.label')}
@@ -2218,8 +2228,7 @@ export default function BillingPage() {
                         onClick={() => setSelectedPeriod('quarterly')}
                         cairoFont={cairoFont}
                         numFont={numFont}
-                        fmtNum={formatNum}
-                        currencySuffix={tCommon('egp')}
+                        fmtCurrency={formatCurrencyLocale}
                       />
                       <PeriodCard
                         label={t('period.annual.label')}
@@ -2235,8 +2244,7 @@ export default function BillingPage() {
                         onClick={() => setSelectedPeriod('annual')}
                         cairoFont={cairoFont}
                         numFont={numFont}
-                        fmtNum={formatNum}
-                        currencySuffix={tCommon('egp')}
+                        fmtCurrency={formatCurrencyLocale}
                       />
                     </div>
                   </div>
