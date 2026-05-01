@@ -23,7 +23,8 @@ export function formatCurrency(value: number, locale: string): string {
 
 export function formatPercent(value: number, locale: string): string {
   const l = locale === 'ar' ? 'ar-EG' : 'en-US';
-  return value.toLocaleString(l) + '%';
+  const num = value.toLocaleString(l, { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+  return locale === 'ar' ? `${num}\u066A` : `${num}%`;
 }
 
 export function formatDate(

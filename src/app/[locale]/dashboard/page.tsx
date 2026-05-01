@@ -22,7 +22,7 @@ const DonutChart = dynamic(
   { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
 );
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import {
@@ -48,6 +48,17 @@ function formatMonthLabel(monthStr: string, locale: string): string {
   return EN_MONTHS[(m || 1) - 1] ?? monthStr;
 }
 
+/** X-axis labels for attendance trend: short English weekdays, long Arabic; never cache localized strings. */
+function formatAttendanceChartDayLabel(dayKey: string, locale: string, isToday: boolean): string {
+  if (isToday) return locale === 'ar' ? 'اليوم' : 'Today';
+  const d = new Date(`${dayKey}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return dayKey;
+  if (locale === 'ar') {
+    return d.toLocaleDateString('ar-EG', { weekday: 'long' });
+  }
+  return d.toLocaleDateString('en-US', { weekday: 'short' });
+}
+
 export interface RecentPaymentRow {
   id: string;
   student_name: string;
@@ -67,8 +78,18 @@ interface DashboardData {
   todayRevenue: number;
   totalPending: number;
   revenueByMethod: { method: string; amount: number }[];
-  trendData: { date: string; count: number }[];
-  revenueChartData: { date: string; day: string; cash: number; instapay: number; vodafone: number; orange: number; fawry: number; bank: number; other: number }[];
+  trendData: { dayKey: string; count: number }[];
+  revenueChartData: {
+    date: string;
+    dayKey: string;
+    cash: number;
+    instapay: number;
+    vodafone: number;
+    orange: number;
+    fawry: number;
+    bank: number;
+    other: number;
+  }[];
   recentPayments: RecentPaymentRow[];
   monthTotal: number;
   monthConfirmed: number;
@@ -93,7 +114,7 @@ type AtRiskRow = {
   days_since_last_scan: number;
 };
 
-const DASHBOARD_CACHE_KEY = 'chq_dashboard_cache';
+const DASHBOARD_CACHE_KEY = 'chq_dashboard_cache_v5';
 
 const EMPTY_DASHBOARD_DATA: DashboardData = {
   todayAttendance: 0,
@@ -123,14 +144,29 @@ const EMPTY_DASHBOARD_DATA: DashboardData = {
   studentSparkline7d: [],
 };
 
+function isDashboardCacheValid(p: unknown): p is DashboardData {
+  if (!p || typeof p !== 'object') return false;
+  const o = p as DashboardData;
+  if (!Array.isArray(o.trendData)) return false;
+  if (o.trendData.length === 0) return true;
+  const row = o.trendData[0];
+  return (
+    typeof row === 'object' &&
+    row !== null &&
+    'dayKey' in row &&
+    typeof (row as { dayKey: unknown }).dayKey === 'string' &&
+    typeof (row as { count: unknown }).count === 'number'
+  );
+}
+
 function readDashboardCache(): DashboardData | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = sessionStorage.getItem(DASHBOARD_CACHE_KEY);
     if (!raw) return null;
     const p = JSON.parse(raw) as unknown;
-    if (!p || typeof p !== 'object') return null;
-    return p as DashboardData;
+    if (!isDashboardCacheValid(p)) return null;
+    return p;
   } catch {
     return null;
   }
@@ -187,7 +223,7 @@ function KpiCommandCard({
           ) : (
             <TrendingDown className="h-3 w-3" aria-hidden />
           )}
-          {`${(trendPct ?? 0) >= 0 ? '+' : ''}${formatNumber(trendPct ?? 0, locale)}%`}
+          {`${(trendPct ?? 0) >= 0 ? '+' : ''}${formatPercent(Math.abs(trendPct ?? 0), locale)}`}
         </span>
       ) : null}
       <div className="mt-3 h-8 w-full opacity-95" aria-hidden>
@@ -264,7 +300,6 @@ export default function DashboardPage() {
       const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString();
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const dayLabels = locale === 'ar' ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
       // Batch 1: 4 parallel queries
       const [
@@ -377,25 +412,34 @@ export default function DashboardPage() {
         const key = s.scanned_at?.slice(0, 10);
         if (key && key in scansByDate) scansByDate[key]++;
       });
-      const trendData: { date: string; count: number }[] = [];
+      const trendData: { dayKey: string; count: number }[] = [];
       for (let i = range - 1; i >= 0; i--) {
         const day = new Date();
         day.setDate(day.getDate() - i);
         const dayKey = day.toISOString().slice(0, 10);
-        const isToday = i === 0;
         trendData.push({
-          date: isToday ? (locale === 'ar' ? 'اليوم' : 'Today') : dayLabels[day.getDay()],
+          dayKey,
           count: scansByDate[dayKey] ?? 0,
         });
       }
 
       // Revenue chart: group payments by date and method
       const defaultMethods = { cash: 0, instapay: 0, vodafone: 0, orange: 0, fawry: 0, bank: 0, other: 0 };
-      const revenueChartData: { date: string; day: string; cash: number; instapay: number; vodafone: number; orange: number; fawry: number; bank: number; other: number }[] = [];
+      const revenueChartData: {
+        date: string;
+        dayKey: string;
+        cash: number;
+        instapay: number;
+        vodafone: number;
+        orange: number;
+        fawry: number;
+        bank: number;
+        other: number;
+      }[] = [];
       for (let i = range - 1; i >= 0; i--) {
         const day = new Date();
         day.setDate(day.getDate() - i);
-        const dayKey = `${day.getDate()}/${day.getMonth() + 1}`;
+        const dayKey = day.toISOString().slice(0, 10);
         const byMethod = { ...defaultMethods };
         paymentsData.filter(p => p.confirmed && p.paid_at).forEach(p => {
           const d = new Date(p.paid_at!);
@@ -410,10 +454,9 @@ export default function DashboardPage() {
           else if (m === 'bank_transfer' || m === 'bank') byMethod.bank += amt;
           else byMethod.other += amt;
         });
-        const isToday = i === 0;
         revenueChartData.push({
-          date: dayKey,
-          day: isToday ? (locale === 'ar' ? 'اليوم' : 'Today') : dayLabels[day.getDay()],
+          date: `${day.getDate()}/${day.getMonth() + 1}`,
+          dayKey,
           ...byMethod,
         });
       }
@@ -542,7 +585,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Dashboard load error:', err);
     }
-  }, [locale, tCommon]);
+  }, [tCommon]);
 
   useEffect(() => {
     const init = async () => {
@@ -789,9 +832,15 @@ export default function DashboardPage() {
 
   const attendanceChart7 = useMemo(() => {
     const td = safeData.trendData;
-    if (td.length <= 7) return td.map((d) => ({ date: d.date, count: d.count }));
-    return td.slice(-7).map((d) => ({ date: d.date, count: d.count }));
-  }, [safeData.trendData]);
+    const slice = td.length <= 7 ? td : td.slice(-7);
+    return slice.map((d, idx, arr) => {
+      const isToday = idx === arr.length - 1;
+      return {
+        date: formatAttendanceChartDayLabel(d.dayKey, locale, isToday),
+        count: d.count,
+      };
+    });
+  }, [safeData.trendData, locale]);
 
   const attendanceWeekTotal = useMemo(
     () => attendanceChart7.reduce((s, d) => s + d.count, 0),
@@ -1145,7 +1194,7 @@ export default function DashboardPage() {
                 <>
                   {formatNumber(Number(attendanceTodayCount), locale)}
                   <span className="ms-1 text-base font-semibold text-[var(--color-text-muted)]">
-                    ({formatNumber(Number(attendancePctOfTotal), locale)}%)
+                    ({formatPercent(Number(attendancePctOfTotal), locale)})
                   </span>
                 </>
               }
@@ -1213,7 +1262,7 @@ export default function DashboardPage() {
                   xKey="date"
                   color="teal"
                   height={200}
-                  xTickFormatter={(v) => String(v)}
+                  yTickFormatter={(v) => formatNumber(v, locale)}
                 />
               </ChartCard>
             </div>
@@ -1283,9 +1332,12 @@ export default function DashboardPage() {
                           </div>
                           <span
                             className="shrink-0 tabular-nums text-xs font-semibold text-[var(--color-text-secondary)]"
-                            style={{ fontFamily: 'Georgia, serif' }}
+                            style={{
+                              fontFamily:
+                                'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                            }}
                           >
-                            {formatNumber(pct, locale)}%
+                            {formatPercent(pct, locale)}
                           </span>
                         </div>
                         <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-3)]">

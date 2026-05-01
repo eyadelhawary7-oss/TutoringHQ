@@ -18,7 +18,9 @@ export const CHART_COLORS = {
 } as const;
 
 export const CHART_STYLE = {
-  fontFamily: 'Cairo, Georgia, sans-serif',
+  /** system-ui avoids serif confusion (e.g. 0 vs O) on Recharts axis/tooltip numerals */
+  fontFamily:
+    'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   fontSize: 12,
   axisColor: '#334155',
   tickColor: '#64748B',
