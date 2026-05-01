@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
+import { useBranchStore } from '@/stores/branchStore';
 import AgingReport from '@/components/analytics/AgingReport';
 import PnLCard from '@/components/analytics/PnLCard';
 import AnalyticsAiChatWidget from '@/components/analytics/AnalyticsAiChatWidget';
@@ -115,7 +116,12 @@ export default function AnalyticsPage() {
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const { user, hasPermission } = useUser();
-  const canViewRevenue = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_revenue');
+  const { activeCenterId } = useBranchStore();
+  const canViewRevenue =
+    user?.role === 'super_admin' ||
+    user?.role === 'owner' ||
+    user?.role === 'admin' ||
+    hasPermission('can_view_revenue');
 
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +136,9 @@ export default function AnalyticsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/analytics/revenue', {
+      const centerParam = user?.center_id ?? activeCenterId ?? null;
+      const qs = centerParam ? `?center_id=${encodeURIComponent(centerParam)}` : '';
+      const res = await fetch(`/api/analytics/revenue${qs}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) {
@@ -144,7 +152,7 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [tCommon]);
+  }, [tCommon, user?.center_id, activeCenterId]);
 
   useEffect(() => {
     if (!canViewRevenue) return;
@@ -348,8 +356,6 @@ export default function AnalyticsPage() {
             <div className="min-w-0 w-full">
               <RevenueAreaChart data={revenueData} />
             </div>
-          ) : revenueData.length === 1 ? (
-            <div className="chq-skeleton h-48 w-full rounded-xl" aria-hidden />
           ) : (
             <p className="text-sm text-[var(--color-text-muted)] py-8 text-center">{ta('no_data')}</p>
           )}
@@ -359,7 +365,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 mb-4">
         <div className="chart-animate chart-animate-delay-2">
           <ChartCard title={tCharts('paymentMethods')} loading={loading && !data} minHeight={280}>
-            {donutData.length > 0 ? (
+            {donutData.length >= 2 ? (
               <>
                 <div className="min-w-0 w-full">
                   <PaymentDonutChart data={donutData} />
@@ -400,10 +406,8 @@ export default function AnalyticsPage() {
             <div className="min-w-0 w-full">
               <RevenueByGroup data={d.revenue_by_group} />
             </div>
-          ) : d.revenue_by_group.length === 1 ? (
-            <div className="chq-skeleton h-48 w-full rounded-xl" aria-hidden />
           ) : (
-            <RevenueByGroup data={d.revenue_by_group} />
+            <p className="text-sm text-[var(--color-text-muted)] py-8 text-center">{ta('no_data')}</p>
           )}
         </ChartCard>
       </section>

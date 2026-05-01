@@ -1,7 +1,38 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
-async function getUserContext(request: NextRequest) {
+const EMPTY_ANALYTICS_PAYLOAD = {
+  mrr: 0,
+  outstanding_total: 0,
+  collection_rate: 0,
+  avg_payment_per_student: 0,
+  revenue_by_group: [] as { group_id: string; group_name: string; amount: number }[],
+  mrr_trend: [] as { month: string; amount: number }[],
+  payment_method_distribution: [] as { method: string; amount: number }[],
+  attendance_heatmap: [] as { day: number; week: number; count: number }[],
+  aging_report: [] as {
+    student_id: string;
+    student_name: string;
+    group_name: string;
+    days_overdue: number;
+    amount: number;
+  }[],
+  expenses_by_month: {} as Record<string, { rent: number; salaries: number; utilities: number; other: number }>,
+  income_by_month: {} as Record<string, number>,
+  pnl_months: [] as string[],
+  current_period_type: 'normal',
+  academic_year_average_attendance: null as number | null,
+  enrollment_surge_active: false,
+  surge_message: null as string | null,
+};
+
+type AnalyticsAuthContext = {
+  centerId: string | null;
+  supabaseAdmin: SupabaseClient;
+  isSuperAdmin: boolean;
+};
+
+async function getAnalyticsAuth(request: NextRequest): Promise<AnalyticsAuthContext | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -17,7 +48,10 @@ async function getUserContext(request: NextRequest) {
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
 
-  const { data: { user }, error } = await supabaseAuth.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabaseAuth.auth.getUser();
   if (error || !user) return null;
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -26,21 +60,41 @@ async function getUserContext(request: NextRequest) {
 
   const { data: userRecord } = await supabaseAdmin
     .from('users')
-    .select('id, center_id')
+    .select('id, center_id, role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (!userRecord?.center_id) return null;
+  const { data: adminRecord } = await supabaseAdmin.from('admin_users').select('id').eq('id', user.id).maybeSingle();
 
-  return { centerId: userRecord.center_id, supabaseAdmin };
+  if (!userRecord && !adminRecord) return null;
+
+  const role = String((userRecord as { role?: string } | null)?.role ?? '');
+  const isSuperAdmin = role === 'super_admin' || !!adminRecord;
+
+  let centerId = (userRecord as { center_id?: string | null } | null)?.center_id ?? null;
+  const qp = request.nextUrl.searchParams.get('center_id');
+  if (isSuperAdmin && qp) {
+    centerId = qp;
+  }
+
+  if (!isSuperAdmin && !centerId) return null;
+
+  return { centerId, supabaseAdmin, isSuperAdmin };
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await getUserContext(request);
+    const ctx = await getAnalyticsAuth(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { centerId, supabaseAdmin } = ctx;
+    const { centerId, supabaseAdmin, isSuperAdmin } = ctx;
+
+    if (!centerId) {
+      if (isSuperAdmin) {
+        return NextResponse.json(EMPTY_ANALYTICS_PAYLOAD);
+      }
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const now = new Date();
 
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);

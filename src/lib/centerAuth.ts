@@ -62,15 +62,34 @@ export async function requireCenterAuth(request: NextRequest): Promise<CenterAut
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!userRecord?.center_id) {
+  const { data: adminRecord } = await admin.from('admin_users').select('id').eq('id', user.id).maybeSingle();
+
+  if (!userRecord && !adminRecord) {
+    return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+
+  const roleFromUser = String((userRecord as { role?: string } | null)?.role ?? '');
+  const isSuperAdmin = roleFromUser === 'super_admin' || !!adminRecord;
+  const effectiveRole = adminRecord && !userRecord ? 'super_admin' : roleFromUser;
+
+  let centerId = (userRecord as { center_id?: string | null } | null)?.center_id ?? null;
+  const qp =
+    request.nextUrl.searchParams.get('center_id')?.trim() ||
+    request.headers.get('x-center-id')?.trim() ||
+    null;
+  if (isSuperAdmin && qp) {
+    centerId = qp;
+  }
+
+  if (!centerId) {
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }
 
   return {
     ok: true,
     userId: user.id,
-    centerId: userRecord.center_id as string,
-    role: String((userRecord as { role?: string }).role ?? ''),
+    centerId: centerId as string,
+    role: effectiveRole || roleFromUser,
     supabaseAdmin: admin,
   };
 }
