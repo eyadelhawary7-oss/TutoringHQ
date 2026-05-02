@@ -25,21 +25,12 @@ export function formatNumber(
 }
 
 export function formatCurrency(value: number, locale: string): string {
+  const isAr = locale === 'ar' || locale.startsWith('ar');
   if (!Number.isFinite(value)) {
-    return locale === 'ar' ? '٠ ج.م' : '0 EGP';
+    return isAr ? '٠ ج.م' : '0 EGP';
   }
   const l = intlLocale(locale);
-  if (locale === 'ar') {
-    let s = new Intl.NumberFormat(l, {
-      numberingSystem: 'arab',
-      style: 'currency',
-      currency: 'EGP',
-      currencyDisplay: 'symbol',
-    }).format(value);
-    s = s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
-    s = s.replace(/جنيه\s*مصري|الجنيه\s*المصري|\bEGP\b|E£/gi, '').trim();
-    s = s.replace(/\s+/g, ' ').trim();
-    if (s.includes('ج.م')) return s;
+  if (isAr) {
     const num = new Intl.NumberFormat(l, {
       numberingSystem: 'arab',
       minimumFractionDigits: 0,
@@ -47,6 +38,7 @@ export function formatCurrency(value: number, locale: string): string {
     }).format(value);
     return `${num} ج.م`;
   }
+  // /en/ spec: amount first, then ISO code (not "EGP 900" from Intl currency order).
   const num = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,

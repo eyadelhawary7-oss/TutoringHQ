@@ -9,7 +9,7 @@ import { Plus, BookOpen, X, Users, ChevronRight, Search, Link as LinkIcon } from
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 interface Group {
@@ -448,7 +448,7 @@ export default function GroupsPage() {
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject ?? '\u2014'}</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
-                  {g.fee != null ? `${tCommon('egp')} ${formatNumber(g.fee, locale)}` : '\u2014'}
+                  {g.fee != null ? formatCurrency(g.fee, locale) : '\u2014'}
                 </span>
                 <span className="text-xs text-slate-400">{t('perLesson')}</span>
               </div>
@@ -558,7 +558,7 @@ export default function GroupsPage() {
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('feePerLesson')}</p>
                   <p className="font-semibold text-[var(--color-text-primary)] font-mono">
-                    {detailGroup.fee != null ? `${formatNumber(detailGroup.fee, locale)} ${tCommon('egp')}` : '\u2014'}
+                    {detailGroup.fee != null ? formatCurrency(detailGroup.fee, locale) : '\u2014'}
                   </p>
                 </div>
                 <div>
