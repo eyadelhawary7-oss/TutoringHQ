@@ -4410,6 +4410,16 @@
     "whatsappPack": "باقة واتساب",
     "you": "انت"
   },
+  "refer": {
+    "welcomeTitle": "مرحباً بك!",
+    "invitedBy": "تمت دعوتك من قبل {centerName} لتجربة CenterHQ",
+    "fallbackCenterName": "سنتر",
+    "ctaButton": "احجز عرضك التجريبي",
+    "autoApplyNote": "سيتم تطبيق الإحالة تلقائياً",
+    "loading": "جاري التحميل…",
+    "invalidLink": "رابط غير صالح أو منتهي الصلاحية.",
+    "backHome": "العودة للرئيسية"
+  },
   "referrals": {
     "title": "الإحالات",
     "yourCode": "رمزك",

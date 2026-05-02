@@ -1118,6 +1118,16 @@
     "roiValue": "Value of your saved time",
     "savedPerYear": "EGP per year"
   },
+  "refer": {
+    "welcomeTitle": "Welcome!",
+    "invitedBy": "You've been invited by {centerName} to try CenterHQ",
+    "fallbackCenterName": "a center",
+    "ctaButton": "Book your demo",
+    "autoApplyNote": "Your referral will be automatically applied",
+    "loading": "Loading…",
+    "invalidLink": "This link is invalid or has expired.",
+    "backHome": "Back to home"
+  },
   "referrals": {
     "title": "Referrals",
     "yourCode": "Your Code",
