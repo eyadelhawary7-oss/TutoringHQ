@@ -940,6 +940,14 @@ export default function BillingPage() {
     [center?.subscription_billing_period, center?.billing_period],
   );
 
+  /** Monthly EGP from `pricing_plans.all_in_price` for `plan_key`; never derive from quarterly ÷ 3. */
+  const currentPlanMonthlyDisplayEgp = useMemo(() => {
+    const catalogAllIn = pricingForPlan(planKey, pricingRows).allIn;
+    if (catalogAllIn > 0) return catalogAllIn;
+    const fromCenter = Number(center?.all_in_price ?? 0);
+    return Number.isFinite(fromCenter) && fromCenter > 0 ? fromCenter : catalogAllIn;
+  }, [planKey, pricingRows, center?.all_in_price]);
+
   const billingIsPayg = useMemo(
     () => center?.billing_type === 'payg' || center?.pricing_type === 'payg',
     [center?.billing_type, center?.pricing_type],
@@ -1779,7 +1787,7 @@ export default function BillingPage() {
               <span className="text-lg font-semibold tabular-nums text-white" style={numFont}>
                 {billingIsPayg
                   ? `${formatNum(paygHeroWeeklyDisplay)} ${t('payg.estimate.rateUnit')}`
-                  : formatCurrencyLocale(Number(center?.all_in_price ?? 0))}
+                  : formatCurrencyLocale(currentPlanMonthlyDisplayEgp)}
               </span>
             </div>
             <div className="flex flex-col gap-1 border-b border-white/15 py-4 md:border-b-0 md:border-e md:py-3 md:px-4">
