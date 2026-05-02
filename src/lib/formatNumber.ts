@@ -56,13 +56,23 @@ export function formatCurrency(value: number, locale: string): string {
 
 export function formatPercent(value: number, locale: string): string {
   const l = intlLocale(locale);
-  const numOpts: Intl.NumberFormatOptions = {
+  const isAr = locale === 'ar' || locale.startsWith('ar');
+  const p = Number(value);
+  const safe = Number.isFinite(p) ? p : 0;
+  const fraction = safe / 100;
+  if (isAr) {
+    return new Intl.NumberFormat(l, {
+      numberingSystem: 'arab',
+      style: 'percent',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+    }).format(fraction);
+  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'percent',
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
-    ...(locale === 'ar' ? { numberingSystem: 'arab' as const } : {}),
-  };
-  const num = value.toLocaleString(l, numOpts);
-  return locale === 'ar' ? `${num}\u066A` : `${num}%`;
+  }).format(fraction);
 }
 
 export function formatDate(
