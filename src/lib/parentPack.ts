@@ -3,12 +3,15 @@
  * Use alongside src/lib/parent-pack.ts (billing helpers).
  */
 
+import { BLAST_PRICE_PER_PARENT_INCLUSIVE } from '@/lib/invoiceTemplates';
+
 export const PACK_PRICE_PER_PARENT = 12;
 export const PACK_BASE_PER_PARENT = 10.08;
 export const PACK_SERVICE_FEE_RATE = 0.06;
 export const PACK_VAT_RATE = 0.14;
 
-export const BLAST_PRICE_PER_PARENT = 8;
+/** Per-parent announcement blast total (incl. service + VAT); must match invoice PDFs. */
+export const BLAST_PRICE_PER_PARENT = BLAST_PRICE_PER_PARENT_INCLUSIVE;
 export const BLAST_BASE_PER_PARENT = 6.72;
 export const BLAST_SERVICE_FEE_RATE = 0.06;
 export const BLAST_VAT_RATE = 0.14;

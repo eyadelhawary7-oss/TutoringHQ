@@ -4976,10 +4976,10 @@
     "announcementMonthlyLimit": "You have reached the maximum of 2 announcements for this month.",
     "announcementUsedOfCap": "used toward monthly cap",
     "announcementPlaceholder": "Write your announcement...",
-    "announcementCostLine": "Cost: {parents} parents × {price} EGP/parent = {cost} EGP",
-    "announcementCostBalanceNote": "This will cost {cost} EGP from your announcement balance (toward your monthly cap).",
+    "announcementCostLine": "Cost: {parentCount} × {unitPrice}/parent = {total}",
+    "announcementCostBalanceNote": "This will cost {cost} from your announcement balance (toward your monthly cap).",
     "announcementConfirmTitle": "Send announcement to {parents} parents?",
-    "announcementConfirmCost": "Cost: {cost} EGP - Balance after send: {after} EGP (toward cap)",
+    "announcementConfirmCost": "Cost: {cost} — Balance after send: {after} (toward cap)",
     "announcementConfirmSend": "Confirm send",
     "messagePlaceholder": "Type your message here...",
     "capWarning": "Approaching monthly announcement cap",
@@ -5046,7 +5046,8 @@
     "notifBalance": "Balance Notifications",
     "notifAnnouncement": "Announcement Notifications",
     "blastOps": "Blast Ops",
-    "blastPromo": "Blast Promo"
+    "blastPromo": "Blast Promo",
+    "parentCount": "{count, plural, one {# parent} other {# parents}}"
   },
   "adminWaPack": {
     "title": "WhatsApp Pack Management",

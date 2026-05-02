@@ -15,7 +15,8 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import { BLAST_PRICE_PER_PARENT, getAnnouncementCap, PACK_PRICE_PER_PARENT } from '@/lib/parentPack';
+import { getAnnouncementCap, PACK_PRICE_PER_PARENT } from '@/lib/parentPack';
+import { BLAST_PRICE_PER_PARENT_INCLUSIVE } from '@/lib/invoiceTemplates';
 import { supabase } from '@/lib/supabase';
 import { dbUpdate } from '@/lib/db-proxy';
 import { useToast } from '@/hooks/useToast';
@@ -122,7 +123,7 @@ export default function WhatsAppPackClient({
   const monthsAccum = Number(monthsWithoutInvoice);
   const pricePerParentMonthly = PACK_PRICE_PER_PARENT;
   const monthlyPackTotal = activeParents * pricePerParentMonthly;
-  const blastCost = activeParents * BLAST_PRICE_PER_PARENT;
+  const blastCost = activeParents * BLAST_PRICE_PER_PARENT_INCLUSIVE;
   const remainingAllowance = Math.max(0, cap - balance);
   const monthlyLimitReached = announcementsThisMonth >= 2;
   const cannotAffordBlast = balance >= cap || pct >= 100;
@@ -649,13 +650,13 @@ export default function WhatsAppPackClient({
           <div className="space-y-1 text-sm text-[var(--color-text-secondary)]">
             <p>
               {t('whatsapp.announcementCostLine', {
-                cost: formatNumber(blastCost, locale),
-                parents: formatNumber(activeParents, locale),
-                price: formatNumber(BLAST_PRICE_PER_PARENT, locale),
+                parentCount: t('whatsappPack.parentCount', { count: activeParents }),
+                unitPrice: formatCurrency(BLAST_PRICE_PER_PARENT_INCLUSIVE, locale),
+                total: formatCurrency(blastCost, locale),
               })}
             </p>
             <p className="text-xs text-[var(--color-text-tertiary)]">
-              {t('whatsapp.announcementCostBalanceNote', { cost: formatNumber(blastCost, locale) })}
+              {t('whatsapp.announcementCostBalanceNote', { cost: formatCurrency(blastCost, locale) })}
             </p>
           </div>
 
@@ -711,8 +712,8 @@ export default function WhatsAppPackClient({
                 </h3>
                 <p className="text-sm text-[var(--color-text-secondary)]">
                   {t('whatsapp.announcementConfirmCost', {
-                    cost: formatNumber(blastCost, locale),
-                    after: formatNumber(balance + blastCost, locale),
+                    cost: formatCurrency(blastCost, locale),
+                    after: formatCurrency(balance + blastCost, locale),
                   })}
                 </p>
                 <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">

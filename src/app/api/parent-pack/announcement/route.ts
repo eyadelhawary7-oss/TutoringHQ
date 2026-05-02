@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendParentAnnouncementOps, sendParentAnnouncementPromo } from '@/lib/centerNotify';
 import {
   BLAST_BASE_PER_PARENT,
-  BLAST_PRICE_PER_PARENT,
   BLAST_SERVICE_FEE_RATE,
   BLAST_VAT_RATE,
   dateInNDays,
@@ -10,6 +9,7 @@ import {
   todayISO,
   WA_TEMPLATES,
 } from '@/lib/parentPack';
+import { BLAST_PRICE_PER_PARENT_INCLUSIVE } from '@/lib/invoiceTemplates';
 import { requireOwnerAdminCenter } from '@/lib/requireOwnerAdminCenter';
 
 export const dynamic = 'force-dynamic';
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   const baseAmount = Math.round(parentsNotified * BLAST_BASE_PER_PARENT * 100) / 100;
   const serviceFee = Math.round(baseAmount * BLAST_SERVICE_FEE_RATE * 100) / 100;
   const vat = Math.round(baseAmount * BLAST_VAT_RATE * 100) / 100;
-  const totalAmount = parentsNotified * BLAST_PRICE_PER_PARENT;
+  const totalAmount = parentsNotified * BLAST_PRICE_PER_PARENT_INCLUSIVE;
 
   const templateName =
     body.blast_type === 'ops' ? WA_TEMPLATES.PARENT_ANNOUNCEMENT_OPS : WA_TEMPLATES.PARENT_ANNOUNCEMENT_PROMO;

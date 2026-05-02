@@ -2682,10 +2682,10 @@
     "announcementMonthlyLimit": "وصلت للحد الأقصى: إعلانان شهرياً فقط.",
     "announcementUsedOfCap": "مستخدم من الحد الشهري",
     "announcementPlaceholder": "اكتب إعلانك...",
-    "announcementCostLine": "التكلفة: {parents} ولي أمر × {price} جنيه = {cost} جنيه",
-    "announcementCostBalanceNote": "سيُخصم {cost} جنيه من رصيد الإعلانات (ضمن الحد الشهري).",
+    "announcementCostLine": "التكلفة: {parentCount} × {unitPrice} = {total}",
+    "announcementCostBalanceNote": "سيُخصم {cost} من رصيد الإعلانات (ضمن الحد الشهري).",
     "announcementConfirmTitle": "إرسال الإعلان إلى {parents} ولي أمر؟",
-    "announcementConfirmCost": "التكلفة: {cost} جنيه - الرصيد بعد الإرسال: {after} جنيه (ضمن الحد)",
+    "announcementConfirmCost": "التكلفة: {cost} — الرصيد بعد الإرسال: {after} (ضمن الحد)",
     "announcementConfirmSend": "تأكيد الإرسال",
     "messagePlaceholder": "اكتب رسالتك هنا...",
     "capWarning": "اقتربت من الحد الأقصى للإعلانات هذا الشهر",
@@ -2752,7 +2752,8 @@
     "notifBalance": "تنبيهات الرصيد",
     "notifAnnouncement": "تنبيهات الإعلانات",
     "blastOps": "إرسال تشغيلي",
-    "blastPromo": "إرسال ترويجي"
+    "blastPromo": "إرسال ترويجي",
+    "parentCount": "{count, plural, one {ولي أمر واحد} other {# أولياء أمور}}"
   },
   "adminWaPack": {
     "title": "إدارة باقة واتساب",
