@@ -46,10 +46,20 @@ function formatDraftValue(key: string, value: unknown): string {
     }
   }
   if (value === null || value === undefined) return '';
+  if (ed === 'number' && typeof value === 'number') {
+    if (key.includes('_percent')) {
+      return String(Math.round(value));
+    }
+    if ((key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate') && value > 0 && value <= 1) {
+      return String(Math.round(value * 100));
+    }
+  }
   return String(value);
 }
 
 function numberStepForKey(key: string): string {
+  if (key.includes('_percent')) return '1';
+  if (key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate') return '1';
   if (key.includes('_rate') || key.includes('reactivation_discount')) return '0.01';
   return '1';
 }
@@ -202,7 +212,15 @@ export default function PlatformConfigPage() {
           toast.error(t('platformConfigNumberInvalid'));
           return;
         }
-        parsed = numberStepForKey(key) === '1' ? Math.trunc(n) : n;
+        if (key.includes('_percent')) {
+          parsed = Math.min(100, Math.max(0, Math.round(n)));
+        } else if (key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate') {
+          let pct = Math.round(n);
+          if (n > 0 && n <= 1) pct = Math.round(n * 100);
+          parsed = Math.min(100, Math.max(0, pct));
+        } else {
+          parsed = numberStepForKey(key) === '1' ? Math.trunc(n) : n;
+        }
       } else if (editor === 'json') {
         try {
           parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -324,6 +342,30 @@ export default function PlatformConfigPage() {
             onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
             spellCheck={false}
           />
+        ) : editor === 'number' &&
+          (key.includes('_percent') ||
+            key === 'late_fee_tier1_rate' ||
+            key === 'late_fee_tier2_rate') ? (
+          <div className="flex max-w-md items-center gap-2">
+            <input
+              type="number"
+              step={numberStepForKey(key)}
+              min={0}
+              max={key.includes('_percent') || key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate' ? 100 : undefined}
+              className="min-w-0 flex-1 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2 text-[var(--color-text-primary)]"
+              value={drafts[key] ?? ''}
+              disabled={busy}
+              onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
+              dir="ltr"
+              aria-describedby={`${key}-pct-hint`}
+            />
+            <span
+              id={`${key}-pct-hint`}
+              className="shrink-0 text-sm font-medium text-[var(--color-text-secondary)] tabular-nums"
+            >
+              %
+            </span>
+          </div>
         ) : (
           <input
             type={editor === 'number' ? 'number' : 'text'}

@@ -1,7 +1,7 @@
 /**
  * Daily late-fee tiers + dormancy (Cairo calendar), used by process-renewals cron.
  * Config keys in platform_config (jsonb numbers): late_fee_grace_days, late_fee_tier1_trigger_day,
- * late_fee_tier2_trigger_day, dormancy_trigger_day.
+ * late_fee_tier1_percent, late_fee_tier2_percent, dormancy_trigger_day.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -16,11 +16,30 @@ export type LateFeeDormancyConfig = {
   tier1Day: number;
   tier2Day: number;
   dormancyDay: number;
+  /** Late fee as % of base balance, e.g. 5 = 5% (from platform_config integer). */
+  tier1Percent: number;
+  tier2Percent: number;
 };
 
 function parseConfigNum(v: unknown, fallback: number): number {
   if (typeof v === 'number' && Number.isFinite(v) && v >= 0) return Math.floor(v);
   if (typeof v === 'string' && /^\d+$/.test(v)) return parseInt(v, 10);
+  return fallback;
+}
+
+/** Integer percent 0–100; if legacy jsonb stored 0.05, treat as 5%. */
+function parseConfigPercent(v: unknown, fallback: number): number {
+  if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
+    if (v > 0 && v <= 1) return Math.min(100, Math.round(v * 100));
+    return Math.min(100, Math.round(v));
+  }
+  if (typeof v === 'string' && v.trim() !== '') {
+    const n = parseFloat(v);
+    if (Number.isFinite(n) && n >= 0) {
+      if (n > 0 && n <= 1) return Math.min(100, Math.round(n * 100));
+      return Math.min(100, Math.round(n));
+    }
+  }
   return fallback;
 }
 
@@ -30,6 +49,8 @@ export async function loadLateFeeDormancyConfig(supabase: SupabaseClient): Promi
     'late_fee_tier1_trigger_day',
     'late_fee_tier2_trigger_day',
     'dormancy_trigger_day',
+    'late_fee_tier1_percent',
+    'late_fee_tier2_percent',
   ] as const;
   const { data: rows } = await supabase.from('platform_config').select('key, value').in('key', [...keys]);
   const map = new Map<string, unknown>();
@@ -42,6 +63,8 @@ export async function loadLateFeeDormancyConfig(supabase: SupabaseClient): Promi
     tier1Day: parseConfigNum(map.get('late_fee_tier1_trigger_day'), 4),
     tier2Day: parseConfigNum(map.get('late_fee_tier2_trigger_day'), 9),
     dormancyDay: parseConfigNum(map.get('dormancy_trigger_day'), 30),
+    tier1Percent: parseConfigPercent(map.get('late_fee_tier1_percent'), 5),
+    tier2Percent: parseConfigPercent(map.get('late_fee_tier2_percent'), 10),
   };
 }
 
@@ -297,7 +320,7 @@ export async function runLateFeeAndDormancyScan(
           .map((row) => row.id);
         await voidLateFees(supabase, tier1Ids);
 
-        const rate = 0.1;
+        const rate = cfg.tier2Percent / 100;
         const feeAmt = Math.round(base * rate * 100) / 100;
         const total = Math.round((base + feeAmt) * 100) / 100;
 
@@ -347,7 +370,7 @@ export async function runLateFeeAndDormancyScan(
         const hasAny = pending.length > 0;
         if (hasAny) continue;
 
-        const rate = 0.05;
+        const rate = cfg.tier1Percent / 100;
         const feeAmt = Math.round(base * rate * 100) / 100;
         const total = Math.round((base + feeAmt) * 100) / 100;
 
