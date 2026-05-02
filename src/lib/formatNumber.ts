@@ -25,9 +25,33 @@ export function formatNumber(
 }
 
 export function formatCurrency(value: number, locale: string): string {
+  if (!Number.isFinite(value)) {
+    return locale === 'ar' ? '٠ ج.م' : '0 EGP';
+  }
   const l = intlLocale(locale);
-  const opts = locale === 'ar' ? ({ numberingSystem: 'arab' } as Intl.NumberFormatOptions) : undefined;
-  return value.toLocaleString(l, opts) + (locale === 'ar' ? ' ج.م' : ' EGP');
+  if (locale === 'ar') {
+    let s = new Intl.NumberFormat(l, {
+      numberingSystem: 'arab',
+      style: 'currency',
+      currency: 'EGP',
+      currencyDisplay: 'symbol',
+    }).format(value);
+    s = s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+    s = s.replace(/جنيه\s*مصري|الجنيه\s*المصري|\bEGP\b|E£/gi, '').trim();
+    s = s.replace(/\s+/g, ' ').trim();
+    if (s.includes('ج.م')) return s;
+    const num = new Intl.NumberFormat(l, {
+      numberingSystem: 'arab',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
+    return `${num} ج.م`;
+  }
+  const num = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${num} EGP`;
 }
 
 export function formatPercent(value: number, locale: string): string {

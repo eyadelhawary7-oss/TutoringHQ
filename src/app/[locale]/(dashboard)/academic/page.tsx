@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/shared';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/useToast';
 import { Calendar, Plus, Pencil, Trash2, Loader2, X, Send } from 'lucide-react';
+import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 import { formatDate } from '@/lib/formatNumber';
 
 type PeriodType = 'exam' | 'holiday' | 'peak' | 'normal';
@@ -405,16 +406,16 @@ export default function AcademicPage() {
                 placeholder={t('yearName')}
               />
               <div className="flex gap-2">
-                <input
-                  type="date"
+                <LocalizedDateInput
                   value={editYearForm.start_date}
                   onChange={(e) => setEditYearForm((f) => ({ ...f, start_date: e.target.value }))}
+                  locale={locale}
                   className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)]"
                 />
-                <input
-                  type="date"
+                <LocalizedDateInput
                   value={editYearForm.end_date}
                   onChange={(e) => setEditYearForm((f) => ({ ...f, end_date: e.target.value }))}
+                  locale={locale}
                   className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)]"
                 />
               </div>
@@ -645,16 +646,16 @@ export default function AcademicPage() {
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                 placeholder={t('yearName')}
               />
-              <input
-                type="date"
+              <LocalizedDateInput
                 value={newYearForm.start_date}
                 onChange={(e) => setNewYearForm((f) => ({ ...f, start_date: e.target.value }))}
+                locale={locale}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
-              <input
-                type="date"
+              <LocalizedDateInput
                 value={newYearForm.end_date}
                 onChange={(e) => setNewYearForm((f) => ({ ...f, end_date: e.target.value }))}
+                locale={locale}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
             </div>
@@ -699,16 +700,16 @@ export default function AcademicPage() {
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                 placeholder={t('periodName')}
               />
-              <input
-                type="date"
+              <LocalizedDateInput
                 value={periodForm.start_date ?? ''}
                 onChange={(e) => setPeriodForm((f) => ({ ...f, start_date: e.target.value }))}
+                locale={locale}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
-              <input
-                type="date"
+              <LocalizedDateInput
                 value={periodForm.end_date ?? ''}
                 onChange={(e) => setPeriodForm((f) => ({ ...f, end_date: e.target.value }))}
+                locale={locale}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
             </div>
@@ -743,10 +744,10 @@ export default function AcademicPage() {
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                 placeholder={t('holidayName')}
               />
-              <input
-                type="date"
+              <LocalizedDateInput
                 value={holidayForm.date ?? ''}
                 onChange={(e) => setHolidayForm((f) => ({ ...f, date: e.target.value }))}
+                locale={locale}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
               <label className="flex items-center gap-2">

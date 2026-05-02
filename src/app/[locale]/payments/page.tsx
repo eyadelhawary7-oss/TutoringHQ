@@ -13,7 +13,7 @@ import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/ToastProvider';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
-import { formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDateTime } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 interface PaymentRecord {
@@ -517,18 +517,21 @@ export default function PaymentsPage() {
             >
               <div className="card p-3 flex flex-col gap-1">
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_today')}</span>
-                <span className="text-base font-bold text-[var(--color-success)]">{formatNumber(totalToday, locale)}</span>
-                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
+                <span className="text-base font-bold text-[var(--color-success)] tabular-nums">
+                  {formatCurrency(totalToday, locale)}
+                </span>
               </div>
               <div className="card p-3 flex flex-col gap-1">
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_pending')}</span>
-                <span className="text-base font-bold text-[var(--color-warning)]">{formatNumber(totalPending, locale)}</span>
-                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
+                <span className="text-base font-bold text-[var(--color-warning)] tabular-nums">
+                  {formatCurrency(totalPending, locale)}
+                </span>
               </div>
               <div className="card p-3 flex flex-col gap-1">
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_month')}</span>
-                <span className="text-base font-bold text-[var(--color-text-primary)]">{formatNumber(totalMonth, locale)}</span>
-                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('egp')}</span>
+                <span className="text-base font-bold text-[var(--color-text-primary)] tabular-nums">
+                  {formatCurrency(totalMonth, locale)}
+                </span>
               </div>
             </div>
           )}
@@ -679,9 +682,8 @@ export default function PaymentsPage() {
                       {tp(methodTpKey(payment.method))}
                     </span>
                     <div className="flex items-center gap-2 ms-auto min-w-0 text-end tabular-nums">
-                      <span className="text-base font-bold text-[var(--color-text-primary)]">
-                        {formatNumber(Number(payment.amount), locale)}
-                        <span className="text-xs font-normal text-[var(--color-text-tertiary)] ms-1">{tp('egp')}</span>
+                      <span className="text-base font-bold text-[var(--color-text-primary)] tabular-nums">
+                        {formatCurrency(Number(payment.amount), locale)}
                       </span>
                       {isPaymentConfirmed(payment) ? (
                         <span className="badge badge-success text-xs">{tp('status_confirmed')}</span>
@@ -838,7 +840,8 @@ export default function PaymentsPage() {
           >
             <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tp('confirmPayment')}</h3>
             <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-              {formatNumber(Number(confirmModal.amount), locale)} {tp('egp')} · {tp(methodTpKey(confirmModal.method))} · {confirmModal.student_name}
+              {formatCurrency(Number(confirmModal.amount), locale)} · {tp(methodTpKey(confirmModal.method))} ·{' '}
+              {confirmModal.student_name}
             </p>
             <div className="flex gap-3 justify-end">
               <button

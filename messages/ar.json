@@ -4281,7 +4281,7 @@
     "receipt_method": "طريقة الدفع",
     "receipt_date": "التاريخ",
     "receipt_close": "إغلاق",
-    "egp": "جنيه مصري",
+    "egp": "ج.م",
     "csv_col_date": "التاريخ",
     "csv_col_student": "اسم الطالب",
     "csv_col_amount": "المبلغ (ج.م)",
