@@ -2942,7 +2942,7 @@
   "attendance": {
     "title": "سجل الحضور لـ",
     "subtitle": "عرض حضور الطلاب والمجموعات",
-    "byStudent": "كتابة الطالب",
+    "byStudent": "حسب الطالب",
     "byGroup": "حسب المجموعة",
     "searchStudent": "بحث عن الطلاب...",
     "searchGroup": "البحث عن مجموعة",
