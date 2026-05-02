@@ -74,7 +74,7 @@ export function BottomNav() {
 
   const visiblePrimaryItems = user
     ? primaryItems.filter((item) => {
-        if (user.role === 'owner' || user.role === 'admin') return true;
+        if (user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin') return true;
         if (!item.permission) return true;
         return hasPermission(item.permission);
       })
@@ -82,8 +82,8 @@ export function BottomNav() {
 
   const visibleMoreItems = user
     ? moreItems.filter((item) => {
-        if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin';
-        if (user.role === 'owner' || user.role === 'admin') return true;
+        if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin';
+        if (user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin') return true;
         if (!item.permission) return true;
         return hasPermission(item.permission);
       })

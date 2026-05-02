@@ -23,7 +23,7 @@ export default function PlanUsageCard({ plan, weeklyUniqueStudents, studentLimit
   const t = useTranslations('dashboard');
   const tSettings = useTranslations('settings');
   const { user } = useUser();
-  const isOwner = user?.role === 'owner';
+  const isOwner = user?.role === 'owner' || user?.role === 'super_admin';
 
   if (studentLimit >= 999999) return null; // Unlimited plan
 

@@ -50,7 +50,7 @@ export function BottomTabBar() {
 
   const visibleTabs = user
     ? TABS.filter((tab) => {
-        if (user.role === 'owner' || user.role === 'admin') return true;
+        if (user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin') return true;
         if (!tab.permission) return true;
         return hasPermission(tab.permission);
       })

@@ -247,7 +247,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useUser();
-  const canViewRevenue = user?.role === 'owner' || user?.role === 'admin' || user?.can_view_revenue === true;
+  const canViewRevenue =
+    user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || user?.can_view_revenue === true;
 
   const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string; plan?: string } | null>(null);
   const [planUsage, setPlanUsage] = useState<{ plan: string; weeklyUniqueStudents: number; studentLimit: number } | null>(null);
@@ -610,7 +611,11 @@ export default function DashboardPage() {
 
       if (meData?.user?.center_id) {
         // Center users must have can_view_dashboard to access dashboard
-        const canView = meData.user.can_view_dashboard === true || meData.user.role === 'owner' || meData.user.role === 'admin';
+        const canView =
+          meData.user.can_view_dashboard === true ||
+          meData.user.role === 'owner' ||
+          meData.user.role === 'admin' ||
+          meData.user.role === 'super_admin';
         if (!canView) {
           router.replace('/scan');
           return;

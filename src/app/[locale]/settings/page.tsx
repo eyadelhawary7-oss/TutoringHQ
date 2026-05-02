@@ -1016,7 +1016,7 @@ function SettingsPageContent() {
             </div>
 
             {/* Financial Settings (owner - InstaPay for withdrawals) */}
-            {currentUser?.role === 'owner' ? (
+            {currentUser?.role === 'owner' || currentUser?.role === 'super_admin' ? (
               <div className="bg-[var(--color-surface-1)] dark:bg-slate-800 rounded-2xl border border-[var(--color-border-subtle)] p-6 mb-4 card-shadow">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">

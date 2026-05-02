@@ -100,9 +100,9 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
     ? []
     : user
       ? ALL_NAV.filter((item) => {
-          if (item.ownerOnly) return user.role === 'owner';
-          if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin';
-          if (user.role === 'owner' || user.role === 'admin') return true;
+          if (item.ownerOnly) return user.role === 'owner' || user.role === 'super_admin';
+          if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin';
+          if (user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin') return true;
           if (!item.permission) return true;
           return hasPermission(item.permission);
         })
@@ -113,7 +113,9 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
       ? 'roleOwner'
       : user?.role === 'admin'
         ? 'roleAdmin'
-        : user?.role === 'assistant'
+        : user?.role === 'super_admin'
+          ? 'roleAdmin'
+          : user?.role === 'assistant'
           ? 'roleAssistant'
           : user?.role === 'teacher'
             ? 'roleTeacher'

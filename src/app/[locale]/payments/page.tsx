@@ -127,7 +127,8 @@ export default function PaymentsPage() {
   const locale = useLocale();
   const router = useRouter();
   const { user, hasPermission } = useUser();
-  const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
+  const canViewPayments =
+    user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || hasPermission('can_view_payments');
   const canCollectPayment =
     canViewPayments ||
     user?.can_record_payments === true ||

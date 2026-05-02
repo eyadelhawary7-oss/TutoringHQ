@@ -169,7 +169,7 @@ export default function SettingsReferralsPage() {
     fetchData();
   }, [centerId]);
 
-  if (user?.role !== 'owner') {
+  if (user?.role !== 'owner' && user?.role !== 'super_admin') {
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-4">
         <PageHeader title={t('title')} />

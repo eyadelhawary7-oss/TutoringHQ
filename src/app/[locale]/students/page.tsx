@@ -137,7 +137,8 @@ export default function StudentsPage() {
   const tCommon = useTranslations('common');
   const tToast = useTranslations('toasts');
   const { user, hasPermission, refreshUser } = useUser();
-  const canViewPayments = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_view_payments');
+  const canViewPayments =
+    user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || hasPermission('can_view_payments');
   const { cart, addToCart, removeFromCart, clearCart, isInCart, cartCount } = useCardOrderCart();
   const { toast } = useToast();
 
@@ -516,7 +517,7 @@ export default function StudentsPage() {
   const activeParentsForAnnounce =
     user?.center?.parent_pack_active_parents ?? centerInfo?.parent_pack_active_parents ?? 0;
   const canSendAnnouncement =
-    (user?.role === 'owner' || user?.role === 'admin') && activeParentsForAnnounce > 0;
+    (user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin') && activeParentsForAnnounce > 0;
   const announcementPlan = user?.center?.plan ?? centerInfo?.plan ?? 'starter';
   const announcementBalanceNum = Number(
     user?.center?.announcement_balance ?? centerInfo?.announcement_balance ?? 0,
@@ -962,7 +963,7 @@ export default function StudentsPage() {
                   </span>
                 ) : null}
               </Link>
-              {(user?.role === 'owner' || user?.role === 'admin') && (
+              {(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin') && (
                 <button
                   type="button"
                   disabled={!canSendAnnouncement}

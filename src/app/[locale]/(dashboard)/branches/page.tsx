@@ -32,7 +32,7 @@ export default function BranchesPage() {
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const { user } = useUser();
-  const isOwner = user?.role === 'owner';
+  const isOwner = user?.role === 'owner' || user?.role === 'super_admin';
 
   const [plan, setPlan] = useState<'single' | 'multi'>('single');
   const [branches, setBranches] = useState<BranchRow[]>([]);

@@ -861,7 +861,7 @@ export default function BillingPage() {
   }, [closePaymob, toast, t]);
 
   useEffect(() => {
-    if (userRole !== 'owner') return;
+    if (userRole !== 'owner' && userRole !== 'super_admin') return;
     let cancelled = false;
     (async () => {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -889,7 +889,7 @@ export default function BillingPage() {
     setDowngradeError(null);
   }, [activeTab]);
 
-  const ownerOk = userRole === 'owner';
+  const ownerOk = userRole === 'owner' || userRole === 'super_admin';
 
   const handleDownloadPdf = useCallback(
     async (invoiceId: string, invoiceNumber: string | null) => {

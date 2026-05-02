@@ -235,7 +235,11 @@ export default function ScanPage() {
     }
   }, [centerId]);
 
-  const canAllowLateEntry = user?.role === 'owner' || user?.role === 'admin' || hasPermission('can_allow_late_entry');
+  const canAllowLateEntry =
+    user?.role === 'owner' ||
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    hasPermission('can_allow_late_entry');
 
   useEffect(() => {
     const loadUser = async () => {

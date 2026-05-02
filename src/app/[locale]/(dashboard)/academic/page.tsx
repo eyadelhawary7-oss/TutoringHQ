@@ -56,7 +56,7 @@ export default function AcademicPage() {
   const locale = useLocale();
   const { user } = useUser();
   const toast = useToast();
-  const canTermSummary = user?.role === 'owner' || user?.role === 'admin';
+  const canTermSummary = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin';
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [periods, setPeriods] = useState<AcademicPeriod[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);

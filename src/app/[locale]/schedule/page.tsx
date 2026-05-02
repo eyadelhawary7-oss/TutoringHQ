@@ -92,7 +92,7 @@ export default function SchedulePage() {
 
   const isReadOnly = user?.role === 'teacher' || user?.role === 'assistant';
   const isTeacher = user?.role === 'teacher';
-  const canEdit = user?.role === 'owner' || user?.role === 'admin';
+  const canEdit = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin';
 
   const formatMemberCount = (n: number) =>
     `${formatNumber(n, locale)} ${n === 1 ? tCommon('student') : tCommon('students')}`;

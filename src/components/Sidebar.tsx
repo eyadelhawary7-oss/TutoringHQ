@@ -119,9 +119,9 @@ export default function Sidebar({ onClose }: SidebarProps) {
     ? []
     : user
       ? allNavItems.filter((item) => {
-          if (item.ownerOnly) return user.role === 'owner';
-          if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin';
-          if (user.role === 'owner' || user.role === 'admin') return true;
+          if (item.ownerOnly) return user.role === 'owner' || user.role === 'super_admin';
+          if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin';
+          if (user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin') return true;
           if (!item.permission) return true;
           return hasPermission(item.permission);
         })

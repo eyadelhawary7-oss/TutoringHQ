@@ -86,7 +86,7 @@ export default function TopNavbar() {
     ? []
     : user
       ? allNavItems.filter(item => {
-          if (user.role === 'owner' || user.role === 'admin') return true;
+          if (user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin') return true;
           if (!item.permission) return true;
           return hasPermission(item.permission);
         })
