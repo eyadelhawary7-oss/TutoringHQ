@@ -58,6 +58,17 @@ function computeUptimePercent90d(
   return (operationalDays / dayKeys.length) * 100;
 }
 
+/** Uptime % for UI; em dash when there is no day-level history yet. */
+function formatUptime90dPercent(
+  uptime90d: Record<string, Record<string, Status>> | undefined,
+  serviceKey: string,
+  locale: string,
+): string {
+  const dayKeys = Object.keys(uptime90d ?? {});
+  if (dayKeys.length === 0) return '—';
+  return formatPercent(computeUptimePercent90d(uptime90d ?? {}, serviceKey), locale);
+}
+
 export default function StatusPage() {
   const locale = useLocale();
   const [data, setData] = useState<StatusData | null>(null);
@@ -91,10 +102,18 @@ export default function StatusPage() {
   if (loading && !data) {
     return (
       <div
-        className="chq-page min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] flex items-center justify-center"
+        className="chq-page min-h-screen flex flex-col bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <header className="bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+            CenterHQ - {pickLocale('حالة المنصة', 'Platform Status')}
+          </h1>
+          <ThemeToggle />
+        </header>
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        </div>
       </div>
     );
   }
@@ -157,10 +176,10 @@ export default function StatusPage() {
                   <span className="font-medium text-[var(--color-text-primary)]">
                     {locale === 'ar' ? labelAr : labelEn}
                   </span>
-                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                  <div className="flex items-center gap-2 flex-wrap justify-end min-w-0">
                     <StatusIcon status={status} />
-                    <span className="text-sm tabular-nums text-[var(--color-text-primary)] font-medium">
-                      {formatPercent(computeUptimePercent90d(d.uptime_90d ?? {}, key), locale)}
+                    <span className="text-sm tabular-nums text-[var(--color-text-primary)] font-medium shrink-0">
+                      {formatUptime90dPercent(d.uptime_90d, key, locale)}
                     </span>
                     <span className="text-sm text-[var(--color-text-secondary)]">
                       {StatusLabel({ status, locale })}
@@ -210,8 +229,8 @@ export default function StatusPage() {
               {SERVICES.map(({ key, labelAr, labelEn }) => (
                 <span key={key} className="inline-flex items-center gap-2">
                   <span className="font-medium">{locale === 'ar' ? labelAr : labelEn}</span>
-                  <span className="tabular-nums text-[var(--color-text-secondary)]">
-                    {formatPercent(computeUptimePercent90d(d.uptime_90d ?? {}, key), locale)}
+                  <span className="tabular-nums text-[var(--color-text-secondary)] shrink-0">
+                    {formatUptime90dPercent(d.uptime_90d, key, locale)}
                   </span>
                 </span>
               ))}

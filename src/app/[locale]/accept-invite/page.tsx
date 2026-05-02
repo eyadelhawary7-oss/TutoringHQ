@@ -124,15 +124,11 @@ export default function AcceptInvitePage() {
   };
 
   return (
-    <>
+    <div
+      className="dark min-h-screen w-full flex flex-col items-center justify-center bg-[#080f1a] px-4 sm:px-6 lg:px-8"
+      style={{ backgroundColor: '#080f1a', minHeight: '100vh' }}
+    >
       <LoginThemeEffect />
-      <div
-        className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8"
-        style={{
-          background: '#080D14',
-          minHeight: '100vh',
-        }}
-      >
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex flex-col items-center">
@@ -273,7 +269,6 @@ export default function AcceptInvitePage() {
             </Link>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

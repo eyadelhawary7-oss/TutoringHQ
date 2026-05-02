@@ -29,6 +29,7 @@ const PUBLIC_PATHS = [
   '/session-expired',
   '/auth/callback',
   '/status',
+  '/accept-invite',
   '/join',
 ];
 function stripLocale(path: string): string {
