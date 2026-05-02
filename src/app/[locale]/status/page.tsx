@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useLocale } from 'next-intl';
-import { formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { formatDateTime, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { CheckCircle, AlertTriangle, XCircle, RefreshCw, Loader2 } from 'lucide-react';
 
 const SERVICES = [
@@ -29,7 +30,7 @@ function StatusIcon({ status }: { status: Status }) {
     case 'outage':
       return <XCircle className="h-5 w-5 text-red-500" />;
     default:
-      return <AlertTriangle className="h-5 w-5 text-slate-400" />;
+      return <AlertTriangle className="h-5 w-5 text-[var(--color-text-muted)]" />;
   }
 }
 
@@ -41,6 +42,20 @@ function StatusLabel({ status, locale }: { status: Status; locale: string }) {
     unknown: { ar: 'غير معروف', en: 'Unknown' },
   };
   return locale === 'ar' ? labels[status].ar : labels[status].en;
+}
+
+/** Share of days in `uptime_90d` where the service was fully operational (vs total days in range). */
+function computeUptimePercent90d(
+  uptime90d: Record<string, Record<string, Status>>,
+  serviceKey: string,
+): number {
+  const dayKeys = Object.keys(uptime90d).sort();
+  if (dayKeys.length === 0) return 0;
+  let operationalDays = 0;
+  for (const day of dayKeys) {
+    if (uptime90d[day]?.[serviceKey] === 'operational') operationalDays += 1;
+  }
+  return (operationalDays / dayKeys.length) * 100;
 }
 
 export default function StatusPage() {
@@ -75,7 +90,10 @@ export default function StatusPage() {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div
+        className="chq-page min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] flex items-center justify-center"
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
       </div>
     );
@@ -91,12 +109,15 @@ export default function StatusPage() {
   const dayKeys = Object.keys(d.uptime_90d ?? {}).sort();
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div
+      className="chq-page min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
       <header className="bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] px-6 py-4">
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
           CenterHQ - {pickLocale('حالة المنصة', 'Platform Status')}
         </h1>
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex flex-wrap items-center gap-3 mt-2">
           <StatusIcon status={d.overall as Status} />
           <span className="text-[var(--color-text-secondary)]">
             {StatusLabel({ status: d.overall as Status, locale })}
@@ -109,12 +130,13 @@ export default function StatusPage() {
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
+          <ThemeToggle />
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto p-6 space-y-8">
         {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-red-700">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive text-sm">
             {error}
           </div>
         )}
@@ -135,15 +157,16 @@ export default function StatusPage() {
                   <span className="font-medium text-[var(--color-text-primary)]">
                     {locale === 'ar' ? labelAr : labelEn}
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
                     <StatusIcon status={status} />
+                    <span className="text-sm tabular-nums text-[var(--color-text-primary)] font-medium">
+                      {formatPercent(computeUptimePercent90d(d.uptime_90d ?? {}, key), locale)}
+                    </span>
                     <span className="text-sm text-[var(--color-text-secondary)]">
                       {StatusLabel({ status, locale })}
                     </span>
                     {svc?.response_time_ms != null && (
-                      <span className="text-xs text-slate-400">
-                        {svc.response_time_ms}ms
-                      </span>
+                      <span className="text-xs text-[var(--color-text-muted)]">{svc.response_time_ms}ms</span>
                     )}
                   </div>
                 </div>
@@ -162,7 +185,7 @@ export default function StatusPage() {
             <div className="flex gap-0.5 min-w-max">
               {dayKeys.map((day) => (
                 <div key={day} className="flex flex-col gap-0.5" title={day}>
-                  {SERVICES.map(({ key }) => {
+                  {SERVICES.map(({ key, labelAr, labelEn }) => {
                     const s = (d.uptime_90d?.[day]?.[key] ?? 'unknown') as Status;
                     const color =
                       s === 'operational'
@@ -171,18 +194,29 @@ export default function StatusPage() {
                           ? 'bg-amber-500'
                           : s === 'outage'
                             ? 'bg-red-500'
-                            : 'bg-slate-200';
+                            : 'bg-[var(--color-border-subtle)]';
                     return (
                       <div
                         key={`${day}-${key}`}
-                        className={`w-2 h-2 rounded-sm ${color}`}
+                        className={`w-2 h-2 rounded-sm shrink-0 ${color}`}
+                        title={`${day} · ${pickLocale(labelAr, labelEn)} · ${StatusLabel({ status: s, locale })}`}
                       />
                     );
                   })}
                 </div>
               ))}
             </div>
-            <div className="flex gap-4 mt-3 text-xs text-[var(--color-text-secondary)]">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 text-sm text-[var(--color-text-primary)]">
+              {SERVICES.map(({ key, labelAr, labelEn }) => (
+                <span key={key} className="inline-flex items-center gap-2">
+                  <span className="font-medium">{locale === 'ar' ? labelAr : labelEn}</span>
+                  <span className="tabular-nums text-[var(--color-text-secondary)]">
+                    {formatPercent(computeUptimePercent90d(d.uptime_90d ?? {}, key), locale)}
+                  </span>
+                </span>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-4 mt-3 text-xs text-[var(--color-text-secondary)]">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-sm bg-green-500" />
                 {pickLocale('يعمل', 'Operational')}
@@ -195,6 +229,10 @@ export default function StatusPage() {
                 <span className="w-2 h-2 rounded-sm bg-red-500" />
                 {pickLocale('تعطل', 'Outage')}
               </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-sm bg-[var(--color-border-subtle)]" />
+                {pickLocale('لا بيانات', 'No data')}
+              </span>
             </div>
           </div>
         </section>
@@ -203,7 +241,7 @@ export default function StatusPage() {
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
             {locale === 'ar' ? `آخر ${formatNumber(5, locale)} حوادث` : 'Last 5 Incidents'}
           </h2>
-          <div className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] divide-y divide-slate-100">
+          <div className="bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] divide-y divide-[var(--color-border-subtle)]">
             {d.incidents.length === 0 ? (
               <p className="p-6 text-[var(--color-text-secondary)] text-center">
                 {pickLocale('لا توجد حوادث مسجلة', 'No incidents recorded')}
@@ -220,7 +258,9 @@ export default function StatusPage() {
                       )}
                     </p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-red-100 text-red-700' : inc.severity === 'major' ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-destructive/15 text-destructive' : inc.severity === 'major' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
+                  >
                     {inc.severity}
                   </span>
                 </div>
