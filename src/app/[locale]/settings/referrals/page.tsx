@@ -246,6 +246,9 @@ export default function SettingsReferralsPage() {
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('yourCode')}</p>
                 <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">{referralCode || '-'}</p>
+                {user?.role === 'super_admin' && !referralCode ? (
+                  <p className="mt-2 text-sm text-[var(--color-text-secondary)] max-w-sm">{tRef('noCodeSuperAdmin')}</p>
+                ) : null}
                 {referralCode ? (
                   <button
                     type="button"

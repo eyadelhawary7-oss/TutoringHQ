@@ -1130,6 +1130,7 @@
   },
   "referrals": {
     "title": "Referrals",
+    "noCodeSuperAdmin": "Super admins do not have referral codes",
     "yourCode": "Your Code",
     "copyCode": "Copy Code",
     "shareLink": "Copy Link",
@@ -2171,7 +2172,7 @@
     "monthlyFee": "Fee Per Lesson",
     "assistants": "Assistants",
     "inviteByPhone": "Invite by Phone",
-    "invitePhone": "Assistant Phone Number",
+    "invitePhone": "Phone Number",
     "role": "Role",
     "admin": "Admin",
     "assistant": "Assistant",

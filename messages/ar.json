@@ -4435,6 +4435,7 @@
   },
   "referrals": {
     "title": "الإحالات",
+    "noCodeSuperAdmin": "المشرفون لا يملكون رموز إحالة",
     "yourCode": "رمزك",
     "copyCode": "نسخ الكود",
     "shareLink": "نسخ الرابط",
