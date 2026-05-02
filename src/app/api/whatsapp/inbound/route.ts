@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { normalizeWhatsAppNumber, sendWhatsAppMessage } from '@/lib/whatsapp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { formatCurrency } from '@/lib/formatNumber';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,7 +39,7 @@ const FAQ_PATTERNS = [
   },
   {
     triggers: ['باقة الواتساب', 'whatsapp pack', 'إشعارات الأهالي'],
-    response: 'باقة واتساب الأهالي بـ 12 جنيه/ولي أمر/شهر. فعّلها من الإعدادات > الإشعارات.',
+    response: `باقة واتساب الأهالي بـ ${formatCurrency(12, 'ar')}/ولي أمر/شهر. فعّلها من الإعدادات > الإشعارات.`,
     key: 'wa_pack',
   },
   {
@@ -49,7 +50,7 @@ const FAQ_PATTERNS = [
   },
   {
     triggers: ['السعر', 'price', 'اشتراك', 'باقات'],
-    response: 'باقاتنا تبدأ من 1,999 جنيه/شهر. زور centerhq.app لتفاصيل كل باقة.',
+    response: `باقاتنا تبدأ من ${formatCurrency(1999, 'ar')}/شهر. زور centerhq.app لتفاصيل كل باقة.`,
     key: 'pricing',
   },
   {

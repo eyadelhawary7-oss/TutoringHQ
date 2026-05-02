@@ -2695,7 +2695,7 @@
     "goToStudents": "الذهاب لصفحة الطلاب",
     "sendAnnouncement": "إرسال إعلان للأهالي",
     "announcementSectionTitle": "إرسال إعلان",
-    "announcementBalanceRemaining": "يتبقى {remaining} جنيه من رصيد الإعلانات",
+    "announcementBalanceRemaining": "يتبقى {remaining} من رصيد الإعلانات",
     "announcementNoBalance": "لا يوجد رصيد متبقٍ للإعلانات. تواصل مع الدعم للتعبئة أو انتظر تجديد الحد الشهري.",
     "announcementMonthlyUsage": "{used} من {max} إعلانات هذا الشهر",
     "announcementMonthlyLimit": "وصلت للحد الأقصى: إعلانان شهرياً فقط.",

@@ -5,7 +5,7 @@
  * Consider creating chq_renewal_* templates in Meta Business Manager.
  */
 
-import { formatDate as formatDateDisplay, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate as formatDateDisplay } from '@/lib/formatNumber';
 import { sendFreeformMessage, normalizePhone } from '../client';
 
 const WA_AR = 'ar';
@@ -33,9 +33,8 @@ export interface CenterForRenewal {
   summer_mode?: boolean;
 }
 
-function formatAmount(amount: number | null): string {
-  if (amount == null || isNaN(amount)) return formatNumber(0, WA_AR);
-  return formatNumber(Number(amount), WA_AR, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+function formatMonthlyFee(amount: number | null): string {
+  return formatCurrency(Number(amount ?? 0), WA_AR);
 }
 
 function formatRenewalDate(dateStr: string | null): string {
@@ -53,22 +52,22 @@ function formatRenewalDate(dateStr: string | null): string {
 
 const STAGE_MESSAGES: Record<RenewalStage, (c: CenterForRenewal) => string> = {
   T_MINUS_7: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nشكراً لثقتكم!`,
+    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nشكراً لثقتكم!`,
 
   T_MINUS_3: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_ZERO: (c) =>
-    `مرحباً ${c.name} 👋\n\nموعد تجديد اشتراك CenterHQ اليوم.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع اليوم لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nموعد تجديد اشتراك CenterHQ اليوم.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع اليوم لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_PLUS_3: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير: اشتراك CenterHQ متأخر 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع في أقرب وقت لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير: اشتراك CenterHQ متأخر 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع في أقرب وقت لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_PLUS_7: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير عاجل: اشتراك CenterHQ متأخر 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير عاجل: اشتراك CenterHQ متأخر 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_PLUS_9: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير نهائي: اشتراك CenterHQ متأخر 9 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatAmount(c.subscription_monthly_fee)} جنيه\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nسيتم إيقاف الخدمة قريباً. يرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير نهائي: اشتراك CenterHQ متأخر 9 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nسيتم إيقاف الخدمة قريباً. يرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 };
 
 export interface SendRenewalReminderParams {
@@ -114,7 +113,7 @@ export async function sendRenewalSalesManagerAlert(
     return { success: false, error: 'SALES_MANAGER_PHONE not set' };
   }
 
-  const body = `⚠️ تنبيه تجديد: سنتر "${params.centerName}" متأخر ${params.daysOverdue} يوم.\nموعد التجديد: ${formatRenewalDate(params.renewalDate)}\nMRR: ${formatAmount(params.monthlyFee)} ج.م\nيرجى المتابعة.`;
+  const body = `⚠️ تنبيه تجديد: سنتر "${params.centerName}" متأخر ${params.daysOverdue} يوم.\nموعد التجديد: ${formatRenewalDate(params.renewalDate)}\nMRR: ${formatMonthlyFee(params.monthlyFee)}\nيرجى المتابعة.`;
   const result = await sendFreeformMessage(params.centerId, salesPhone, body);
   return { success: result.success, error: result.error };
 }

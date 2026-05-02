@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { dateInNDays } from '@/lib/parentPack';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatNumber, formatCurrency } from '@/lib/formatNumber';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 const PLATFORM_URL = 'https://centerhq.app';
@@ -283,7 +283,7 @@ export async function sendUpgradeNudge(
 
     const greet = ownerName.trim() || centerName.trim();
     const body = `مرحباً ${greet}، وصل مركز ${centerName} إلى ${studentCount} طالب من أصل ${cap}.
-فكّر في الترقية إلى خطة ${nextPlan} بـ ${nextPlanPrice} جنيه/شهر
+فكّر في الترقية إلى خطة ${nextPlan} بـ ${nextPlanPrice}/شهر
 لاستيعاب المزيد من الطلاب. تواصل معنا للترقية.`;
 
     const ok = await postWhatsappTextMessage({ toDigits: to, body });
@@ -384,7 +384,7 @@ export async function sendPaymentRetry(
     const to = digitsOnly(ownerPhone ?? '');
     if (!to) return { skipped: true };
 
-    const amountStr = formatNumber(amount, 'ar');
+    const amountStr = formatCurrency(amount, 'ar');
 
     if (isUrgent) {
       try {
@@ -405,7 +405,7 @@ export async function sendPaymentRetry(
           toDigits: to,
           body:
             `تنبيه عاجل: يرجى السداد خلال يومين لتجنب إيقاف الخدمة.\n` +
-            `المبلغ: ${amountStr} ج.م\n` +
+            `المبلغ: ${amountStr}\n` +
             `رابط الدفع:\n${paymentLink}`,
         });
         return ok ? { success: true } : { error: true };
@@ -435,7 +435,7 @@ export async function sendPaymentRetry(
       }
     }
 
-    const body = `مرحباً ${ownerName || '—'}، فاتورة مركز ${centerName || '—'} بقيمة ${amountStr} جنيه لم تُسدَّد بعد. اضغط هنا للدفع: ${paymentLink}`;
+    const body = `مرحباً ${ownerName || '—'}، فاتورة مركز ${centerName || '—'} بقيمة ${amountStr} لم تُسدَّد بعد. اضغط هنا للدفع: ${paymentLink}`;
     try {
       const ok = await postWhatsappTextMessage({ toDigits: to, body });
       return ok ? { success: true } : { error: true };
@@ -878,7 +878,7 @@ export async function sendWeeklyReport(
 
     const activeStr = formatNumber(activeStudents, 'ar');
     const sessionsStr = formatNumber(sessions, 'ar');
-    const revenueStr = `${formatNumber(revenue, 'ar')} جنيه`;
+    const revenueStr = formatCurrency(revenue, 'ar');
     const newStr = formatNumber(newStudents, 'ar');
 
     const ok = await postWhatsappTemplate({

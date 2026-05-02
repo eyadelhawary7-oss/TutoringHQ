@@ -5017,7 +5017,7 @@
     "goToStudents": "Go to Students",
     "sendAnnouncement": "Send Announcement to Parents",
     "announcementSectionTitle": "Send Announcement",
-    "announcementBalanceRemaining": "{remaining} EGP remaining on your announcement allowance",
+    "announcementBalanceRemaining": "{remaining} remaining on your announcement allowance",
     "announcementNoBalance": "No balance left on your announcement allowance. Contact support to top up or wait until your cap resets.",
     "announcementMonthlyUsage": "{used} of {max} announcements used this month",
     "announcementMonthlyLimit": "You have reached the maximum of 2 announcements for this month.",

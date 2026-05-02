@@ -274,7 +274,7 @@ export default function WhatsAppPackClient({
               <div>
                 <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('whatsapp.pendingBalance')}</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums text-[var(--color-text-primary)]">
-                  {formatNumber(pendingBal, locale)} EGP
+                  {formatCurrency(pendingBal, locale)}
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">{t('whatsapp.pendingBalanceNote')}</p>
               </div>
@@ -556,7 +556,7 @@ export default function WhatsAppPackClient({
 
           <p className="text-sm font-medium text-[var(--color-text-primary)]">
             {t('whatsapp.announcementBalanceRemaining', {
-              remaining: formatNumber(remainingAllowance, locale),
+              remaining: formatCurrency(remainingAllowance, locale),
             })}
           </p>
           {remainingAllowance <= 0 ? (

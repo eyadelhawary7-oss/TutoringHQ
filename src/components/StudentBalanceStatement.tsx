@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale } from 'next-intl';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 export interface StudentBalanceStatementProps {
@@ -79,7 +79,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
         <thead>
           <tr className="border-b border-black">
             <th className="text-right py-1">التاريخ</th>
-            <th className="text-right py-1">المبلغ (جنيه)</th>
+            <th className="text-right py-1">المبلغ (ج.م)</th>
             <th className="text-right py-1">الطريقة</th>
             <th className="text-right py-1">الحالة</th>
             <th className="text-right py-1">سجّله</th>
@@ -106,7 +106,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
                   })}
                 </td>
                 <td className="py-1 font-bold font-mono text-right">
-                  {formatNumber(p.amount, locale)}
+                  {formatCurrency(p.amount, locale)}
                 </td>
                 <td className="py-1">{p.method}</td>
                 <td className="py-1">
@@ -121,9 +121,9 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
 
       {/* Summary */}
       <div className="border-t-2 border-black pt-3 text-right font-bold space-y-1">
-        <div>إجمالي المدفوع: {formatNumber(confirmedTotal, locale)} جنيه</div>
-        <div>إجمالي المعلق: {formatNumber(pendingTotal, locale)} جنيه</div>
-        <div>الرصيد الحالي: {formatNumber(student.balance_due, locale)} جنيه</div>
+        <div>إجمالي المدفوع: {formatCurrency(confirmedTotal, locale)}</div>
+        <div>إجمالي المعلق: {formatCurrency(pendingTotal, locale)}</div>
+        <div>الرصيد الحالي: {formatCurrency(student.balance_due, locale)}</div>
       </div>
 
       {/* Footer */}

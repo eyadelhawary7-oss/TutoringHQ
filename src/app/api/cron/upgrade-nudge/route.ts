@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { sendUpgradeNudge } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { PLANS, type PlanKey } from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
     if (!nextKey) continue;
 
     const nextPlanAr = NEXT_PLAN_AR[nextKey];
-    const nextPlanPrice = formatNumber(PLANS[nextKey as PlanKey].quarterlyAllIn, 'ar');
+    const nextPlanPrice = formatCurrency(PLANS[nextKey as PlanKey].quarterlyAllIn, 'ar');
     if (!nextPlanAr || !nextPlanPrice) continue;
 
     const activeStudentCount = countByCenter.get(c.id) ?? 0;
