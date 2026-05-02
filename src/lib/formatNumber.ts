@@ -1,29 +1,43 @@
 /**
  * Locale rule for all numeric and date/time display:
- * - `locale === 'ar'` → Arabic-Indic numerals via `Intl` with `ar-EG`
+ * - `locale === 'ar'` → Arabic-Indic numerals (`numberingSystem: 'arab'`) with `ar-EG`
  * - otherwise → Western numerals via `en-US`
  *
  * Use `useLocale()` from next-intl in client components, or `getLocale()`
  * from `next-intl/server` in server components / route handlers when the
  * viewer’s locale is known; otherwise pass `'en'` for operator-only output.
  */
+function intlLocale(locale: string): string {
+  return locale === 'ar' ? 'ar-EG' : 'en-US';
+}
+
 export function formatNumber(
   value: number,
   locale: string,
   options?: Intl.NumberFormatOptions,
 ): string {
-  const l = locale === 'ar' ? 'ar-EG' : 'en-US';
-  return value.toLocaleString(l, options);
+  const l = intlLocale(locale);
+  const opts =
+    locale === 'ar'
+      ? { numberingSystem: 'arab' as const, ...options }
+      : { ...options };
+  return value.toLocaleString(l, opts);
 }
 
 export function formatCurrency(value: number, locale: string): string {
-  const l = locale === 'ar' ? 'ar-EG' : 'en-US';
-  return value.toLocaleString(l) + (locale === 'ar' ? ' ج.م' : ' EGP');
+  const l = intlLocale(locale);
+  const opts = locale === 'ar' ? ({ numberingSystem: 'arab' } as Intl.NumberFormatOptions) : undefined;
+  return value.toLocaleString(l, opts) + (locale === 'ar' ? ' ج.م' : ' EGP');
 }
 
 export function formatPercent(value: number, locale: string): string {
-  const l = locale === 'ar' ? 'ar-EG' : 'en-US';
-  const num = value.toLocaleString(l, { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+  const l = intlLocale(locale);
+  const numOpts: Intl.NumberFormatOptions = {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    ...(locale === 'ar' ? { numberingSystem: 'arab' as const } : {}),
+  };
+  const num = value.toLocaleString(l, numOpts);
   return locale === 'ar' ? `${num}\u066A` : `${num}%`;
 }
 

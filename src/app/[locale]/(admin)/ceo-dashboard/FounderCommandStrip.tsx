@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Clock, MessageSquare, AlertTriangle, Activity, CheckCircle } from 'lucide-react';
 import type { CommandStripResponse, ActionQueueItem } from '@/types/founder-dash';
 import { formatNumber, formatDate, formatPercent } from '@/lib/formatNumber';
+import { localizeCeoActionQueueTitle } from '@/lib/ceoActionQueueTitle';
 
 const PLAN_KEYS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 
@@ -183,7 +184,9 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                         {typeLabels[item.type] ?? item.type}
                       </span>
                     </div>
-                    <p className="font-semibold text-[var(--color-text-primary)]">{item.title}</p>
+                    <p className="font-semibold text-[var(--color-text-primary)]">
+                      {localizeCeoActionQueueTitle(item.title, locale, t)}
+                    </p>
                     {item.subtitle != null && item.subtitle !== '' && (
                       <p className="text-sm text-[var(--color-text-secondary)]">{item.subtitle}</p>
                     )}

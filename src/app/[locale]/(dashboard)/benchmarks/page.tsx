@@ -228,7 +228,7 @@ export default function BenchmarksPage() {
                 />
               </div>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-                {t(descKey, { percentile: formatNumber(pct, locale) })}
+                {t(descKey, { percentile: formatPercent(pct, locale) })}
               </p>
               {(() => {
                 const isMoney = key === 'revenue';

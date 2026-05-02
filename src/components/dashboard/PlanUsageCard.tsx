@@ -1,6 +1,7 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatPercent } from '@/lib/formatNumber';
 import { Link } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 
@@ -21,7 +22,7 @@ interface PlanUsageCardProps {
 
 export default function PlanUsageCard({ plan, weeklyUniqueStudents, studentLimit }: PlanUsageCardProps) {
   const t = useTranslations('dashboard');
-  const tSettings = useTranslations('settings');
+  const locale = useLocale();
   const { user } = useUser();
   const isOwner = user?.role === 'owner' || user?.role === 'super_admin';
 
@@ -48,7 +49,7 @@ export default function PlanUsageCard({ plan, weeklyUniqueStudents, studentLimit
         {t('studentsThisWeek', {
           current: weeklyUniqueStudents,
           max: studentLimit,
-          pct: String(pct),
+          pct: formatPercent(pct, locale),
         })}
       </p>
       <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
