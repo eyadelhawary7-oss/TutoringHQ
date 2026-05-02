@@ -1,14 +1,19 @@
 /**
  * Locale rule for all numeric and date/time display:
- * - `locale === 'ar'` → Arabic-Indic numerals (`numberingSystem: 'arab'`) with `ar-EG`
+ * - Arabic (`ar`, `ar-EG`, …) → Arabic-Indic numerals (`numberingSystem: 'arab'`) with `ar-EG`
+ *   (Egypt); never `ar-AE` etc., so amounts are never formatted with Gulf currency symbols.
  * - otherwise → Western numerals via `en-US`
  *
  * Use `useLocale()` from next-intl in client components, or `getLocale()`
  * from `next-intl/server` in server components / route handlers when the
  * viewer’s locale is known; otherwise pass `'en'` for operator-only output.
  */
+function isArabicLocale(locale: string): boolean {
+  return locale === 'ar' || locale.startsWith('ar-');
+}
+
 function intlLocale(locale: string): string {
-  return locale === 'ar' ? 'ar-EG' : 'en-US';
+  return isArabicLocale(locale) ? 'ar-EG' : 'en-US';
 }
 
 export function formatNumber(
@@ -17,26 +22,27 @@ export function formatNumber(
   options?: Intl.NumberFormatOptions,
 ): string {
   const l = intlLocale(locale);
-  const opts =
-    locale === 'ar'
-      ? { numberingSystem: 'arab' as const, ...options }
-      : { ...options };
+  const opts = isArabicLocale(locale)
+    ? { numberingSystem: 'arab' as const, ...options }
+    : { ...options };
   return value.toLocaleString(l, opts);
 }
 
+/** Egyptian pound display for all Arabic UI (product is EGP-only). */
+const EGP_AR_SUFFIX = '\u062c.\u0645';
+
 export function formatCurrency(value: number, locale: string): string {
-  const isAr = locale === 'ar' || locale.startsWith('ar');
+  const isAr = isArabicLocale(locale);
   if (!Number.isFinite(value)) {
-    return isAr ? '٠ ج.م' : '0 EGP';
+    return isAr ? `\u0660 ${EGP_AR_SUFFIX}` : '0 EGP';
   }
-  const l = intlLocale(locale);
   if (isAr) {
-    const num = new Intl.NumberFormat(l, {
+    const num = new Intl.NumberFormat('ar-EG', {
       numberingSystem: 'arab',
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(value);
-    return `${num} ج.م`;
+    return `${num} ${EGP_AR_SUFFIX}`;
   }
   // /en/ spec: amount first, then ISO code (not "EGP 900" from Intl currency order).
   const num = new Intl.NumberFormat('en-US', {
@@ -48,7 +54,7 @@ export function formatCurrency(value: number, locale: string): string {
 
 export function formatPercent(value: number, locale: string): string {
   const l = intlLocale(locale);
-  const isAr = locale === 'ar' || locale.startsWith('ar');
+  const isAr = isArabicLocale(locale);
   const p = Number(value);
   const safe = Number.isFinite(p) ? p : 0;
   const fraction = safe / 100;
@@ -75,7 +81,7 @@ export function formatDate(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  const l = locale === 'ar' ? 'ar-EG' : 'en-US';
+  const l = isArabicLocale(locale) ? 'ar-EG' : 'en-US';
   const opts: Intl.DateTimeFormatOptions =
     options ?? {
       day: 'numeric',
@@ -91,7 +97,7 @@ export function formatDateTime(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  const l = locale === 'ar' ? 'ar-EG' : 'en-US';
+  const l = isArabicLocale(locale) ? 'ar-EG' : 'en-US';
   return d.toLocaleString(l, options);
 }
 
@@ -110,7 +116,7 @@ function hour12AndPeriodTo24(hour12: number, period: string): number {
  * or 12h strings (e.g. "9:00 AM", "1:00 PM") including Arabic ص/م suffixes.
  */
 export function formatTime(timeInput: string | Date, locale: string): string {
-  const l = locale === 'ar' ? 'ar-EG' : 'en-US';
+  const l = isArabicLocale(locale) ? 'ar-EG' : 'en-US';
 
   if (timeInput instanceof Date) {
     if (Number.isNaN(timeInput.getTime())) return '';
@@ -145,7 +151,7 @@ export function formatTime(timeInput: string | Date, locale: string): string {
     return d.toLocaleTimeString(l, { hour: 'numeric', minute: '2-digit', hour12: true });
   }
 
-  if (locale === 'ar') {
+  if (isArabicLocale(locale)) {
     return timeStr
       .replace(/AM/g, 'ص')
       .replace(/PM/g, 'م')
