@@ -67,9 +67,19 @@ export function formatDateTime(
   return d.toLocaleString(l, options);
 }
 
+/** Map 12h clock + period to 24h hour (for Date construction). */
+function hour12AndPeriodTo24(hour12: number, period: string): number {
+  const p = period.trim();
+  const isPM = p === 'PM' || p === 'pm' || p === 'م';
+  const isAM = p === 'AM' || p === 'am' || p === 'ص';
+  if (!isPM && !isAM) return hour12;
+  if (isAM) return hour12 === 12 ? 0 : hour12;
+  return hour12 === 12 ? 12 : hour12 + 12;
+}
+
 /**
  * Locale-aware time for display. Accepts ISO strings, "HH:MM", "HH:MM:SS",
- * or 12h English strings (e.g. "9:00 AM") for AM/PM localization in Arabic.
+ * or 12h strings (e.g. "9:00 AM", "1:00 PM") including Arabic ص/م suffixes.
  */
 export function formatTime(timeInput: string | Date, locale: string): string {
   const l = locale === 'ar' ? 'ar-EG' : 'en-US';
@@ -95,9 +105,15 @@ export function formatTime(timeInput: string | Date, locale: string): string {
 
   const hm = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
   if (hm) {
-    const hh = parseInt(hm[1]!, 10);
     const mm = parseInt(hm[2]!, 10);
-    const d = new Date(2000, 0, 1, hh, mm, 0);
+    const ss = hm[3] != null ? parseInt(hm[3]!, 10) : 0;
+    const rest = timeStr.slice(hm[0].length).trim();
+    const periodMatch = rest.match(/^(AM|PM|am|pm|ص|م)\s*$/);
+    let hour24 = parseInt(hm[1]!, 10);
+    if (periodMatch) {
+      hour24 = hour12AndPeriodTo24(hour24, periodMatch[1]!);
+    }
+    const d = new Date(2000, 0, 1, hour24, mm, ss);
     return d.toLocaleTimeString(l, { hour: 'numeric', minute: '2-digit', hour12: true });
   }
 
