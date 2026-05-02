@@ -8,10 +8,10 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import {
   Building2,
-  DollarSign,
   TrendingUp,
   TrendingDown,
   Users,
+  Wallet,
   CreditCard,
   Gift,
   AlertTriangle,
@@ -41,7 +41,7 @@ import {
 import { ChartTooltip } from '@/components/charts/ChartTooltip';
 import { CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from '@/components/charts/ChartTokens';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
-import { formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
 
 interface DashboardData {
   totalActiveCenters: number;
@@ -167,7 +167,7 @@ function CeoFinancialsBody({
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] card-shadow p-4 border-s-4 border-teal-500">
             <p className="text-xs text-[var(--color-text-muted)]">{tFinancials('financials.cardTotalTitle')}</p>
             <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
-              {formatNumber(nf(financials.currentMonth?.totalRevenue), locale)} {tCommon('egp')}
+              {formatCurrency(nf(financials.currentMonth?.totalRevenue), locale)}
             </p>
             <div className="mt-2 space-y-0.5 text-[11px] text-[var(--color-text-muted)]">
               <p>
@@ -305,19 +305,19 @@ function CeoFinancialsBody({
               <div>
                 <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelRevenueAllTime')}</p>
                 <p className="font-mono text-[var(--color-text-primary)]">
-                  {formatNumber(nf(financials.cardOrders?.revenueAllTime), locale)} EGP
+                  {formatCurrency(nf(financials.cardOrders?.revenueAllTime), locale)}
                 </p>
               </div>
               <div>
                 <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelRevenueThisMonth')}</p>
                 <p className="font-mono text-[var(--color-text-primary)]">
-                  {formatNumber(nf(financials.cardOrders?.revenueThisMonth), locale)} EGP
+                  {formatCurrency(nf(financials.cardOrders?.revenueThisMonth), locale)}
                 </p>
               </div>
               <div>
                 <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelAverageOrderValue')}</p>
                 <p className="font-mono text-[var(--color-text-primary)]">
-                  {formatNumber(nf(financials.cardOrders?.averageOrderValue), locale)} EGP
+                  {formatCurrency(nf(financials.cardOrders?.averageOrderValue), locale)}
                 </p>
               </div>
             </div>
@@ -346,7 +346,7 @@ function CeoFinancialsBody({
             <div>
               <p className="text-[var(--color-text-muted)] text-xs">{tFinancials('financials.labelPackMrr')}</p>
               <p className="font-mono text-[var(--color-text-primary)]">
-                {formatNumber(nf(financials.whatsappPack?.packMRR), locale)} {tCommon('egp')}
+                {formatCurrency(nf(financials.whatsappPack?.packMRR), locale)}
               </p>
             </div>
             <div>
@@ -380,7 +380,6 @@ export default function CeoDashboardClient({
   rangeSelector: ReactNode;
 }) {
   const t = useTranslations('ceoDashboard');
-  const tCommon = useTranslations('common');
   const locale = useLocale();
   const { setHideShell } = useLayout();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -551,8 +550,8 @@ export default function CeoDashboardClient({
 
   const metrics = [
     { label: t('totalActiveCenters'), value: fmt(d.totalActiveCenters), icon: Building2 },
-    { label: t('mrr'), value: `${fmt(d.mrr)} ${tCommon('egp')}`, icon: DollarSign },
-    { label: t('arr'), value: `${fmt(d.arr)} ${tCommon('egp')}`, icon: TrendingUp },
+    { label: t('mrr'), value: formatCurrency(nf(d.mrr), locale), icon: Wallet },
+    { label: t('arr'), value: formatCurrency(nf(d.arr), locale), icon: TrendingUp },
     {
       label: t('netNew30d'),
       value: nf(d.netNew30d) >= 0 ? `+${fmt(d.netNew30d)}` : String(nf(d.netNew30d)),
@@ -614,12 +613,12 @@ export default function CeoDashboardClient({
         <section className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6 mb-8">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('briefingPreview')}</h2>
           <div className="space-y-2 text-sm text-[var(--color-text-secondary)]">
-            <p>{t('activeCenters')}: {d.totalActiveCenters}</p>
+            <p>{t('activeCenters')}: {fmt(d.totalActiveCenters)}</p>
             <p>
-              {t('mrr')}: {fmt(d.mrr)} {tCommon('egp')}
+              {t('mrr')}: {formatCurrency(nf(d.mrr), locale)}
             </p>
-            <p>{t('newYesterday')}: {d.newYesterday}</p>
-            <p>{t('churned')}: {d.churned}</p>
+            <p>{t('newYesterday')}: {fmt(d.newYesterday)}</p>
+            <p>{t('churned')}: {fmt(d.churned)}</p>
             <p className="flex items-center gap-1">
               {t('atRisk')}: {fmt(d.atRisk)}
               {nf(d.atRisk) > 0 && <AlertTriangle className="h-4 w-4 text-amber-500" />}

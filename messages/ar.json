@@ -3568,9 +3568,9 @@
   "ceoDashboard": {
     "title": "لوحة معلومات الرئيس التنفيذي",
     "totalActiveCenters": "المراكز النشطة",
-    "mrr": "MRR",
+    "mrr": "إيرادات شهرية متكررة",
     "arr": "ايه آر آر",
-    "netNew30d": "30 يومًا صافي جديد",
+    "netNew30d": "٣٠ يومًا صافي جديد",
     "monthlyChurnRate": "معدل الفقدان الشهري",
     "collectionRate": "معدل التحصيل",
     "referralRate": "معدل الإحالة",
