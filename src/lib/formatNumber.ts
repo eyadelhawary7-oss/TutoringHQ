@@ -53,12 +53,14 @@ export function formatPercent(value: number, locale: string): string {
   const safe = Number.isFinite(p) ? p : 0;
   const fraction = safe / 100;
   if (isAr) {
-    return new Intl.NumberFormat(l, {
+    const s = new Intl.NumberFormat(l, {
       numberingSystem: 'arab',
       style: 'percent',
       maximumFractionDigits: 2,
       minimumFractionDigits: 0,
     }).format(fraction);
+    // Intl often emits ASCII U+0025; Arabic UI expects U+066A (٪).
+    return s.replace(/%/g, '\u066A');
   }
   return new Intl.NumberFormat('en-US', {
     style: 'percent',

@@ -248,7 +248,10 @@ export default function BenchmarksPage() {
                     showGrid={false}
                     radius={6}
                     prefix={isMoney ? 'EGP ' : ''}
-                    suffix={isMoney ? '' : locale === 'ar' ? '\u066A' : '%'}
+                    suffix=""
+                    tooltipValueFormatter={
+                      isMoney ? undefined : (v) => formatPercent(Number(v), locale)
+                    }
                   />
                 );
               })()}

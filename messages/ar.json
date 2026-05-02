@@ -2971,7 +2971,7 @@
     "resultPending": "الدفع الرقمي معلق"
   },
   "benchmarks": {
-    "title": "الدول المعيارية",
+    "title": "المقارنة المرجعية",
     "subtitle": "قارن أداء مركزك مع مراكز منطقتك",
     "insufficientData": "We need {count} more centers in your area to enable comparison",
     "noDistrict": "Please set your district in settings to enable benchmark comparison",
