@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
@@ -11,6 +11,12 @@ import { formatDate, formatNumber } from '@/lib/formatNumber';
 function maskCenterName(name: string): string {
   if (!name || name.length < 2) return '***';
   return name.slice(0, 2) + '***';
+}
+
+function normalizeInstapayDigits(raw: string): string | null {
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length !== 11 || !digits.startsWith('01')) return null;
+  return digits;
 }
 
 function formatPeriodMonth(periodMonth: string, loc: string): string {
@@ -51,6 +57,7 @@ export default function ReferralsPage() {
   const { user } = useUser();
   const [data, setData] = useState<{
     referralCode: string;
+    instapayNumber: string;
     totalEarned: number;
     available: number;
     pending: number;
@@ -64,6 +71,8 @@ export default function ReferralsPage() {
   const [codeCopied, setCodeCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [payoutAmount, setPayoutAmount] = useState('');
+  const [instapayDraft, setInstapayDraft] = useState('');
+  const [withdrawalOpen, setWithdrawalOpen] = useState(false);
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
   const [payoutError, setPayoutError] = useState<string | null>(null);
 
@@ -80,6 +89,7 @@ export default function ReferralsPage() {
         const json = await res.json();
         setData({
           referralCode: json.referralCode ?? '',
+          instapayNumber: typeof json.instapayNumber === 'string' ? json.instapayNumber : '',
           totalEarned: json.totalEarned ?? 0,
           available: json.available ?? 0,
           pending: json.pending ?? 0,
@@ -116,6 +126,11 @@ export default function ReferralsPage() {
       );
       return;
     }
+    const instapay = normalizeInstapayDigits(instapayDraft);
+    if (!instapay) {
+      setPayoutError(t('instapayInvalid'));
+      return;
+    }
     setPayoutError(null);
     setPayoutSubmitting(true);
     try {
@@ -131,18 +146,28 @@ export default function ReferralsPage() {
         },
         body: JSON.stringify({
           amount_requested: amount,
-          payment_method: 'bank_transfer',
+          payment_method: 'instapay',
+          payment_details: { instapay_number: instapay },
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? 'Request failed');
       setPayoutAmount('');
+      setInstapayDraft('');
+      setWithdrawalOpen(false);
       await fetchData();
     } catch (err) {
       setPayoutError(err instanceof Error ? err.message : t('payoutGenericError'));
     } finally {
       setPayoutSubmitting(false);
     }
+  };
+
+  const openWithdrawalModal = () => {
+    setPayoutError(null);
+    setInstapayDraft((data?.instapayNumber ?? '').replace(/\D/g, ''));
+    setPayoutAmount(data?.available != null && data.available > 0 ? String(data.available) : '');
+    setWithdrawalOpen(true);
   };
 
   const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://centerhq.app';
@@ -205,6 +230,48 @@ export default function ReferralsPage() {
             <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100 font-mono tabular-nums">{fmt(data?.totalEarned ?? 0)}</p>
             <p className="text-xs text-emerald-700 dark:text-emerald-300">{tc('egp')}</p>
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow p-6">
+          <h2 className="font-bold text-slate-900 dark:text-white mb-4">{t('commissionStructureTitle')}</h2>
+          <ul className="space-y-3 text-sm text-slate-700 dark:text-slate-200">
+            <li className="border-s-4 border-teal-600/80 ps-3">
+              <span className="font-medium text-slate-900 dark:text-white">{t('tier1Label')}: </span>
+              {t('tier1Value')}
+            </li>
+            <li className="border-s-4 border-teal-600/50 ps-3">
+              <span className="font-medium text-slate-900 dark:text-white">{t('tier2Label')}: </span>
+              {t('tier2Value')}
+            </li>
+            <li className="border-s-4 border-teal-600/30 ps-3">
+              <span className="font-medium text-slate-900 dark:text-white">{t('tier3Label')}: </span>
+              {t('tier3Value')}
+            </li>
+          </ul>
+          <p className="text-xs text-amber-700 dark:text-amber-400 mt-4 leading-snug">{t('tierCondition')}</p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow p-6">
+          <h2 className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            {t('requestWithdrawal')}
+          </h2>
+          <p className="text-slate-700 dark:text-slate-200 mb-4 text-sm">
+            {t('availableBalanceLine', {
+              amount: fmt(data?.available ?? 0),
+              egp: tc('egp'),
+            })}
+          </p>
+          <button
+            type="button"
+            onClick={openWithdrawalModal}
+            disabled={(data?.available ?? 0) <= 0}
+            title={(data?.available ?? 0) <= 0 ? t('noWithdrawalBalance') : undefined}
+            className="btn-lift px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t('requestWithdrawal')}
+          </button>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">{t('processingTime')}</p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow overflow-hidden">
@@ -288,7 +355,7 @@ export default function ReferralsPage() {
                 <tbody>
                   {data?.rewardHistory?.map((h) => {
                     const monthLabel = formatPeriodMonth(h.period_month, locale);
-                    let statusBadge: React.ReactNode;
+                    let statusBadge: ReactNode;
                     if (h.status === 'held') {
                       const holdDate = h.held_until ? new Date(h.held_until) : null;
                       const daysLeft = holdDate ? Math.max(0, Math.ceil((holdDate.getTime() - Date.now()) / 86400000)) : 0;
@@ -338,46 +405,6 @@ export default function ReferralsPage() {
           )}
         </div>
 
-        {(data?.available ?? 0) > 0 && (
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow p-6">
-            <h2 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <Banknote className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-              {t('requestWithdrawal')}
-            </h2>
-            <p className="text-slate-700 dark:text-slate-200 mb-3 text-sm">
-              {t('availableBalanceLine', {
-                amount: fmt(data?.available ?? 0),
-                egp: tc('egp'),
-              })}
-            </p>
-            <div className="flex flex-wrap gap-2 items-end">
-              <div>
-                <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('payoutAmountLabel')}</label>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={payoutAmount}
-                  onChange={(e) => setPayoutAmount(e.target.value)}
-                  placeholder={fmt(data?.available ?? 0)}
-                  className="w-36 px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-mono bg-[var(--color-surface-2)] text-slate-900 dark:text-white"
-                  dir="ltr"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => void handlePayoutRequest()}
-                disabled={payoutSubmitting}
-                className="btn-lift px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
-              >
-                {payoutSubmitting ? t('payoutSubmitting') : t('requestWithdrawal')}
-              </button>
-            </div>
-            {payoutError && <p className="text-red-600 dark:text-red-400 text-sm mt-2">{payoutError}</p>}
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">{t('processingTime')}</p>
-          </div>
-        )}
-
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow p-6 md:p-8">
           <h2 className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
             <Gift className="w-5 h-5 text-teal-600 dark:text-teal-400" />
@@ -424,6 +451,81 @@ export default function ReferralsPage() {
             </button>
           </div>
         </div>
+
+        {withdrawalOpen ? (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            role="presentation"
+            onClick={() => {
+              if (!payoutSubmitting) setWithdrawalOpen(false);
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="referral-withdrawal-title"
+              className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-600 bg-[var(--color-surface-1)] p-6 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 id="referral-withdrawal-title" className="font-bold text-slate-900 dark:text-white mb-4">
+                {t('withdrawalModalTitle')}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="ref-withdraw-instapay">
+                    {t('instapayNumber')}
+                  </label>
+                  <input
+                    id="ref-withdraw-instapay"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={instapayDraft}
+                    onChange={(e) => setInstapayDraft(e.target.value)}
+                    placeholder="01XXXXXXXXX"
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-mono bg-[var(--color-surface-2)] text-slate-900 dark:text-white"
+                    dir="ltr"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="ref-withdraw-amount">
+                    {t('payoutAmountLabel')}
+                  </label>
+                  <input
+                    id="ref-withdraw-amount"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={payoutAmount}
+                    onChange={(e) => setPayoutAmount(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-mono bg-[var(--color-surface-2)] text-slate-900 dark:text-white"
+                    dir="ltr"
+                  />
+                </div>
+                <p className="text-xs text-amber-700 dark:text-amber-400 leading-snug">{t('withdrawalFeeNote')}</p>
+                {payoutError ? <p className="text-sm text-red-600 dark:text-red-400">{payoutError}</p> : null}
+                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-2">
+                  <button
+                    type="button"
+                    disabled={payoutSubmitting}
+                    onClick={() => !payoutSubmitting && setWithdrawalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-slate-700/30 disabled:opacity-50"
+                  >
+                    {tc('cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={payoutSubmitting}
+                    onClick={() => void handlePayoutRequest()}
+                    className="px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
+                  >
+                    {payoutSubmitting ? t('payoutSubmitting') : t('submitWithdrawal')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow p-6">
           <h2 className="font-bold text-slate-900 dark:text-white mb-4">{t('howItWorks')}</h2>

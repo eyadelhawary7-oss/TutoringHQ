@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     const { data: center } = await ctx.supabaseAdmin
       .from('centers')
-      .select('referral_code')
+      .select('referral_code, instapay_number')
       .eq('id', centerId)
       .single();
 
@@ -149,6 +149,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       referralCode: center?.referral_code ?? '',
+      instapayNumber: typeof center?.instapay_number === 'string' ? center.instapay_number : '',
       totalEarned,
       available,
       pending,

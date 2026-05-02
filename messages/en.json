@@ -1184,7 +1184,21 @@
     "joinDateColumn": "Join date",
     "earnedColumn": "Earned",
     "statusInactiveShort": "Inactive",
-    "pdfColumn": "PDF"
+    "pdfColumn": "PDF",
+    "commissionStructureTitle": "Commission Structure",
+    "tier1Label": "Month 1",
+    "tier1Value": "25% of referred center's payment",
+    "tier2Label": "Months 2-12",
+    "tier2Value": "10% / month",
+    "tier3Label": "Month 13+",
+    "tier3Value": "5% per month (perpetual)",
+    "tierCondition": "Requires referred center to be active and paid in full",
+    "withdrawalFeeNote": "5% withdrawal fee applies to gross commissions",
+    "instapayNumber": "Instapay Number",
+    "noWithdrawalBalance": "No balance available",
+    "withdrawalModalTitle": "Request withdrawal",
+    "submitWithdrawal": "Submit request",
+    "instapayInvalid": "InstaPay number must be 11 digits starting with 01"
   },
   "referral": {
     "referralCodeOptional": "Referral Code (optional)",
