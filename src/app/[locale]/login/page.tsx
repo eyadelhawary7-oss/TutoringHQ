@@ -175,8 +175,10 @@ export default function LoginPage() {
             cursor: 'pointer',
           }}
         >
-          <Globe size={13} />
-          <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
+          <Globe size={13} className="shrink-0" aria-hidden />
+          <span style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }} dir="ltr">
+            {locale === 'ar' ? 'EN' : 'AR'}
+          </span>
         </button>
       </div>
 
