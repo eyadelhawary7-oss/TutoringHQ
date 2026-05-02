@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import { getAnnouncementCap, PLAN_INVOICE_MINIMUMS } from '@/lib/parentPack'
 import type { NotificationTypes, WaPackBillingSummary, WaPackCenter } from '@/types/whatsapp-pack'
 import { useToast } from '@/hooks/useToast'
-import { formatDate, formatNumber } from '@/lib/formatNumber'
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber'
 
 interface AdminWaPackClientProps {
   initialCenters: WaPackCenter[]
@@ -348,7 +348,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
               ) : (
                 <RefreshCw className="h-4 w-4" aria-hidden />
               )}
-              Sync Templates
+              {t('syncTemplates')}
             </button>
           </div>
 
@@ -495,7 +495,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                           </td>
                           <td className="px-4 py-3">
                             <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
-                              {formatNumber(balance, locale)} / {formatNumber(cap, locale)} EGP
+                              {formatNumber(balance, locale)} / {formatCurrency(cap, locale)}
                             </p>
                             <div className="mt-1 h-[3px] w-full rounded bg-[var(--color-surface-3)]">
                               <div
@@ -509,7 +509,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                             {pend > 0 ? (
                               <>
                                 <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
-                                  {formatNumber(pend, locale)} EGP
+                                  {formatCurrency(pend, locale)}
                                 </p>
                                 <p className="text-[10px] text-[var(--color-text-tertiary)]">
                                   {formatNumber(asNum(c.pack_months_without_invoice), locale)}mo
@@ -592,7 +592,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                           {tRoot('admin.announcementBalance')}
                         </p>
                         <p className="mt-0.5 text-xs tabular-nums text-[var(--color-text-primary)]">
-                          {formatNumber(balance, locale)} / {formatNumber(cap, locale)} EGP
+                          {formatNumber(balance, locale)} / {formatCurrency(cap, locale)}
                         </p>
                         <div className="mt-1 h-[3px] w-full rounded bg-[var(--color-surface-3)]">
                           <div
@@ -614,7 +614,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         {pend > 0 ? (
                           <>
                             <p className="text-xs tabular-nums text-[var(--color-text-primary)]">
-                              {formatNumber(pend, locale)} EGP
+                              {formatCurrency(pend, locale)}
                             </p>
                             <p className="text-[10px] text-[var(--color-text-tertiary)]">
                               {formatNumber(asNum(c.pack_months_without_invoice), locale)}mo
@@ -749,11 +749,10 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                   ) : (
                                     <p className="text-sm text-[var(--color-text-secondary)]">
                                       {tRoot('admin.invoiceMinimumWillBe')}{' '}
-                                      {formatNumber(
+                                      {formatCurrency(
                                         PLAN_INVOICE_MINIMUMS[c.plan] ?? PLAN_INVOICE_MINIMUMS.starter,
                                         locale,
-                                      )}{' '}
-                                      EGP
+                                      )}
                                     </p>
                                   )}
                                   {approveInlineError ? (

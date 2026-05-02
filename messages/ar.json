@@ -2780,7 +2780,8 @@
     "statusCharged": "تم الخصم",
     "statusPending": "في الانتظار",
     "statusFailed": "فشل الخصم",
-    "statusNotIssued": "لم تُصدر"
+    "statusNotIssued": "لم تُصدر",
+    "syncTemplates": "مزامنة القوالب"
   },
   "mobileShell": {
     "tab_bar_label": "التنقل الرئيسي",
