@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
@@ -8,6 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Download, Gift, Link2 } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
+import { ReferralWithdrawalPanel } from '@/components/referrals/ReferralWithdrawalPanel';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 const PLAN_LABELS_AR: Record<string, string> = {
@@ -58,6 +59,8 @@ export default function SettingsReferralsPage() {
   const [referrals, setReferrals] = useState<ReferralRow[]>([]);
   const [referralCode, setReferralCode] = useState('');
   const [totalEarned, setTotalEarned] = useState(0);
+  const [availableBalance, setAvailableBalance] = useState(0);
+  const [referralInstapay, setReferralInstapay] = useState('');
   const [payoutRequests, setPayoutRequests] = useState<PayoutRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -80,6 +83,29 @@ export default function SettingsReferralsPage() {
     [locale],
   );
 
+  const loadReferralSummary = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || !centerId) return;
+    try {
+      const res = await fetch('/api/referral', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setReferralCode(json.referralCode ?? '');
+        setTotalEarned(json.totalEarned ?? 0);
+        setAvailableBalance(json.available ?? 0);
+        setReferralInstapay(typeof json.instapayNumber === 'string' ? json.instapayNumber : '');
+        const pr = json.payoutRequests;
+        if (Array.isArray(pr)) {
+          setPayoutRequests(pr as PayoutRequestRow[]);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [centerId]);
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -87,22 +113,7 @@ export default function SettingsReferralsPage() {
         setLoading(false);
         return;
       }
-      try {
-        const res = await fetch('/api/referral', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          setReferralCode(json.referralCode ?? '');
-          setTotalEarned(json.totalEarned ?? 0);
-          const pr = json.payoutRequests;
-          if (Array.isArray(pr)) {
-            setPayoutRequests(pr as PayoutRequestRow[]);
-          }
-        }
-      } catch {
-        // ignore
-      }
+      await loadReferralSummary();
 
       try {
         const { data: refs, error } = await supabase
@@ -167,7 +178,7 @@ export default function SettingsReferralsPage() {
       }
     };
     fetchData();
-  }, [centerId]);
+  }, [centerId, loadReferralSummary]);
 
   if (user?.role !== 'owner' && user?.role !== 'super_admin') {
     return (
@@ -266,6 +277,12 @@ export default function SettingsReferralsPage() {
               </div>
             </div>
           </div>
+
+          <ReferralWithdrawalPanel
+            available={availableBalance}
+            instapayNumber={referralInstapay}
+            onSuccess={() => void loadReferralSummary()}
+          />
 
           {payoutRequests.length > 0 && (
             <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
