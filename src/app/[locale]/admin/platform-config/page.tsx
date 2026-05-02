@@ -8,6 +8,7 @@ import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
+import { mergeMissingPlatformConfigRows } from '@/lib/platformConfigUi';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Settings } from 'lucide-react';
@@ -21,11 +22,49 @@ function asBool(v: unknown): boolean {
   return false;
 }
 
-function inferEditor(value: unknown): 'bool' | 'number' | 'text' | 'json' {
+function coerceNumericLike(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+/** Use for row UI: treat jsonb number-like strings and *_percent keys as numeric editors. */
+function inferRowEditor(value: unknown, key: string): 'bool' | 'number' | 'text' | 'json' {
   if (typeof value === 'boolean') return 'bool';
-  if (typeof value === 'number') return 'number';
   if (typeof value === 'object' && value !== null) return 'json';
+  const n = coerceNumericLike(value);
+  if (n !== null && key.includes('_percent')) return 'number';
+  if (n !== null && (key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate')) return 'number';
+  if (typeof value === 'number') return 'number';
   return 'text';
+}
+
+function formatDraftValue(key: string, value: unknown): string {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    try {
+      return JSON.stringify(value ?? {}, null, 2);
+    } catch {
+      return '{}';
+    }
+  }
+  if (value === null || value === undefined) return '';
+
+  const n = coerceNumericLike(value);
+  if (n !== null) {
+    if (key.includes('_percent')) {
+      if (n > 0 && n <= 1) return String(Math.round(n * 100));
+      return String(Math.round(n));
+    }
+    if ((key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate') && n > 0 && n <= 1) {
+      return String(Math.round(n * 100));
+    }
+    return typeof value === 'number' ? String(value) : String(n);
+  }
+
+  return String(value);
 }
 
 function isLateFeesDormancyKey(key: string): boolean {
@@ -34,27 +73,6 @@ function isLateFeesDormancyKey(key: string): boolean {
     key.startsWith('dormancy_') ||
     key.startsWith('reactivation_discount_')
   );
-}
-
-function formatDraftValue(key: string, value: unknown): string {
-  const ed = inferEditor(value);
-  if (ed === 'json') {
-    try {
-      return JSON.stringify(value ?? {}, null, 2);
-    } catch {
-      return '{}';
-    }
-  }
-  if (value === null || value === undefined) return '';
-  if (ed === 'number' && typeof value === 'number') {
-    if (key.includes('_percent')) {
-      return String(Math.round(value));
-    }
-    if ((key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate') && value > 0 && value <= 1) {
-      return String(Math.round(value * 100));
-    }
-  }
-  return String(value);
 }
 
 function numberStepForKey(key: string): string {
@@ -139,7 +157,7 @@ export default function PlatformConfigPage() {
       throw new Error(err?.error || t('platformConfigLoadError'));
     }
     const data = await res.json();
-    const list = (data.config || []) as ConfigRow[];
+    const list = mergeMissingPlatformConfigRows((data.config || []) as ConfigRow[]);
     setRows(list);
     const next: Record<string, unknown> = {};
     const d: Record<string, string> = {};
@@ -203,7 +221,7 @@ export default function PlatformConfigPage() {
   const saveDraft = useCallback(
     async (key: string) => {
       const raw = drafts[key] ?? '';
-      const editor = inferEditor(byKey[key]);
+      const editor = inferRowEditor(byKey[key], key);
       let parsed: unknown;
 
       if (editor === 'number') {
@@ -213,7 +231,9 @@ export default function PlatformConfigPage() {
           return;
         }
         if (key.includes('_percent')) {
-          parsed = Math.min(100, Math.max(0, Math.round(n)));
+          let pct = Math.round(n);
+          if (n > 0 && n < 1) pct = Math.round(n * 100);
+          parsed = Math.min(100, Math.max(0, pct));
         } else if (key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate') {
           let pct = Math.round(n);
           if (n > 0 && n <= 1) pct = Math.round(n * 100);
@@ -286,7 +306,7 @@ export default function PlatformConfigPage() {
 
   const renderRow = (key: string) => {
     const val = byKey[key];
-    const editor = inferEditor(val);
+    const editor = inferRowEditor(val, key);
     const busy = savingKey === key;
 
     if (editor === 'bool') {

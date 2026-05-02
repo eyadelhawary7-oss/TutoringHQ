@@ -23,6 +23,7 @@
 
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { requireSuperAdminRow } from '@/lib/admin-access';
+import { PLATFORM_CONFIG_INSERT_DEFAULTS } from '@/lib/platformConfigUi';
 import { NextRequest, NextResponse } from 'next/server';
 
 /** Accept boolean, number, string, null, or JSON-serializable object/array for jsonb. */
@@ -83,16 +84,39 @@ export async function PATCH(request: NextRequest) {
       console.error('[PATCH /api/admin/platform-config] key lookup', existErr);
       return NextResponse.json({ error: existErr.message }, { status: 500 });
     }
-    if (!existing) {
-      return NextResponse.json({ error: 'Unknown config key' }, { status: 400 });
-    }
-
     const jsonVal = normalizePatchValue(body.value);
     if (jsonVal === undefined) {
       return NextResponse.json(
         { error: 'value must be boolean, number, string, null, or a JSON object' },
         { status: 400 },
       );
+    }
+
+    if (!existing) {
+      if (!(key in PLATFORM_CONFIG_INSERT_DEFAULTS)) {
+        return NextResponse.json({ error: 'Unknown config key' }, { status: 400 });
+      }
+      const n = typeof jsonVal === 'number' ? jsonVal : Number(jsonVal);
+      if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
+        return NextResponse.json(
+          { error: `${key} must be a non-negative integer` },
+          { status: 400 },
+        );
+      }
+      const { data: inserted, error: insErr } = await auth.supabaseAdmin
+        .from('platform_config')
+        .insert({
+          key,
+          value: n,
+          updated_at: new Date().toISOString(),
+        })
+        .select('key, value, updated_at')
+        .single();
+      if (insErr) {
+        console.error('[PATCH /api/admin/platform-config] insert', insErr);
+        return NextResponse.json({ error: insErr.message }, { status: 500 });
+      }
+      return NextResponse.json(inserted);
     }
 
     if (key === 'breakeven_target') {
