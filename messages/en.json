@@ -2639,6 +2639,7 @@
     "title": "Accept Team Invitation",
     "enterPhone": "Enter your phone number",
     "enterPhoneDesc": "Enter the phone number that received the invitation.",
+    "sendOtp": "Send OTP",
     "otpSent": "Code sent to {phone}",
     "invitedTo": "Invited to {centerName}",
     "createCredentials": "Create Login Credentials",

@@ -2836,7 +2836,8 @@
   "acceptInvite": {
     "title": "قبول دعوة الفريق",
     "enterPhone": "أدخِل رقم هاتفك",
-    "enterPhoneDesc": "Enter the phone number that received the invitation.",
+    "enterPhoneDesc": "أدخل رقم الهاتف الذي تلقى الدعوة.",
+    "sendOtp": "إرسال رمز التحقق",
     "otpSent": "تم إرسال الرمز إلى {phone}",
     "invitedTo": "تمت دعوته إلى {centerName}",
     "createCredentials": "إنشاء بيانات اعتماد تسجيل الدخول",
