@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { dedupePrintStudentRows } from '@/lib/dedupePrintStudentRows';
 import { formatNumber } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import QRCode from 'qrcode';
@@ -44,17 +45,21 @@ export default function PrintClient({
   const [showGroup, setShowGroup] = useState(false);
   const [readyStudents, setReadyStudents] = useState<StudentWithQR[]>([]);
 
+  const studentsDeduped = useMemo(() => dedupePrintStudentRows(students), [students]);
+
   useEffect(() => {
-    if (initializedSubjectsRef.current || students.length === 0) return;
+    if (initializedSubjectsRef.current || studentsDeduped.length === 0) return;
     initializedSubjectsRef.current = true;
     const uniqueSubjects = [
-      ...new Set(students.map((s) => s.subject).filter(Boolean)),
+      ...new Set(studentsDeduped.map((s) => s.subject).filter(Boolean)),
     ] as string[];
     setSubjects(uniqueSubjects);
-  }, [students]);
+  }, [studentsDeduped]);
 
   const filteredStudents =
-    selectedSubject === 'all' ? students : students.filter((s) => s.subject === selectedSubject);
+    selectedSubject === 'all'
+      ? studentsDeduped
+      : studentsDeduped.filter((s) => s.subject === selectedSubject);
 
   const studentsWithQR = useMemo(() => {
     return filteredStudents.map((s) => ({

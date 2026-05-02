@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { dedupePrintStudentRows } from '@/lib/dedupePrintStudentRows';
 import PrintClient, { type PrintStudentRow } from './PrintClient';
 
 export default async function PrintStudentsPage({
@@ -44,9 +45,11 @@ export default async function PrintStudentsPage({
     .from('students')
     .select('id, name, subject, qr_code, student_number')
     .eq('center_id', centerId)
+    .or('is_active.is.null,is_active.eq.true')
+    .order('student_number', { ascending: true, nullsFirst: false })
     .order('name', { ascending: true });
 
-  const studentList = (students ?? []) as PrintStudentRow[];
+  const studentList = dedupePrintStudentRows((students ?? []) as PrintStudentRow[]);
 
   const studentGroupMap: Record<string, string> = {};
   if (studentList.length > 0) {
