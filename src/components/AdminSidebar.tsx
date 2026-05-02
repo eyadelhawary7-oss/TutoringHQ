@@ -457,6 +457,24 @@ export function AdminSidebar({
                 ) : null}
               </button>,
             ];
+            if (key === 'centers' && adminRole === 'super_admin') {
+              items.push(
+                <Link
+                  key="platform-health"
+                  href="/admin/health"
+                  onClick={afterNavigate}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
+                    isHealth
+                      ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
+                      : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
+                  )}
+                >
+                  <Activity size={18} className="shrink-0" />
+                  <span>{t('platformHealth')}</span>
+                </Link>,
+              );
+            }
             if (key === 'referrals') {
               items.push(
                 <Link
@@ -559,22 +577,6 @@ export function AdminSidebar({
             }
             return items;
           })}
-          {/* Platform Health: /admin/health (super_admin only) */}
-          {adminRole === 'super_admin' ? (
-            <Link
-              href="/admin/health"
-              onClick={afterNavigate}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
-                isHealth
-                  ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                  : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
-              )}
-            >
-              <Activity size={18} className="shrink-0" />
-              <span>{t('platformHealth')}</span>
-            </Link>
-          ) : null}
           {/* HR & Commissions group */}
           {adminRole === 'super_admin' ? (
             <>
@@ -720,6 +722,24 @@ export function AdminSidebar({
                 ) : null}
               </button>,
             ];
+            if (key === 'centers' && adminRole === 'super_admin') {
+              items.push(
+                <Link
+                  key="platform-health"
+                  href="/admin/health"
+                  onClick={() => closeMainSidebar?.()}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
+                    isHealth
+                      ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
+                      : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                  )}
+                >
+                  <Activity size={18} className="shrink-0" />
+                  <span>{t('platformHealth')}</span>
+                </Link>,
+              );
+            }
             if (key === 'referrals') {
               items.push(
                 <Link
@@ -847,22 +867,6 @@ export function AdminSidebar({
             }
             return items;
           })}
-          {/* Platform Health: /admin/health (super_admin only) */}
-          {adminRole === 'super_admin' ? (
-            <Link
-              href="/admin/health"
-              onClick={() => closeMainSidebar?.()}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
-                isHealth
-                  ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                  : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-              )}
-            >
-              <Activity size={18} />
-              <span>{t('platformHealth')}</span>
-            </Link>
-          ) : null}
           {/* HR & Commissions group */}
           {adminRole === 'super_admin' ? (
             <>
