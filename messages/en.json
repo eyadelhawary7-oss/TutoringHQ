@@ -5047,6 +5047,8 @@
     "notifAnnouncement": "Announcement Notifications",
     "blastOps": "Blast Ops",
     "blastPromo": "Blast Promo",
+    "opsBlastTab": "Send Ops Blast",
+    "promoBlastTab": "Send Promo Blast",
     "parentCount": "{count, plural, one {# parent} other {# parents}}"
   },
   "adminWaPack": {

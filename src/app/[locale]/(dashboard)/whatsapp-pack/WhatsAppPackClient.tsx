@@ -602,7 +602,7 @@ export default function WhatsAppPackClient({
                 blastType === 'ops' ? 'ring-2 ring-teal-500 bg-teal-600 text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]',
               )}
             >
-              {t('whatsappPack.blastOps')}
+              {t('whatsappPack.opsBlastTab')}
             </button>
             <button
               type="button"
@@ -615,7 +615,7 @@ export default function WhatsAppPackClient({
                 blastType === 'promo' ? 'ring-2 ring-teal-500 bg-teal-600 text-white' : 'bg-[var(--color-surface-2)] text-[var(--color-text-primary)]',
               )}
             >
-              {t('whatsappPack.blastPromo')}
+              {t('whatsappPack.promoBlastTab')}
             </button>
           </div>
 
@@ -769,7 +769,7 @@ export default function WhatsAppPackClient({
                             : 'bg-amber-500/15 text-amber-800 dark:text-amber-200',
                         )}
                       >
-                        {blast.blast_type === 'ops' ? t('whatsappPack.blastOps') : t('whatsappPack.blastPromo')}
+                        {blast.blast_type === 'ops' ? t('whatsappPack.opsBlastTab') : t('whatsappPack.promoBlastTab')}
                       </span>
                     </div>
                     <p className="text-sm text-[var(--color-text-primary)] break-words">

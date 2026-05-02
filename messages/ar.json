@@ -2753,6 +2753,8 @@
     "notifAnnouncement": "تنبيهات الإعلانات",
     "blastOps": "إرسال تشغيلي",
     "blastPromo": "إرسال ترويجي",
+    "opsBlastTab": "إرسال تشغيلي",
+    "promoBlastTab": "إرسال ترويجي",
     "parentCount": "{count, plural, one {ولي أمر واحد} other {# أولياء أمور}}"
   },
   "adminWaPack": {
