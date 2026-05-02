@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         .order('start_date', { ascending: true }),
       supabaseAdmin
         .from('holidays')
-        .select('id, name, date, is_recurring')
+        .select('id, name, english_name, date, is_recurring')
         .eq('center_id', centerId)
         .order('date', { ascending: true }),
     ]);
@@ -168,13 +168,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'create_holiday') {
-      const { name, date, is_recurring } = body;
-      if (!name || !date) return NextResponse.json({ error: 'Missing name or date' }, { status: 400 });
+      const { name, english_name, date, is_recurring } = body;
+      const nameTrim = typeof name === 'string' ? name.trim() : '';
+      const enTrim = typeof english_name === 'string' ? english_name.trim() : '';
+      const primaryName = nameTrim || enTrim;
+      if (!primaryName || !date) return NextResponse.json({ error: 'Missing name or date' }, { status: 400 });
       const { data, error } = await supabaseAdmin
         .from('holidays')
         .insert({
           center_id: centerId,
-          name,
+          name: primaryName,
+          english_name: enTrim || null,
           date,
           is_recurring: is_recurring ?? false,
         })
@@ -185,10 +189,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'update_holiday') {
-      const { id, name, date, is_recurring } = body;
+      const { id, name, english_name, date, is_recurring } = body;
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
       const updates: Record<string, unknown> = {};
-      if (name != null) updates.name = name;
+      if (name != null) updates.name = typeof name === 'string' ? name.trim() : name;
+      if (english_name !== undefined) {
+        updates.english_name =
+          typeof english_name === 'string' && english_name.trim() !== '' ? english_name.trim() : null;
+      }
       if (date != null) updates.date = date;
       if (is_recurring !== undefined) updates.is_recurring = is_recurring;
       const { data, error } = await supabaseAdmin

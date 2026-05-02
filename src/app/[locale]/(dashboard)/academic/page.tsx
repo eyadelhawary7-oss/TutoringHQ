@@ -35,6 +35,7 @@ interface AcademicPeriod {
 interface Holiday {
   id: string;
   name: string;
+  english_name?: string | null;
   date: string;
   is_recurring: boolean;
 }
@@ -49,6 +50,17 @@ const PERIOD_COLORS: Record<PeriodType, string> = {
 function formatHolidayDate(dateStr: string | null | undefined, locale: string): string {
   if (!dateStr?.trim()) return '-';
   return formatDate(dateStr + 'T12:00:00', locale, { day: 'numeric', month: 'long' });
+}
+
+/** Label for list/UI: English uses english_name when set; Arabic uses canonical `name`. */
+function holidayDisplayName(h: Holiday, locale: string): string {
+  if (locale === 'ar') return h.name;
+  const en = h.english_name?.trim();
+  return en && en.length > 0 ? en : h.name;
+}
+
+function holidayNameNeedsEnFallback(h: Holiday, locale: string): boolean {
+  return locale === 'en' && !(h.english_name?.trim());
 }
 
 export default function AcademicPage() {
@@ -70,7 +82,9 @@ export default function AcademicPage() {
   const [showPeriodModal, setShowPeriodModal] = useState(false);
   const [periodForm, setPeriodForm] = useState<Partial<AcademicPeriod> & { id?: string }>({});
   const [showHolidayModal, setShowHolidayModal] = useState(false);
-  const [holidayForm, setHolidayForm] = useState<Partial<Holiday> & { id?: string }>({});
+  const [holidayForm, setHolidayForm] = useState<
+    Partial<Holiday> & { id?: string; english_name?: string | null }
+  >({});
   const [saving, setSaving] = useState(false);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [termModalOpen, setTermModalOpen] = useState(false);
@@ -289,14 +303,27 @@ export default function AcademicPage() {
   };
 
   const saveHoliday = async () => {
-    if (!holidayForm.name || !holidayForm.date) return;
+    const nameTrim = (holidayForm.name ?? '').trim();
+    const enTrim = (holidayForm.english_name ?? '').trim();
+    const hasLabel = locale === 'ar' ? nameTrim : nameTrim || enTrim;
+    if (!hasLabel || !holidayForm.date) return;
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      const payload: Record<string, unknown> = {
+        date: holidayForm.date,
+        is_recurring: holidayForm.is_recurring ?? false,
+      };
+      if (locale === 'ar') {
+        payload.name = nameTrim;
+      } else {
+        payload.name = nameTrim || enTrim;
+        payload.english_name = enTrim || null;
+      }
       const body = holidayForm.id
-        ? { action: 'update_holiday', id: holidayForm.id, ...holidayForm }
-        : { action: 'create_holiday', ...holidayForm };
+        ? { action: 'update_holiday', id: holidayForm.id, ...payload }
+        : { action: 'create_holiday', ...payload };
       const res = await fetch('/api/academic', {
         method: 'POST',
         headers: {
@@ -569,7 +596,7 @@ export default function AcademicPage() {
             <h3 className="font-medium text-[var(--color-text-primary)]">{t('holidays')}</h3>
             <button
               onClick={() => {
-                setHolidayForm({ name: '', date: '', is_recurring: false });
+                setHolidayForm({ name: '', english_name: '', date: '', is_recurring: false });
                 setShowHolidayModal(true);
               }}
               className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
@@ -585,11 +612,15 @@ export default function AcademicPage() {
                   key={h.id}
                   className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border)]"
                 >
-                  <span className="text-[var(--color-text-primary)]">{h.name} - {formatHolidayDate(h.date, locale)}</span>
+                  <span
+                    className={`text-[var(--color-text-primary)]${holidayNameNeedsEnFallback(h, locale) ? ' italic text-[var(--color-text-secondary)]' : ''}`}
+                  >
+                    {holidayDisplayName(h, locale)} - {formatHolidayDate(h.date, locale)}
+                  </span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        setHolidayForm({ ...h });
+                        setHolidayForm({ ...h, english_name: h.english_name ?? '' });
                         setShowHolidayModal(true);
                       }}
                       className="p-1.5 rounded hover:bg-[var(--color-surface-2)]"
@@ -737,13 +768,42 @@ export default function AcademicPage() {
           <div className="bg-[var(--color-surface-1)] rounded-xl p-6 max-w-md w-full">
             <h3 className="font-bold text-lg mb-4 text-[var(--color-text-primary)]">{holidayForm.id ? t('editHoliday') : t('addHoliday')}</h3>
             <div className="space-y-3">
-              <input
-                type="text"
-                value={holidayForm.name ?? ''}
-                onChange={(e) => setHolidayForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
-                placeholder={t('holidayName')}
-              />
+              {locale === 'ar' ? (
+                <input
+                  type="text"
+                  value={holidayForm.name ?? ''}
+                  onChange={(e) => setHolidayForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
+                  placeholder={t('holidayName')}
+                />
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                      {t('holidayNameEnglish')}
+                    </label>
+                    <input
+                      type="text"
+                      value={holidayForm.english_name ?? ''}
+                      onChange={(e) => setHolidayForm((f) => ({ ...f, english_name: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
+                      placeholder={t('holidayNameEnglish')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                      {t('holidayNameArabicOptional')}
+                    </label>
+                    <input
+                      type="text"
+                      value={holidayForm.name ?? ''}
+                      onChange={(e) => setHolidayForm((f) => ({ ...f, name: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
+                      placeholder={t('holidayNameArabicOptional')}
+                    />
+                  </div>
+                </>
+              )}
               <LocalizedDateInput
                 value={holidayForm.date ?? ''}
                 onChange={(e) => setHolidayForm((f) => ({ ...f, date: e.target.value }))}

@@ -1967,6 +1967,8 @@
     "addHoliday": "Add holiday",
     "editHoliday": "Edit holiday",
     "holidayName": "Holiday name",
+    "holidayNameEnglish": "Name (English)",
+    "holidayNameArabicOptional": "Arabic name (optional)",
     "periodName": "Period name",
     "isRecurring": "Recurring yearly",
     "noYear": "No academic year set",

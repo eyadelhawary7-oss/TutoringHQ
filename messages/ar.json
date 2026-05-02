@@ -2800,6 +2800,8 @@
     "addHoliday": "أضف عطلة",
     "editHoliday": "تعديل عطلة",
     "holidayName": "اسم العطلة",
+    "holidayNameEnglish": "الاسم بالإنجليزية",
+    "holidayNameArabicOptional": "الاسم بالعربية (اختياري)",
     "periodName": "اسم الفترة",
     "isRecurring": "متكرر (سنويا)",
     "noYear": "لم يتم تعيين عام دراسي",
