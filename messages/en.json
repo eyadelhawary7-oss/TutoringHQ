@@ -2659,6 +2659,13 @@
     "success": "Success",
     "yourPin": "Your Pin"
   },
+  "adminHealth": {
+    "statusSuccess": "Success",
+    "statusError": "Error",
+    "statusRunning": "Running",
+    "statusPending": "Pending",
+    "statusPartial": "Partial"
+  },
   "admin": {
     "actionError": "Action Error",
     "orderId": "Order ID",

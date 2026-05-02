@@ -57,6 +57,7 @@ function formatRanAt(iso: string | null, locale: string): string {
 
 export default function AdminHealthPage() {
   const t = useTranslations('admin');
+  const tHealth = useTranslations('adminHealth');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
@@ -345,18 +346,20 @@ export default function AdminHealthPage() {
                           </td>
                           <td className="p-3 text-[var(--color-text-primary)]">
                             {!row.last_status ? (
-                              <span className="text-[var(--color-text-secondary)]">-</span>
+                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
+                                {tHealth('statusPending')}
+                              </span>
                             ) : row.last_status === 'success' ? (
                               <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                ✓ success
+                                ✓ {tHealth('statusSuccess')}
                               </span>
                             ) : row.last_status === 'failure' ? (
                               <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                ✗ failure
+                                ✗ {tHealth('statusError')}
                               </span>
                             ) : (
                               <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                ⚠ partial
+                                ⚠ {tHealth('statusPartial')}
                               </span>
                             )}
                           </td>
