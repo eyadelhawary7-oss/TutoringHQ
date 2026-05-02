@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import { createPortal } from 'react-dom';
 import {
   StudentBalanceStatement,
@@ -8,6 +9,7 @@ import {
 } from './StudentBalanceStatement';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Printer, X } from 'lucide-react';
+import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 
 interface PrintStatementModalProps {
   studentId: string;
@@ -22,6 +24,7 @@ export function PrintStatementModal({
   isOpen,
   onClose,
 }: PrintStatementModalProps) {
+  const locale = useLocale();
   const [dateFrom, setDateFrom] = useState<string>(() => {
     const d = new Date();
     const y = d.getFullYear();
@@ -179,26 +182,26 @@ export function PrintStatementModal({
           <div className="flex flex-wrap gap-4 mb-4">
             <label className="flex items-center gap-2 text-sm text-[var(--color-text-primary)]">
               من
-              <input
-                type="date"
+              <LocalizedDateInput
                 value={dateFrom}
                 onChange={(e) => {
                   setDateFrom(e.target.value);
                   setStatementData(null);
                 }}
-                className="px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                locale={locale}
+                className="min-w-[11rem] px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
               />
             </label>
             <label className="flex items-center gap-2 text-sm text-[var(--color-text-primary)]">
               إلى
-              <input
-                type="date"
+              <LocalizedDateInput
                 value={dateTo}
                 onChange={(e) => {
                   setDateTo(e.target.value);
                   setStatementData(null);
                 }}
-                className="px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                locale={locale}
+                className="min-w-[11rem] px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
               />
             </label>
           </div>

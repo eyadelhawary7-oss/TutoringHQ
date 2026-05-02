@@ -2104,6 +2104,20 @@ html.light {
 }
 /* ─── end date input ─── */
 
+/* LocalizedDateInput: suppress native Western date glyphs (some engines paint through opacity-0) */
+.chq-localized-date-native {
+  color: transparent !important;
+}
+.chq-localized-date-native::-webkit-datetime-edit,
+.chq-localized-date-native::-webkit-datetime-edit-fields-wrapper,
+.chq-localized-date-native::-webkit-datetime-edit-text,
+.chq-localized-date-native::-webkit-datetime-edit-month-field,
+.chq-localized-date-native::-webkit-datetime-edit-day-field,
+.chq-localized-date-native::-webkit-datetime-edit-year-field {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
 .dark [data-admin="true"] .admin-textarea,
 .dark [data-admin="true"] textarea.admin-textarea,
 .dark [data-admin="true"] div .admin-textarea,

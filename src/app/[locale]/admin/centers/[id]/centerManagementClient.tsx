@@ -14,6 +14,10 @@ import { useToast } from '@/hooks/useToast';
 import { Pin, Trash2 } from 'lucide-react';
 import { districtSlugFromDisplay, formatDistrictDisplay } from '@/lib/formatDistrict';
 import { formatDate as formatDateI18n, formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
+
+const ADMIN_LOCALIZED_DATE_CLASS =
+  'w-full rounded-lg px-3 py-2 text-sm border border-gray-300 bg-gray-100 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500';
 
 type CenterData = {
   center: Record<string, unknown>;
@@ -30,24 +34,6 @@ type CenterData = {
 interface CenterManagementClientProps {
   centerId: string;
 }
-
-const AdminDatePicker = ({
-  value,
-  onChange,
-  placeholder = 'Select date',
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  placeholder?: string;
-}) => (
-  <input
-    type="date"
-    value={value}
-    aria-label={placeholder}
-    onChange={(e) => onChange(e.target.value)}
-    className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 bg-gray-100 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
-  />
-);
 
 const Toggle = ({
   checked,
@@ -2070,20 +2056,35 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
                       {t('centerManagement.section3.nextPaymentDue')}
                     </label>
-                    <AdminDatePicker value={s3NextPaymentDue} onChange={setS3NextPaymentDue} placeholder="YYYY-MM-DD" />
+                    <LocalizedDateInput
+                      value={s3NextPaymentDue}
+                      onChange={(e) => setS3NextPaymentDue(e.target.value)}
+                      locale={locale}
+                      className={ADMIN_LOCALIZED_DATE_CLASS}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
                       {t('centerManagement.section3.autoSuspendAt')}
                     </label>
-                    <AdminDatePicker value={s3AutoSuspendAt} onChange={setS3AutoSuspendAt} />
+                    <LocalizedDateInput
+                      value={s3AutoSuspendAt}
+                      onChange={(e) => setS3AutoSuspendAt(e.target.value)}
+                      locale={locale}
+                      className={ADMIN_LOCALIZED_DATE_CLASS}
+                    />
                     <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">{t('centerManagement.section3.autoSuspendWarning')}</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
                       {t('centerManagement.section3.subscriptionStartDate')}
                     </label>
-                    <AdminDatePicker value={s3SubStartDate} onChange={setS3SubStartDate} placeholder="YYYY-MM-DD" />
+                    <LocalizedDateInput
+                      value={s3SubStartDate}
+                      onChange={(e) => setS3SubStartDate(e.target.value)}
+                      locale={locale}
+                      className={ADMIN_LOCALIZED_DATE_CLASS}
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <Toggle
@@ -2381,7 +2382,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
                         {t('centerManagement.section4.paidAt')}
                       </label>
-                      <AdminDatePicker value={s4MarkPaidAt} onChange={setS4MarkPaidAt} />
+                      <LocalizedDateInput
+                        value={s4MarkPaidAt}
+                        onChange={(e) => setS4MarkPaidAt(e.target.value)}
+                        locale={locale}
+                        className={ADMIN_LOCALIZED_DATE_CLASS}
+                      />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <button
@@ -2445,20 +2451,22 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
                           {t('centerManagement.section4.periodStart')}
                         </label>
-                        <AdminDatePicker
+                        <LocalizedDateInput
                           value={s4CreatePeriodStart}
-                          onChange={setS4CreatePeriodStart}
-                          placeholder="YYYY-MM-DD"
+                          onChange={(e) => setS4CreatePeriodStart(e.target.value)}
+                          locale={locale}
+                          className={ADMIN_LOCALIZED_DATE_CLASS}
                         />
                       </div>
                       <div>
                         <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
                           {t('centerManagement.section4.periodEnd')}
                         </label>
-                        <AdminDatePicker
+                        <LocalizedDateInput
                           value={s4CreatePeriodEnd}
-                          onChange={setS4CreatePeriodEnd}
-                          placeholder="YYYY-MM-DD"
+                          onChange={(e) => setS4CreatePeriodEnd(e.target.value)}
+                          locale={locale}
+                          className={ADMIN_LOCALIZED_DATE_CLASS}
                         />
                       </div>
                     </div>
@@ -2466,7 +2474,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
                         {t('centerManagement.section4.dueDate')}
                       </label>
-                      <AdminDatePicker value={s4CreateDueDate} onChange={setS4CreateDueDate} placeholder="YYYY-MM-DD" />
+                      <LocalizedDateInput
+                        value={s4CreateDueDate}
+                        onChange={(e) => setS4CreateDueDate(e.target.value)}
+                        locale={locale}
+                        className={ADMIN_LOCALIZED_DATE_CLASS}
+                      />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <button
@@ -2555,7 +2568,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
                         {t('centerManagement.section5.paymentDate')}
                       </label>
-                      <AdminDatePicker value={s5Date} onChange={setS5Date} />
+                      <LocalizedDateInput
+                        value={s5Date}
+                        onChange={(e) => setS5Date(e.target.value)}
+                        locale={locale}
+                        className={ADMIN_LOCALIZED_DATE_CLASS}
+                      />
                     </div>
                     <div>
                       <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">

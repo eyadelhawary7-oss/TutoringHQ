@@ -88,13 +88,15 @@ export function formatDate(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  const l = isArabicLocale(locale) ? 'ar-EG' : 'en-US';
-  const opts: Intl.DateTimeFormatOptions =
+  const isAr = isArabicLocale(locale);
+  const l = isAr ? 'ar-EG' : 'en-US';
+  const base: Intl.DateTimeFormatOptions =
     options ?? {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     };
+  const opts: Intl.DateTimeFormatOptions = isAr ? { ...base, numberingSystem: 'arab' as const } : base;
   return d.toLocaleDateString(l, opts);
 }
 

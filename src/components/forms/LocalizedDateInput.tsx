@@ -25,7 +25,8 @@ function isoDateDisplay(value: string, locale: string): string {
 
 /**
  * Native `type="date"` (ISO value) with a locale-visible label — avoids Western-only
- * strings like "02-May-2026" on /ar when the OS/browser ignores `lang`.
+ * strings like "02-May-2026" on /ar when the browser paints the native field on top.
+ * The input sits behind an opaque overlay; clicks pass through (`pointer-events-none`).
  */
 export function LocalizedDateInput({
   value,
@@ -40,13 +41,12 @@ export function LocalizedDateInput({
   const ariaLabel = display.trim() ? display : 'Select date';
 
   return (
-    <div className={cn('relative flex min-h-[2.5rem] w-full min-w-0 items-center', className)}>
-      <span
-        className="pointer-events-none relative z-0 block w-full min-w-0 truncate text-start text-sm text-[var(--color-text-primary)] tabular-nums"
-        aria-hidden
-      >
-        {display}
-      </span>
+    <div
+      className={cn(
+        'relative flex min-h-[2.5rem] w-full min-w-0 items-stretch overflow-hidden',
+        className,
+      )}
+    >
       <input
         type="date"
         lang={lang}
@@ -54,9 +54,15 @@ export function LocalizedDateInput({
         value={value}
         onChange={onChange}
         aria-label={ariaLabel}
-        className="absolute inset-0 z-[1] h-full w-full cursor-pointer opacity-0"
+        className="chq-localized-date-native absolute inset-0 z-0 h-full min-h-[2.5rem] w-full min-w-0 cursor-pointer opacity-0"
         {...rest}
       />
+      <span
+        className="pointer-events-none absolute inset-0 z-[1] flex min-w-0 items-center text-start rounded-[inherit] bg-inherit text-sm tabular-nums text-inherit"
+        aria-hidden
+      >
+        {display}
+      </span>
     </div>
   );
 }

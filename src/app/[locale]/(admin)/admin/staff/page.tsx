@@ -10,6 +10,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { useLayout } from '@/contexts/LayoutContext'
 import { formatNumber } from '@/lib/formatNumber'
+import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput'
 
 interface StaffMember {
   id: string
@@ -558,10 +559,10 @@ export default function StaffPage() {
                   <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
                     {t('staff.hire_date')}
                   </label>
-                  <input
-                    type="date"
+                  <LocalizedDateInput
                     value={form.hire_date}
                     onChange={(e) => setForm((prev) => ({ ...prev, hire_date: e.target.value }))}
+                    locale={locale}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
                   />
                 </div>
@@ -691,12 +692,12 @@ export default function StaffPage() {
                   <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
                     {t('staff.termination_date_label')}
                   </label>
-                  <input
-                    type="date"
+                  <LocalizedDateInput
                     value={terminateForm.termination_date}
                     onChange={(e) =>
                       setTerminateForm((prev) => ({ ...prev, termination_date: e.target.value }))
                     }
+                    locale={locale}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-red-500 outline-none"
                   />
                 </div>
