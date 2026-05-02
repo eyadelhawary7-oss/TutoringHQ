@@ -12,6 +12,7 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { getAnnualChargeRounded } from '@/lib/pricing';
 import { useToast } from '@/hooks/useToast';
 import { Pin, Trash2 } from 'lucide-react';
+import { districtSlugFromDisplay, formatDistrictDisplay } from '@/lib/formatDistrict';
 import { formatDate as formatDateI18n, formatDateTime, formatNumber } from '@/lib/formatNumber';
 
 type CenterData = {
@@ -1736,8 +1737,8 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </label>
                     <input
                       type="text"
-                      value={s1District}
-                      onChange={(e) => setS1District(e.target.value)}
+                      value={formatDistrictDisplay(s1District)}
+                      onChange={(e) => setS1District(districtSlugFromDisplay(e.target.value))}
                       className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
                     />
                   </div>

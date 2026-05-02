@@ -12,7 +12,7 @@ import AnalyticsAiChatWidget from '@/components/analytics/AnalyticsAiChatWidget'
 import { chartColors, colors } from '@/lib/tokens';
 import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 import { ChartCard, ChartLegend } from '@/components/charts';
-import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber, formatPercent, formatPlainInteger } from '@/lib/formatNumber';
 
 const RevenueByGroup = dynamic(() => import('@/components/charts/RevenueByGroup'), {
   ssr: false,
@@ -179,7 +179,7 @@ export default function AnalyticsPage() {
         const m = parts[1] ? parseInt(parts[1], 10) - 1 : -1;
         const label =
           m >= 0 && months[m] != null && Number.isFinite(yNum)
-            ? `${months[m]} ${formatNumber(yNum, locale)}`
+            ? `${months[m]} ${formatPlainInteger(yNum, locale)}`
             : month;
         return { month: label, revenue: Number(amount) || 0 };
       });

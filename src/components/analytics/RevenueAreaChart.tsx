@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale } from 'next-intl';
-import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatPlainInteger } from '@/lib/formatNumber';
 import { AreaChartComponent } from '@/components/charts';
 
 type DataPoint = { month: string; revenue: number };
@@ -13,7 +13,7 @@ function formatMonthAxisLabel(label: string | number, locale: string): string {
   if (m) {
     const yearNum = Number(m[2]);
     if (Number.isFinite(yearNum)) {
-      return `${m[1]} ${formatNumber(yearNum, locale)}`;
+      return `${m[1]} ${formatPlainInteger(yearNum, locale)}`;
     }
   }
   return s;

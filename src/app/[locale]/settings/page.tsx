@@ -12,7 +12,7 @@ import { PageHeader, RoleBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Package, Wallet } from 'lucide-react';
 import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
 type TabType = 'general' | 'team';
 
@@ -1156,8 +1156,8 @@ function SettingsPageContent() {
                     })}
                   </p>
                   <p className="text-xs text-[var(--color-text-secondary)] mb-2">
-                    {t('totalReferrals')}: {formatNumber(referralData.rewards?.length ?? 0, locale)} | {t('totalEarned')}: {tCommon('egp')}{' '}
-                    {formatNumber(Number(referralData.totalEarned || 0), locale)}
+                    {t('totalReferrals')}: {formatNumber(referralData.rewards?.length ?? 0, locale)} | {t('totalEarned')}:{' '}
+                    {formatCurrency(Number(referralData.totalEarned || 0), locale)}
                   </p>
                   <div>
                     <p className="text-sm font-medium text-[var(--color-text-primary)] mb-2">{tReferral('rewardsTable')}</p>
@@ -1179,7 +1179,7 @@ function SettingsPageContent() {
                                 <td className="py-2 text-[var(--color-text-primary)]">{r.referred_center_name}</td>
                                 <td className="py-2 text-[var(--color-text-secondary)]">{r.referred_center_plan}</td>
                                 <td className="py-2 font-mono text-[var(--color-text-primary)]" dir="ltr">
-                                  {tCommon('egp')} {formatNumber(Number(r.reward_amount), locale)}
+                                  {formatCurrency(Number(r.reward_amount), locale)}
                                 </td>
                                 <td className="py-2"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${r.reward_status === 'paid' ? 'badge-confirmed' : r.reward_status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-muted text-[var(--color-text-secondary)]'}`}>{r.reward_status}</span></td>
                                 <td className="py-2 text-[var(--color-text-secondary)]">

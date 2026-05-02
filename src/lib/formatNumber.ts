@@ -28,6 +28,13 @@ export function formatNumber(
   return value.toLocaleString(l, opts);
 }
 
+/** Calendar years, quarter numbers, etc.: never digit-grouping (`2026` not `2,026`). */
+export function formatPlainInteger(value: number, locale: string): string {
+  const n = Math.round(Number(value));
+  const safe = Number.isFinite(n) ? n : 0;
+  return formatNumber(safe, locale, { useGrouping: false, maximumFractionDigits: 0 });
+}
+
 /** Egyptian pound display for all Arabic UI (product is EGP-only). */
 const EGP_AR_SUFFIX = '\u062c.\u0645';
 

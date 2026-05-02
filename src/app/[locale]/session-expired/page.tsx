@@ -11,7 +11,7 @@ export default function SessionExpiredPage() {
   return (
     <div
       data-chq-session-expired
-      className="flex min-h-screen items-center justify-center bg-[var(--color-surface-0)] p-6"
+      className="flex min-h-screen w-full items-center justify-center bg-[#080f1a] p-6"
       dir={dir}
     >
       <div className="chq-spring-in w-full max-w-md space-y-6 text-center">

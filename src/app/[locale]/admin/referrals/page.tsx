@@ -10,7 +10,14 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { ArrowLeft, Gift, CheckCircle } from 'lucide-react';
-import { formatCurrency, formatDate, formatDateTime, formatNumber, formatPercent } from '@/lib/formatNumber';
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatNumber,
+  formatPercent,
+  formatPlainInteger,
+} from '@/lib/formatNumber';
 
 function formatRatePct(
   row: {
@@ -90,8 +97,8 @@ export default function AdminReferralsPage() {
       out.push({
         value: `${y}-Q${q}`,
         label: t('quarterOptionLabel', {
-          quarter: formatNumber(q, locale),
-          year: formatNumber(y, locale),
+          quarter: formatPlainInteger(q, locale),
+          year: formatPlainInteger(y, locale),
         }),
       });
       d.setMonth(d.getMonth() - 3);
@@ -490,8 +497,8 @@ export default function AdminReferralsPage() {
                   <p className="text-sm font-semibold text-slate-900 dark:text-teal-100 mb-2">
                     {!summary.quarterAll && summary.quarter != null && summary.year != null
                       ? t('commissionSummaryTitle', {
-                          quarter: formatNumber(summary.quarter, locale),
-                          year: formatNumber(summary.year, locale),
+                          quarter: formatPlainInteger(summary.quarter, locale),
+                          year: formatPlainInteger(summary.year, locale),
                         })
                       : t('commissionSummaryAll')}
                   </p>
