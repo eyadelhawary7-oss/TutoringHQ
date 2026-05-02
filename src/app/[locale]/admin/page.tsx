@@ -2327,7 +2327,9 @@ function AdminPageContent() {
                             <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">
                               {order.center_name ?? tCommon('notAvailable')}
                             </td>
-                            <td className="px-4 py-3 font-mono">{Number(order.quantity ?? 0)}</td>
+                            <td className="px-4 py-3 font-mono">
+                              {formatNumber(Number(order.quantity ?? 0), locale)}
+                            </td>
                             <td className="px-4 py-3 font-mono font-bold">
                               {formatCurrency(Number(order.total_amount ?? 0), locale)}
                             </td>
