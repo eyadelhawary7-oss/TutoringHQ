@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { Clock, MessageSquare, AlertTriangle, Activity, CheckCircle } from 'lucide-react';
 import type { CommandStripResponse, ActionQueueItem } from '@/types/founder-dash';
-import { formatNumber, formatDate, formatPercent } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { localizeCeoActionQueueTitle } from '@/lib/ceoActionQueueTitle';
 
 const PLAN_KEYS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
@@ -193,7 +193,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                     <div className="flex flex-wrap items-center gap-2">
                       {n(item.revenue_at_risk) > 0 && (
                         <span className="text-xs rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-1 font-mono">
-                          {formatNumber(n(item.revenue_at_risk), locale)} {t('egpAbbrev')}
+                          {formatCurrency(n(item.revenue_at_risk), locale)}
                         </span>
                       )}
                       {item.action_label && item.action_url && (

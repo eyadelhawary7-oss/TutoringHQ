@@ -14,7 +14,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import type { GrowthPanelResponse } from '@/types/founder-dash';
-import { formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
 
 const ACTIVE_STAGES = ['lead', 'demo', 'trial', 'closed'] as const;
 
@@ -317,7 +317,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                     : 'text-[var(--color-text-primary)]'
                 }`}
               >
-                {formatNumber(n(referral.commissionsOwed), locale)} {t('egpAbbrev')}
+                {formatCurrency(n(referral.commissionsOwed), locale)}
               </p>
             </div>
             <div
@@ -344,7 +344,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                     : 'text-[var(--color-text-primary)]'
                 }`}
               >
-                {formatNumber(n(referral.commissionsPaid), locale)} {t('egpAbbrev')}
+                {formatCurrency(n(referral.commissionsPaid), locale)}
               </p>
             </div>
           </div>
