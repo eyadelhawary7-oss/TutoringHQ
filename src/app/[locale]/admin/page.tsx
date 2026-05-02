@@ -332,10 +332,17 @@ const ADMIN_TAB_QUERY_ALIASES: Record<string, AdminTab> = {
   overview: 'overview',
   ceo: 'ceoDashboard',
   ceodashboard: 'ceoDashboard',
+  'ceo-dashboard': 'ceoDashboard',
+  ceo_dashboard: 'ceoDashboard',
   centers: 'centers',
+  center: 'centers',
   billing: 'billing',
   cardorders: 'cardOrders',
+  'card-orders': 'cardOrders',
+  card_orders: 'cardOrders',
   planrequests: 'planRequests',
+  'plan-requests': 'planRequests',
+  plan_requests: 'planRequests',
   pendingsignups: 'pendingSignups',
   pending: 'pendingSignups',
   'pending-signups': 'pendingSignups',
@@ -343,24 +350,49 @@ const ADMIN_TAB_QUERY_ALIASES: Record<string, AdminTab> = {
   referral: 'referrals',
   referrals: 'referrals',
   internalteam: 'internalTeam',
+  'internal-team': 'internalTeam',
+  internal_team: 'internalTeam',
   salespipeline: 'salesPipeline',
+  'sales-pipeline': 'salesPipeline',
+  sales_pipeline: 'salesPipeline',
   analytics: 'analytics',
 };
 
 /** `?tab=` values that map to full admin sub-routes (not inline panels). */
 const ADMIN_TAB_REDIRECTS: Record<string, string> = {
   renewals: '/admin/renewals',
+  renewal: '/admin/renewals',
   withdrawals: '/admin/withdrawals',
+  withdrawal: '/admin/withdrawals',
   pricingPanel: '/admin/pricing',
+  pricing: '/admin/pricing',
+  'pricing-panel': '/admin/pricing',
+  pricingpanel: '/admin/pricing',
   platformConfig: '/admin/platform-config',
+  'platform-config': '/admin/platform-config',
+  platformconfig: '/admin/platform-config',
+  platform_config: '/admin/platform-config',
   vendors: '/admin/vendors',
+  vendor: '/admin/vendors',
   whatsappPack: '/admin/whatsapp-pack',
+  whatsapppack: '/admin/whatsapp-pack',
+  'whatsapp-pack': '/admin/whatsapp-pack',
+  /** Platform Health lives at `/admin/health` (no inline `AdminTab`; sidebar uses this route). */
+  health: '/admin/health',
+  'platform-health': '/admin/health',
+  platformhealth: '/admin/health',
+  platform_health: '/admin/health',
+  platformHealth: '/admin/health',
 };
+
+function resolveAdminTabRedirect(trimmed: string): string | undefined {
+  return ADMIN_TAB_REDIRECTS[trimmed] ?? ADMIN_TAB_REDIRECTS[trimmed.toLowerCase()];
+}
 
 function parseAdminTabParam(raw: string | null): AdminTab {
   if (!raw) return 'overview';
   const trimmed = raw.trim();
-  if (ADMIN_TAB_REDIRECTS[trimmed]) return 'overview';
+  if (resolveAdminTabRedirect(trimmed)) return 'overview';
   const alias = ADMIN_TAB_QUERY_ALIASES[trimmed.toLowerCase()];
   if (alias) return alias;
   if (ADMIN_QUERY_TAB_WHITELIST.has(trimmed)) return trimmed as AdminTab;
@@ -411,14 +443,14 @@ function AdminPageContent() {
 
   useLayoutEffect(() => {
     if (!tabParam) return;
-    const target = ADMIN_TAB_REDIRECTS[tabParam];
+    const target = resolveAdminTabRedirect(tabParam);
     if (target) {
       router.replace(target, { scroll: false });
     }
   }, [tabParam, router]);
 
   useLayoutEffect(() => {
-    if (tabParam && ADMIN_TAB_REDIRECTS[tabParam]) return;
+    if (tabParam && resolveAdminTabRedirect(tabParam)) return;
     const next = parseAdminTabParam(tabParam);
     setTab((prev) => (prev === next ? prev : next));
   }, [tabParam]);
