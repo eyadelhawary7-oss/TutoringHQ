@@ -74,7 +74,7 @@ export default function PhoneInput({
                 setPhone(e.target.value.replace(/\D/g, ''));
                 setValidationError('');
               }}
-              placeholder={phonePlaceholderOverride ?? '1XXXXXXXXX'}
+              placeholder={phonePlaceholderOverride ?? t('phonePlaceholder')}
               className="flex-1 min-w-0 bg-transparent outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm"
               maxLength={10}
               required

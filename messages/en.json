@@ -965,7 +965,7 @@
     "subtitle": "Reset your PIN",
     "phoneLabel": "Phone Number",
     "phoneHint": "Enter your registered phone number",
-    "phonePlaceholder": "Enter your mobile number",
+    "phonePlaceholder": "Enter your phone number",
     "sendOtp": "Send OTP",
     "sendOTP": "Send Verification Code",
     "sending": "Sending...",
