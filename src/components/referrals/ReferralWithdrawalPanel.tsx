@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Banknote } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatCurrency } from '@/lib/formatNumber';
 
 function normalizeInstapayDigits(raw: string): string | null {
   const digits = raw.replace(/\D/g, '');
@@ -25,7 +25,6 @@ export function ReferralWithdrawalPanel({ available, instapayNumber, onSuccess }
   const t = useTranslations('referrals');
   const tc = useTranslations('common');
   const locale = useLocale();
-  const fmt = (n: number) => formatNumber(n, locale);
 
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
   const [payoutAmount, setPayoutAmount] = useState('');
@@ -49,8 +48,7 @@ export function ReferralWithdrawalPanel({ available, instapayNumber, onSuccess }
     if (amount > available) {
       setPayoutError(
         t('payoutExceedsBalance', {
-          max: fmt(available),
-          egp: tc('egp'),
+          max: formatCurrency(available, locale),
         }),
       );
       return;
@@ -100,10 +98,10 @@ export function ReferralWithdrawalPanel({ available, instapayNumber, onSuccess }
           {t('requestWithdrawal')}
         </h2>
         <p className="text-slate-700 dark:text-slate-200 mb-4 text-sm">
-          {t('availableBalanceLine', {
-            amount: fmt(available),
-            egp: tc('egp'),
-          })}
+          {t('availableBalanceIntro')}{' '}
+          <span dir="ltr" className="tabular-nums inline-block font-mono">
+            {formatCurrency(available, locale)}
+          </span>
         </p>
         <button
           type="button"

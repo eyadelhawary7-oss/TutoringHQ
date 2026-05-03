@@ -1157,7 +1157,9 @@ function SettingsPageContent() {
                   </p>
                   <p className="text-xs text-[var(--color-text-secondary)] mb-2">
                     {t('totalReferrals')}: {formatNumber(referralData.rewards?.length ?? 0, locale)} | {t('totalEarned')}:{' '}
-                    {formatCurrency(Number(referralData.totalEarned || 0), locale)}
+                    <span dir="ltr" className="tabular-nums inline-block">
+                      {formatCurrency(Number(referralData.totalEarned || 0), locale)}
+                    </span>
                   </p>
                   <div>
                     <p className="text-sm font-medium text-[var(--color-text-primary)] mb-2">{tReferral('rewardsTable')}</p>

@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Download, Gift, Link2 } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { ReferralWithdrawalPanel } from '@/components/referrals/ReferralWithdrawalPanel';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
 const PLAN_LABELS_AR: Record<string, string> = {
   nano: 'سنتر نانو',
@@ -276,7 +276,11 @@ export default function SettingsReferralsPage() {
               </div>
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('totalEarned')}</p>
-                <p className="text-xl font-bold text-teal-600 font-mono">{formatNumber(totalEarned, locale)} {tc('egp')}</p>
+                <p className="text-xl font-bold text-teal-600 font-mono">
+                  <span dir="ltr" className="tabular-nums inline-block">
+                    {formatCurrency(Number(totalEarned || 0), locale)}
+                  </span>
+                </p>
               </div>
             </div>
           </div>
@@ -318,7 +322,9 @@ export default function SettingsReferralsPage() {
                       return (
                         <tr key={p.id} className="border-b border-[var(--color-border-subtle)]">
                           <td className="py-3 px-4 font-mono font-semibold">
-                            {formatNumber(Number(p.amount_requested ?? 0), locale)} {tc('egp')}
+                            <span dir="ltr" className="tabular-nums inline-block">
+                              {formatCurrency(Number(p.amount_requested ?? 0), locale)}
+                            </span>
                           </td>
                           <td className="py-3 px-4">{p.status}</td>
                           <td className="py-3 px-4 text-[var(--color-text-secondary)]">
@@ -423,7 +429,9 @@ export default function SettingsReferralsPage() {
                           {getStatusBadge(r.status)}
                         </td>
                         <td className="py-3 px-4 text-end font-mono font-semibold text-[var(--color-text-primary)]">
-                          {formatNumber(r.total_earned_egp ?? 0, locale)} {tc('egp')}
+                          <span dir="ltr" className="tabular-nums inline-block">
+                            {formatCurrency(Number(r.total_earned_egp ?? 0), locale)}
+                          </span>
                         </td>
                       </tr>
                     ))}
