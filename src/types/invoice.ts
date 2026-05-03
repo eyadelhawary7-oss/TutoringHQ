@@ -27,7 +27,7 @@ export const INVOICE_TYPE_LABELS: Record<string, { ar: string; en: string }> = {
   subscription: { ar: 'فاتورة اشتراك', en: 'Subscription Invoice' },
   base_subscription: { ar: 'اشتراك أساسي', en: 'Base Subscription' },
   signup_first_payment: { ar: 'أول دفعة تسجيل', en: 'First Payment' },
-  pack_billing: { ar: 'فوترة باقة الواتساب', en: 'WhatsApp Pack Billing' },
+  pack_billing: { ar: 'فوترة باقة واتساب', en: 'WhatsApp Pack Billing' },
   announcement_settlement: { ar: 'تسوية الإعلانات', en: 'Announcement Settlement' },
   announcement_cap: { ar: 'تجاوز حد الإعلانات', en: 'Announcement Cap' },
   plan_upgrade_difference: { ar: 'فرق ترقية الخطة', en: 'Plan Upgrade Difference' },

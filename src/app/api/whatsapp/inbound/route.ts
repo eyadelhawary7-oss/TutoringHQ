@@ -38,7 +38,7 @@ const FAQ_PATTERNS = [
     key: 'renewal',
   },
   {
-    triggers: ['باقة الواتساب', 'whatsapp pack', 'إشعارات الأهالي'],
+    triggers: ['باقة واتساب', 'باقة الواتساب', 'حزمة واتساب', 'whatsapp pack', 'إشعارات الأهالي'],
     response: `باقة واتساب الأهالي بـ ${formatCurrency(12, 'ar')}/ولي أمر/شهر. فعّلها من الإعدادات > الإشعارات.`,
     key: 'wa_pack',
   },
