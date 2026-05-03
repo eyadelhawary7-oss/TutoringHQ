@@ -172,7 +172,7 @@ export const demoRequestSchema = z.object({
 export const inviteUserSchema = z.object({
   name: z.string().max(100).regex(/^[a-zA-Z\s\u0600-\u06FF]*$/, 'Invalid characters').optional().default(''),
   phone: egyptianPhoneRequired,
-  role: z.enum(['assistant', 'teacher']),
+  role: z.enum(['assistant', 'teacher', 'admin']),
   teacher_group_ids: z.array(z.string().uuid()).optional(),
   permissions: z.record(z.string(), z.boolean()).optional(),
 });

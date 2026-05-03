@@ -6,6 +6,7 @@ import { normalizePhone } from '@/lib/utils/phone';
 import { requireOwnerAdminCenter } from '@/lib/requireOwnerAdminCenter';
 import { sendTeamInvite } from '@/lib/centerNotify';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { parseBodyWithLimit, validatePhone, validateString, ValidationError } from '@/lib/validate';
 
 export async function POST(request: Request) {
   try {
@@ -25,7 +26,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 10240)) as Record<string, unknown>;
+    validatePhone(body.phone, 'phone');
+    const roleRaw = validateString(body.role, 'role', { required: true, maxLength: 20 });
+    if (!['admin', 'assistant', 'teacher'].includes(roleRaw)) {
+      throw new ValidationError('Invalid role value', 'role');
+    }
+
     const parsed = inviteUserSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
@@ -134,7 +141,14 @@ export async function POST(request: Request) {
       .maybeSingle();
     const centerName = String((centerNameRow as { name?: string | null } | null)?.name ?? '').trim() || '—';
     const inviteeName = name.trim() || '—';
-    const roleLabel = role === 'teacher' ? 'معلم' : role === 'assistant' ? 'مساعد' : role || 'assistant';
+    const roleLabel =
+      role === 'teacher'
+        ? 'معلم'
+        : role === 'assistant'
+          ? 'مساعد'
+          : role === 'admin'
+            ? 'مسؤول'
+            : role || 'assistant';
 
     if (inviteToken) {
       try {
@@ -164,6 +178,9 @@ export async function POST(request: Request) {
       message: 'تم إرسال الدعوة / Invitation sent! The person should go to the accept-invite page, enter their phone number to receive a verification code, verify, and create their login credentials.',
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message, field: error.field }, { status: 400 });
+    }
     console.error('Invite user error:', error);
     return NextResponse.json({
       error: 'حدث خطأ / Internal server error',
