@@ -13,6 +13,7 @@ import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Package, Wallet } from 'lucide-react';
 import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
+import { getSupportWhatsAppDisplayLabel, getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
 
 type TabType = 'general' | 'team';
 
@@ -62,8 +63,6 @@ interface PendingInvite {
   role: string;
   status: string;
 }
-
-const ADMIN_NOTIFICATION_PHONE = '201220601410';
 
 function maskInstapayDisplay(digits: string): string {
   const d = digits.replace(/\D/g, '');
@@ -1231,17 +1230,22 @@ function SettingsPageContent() {
               </div>
               <div className="p-6">
                 <p className="text-sm text-[var(--color-text-secondary)] mb-3" dir="ltr">
-                  {t('supportContact', { email: 'support@centerhq.com', phone: '+20 122 060 1410' })}
+                  {t('supportContact', {
+                    email: 'support@centerhq.com',
+                    phone: getSupportWhatsAppDisplayLabel() || '—',
+                  })}
                 </p>
-                <a
-                  href={`https://wa.me/${ADMIN_NOTIFICATION_PHONE}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors btn-lift"
-                >
-                  <MessageCircle className="w-4 h-4 shrink-0" aria-hidden />
-                  {t('chatOnWhatsapp')}
-                </a>
+                {getSupportWhatsAppWaMeBase() ? (
+                  <a
+                    href={getSupportWhatsAppWaMeBase()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors btn-lift"
+                  >
+                    <MessageCircle className="w-4 h-4 shrink-0" aria-hidden />
+                    {t('chatOnWhatsapp')}
+                  </a>
+                ) : null}
               </div>
             </div>
 

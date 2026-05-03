@@ -1,4 +1,4 @@
-const ADMIN_WA_NUMBER = '201220601410';
+import { getAdminOrSupportWhatsAppDigits } from '@/lib/supportWhatsApp';
 
 interface AdminFailureOpts {
   ref: string;
@@ -9,6 +9,14 @@ interface AdminFailureOpts {
 
 export async function notifyAdminOfVendorFailure(opts: AdminFailureOpts): Promise<void> {
   try {
+    const adminTo = getAdminOrSupportWhatsAppDigits();
+    if (!adminTo) {
+      console.warn(
+        '[notifyAdminFailure] Set ADMIN_WHATSAPP_NUMBER or NEXT_PUBLIC_SUPPORT_WHATSAPP to enable admin WhatsApp alerts',
+      );
+      return;
+    }
+
     const messageBody = [
       '⚠️ تنبيه — CenterHQ',
       '',
@@ -30,7 +38,7 @@ export async function notifyAdminOfVendorFailure(opts: AdminFailureOpts): Promis
         },
         body: JSON.stringify({
           messaging_product: 'whatsapp',
-          to: ADMIN_WA_NUMBER,
+          to: adminTo,
           type: 'text',
           text: { body: messageBody },
         }),

@@ -14,6 +14,7 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { getSupportWhatsAppWaMeWithText } from '@/lib/supportWhatsApp';
 
 const PLAYFAIR = {
   fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
@@ -22,8 +23,9 @@ const PLAYFAIR = {
 } as const;
 const SANS = { fontFamily: 'system-ui, -apple-system, sans-serif' } as const;
 
-const TOP_CENTERS_WHATSAPP =
-  'https://wa.me/201220601410?text=I%20am%20interested%20in%20the%20TOP%20CENTERS%20plan';
+const TOP_CENTERS_WHATSAPP = getSupportWhatsAppWaMeWithText(
+  'I am interested in the TOP CENTERS plan',
+);
 
 /** Bilingual labels for payment summary (must match select option values). */
 const CITY_SUMMARY_LABEL: Record<string, string> = {
@@ -1095,8 +1097,11 @@ export default function SignupPage() {
 
                 <button
                   type="button"
-                  onClick={() => window.open(TOP_CENTERS_WHATSAPP, '_blank')}
-                  className="group w-full border-b border-slate-800/60 py-5 text-start transition-all duration-300 hover:border-slate-700"
+                  disabled={!TOP_CENTERS_WHATSAPP}
+                  onClick={() => {
+                    if (TOP_CENTERS_WHATSAPP) window.open(TOP_CENTERS_WHATSAPP, '_blank');
+                  }}
+                  className="group w-full border-b border-slate-800/60 py-5 text-start transition-all duration-300 hover:border-slate-700 disabled:pointer-events-none disabled:opacity-40"
                 >
                   <div className="flex items-center justify-between">
                     <div>

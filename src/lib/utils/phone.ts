@@ -10,7 +10,7 @@
  *
  * Egyptian mobile: 010, 011, 012, 015 (10 digits after 0)
  * Full format: +20 followed by 10 digits (without leading 0)
- * Example: 01220601410 → +201220601410
+ * Example: 01234567890 → +201234567890
  */
 export function normalizePhone(phone: string): string {
   if (!phone || typeof phone !== 'string') return '';
@@ -20,7 +20,7 @@ export function normalizePhone(phone: string): string {
 
   if (digits.length === 0) return '';
 
-  // Has 20 prefix (e.g. "201220601410") → add + and return
+  // Has 20 prefix (e.g. "201234567890") → add + and return
   if (digits.startsWith('20') && digits.length >= 12) {
     return '+' + digits;
   }

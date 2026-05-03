@@ -5,9 +5,14 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { PLANS, ORDERED_SUBSCRIPTION_PLAN_KEYS } from '@/lib/pricing';
+import {
+  getSupportWhatsAppDisplayLabel,
+  getSupportWhatsAppWaMeBase,
+} from '@/lib/supportWhatsApp';
 import { Menu, X } from 'lucide-react';
 
-const WA_SUPPORT = 'https://wa.me/201220601410';
+const WA_SUPPORT = getSupportWhatsAppWaMeBase();
+const WA_SUPPORT_LABEL = getSupportWhatsAppDisplayLabel();
 
 type DemoScreen = 'scanning' | 'scanned' | 'dashboard' | 'whatsapp' | 'payment';
 
@@ -346,14 +351,18 @@ export default function LocaleHomePage() {
               >
                 {m('navPricing')}
               </a>
-              <a
-                href={WA_SUPPORT}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
-              >
-                {m('navContact')}
-              </a>
+              {WA_SUPPORT ? (
+                <a
+                  href={WA_SUPPORT}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
+                >
+                  {m('navContact')}
+                </a>
+              ) : (
+                <span className="text-sm text-slate-500">{m('navContact')}</span>
+              )}
             </nav>
 
             <div className="hidden items-center gap-2 md:flex">
@@ -397,15 +406,19 @@ export default function LocaleHomePage() {
               >
                 {m('navPricing')}
               </a>
-              <a
-                href={WA_SUPPORT}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-xl px-3 py-3 text-slate-300 btn-press chq-focus"
-                onClick={() => setMobileOpen(false)}
-              >
-                {m('navContact')}
-              </a>
+              {WA_SUPPORT ? (
+                <a
+                  href={WA_SUPPORT}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl px-3 py-3 text-slate-300 btn-press chq-focus"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {m('navContact')}
+                </a>
+              ) : (
+                <span className="rounded-xl px-3 py-3 text-slate-500">{m('navContact')}</span>
+              )}
               <Link
                 href="/login"
                 className="rounded-xl px-3 py-3 text-slate-300 btn-press chq-focus"
@@ -741,14 +754,20 @@ export default function LocaleHomePage() {
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center text-sm text-slate-400">
           <p>{m('footerTagline')}</p>
           <p className="text-xs">{footerT('ehgProduct')}</p>
-          <a
-            href={WA_SUPPORT}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-400 transition-colors hover:text-white btn-press chq-focus rounded-lg px-2 py-1"
-          >
-            {m('footerSupportLabel')}: +20 122 060 1410
-          </a>
+          {WA_SUPPORT ? (
+            <a
+              href={WA_SUPPORT}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 transition-colors hover:text-white btn-press chq-focus rounded-lg px-2 py-1"
+            >
+              {WA_SUPPORT_LABEL
+                ? `${m('footerSupportLabel')}: ${WA_SUPPORT_LABEL}`
+                : m('footerSupportLabel')}
+            </a>
+          ) : (
+            <p className="text-slate-500">{m('footerSupportLabel')}</p>
+          )}
           <p className="text-xs text-slate-600">{m('footerRights')}</p>
         </div>
       </footer>

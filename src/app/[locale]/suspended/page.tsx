@@ -6,8 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
 import LanguageToggle from '@/components/LanguageToggle';
-
-const SUPPORT_WHATSAPP = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || '201220601410';
+import { getSupportWhatsAppWaMeWithText } from '@/lib/supportWhatsApp';
 
 export default function SuspendedPage() {
   const t = useTranslations('suspended');
@@ -60,7 +59,7 @@ export default function SuspendedPage() {
     : isCenterSuspended
       ? t('centerSuspendedWhatsappMessage')
       : t('whatsappMessage');
-  const waHref = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(waMessage)}`;
+  const waHref = getSupportWhatsAppWaMeWithText(waMessage);
 
   return (
     <div
@@ -95,14 +94,16 @@ export default function SuspendedPage() {
           >
             {t('payNow')}
           </Link>
-          <a
-            href={waHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-xl border border-teal-800/50 px-6 py-3 text-center text-sm font-semibold text-teal-400 transition-colors hover:bg-teal-900/20 btn-press chq-focus"
-          >
-            {t('contactSupport')}
-          </a>
+          {waHref ? (
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl border border-teal-800/50 px-6 py-3 text-center text-sm font-semibold text-teal-400 transition-colors hover:bg-teal-900/20 btn-press chq-focus"
+            >
+              {t('contactSupport')}
+            </a>
+          ) : null}
         </div>
 
         <button

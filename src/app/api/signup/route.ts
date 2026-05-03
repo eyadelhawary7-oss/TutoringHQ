@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
+import { getSupportWhatsAppWaMeWithText } from '@/lib/supportWhatsApp';
 import { normalizePhone } from '@/lib/utils/phone';
 import {
   PLANS,
@@ -387,7 +388,7 @@ export async function POST(request: Request) {
 🔗 View in admin panel.`;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
-    const adminWhatsAppUrl = `https://wa.me/201220601410?text=${encodeURIComponent(whatsappMessage)}`;
+    const adminWhatsAppUrl = getSupportWhatsAppWaMeWithText(whatsappMessage) || '';
 
     return NextResponse.json({
       success: true,
