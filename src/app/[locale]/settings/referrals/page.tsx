@@ -245,10 +245,13 @@ export default function SettingsReferralsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tRef('yourCode')}</p>
-                <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">{referralCode || '-'}</p>
                 {user?.role === 'super_admin' && !referralCode ? (
-                  <p className="mt-2 text-sm text-[var(--color-text-secondary)] max-w-sm">{tRef('noCodeSuperAdmin')}</p>
-                ) : null}
+                  <p className="text-sm font-normal text-[var(--color-text-secondary)] leading-relaxed max-w-md">
+                    {tRef('noCodeSuperAdmin')}
+                  </p>
+                ) : (
+                  <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">{referralCode || '-'}</p>
+                )}
                 {referralCode ? (
                   <button
                     type="button"
