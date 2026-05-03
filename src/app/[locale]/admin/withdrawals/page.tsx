@@ -191,7 +191,7 @@ export default function AdminWithdrawalsPage() {
               <p className="text-sm font-medium text-slate-800 dark:text-teal-100">
                 {t('summary', {
                   quarter: formatPlainInteger(quarter, locale),
-                  year: formatPlainInteger(year, locale),
+                  year: String(year),
                   count: formatNumber(summaryCount, locale),
                   sum: formatCurrency(summarySum, locale),
                 })}
