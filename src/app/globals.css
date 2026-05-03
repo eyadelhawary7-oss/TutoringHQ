@@ -566,7 +566,9 @@ html.light [data-chq-landing],
 html [data-chq-signup],
 html.light [data-chq-signup],
 html [data-chq-forgot-password],
-html.light [data-chq-forgot-password] {
+html.light [data-chq-forgot-password],
+html [data-chq-session-expired],
+html.light [data-chq-session-expired] {
   --color-surface-0: #080f1a !important;
   --color-surface-1: #0f172a !important;
   --color-surface-2: #1e293b !important;
@@ -1460,12 +1462,14 @@ html.light [data-chq-login] input:-webkit-autofill {
 
 /* Session expired — full-page dark surface (same as login/signup) even in html.light */
 [data-chq-session-expired] {
-  background-color: #080d14 !important;
+  background-color: #080f1a !important;
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
 }
 
 html.light [data-chq-session-expired] {
-  background-color: #080d14 !important;
+  background-color: #080f1a !important;
 }
 
 [data-chq-session-expired] .text-white,
@@ -2190,10 +2194,11 @@ html.light {
   animation: chq-fade-in 200ms ease forwards;
 }
 
-/* Landing / signup / forgot-password: dark canvas so fast scroll never shows light body gaps */
+/* Landing / signup / forgot-password / session-expired: dark canvas so fast scroll never shows light body gaps */
 [data-chq-landing],
 [data-chq-signup],
-[data-chq-forgot-password] {
+[data-chq-forgot-password],
+[data-chq-session-expired] {
   background-color: #080f1a;
 }
 html:has([data-chq-landing]),
@@ -2201,8 +2206,13 @@ body:has([data-chq-landing]),
 html:has([data-chq-signup]),
 body:has([data-chq-signup]),
 html:has([data-chq-forgot-password]),
-body:has([data-chq-forgot-password]) {
+body:has([data-chq-forgot-password]),
+html:has([data-chq-session-expired]),
+body:has([data-chq-session-expired]) {
   background-color: #080f1a;
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
 }
 
 @keyframes chq-shimmer {
