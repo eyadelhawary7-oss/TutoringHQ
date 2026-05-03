@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { signupRatelimit, getClientIp, rateLimitedResponse } from '@/lib/ratelimit';
+import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { normalizePhone } from '@/lib/utils/phone';
 import {
   PLANS,
@@ -89,16 +89,38 @@ async function phoneHasActiveCenter(supabase: SupabaseClient, formattedPhone: st
 
 export async function POST(request: Request) {
   try {
-    if (signupRatelimit) {
-      const ip = getClientIp(request);
-      const { success, reset } = await signupRatelimit.limit(ip);
-      if (!success) {
-        const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-        return rateLimitedResponse(retryAfter);
-      }
+    type SignupJson = {
+      centerName?: string;
+      ownerName?: string;
+      phone?: string;
+      city?: unknown;
+      plan?: string;
+      notes?: string;
+      referralCode?: string;
+      email?: string;
+      initiatePayment?: unknown;
+      billingPeriod?: unknown;
+      billing_period?: unknown;
+    };
+
+    let body: SignupJson;
+    try {
+      body = (await request.json()) as SignupJson;
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
-    const body = await request.json();
+    const rawPhone = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const ip = getClientIp(request);
+    const normalizedForKey = rawPhone ? normalizePhone(rawPhone) : '';
+    const signupKey =
+      normalizedForKey.length > 0 ? `signup:${normalizedForKey}` : `signup:${ip}`;
+    const signupWindowSec = 3600;
+    const { success } = await rateLimit(signupKey, 3, signupWindowSec);
+    if (!success) {
+      return rateLimitExceededResponse(signupWindowSec);
+    }
+
     const {
       centerName,
       ownerName,

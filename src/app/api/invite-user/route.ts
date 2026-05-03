@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { inviteUserSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { normalizePhone } from '@/lib/utils/phone';
@@ -10,6 +11,13 @@ export async function POST(request: Request) {
   try {
     const ctx = await requireOwnerAdminCenter(request);
     if (ctx instanceof NextResponse) return ctx;
+
+    const inviteWindowSec = 3600;
+    const { success } = await rateLimit(`invite:${ctx.centerId}`, 10, inviteWindowSec);
+    if (!success) {
+      return rateLimitExceededResponse(inviteWindowSec);
+    }
+
     if (!validateCSRFRequest(request, ctx.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }

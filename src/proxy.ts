@@ -10,46 +10,6 @@ function stripLocalePrefix(pathname: string): string {
   return pathname.replace(/^\/(ar|en)(\/|$)/, '/') || '/';
 }
 
-// --- Rate limiting: in-memory Map (Edge-compatible, per-instance) ---
-const LOGIN_RATE_LIMIT = 5;
-const LOGIN_WINDOW_MS = 60 * 1000; // 1 minute
-const LOGIN_WINDOW_SEC = 60;
-
-type RateLimitEntry = { count: number; firstAttempt: number };
-
-const loginAttempts = new Map<string, RateLimitEntry>();
-
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    'unknown'
-  );
-}
-
-function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter: number } {
-  const now = Date.now();
-  const entry = loginAttempts.get(ip);
-
-  if (!entry) {
-    loginAttempts.set(ip, { count: 1, firstAttempt: now });
-    return { allowed: true, retryAfter: LOGIN_WINDOW_SEC };
-  }
-
-  const windowEnd = entry.firstAttempt + LOGIN_WINDOW_MS;
-  if (now >= windowEnd) {
-    loginAttempts.set(ip, { count: 1, firstAttempt: now });
-    return { allowed: true, retryAfter: LOGIN_WINDOW_SEC };
-  }
-
-  if (entry.count >= LOGIN_RATE_LIMIT) {
-    return { allowed: false, retryAfter: Math.ceil((windowEnd - now) / 1000) };
-  }
-
-  entry.count += 1;
-  return { allowed: true, retryAfter: LOGIN_WINDOW_SEC };
-}
-
 // --- Security headers (applied to all responses) ---
 const SECURITY_HEADERS: [string, string][] = [
   [
@@ -69,7 +29,9 @@ const SECURITY_HEADERS: [string, string][] = [
   ],
   ['X-Frame-Options', 'DENY'],
   ['X-Content-Type-Options', 'nosniff'],
+  ['X-XSS-Protection', '1; mode=block'],
   ['Referrer-Policy', 'strict-origin-when-cross-origin'],
+  ['Permissions-Policy', 'camera=(), microphone=(), geolocation=()'],
 ];
 
 function applySecurityHeaders(response: NextResponse): NextResponse {
@@ -125,20 +87,6 @@ function isApiRoute(pathname: string): boolean {
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Rate limit POST /api/login
-  if (pathname === '/api/login' && request.method === 'POST') {
-    const ip = getClientIp(request);
-    const { allowed, retryAfter } = checkLoginRateLimit(ip);
-    if (!allowed) {
-      const res = NextResponse.json(
-        { error: 'too_many_attempts', retry_after: retryAfter },
-        { status: 429 }
-      );
-      res.headers.set('Retry-After', String(retryAfter));
-      return applySecurityHeaders(res);
-    }
-  }
 
   // Paymob card-order webhook — public; Paymob calls with no user session.
   if (pathname === '/api/paymob/webhook') {

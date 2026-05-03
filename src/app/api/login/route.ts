@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { loginRatelimit, getClientIp, rateLimitedResponse } from '@/lib/ratelimit';
+import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { normalizePhone } from '@/lib/utils/phone';
 
 /**
@@ -9,15 +9,26 @@ import { normalizePhone } from '@/lib/utils/phone';
  */
 export async function POST(request: Request) {
   try {
-    // Rate limiting — check before any DB operations
-    if (loginRatelimit) {
-      const ip = getClientIp(request);
-      const { success, reset } = await loginRatelimit.limit(ip);
-      if (!success) {
-        const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-        return rateLimitedResponse(retryAfter);
-      }
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
+
+    const phoneRaw = typeof (body as { phone?: unknown })?.phone === 'string'
+      ? (body as { phone: string }).phone.trim()
+      : '';
+    const ip = getClientIp(request);
+    const normalizedForLoginKey = phoneRaw ? normalizePhone(phoneRaw) : '';
+    const loginKey =
+      normalizedForLoginKey.length > 0 ? `login:${normalizedForLoginKey}` : `login:${ip}`;
+    const loginWindowSec = 900;
+    const { success } = await rateLimit(loginKey, 5, loginWindowSec);
+    if (!success) {
+      return rateLimitExceededResponse(loginWindowSec);
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -28,8 +39,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const phone = typeof body?.phone === 'string' ? body.phone.trim() : '';
+    const phone = phoneRaw;
 
     if (!phone) {
       return NextResponse.json(

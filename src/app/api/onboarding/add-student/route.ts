@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+
+  const onboardWindowSec = 3600;
+  const { success } = await rateLimit(`onboard:${auth.centerId}`, 20, onboardWindowSec);
+  if (!success) {
+    return rateLimitExceededResponse(onboardWindowSec);
+  }
+
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }

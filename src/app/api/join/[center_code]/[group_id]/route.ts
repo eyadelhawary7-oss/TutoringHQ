@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
+import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ center_code: string; group_id: string }> },
 ) {
+  const joinWindowSec = 3600;
+  const ip = getClientIp(request);
+  const { success } = await rateLimit(`join:${ip}`, 10, joinWindowSec);
+  if (!success) {
+    return rateLimitExceededResponse(joinWindowSec);
+  }
+
   const { center_code, group_id } = await context.params;
 
   if (!center_code || !group_id) {
