@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { afterStudentWriteParentPackEffects } from '@/lib/studentParentPackWelcome';
+import { logAdminAction } from '@/lib/audit';
 
 type ApproveStudentRpcRow = {
   new_student_count?: number | null;
@@ -37,6 +38,8 @@ export async function POST(
     }
     return NextResponse.json({ error: rpcErr.message }, { status: 500 });
   }
+
+  await logAdminAction(userId ?? 'unknown', 'student_approval', { studentId, centerId }, centerId);
 
   const { data: studentRow } = await supabaseAdmin
     .from('students')

@@ -10,6 +10,7 @@ import {
   toArabicNumerals,
   WA_TEMPLATES,
 } from '@/lib/parentPack';
+import { assertIsoDateForOrFilter } from '@/lib/postgrestSafe';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
 
   try {
     const todayDayOfWeek = getDayOfWeek(new Date());
-    const todayCairo = getTodayCairo();
+    const todayCairo = assertIsoDateForOrFilter(getTodayCairo(), 'todayCairo');
     const { hour: currentHour, minute: currentMin } = getCurrentCairoTime();
     const sentToday = new Set<string>();
 

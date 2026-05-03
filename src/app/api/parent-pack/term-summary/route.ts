@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import { toArabicNumerals, WA_TEMPLATES } from '@/lib/parentPack';
 import { requireOwnerAdminCenter } from '@/lib/requireOwnerAdminCenter';
+import { assertIsoDateForOrFilter } from '@/lib/postgrestSafe';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,9 @@ export async function POST(request: NextRequest) {
   if (!period) {
     return NextResponse.json({ error: 'Period not found' }, { status: 404 });
   }
+
+  const periodStart = assertIsoDateForOrFilter(String(period.start_date).slice(0, 10), 'period.start_date');
+  const periodEnd = assertIsoDateForOrFilter(String(period.end_date).slice(0, 10), 'period.end_date');
 
   const { data: ctr } = await supabaseAdmin.from('centers').select('name').eq('id', centerId).maybeSingle();
 
@@ -99,7 +103,7 @@ export async function POST(request: NextRequest) {
   const weeks = Math.max(
     1,
     Math.round(
-      (new Date(`${period.end_date}T12:00:00`).getTime() - new Date(`${period.start_date}T12:00:00`).getTime()) /
+      (new Date(`${periodEnd}T12:00:00`).getTime() - new Date(`${periodStart}T12:00:00`).getTime()) /
         msPerWeek,
     ),
   );
@@ -111,15 +115,15 @@ export async function POST(request: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .eq('student_id', student.id)
       .eq('group_id', student.groupId)
-      .gte('session_date', period.start_date)
-      .lte('session_date', period.end_date);
+      .gte('session_date', periodStart)
+      .lte('session_date', periodEnd);
 
     const { count: slotsPerWeek } = await supabaseAdmin
       .from('schedule_slots')
       .select('id', { count: 'exact', head: true })
       .eq('group_id', student.groupId)
       .eq('recurring', true)
-      .or(`recurring_until.is.null,recurring_until.gte.${period.start_date}`);
+      .or(`recurring_until.is.null,recurring_until.gte.${periodStart}`);
 
     const totalSessions = (slotsPerWeek ?? 1) * weeks;
 

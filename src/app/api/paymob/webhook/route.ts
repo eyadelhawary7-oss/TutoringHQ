@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCardOrderPaymobHmac } from '@/lib/paymob';
 import { triggerT1Eligible, resumeCommissionClocks } from '@/lib/commissions';
@@ -96,11 +97,9 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
         );
         if (!cardResult) {
           const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
-          // Includes invoice_type signup_first_payment: pending_payment centers are finalized in processInvoiceSignupAfterPaymobSuccess.
           await finalizeInvoicePaymentSuccess(supabaseAdminLocal, orderId, transactionId);
         }
       }
-      // Signup flow: platform_config keys auto_approve_signups, pause_new_signups (see signupPaymobAutoApprove).
       const { processSignupAutoApprovalAfterPaymobSuccess } = await import('@/lib/signupPaymobAutoApprove');
       await processSignupAutoApprovalAfterPaymobSuccess(supabaseAdminLocal, orderId, transactionId);
 
@@ -224,6 +223,25 @@ export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
 
+    const hmacSecret = process.env.PAYMOB_HMAC_SECRET;
+    if (!hmacSecret) {
+      return NextResponse.json({ error: 'Config error' }, { status: 500 });
+    }
+
+    const receivedHeaderHmac = (request.headers.get('x-hmac-signature') ?? '').trim();
+    if (receivedHeaderHmac) {
+      const computedHmac = crypto.createHmac('sha512', hmacSecret).update(rawBody, 'utf8').digest('hex');
+      try {
+        const a = Buffer.from(receivedHeaderHmac, 'hex');
+        const b = Buffer.from(computedHmac, 'hex');
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      }
+    }
+
     let payload: Record<string, unknown>;
     try {
       payload = JSON.parse(rawBody) as Record<string, unknown>;
@@ -231,21 +249,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    const hmacFromQuery = request.nextUrl.searchParams.get('hmac') ?? '';
+    if (!receivedHeaderHmac) {
+      const hmacFromQuery = request.nextUrl.searchParams.get('hmac') ?? '';
+      const hmac = hmacFromQuery || (typeof payload.hmac === 'string' ? payload.hmac : '');
+      const obj = payload.obj;
 
-    const hmac = hmacFromQuery || (typeof payload.hmac === 'string' ? payload.hmac : '');
-    const obj = payload.obj;
+      if (!hmac || !obj || typeof obj !== 'object') {
+        return paymobAck({ error: 'invalid_payload' });
+      }
 
-    if (!hmac || !obj || typeof obj !== 'object') {
-      return paymobAck({ error: 'invalid_payload' });
+      if (!verifyCardOrderPaymobHmac(obj as Record<string, unknown>, hmac)) {
+        console.warn('[paymob/webhook] Invalid HMAC');
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      }
     }
 
-    if (!verifyCardOrderPaymobHmac(obj as Record<string, unknown>, hmac)) {
-      console.warn('[paymob/webhook] Invalid HMAC');
-      return paymobAck({ error: 'invalid_hmac' });
-    }
-
-    const objAsRec = payload.obj as Record<string, unknown>;
+    const objAsRec = payload.obj as Record<string, unknown> | undefined;
     const transactionId =
       (objAsRec?.id as string | number | null | undefined) ??
       (payload.id as string | number | null | undefined) ??

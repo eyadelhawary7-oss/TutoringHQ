@@ -16,6 +16,7 @@ import {
 } from '@/lib/whatsapp/flows/dailySummary';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { assertIsoDateForOrFilter, orClauseDayOfWeekEgypt } from '@/lib/postgrestSafe';
 
 const CEO_LOCALE = 'en';
 
@@ -323,7 +324,7 @@ export async function POST(request: Request) {
   try {
     await runCeoDailyBriefing(supabase);
 
-    const yesterdayStr = getYesterdayCairo();
+    const yesterdayStr = assertIsoDateForOrFilter(getYesterdayCairo(), 'yesterdayStr');
     const { start: rangeStart, end: rangeEnd } = getYesterdayCairoUtcRange();
     const egyptDay = getEgyptDayOfWeek(yesterdayStr);
 
@@ -366,9 +367,6 @@ export async function POST(request: Request) {
     const centerList = centers as { id: string; name: string; phone: string }[];
     const centerIds = centerList.map((c) => c.id);
 
-    const dayNames = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
-    const dayName = dayNames[egyptDay];
-
     const [scansRangeRes, paymentsRes, studentsRes, slotsRes, sessionScansRes] = await Promise.all([
       supabase
         .from('attendance_scans')
@@ -391,7 +389,7 @@ export async function POST(request: Request) {
         .from('schedule_slots')
         .select('id, group_id, center_id')
         .in('center_id', centerIds)
-        .or(`day_of_week.eq.${egyptDay},day_of_week.eq.${dayName}`),
+        .or(orClauseDayOfWeekEgypt(egyptDay)),
       supabase
         .from('attendance_scans')
         .select('center_id, student_id')

@@ -10,6 +10,30 @@ function stripLocalePrefix(pathname: string): string {
   return pathname.replace(/^\/(ar|en)(\/|$)/, '/') || '/';
 }
 
+const ALLOWED_API_ORIGINS = new Set([
+  'https://centerhq.app',
+  'https://www.centerhq.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+]);
+
+/** Public POST webhooks (server-to-server; Origin often absent). */
+const PUBLIC_WEBHOOK_PREFIXES = [
+  '/api/paymob/webhook',
+  '/api/bosta/webhook',
+  '/api/whatsapp/webhook',
+  '/api/whatsapp/inbound',
+];
+
+function isPublicWebhookPath(pathname: string): boolean {
+  return PUBLIC_WEBHOOK_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+function isAllowedCorsOrigin(origin: string | null): boolean {
+  if (origin == null || origin === '') return true;
+  return ALLOWED_API_ORIGINS.has(origin.trim());
+}
+
 // --- Security headers (applied to all responses) ---
 const SECURITY_HEADERS: [string, string][] = [
   [
@@ -34,7 +58,8 @@ const SECURITY_HEADERS: [string, string][] = [
   ['Permissions-Policy', 'camera=(), microphone=(), geolocation=()'],
 ];
 
-function applySecurityHeaders(response: NextResponse): NextResponse {
+function applySecurityHeaders(response: NextResponse, requestId: string): NextResponse {
+  response.headers.set('X-Request-ID', requestId);
   for (const [key, value] of SECURITY_HEADERS) {
     response.headers.set(key, value);
   }
@@ -85,21 +110,45 @@ function isApiRoute(pathname: string): boolean {
   return apiRoutes.some(route => pathname.startsWith(route));
 }
 
+function newRequestId(): string {
+  return globalThis.crypto.randomUUID();
+}
+
 export default async function proxy(request: NextRequest) {
+  const requestId = newRequestId();
   const { pathname } = request.nextUrl;
+
+  const blockedPaths = ['/.env', '/wp-admin', '/phpinfo', '/.git', '/admin.php'];
+  if (blockedPaths.some((p) => pathname.startsWith(p))) {
+    return applySecurityHeaders(new NextResponse('Not Found', { status: 404 }), requestId);
+  }
+
+  if (pathname.startsWith('/api')) {
+    const method = request.method;
+    const origin = request.headers.get('origin');
+    if (method === 'OPTIONS') {
+      if (!isAllowedCorsOrigin(origin)) {
+        return applySecurityHeaders(new NextResponse(null, { status: 403 }), requestId);
+      }
+    } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && origin && !isAllowedCorsOrigin(origin)) {
+      if (!isPublicWebhookPath(pathname)) {
+        return applySecurityHeaders(NextResponse.json({ error: 'Forbidden' }, { status: 403 }), requestId);
+      }
+    }
+  }
 
   // Paymob card-order webhook — public; Paymob calls with no user session.
   if (pathname === '/api/paymob/webhook') {
-    return applySecurityHeaders(NextResponse.next());
+    return applySecurityHeaders(NextResponse.next(), requestId);
   }
 
   if (pathname === '/api/bosta/webhook') {
-    return applySecurityHeaders(NextResponse.next());
+    return applySecurityHeaders(NextResponse.next(), requestId);
   }
 
   if (isApiRoute(pathname)) {
     const res = NextResponse.next();
-    return applySecurityHeaders(res);
+    return applySecurityHeaders(res, requestId);
   }
 
   if (
@@ -110,13 +159,13 @@ export default async function proxy(request: NextRequest) {
     pathname.startsWith('/manifest.json')
   ) {
     const res = NextResponse.next();
-    return applySecurityHeaders(res);
+    return applySecurityHeaders(res, requestId);
   }
 
   const intlResponse = intlMiddleware(request);
 
   if (isPublicRoute(pathname)) {
-    return applySecurityHeaders(intlResponse);
+    return applySecurityHeaders(intlResponse, requestId);
   }
 
   let supabaseResponse = intlResponse;
@@ -128,7 +177,7 @@ export default async function proxy(request: NextRequest) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      return applySecurityHeaders(intlResponse);
+      return applySecurityHeaders(intlResponse, requestId);
     }
 
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -155,7 +204,7 @@ export default async function proxy(request: NextRequest) {
       storedCookies.forEach(({ name, value, options }) =>
         redirectResp.cookies.set(name, value, options ?? {})
       );
-      return applySecurityHeaders(redirectResp);
+      return applySecurityHeaders(redirectResp, requestId);
     }
 
     if (user) {
@@ -184,7 +233,7 @@ export default async function proxy(request: NextRequest) {
             storedCookies.forEach(({ name, value, options }) =>
               blocked.cookies.set(name, value, options ?? {})
             );
-            return applySecurityHeaders(blocked);
+            return applySecurityHeaders(blocked, requestId);
           }
         }
 
@@ -212,7 +261,7 @@ export default async function proxy(request: NextRequest) {
             storedCookies.forEach(({ name, value, options }) =>
               redirectResp.cookies.set(name, value, options ?? {})
             );
-            return applySecurityHeaders(redirectResp);
+            return applySecurityHeaders(redirectResp, requestId);
           }
         }
 
@@ -227,7 +276,7 @@ export default async function proxy(request: NextRequest) {
           storedCookies.forEach(({ name, value, options }) =>
             redirectResp.cookies.set(name, value, options ?? {})
           );
-          return applySecurityHeaders(redirectResp);
+          return applySecurityHeaders(redirectResp, requestId);
         }
       }
     }
@@ -235,7 +284,7 @@ export default async function proxy(request: NextRequest) {
     // Auth check failed, continue
   }
 
-  return applySecurityHeaders(supabaseResponse);
+  return applySecurityHeaders(supabaseResponse, requestId);
 }
 
 export const config = {

@@ -8,6 +8,7 @@ import { sendPaymentRetry } from '@/lib/centerNotify';
 import { FEATURES } from '@/lib/features';
 import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { assertIsoDateForOrFilter } from '@/lib/postgrestSafe';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
   }
 
   const admin = supabaseAdmin;
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = assertIsoDateForOrFilter(new Date().toISOString().slice(0, 10), 'todayStr');
 
   let rows: InvoiceRetryRow[] = [];
   try {

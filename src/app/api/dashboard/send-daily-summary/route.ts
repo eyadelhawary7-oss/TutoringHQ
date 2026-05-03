@@ -6,6 +6,7 @@ import {
   getYesterdayCairoUtcRange,
   type DailySummaryData,
 } from '@/lib/whatsapp/flows/dailySummary';
+import { assertIsoDateForOrFilter, orClauseDayOfWeekEgypt } from '@/lib/postgrestSafe';
 
 async function getUserCenter(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -92,11 +93,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'center_inactive' }, { status: 400 });
     }
 
-    const yesterdayStr = getYesterdayCairo();
+    const yesterdayStr = assertIsoDateForOrFilter(getYesterdayCairo(), 'yesterdayStr');
     const { start: rangeStart, end: rangeEnd } = getYesterdayCairoUtcRange();
     const egyptDay = getEgyptDayOfWeek(yesterdayStr);
-    const dayNames = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
-    const dayName = dayNames[egyptDay];
 
     const [scansRangeRes, paymentsRes, studentsRes, slotsRes, sessionScansRes] = await Promise.all([
       supabaseAdmin
@@ -120,7 +119,7 @@ export async function POST(request: NextRequest) {
         .from('schedule_slots')
         .select('id, group_id, center_id')
         .eq('center_id', centerId)
-        .or(`day_of_week.eq.${egyptDay},day_of_week.eq.${dayName}`),
+        .or(orClauseDayOfWeekEgypt(egyptDay)),
       supabaseAdmin
         .from('attendance_scans')
         .select('center_id, student_id')

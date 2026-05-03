@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { parseBodyWithLimit, validatePhone, validateString, ValidationError } from '@/lib/validate';
+import { orClauseCenterByCodeOrId } from '@/lib/postgrestSafe';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -32,10 +33,10 @@ export async function GET(
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
 
-  const codeIsUuid = UUID_RE.test(center_code);
-  const orFilter = codeIsUuid
-    ? `center_code.eq.${center_code},id.eq.${center_code}`
-    : `center_code.eq.${center_code}`;
+  const orFilter = orClauseCenterByCodeOrId(center_code);
+  if (!orFilter) {
+    return NextResponse.json({ error: 'Invalid link' }, { status: 404 });
+  }
 
   const { data: center, error: centerError } = await supabase
     .from('centers')
@@ -107,10 +108,10 @@ export async function POST(
       return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
     }
 
-    const codeIsUuid = UUID_RE.test(center_code);
-    const orFilter = codeIsUuid
-      ? `center_code.eq.${center_code},id.eq.${center_code}`
-      : `center_code.eq.${center_code}`;
+    const orFilter = orClauseCenterByCodeOrId(center_code);
+    if (!orFilter) {
+      return NextResponse.json({ error: 'Invalid link' }, { status: 404 });
+    }
 
     const { data: center, error: centerError } = await admin
       .from('centers')
