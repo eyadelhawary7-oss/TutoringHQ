@@ -12,7 +12,7 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { getAnnualChargeRounded } from '@/lib/pricing';
 import { useToast } from '@/hooks/useToast';
 import { Pin, Trash2 } from 'lucide-react';
-import { districtSlugFromDisplay, formatDistrictDisplay } from '@/lib/formatDistrict';
+import { districtSlugFromDisplay } from '@/lib/formatDistrict';
 import { formatDate as formatDateI18n, formatDateTime, formatNumber } from '@/lib/formatNumber';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 
@@ -219,6 +219,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
   const isRTL = locale === 'ar';
+
+  /** Slug → label for display only (DB/API values stay underscore-separated). */
+  const formatDistrict = (value: string) => value.replace(/_/g, ' ');
+  const formatDistrictLabel = (value: string) =>
+    formatDistrict(value).replace(/\b\w/g, (c) => c.toUpperCase());
 
   const formatPlanKey = (plan: unknown): string => {
     const p = String(plan ?? '').trim().toLowerCase();
@@ -1712,8 +1717,10 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('centerManagement.section1.city')}</label>
                     <input
                       type="text"
-                      value={s1City}
-                      onChange={(e) => setS1City(e.target.value)}
+                      value={/_/.test(s1City) ? formatDistrictLabel(s1City) : s1City}
+                      onChange={(e) =>
+                        setS1City(s1City.includes('_') ? districtSlugFromDisplay(e.target.value) : e.target.value)
+                      }
                       className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
@@ -1723,7 +1730,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </label>
                     <input
                       type="text"
-                      value={formatDistrictDisplay(s1District)}
+                      value={formatDistrictLabel(s1District)}
                       onChange={(e) => setS1District(districtSlugFromDisplay(e.target.value))}
                       className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
                     />
@@ -1738,6 +1745,10 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="">{tCommon('select')}</option>
+                      {s1Governorate !== '' &&
+                      !GOVERNORATE_OPTIONS.some((o) => o.value === s1Governorate) ? (
+                        <option value={s1Governorate}>{formatDistrictLabel(s1Governorate)}</option>
+                      ) : null}
                       {GOVERNORATE_OPTIONS.map((o) => (
                         <option key={o.value} value={o.value}>
                           {o.label}
