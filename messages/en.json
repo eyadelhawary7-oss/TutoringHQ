@@ -2578,6 +2578,7 @@
     "businessLimit": "Up to 1,000 students/week",
     "enterpriseLimit": "Up to 2,000 students/week",
     "terms": "I agree to terms and conditions",
+    "termsAcceptance": "I agree to the <termsLink>Terms of Service & Privacy Policy</termsLink>",
     "submit": "Submit Request",
     "success": "Request submitted successfully",
     "successMessage": "Your request will be reviewed within 24 hours",

@@ -4912,6 +4912,7 @@
     "businessLimit": "ما يصل إلى 1000 طالب/أسبوع",
     "enterpriseLimit": "ما يصل إلى 2000 طالب/أسبوع",
     "terms": "أوافق على الشروط والأحكام",
+    "termsAcceptance": "أوافق على <termsLink>شروط الخدمة وسياسة الخصوصية</termsLink>",
     "submit": "إرسال الطلب",
     "success": "تم تقديم الطلب بنجاح.",
     "successMessage": "Your request will be reviewed within 24 hours",

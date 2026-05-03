@@ -102,6 +102,7 @@ export async function POST(request: Request) {
       initiatePayment?: unknown;
       billingPeriod?: unknown;
       billing_period?: unknown;
+      termsAccepted?: unknown;
     };
 
     let body: SignupJson;
@@ -132,7 +133,12 @@ export async function POST(request: Request) {
       referralCode,
       email,
       initiatePayment: initiatePaymentRaw,
+      termsAccepted: termsAcceptedRaw,
     } = body;
+
+    if (termsAcceptedRaw !== true) {
+      return NextResponse.json({ error: 'Terms of Service must be accepted' }, { status: 400 });
+    }
 
     const billingPeriodRaw =
       body.billingPeriod ?? body.billing_period ?? 'quarterly';
@@ -239,6 +245,7 @@ export async function POST(request: Request) {
 
     const emailTrim = typeof email === 'string' ? email.trim() : '';
 
+    const termsAcceptedAt = new Date().toISOString();
     const centerInsert: Record<string, unknown> = {
       name: centerName.trim(),
       owner_name: ownerName.trim(),
@@ -254,6 +261,8 @@ export async function POST(request: Request) {
       billing_amount: defaultQuarterlyInvoice,
       all_in_price: allInPerMonth,
       requested_at: new Date().toISOString(),
+      terms_accepted_at: termsAcceptedAt,
+      terms_version: 'v1-2026-05',
     };
 
     if (initiatePayment) {

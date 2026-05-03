@@ -27,6 +27,9 @@ const TOP_CENTERS_WHATSAPP = getSupportWhatsAppWaMeWithText(
   'I am interested in the TOP CENTERS plan',
 );
 
+const TERMS_OF_SERVICE_DOC_URL =
+  'https://docs.google.com/document/d/1-N6vT2WkqhBgh6QtC7-AyN3OHI2HhHYzky6odZQPYRw/edit?usp=drivesdk';
+
 /** Bilingual labels for payment summary (must match select option values). */
 const CITY_SUMMARY_LABEL: Record<string, string> = {
   cairo: 'القاهرة - Cairo',
@@ -208,8 +211,8 @@ export default function SignupPage() {
     billingPeriod: 'quarterly' as BillingPeriod,
     referralCode: '',
     notes: '',
-    agreeTerms: false,
   });
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showReferral, setShowReferral] = useState(false);
@@ -235,7 +238,7 @@ export default function SignupPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.agreeTerms || loading) return;
+    if (!termsAccepted || loading) return;
     setLoading(true);
     setError('');
     try {
@@ -259,6 +262,7 @@ export default function SignupPage() {
           referralCode: form.referralCode || null,
           notes: form.notes,
           initiatePayment: true,
+          termsAccepted: true,
         }),
       });
       const data = (await res.json()) as { error?: string; paymentUrl?: string; success?: boolean };
@@ -670,42 +674,32 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', margin: '22px 0 16px' }}>
-              <button
-                type="button"
-                aria-pressed={form.agreeTerms}
-                onClick={() => updateForm('agreeTerms', !form.agreeTerms)}
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '4px',
-                  border: `1.5px solid ${form.agreeTerms ? '#0D9488' : '#1e293b'}`,
-                  background: form.agreeTerms ? '#0D9488' : 'transparent',
-                  flexShrink: 0,
-                  marginTop: '1px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 0,
-                }}
+            <div className="mt-4 flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border border-[var(--color-border)] accent-[#0D9488]"
+              />
+              <label
+                htmlFor="terms"
+                className="cursor-pointer text-sm leading-relaxed text-[var(--color-text-secondary)]"
+                style={SANS}
               >
-                {form.agreeTerms ? (
-                  <svg
-                    width="9"
-                    height="9"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : null}
-              </button>
-              <span style={{ ...SANS, fontSize: '12px', color: '#475569', lineHeight: '1.6' }}>{t('terms')}</span>
+                {t.rich('termsAcceptance', {
+                  termsLink: (chunks) => (
+                    <a
+                      href={TERMS_OF_SERVICE_DOC_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#0D9488] underline hover:opacity-80"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
+              </label>
             </div>
 
             {error ? (
@@ -725,7 +719,7 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!form.agreeTerms || loading}
+              disabled={!termsAccepted || loading}
               style={{
                 ...PLAYFAIR,
                 width: '100%',
@@ -737,7 +731,7 @@ export default function SignupPage() {
                 fontSize: '14px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                opacity: !form.agreeTerms || loading ? 0.35 : 1,
+                opacity: !termsAccepted || loading ? 0.35 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
