@@ -5079,6 +5079,10 @@
     "goDashboard": "الرئيسية",
     "backToDashboard": "العودة للوحة التحكم"
   },
+  "sentryTest": {
+    "title": "اختبار Sentry",
+    "button": "إرسال خطأ تجريبي"
+  },
   "sessionExpired": {
     "title": "انتهت جلسة العمل",
     "desc": "لأمان حسابك، تنتهي الجلسة تلقائياً. سجّل الدخول مجدداً.",

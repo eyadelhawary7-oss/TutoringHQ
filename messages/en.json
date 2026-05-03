@@ -3749,6 +3749,10 @@
     "goDashboard": "Dashboard",
     "backToDashboard": "Back to dashboard"
   },
+  "sentryTest": {
+    "title": "Sentry Test",
+    "button": "Throw Test Error"
+  },
   "sessionExpired": {
     "title": "Session expired",
     "desc": "For your security, sessions expire automatically. Please log in again.",
