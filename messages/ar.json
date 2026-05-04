@@ -3040,7 +3040,9 @@
     "cardStyleOptionB": "الخيار B",
     "cardStyleOptionC": "الخيار C",
     "viewCardDesignsPdf": "عرض PDF تصاميم البطاقات",
-    "selectedCardStyle": "المحدد: {style}"
+    "selectedCardStyle": "المحدد: {style}",
+    "cardPreviewLockedTitle": "سيتم تصميم بطاقاتك وتسليمها إليك.",
+    "cardPreviewLockedSub": "CenterHQ تتولى جميع عمليات الطباعة ومراقبة الجودة."
   },
   "billing": {
     "account": "Account",

@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
-import { X, Search, ChevronRight, ChevronLeft, Check, CreditCard } from 'lucide-react';
+import { X, Search, ChevronRight, ChevronLeft, Check, CreditCard, Lock } from 'lucide-react';
 import QRCode from 'qrcode';
 import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
@@ -126,7 +126,6 @@ export function CardOrderModal({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [qrDataUrls, setQrDataUrls] = useState<Record<string, string>>({});
   const [selectedStyle, setSelectedStyle] = useState<QrCardStyle>('dark');
-  const [cardDesignsPdfUrl, setCardDesignsPdfUrl] = useState<string | null>(null);
 
   const centerName = centerInfo?.name ?? 'CenterHQ';
   const centerPhone = centerInfo?.phone ?? null;
@@ -171,29 +170,6 @@ export function CardOrderModal({
       setDeliveryForm({ full_name: '', phone: '', governorate: '', city: '', street: '', building: '', landmark: '' });
     }
   }, [isOpen, savedDelivery, useSavedAddress]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from('platform_config')
-        .select('value')
-        .eq('key', 'card_designs_pdf_url')
-        .maybeSingle();
-      if (cancelled) return;
-      if (error) {
-        setCardDesignsPdfUrl(null);
-        return;
-      }
-      const raw = data?.value;
-      const s = typeof raw === 'string' ? raw.trim() : raw != null ? String(raw).trim() : '';
-      setCardDesignsPdfUrl(s.length > 0 ? s : null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -595,28 +571,21 @@ export function CardOrderModal({
             {/* Step 2: Preview & Customize */}
             {step === 2 && (
               <>
+                <div className="flex justify-center mb-4">
+                  <div
+                    className="flex w-full max-w-[320px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#dc2626] bg-[var(--color-surface-1)] px-4 text-center text-[#dc2626] aspect-[85.6/54]"
+                    role="img"
+                    aria-label={tOrders('cardPreviewLockedTitle')}
+                  >
+                    <Lock size={28} className="shrink-0" aria-hidden />
+                    <p className="text-[13px] font-bold leading-tight">{tOrders('cardPreviewLockedTitle')}</p>
+                    <p className="text-[11px] opacity-70 leading-tight">{tOrders('cardPreviewLockedSub')}</p>
+                  </div>
+                </div>
                 <div className="space-y-3">
                   <div>
                     <p className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                       {tOrders('cardStyleLabel')}
-                    </p>
-                    {cardDesignsPdfUrl ? (
-                      <a
-                        href={cardDesignsPdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex text-sm font-medium text-[color:var(--color-teal)] hover:underline mb-3"
-                      >
-                        {tOrders('viewCardDesignsPdf')} →
-                      </a>
-                    ) : null}
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-                      {tOrders('selectedCardStyle', {
-                        style:
-                          selectedStyle === 'dark'
-                            ? tOrders('cardStyleDark')
-                            : tOrders('cardStyleLight'),
-                      })}
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <button
