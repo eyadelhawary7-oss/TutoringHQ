@@ -5089,7 +5089,19 @@
     "print_card_count": "عدد الكروت: {count}",
     "print_cards": "طباعة الكروت",
     "printShowGroup": "عرض المجموعة",
-    "academicYear": "العام الدراسي"
+    "academicYear": "العام الدراسي",
+    "announcementOps": "إرسال تشغيلي",
+    "announcementPromo": "إرسال ترويجي",
+    "announcementMessage": "نص الرسالة",
+    "announcementPreview": "معاينة",
+    "announcementPreviewOps": "{center}: {message}",
+    "announcementPreviewPromo": "🎉 {center}: {message}",
+    "announcementParentsCount": "سيصل هذا الإعلان إلى {count} ولي أمر نشط",
+    "announcementCost": "التكلفة الإجمالية",
+    "announcementConfirm": "إرسال الإعلان",
+    "announcementCapWarning": "استخدمت {balance} من {cap} إعلان هذا الشهر",
+    "announcementCapReached": "تم الوصول للحد الأقصى للإعلانات هذا الشهر. يتجدد الشهر القادم.",
+    "announcementSentToast": "تم الإرسال إلى {count} ولي أمر · التكلفة: {cost} ج.م"
   },
   "notFound": {
     "heading": "الصفحة غير موجودة",

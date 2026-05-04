@@ -23,7 +23,7 @@ import {
   BLAST_PRICE_PER_PARENT,
   getAnnouncementCap,
 } from '@/lib/parentPack';
-import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber, formatPlainInteger } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
@@ -2043,17 +2043,22 @@ export default function StudentsPage() {
                   })}
             </div>
             <p className="text-sm mt-3 text-[var(--color-text-primary)]">
-              {ts('announcementParentsCount', { count: activeParentsForAnnounce })}
+              {ts('announcementParentsCount', {
+                count: formatPlainInteger(Math.round(Number(activeParentsForAnnounce)), locale),
+              })}
             </p>
             <p className="text-sm font-mono mt-1 text-[var(--color-text-primary)]" dir="ltr">
               {ts('announcementCost')}:{' '}
-              {formatCurrency(activeParentsForAnnounce * BLAST_PRICE_PER_PARENT, locale)}
+              {formatCurrency(
+                Math.round(activeParentsForAnnounce * BLAST_PRICE_PER_PARENT * 100) / 100,
+                locale,
+              )}
             </p>
             {announcementCapWarning && !announcementCapReached && (
               <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
                 {ts('announcementCapWarning', {
-                  balance: formatNumber(announcementBalanceNum, locale),
-                  cap: formatNumber(announcementCap, locale),
+                  balance: formatPlainInteger(Math.round(announcementBalanceNum), locale),
+                  cap: formatPlainInteger(Math.round(announcementCap), locale),
                 })}
               </p>
             )}

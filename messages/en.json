@@ -1436,7 +1436,19 @@
     "print_card_count": "Card count: {count}",
     "print_cards": "Print Cards",
     "printShowGroup": "Show Group",
-    "academicYear": "Academic Year"
+    "academicYear": "Academic Year",
+    "announcementOps": "Operational Blast",
+    "announcementPromo": "Promotional Blast",
+    "announcementMessage": "Message",
+    "announcementPreview": "Preview",
+    "announcementPreviewOps": "{center}: {message}",
+    "announcementPreviewPromo": "🎉 {center}: {message}",
+    "announcementParentsCount": "{count} active parents will receive this",
+    "announcementCost": "Total cost",
+    "announcementConfirm": "Send Announcement",
+    "announcementCapWarning": "You have used {balance} of {cap} blasts this month",
+    "announcementCapReached": "Monthly blast limit reached. Resets next month.",
+    "announcementSentToast": "Sent to {count} parents · Cost: {cost} EGP"
   },
   "print": {
     "title": "Print Student Cards",
