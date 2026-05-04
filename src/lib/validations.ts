@@ -347,5 +347,7 @@ export const dbInsertSchemas: Record<string, z.ZodType> = {
       .default('pending_payment'),
     delivery_address: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
+    /** Not a DB column — used by /api/db to compute delivery_fee from selected governorate; stripped before insert */
+    delivery_governorate: z.string().optional().nullable(),
   }),
 };

@@ -1995,7 +1995,9 @@
     "cardStyleLabel": "Card Style",
     "pricePerCard": "Price per card",
     "cardStyleOptionB": "Option B",
-    "cardStyleOptionC": "Option C"
+    "cardStyleOptionC": "Option C",
+    "viewCardDesignsPdf": "View Card Designs PDF",
+    "selectedCardStyle": "Selected: {style}"
   },
   "branches": {
     "title": "Branches",

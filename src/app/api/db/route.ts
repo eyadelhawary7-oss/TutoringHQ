@@ -168,12 +168,11 @@ export async function POST(request: Request) {
       if (!userCenterId || userCenterId !== targetCenterId) {
         return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
       }
-      const { data: center } = await supabaseAdmin
-        .from('centers')
-        .select('governorate')
-        .eq('id', targetCenterId)
-        .maybeSingle();
-      const gov = (center as { governorate?: string | null } | null)?.governorate;
+      const deliveryGovRaw = row.delivery_governorate;
+      const gov =
+        typeof deliveryGovRaw === 'string' && deliveryGovRaw.trim() !== ''
+          ? deliveryGovRaw.trim()
+          : null;
       const deliveryFee = getShippingFee(gov);
       const shippingZone = getShippingZone(gov);
       const qty = Math.round(Number(row.quantity ?? 0));
@@ -182,6 +181,7 @@ export async function POST(request: Request) {
       row.delivery_fee = deliveryFee;
       row.shipping_zone = shippingZone;
       row.total_amount = total;
+      delete row.delivery_governorate;
     }
 
     let prevStudentPack: { parent_pack_opted_in: boolean | null; parent_phone: string | null } | null = null;

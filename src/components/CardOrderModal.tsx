@@ -124,12 +124,11 @@ export function CardOrderModal({
   const [currentCardOrderId, setCurrentCardOrderId] = useState<string | null>(null);
   const [currentPaymobOrderId, setCurrentPaymobOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
   const [qrDataUrls, setQrDataUrls] = useState<Record<string, string>>({});
   const [selectedStyle, setSelectedStyle] = useState<QrCardStyle>('dark');
+  const [cardDesignsPdfUrl, setCardDesignsPdfUrl] = useState<string | null>(null);
 
   const centerName = centerInfo?.name ?? 'CenterHQ';
-  const centerLogo = centerInfo?.logo_url ?? null;
   const centerPhone = centerInfo?.phone ?? null;
 
   useEffect(() => {
@@ -172,16 +171,29 @@ export function CardOrderModal({
       setDeliveryForm({ full_name: '', phone: '', governorate: '', city: '', street: '', building: '', landmark: '' });
     }
   }, [isOpen, savedDelivery, useSavedAddress]);
-  const centerInitials = centerName
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
-  const previewFaceBg = selectedStyle === 'dark' ? '#0a1628' : '#ffffff';
-  const previewPrimaryText =
-    selectedStyle === 'dark' ? 'text-[var(--color-text-primary)]' : 'text-[color:#0f172a]';
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('platform_config')
+        .select('value')
+        .eq('key', 'card_designs_pdf_url')
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        setCardDesignsPdfUrl(null);
+        return;
+      }
+      const raw = data?.value;
+      const s = typeof raw === 'string' ? raw.trim() : raw != null ? String(raw).trim() : '';
+      setCardDesignsPdfUrl(s.length > 0 ? s : null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -215,14 +227,15 @@ export function CardOrderModal({
     setSelectedIds(new Set());
   };
 
-  const centerGov = centerInfo?.governorate?.trim();
-  const deliveryFee = useMemo(() => getShippingFee(centerGov), [centerGov]);
-  const shippingZoneEn = useMemo(() => getShippingZone(centerGov), [centerGov]);
-  const hasProfileGovernorate = !!centerGov;
+  const selectedGovernorate = deliveryForm.governorate?.trim() || null;
+  const deliveryFee = getShippingFee(selectedGovernorate);
+  const shippingZoneEn = getShippingZone(selectedGovernorate);
   const quantity = selectedStudents.length;
   const cardsInclusiveTotal = PRICE_PER_CARD * quantity;
   const exclusivePricing = useMemo(() => calcExclusive(cardsInclusiveTotal), [cardsInclusiveTotal]);
   const payTotal = exclusivePricing.total + deliveryFee;
+  const basePricePerCard =
+    quantity > 0 ? Math.round(exclusivePricing.base / quantity) : 0;
 
   const ensureQrCodes = useCallback(async () => {
     const needQr = selectedStudents.filter((s) => !qrDataUrls[s.id]);
@@ -272,7 +285,6 @@ export function CardOrderModal({
     setDeliveryForm({ full_name: '', phone: '', governorate: '', city: '', street: '', building: '', landmark: '' });
     setNotes('');
     setSubmitSuccess(false);
-    setCardSide('front');
     setQrDataUrls({});
     setUseSavedAddress(hasSavedAddress);
     setSelectedStyle('dark');
@@ -345,6 +357,7 @@ export function CardOrderModal({
             delivery_address: deliveryDisplay || null,
             notes: notes.trim() || null,
             card_style: selectedStyle,
+            delivery_governorate: selectedGovernorate,
           },
           select: 'id',
           single: true,
@@ -582,99 +595,28 @@ export function CardOrderModal({
             {/* Step 2: Preview & Customize */}
             {step === 2 && (
               <>
-                <div className="flex justify-center mb-4">
-                  <div
-                    className="relative w-full max-w-[320px] aspect-[85.6/54] rounded-xl overflow-hidden shadow-xl"
-                    style={{ perspective: '1000px' }}
-                  >
-                    <div
-                      className="relative w-full h-full transition-transform duration-500"
-                      style={{
-                        transformStyle: 'preserve-3d',
-                        transform: cardSide === 'back' ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                      }}
-                    >
-                      {/* Front */}
-                      <div
-                        className="absolute inset-0 rounded-xl overflow-hidden flex flex-col"
-                        style={{ backfaceVisibility: 'hidden', backgroundColor: previewFaceBg }}
-                      >
-                        <div
-                          className="h-[20%] shrink-0 flex items-center justify-between px-3 py-2 bg-[color:var(--color-teal)]"
-                        >
-                          {centerLogo ? (
-                            <img src={centerLogo} alt="" className="h-6 w-6 object-contain" />
-                          ) : (
-                            <div className="h-6 w-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold bg-[color:var(--color-teal)]">
-                              {centerInitials}
-                            </div>
-                          )}
-                          <span className="text-white text-xs font-medium truncate max-w-[60%]">{centerName}</span>
-                        </div>
-                        <div className="flex flex-1 flex-col items-center justify-center px-2 pb-2 pt-3">
-                          <div
-                            className={`w-[40%] aspect-square rounded-lg flex items-center justify-center shadow-md border border-[var(--color-border-subtle)] ${selectedStyle === 'dark' ? 'bg-[var(--color-surface-2)]' : 'bg-[var(--color-surface-1)]'}`}
-                          >
-                            {selectedStudents[0] && (qrDataUrls[selectedStudents[0].id] || selectedStudents[0].qr_code) ? (
-                              <img
-                                src={qrDataUrls[selectedStudents[0].id] || selectedStudents[0].qr_code || ''}
-                                alt="QR"
-                                className="w-[85%] h-[85%] object-contain"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 border-2 border-[color:var(--color-teal)] border-t-transparent rounded-full animate-spin" />
-                            )}
-                          </div>
-                          <div className={`mt-2 text-center font-bold text-sm ${previewPrimaryText}`}>
-                            {selectedStudents[0]?.name ?? '-'}
-                          </div>
-                          <div className="text-[10px] font-mono text-[color:var(--color-teal)]">
-                            {selectedStudents[0]?.student_number
-                              ? formatStudentNumberForDisplay(selectedStudents[0].student_number)
-                              : '-'}
-                          </div>
-                        </div>
-                      </div>
-                      {/* Back */}
-                      <div
-                        className="absolute inset-0 rounded-xl overflow-hidden flex flex-col"
-                        style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', backgroundColor: previewFaceBg }}
-                      >
-                        <div className="h-[20%] shrink-0 bg-[color:var(--color-teal)]" aria-hidden />
-                        <div className="relative flex flex-1 flex-col items-center justify-center p-4">
-                          <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 bg-[color:var(--color-teal)]">
-                            {centerInitials}
-                          </div>
-                          <div className={`mt-2 font-bold text-sm text-center leading-tight ${previewPrimaryText}`}>{centerName}</div>
-                          {centerPhone && (
-                            <div className="mt-1 text-[10px] text-[color:var(--color-teal)] font-mono" dir="ltr">
-                              {centerPhone}
-                            </div>
-                          )}
-                          <div className={`absolute bottom-2 text-[8px] ${selectedStyle === 'dark' ? 'text-[var(--color-text-tertiary)]' : 'text-[color:#64748b]'}`}>{t('poweredBy')}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-center gap-2 mb-4">
-                  <button
-                    onClick={() => setCardSide('front')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${cardSide === 'front' ? 'bg-primary text-white' : 'bg-muted text-[var(--color-text-secondary)]'}`}
-                  >
-                    {t('frontOfCard')}
-                  </button>
-                  <button
-                    onClick={() => setCardSide('back')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${cardSide === 'back' ? 'bg-primary text-white' : 'bg-muted text-[var(--color-text-secondary)]'}`}
-                  >
-                    {t('backOfCard')}
-                  </button>
-                </div>
                 <div className="space-y-3">
                   <div>
                     <p className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                       {tOrders('cardStyleLabel')}
+                    </p>
+                    {cardDesignsPdfUrl ? (
+                      <a
+                        href={cardDesignsPdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex text-sm font-medium text-[color:var(--color-teal)] hover:underline mb-3"
+                      >
+                        {tOrders('viewCardDesignsPdf')} →
+                      </a>
+                    ) : null}
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+                      {tOrders('selectedCardStyle', {
+                        style:
+                          selectedStyle === 'dark'
+                            ? tOrders('cardStyleDark')
+                            : tOrders('cardStyleLight'),
+                      })}
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -687,14 +629,12 @@ export function CardOrderModal({
                             : 'border-[var(--color-border)]',
                         )}
                       >
-                        <div className="mb-2 aspect-[85.6/54] rounded-lg overflow-hidden border border-[var(--color-border-subtle)] flex flex-col">
-                          <div className="h-[22%] shrink-0 bg-[color:var(--color-teal)]" />
-                          <div className="flex-1 bg-[#0a1628]" />
-                        </div>
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
                           {tOrders('cardStyleOptionB')}
                         </span>
-                        <span className="mt-0.5 block text-xs font-medium text-[var(--color-text-primary)]">{tOrders('cardStyleDark')}</span>
+                        <span className="mt-0.5 block text-xs font-medium text-[var(--color-text-primary)]">
+                          {tOrders('cardStyleDark')}
+                        </span>
                       </button>
                       <button
                         type="button"
@@ -706,14 +646,12 @@ export function CardOrderModal({
                             : 'border-[var(--color-border)]',
                         )}
                       >
-                        <div className="mb-2 aspect-[85.6/54] rounded-lg overflow-hidden border border-[var(--color-border-subtle)] flex flex-col">
-                          <div className="h-[22%] shrink-0 bg-[color:var(--color-teal)]" />
-                          <div className="flex-1 bg-[#ffffff]" />
-                        </div>
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
                           {tOrders('cardStyleOptionC')}
                         </span>
-                        <span className="mt-0.5 block text-xs font-medium text-[var(--color-text-primary)]">{tOrders('cardStyleLight')}</span>
+                        <span className="mt-0.5 block text-xs font-medium text-[var(--color-text-primary)]">
+                          {tOrders('cardStyleLight')}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -797,17 +735,14 @@ export function CardOrderModal({
                   ))}
                 </div>
                 <div className="rounded-xl border border-border p-4 space-y-2">
-                  {!hasProfileGovernorate ? (
-                    <p className="text-xs text-amber-600 dark:text-amber-400 pb-1">{t('governorateShippingHint')}</p>
-                  ) : null}
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--color-text-secondary)]">
                       {t('orderSummaryBreakdownCards', {
                         qty: quantity,
-                        unit: formatCurrency(PRICE_PER_CARD, locale),
+                        unit: formatCurrency(basePricePerCard, locale),
                       })}
                     </span>
-                    <span className="font-mono text-end tabular-nums">{formatCurrency(cardsInclusiveTotal, locale)}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.base, locale)}</span>
                   </div>
                   <div className="border-t border-dashed border-[var(--color-border)]" />
                   <div className="flex justify-between gap-3 text-sm">

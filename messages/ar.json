@@ -3038,7 +3038,9 @@
     "cardStyleLabel": "تصميم البطاقة",
     "pricePerCard": "السعر للبطاقة",
     "cardStyleOptionB": "الخيار B",
-    "cardStyleOptionC": "الخيار C"
+    "cardStyleOptionC": "الخيار C",
+    "viewCardDesignsPdf": "عرض PDF تصاميم البطاقات",
+    "selectedCardStyle": "المحدد: {style}"
   },
   "billing": {
     "account": "Account",
