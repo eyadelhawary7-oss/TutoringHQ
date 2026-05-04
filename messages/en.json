@@ -1999,7 +1999,11 @@
     "viewCardDesignsPdf": "View Card Designs PDF",
     "selectedCardStyle": "Selected: {style}",
     "cardPreviewLockedTitle": "Your cards will be designed and delivered to you.",
-    "cardPreviewLockedSub": "CenterHQ handles all printing and quality control."
+    "cardPreviewLockedSub": "CenterHQ handles all printing and quality control.",
+    "cardOrderTermsLabel": "I agree to the QR card order",
+    "cardOrderTermsLink": "terms",
+    "cardOrderTermsBody": "QR card orders are final and non-refundable. Cards are custom-printed per student and cannot be returned or exchanged. CenterHQ is not responsible for delays caused by incorrect delivery information. By proceeding, you confirm all student data and delivery details are correct.",
+    "cardOrderTermsRequired": "You must accept the terms to continue."
   },
   "branches": {
     "title": "Branches",

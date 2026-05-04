@@ -125,6 +125,8 @@ export function CardOrderModal({
   const [currentPaymobOrderId, setCurrentPaymobOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<QrCardStyle>('dark');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsExpanded, setTermsExpanded] = useState(false);
 
   const centerName = centerInfo?.name ?? 'CenterHQ';
   const centerPhone = centerInfo?.phone ?? null;
@@ -253,6 +255,8 @@ export function CardOrderModal({
     setCurrentCardOrderId(null);
     setCurrentPaymobOrderId(null);
     setPaymentError(null);
+    setTermsAccepted(false);
+    setTermsExpanded(false);
   };
 
   const handleClose = () => {
@@ -677,6 +681,37 @@ export function CardOrderModal({
                       rows={2}
                     />
                   </div>
+                  <div className="pt-1">
+                    <div className="flex gap-2 items-start">
+                      <input
+                        id="card-order-terms"
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="mt-1 h-4 w-4 shrink-0 rounded accent-[color:var(--color-teal)]"
+                      />
+                      <div className="min-w-0 flex-1 text-[13px] text-[var(--color-text-primary)]">
+                        <label htmlFor="card-order-terms" className="cursor-pointer">
+                          {tOrders('cardOrderTermsLabel')}{' '}
+                        </label>
+                        <button
+                          type="button"
+                          className="text-[color:var(--color-teal)] underline"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setTermsExpanded((v) => !v);
+                          }}
+                        >
+                          {tOrders('cardOrderTermsLink')}
+                        </button>
+                      </div>
+                    </div>
+                    {termsExpanded ? (
+                      <div className="mt-1.5 rounded-lg border border-[#e5e7eb] bg-[var(--color-surface-1)] p-3 text-[11px] text-[#6b7280]">
+                        {tOrders('cardOrderTermsBody')}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </>
             )}
@@ -824,7 +859,13 @@ export function CardOrderModal({
             {step < 3 ? (
               <button
                 onClick={handleNext}
-                disabled={step === 1 && selectedIds.size === 0}
+                disabled={
+                  (step === 1 && selectedIds.size === 0) ||
+                  (step === 2 && !termsAccepted)
+                }
+                title={
+                  step === 2 && !termsAccepted ? tOrders('cardOrderTermsRequired') : undefined
+                }
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary disabled:opacity-50 flex items-center gap-1"
               >
                 {tCommon('next')}

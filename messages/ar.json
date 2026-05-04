@@ -3042,7 +3042,11 @@
     "viewCardDesignsPdf": "عرض PDF تصاميم البطاقات",
     "selectedCardStyle": "المحدد: {style}",
     "cardPreviewLockedTitle": "سيتم تصميم بطاقاتك وتسليمها إليك.",
-    "cardPreviewLockedSub": "CenterHQ تتولى جميع عمليات الطباعة ومراقبة الجودة."
+    "cardPreviewLockedSub": "CenterHQ تتولى جميع عمليات الطباعة ومراقبة الجودة.",
+    "cardOrderTermsLabel": "أوافق على",
+    "cardOrderTermsLink": "شروط طلب البطاقات",
+    "cardOrderTermsBody": "طلبات بطاقات QR نهائية وغير قابلة للاسترداد. البطاقات مطبوعة خصيصاً لكل طالب ولا يمكن إرجاعها أو استبدالها. CenterHQ غير مسؤولة عن التأخير الناجم عن معلومات التسليم غير الصحيحة. بالمتابعة، تؤكد أن جميع بيانات الطلاب وتفاصيل التسليم صحيحة.",
+    "cardOrderTermsRequired": "يجب قبول الشروط للمتابعة."
   },
   "billing": {
     "account": "Account",
