@@ -1,4 +1,5 @@
 import { formatDate, formatDateTime, formatNumber, formatPercent, formatTime } from '@/lib/formatNumber';
+import { calcExclusive, calcExclusiveProduct, type ExclusivePricing } from '@/lib/invoiceTaxUtils';
 
 const PDF_LOCALE = 'ar';
 
@@ -318,10 +319,34 @@ function totalsRowBold(label: string, value: string): string {
   </div>`;
 }
 
-function taxRowsBlock(): string {
-  return `${totalsRow('رسوم الخدمة 6%', 'مدمجة')}
-  ${totalsRow('رسوم الدمغة 0.4%', 'مدمجة')}
-  ${totalsRow('ضريبة القيمة المضافة 14%', 'مدمجة')}`;
+function dividerDashed(): string {
+  return `<div style="margin:8px 0;border-top:1px dashed #475569;opacity:0.9;"></div>`;
+}
+
+function dividerLight(): string {
+  return `<div style="margin:8px 0;border-top:1px solid #334155;"></div>`;
+}
+
+function dividerSolid(): string {
+  return `<div style="margin:8px 0;border-top:2px solid #1e293b;"></div>`;
+}
+
+function taxNoteRow(note: string): string {
+  return `<div style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.55;font-family:Cairo,sans-serif;">${esc(note)}</div>`;
+}
+
+const TAX_NOTE_STANDARD_AR =
+  'ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.4٪';
+
+function exclusiveTotalsStandard(p: ExclusivePricing, totalLabel: string, taxNoteAr: string): string {
+  return `${totalsRow('المجموع الجزئي', `${fmtMoney(p.base)} EGP`)}
+  ${dividerDashed()}
+  ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(p.service)} EGP`)}
+  ${totalsRow('رسوم الدمغة (0.4%)', `${fmtMoney(p.stamp)} EGP`)}
+  ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
+  ${dividerSolid()}
+  ${totalsRowBold(totalLabel, `${fmtMoney(p.total)} EGP`)}
+  ${taxNoteRow(taxNoteAr)}`;
 }
 
 function lineRowHtml(opts: {
@@ -380,9 +405,7 @@ function taxDisclosureBox(txnBlock: string): string {
   return `<div class="tax-box" style="background:#0a1628;border:1px solid #1e293b;border-radius:8px;padding:12px;margin-top:16px;display:flex;gap:24px;flex-wrap:wrap;">
   <div>
     <div style="color:#64748b;font-size:11px;margin-bottom:4px;">الإفصاح الضريبي</div>
-    <div style="color:#cbd5e1;font-size:11px;">جميع المبالغ شاملة للضرائب والرسوم:</div>
-    <div style="color:#cbd5e1;font-size:11px;">ضريبة القيمة المضافة 14%</div>
-    <div style="color:#cbd5e1;font-size:11px;">رسوم الخدمة 6% · رسوم الدمغة 0.4%</div>
+    <div style="color:#cbd5e1;font-size:11px;">التفصيل أعلاه يوضح القيمة الأساسية والضرائب والرسوم؛ الإجمالي النهائي كما هو مسجل.</div>
   </div>
   ${txnBlock}
 </div>`;
@@ -571,12 +594,15 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">الفترة الأولى</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(periodArabic)}</div>`;
   } else if (invoiceType === 'pack_billing') {
+    const pSidebar = calcExclusive(total);
+    const acSidebar = num(meta.active_count ?? meta.active_parent_count ?? packActivePre) || packActivePre;
+    const exSidebar = acSidebar > 0 ? (pSidebar.base / acSidebar).toFixed(2) : '0.00';
     const ma = r.monthArabic ?? periodArabic;
     typeSpecificSidebar = `
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">أولياء الأمور النشطون</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(String(packActivePre))} ولي أمر</div>
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">السعر</div>
-      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">12 ج.م / ولي أمر</div>
+      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(exSidebar)} ج.م / ولي أمر</div>
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">الفترة</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(ma)}</div>`;
   } else if (invoiceType === 'announcement_settlement') {
@@ -692,6 +718,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       : '';
 
   if (['subscription', 'base_subscription'].includes(invoiceType)) {
+    const p = calcExclusive(total);
     const subPre = discount > 0 ? total + discount : total;
     lineRowsHtml = lineRowHtml({
       amount: total,
@@ -701,9 +728,9 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     });
     totalsInner = `${totalsRow(`${planAr} × ${billingCycle}`, `${fmtMoney(subPre)} EGP`)}
     ${discountRowHtml}
-    ${taxRowsBlock()}
-    ${totalsRowBold(totalLabel, `${fmtMoney(total)} EGP`)}`;
+    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
   } else if (invoiceType === 'signup_first_payment') {
+    const p = calcExclusive(total);
     lineRowsHtml = lineRowHtml({
       amount: total,
       detail: periodRange,
@@ -713,18 +740,20 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     const subPreSu = discount > 0 ? total + discount : total;
     totalsInner = `${totalsRow(`${planAr} × ${billingCycle}`, `${fmtMoney(subPreSu)} EGP`)}
     ${discountRowHtml}
-    ${taxRowsBlock()}
-    ${totalsRowBold(totalLabel, `${fmtMoney(total)} EGP`)}`;
+    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
   } else if (invoiceType === 'pack_billing') {
-    const packPer = num(c.pack_price_per_parent ?? 12) || 12;
+    const p = calcExclusive(total);
     const active = packActivePre;
+    const activeCount = num(meta.active_count ?? meta.active_parent_count ?? active) || active;
+    const exclusivePerParent = activeCount > 0 ? (p.base / activeCount).toFixed(2) : '0.00';
     const inactive = num(meta.inactive_parent_count ?? 0);
+    const lineActiveAmount = round2(activeCount * parseFloat(exclusivePerParent));
     lineRowsHtml =
       lineRowHtml({
-        amount: round2(active * packPer),
+        amount: lineActiveAmount,
         detail: periodRange,
         title: 'باقة واتساب أولياء الأمور, شهري',
-        subtitle: `${active} ولي أمر نشط`,
+        subtitle: `${activeCount} ولي أمر × ${exclusivePerParent} ج.م/ولي`,
       }) +
       lineRowHtml({
         amount: 0,
@@ -733,34 +762,41 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         subtitle: `${inactive} أولياء`,
         amountMuted: true,
       });
-    totalsInner = `${totalsRow(`${active} ولي أمر × ${fmtMoney(packPer)} ج.م`, `${fmtMoney(round2(active * packPer))} EGP`)}
+    totalsInner = `${totalsRow(`${activeCount} ولي أمر × ${exclusivePerParent} ج.م`, `${fmtMoney(p.base)} EGP`)}
     ${totalsRow(`${inactive} غير نشطين (مُعفى)`, `0 EGP`)}
-    ${taxRowsBlock()}
-    ${totalsRowBold('إجمالي المخصوم', `${fmtMoney(total)} EGP`)}`;
+    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
   } else if (invoiceType === 'announcement_settlement') {
+    const p = calcExclusive(total);
     const blasts = r.settlementBlasts ?? [];
+    const metaAnn = meta.announcements as { parent_count: number }[] | undefined;
+    const totalParents =
+      metaAnn?.length
+        ? metaAnn.reduce((s, b) => s + num(b.parent_count), 0)
+        : blasts.length > 0
+          ? blasts.reduce((s, b) => s + b.parents_notified, 0)
+          : num(meta.parent_count ?? 0);
+    const exclusivePerParent = totalParents > 0 ? (p.base / totalParents).toFixed(2) : '0.00';
     if (blasts.length === 0) {
       const pc = num(meta.parent_count ?? 0);
-      const amt = round2(pc * BLAST_PRICE_PER_PARENT_INCLUSIVE);
+      const amt = round2(pc * (totalParents > 0 ? p.base / totalParents : 0));
       lineRowsHtml = lineRowHtml({
         amount: amt,
         detail: `${fmtDateAr(inv.created_at)} · ${pc} parents`,
         title: `إعلان 1 - ${blastTypeAr('promo')}`,
-        subtitle: `${pc} ولي أمر × 9.71 ج.م/ولي`,
+        subtitle: `${pc} ولي أمر × ${exclusivePerParent} ج.م/ولي`,
       });
-      totalsInner = `${totalsRow(`إعلان 1 - ${pc} × 9.71 ج.م`, `${fmtMoney(amt)} EGP`)}
-      ${taxRowsBlock()}
-      ${totalsRowBold('الإجمالي الشهري', `${fmtMoney(total)} EGP`)}`;
+      totalsInner = `${totalsRow(`إعلان 1 - ${pc} × ${exclusivePerParent} ج.م`, `${fmtMoney(amt)} EGP`)}
+      ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
     } else {
       lineRowsHtml = blasts
         .map((b, i) => {
           const pc = b.parents_notified;
-          const amt = round2(pc * BLAST_PRICE_PER_PARENT_INCLUSIVE);
+          const amt = num(b.total_amount) || round2(pc * (totalParents > 0 ? p.base / totalParents : 0));
           return lineRowHtml({
             amount: amt,
             detail: `${fmtDateAr(b.created_at)} · ${pc} parents`,
             title: `إعلان ${i + 1} - ${blastTypeAr(b.blast_type)}`,
-            subtitle: `${pc} ولي أمر × 9.71 ج.م/ولي`,
+            subtitle: `${pc} ولي أمر × ${exclusivePerParent} ج.م/ولي`,
           });
         })
         .join('');
@@ -768,17 +804,18 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         blasts
           .map((b, i) => {
             const pc = b.parents_notified;
-            const amt = round2(pc * BLAST_PRICE_PER_PARENT_INCLUSIVE);
-            return totalsRow(`إعلان ${i + 1} - ${pc} × 9.71 ج.م`, `${fmtMoney(amt)} EGP`);
+            const amt = num(b.total_amount) || round2(pc * (totalParents > 0 ? p.base / totalParents : 0));
+            return totalsRow(`إعلان ${i + 1} - ${pc} × ${exclusivePerParent} ج.م`, `${fmtMoney(amt)} EGP`);
           })
-          .join('') +
-        taxRowsBlock() +
-        totalsRowBold('الإجمالي الشهري', `${fmtMoney(total)} EGP`);
+          .join('') + exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR);
     }
   } else if (invoiceType === 'announcement_cap') {
+    const p = calcExclusive(total);
     const cb = r.capBlast;
     const pc = cb?.parents_notified ?? 0;
-    const amt = round2(pc * BLAST_PRICE_PER_PARENT_INCLUSIVE);
+    const exclusivePerParentCap = pc > 0 ? (p.base / pc).toFixed(2) : '0.00';
+    const amt =
+      pc > 0 ? round2(pc * parseFloat(exclusivePerParentCap)) : 0;
     const typeAr = cb ? blastTypeAr(cb.blast_type) : 'ترويج';
     const dt = cb ? fmtDateAr(cb.created_at) : periodStart;
     const tm = cb ? formatTime(cb.created_at, PDF_LOCALE) : '';
@@ -789,7 +826,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         amount: amt,
         detail: `${dt} · ${tm}`,
         title: `إعلان ${typeAr}`,
-        subtitle: `${pc} ولي أمر × 9.71 ج.م/ولي`,
+        subtitle: `${pc} ولي أمر × ${exclusivePerParentCap} ج.م/ولي`,
       }) +
       lineRowHtml({
         amount: 0,
@@ -798,16 +835,19 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         subtitle: `هذا هو إعلانك ${n} هذا الشهر`,
         amountMuted: true,
       });
-    totalsInner = `${totalsRow(`${pc} ولي أمر × 9.71 ج.م`, `${fmtMoney(amt)} EGP`)}
+    totalsInner = `${totalsRow(`${pc} ولي أمر × ${exclusivePerParentCap} ج.م`, `${fmtMoney(amt)} EGP`)}
     ${totalsRow('رسوم تجاوز الحد', `0 ج.م`)}
-    ${taxRowsBlock()}
-    ${totalsRowBold('إجمالي المخصوم', `${fmtMoney(total)} EGP`)}`;
+    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
   } else if (invoiceType === 'plan_upgrade_difference') {
     const u = r.upgrade;
     const days = u?.daysRemaining ?? 0;
     const newAmt = u?.newPlanAmount ?? total + (u?.oldPlanCredit ?? 0);
     const credit = u?.oldPlanCredit ?? 0;
     const newCap = u?.newCap ?? studentCap;
+    const newPlanAmtMeta = num(meta.new_plan_amount ?? newAmt);
+    const oldCreditAmtMeta = num(meta.old_plan_credit ?? credit);
+    const pNew = calcExclusive(newPlanAmtMeta);
+    const pOld = calcExclusive(oldCreditAmtMeta);
     lineRowsHtml =
       lineRowHtml({
         amount: newAmt,
@@ -822,11 +862,18 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         subtitle: 'الأيام المتبقية من الفترة الحالية',
         amountRed: true,
       });
-    totalsInner = `${totalsRow(`${u?.toPlanAr ?? planAr} - ${days} يوم`, `${fmtMoney(newAmt)} EGP`)}
-    ${totalsRow(`خصم ${u?.fromPlanAr ?? '—'} - ${days} يوم`, `-${fmtMoney(credit)} EGP`)}
-    ${discountRowHtml}
-    ${taxRowsBlock()}
-    ${totalsRowBold('فرق الترقية', `${fmtMoney(total)} EGP`)}`;
+    const netBase = pNew.base - pOld.base;
+    const netSvc = pNew.service - pOld.service;
+    const netStamp = pNew.stamp - pOld.stamp;
+    const netVat = pNew.vat - pOld.vat;
+    totalsInner = `${totalsRow('المجموع الجزئي (الصافي)', `${fmtMoney(netBase)} EGP`)}
+    ${dividerDashed()}
+    ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(netSvc)} EGP`)}
+    ${totalsRow('رسوم الدمغة (0.4%)', `${fmtMoney(netStamp)} EGP`)}
+    ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(netVat)} EGP`)}
+    ${dividerSolid()}
+    ${totalsRowBold('فرق الترقية', `${fmtMoney(total)} EGP`)}
+    ${taxNoteRow(TAX_NOTE_STANDARD_AR)}`;
   } else if (invoiceType === 'setup_fee') {
     showTaxBox = false;
     const productName = String(meta.product_name_ar ?? 'ماسح البطاقات الذكية');
@@ -836,8 +883,13 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       meta.scanner_unit_price != null && num(meta.scanner_unit_price) > 0
         ? num(meta.scanner_unit_price)
         : Math.max(0, base - 50);
-    const shipFee = Math.max(0, total - unitPrice * qty);
+    let shippingFee = num(meta.shipping_fee ?? 0);
+    if (!shippingFee) {
+      shippingFee = Math.max(0, total - unitPrice * qty);
+    }
     const prodTotal = round2(unitPrice * qty);
+    const p = calcExclusiveProduct(total, shippingFee);
+    const productSub = p.base + p.service + p.stamp + p.vat;
     lineRowsHtml =
       lineRowHtml({
         amount: prodTotal,
@@ -846,18 +898,29 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         subtitle: 'مُعدَّ مسبقاً وجاهز للاستخدام',
       }) +
       lineRowHtml({
-        amount: shipFee,
+        amount: shippingFee,
         detail: 'Express · 1-2 days',
         title: 'رسوم توصيل Bosta',
         subtitle: `توصيل سريع - ${city}`,
       });
-    totalsInner = `${totalsRow(`الماسح الضوئي × ${qty}`, `${fmtMoney(prodTotal)} EGP`)}
-    ${totalsRow('رسوم التوصيل Bosta', `${fmtMoney(shipFee)} EGP`)}
-    ${totalsRowBold('إجمالي المدفوع', `${fmtMoney(total)} EGP`)}`;
+    totalsInner = `${totalsRow('قيمة المنتج الأساسية', `${fmtMoney(p.base)} EGP`)}
+    ${dividerDashed()}
+    ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(p.service)} EGP`)}
+    ${totalsRow('رسوم الدمغة (0.4%)', `${fmtMoney(p.stamp)} EGP`)}
+    ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
+    ${dividerLight()}
+    ${totalsRow('مجموع المنتج', `${fmtMoney(productSub)} EGP`)}
+    ${totalsRow('رسوم شحن بوسطة', `${fmtMoney(p.shipping)} EGP`)}
+    ${dividerSolid()}
+    ${totalsRowBold('إجمالي المدفوع', `${fmtMoney(p.total)} EGP`)}
+    ${taxNoteRow('ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.4٪ - على المنتج فقط. رسوم الشحن منفصلة.')}`;
   } else if (invoiceType === 'late_payment_fee') {
-    const lf = meta as { late_fee_rate?: number; late_fee_amount?: number };
+    const lf = meta as { late_fee_rate?: number; late_fee_amount?: number; penalty_amount?: number };
     const pct = Math.round(num(lf.late_fee_rate) * 100);
-    const feeAmt = num(lf.late_fee_amount ?? total - base);
+    const penaltyAmount = num(lf.penalty_amount ?? lf.late_fee_amount ?? total - base);
+    const p = calcExclusive(total - penaltyAmount);
+    const planInclusive = total - penaltyAmount;
+    const feeAmt = num(lf.late_fee_amount ?? penaltyAmount);
     lineRowsHtml =
       lineRowHtml({
         amount: base,
@@ -872,14 +935,27 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         subtitle: `${formatPercent(pct, PDF_LOCALE)} من المبلغ المستحق`,
         amountAmber: true,
       });
-    totalsInner = `${totalsRow(`الخطة ${planAr}`, `${fmtMoney(base)} EGP`)}
-    ${totalsRow(`غرامة التأخر ${formatPercent(pct, PDF_LOCALE)}`, `${fmtMoney(feeAmt)} EGP`)}
-    ${taxRowsBlock()}
-    ${totalsRowBold('إجمالي المستحق', `${fmtMoney(total)} EGP`)}`;
+    totalsInner = `${totalsRow('قيمة الاشتراك الأساسية', `${fmtMoney(p.base)} EGP`)}
+    ${dividerDashed()}
+    ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(p.service)} EGP`)}
+    ${totalsRow('رسوم الدمغة (0.4%)', `${fmtMoney(p.stamp)} EGP`)}
+    ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
+    ${dividerLight()}
+    ${totalsRow('مجموع الخطة', `${fmtMoney(planInclusive)} EGP`)}
+    ${totalsRow(
+      'غرامة التأخر في السداد',
+      `<span style="color:#ef4444;font-weight:700;">${fmtMoney(penaltyAmount)} EGP</span>`,
+    )}
+    ${dividerSolid()}
+    ${totalsRowBold('إجمالي المستحق', `${fmtMoney(total)} EGP`)}
+    ${taxNoteRow('ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.4٪ - تطبق على قيمة الاشتراك فقط. تُضاف غرامة التأخر بعد الضريبة.')}`;
   } else if (invoiceType === 'referral_payout') {
     showTaxBox = false;
-    const gross = r.referralGross ?? total + num(r.referralWithdrawalFee);
-    const fee = num(r.referralWithdrawalFee);
+    const metaComm = meta.commissions as { amount: number }[] | undefined;
+    const wfee = num(meta.withdrawal_fee ?? r.referralWithdrawalFee);
+    const grossFromMeta = metaComm?.reduce((s, c) => s + num(c.amount), 0) ?? 0;
+    const gross = grossFromMeta > 0 ? grossFromMeta : r.referralGross ?? total + wfee;
+    const fee = wfee;
     const comm = r.referralCommissions ?? [];
     if (comm.length === 0) {
       lineRowsHtml = lineRowHtml({
@@ -909,23 +985,26 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       amountMuted: fee <= 0,
     });
     totalsInner = `${totalsRow('إجمالي العمولات', `${fmtMoney(gross)} EGP`)}
-    ${totalsRow('رسوم السحب', `-${fmtMoney(fee)} EGP`)}
-    ${totalsRowBold('صافي المُصروف', `${fmtMoney(total)} EGP`)}`;
+    ${totalsRow(
+      'رسوم السحب (5%)',
+      `<span style="color:#ef4444;font-weight:700;">-${fmtMoney(fee)} EGP</span>`,
+    )}
+    ${dividerSolid()}
+    ${totalsRowBold('صافي المدفوع', `${fmtMoney(total)} EGP`)}
+    ${taxNoteRow('لا ضريبة قيمة مضافة او رسوم خدمة - هذا دفع عمولات من CenterHQ.')}`;
   } else if (invoiceType === 'payment_proof') {
     showTaxBox = false;
     const refInv = String(meta.reference_invoice_number ?? payRef ?? '—');
-    const payAmt = num(inv.payment_amount ?? total);
     lineRowsHtml = lineRowHtml({
-      amount: payAmt,
+      amount: total,
       detail: 'تجديد',
       title: `${planAr}, تجديد ${billingCycle}`,
       subtitle: `مرجع: ${refInv}`,
     });
-    totalsInner = `${totalsRow('المبلغ المُقدَّم', `${fmtMoney(payAmt)} EGP`)}
-    ${totalsRow('مراجعة المشرف', 'قيد الانتظار')}
-    ${totalsRow('الوقت المتوقع', '1-2 ساعة')}
-    ${totalsRowBold('المبلغ قيد الانتظار', `${fmtMoney(payAmt)} EGP`)}`;
+    totalsInner = `${totalsRowBold('المبلغ المُقدَّم', `${fmtMoney(total)} EGP`)}
+    ${taxNoteRow('المبالغ تعكس اجمالي الفاتورة المرجعية.')}`;
   } else if (invoiceType === 'whatsapp_addon') {
+    const p = calcExclusive(total);
     const desc = String(meta.description ?? inv.notes ?? '—');
     lineRowsHtml = lineRowHtml({
       amount: total,
@@ -936,28 +1015,26 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     const subPreWa = discount > 0 ? total + discount : total;
     totalsInner = `${totalsRow(`إضافة واتساب × ${billingCycle}`, `${fmtMoney(subPreWa)} EGP`)}
     ${discountRowHtml}
-    ${taxRowsBlock()}
-    ${totalsRowBold(totalLabel, `${fmtMoney(total)} EGP`)}`;
+    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
   } else if (invoiceType === 'reactivation_fee') {
+    const p = calcExclusive(total);
     lineRowsHtml = lineRowHtml({
       amount: total,
       detail: periodRange,
       title: 'رسوم إعادة تفعيل',
       subtitle: planAr,
     });
-    totalsInner = `${totalsRow('إعادة تفعيل', `${fmtMoney(total)} EGP`)}
-    ${totalsRowBold('الإجمالي', `${fmtMoney(total)} EGP`)}`;
-    showTaxBox = false;
+    totalsInner = exclusiveTotalsStandard(p, 'الإجمالي', TAX_NOTE_STANDARD_AR);
+    showTaxBox = true;
   } else {
+    const p = calcExclusive(total);
     lineRowsHtml = lineRowHtml({
       amount: total,
       detail: periodRange,
       title: 'بند فاتورة',
       subtitle: invoiceType,
     });
-    totalsInner = `${totalsRow('المجموع', `${fmtMoney(total)} EGP`)}
-    ${taxRowsBlock()}
-    ${totalsRowBold('الإجمالي', `${fmtMoney(total)} EGP`)}`;
+    totalsInner = exclusiveTotalsStandard(p, 'الإجمالي', TAX_NOTE_STANDARD_AR);
   }
 
   if (txnId && !['payment_proof', 'referral_payout', 'setup_fee'].includes(invoiceType)) {
