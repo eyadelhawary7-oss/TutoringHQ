@@ -125,6 +125,7 @@ export default function ScanPage() {
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
+  const [centerPlan, setCenterPlan] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterHydrated, setRosterHydrated] = useState(false);
@@ -254,6 +255,9 @@ export default function ScanPage() {
 
       if (meData?.user?.center_id) {
         setCenterId(meData.user.center_id);
+      }
+      if (meData?.user?.center?.plan) {
+        setCenterPlan(meData.user.center.plan);
       }
     };
     loadUser();
@@ -388,10 +392,21 @@ export default function ScanPage() {
 
   const normalizeForLookup = (input: string): { byId: boolean; value: string } => {
     const trimmed = input.trim();
+
+    // UUID → look up by student ID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidRegex.test(trimmed)) return { byId: true, value: trimmed };
-    if (/^\d+$/.test(trimmed)) return { byId: false, value: 'STU-' + trimmed.padStart(5, '0') };
+
+    // Already has # prefix → use as-is
+    if (trimmed.startsWith('#')) return { byId: false, value: trimmed };
+
+    // Plain number → add # prefix (DB stores as #1024)
+    if (/^\d+$/.test(trimmed)) return { byId: false, value: '#' + trimmed };
+
+    // STU- legacy format → keep as-is
     if (trimmed.toUpperCase().startsWith('STU-')) return { byId: false, value: trimmed.toUpperCase() };
+
+    // Anything else → pass through
     return { byId: false, value: trimmed };
   };
 
@@ -960,6 +975,33 @@ export default function ScanPage() {
   const scannerFrameTone =
     scanFrameState === 'success' ? 'success' : scanFrameState === 'error' ? 'error' : 'scanning';
 
+  function getHardwareSpec(plan: string | null) {
+    if (!plan) return null;
+    if (plan === 'enterprise') {
+      return {
+        tier: 'enterprise',
+        minSpec: null,
+        recommended: 'Apple iPad (9th Gen)',
+        addon: 'Bluetooth 2D Scanner Gun',
+      };
+    }
+    if (plan === 'pro' || plan === 'business') {
+      return {
+        tier: 'pro',
+        minSpec: '4GB RAM · 64GB Storage',
+        recommended: 'Samsung Galaxy Tab A9+',
+        addon: null,
+      };
+    }
+    // solo, nano, starter
+    return {
+      tier: 'starter',
+      minSpec: '3GB RAM · 32GB Storage · 8MP Auto-focus Camera',
+      recommended: 'Lenovo Tab M9',
+      addon: null,
+    };
+  }
+
   return (
     <>
       {showFlash && <div className="chq-flash-success" aria-hidden />}
@@ -1214,6 +1256,54 @@ export default function ScanPage() {
                 </div>
               )}
             </div>
+
+            {centerPlan && (() => {
+              const spec = getHardwareSpec(centerPlan);
+              if (!spec) return null;
+              return (
+                <div className="w-full max-w-sm mt-2">
+                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="shrink-0 w-8 h-8 rounded-lg bg-teal-900/40 border border-teal-800/40 flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                          stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                          <line x1="12" y1="18" x2="12" y2="18"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-1">
+                          {locale === 'ar' ? 'المواصفات المطلوبة للسكانر' : 'Recommended Scanner Hardware'}
+                        </p>
+                        {spec.minSpec && (
+                          <p className="text-xs text-[var(--color-text-muted)] mb-1">
+                            {locale === 'ar' ? 'الحد الأدنى: ' : 'Minimum: '}
+                            <span className="text-[var(--color-text-secondary)]">{spec.minSpec}</span>
+                          </p>
+                        )}
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          {locale === 'ar' ? 'الجهاز المقترح: ' : 'Recommended: '}
+                          <span className="font-medium text-teal-400">{spec.recommended}</span>
+                        </p>
+                        {spec.addon && (
+                          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                            {locale === 'ar' ? 'إضافة مقترحة: ' : 'Add-on: '}
+                            <span className="text-[var(--color-text-secondary)]">{spec.addon}</span>
+                          </p>
+                        )}
+                        {spec.tier === 'enterprise' && (
+                          <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                            {locale === 'ar'
+                              ? 'iOS أفضل من Android لإدارة الذاكرة في المراكز الكبيرة'
+                              : 'iOS handles large IndexedDB payloads better than Android'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

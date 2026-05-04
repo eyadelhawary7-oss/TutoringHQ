@@ -1526,7 +1526,7 @@
     "scanSuccess": "Attendance recorded",
     "scanError": "Scan error",
     "manualEntry": "Enter student number",
-    "manualPlaceholder": "e.g. 001-0001",
+    "manualPlaceholder": "Student number (e.g. 1024 or #1024)",
     "manualSubmit": "Record",
     "checkIn": "Check In",
     "loadingRetry": "Loading Retry",

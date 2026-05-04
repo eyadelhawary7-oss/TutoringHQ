@@ -4637,7 +4637,7 @@
     "scanSuccess": "تم تسجيل الحضور",
     "scanError": "مسح خطأ",
     "manualEntry": "أدخل رقم الطالب",
-    "manualPlaceholder": "رقم الطالب مثال: 001-0001",
+    "manualPlaceholder": "رقم الطالب (مثال: ١٠٢٤ أو #١٠٢٤)",
     "manualSubmit": "تسجيل",
     "checkIn": "فحص في",
     "loadingRetry": "جاري التحميل إعادة",
