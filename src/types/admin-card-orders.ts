@@ -27,6 +27,7 @@ export interface AdminCardOrderRow {
   quantity: number;
   price_per_card: number;
   delivery_fee: number;
+  shipping_zone: string | null;
   total_amount: number;
   delivery_address: string | null;
   notes: string | null;

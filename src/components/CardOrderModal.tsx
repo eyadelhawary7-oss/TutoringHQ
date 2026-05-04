@@ -9,6 +9,7 @@ import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
+import { getShippingFee, getShippingZone, formatShippingZoneForLocale } from '@/lib/bostaShipping';
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 
@@ -109,7 +110,6 @@ export function CardOrderModal({
   const [step, setStep] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryForm, setDeliveryForm] = useState<DeliveryAddress>({
     full_name: '',
     phone: '',
@@ -151,20 +151,6 @@ export function CardOrderModal({
       setSelectedColor('#0D9488');
     }
   }, [isOpen, centerInfo?.card_color]);
-
-  useEffect(() => {
-    if (!isOpen || !centerInfo?.governorate) return;
-    const gov = centerInfo.governorate;
-    const fetchDeliveryFee = async () => {
-      const { data } = await supabase
-        .from('delivery_fees')
-        .select('fee')
-        .eq('governorate', gov)
-        .maybeSingle();
-      setDeliveryFee(Number(data?.fee ?? 0));
-    };
-    void fetchDeliveryFee();
-  }, [isOpen, centerInfo?.governorate]);
 
   useEffect(() => {
     if (!isOpen || typeof window === 'undefined') return;
@@ -240,9 +226,13 @@ export function CardOrderModal({
     setSelectedIds(new Set());
   };
 
+  const centerGov = centerInfo?.governorate?.trim();
+  const deliveryFee = useMemo(() => getShippingFee(centerGov), [centerGov]);
+  const shippingZoneEn = useMemo(() => getShippingZone(centerGov), [centerGov]);
+  const hasProfileGovernorate = !!centerGov;
   const quantity = selectedStudents.length;
   const subtotal = quantity * PRICE_PER_CARD;
-  const totalAmount = subtotal + (deliveryFee || 0);
+  const totalAmount = subtotal + deliveryFee;
 
   const ensureQrCodes = useCallback(async () => {
     const needQr = selectedStudents.filter((s) => !qrDataUrls[s.id]);
@@ -289,7 +279,6 @@ export function CardOrderModal({
     setStep(1);
     setSelectedIds(new Set());
     setSearchQuery('');
-    setDeliveryFee(0);
     setDeliveryForm({ full_name: '', phone: '', governorate: '', city: '', street: '', building: '', landmark: '' });
     setNotes('');
     setSubmitSuccess(false);
@@ -359,6 +348,7 @@ export function CardOrderModal({
             quantity,
             price_per_card: 55,
             delivery_fee: deliveryFee,
+            shipping_zone: shippingZoneEn,
             total_amount: totalAmount,
             status: 'pending_payment',
             payment_status: 'pending_payment',
@@ -794,11 +784,16 @@ export function CardOrderModal({
                       {formatCurrency(subtotal, locale)}
                     </span>
                   </div>
+                  {!hasProfileGovernorate ? (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">{t('governorateShippingHint')}</p>
+                  ) : null}
                   <div className="flex justify-between text-sm">
-                    <span>{t('deliveryFee')}:</span>
-                    <span className="font-mono text-end">
-                      {deliveryFee === 0 ? t('deliveryFree') : formatCurrency(deliveryFee, locale)}
+                    <span>
+                      {t('shippingWithZone', {
+                        zone: formatShippingZoneForLocale(shippingZoneEn, locale),
+                      })}
                     </span>
+                    <span className="font-mono text-end">{formatCurrency(deliveryFee, locale)}</span>
                   </div>
                   <p className="text-xs text-[var(--color-text-tertiary)] -mt-1">{t('deliveryFeeNote')}</p>
                   <div className="flex justify-between font-bold text-teal-600 pt-2 border-t border-border">

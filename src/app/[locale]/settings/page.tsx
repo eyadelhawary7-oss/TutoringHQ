@@ -31,6 +31,7 @@ interface CenterInfo {
   scanner_default_mode: string;
   phone?: string | null;
   district?: string | null;
+  governorate?: string | null;
   max_teachers?: number;
   daily_summary_enabled?: boolean;
   summer_mode?: boolean;
@@ -84,6 +85,23 @@ const DISTRICT_VALUES = [
   'zamalek',
   'mohandiseen',
   'other',
+] as const;
+
+/** Canonical keys aligned with Bosta shipping table — subset for settings UX */
+const CENTER_GOVERNORATE_VALUES = [
+  'cairo',
+  'alexandria',
+  'giza',
+  'mansoura',
+  'tanta',
+  'ismailia',
+  'port_said',
+  'suez',
+  'aswan',
+  'luxor',
+  'asyut',
+  'hurghada',
+  'other_upper_egypt',
 ] as const;
 
 const PERMISSION_KEYS: { key: string; labelKey: string }[] = [
@@ -150,6 +168,7 @@ function SettingsPageContent() {
   const [centerName, setCenterName] = useState('');
   const [centerPhone, setCenterPhone] = useState('');
   const [centerDistrict, setCenterDistrict] = useState('');
+  const [centerGovernorate, setCenterGovernorate] = useState('');
   const [newSubjectName, setNewSubjectName] = useState('');
   const [scannerMode, setScannerMode] = useState('camera');
   const [dailySummaryEnabled, setDailySummaryEnabled] = useState(true);
@@ -254,6 +273,11 @@ function SettingsPageContent() {
         setCenterName(c.name || '');
         setCenterPhone(c.phone || '');
         setCenterDistrict(c.district || '');
+        setCenterGovernorate(
+          typeof (c as { governorate?: string | null }).governorate === 'string'
+            ? (c as { governorate?: string | null }).governorate ?? ''
+            : '',
+        );
         setScannerMode(c.scanner_default_mode || 'camera');
         setDailySummaryEnabled(c.daily_summary_enabled !== false);
         setSummerModeEnabled(c.summer_mode === true);
@@ -425,6 +449,27 @@ function SettingsPageContent() {
     if (!error) {
       await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'district' } });
       setCenter(prev => prev ? { ...prev, district: val } : null);
+      showSaved();
+    }
+  };
+
+  const handleSaveCenterGovernorate = async () => {
+    if (!centerId || !userId) return;
+    const val = centerGovernorate.trim() || null;
+    const { error } = await dbUpdate({
+      table: 'centers',
+      data: { governorate: val },
+      filters: [{ column: 'id', op: 'eq', value: centerId }],
+    });
+    if (!error) {
+      await auditLog({
+        centerId,
+        userId,
+        action: 'center_update',
+        entityType: 'centers',
+        details: { field: 'governorate', value: val },
+      });
+      setCenter((prev) => (prev ? { ...prev, governorate: val } : null));
       showSaved();
     }
   };
@@ -875,8 +920,35 @@ function SettingsPageContent() {
                       </select>
                       <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('districtHint')}</p>
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('governorate')}</label>
+                      <select
+                        value={centerGovernorate}
+                        onChange={(e) => setCenterGovernorate(e.target.value)}
+                        className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
+                      >
+                        <option value="">{t('governorateSelectPlaceholder')}</option>
+                        {CENTER_GOVERNORATE_VALUES.map((g) => (
+                          <option key={g} value={g}>
+                            {t(`governorateOptions.${g}`)}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('governorateHint')}</p>
+                    </div>
                     <div className="flex justify-end">
-                      <button type="button" onClick={() => { handleSaveCenterName(); handleSaveCenterPhone(); handleSaveCenterDistrict(); }} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">{tCommon('save')}</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSaveCenterName();
+                          handleSaveCenterPhone();
+                          handleSaveCenterDistrict();
+                          handleSaveCenterGovernorate();
+                        }}
+                        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                      >
+                        {tCommon('save')}
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -325,6 +325,7 @@ export const dbInsertSchemas: Record<string, z.ZodType> = {
     quantity: z.number().int().min(0),
     price_per_card: z.number().min(0).optional().default(55),
     delivery_fee: z.number().min(0).optional().default(0),
+    shipping_zone: z.string().optional().nullable(),
     total_amount: z.number().min(0),
     status: z
       .enum([

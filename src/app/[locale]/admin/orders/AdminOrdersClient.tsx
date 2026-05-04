@@ -22,7 +22,8 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import type { AdminCardOrderRow, CardOrderFulfillmentStatus } from '@/types/admin-card-orders';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
-import { formatDate, formatDateTime } from '@/lib/formatNumber';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/formatNumber';
+import { formatShippingZoneForLocale } from '@/lib/bostaShipping';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 const STATUS_ORDER: CardOrderFulfillmentStatus[] = [
@@ -321,7 +322,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                         {order.quantity}
                       </td>
                       <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono font-bold">
-                        {order.total_amount} {tCommon('egp')}
+                        {formatCurrency(Number(order.total_amount), locale)}
                       </td>
                       <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                         <span
@@ -480,23 +481,28 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     <span>
                       {slideOrder.quantity} {tIdCards('cards')} × {slideOrder.price_per_card} {tCommon('egp')}
                     </span>
-                    <span className="font-mono font-bold">
-                      {cardsSubtotal(slideOrder)} {tCommon('egp')}
+                    <span className="font-mono font-bold">{formatCurrency(cardsSubtotal(slideOrder), locale)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-[var(--color-text-primary)] mb-1 gap-2">
+                    <span className="min-w-0">
+                      {tIdCards('shippingFee')}{' '}
+                      {slideOrder.shipping_zone ? (
+                        <span className="text-[var(--color-text-secondary)]">
+                          ({formatShippingZoneForLocale(slideOrder.shipping_zone, locale)})
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="font-mono font-bold shrink-0">
+                      {formatCurrency(slideOrder.delivery_fee, locale)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm text-[var(--color-text-primary)] mb-3">
-                    <span>{tIdCards('delivery')}</span>
-                    <span className="font-mono font-bold">
-                      {slideOrder.delivery_fee} {tCommon('egp')}
-                    </span>
-                  </div>
-                  <div className="border-t border-border pt-3 flex justify-between">
+                  <div className="border-t border-border pt-3 mt-2 flex justify-between">
                     <span className="font-bold text-[var(--color-text-primary)]">{tIdCards('total')}</span>
                     <span
                       className="font-mono font-black text-lg"
                       style={{ color: slideOrder.card_color }}
                     >
-                      {slideOrder.total_amount} {tCommon('egp')}
+                      {formatCurrency(slideOrder.total_amount, locale)}
                     </span>
                   </div>
                 </div>

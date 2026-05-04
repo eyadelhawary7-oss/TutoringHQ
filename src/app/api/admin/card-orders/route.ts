@@ -106,7 +106,8 @@ export async function GET(request: Request) {
       vendor_notify_failed,
       bosta_order_id,
       tracking_number,
-      centers ( name, phone, logo_url, card_color )
+      centers ( name, phone, logo_url, card_color ),
+      shipping_zone
     `,
     )
     .not('payment_status', 'in', '(pending_payment,failed)')
@@ -135,6 +136,7 @@ export async function GET(request: Request) {
       quantity: Number(r.quantity ?? 0),
       price_per_card: Number(r.price_per_card ?? 0),
       delivery_fee: Number(r.delivery_fee ?? 0),
+      shipping_zone: r.shipping_zone != null ? String(r.shipping_zone) : null,
       total_amount: Number(r.total_amount ?? 0),
       delivery_address: r.delivery_address != null ? String(r.delivery_address) : null,
       notes: r.notes != null ? String(r.notes) : null,

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createBostaDelivery } from '@/lib/bosta';
+import { getShippingFee } from '@/lib/bostaShipping';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 export async function autoBookBosta(
@@ -18,6 +19,7 @@ export async function autoBookBosta(
         notes,
         delivery_address,
         bosta_order_id,
+        delivery_fee,
         centers ( phone, governorate )
       `,
       )
@@ -28,7 +30,7 @@ export async function autoBookBosta(
       return { success: false, error: 'order_not_found' };
     }
 
-    const o = order as { bosta_order_id?: string | null };
+    const o = order as { bosta_order_id?: string | null; delivery_fee?: number | null };
     if (o.bosta_order_id) {
       return { success: true };
     }
@@ -45,6 +47,8 @@ export async function autoBookBosta(
     }
 
     const center = order.centers as { phone?: string | null; governorate?: string | null } | null;
+    const centerGovernorate = center?.governorate;
+    const shippingFee = getShippingFee(centerGovernorate);
     const prefix = (process.env.BOSTA_BUSINESS_PREFIX ?? 'CHQ').replace(/[^A-Za-z0-9]/g, '') || 'CHQ';
     const ref = `${prefix}-${String(order.id).substring(0, 8).toUpperCase()}`;
 
@@ -57,7 +61,7 @@ export async function autoBookBosta(
     const result = await createBostaDelivery({
       centerPhone: center?.phone ?? '',
       centerAddress: String(order.delivery_address ?? ''),
-      centerCity: center?.governorate ?? 'Cairo',
+      centerCity: centerGovernorate ?? 'Cairo',
       vendorPhone: v.whatsapp_number,
       vendorAddress: v.pickup_address,
       vendorCity: v.city ?? 'Cairo',
@@ -72,15 +76,17 @@ export async function autoBookBosta(
     }
 
     const shippedAt = new Date().toISOString();
-    const { error: upErr } = await db
-      .from('card_orders')
-      .update({
-        bosta_order_id: result.bostaOrderId ?? 'booked',
-        tracking_number: result.trackingNumber ?? null,
-        status: 'shipped',
-        shipped_at: shippedAt,
-      })
-      .eq('id', orderId);
+    const existingFee = Number(o.delivery_fee ?? 0);
+    const updatePayload: Record<string, unknown> = {
+      bosta_order_id: result.bostaOrderId ?? 'booked',
+      tracking_number: result.trackingNumber ?? null,
+      status: 'shipped',
+      shipped_at: shippedAt,
+    };
+    if (!Number.isFinite(existingFee) || existingFee <= 0) {
+      updatePayload.delivery_fee = shippingFee;
+    }
+    const { error: upErr } = await db.from('card_orders').update(updatePayload).eq('id', orderId);
 
     if (upErr) {
       console.error('[autoBookBosta] Update failed:', upErr);

@@ -5,6 +5,7 @@ import { dbInsertSchemas, studentUpdateSchema } from '@/lib/validations';
 import { afterStudentWriteParentPackEffects } from '@/lib/studentParentPackWelcome';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { scanRatelimit, rateLimitedResponse } from '@/lib/ratelimit';
+import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 
 const ALLOWED_TABLES = [
   'payments', 'students', 'student_groups', 'attendance_scans',
@@ -145,6 +146,43 @@ export async function POST(request: Request) {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    if (
+      table === 'card_orders' &&
+      operation === 'insert' &&
+      data &&
+      typeof data === 'object' &&
+      !Array.isArray(data)
+    ) {
+      const row = data as Record<string, unknown>;
+      const targetCenterId = typeof row.center_id === 'string' ? row.center_id : '';
+      if (!targetCenterId) {
+        return NextResponse.json({ error: 'center_id required', code: 'VALIDATION_ERROR' }, { status: 400 });
+      }
+      const { data: userRow } = await supabaseAdmin
+        .from('users')
+        .select('center_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      const userCenterId = (userRow as { center_id?: string | null } | null)?.center_id ?? null;
+      if (!userCenterId || userCenterId !== targetCenterId) {
+        return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+      }
+      const { data: center } = await supabaseAdmin
+        .from('centers')
+        .select('governorate')
+        .eq('id', targetCenterId)
+        .maybeSingle();
+      const gov = (center as { governorate?: string | null } | null)?.governorate;
+      const deliveryFee = getShippingFee(gov);
+      const shippingZone = getShippingZone(gov);
+      const qty = Math.round(Number(row.quantity ?? 0));
+      const ppc = Number(row.price_per_card ?? 55);
+      const total = Math.round((qty * ppc + deliveryFee) * 100) / 100;
+      row.delivery_fee = deliveryFee;
+      row.shipping_zone = shippingZone;
+      row.total_amount = total;
+    }
 
     let prevStudentPack: { parent_pack_opted_in: boolean | null; parent_phone: string | null } | null = null;
     if (table === 'students' && operation === 'update' && filters && Array.isArray(filters)) {

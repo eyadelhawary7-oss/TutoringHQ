@@ -1,5 +1,92 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 import { notifyVendorOfNewOrder } from '@/lib/vendorNotify';
+
+async function ensureCardOrderSetupFeeInvoice(
+  supabaseAdmin: SupabaseClient,
+  orderId: string,
+  paymobOrderId: string,
+  paymobTransactionId: string,
+): Promise<void> {
+  const payRef = `card_order:${orderId}`;
+  const { data: existing } = await supabaseAdmin
+    .from('invoices')
+    .select('id')
+    .eq('payment_reference', payRef)
+    .maybeSingle();
+  if (existing) return;
+
+  const { data: ord } = await supabaseAdmin
+    .from('card_orders')
+    .select(
+      'id, center_id, quantity, price_per_card, delivery_fee, shipping_zone, total_amount, tracking_number, paymob_order_id',
+    )
+    .eq('id', orderId)
+    .maybeSingle();
+  if (!ord) return;
+
+  const r = ord as {
+    center_id: string;
+    quantity: number | null;
+    price_per_card: number | null;
+    delivery_fee: number | null;
+    shipping_zone: string | null;
+    total_amount: number | null;
+    tracking_number: string | null;
+    paymob_order_id?: string | null;
+  };
+  const cid = r.center_id;
+  const qty = Math.round(Number(r.quantity ?? 0));
+  const pricePerCard = Number(r.price_per_card ?? 55);
+  let deliveryFee = Number(r.delivery_fee ?? 0);
+  let shippingZone = r.shipping_zone != null && String(r.shipping_zone).trim() ? String(r.shipping_zone) : '';
+  if (!Number.isFinite(deliveryFee) || deliveryFee <= 0 || !shippingZone) {
+    const { data: center } = await supabaseAdmin.from('centers').select('governorate').eq('id', cid).maybeSingle();
+    const gov = (center as { governorate?: string | null } | null)?.governorate;
+    deliveryFee = getShippingFee(gov);
+    shippingZone = getShippingZone(gov);
+  }
+  const total = Number(r.total_amount ?? qty * pricePerCard + deliveryFee);
+
+  const { data: codeRow } = await supabaseAdmin.from('centers').select('center_code').eq('id', cid).maybeSingle();
+  const code = String((codeRow as { center_code?: string } | null)?.center_code ?? 'XXX');
+  const ymd = new Date().toISOString().slice(0, 10);
+  const invoiceNumber = `CARD-${code}-${ymd}-${String(orderId).replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+
+  const metadata = {
+    card_order_id: orderId,
+    product_name: 'QR Cards',
+    product_name_ar: 'بطاقات QR',
+    qty,
+    unit_price: pricePerCard,
+    scanner_unit_price: pricePerCard,
+    shipping_company: 'Bosta',
+    shipping_fee: deliveryFee,
+    shipping_zone: shippingZone,
+    tracking_number: r.tracking_number ?? null,
+  };
+
+  const { error: invErr } = await supabaseAdmin.from('invoices').insert({
+    center_id: cid,
+    invoice_number: invoiceNumber,
+    invoice_type: 'setup_fee',
+    total_amount: total,
+    base_amount: Math.round((qty * pricePerCard) * 100) / 100,
+    billing_period_start: ymd,
+    billing_period_end: ymd,
+    due_date: ymd,
+    status: 'paid',
+    paid_at: new Date().toISOString(),
+    discount_amount: 0,
+    payment_reference: payRef,
+    paymob_order_id: String(r.paymob_order_id ?? paymobOrderId),
+    paymob_transaction_id: paymobTransactionId,
+    metadata,
+  });
+  if (invErr) {
+    console.error('[finalizeCardOrderPaymentSuccess] setup_fee invoice:', invErr);
+  }
+}
 
 export async function finalizeCardOrderPaymentSuccess(
   supabaseAdmin: SupabaseClient,
@@ -17,6 +104,7 @@ export async function finalizeCardOrderPaymentSuccess(
   const row = order as { id: string; payment_status?: string | null };
 
   if (row.payment_status === 'paid') {
+    await ensureCardOrderSetupFeeInvoice(supabaseAdmin, row.id, paymobOrderId, paymobTransactionId);
     return { orderId: row.id };
   }
 
@@ -34,6 +122,7 @@ export async function finalizeCardOrderPaymentSuccess(
     return null;
   }
 
+  await ensureCardOrderSetupFeeInvoice(supabaseAdmin, row.id, paymobOrderId, paymobTransactionId);
   void notifyVendorOfNewOrder(row.id);
   return { orderId: row.id };
 }
