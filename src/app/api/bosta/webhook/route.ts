@@ -217,7 +217,47 @@ async function processBostaEvent(payload: Record<string, unknown>): Promise<void
           bosta_updated_at: now,
         })
         .eq('id', order.id);
-      if (error) console.error('[bosta-webhook] OUT_FOR_DELIVERY update:', error);
+      if (error) {
+        console.error('[bosta-webhook] OUT_FOR_DELIVERY update:', error);
+      } else {
+        try {
+          const trackingNum =
+            order.tracking_number ??
+            (typeof trackingNumber === 'string' ? trackingNumber : null);
+
+          if (trackingNum) {
+            const { data: invoice } = await supabase
+              .from('invoices')
+              .select('id, metadata')
+              .eq('invoice_type', 'setup_fee')
+              .eq('center_id', order.center_id)
+              .contains('metadata', { card_order_id: order.id })
+              .maybeSingle();
+
+            if (invoice) {
+              const inv = invoice as { id: string; metadata: unknown };
+              const updatedMetadata = {
+                ...(typeof inv.metadata === 'object' &&
+                inv.metadata !== null &&
+                !Array.isArray(inv.metadata)
+                  ? (inv.metadata as Record<string, unknown>)
+                  : {}),
+                tracking_number: trackingNum,
+                tracking_url: bostaTrackingUrl(trackingNum),
+              };
+              const { error: invErr } = await supabase
+                .from('invoices')
+                .update({ metadata: updatedMetadata })
+                .eq('id', inv.id);
+              if (invErr) {
+                console.error('[bosta-webhook] invoice metadata update OUT_FOR_DELIVERY:', invErr);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[bosta-webhook] invoice tracking writeback OUT_FOR_DELIVERY:', e);
+        }
+      }
       break;
     }
 
@@ -235,7 +275,51 @@ async function processBostaEvent(payload: Record<string, unknown>): Promise<void
           delivered_at: now,
         })
         .eq('id', order.id);
-      if (error) console.error('[bosta-webhook] DELIVERED/DELIVERED_TO_SENDER update:', error);
+      if (error) {
+        console.error('[bosta-webhook] DELIVERED/DELIVERED_TO_SENDER update:', error);
+      } else {
+        // Write tracking number back to setup_fee invoice metadata
+        try {
+          const trackingNum =
+            order.tracking_number ??
+            (typeof trackingNumber === 'string' ? trackingNumber : null);
+
+          if (trackingNum) {
+            const { data: invoice } = await supabase
+              .from('invoices')
+              .select('id, metadata')
+              .eq('invoice_type', 'setup_fee')
+              .eq('center_id', order.center_id)
+              .contains('metadata', { card_order_id: order.id })
+              .maybeSingle();
+
+            if (invoice) {
+              const inv = invoice as { id: string; metadata: unknown };
+              const updatedMetadata = {
+                ...(typeof inv.metadata === 'object' &&
+                inv.metadata !== null &&
+                !Array.isArray(inv.metadata)
+                  ? (inv.metadata as Record<string, unknown>)
+                  : {}),
+                tracking_number: trackingNum,
+                tracking_url: bostaTrackingUrl(trackingNum),
+                delivered_at: now,
+              };
+              const { error: invErr } = await supabase
+                .from('invoices')
+                .update({ metadata: updatedMetadata })
+                .eq('id', inv.id);
+              if (invErr) {
+                console.error('[bosta-webhook] invoice metadata update:', invErr);
+              } else {
+                console.info('[bosta-webhook] tracking written to invoice:', inv.id);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[bosta-webhook] invoice tracking writeback:', e);
+        }
+      }
       break;
     }
 
