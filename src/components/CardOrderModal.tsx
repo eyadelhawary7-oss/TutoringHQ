@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
 import { X, Search, ChevronRight, ChevronLeft, Check, CreditCard, Lock } from 'lucide-react';
@@ -124,7 +124,6 @@ export function CardOrderModal({
   const [currentCardOrderId, setCurrentCardOrderId] = useState<string | null>(null);
   const [currentPaymobOrderId, setCurrentPaymobOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [qrDataUrls, setQrDataUrls] = useState<Record<string, string>>({});
   const [selectedStyle, setSelectedStyle] = useState<QrCardStyle>('dark');
 
   const centerName = centerInfo?.name ?? 'CenterHQ';
@@ -213,24 +212,8 @@ export function CardOrderModal({
   const basePricePerCard =
     quantity > 0 ? Math.round(exclusivePricing.base / quantity) : 0;
 
-  const ensureQrCodes = useCallback(async () => {
-    const needQr = selectedStudents.filter((s) => !qrDataUrls[s.id]);
-    if (needQr.length === 0) return;
-    const next: Record<string, string> = { ...qrDataUrls };
-    for (const s of needQr) {
-      try {
-        const dataUrl = s.qr_code || (await QRCode.toDataURL(s.id, { width: 300, margin: 2 }));
-        next[s.id] = dataUrl;
-      } catch {
-        next[s.id] = '';
-      }
-    }
-    setQrDataUrls(next);
-  }, [selectedStudents, qrDataUrls]);
-
   const handleNext = () => {
     if (step === 1 && selectedIds.size > 0) {
-      ensureQrCodes();
       setStep(2);
     } else if (step === 2) {
       setStep(3);
@@ -261,7 +244,6 @@ export function CardOrderModal({
     setDeliveryForm({ full_name: '', phone: '', governorate: '', city: '', street: '', building: '', landmark: '' });
     setNotes('');
     setSubmitSuccess(false);
-    setQrDataUrls({});
     setUseSavedAddress(hasSavedAddress);
     setSelectedStyle('dark');
     setPaymentStatus('idle');
@@ -281,11 +263,20 @@ export function CardOrderModal({
   const buildOrderPayload = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user?.id || !centerId) return null;
+    const qrByStudentId: Record<string, string> = {};
+    for (const s of selectedStudents) {
+      try {
+        qrByStudentId[s.id] =
+          s.qr_code || (await QRCode.toDataURL(s.id, { width: 300, margin: 2 }));
+      } catch {
+        qrByStudentId[s.id] = '';
+      }
+    }
     const studentsPayload = selectedStudents.map((s) => ({
       id: s.id,
       name: s.name,
       student_number: s.student_number ?? '',
-      qr_code: qrDataUrls[s.id] || s.qr_code || '',
+      qr_code: qrByStudentId[s.id] || s.qr_code || '',
     }));
     const deliveryPayload = {
       full_name: deliveryForm.full_name?.trim() || null,
