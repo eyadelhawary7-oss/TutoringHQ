@@ -386,7 +386,7 @@ async function processBostaEvent(payload: Record<string, unknown>): Promise<void
               created_by: fo.created_by,
               students: fo.students ?? [],
               quantity: fo.quantity,
-              price_per_card: fo.price_per_card ?? 55,
+              price_per_card: fo.price_per_card ?? 62,
               delivery_fee: 0,
               total_amount: 0,
               status: 'pending',

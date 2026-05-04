@@ -29,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const { data: order, error: fetchError } = await supabaseAdmin
     .from('card_orders')
-    .select('id, quantity, notes, students, centers(name, phone, card_color)')
+    .select('id, quantity, notes, students, card_style, centers(name, phone, card_color)')
     .eq('id', id)
     .maybeSingle();
 
@@ -48,6 +48,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const year = now.getFullYear();
   const academicYear = month >= 9 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
 
+  const pdfCardStyle: 'dark' | 'light' =
+    (order as { card_style?: string | null }).card_style === 'light' ? 'light' : 'dark';
+
   const pdfBuffer = await generateOrderPdf({
     ref,
     quantity: order.quantity,
@@ -55,6 +58,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     centerName: center?.name ?? '',
     centerPhone: center?.phone ?? '',
     cardColor: center?.card_color ?? '#0D9488',
+    cardStyle: pdfCardStyle,
     academicYear,
     students,
   });

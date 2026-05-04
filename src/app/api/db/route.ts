@@ -177,7 +177,7 @@ export async function POST(request: Request) {
       const deliveryFee = getShippingFee(gov);
       const shippingZone = getShippingZone(gov);
       const qty = Math.round(Number(row.quantity ?? 0));
-      const ppc = Number(row.price_per_card ?? 55);
+      const ppc = Number(row.price_per_card ?? 62);
       const total = Math.round((qty * ppc + deliveryFee) * 100) / 100;
       row.delivery_fee = deliveryFee;
       row.shipping_zone = shippingZone;

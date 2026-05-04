@@ -7,7 +7,9 @@ import { X, Search, ChevronRight, ChevronLeft, Check, CreditCard } from 'lucide-
 import QRCode from 'qrcode';
 import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency } from '@/lib/formatNumber';
+import { calcExclusive } from '@/lib/invoiceTaxUtils';
+import { cn } from '@/lib/utils';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { getShippingFee, getShippingZone, formatShippingZoneForLocale } from '@/lib/bostaShipping';
 
@@ -56,7 +58,6 @@ interface CenterInfo {
   phone?: string;
   governorate?: string;
   delivery_address?: DeliveryAddress;
-  card_color?: string;
 }
 
 interface DeliveryAddress {
@@ -78,18 +79,9 @@ interface CardOrderModalProps {
   onSuccess?: () => void;
 }
 
-const PRICE_PER_CARD = 55;
+const PRICE_PER_CARD = 62;
 
-const CARD_COLORS = [
-  { value: '#0D9488', label: 'Teal' },
-  { value: '#1E3A5F', label: 'Navy' },
-  { value: '#1A1A1A', label: 'Black' },
-  { value: '#7C3AED', label: 'Purple' },
-  { value: '#DC2626', label: 'Red' },
-  { value: '#EA580C', label: 'Orange' },
-  { value: '#B45309', label: 'Gold' },
-  { value: '#15803D', label: 'Green' },
-] as const;
+export type QrCardStyle = 'dark' | 'light';
 
 export function CardOrderModal({
   isOpen,
@@ -100,6 +92,8 @@ export function CardOrderModal({
   onSuccess,
 }: CardOrderModalProps) {
   const t = useTranslations('cardOrders');
+  const tOrders = useTranslations('orders');
+  const tStudents = useTranslations('students');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const isRTL = locale === 'ar';
@@ -132,7 +126,7 @@ export function CardOrderModal({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
   const [qrDataUrls, setQrDataUrls] = useState<Record<string, string>>({});
-  const [selectedColor, setSelectedColor] = useState<string>('#0D9488');
+  const [selectedStyle, setSelectedStyle] = useState<QrCardStyle>('dark');
 
   const centerName = centerInfo?.name ?? 'CenterHQ';
   const centerLogo = centerInfo?.logo_url ?? null;
@@ -142,15 +136,6 @@ export function CardOrderModal({
     if (isOpen && hasSavedAddress) setUseSavedAddress(true);
     else if (isOpen && !hasSavedAddress) setUseSavedAddress(false);
   }, [isOpen, hasSavedAddress]);
-
-  useEffect(() => {
-    if (isOpen && centerInfo?.card_color) {
-      const c = centerInfo.card_color;
-      setSelectedColor(CARD_COLORS.some((x) => x.value === c) ? c : '#0D9488');
-    } else if (isOpen && !centerInfo?.card_color) {
-      setSelectedColor('#0D9488');
-    }
-  }, [isOpen, centerInfo?.card_color]);
 
   useEffect(() => {
     if (!isOpen || typeof window === 'undefined') return;
@@ -194,6 +179,10 @@ export function CardOrderModal({
     .join('')
     .toUpperCase();
 
+  const previewFaceBg = selectedStyle === 'dark' ? '#0a1628' : '#ffffff';
+  const previewPrimaryText =
+    selectedStyle === 'dark' ? 'text-[var(--color-text-primary)]' : 'text-[color:#0f172a]';
+
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
     const q = searchQuery.toLowerCase().trim();
@@ -231,8 +220,9 @@ export function CardOrderModal({
   const shippingZoneEn = useMemo(() => getShippingZone(centerGov), [centerGov]);
   const hasProfileGovernorate = !!centerGov;
   const quantity = selectedStudents.length;
-  const subtotal = quantity * PRICE_PER_CARD;
-  const totalAmount = subtotal + deliveryFee;
+  const cardsInclusiveTotal = PRICE_PER_CARD * quantity;
+  const exclusivePricing = useMemo(() => calcExclusive(cardsInclusiveTotal), [cardsInclusiveTotal]);
+  const payTotal = exclusivePricing.total + deliveryFee;
 
   const ensureQrCodes = useCallback(async () => {
     const needQr = selectedStudents.filter((s) => !qrDataUrls[s.id]);
@@ -285,7 +275,7 @@ export function CardOrderModal({
     setCardSide('front');
     setQrDataUrls({});
     setUseSavedAddress(hasSavedAddress);
-    setSelectedColor(centerInfo?.card_color && CARD_COLORS.some((x) => x.value === centerInfo.card_color) ? centerInfo.card_color : '#0D9488');
+    setSelectedStyle('dark');
     setPaymentStatus('idle');
     setPaymentKey(null);
     setPaymobIframeId(null);
@@ -346,14 +336,15 @@ export function CardOrderModal({
             created_by: session.user.id,
             students: studentsPayload,
             quantity,
-            price_per_card: 55,
+            price_per_card: PRICE_PER_CARD,
             delivery_fee: deliveryFee,
             shipping_zone: shippingZoneEn,
-            total_amount: totalAmount,
+            total_amount: payTotal,
             status: 'pending_payment',
             payment_status: 'pending_payment',
             delivery_address: deliveryDisplay || null,
             notes: notes.trim() || null,
+            card_style: selectedStyle,
           },
           select: 'id',
           single: true,
@@ -369,13 +360,13 @@ export function CardOrderModal({
         orderId = (inserted as { id: string }).id;
         setCurrentCardOrderId(orderId);
 
-        const centerUpdates: Record<string, unknown> = { card_color: selectedColor };
-        if (deliveryDisplay) centerUpdates.delivery_address = deliveryPayload;
-        await dbUpdate({
-          table: 'centers',
-          data: centerUpdates,
-          filters: [{ column: 'id', op: 'eq', value: centerId }],
-        });
+        if (deliveryDisplay) {
+          await dbUpdate({
+            table: 'centers',
+            data: { delivery_address: deliveryPayload },
+            filters: [{ column: 'id', op: 'eq', value: centerId }],
+          });
+        }
       }
 
       const phoneForPaymob = (deliveryForm.phone?.trim() || centerPhone || '').replace(/\D/g, '');
@@ -392,7 +383,7 @@ export function CardOrderModal({
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          amount: totalAmount,
+          amount: payTotal,
           centerName,
           centerPhone: phoneForPaymob || '0',
           cardOrderId: orderId,
@@ -545,7 +536,9 @@ export function CardOrderModal({
                     {t('clear', { defaultValue: 'Clear' })}
                   </button>
                   <span className="text-sm text-[var(--color-text-secondary)] ms-auto">
-                    {t('studentsSelected', { count: selectedIds.size, defaultValue: `${selectedIds.size} students selected` })}
+                    {selectedIds.size === 1
+                      ? tStudents('cardOrderCartSelected', { count: 1 })
+                      : tStudents('cardOrderCartSelectedPlural', { count: selectedIds.size })}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
@@ -603,25 +596,25 @@ export function CardOrderModal({
                     >
                       {/* Front */}
                       <div
-                        className="absolute inset-0 bg-[var(--color-surface-1)] rounded-xl overflow-hidden"
-                        style={{ backfaceVisibility: 'hidden' }}
+                        className="absolute inset-0 rounded-xl overflow-hidden flex flex-col"
+                        style={{ backfaceVisibility: 'hidden', backgroundColor: previewFaceBg }}
                       >
                         <div
-                          className="absolute top-0 left-0 right-0 h-[20%]"
-                          style={{ background: `linear-gradient(135deg, ${selectedColor} 0%, ${selectedColor}dd 100%)` }}
-                        />
-                        <div className="absolute top-0 left-0 right-0 h-[20%] flex items-center justify-between px-3 py-2">
+                          className="h-[20%] shrink-0 flex items-center justify-between px-3 py-2 bg-[color:var(--color-teal)]"
+                        >
                           {centerLogo ? (
                             <img src={centerLogo} alt="" className="h-6 w-6 object-contain" />
                           ) : (
-                            <div className="h-6 w-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ backgroundColor: selectedColor }}>
+                            <div className="h-6 w-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold bg-[color:var(--color-teal)]">
                               {centerInitials}
                             </div>
                           )}
                           <span className="text-white text-xs font-medium truncate max-w-[60%]">{centerName}</span>
                         </div>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-[15%]">
-                          <div className="w-[40%] aspect-square bg-[var(--color-surface-1)] rounded-lg flex items-center justify-center shadow-md">
+                        <div className="flex flex-1 flex-col items-center justify-center px-2 pb-2 pt-3">
+                          <div
+                            className={`w-[40%] aspect-square rounded-lg flex items-center justify-center shadow-md border border-[var(--color-border-subtle)] ${selectedStyle === 'dark' ? 'bg-[var(--color-surface-2)]' : 'bg-[var(--color-surface-1)]'}`}
+                          >
                             {selectedStudents[0] && (qrDataUrls[selectedStudents[0].id] || selectedStudents[0].qr_code) ? (
                               <img
                                 src={qrDataUrls[selectedStudents[0].id] || selectedStudents[0].qr_code || ''}
@@ -629,35 +622,36 @@ export function CardOrderModal({
                                 className="w-[85%] h-[85%] object-contain"
                               />
                             ) : (
-                              <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+                              <div className="w-8 h-8 border-2 border-[color:var(--color-teal)] border-t-transparent rounded-full animate-spin" />
                             )}
                           </div>
-                          <div className="mt-2 text-center font-bold text-[var(--color-text-primary)] text-sm">
+                          <div className={`mt-2 text-center font-bold text-sm ${previewPrimaryText}`}>
                             {selectedStudents[0]?.name ?? '-'}
                           </div>
-                          <div className="text-[10px] font-mono text-teal-600">
+                          <div className="text-[10px] font-mono text-[color:var(--color-teal)]">
                             {selectedStudents[0]?.student_number
                               ? formatStudentNumberForDisplay(selectedStudents[0].student_number)
                               : '-'}
                           </div>
                         </div>
                       </div>
-                      {/* Back - center name + contact info (no external images to avoid screenshot/iframe issues) */}
+                      {/* Back */}
                       <div
-                        className="absolute inset-0 bg-[var(--color-surface-1)] rounded-xl overflow-hidden"
-                        style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                        className="absolute inset-0 rounded-xl overflow-hidden flex flex-col"
+                        style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', backgroundColor: previewFaceBg }}
                       >
-                        <div className="flex flex-col items-center justify-center h-full p-4">
-                          <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0" style={{ backgroundColor: selectedColor }}>
+                        <div className="h-[20%] shrink-0 bg-[color:var(--color-teal)]" aria-hidden />
+                        <div className="relative flex flex-1 flex-col items-center justify-center p-4">
+                          <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 bg-[color:var(--color-teal)]">
                             {centerInitials}
                           </div>
-                          <div className="mt-2 font-bold text-[var(--color-text-primary)] text-sm text-center leading-tight">{centerName}</div>
+                          <div className={`mt-2 font-bold text-sm text-center leading-tight ${previewPrimaryText}`}>{centerName}</div>
                           {centerPhone && (
-                            <div className="mt-1 text-[10px] text-teal-600 font-mono" dir="ltr">
+                            <div className="mt-1 text-[10px] text-[color:var(--color-teal)] font-mono" dir="ltr">
                               {centerPhone}
                             </div>
                           )}
-                          <div className="absolute bottom-2 text-[8px] text-[var(--color-text-tertiary)]">{t('poweredBy')}</div>
+                          <div className={`absolute bottom-2 text-[8px] ${selectedStyle === 'dark' ? 'text-[var(--color-text-tertiary)]' : 'text-[color:#64748b]'}`}>{t('poweredBy')}</div>
                         </div>
                       </div>
                     </div>
@@ -679,22 +673,48 @@ export function CardOrderModal({
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
-                      {t('cardColor', { defaultValue: 'Card Color' })}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {CARD_COLORS.map(({ value }) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => setSelectedColor(value)}
-                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-transform shrink-0 ${selectedColor === value ? 'scale-110 border-foreground' : 'border-border hover:border-muted-foreground'}`}
-                          style={{ backgroundColor: value }}
-                          aria-label={value}
-                        >
-                          {selectedColor === value && <Check size={20} className="text-white drop-shadow" strokeWidth={3} />}
-                        </button>
-                      ))}
+                    <p className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                      {tOrders('cardStyleLabel')}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStyle('dark')}
+                        className={cn(
+                          'rounded-xl border-2 p-3 text-start transition-shadow',
+                          selectedStyle === 'dark'
+                            ? 'ring-2 ring-[color:var(--color-teal)] border-[color:var(--color-teal)]'
+                            : 'border-[var(--color-border)]',
+                        )}
+                      >
+                        <div className="mb-2 aspect-[85.6/54] rounded-lg overflow-hidden border border-[var(--color-border-subtle)] flex flex-col">
+                          <div className="h-[22%] shrink-0 bg-[color:var(--color-teal)]" />
+                          <div className="flex-1 bg-[#0a1628]" />
+                        </div>
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                          {tOrders('cardStyleOptionB')}
+                        </span>
+                        <span className="mt-0.5 block text-xs font-medium text-[var(--color-text-primary)]">{tOrders('cardStyleDark')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStyle('light')}
+                        className={cn(
+                          'rounded-xl border-2 p-3 text-start transition-shadow',
+                          selectedStyle === 'light'
+                            ? 'ring-2 ring-[color:var(--color-teal)] border-[color:var(--color-teal)]'
+                            : 'border-[var(--color-border)]',
+                        )}
+                      >
+                        <div className="mb-2 aspect-[85.6/54] rounded-lg overflow-hidden border border-[var(--color-border-subtle)] flex flex-col">
+                          <div className="h-[22%] shrink-0 bg-[color:var(--color-teal)]" />
+                          <div className="flex-1 bg-[#ffffff]" />
+                        </div>
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                          {tOrders('cardStyleOptionC')}
+                        </span>
+                        <span className="mt-0.5 block text-xs font-medium text-[var(--color-text-primary)]">{tOrders('cardStyleLight')}</span>
+                      </button>
                     </div>
                   </div>
                   <div className="space-y-3 border border-border rounded-xl p-4 bg-muted/20">
@@ -777,33 +797,52 @@ export function CardOrderModal({
                   ))}
                 </div>
                 <div className="rounded-xl border border-border p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>{t('pricePerCard')}:</span>
-                    <span className="font-mono">
-                      {formatNumber(quantity, locale)} × {formatCurrency(PRICE_PER_CARD, locale)} ={' '}
-                      {formatCurrency(subtotal, locale)}
-                    </span>
-                  </div>
                   {!hasProfileGovernorate ? (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">{t('governorateShippingHint')}</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 pb-1">{t('governorateShippingHint')}</p>
                   ) : null}
-                  <div className="flex justify-between text-sm">
-                    <span>
-                      {t('shippingWithZone', {
-                        zone: formatShippingZoneForLocale(shippingZoneEn, locale),
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="text-[var(--color-text-secondary)]">
+                      {t('orderSummaryBreakdownCards', {
+                        qty: quantity,
+                        unit: formatCurrency(PRICE_PER_CARD, locale),
                       })}
                     </span>
-                    <span className="font-mono text-end">{formatCurrency(deliveryFee, locale)}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(cardsInclusiveTotal, locale)}</span>
+                  </div>
+                  <div className="border-t border-dashed border-[var(--color-border)]" />
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="text-[var(--color-text-secondary)]">{t('orderSummaryServiceFee')}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.service, locale)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="text-[var(--color-text-secondary)]">{t('orderSummaryStampDuty')}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.stamp, locale)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="text-[var(--color-text-secondary)]">{t('orderSummaryVat')}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.vat, locale)}</span>
+                  </div>
+                  <div className="border-t border-[var(--color-border)]" />
+                  <div className="flex justify-between gap-3 text-sm font-medium">
+                    <span className="text-[var(--color-text-primary)]">{t('orderSummaryCardsSubtotal')}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.total, locale)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="text-[var(--color-text-secondary)]">
+                      {t('orderSummaryShippingZone', { zone: formatShippingZoneForLocale(shippingZoneEn, locale) })}
+                    </span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(deliveryFee, locale)}</span>
                   </div>
                   <p className="text-xs text-[var(--color-text-tertiary)] -mt-1">{t('deliveryFeeNote')}</p>
-                  <div className="flex justify-between font-bold text-teal-600 pt-2 border-t border-border">
-                    <span>{t('totalAmount')}:</span>
-                    <span className="font-mono">{formatCurrency(totalAmount, locale)}</span>
+                  <div className="border-t-2 border-[color:var(--color-teal)] pt-2 mt-1" />
+                  <div className="flex justify-between font-bold text-[color:var(--color-teal)] gap-3">
+                    <span>{t('orderSummaryTotal')}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(payTotal, locale)}</span>
                   </div>
                 </div>
                 <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/10">
                   <div className="flex items-start gap-3">
-                    <CreditCard className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" aria-hidden />
+                    <CreditCard className="w-5 h-5 text-[color:var(--color-teal)] shrink-0 mt-0.5" aria-hidden />
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('paymentTitle')}</h3>
                     </div>
@@ -815,15 +854,15 @@ export function CardOrderModal({
                     <button
                       type="button"
                       onClick={handlePayNow}
-                      className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-[color:var(--color-teal)] hover:opacity-90 flex items-center justify-center gap-2"
                     >
                       <CreditCard size={18} aria-hidden />
-                      {t('payNow')} - {formatCurrency(totalAmount, locale)}
+                      {t('payNow')} - {formatCurrency(payTotal, locale)}
                     </button>
                   )}
                   {paymentStatus === 'loading' && (
                     <div className="flex items-center justify-center gap-3 py-4 text-[var(--color-text-secondary)]">
-                      <div className="w-8 h-8 border-2 border-teal-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                      <div className="w-8 h-8 border-2 border-[color:var(--color-teal)] border-t-transparent rounded-full animate-spin shrink-0" />
                       <span className="text-sm">{t('paymentLoading')}</span>
                     </div>
                   )}
@@ -850,7 +889,7 @@ export function CardOrderModal({
                       <button
                         type="button"
                         onClick={handleConfirmOrderAfterPayment}
-                        className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700"
+                        className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-[color:var(--color-teal)] hover:opacity-90"
                       >
                         {t('submitOrder')}
                       </button>

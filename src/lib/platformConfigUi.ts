@@ -6,7 +6,7 @@ export const PLATFORM_CONFIG_INSERT_DEFAULTS: Record<string, number> = {
   blast_price_per_parent: 8,
   announcement_cap_monthly: 2,
   data_deletion_days: 90,
-  qr_card_price: 55,
+  qr_card_price: 62,
 };
 
 export type PlatformConfigRow = { key: string; value: unknown };

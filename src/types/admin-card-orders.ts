@@ -23,6 +23,7 @@ export interface AdminCardOrderRow {
   center_phone: string | null;
   center_logo_url: string | null;
   card_color: string;
+  card_style: 'dark' | 'light';
   students: AdminCardOrderStudent[];
   quantity: number;
   price_per_card: number;

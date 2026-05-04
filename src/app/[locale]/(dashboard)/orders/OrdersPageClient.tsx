@@ -32,7 +32,6 @@ interface CenterInfoState {
   phone?: string;
   governorate?: string;
   delivery_address?: Record<string, unknown>;
-  card_color?: string;
 }
 
 interface CardOrderRow {
@@ -99,7 +98,7 @@ function statusLabelKey(status: string): CardOrderStatusKey {
   return 'statusPending';
 }
 
-const PREVIEW_PRICE_PER_CARD = 55;
+const PREVIEW_PRICE_PER_CARD = 62;
 
 export default function OrdersPageClient({
   initialShippingQuote,
@@ -151,7 +150,6 @@ export default function OrdersPageClient({
               phone: meData.user.center.phone,
               governorate: meData.user.center.governorate,
               delivery_address: meData.user.center.delivery_address,
-              card_color: meData.user.center.card_color,
             }
           : null
       );
@@ -299,7 +297,7 @@ export default function OrdersPageClient({
               const shortId = order.id.replace(/-/g, '').slice(-8).toUpperCase();
               const expanded = expandedId === order.id;
               const lines = parseStudentLines(order.students);
-              const pricePer = order.price_per_card ?? 55;
+              const pricePer = order.price_per_card ?? 62;
               const deliveryFee = Number(order.delivery_fee ?? 0);
               const subtotal = Math.round(order.quantity * pricePer * 100) / 100;
               const zoneLabel =

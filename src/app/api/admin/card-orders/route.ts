@@ -106,6 +106,7 @@ export async function GET(request: Request) {
       vendor_notify_failed,
       bosta_order_id,
       tracking_number,
+      card_style,
       centers ( name, phone, logo_url, card_color ),
       shipping_zone
     `,
@@ -132,6 +133,7 @@ export async function GET(request: Request) {
       center_phone: center?.phone ?? null,
       center_logo_url: center?.logo_url ?? null,
       card_color: typeof center?.card_color === 'string' && center.card_color ? center.card_color : '#0D9488',
+      card_style: (r.card_style === 'light' ? 'light' : 'dark') as 'dark' | 'light',
       students,
       quantity: Number(r.quantity ?? 0),
       price_per_card: Number(r.price_per_card ?? 0),

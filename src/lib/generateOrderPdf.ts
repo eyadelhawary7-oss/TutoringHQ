@@ -20,6 +20,8 @@ export interface GeneratePdfInput {
   centerName: string;
   centerPhone: string;
   cardColor: string;
+  /** When set, uses Option B (dark) / C (light) layout; otherwise legacy single accent color. */
+  cardStyle?: 'dark' | 'light';
   academicYear: string;
   students: PdfStudent[];
 }
@@ -38,7 +40,15 @@ function getContrastColor(hex: string): string {
 // ── HTML Builder ───────────────────────────────────────────────────
 
 function buildCardHtml(input: GeneratePdfInput): string {
-  const { ref, quantity, notes, centerName, centerPhone, cardColor, academicYear, students } = input;
+  const { ref, quantity, notes, centerName, centerPhone, cardColor, cardStyle, academicYear, students } =
+    input;
+
+  const usePresetStyle = cardStyle === 'dark' || cardStyle === 'light';
+  const presetBodyBg = cardStyle === 'light' ? '#ffffff' : '#0a1628';
+  const presetHeaderBg = '#0D9488';
+  const presetNameOnBody =
+    cardStyle === 'light' ? '#0F172A' : '#F8FAFC';
+  const presetQrBg = cardStyle === 'light' ? '#F8FAFC' : '#1E293B';
 
   const safeColor = cardColor || '#0D9488';
   const textColor = getContrastColor(safeColor);
@@ -51,8 +61,39 @@ function buildCardHtml(input: GeneratePdfInput): string {
   });
 
   const rows = students
-    .map(
-      (s) => `
+    .map((s) =>
+      usePresetStyle
+        ? `
+    <div class="row">
+      <div class="col">
+        <div class="front" style="background:${presetBodyBg}">
+          <div class="front-header" style="background:${presetHeaderBg};height:11mm;display:flex;align-items:center;justify-content:flex-end;padding:0 4mm">
+            <span class="front-center-name" style="color:#FFFFFF;font-size:9px;font-weight:800;">${centerName}</span>
+          </div>
+          <div class="front-body" style="background:${presetBodyBg};flex:1">
+            <img class="qr" style="background:${presetQrBg};padding:1mm;border-radius:2mm" src="${s.qr_code}" alt="QR" />
+            <div class="student-name" style="color:${presetNameOnBody}">${s.name}</div>
+            <div class="student-num" style="color:${presetNameOnBody}">${formatStudentNumberForDisplay(s.student_number)}</div>
+            <div class="acad-year" style="color:${presetNameOnBody}">${academicYear}</div>
+          </div>
+        </div>
+        <div class="label">الوجه الأمامي</div>
+      </div>
+      <div class="col">
+        <div class="back" style="background:${presetBodyBg};border-color:${presetBodyBg === '#ffffff' ? '#E2E8F0' : '#334155'}">
+          <div style="height:8mm;background:${presetHeaderBg};width:100%"></div>
+          <div class="circle" style="background:${presetHeaderBg};margin-top:-6mm">
+            <span class="initial">${initial}</span>
+          </div>
+          <div class="back-name" style="color:${presetNameOnBody}">${centerName}</div>
+          <div class="back-phone">${centerPhone || ''}</div>
+          <div class="powered">Powered by CenterHQ</div>
+        </div>
+        <div class="label">الوجه الخلفي</div>
+      </div>
+    </div>
+  `
+        : `
     <div class="row">
       <div class="col">
         <div class="front">

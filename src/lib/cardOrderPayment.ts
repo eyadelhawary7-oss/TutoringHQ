@@ -37,7 +37,7 @@ async function ensureCardOrderSetupFeeInvoice(
   };
   const cid = r.center_id;
   const qty = Math.round(Number(r.quantity ?? 0));
-  const pricePerCard = Number(r.price_per_card ?? 55);
+  const pricePerCard = Number(r.price_per_card ?? 62);
   let deliveryFee = Number(r.delivery_fee ?? 0);
   let shippingZone = r.shipping_zone != null && String(r.shipping_zone).trim() ? String(r.shipping_zone) : '';
   if (!Number.isFinite(deliveryFee) || deliveryFee <= 0 || !shippingZone) {

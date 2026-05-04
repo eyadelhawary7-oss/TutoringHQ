@@ -49,14 +49,18 @@ function buildInteractiveBodyText(
   quantity: number,
   centerName: string,
   notes: string | null,
+  cardStyle: 'dark' | 'light',
 ): string {
   const x = vn();
+  const styleLabel =
+    cardStyle === 'dark' ? 'Option B (Dark Navy + Teal)' : 'Option C (White + Teal)';
   const lines = [
     x.header,
     interpolate(x.ref, { ref }),
     interpolate(x.qty, { quantity }),
     interpolate(x.center, { centerName }),
     notes ? interpolate(x.notes, { notes }) : '',
+    `Card Style: ${styleLabel}`,
     '',
     x.interactiveCta,
   ];
@@ -69,14 +73,18 @@ function buildFallbackBodyText(
   centerName: string,
   notes: string | null,
   readyToken: string,
+  cardStyle: 'dark' | 'light',
 ): string {
   const x = vn();
+  const styleLabel =
+    cardStyle === 'dark' ? 'Option B (Dark Navy + Teal)' : 'Option C (White + Teal)';
   const lines = [
     x.header,
     interpolate(x.ref, { ref }),
     interpolate(x.qty, { quantity }),
     interpolate(x.center, { centerName }),
     notes ? interpolate(x.notes, { notes }) : '',
+    `Card Style: ${styleLabel}`,
     '',
     interpolate(x.fallbackConfirm, { readyToken }),
   ];
@@ -102,11 +110,14 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
 
     const { data: order } = await supabaseAdmin
       .from('card_orders')
-      .select('id, quantity, notes, centers(name)')
+      .select('id, quantity, notes, card_style, centers(name)')
       .eq('id', orderId)
       .maybeSingle();
 
     if (!order) return;
+
+    const cardStyle: 'dark' | 'light' =
+      (order as { card_style?: string | null }).card_style === 'light' ? 'light' : 'dark';
 
     const prefix = (process.env.BOSTA_BUSINESS_PREFIX ?? 'CHQ').replace(/[^A-Za-z0-9]/g, '') || 'CHQ';
     const ref = `${prefix}-${String(order.id).substring(0, 8).toUpperCase()}`;
@@ -211,7 +222,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
               interactive: {
                 type: 'button',
                 body: {
-                  text: buildInteractiveBodyText(ref, Number(order.quantity ?? 0), centerName, notesVal),
+                  text: buildInteractiveBodyText(ref, Number(order.quantity ?? 0), centerName, notesVal, cardStyle),
                 },
                 footer: {
                   text: x.platformFooter,
@@ -244,6 +255,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
         centerName,
         notesVal,
         readyButtonId,
+        cardStyle,
       );
       const fallbackRes = await fetch(waUrl, {
         method: 'POST',
@@ -292,12 +304,17 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
 
     const { data: pdfOrderData } = await supabaseAdmin
       .from('card_orders')
-      .select('id, quantity, notes, students, centers(name, phone, card_color)')
+      .select('id, quantity, notes, students, card_style, centers(name, phone, card_color)')
       .eq('id', orderId)
       .maybeSingle();
 
     const pdfCenter = pdfOrderData?.centers as unknown as VendorPdfCenter | null;
     const pdfStudents = (pdfOrderData?.students ?? []) as unknown as VendorPdfStudent[];
+
+    const pdfCardStyle: 'dark' | 'light' =
+      (pdfOrderData as { card_style?: string | null } | null)?.card_style === 'light'
+        ? 'light'
+        : 'dark';
 
     const pdfNow = new Date();
     const pdfMonth = pdfNow.getMonth() + 1;
@@ -312,6 +329,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
       centerName: pdfCenter?.name ?? '',
       centerPhone: pdfCenter?.phone ?? '',
       cardColor: pdfCenter?.card_color ?? '#0D9488',
+      cardStyle: pdfCardStyle,
       academicYear: pdfAcademicYear,
       students: pdfStudents,
     };

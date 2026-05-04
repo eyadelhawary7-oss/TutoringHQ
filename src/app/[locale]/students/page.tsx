@@ -192,7 +192,6 @@ export default function StudentsPage() {
     phone?: string;
     governorate?: string;
     delivery_address?: Record<string, unknown>;
-    card_color?: string;
     parent_pack_enabled?: boolean;
     plan?: string;
     announcement_balance?: string | number;
@@ -288,7 +287,6 @@ export default function StudentsPage() {
               phone: meData.user.center.phone,
               governorate: meData.user.center.governorate,
               delivery_address: meData.user.center.delivery_address,
-              card_color: meData.user.center.card_color,
               parent_pack_enabled: meData.user.center.parent_pack_enabled,
               plan: meData.user.center.plan,
               announcement_balance: meData.user.center.announcement_balance,
@@ -2244,7 +2242,6 @@ export default function StudentsPage() {
                   phone: meData.user.center.phone,
                   governorate: meData.user.center.governorate,
                   delivery_address: meData.user.center.delivery_address,
-                  card_color: meData.user.center.card_color,
                 });
             }
           }}

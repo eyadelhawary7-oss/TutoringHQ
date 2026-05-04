@@ -425,6 +425,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                           : '-'
                       }
                       qrCode={slideOrder.students[0]?.qr_code}
+                      cardStyle={slideOrder.card_style}
                       color={slideOrder.card_color}
                       className="scale-[0.85] origin-top"
                     />
@@ -498,10 +499,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                   </div>
                   <div className="border-t border-border pt-3 mt-2 flex justify-between">
                     <span className="font-bold text-[var(--color-text-primary)]">{tIdCards('total')}</span>
-                    <span
-                      className="font-mono font-black text-lg"
-                      style={{ color: slideOrder.card_color }}
-                    >
+                    <span className="font-mono font-black text-lg text-[color:var(--color-teal)]">
                       {formatCurrency(slideOrder.total_amount, locale)}
                     </span>
                   </div>
