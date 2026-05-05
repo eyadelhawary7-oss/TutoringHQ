@@ -405,7 +405,7 @@ export default function SignupPage() {
       </div>
 
       <div
-        className="fixed top-0 right-0 left-0 z-50 h-[2px] bg-slate-800/50"
+        className="fixed top-0 end-0 start-0 z-50 h-[2px] bg-slate-800/50"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}

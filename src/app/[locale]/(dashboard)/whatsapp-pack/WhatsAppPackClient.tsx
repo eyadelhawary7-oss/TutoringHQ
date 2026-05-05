@@ -380,7 +380,7 @@ export default function WhatsAppPackClient({
               <div className="p-4 sm:p-6 space-y-6">
                 <div className="relative mb-3">
                   <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-muted)] pointer-events-none"
+                    className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-muted)] pointer-events-none"
                     aria-hidden
                   />
                   <input

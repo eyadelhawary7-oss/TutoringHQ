@@ -240,8 +240,8 @@ function CardOrderPreview({
       <div className="relative w-48 aspect-[85.6/54] rounded-xl overflow-hidden shadow-lg border border-border bg-[var(--color-surface-1)]">
         {side === 'front' ? (
           <>
-            <div className="absolute top-0 left-0 right-0 h-[20%] bg-gradient-to-br from-teal-600 to-teal-700" />
-            <div className="absolute top-0 left-0 right-0 h-[20%] flex items-center justify-between px-2 py-1">
+            <div className="absolute top-0 start-0 end-0 h-[20%] bg-gradient-to-br from-teal-600 to-teal-700" />
+            <div className="absolute top-0 start-0 end-0 h-[20%] flex items-center justify-between px-2 py-1">
               {centerLogo ? <img src={centerLogo} alt="" className="h-5 w-5 object-contain" /> : <div className="h-5 w-5 rounded-full bg-teal-600 flex items-center justify-center text-white text-[8px] font-bold">{initials}</div>}
               <span className="text-white text-[10px] font-medium truncate">{centerName}</span>
             </div>

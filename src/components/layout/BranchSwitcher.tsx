@@ -99,7 +99,7 @@ export function BranchSwitcher() {
           <div className="fixed inset-0 z-40" aria-hidden="true" onClick={() => setOpen(false)} />
           <ul
             role="listbox"
-            className="absolute left-2 right-2 mt-1 py-1 bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto"
+            className="absolute start-2 end-2 mt-1 py-1 bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto"
           >
             {branches.map((b) => (
               <li key={b.id} role="option" aria-selected={b.id === activeCenterId}>

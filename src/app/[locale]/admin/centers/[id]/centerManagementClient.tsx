@@ -2966,7 +2966,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       </thead>
                       <tbody>
                         {s9Requests.map((req, i) => {
-                          const rid = String(req.id ?? `pr-${i}`);
+                          const rid = String(req.id ?? `plan-req-${i}`);
                           const st = String(req.status ?? '');
                           const canAct = st === 'pending' || st === 'pending_payment';
                           return (

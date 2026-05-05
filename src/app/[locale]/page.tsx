@@ -74,16 +74,16 @@ const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
     </div>
 
     <div className="pointer-events-none absolute inset-6">
-      <div className="absolute left-0 top-0 h-8 w-8 rounded-tl-sm border-l-[3px] border-t-[3px] border-teal-400" />
-      <div className="absolute right-0 top-0 h-8 w-8 rounded-tr-sm border-r-[3px] border-t-[3px] border-teal-400" />
-      <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-sm border-b-[3px] border-l-[3px] border-teal-400" />
-      <div className="absolute bottom-0 right-0 h-8 w-8 rounded-br-sm border-b-[3px] border-r-[3px] border-teal-400" />
+      <div className="absolute start-0 top-0 h-8 w-8 rounded-ss-sm border-s-[3px] border-t-[3px] border-teal-400" />
+      <div className="absolute end-0 top-0 h-8 w-8 rounded-se-sm border-e-[3px] border-t-[3px] border-teal-400" />
+      <div className="absolute bottom-0 start-0 h-8 w-8 rounded-es-sm border-b-[3px] border-s-[3px] border-teal-400" />
+      <div className="absolute bottom-0 end-0 h-8 w-8 rounded-ee-sm border-b-[3px] border-e-[3px] border-teal-400" />
     </div>
 
     {demoScreen === 'scanning' ? (
       <div className="pointer-events-none absolute inset-6 overflow-hidden [container-type:size]">
         <div
-          className="chq-landing-scanline-bar absolute left-8 right-8 top-0 h-[2px] rounded-full"
+          className="chq-landing-scanline-bar absolute start-8 end-8 top-0 h-[2px] rounded-full"
           style={{
             background: 'linear-gradient(90deg,transparent,#0D9488,transparent)',
             boxShadow: '0 0 12px 2px rgba(13,148,136,0.6)',
@@ -126,7 +126,7 @@ const DashboardScreen = ({ locale }: { locale: string }) => (
         <div key={name} className="mb-1 flex items-center gap-1.5">
           <div className="h-1.5 w-1.5 rounded-full bg-teal-500" />
           <span className="text-[8px] text-slate-300">{name}</span>
-          <span className="ml-auto text-[7px] text-slate-600">الآن</span>
+          <span className="ms-auto text-[7px] text-slate-600">الآن</span>
         </div>
       ))}
     </div>
@@ -495,8 +495,8 @@ export default function LocaleHomePage() {
                       <div className="h-3 w-[3px] rounded-full bg-teal-400" />
                     </div>
                     <div className="relative h-2.5 w-5 rounded-[3px] border border-slate-400">
-                      <div className="absolute inset-[2px] left-[2px] right-[4px] rounded-[1px] bg-teal-400" />
-                      <div className="absolute -right-[3px] top-1/2 h-[6px] w-[3px] -translate-y-1/2 rounded-r-full bg-slate-500" />
+                      <div className="absolute top-[2px] bottom-[2px] start-[2px] end-[4px] rounded-[1px] bg-teal-400" />
+                      <div className="absolute -end-[3px] top-1/2 h-[6px] w-[3px] -translate-y-1/2 rounded-e-full bg-slate-500" />
                     </div>
                   </div>
                 </div>
