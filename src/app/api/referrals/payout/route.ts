@@ -9,8 +9,15 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response;
 
     const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
+
+    const ALLOWED_PAYMENT_METHODS = ['instapay'];
+    const paymentMethod =
+      typeof body.payment_method === 'string' ? body.payment_method.trim().toLowerCase() : '';
+    if (!ALLOWED_PAYMENT_METHODS.includes(paymentMethod)) {
+      return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
+    }
+
     const amountRequested = Number(body?.amount_requested ?? 0);
-    const paymentMethod = typeof body?.payment_method === 'string' ? body.payment_method : 'bank_transfer';
     const paymentDetails = body?.payment_details && typeof body.payment_details === 'object' ? body.payment_details : null;
 
     if (!Number.isFinite(amountRequested) || amountRequested <= 0) {
