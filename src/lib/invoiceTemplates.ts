@@ -3,7 +3,7 @@ import { calcExclusive, calcExclusiveProduct, type ExclusivePricing } from '@/li
 
 const PDF_LOCALE = 'ar';
 
-export const BLAST_PRICE_PER_PARENT_INCLUSIVE = 9.71;
+export const BLAST_PRICE_PER_PARENT_INCLUSIVE = 9.8;
 
 export const INVOICE_PREFIX: Record<string, string> = {
   subscription: 'INV',

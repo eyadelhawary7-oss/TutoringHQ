@@ -29,6 +29,7 @@ export async function afterStudentWriteParentPackEffects(
     | {
         kind: 'insert';
         centerId: string;
+        skipParentWelcome?: boolean;
         row: {
           id: string;
           name: string;
@@ -54,7 +55,7 @@ export async function afterStudentWriteParentPackEffects(
     const shouldSendWelcome =
       args.row.parent_pack_opted_in === true && !!args.row.parent_phone?.trim();
 
-    if (shouldSendWelcome) {
+    if (shouldSendWelcome && !args.skipParentWelcome) {
       const { data: ctr } = await supabaseAdmin
         .from('centers')
         .select('name, parent_pack_enabled')
