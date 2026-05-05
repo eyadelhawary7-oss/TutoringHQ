@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import { createAction } from '@/lib/ceo';
-import { sendWelcomeTemplate } from '@/lib/centerNotify';
+import { isTemplateApproved, sendWelcomeTemplate } from '@/lib/centerNotify';
 import { generateReferralCode } from '@/lib/referral';
 import { todayISO } from '@/lib/parentPack';
 import { normalizePhone } from '@/lib/utils/phone';
@@ -13,6 +13,11 @@ import {
   type BillingPeriod,
   type PlanKey,
 } from '@/lib/pricing';
+
+/** Gate pending-payment signup WhatsApp text on same registry row as welcome/signup templates. */
+const PENDING_SIGNUP_PAYMENT_WA_TEMPLATE = 'chq_welcome';
+
+const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
 
 function parseConfigBool(v: unknown): boolean {
   if (v === true) return true;
@@ -27,6 +32,20 @@ function waApiPhoneNumberId(): string | null {
 
 function waApiToken(): string | null {
   return process.env.WHATSAPP_TOKEN || null;
+}
+
+function shouldSkipWaForTestPhoneId(): boolean {
+  const phoneId = waApiPhoneNumberId();
+  return !phoneId || phoneId === WHATSAPP_META_TEST_PHONE_NUMBER_ID;
+}
+
+async function waSendingEnabled(client: SupabaseClient): Promise<boolean> {
+  const { data: cfg } = await client
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  return cfg?.value !== false;
 }
 
 /** Prefer Arabic when owner/center names contain Arabic script; otherwise English. */
@@ -50,15 +69,39 @@ function pendingPaymentConfirmationBody(ownerName: string, locale: 'ar' | 'en'):
 /**
  * Plain-text WhatsApp (same env/credentials as centerNotify). Logs only; never throws.
  */
-async function sendPendingSignupPaymentWhatsApp(opts: {
-  toDigits: string;
-  ownerName: string;
-  locale: 'ar' | 'en';
-}): Promise<void> {
+async function sendPendingSignupPaymentWhatsApp(
+  supabase: SupabaseClient,
+  opts: {
+    toDigits: string;
+    ownerName: string;
+    locale: 'ar' | 'en';
+  },
+): Promise<void> {
+  if (!(await isTemplateApproved(PENDING_SIGNUP_PAYMENT_WA_TEMPLATE, supabase))) {
+    console.warn(
+      `[signupInvoiceAutoApprove] skipped — template not approved: ${PENDING_SIGNUP_PAYMENT_WA_TEMPLATE}`,
+    );
+    return;
+  }
+
+  if (!(await waSendingEnabled(supabase))) {
+    console.warn('[signupInvoiceAutoApprove] skipped — wa_sending_enabled is false');
+    return;
+  }
+
+  if (shouldSkipWaForTestPhoneId()) {
+    console.warn(
+      '[signupInvoiceAutoApprove] skipped — Meta test PHONE_NUMBER_ID or missing phone number ID',
+    );
+    return;
+  }
+
   const phoneId = waApiPhoneNumberId();
   const token = waApiToken();
   if (!phoneId || !token) {
-    console.warn('[signupInvoiceAutoApprove] pending payment WA skipped — missing PHONE_NUMBER_ID/WHATSAPP_PHONE_ID or WHATSAPP_TOKEN');
+    console.warn(
+      '[signupInvoiceAutoApprove] pending payment WA skipped — missing PHONE_NUMBER_ID/WHATSAPP_PHONE_ID or WHATSAPP_TOKEN',
+    );
     return;
   }
   const body = pendingPaymentConfirmationBody(opts.ownerName, opts.locale);
@@ -314,31 +357,20 @@ export async function processInvoiceSignupAfterPaymobSuccess(
     }
 
     try {
-      const { data: waRow, error: waCfgErr } = await supabase
-        .from('platform_config')
-        .select('value')
-        .eq('key', 'wa_sending_enabled')
-        .maybeSingle();
-      if (waCfgErr) {
-        console.error('[signupInvoiceAutoApprove] wa_sending_enabled platform_config read', waCfgErr);
-      } else if (!parseConfigBool(waRow?.value)) {
-        console.info('[signupInvoiceAutoApprove] pending payment WA skipped — wa_sending_enabled is not true');
+      const phoneRaw = (c.phone ?? '').trim();
+      const normalizedPhone = normalizePhone(phoneRaw);
+      const phoneDigits = normalizedPhone.replace(/\D/g, '');
+      if (!phoneDigits) {
+        console.warn('[signupInvoiceAutoApprove] pending payment WA skipped — no valid phone', centerId);
       } else {
-        const phoneRaw = (c.phone ?? '').trim();
-        const normalizedPhone = normalizePhone(phoneRaw);
-        const phoneDigits = normalizedPhone.replace(/\D/g, '');
-        if (!phoneDigits) {
-          console.warn('[signupInvoiceAutoApprove] pending payment WA skipped — no valid phone', centerId);
-        } else {
-          const locale = inferPendingSignupWaLocale(c);
-          const ownerDisplay =
-            (c.owner_name ?? '').trim() || (c.name ?? '').trim() || (locale === 'ar' ? 'عميلنا العزيز' : 'there');
-          await sendPendingSignupPaymentWhatsApp({
-            toDigits: phoneDigits,
-            ownerName: ownerDisplay,
-            locale,
-          });
-        }
+        const locale = inferPendingSignupWaLocale(c);
+        const ownerDisplay =
+          (c.owner_name ?? '').trim() || (c.name ?? '').trim() || (locale === 'ar' ? 'عميلنا العزيز' : 'there');
+        await sendPendingSignupPaymentWhatsApp(supabase, {
+          toDigits: phoneDigits,
+          ownerName: ownerDisplay,
+          locale,
+        });
       }
     } catch (e) {
       console.error('[signupInvoiceAutoApprove] pending payment WA block error:', e);

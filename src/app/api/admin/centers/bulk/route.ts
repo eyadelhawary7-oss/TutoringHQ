@@ -2,9 +2,15 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { isTemplateApproved } from '@/lib/centerNotify';
 import { createCommissionsForCenter } from '@/lib/commissions';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { parseBodyWithLimit } from '@/lib/validate';
+
+/** Gate admin bulk freeform WA on ops announcement template in Meta registry. */
+const BULK_CENTER_WA_TEMPLATE = 'chq_parent_announcement_ops';
+
+const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -75,6 +81,21 @@ function waPhoneNumberId(): string | null {
 
 function waToken(): string | null {
   return process.env.WHATSAPP_TOKEN || null;
+}
+
+function shouldSkipWaForTestPhoneId(): boolean {
+  const phoneId = waPhoneNumberId();
+  return !phoneId || phoneId === WHATSAPP_META_TEST_PHONE_NUMBER_ID;
+}
+
+async function waSendingEnabled(): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+  const { data: cfg } = await supabaseAdmin
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  return cfg?.value !== false;
 }
 
 // POST /api/admin/centers/bulk
@@ -223,6 +244,25 @@ export async function POST(request: Request) {
 
     const phoneId = waPhoneNumberId();
     const token = waToken();
+
+    if (!(await isTemplateApproved(BULK_CENTER_WA_TEMPLATE, supabaseAdmin))) {
+      console.warn(
+        `[admin/centers/bulk] send_wa skipped — template not approved: ${BULK_CENTER_WA_TEMPLATE}`,
+      );
+      return NextResponse.json({ success: true, action, processed: 0 });
+    }
+
+    if (!(await waSendingEnabled())) {
+      console.warn('[admin/centers/bulk] send_wa skipped — wa_sending_enabled is false');
+      return NextResponse.json({ success: true, action, processed: 0 });
+    }
+
+    if (shouldSkipWaForTestPhoneId()) {
+      console.warn(
+        '[admin/centers/bulk] send_wa skipped — Meta test PHONE_NUMBER_ID or missing phone number ID',
+      );
+      return NextResponse.json({ success: true, action, processed: 0 });
+    }
 
     if (!phoneId || !token) {
       return NextResponse.json({ errorKey: 'bulk.errors.whatsappNotConfigured' }, { status: 500 });

@@ -1,8 +1,32 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
+import { isTemplateApproved } from '@/lib/centerNotify';
 import { tCronBackup as tBackup } from '@/lib/cronBackupI18n';
 import { formatNumber } from '@/lib/formatNumber';
+
+/** Gate backup-complete WA on internal ops template in Meta registry. */
+const BACKUP_COMPLETE_WA_TEMPLATE = 'chq_internal_churn_alert';
+
+const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
+
+function waPhoneNumberId(): string | null {
+  return process.env.PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_ID || null;
+}
+
+function shouldSkipWaForTestPhoneId(): boolean {
+  const phoneId = waPhoneNumberId();
+  return !phoneId || phoneId === WHATSAPP_META_TEST_PHONE_NUMBER_ID;
+}
+
+async function waSendingEnabled(client: SupabaseClient): Promise<boolean> {
+  const { data: cfg } = await client
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  return cfg?.value !== false;
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -239,9 +263,31 @@ export async function notifyBackupComplete(result: BackupResult): Promise<void> 
   const message = lines.join('\n');
 
   try {
-    const phoneId = process.env.WHATSAPP_PHONE_ID;
+    if (!(await isTemplateApproved(BACKUP_COMPLETE_WA_TEMPLATE, supabase))) {
+      console.warn(
+        `[googleDriveBackup] skipped — template not approved: ${BACKUP_COMPLETE_WA_TEMPLATE}`,
+      );
+      return;
+    }
+
+    if (!(await waSendingEnabled(supabase))) {
+      console.warn('[googleDriveBackup] skipped — wa_sending_enabled is false');
+      return;
+    }
+
+    if (shouldSkipWaForTestPhoneId()) {
+      console.warn(
+        '[googleDriveBackup] skipped — Meta test PHONE_NUMBER_ID or missing phone number ID',
+      );
+      return;
+    }
+
+    const phoneId = waPhoneNumberId();
     const token = process.env.WHATSAPP_TOKEN;
-    if (!phoneId || !token) return;
+    if (!phoneId || !token) {
+      console.warn('[googleDriveBackup] skipped — missing WHATSAPP_TOKEN or phone number ID');
+      return;
+    }
 
     await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
       method: 'POST',

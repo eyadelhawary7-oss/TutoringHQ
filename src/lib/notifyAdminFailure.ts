@@ -1,4 +1,30 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { isTemplateApproved } from '@/lib/centerNotify';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getAdminOrSupportWhatsAppDigits } from '@/lib/supportWhatsApp';
+
+/** Gate freeform vendor-failure admin alerts on vendor pipeline template approval in Meta registry. */
+const VENDOR_FAILURE_WA_TEMPLATE = 'chq_vendor_new_order';
+
+const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
+
+function waPhoneNumberId(): string | null {
+  return process.env.PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_ID || null;
+}
+
+function shouldSkipWaForTestPhoneId(): boolean {
+  const phoneId = waPhoneNumberId();
+  return !phoneId || phoneId === WHATSAPP_META_TEST_PHONE_NUMBER_ID;
+}
+
+async function waSendingEnabled(supabase: SupabaseClient): Promise<boolean> {
+  const { data: cfg } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  return cfg?.value !== false;
+}
 
 interface AdminFailureOpts {
   ref: string;
@@ -28,22 +54,53 @@ export async function notifyAdminOfVendorFailure(opts: AdminFailureOpts): Promis
       '⚡ يرجى التواصل مع المورد يدوياً وإرسال ملف البطاقات',
     ].join('\n');
 
-    const res = await fetch(
-      `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: adminTo,
-          type: 'text',
-          text: { body: messageBody },
-        }),
+    let supabase: SupabaseClient;
+    try {
+      supabase = getSupabaseAdmin();
+    } catch {
+      console.warn('[notifyAdminFailure] skipped — Supabase admin client not configured');
+      return;
+    }
+
+    if (!(await isTemplateApproved(VENDOR_FAILURE_WA_TEMPLATE, supabase))) {
+      console.warn(
+        `[notifyAdminFailure] skipped — template not approved: ${VENDOR_FAILURE_WA_TEMPLATE}`,
+      );
+      return;
+    }
+
+    if (!(await waSendingEnabled(supabase))) {
+      console.warn('[notifyAdminFailure] skipped — wa_sending_enabled is false');
+      return;
+    }
+
+    if (shouldSkipWaForTestPhoneId()) {
+      console.warn(
+        '[notifyAdminFailure] skipped — Meta test PHONE_NUMBER_ID or missing phone number ID',
+      );
+      return;
+    }
+
+    const graphPhoneId = waPhoneNumberId();
+    const token = process.env.WHATSAPP_TOKEN;
+    if (!graphPhoneId || !token) {
+      console.warn('[notifyAdminFailure] skipped — missing WHATSAPP_TOKEN or phone number ID');
+      return;
+    }
+
+    const res = await fetch(`https://graph.facebook.com/v18.0/${graphPhoneId}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: adminTo,
+        type: 'text',
+        text: { body: messageBody },
+      }),
+    });
 
     if (!res.ok) {
       console.error('[notifyAdminFailure] Failed:', res.status, await res.text());
