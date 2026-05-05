@@ -49,7 +49,8 @@ export type AdminTab =
   | 'withdrawals'
   | 'internalTeam'
   | 'salesPipeline'
-  | 'analytics';
+  | 'analytics'
+  | 'platformHealth';
 
 /** Shown only when admin_users.role === 'super_admin' (see /api/admin/check). */
 const SUPER_ONLY_PERMISSION_KEYS = new Set(['billing', 'withdrawals', 'internal_team']);

@@ -325,6 +325,7 @@ const ADMIN_QUERY_TAB_WHITELIST = new Set<string>([
   'internalTeam',
   'salesPipeline',
   'analytics',
+  'platformHealth',
 ]);
 
 /** Case-insensitive / alias mapping for `?tab=` (bookmarks, typos). */
@@ -356,6 +357,10 @@ const ADMIN_TAB_QUERY_ALIASES: Record<string, AdminTab> = {
   'sales-pipeline': 'salesPipeline',
   sales_pipeline: 'salesPipeline',
   analytics: 'analytics',
+  health: 'platformHealth',
+  'platform-health': 'platformHealth',
+  platformhealth: 'platformHealth',
+  platform_health: 'platformHealth',
 };
 
 /** `?tab=` values that map to full admin sub-routes (not inline panels). */
@@ -392,9 +397,9 @@ function resolveAdminTabRedirect(trimmed: string): string | undefined {
 function parseAdminTabParam(raw: string | null): AdminTab {
   if (!raw) return 'overview';
   const trimmed = raw.trim();
-  if (resolveAdminTabRedirect(trimmed)) return 'overview';
   const alias = ADMIN_TAB_QUERY_ALIASES[trimmed.toLowerCase()];
   if (alias) return alias;
+  if (resolveAdminTabRedirect(trimmed)) return 'overview';
   if (ADMIN_QUERY_TAB_WHITELIST.has(trimmed)) return trimmed as AdminTab;
   return 'overview';
 }
@@ -402,6 +407,7 @@ function parseAdminTabParam(raw: string | null): AdminTab {
 function adminTabToQueryParam(tab: AdminTab): string | null {
   if (tab === 'overview') return null;
   if (tab === 'pendingSignups') return 'pending';
+  if (tab === 'platformHealth') return 'health';
   return tab;
 }
 
@@ -463,6 +469,10 @@ function AdminPageContent() {
       }
       if (next === 'withdrawals') {
         router.push('/admin/withdrawals');
+        return;
+      }
+      if (next === 'platformHealth') {
+        router.push('/admin/health');
         return;
       }
       setTab(next);
