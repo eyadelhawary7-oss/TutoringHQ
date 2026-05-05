@@ -15,7 +15,12 @@ import {
   sendTemplateMessage,
 } from '@/lib/whatsapp/client';
 import { pauseOnboardingFlow } from '@/lib/whatsapp/flows/onboarding';
-import { handleVendorReadySignal, isVendorInboundPhone } from '@/lib/vendorWebhook';
+import {
+  handleVendorReadySignal,
+  handleVendorTypedReadyMessage,
+  isVendorInboundPhone,
+  isVendorTypedReadyKeyword,
+} from '@/lib/vendorWebhook';
 
 const HOLDING_HOURS = 4;
 
@@ -320,7 +325,17 @@ async function processWebhookPayload(body: Record<string, unknown>): Promise<voi
                 : null;
 
           if (readyPayload && (await isVendorInboundPhone(adminClient, fromPhone))) {
-            await handleVendorReadySignal(readyPayload, adminClient);
+            await handleVendorReadySignal(readyPayload, adminClient, fromPhone);
+            continue;
+          }
+
+          if (
+            !readyPayload &&
+            textBody &&
+            isVendorTypedReadyKeyword(textBody) &&
+            (await isVendorInboundPhone(adminClient, fromPhone))
+          ) {
+            await handleVendorTypedReadyMessage(fromPhone, adminClient);
             continue;
           }
 

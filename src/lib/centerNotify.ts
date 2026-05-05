@@ -114,17 +114,39 @@ function cairoDateFromTimestamp(iso: string): string {
   return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
 }
 
+type WhatsappTemplateButtonComponent = {
+  type: 'button';
+  sub_type: 'quick_reply';
+  index: string;
+  parameters: { type: 'payload'; payload: string }[];
+};
+
 async function postWhatsappTemplate(opts: {
   templateName: string;
   languageCode: 'ar' | 'ar_EG';
   toDigits: string;
   bodyParameters: string[];
+  /** Optional quick_reply button components (appended after body). */
+  buttonsPayload?: WhatsappTemplateButtonComponent[];
 }): Promise<boolean> {
   const phoneId = waPhoneNumberId();
   const token = waToken();
   if (!phoneId || !token) {
     console.warn('[centerNotify] Missing PHONE_NUMBER_ID/WHATSAPP_PHONE_ID or WHATSAPP_TOKEN');
     return false;
+  }
+
+  const components: (
+    | { type: 'body'; parameters: { type: 'text'; text: string }[] }
+    | WhatsappTemplateButtonComponent
+  )[] = [
+    {
+      type: 'body',
+      parameters: opts.bodyParameters.map((text) => ({ type: 'text', text })),
+    },
+  ];
+  if (opts.buttonsPayload?.length) {
+    components.push(...opts.buttonsPayload);
   }
 
   try {
@@ -141,12 +163,7 @@ async function postWhatsappTemplate(opts: {
         template: {
           name: opts.templateName,
           language: { code: opts.languageCode },
-          components: [
-            {
-              type: 'body',
-              parameters: opts.bodyParameters.map((text) => ({ type: 'text', text })),
-            },
-          ],
+          components,
         },
       }),
     });
@@ -192,6 +209,21 @@ async function postWhatsappTextMessage(opts: { toDigits: string; body: string })
     return true;
   } catch (err) {
     console.error('[centerNotify] Text send error:', err);
+    return false;
+  }
+}
+
+/** Outbound freeform text from the platform WhatsApp number (no center context). Never throws. */
+export async function sendOperationalWhatsappText(toPhone: string, body: string): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const to = digitsOnly(toPhone);
+    if (!to) return false;
+    const text = body.trim();
+    if (!text) return false;
+    return await postWhatsappTextMessage({ toDigits: to, body: text });
+  } catch (err) {
+    console.error('[centerNotify] sendOperationalWhatsappText:', err);
     return false;
   }
 }
@@ -1228,31 +1260,48 @@ export async function sendWithdrawalProcessed(
   }
 }
 
+// IMPORTANT: The chq_vendor_new_order Meta template MUST have a quick_reply button
+// defined at index 0 in the Meta template editor with any placeholder payload.
+// This code injects the dynamic READY_<orderId> payload at send time.
+// If the template has no button, the dynamic payload is silently ignored by Meta.
 export async function sendVendorNewOrder(
-  orderNumber: string,
-  cardCount: number,
+  phone: string,
+  ref: string,
+  quantity: number,
   notes: string,
+  orderId: string,
 ): Promise<boolean> {
   try {
     if (shouldSkipWaForTestPhoneId()) return false;
     const supabase = serviceSupabase();
     if (!supabase) return false;
     if (!(await canSendApprovedTemplate(supabase, TEMPLATE_VENDOR_NEW_ORDER))) return false;
-    const vendorRaw = process.env.VENDOR_WHATSAPP_NUMBER?.trim();
-    if (!vendorRaw) {
-      console.warn('[centerNotify] sendVendorNewOrder: VENDOR_WHATSAPP_NUMBER not set');
+    const to = digitsOnly(phone) || digitsOnly(process.env.VENDOR_WHATSAPP_NUMBER?.trim() ?? '');
+    if (!to) {
+      console.warn('[centerNotify] sendVendorNewOrder: no vendor phone (arg or VENDOR_WHATSAPP_NUMBER)');
       return false;
     }
-    const to = digitsOnly(vendorRaw);
-    if (!to) return false;
-    const ord = orderNumber.trim() || '—';
-    const countStr = formatNumber(cardCount, 'ar');
+    const ord = ref.trim() || '—';
+    const countStr = formatNumber(quantity, 'ar');
     const notesText = notes.trim() || '—';
+    const oid = orderId.trim();
+    const buttonsPayload: WhatsappTemplateButtonComponent[] | undefined =
+      oid.length > 0
+        ? [
+            {
+              type: 'button',
+              sub_type: 'quick_reply',
+              index: '0',
+              parameters: [{ type: 'payload', payload: `READY_${oid}` }],
+            },
+          ]
+        : undefined;
     return await postWhatsappTemplate({
       templateName: TEMPLATE_VENDOR_NEW_ORDER,
       languageCode: 'ar_EG',
       toDigits: to,
       bodyParameters: [ord, countStr, notesText],
+      buttonsPayload,
     });
   } catch (err) {
     console.error('[centerNotify] sendVendorNewOrder:', err);

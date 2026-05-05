@@ -909,6 +909,7 @@
     "orderStatusFallback": "{status}",
     "sentToVendor": "Sent to vendor",
     "bookCourier": "Book Courier",
+    "bookCourierTooltip": "Auto-books when the vendor confirms via WhatsApp. Use this only as a manual fallback.",
     "bookingCourier": "Booking...",
     "courierBooked": "Courier booked successfully",
     "noVendorConfigured": "No active vendor configured yet",

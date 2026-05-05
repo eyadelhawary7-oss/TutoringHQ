@@ -553,6 +553,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                 {slideOrder.status === 'ready_for_pickup' && !slideOrder.bosta_order_id ? (
                   <button
                     type="button"
+                    title={tIdCards('bookCourierTooltip')}
                     onClick={async () => {
                       setBookingCourier(slideOrder.id);
                       const {

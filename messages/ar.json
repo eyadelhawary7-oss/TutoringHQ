@@ -909,6 +909,7 @@
     "orderStatusFallback": "{status}",
     "sentToVendor": "أُرسل للمورد",
     "bookCourier": "حجز مندوب الشحن",
+    "bookCourierTooltip": "يُحجز تلقائياً عندما يؤكد المورد عبر واتساب. استخدم هذا الزر كاحتياط يدوي فقط.",
     "bookingCourier": "جاري الحجز...",
     "courierBooked": "تم حجز المندوب بنجاح",
     "noVendorConfigured": "لم يتم إضافة مورد نشط بعد",

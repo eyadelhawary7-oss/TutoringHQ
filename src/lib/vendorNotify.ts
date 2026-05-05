@@ -72,21 +72,6 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
     const notesForTemplate =
       order.notes != null && String(order.notes).trim() !== '' ? String(order.notes) : 'لا يوجد';
 
-    if (process.env.VENDOR_WHATSAPP_NUMBER?.trim()) {
-      try {
-        const ok = await sendVendorNewOrder(
-          ref,
-          Number(order.quantity ?? 0),
-          notesForTemplate === 'لا يوجد' ? '' : notesForTemplate,
-        );
-        if (ok) {
-          console.info('[vendorNotify] Sent chq_vendor_new_order template for', ref);
-        }
-      } catch (e) {
-        console.error('[vendorNotify] sendVendorNewOrder:', e);
-      }
-    }
-
     const { data: vendor } = await supabaseAdmin
       .from('vendors')
       .select('id, name, whatsapp_number')
@@ -97,6 +82,23 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
     const to = String(
       (vendor?.whatsapp_number ?? process.env.VENDOR_WHATSAPP_NUMBER ?? '') as string,
     ).replace(/[^0-9]/g, '');
+
+    if (to) {
+      try {
+        const ok = await sendVendorNewOrder(
+          to,
+          ref,
+          Number(order.quantity ?? 0),
+          notesForTemplate === 'لا يوجد' ? '' : notesForTemplate,
+          orderId,
+        );
+        if (ok) {
+          console.info('[vendorNotify] Sent chq_vendor_new_order template for', ref);
+        }
+      } catch (e) {
+        console.error('[vendorNotify] sendVendorNewOrder:', e);
+      }
+    }
     if (!to) {
       console.warn('[vendorNotify] No vendor WhatsApp recipient');
       return;
