@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import type { PatchStudentBody } from '@/types/whatsapp-pack'
+import { parseBodyWithLimit } from '@/lib/validate';
 
 async function getCenterOwnerAdminContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -70,7 +71,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const body = (await request.json()) as PatchStudentBody
+    const body = (await parseBodyWithLimit(request, 65536)) as PatchStudentBody
     const updateFields: Partial<PatchStudentBody> = {}
     if (body.parent_pack_opted_in !== undefined) {
       updateFields.parent_pack_opted_in = body.parent_pack_opted_in

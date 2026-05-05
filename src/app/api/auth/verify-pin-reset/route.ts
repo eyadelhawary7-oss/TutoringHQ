@@ -6,6 +6,7 @@ import {
   verifyPinResetPhoneRatelimit,
   rateLimitedResponse,
 } from '@/lib/ratelimit';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const SIX_DIGITS = /^\d{6}$/;
 
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     let body: unknown;
     try {
-      body = await request.json();
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     } catch {
       return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
     }

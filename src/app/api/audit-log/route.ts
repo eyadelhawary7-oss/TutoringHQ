@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 /**
  * Append one audit_log row using the service role. Callers must be authenticated
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
       details?: unknown;
     };
     try {
-      body = await request.json();
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }

@@ -4,6 +4,7 @@ import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
 import { sendReferralCommission } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 function differenceInMonths(d1: Date, d2: Date): number {
   const y1 = d1.getFullYear();
@@ -50,17 +51,29 @@ export async function POST(request: NextRequest) {
     const isPhoneAdmin = !!userRecord?.phone && superAdminPhones.includes(userRecord.phone);
     if (!adminUser && !isPhoneAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const body = await request.json();
-    const { referral_id, period_month, paid_in_full } = body;
+    let body: unknown;
+    try {
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
+    const { referral_id, period_month, paid_in_full } = body as {
+      referral_id?: unknown;
+      period_month?: unknown;
+      paid_in_full?: unknown;
+    };
 
     if (!referral_id || !period_month || typeof paid_in_full !== 'boolean') {
       return NextResponse.json({ error: 'Missing required fields: referral_id, period_month, paid_in_full' }, { status: 400 });
     }
 
+    const referralId = String(referral_id);
+    const periodMonth = String(period_month);
+
     const { data: referral, error: refErr } = await supabaseAdmin
       .from('referrals')
       .select('id, referrer_center_id, referred_center_id, referred_first_paid_at')
-      .eq('id', referral_id)
+      .eq('id', referralId)
       .single();
 
     if (refErr || !referral) {
@@ -88,7 +101,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Referral must have referred_first_paid_at set' }, { status: 400 });
     }
 
-    const periodDate = new Date(period_month);
+    const periodDate = new Date(periodMonth);
     const firstPaidDate = new Date(referral.referred_first_paid_at);
     const months = differenceInMonths(periodDate, firstPaidDate) + 1;
 
@@ -105,8 +118,8 @@ export async function POST(request: NextRequest) {
 
     if (paid_in_full === false) {
       const { error: insErr } = await supabaseAdmin.from('referral_commissions').insert({
-        referral_id,
-        period_month: period_month.slice(0, 7),
+        referral_id: referralId,
+        period_month: periodMonth.slice(0, 7),
         referred_plan_fee,
         commission_rate: rate,
         commission_amount: 0,
@@ -122,8 +135,8 @@ export async function POST(request: NextRequest) {
     const status = holdUntil ? 'hold' : 'withdrawable';
 
     const insertData: Record<string, unknown> = {
-      referral_id,
-      period_month: period_month.slice(0, 7),
+      referral_id: referralId,
+      period_month: periodMonth.slice(0, 7),
       referred_plan_fee,
       commission_rate: rate,
       commission_amount: commission,
@@ -137,7 +150,7 @@ export async function POST(request: NextRequest) {
     if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
 
     if (months === 1) {
-      await supabaseAdmin.from('referrals').update({ status: 'active' }).eq('id', referral_id);
+      await supabaseAdmin.from('referrals').update({ status: 'active' }).eq('id', referralId);
     }
 
     if (commission > 0) {

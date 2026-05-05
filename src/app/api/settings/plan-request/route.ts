@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { planRequestSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = planRequestSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';

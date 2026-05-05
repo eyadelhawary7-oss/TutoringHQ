@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
 
   let body: { step?: number };
   try {
-    body = await request.json();
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

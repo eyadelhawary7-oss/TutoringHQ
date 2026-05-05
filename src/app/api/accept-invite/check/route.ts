@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/utils/phone';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const phoneRaw = typeof body.phone === 'string' ? body.phone.trim() : '';
     if (!phoneRaw) {
       return NextResponse.json({ hasInvite: false, error: 'Phone required' }, { status: 400 });

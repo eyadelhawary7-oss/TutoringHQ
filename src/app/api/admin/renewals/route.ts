@@ -3,6 +3,7 @@ import { getAdminContext } from '@/lib/admin-auth';
 import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-access';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
     }
 
     const { supabaseAdmin, userId } = ctx;
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const centerId = body.center_id as string | undefined;
     const amount = body.amount as number | undefined;
     const paymentMethod = (body.payment_method as string) || 'bank_transfer';

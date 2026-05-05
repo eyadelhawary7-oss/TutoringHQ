@@ -2,6 +2,7 @@ import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { requireSuperAdminRow } from '@/lib/admin-access';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 type PatchBody = {
   monthly_fee?: number;
@@ -30,7 +31,7 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ plan_
 
   let body: PatchBody;
   try {
-    body = (await request.json()) as PatchBody;
+    body = (await parseBodyWithLimit(request, 65536)) as PatchBody;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

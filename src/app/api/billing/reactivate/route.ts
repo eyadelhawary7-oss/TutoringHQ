@@ -12,6 +12,7 @@ import {
 import { reactivateCenterFromSession } from '@/lib/combinedPaymentFinalize';
 import { normalizeBillingPeriod, type BillingPeriod } from '@/lib/pricing';
 import { createPaymobCheckoutEgp, createPaymobIframeForExistingOrder } from '@/lib/paymobCenterCheckout';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
 
   let body: { useCredits?: boolean; creditAmount?: number };
   try {
-    body = (await request.json()) as typeof body;
+    body = (await parseBodyWithLimit(request, 65536)) as typeof body;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

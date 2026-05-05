@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import { WA_TEMPLATES } from '@/lib/parentPack';
 import { requireOwnerAdminCenter } from '@/lib/requireOwnerAdminCenter';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export async function PATCH(request: NextRequest) {
 
   let body: { enabled?: boolean };
   try {
-    body = await request.json();
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

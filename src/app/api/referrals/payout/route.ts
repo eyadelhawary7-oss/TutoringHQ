@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { formatNumber } from '@/lib/formatNumber';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireCenterAuth(request);
     if (!auth.ok) return auth.response;
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const amountRequested = Number(body?.amount_requested ?? 0);
     const paymentMethod = typeof body?.payment_method === 'string' ? body.payment_method : 'bank_transfer';
     const paymentDetails = body?.payment_details && typeof body.payment_details === 'object' ? body.payment_details : null;

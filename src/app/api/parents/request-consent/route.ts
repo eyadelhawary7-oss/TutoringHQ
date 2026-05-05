@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const TEMPLATE_CONSENT = 'chq_parent_consent';
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await request.json().catch(() => ({}));
+    const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
     const studentId = body.student_id as string | undefined;
     const parentPhone = body.parent_phone as string | undefined;
 

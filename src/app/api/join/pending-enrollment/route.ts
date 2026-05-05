@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 /**
  * Public: create inactive student + pending_enrollment (v3 join flow).
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     notes?: string | null;
   };
   try {
-    body = await request.json();
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

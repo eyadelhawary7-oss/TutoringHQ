@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const VALID_STATUSES = ['enrolled', 'active', 'at_risk', 'inactive', 'churned'] as const;
 
@@ -9,7 +10,7 @@ export async function PATCH(request: NextRequest) {
     const auth = await requireCenterAuth(request);
     if (!auth.ok) return auth.response;
 
-    const body = await request.json().catch(() => ({}));
+    const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
     const studentId = typeof body.student_id === 'string' ? body.student_id : null;
     const status = typeof body.lifecycle_status === 'string' ? body.lifecycle_status : null;
 

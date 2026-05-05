@@ -10,6 +10,7 @@ import {
   daysInCairoMonth,
   getPackPlanMinimumEgp,
 } from '@/lib/packBilling'
+import { parseBodyWithLimit } from '@/lib/validate';
 
 // TODO: set to true when chq_pack_invoice is approved by Meta
 const packInvoiceEnabled = true
@@ -66,7 +67,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const body = (await request.json()) as { enabled: boolean; confirmed?: boolean }
+    const body = (await parseBodyWithLimit(request, 65536)) as { enabled: boolean; confirmed?: boolean }
 
     const { data: centerRow, error: centerErr } = await ctx.supabaseAdmin
       .from('centers')

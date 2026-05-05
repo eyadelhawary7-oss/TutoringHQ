@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { onboardingSchema } from '@/lib/validations';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: Request) {
   try {
@@ -51,7 +52,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
     const validation = onboardingSchema.safeParse(body);
     if (!validation.success) {
       const msg = validation.error.issues[0]?.message || 'Invalid input';

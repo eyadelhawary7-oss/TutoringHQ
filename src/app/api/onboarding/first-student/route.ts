@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 async function getUserCenterContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     let body: { name?: string; phone?: string | null };
     try {
-      body = await request.json();
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }

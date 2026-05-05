@@ -5,6 +5,7 @@ import type {
   CardOrderFulfillmentStatus,
 } from '@/types/admin-card-orders';
 import { NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const VALID_STATUSES: CardOrderFulfillmentStatus[] = [
   'pending',
@@ -163,14 +164,20 @@ async function handleOrderStatusUpdate(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json();
-  const orderId = (body.orderId ?? body.id) as string | undefined;
-  const { status } = body;
+  let body: unknown;
+  try {
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  }
+  const b = body as { orderId?: unknown; id?: unknown; status?: unknown };
+  const orderId = (b.orderId ?? b.id) as string | undefined;
+  const { status } = b;
   if (!orderId || !status) {
     return NextResponse.json({ error: 'orderId and status required' }, { status: 400 });
   }
 
-  const result = await updateOrderStatus(ctx.supabaseAdmin, orderId, status);
+  const result = await updateOrderStatus(ctx.supabaseAdmin, orderId, String(status));
   if (!result.ok) {
     return NextResponse.json({ error: result.message }, { status: result.status });
   }

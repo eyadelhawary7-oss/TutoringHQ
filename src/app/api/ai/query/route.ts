@@ -6,6 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const SYSTEM_PROMPT = `You are a data assistant for an Egyptian tutoring center management platform called CenterHQ.
 The user asks questions in Arabic or English about their center's data.
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const question = typeof body?.question === 'string' ? body.question.trim() : '';
     if (!question) {
       return NextResponse.json({ error: 'question required' }, { status: 400 });

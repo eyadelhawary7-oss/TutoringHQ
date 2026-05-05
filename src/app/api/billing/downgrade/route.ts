@@ -11,6 +11,7 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   let body: { newPlan?: string; newBillingPeriod?: string };
   try {
-    body = (await request.json()) as typeof body;
+    body = (await parseBodyWithLimit(request, 65536)) as typeof body;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

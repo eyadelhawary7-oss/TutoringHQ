@@ -1,5 +1,6 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth'
 import { NextResponse } from 'next/server'
+import { parseBodyWithLimit } from '@/lib/validate';
 
 interface PatchBody {
   parent_pack_enabled?: unknown
@@ -15,7 +16,12 @@ export async function PATCH(
   }
 
   const { centerId } = await params
-  const body = (await request.json()) as PatchBody
+  let body: PatchBody
+  try {
+    body = (await parseBodyWithLimit(request, 65536)) as PatchBody
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
 
   if (typeof body.parent_pack_enabled !== 'boolean') {
     return NextResponse.json({ error: 'parent_pack_enabled required' }, { status: 400 })

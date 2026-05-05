@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { scheduleOnboardingFlow } from '@/lib/whatsapp/flows/onboarding';
 import { normalizePhone } from '@/lib/whatsapp/client';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     let body: { centerPhone?: string };
     try {
-      body = await request.json();
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }

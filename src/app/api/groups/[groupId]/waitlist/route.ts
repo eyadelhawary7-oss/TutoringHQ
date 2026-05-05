@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 /** GET: List waitlist for group */
 export async function GET(
@@ -49,7 +50,7 @@ export async function POST(
     if (!auth.ok) return auth.response;
 
     const { groupId } = await params;
-    const body = await request.json().catch(() => ({}));
+    const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
     const studentId = typeof body.student_id === 'string' ? body.student_id : null;
 
     if (!groupId || !studentId) {

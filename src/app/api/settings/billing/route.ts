@@ -10,6 +10,7 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 import { getAnnouncementCap } from '@/lib/parentPack';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const MONTHLY_MULTIPLIER = 4.333;
 
@@ -258,7 +259,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = (await import('@/lib/validations')).settingsBillingPutSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
@@ -371,7 +372,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = (await import('@/lib/validations')).settingsBillingPostSchema.safeParse({
       amount: body.amount,
       reference: body.reference,

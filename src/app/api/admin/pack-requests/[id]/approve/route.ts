@@ -1,5 +1,6 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export async function POST(
 
   let body: { customInvoiceMinimum?: number };
   try {
-    body = await request.json();
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

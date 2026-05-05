@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { currentBillingPeriod } from '@/lib/parentPack';
 import { afterStudentPackToggle } from '@/lib/studentParentPackWelcome';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 async function getOwnerAdminContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -71,7 +72,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   let body: { parent_pack_opted_in?: boolean; opted_in?: boolean };
   try {
-    body = await request.json();
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

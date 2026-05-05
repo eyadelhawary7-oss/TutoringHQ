@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { sendParentTermSummary } from '@/lib/centerNotify';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   const { supabaseAdmin, centerId } = auth;
   let body: Body;
   try {
-    body = (await request.json()) as Body;
+    body = (await parseBodyWithLimit(request, 65536)) as Body;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

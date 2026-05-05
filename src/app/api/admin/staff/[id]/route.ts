@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -125,7 +126,13 @@ export async function PATCH(
   }
 
   const { id } = await params
-  const body = await request.json()
+  let body: unknown
+  try {
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+  const b = body as Record<string, unknown>
 
   const allowedFields = [
     'name',
@@ -145,7 +152,7 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {}
   for (const field of allowedFields) {
-    if (field in body) updates[field] = body[field]
+    if (field in b) updates[field] = b[field]
   }
 
   if (updates.status === 'terminated') {

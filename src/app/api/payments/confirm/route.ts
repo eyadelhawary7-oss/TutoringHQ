@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const paymentId = body?.payment_id ?? body?.paymentId;
     if (!paymentId || typeof paymentId !== 'string') {
       return NextResponse.json({ error: 'payment_id is required' }, { status: 400 });

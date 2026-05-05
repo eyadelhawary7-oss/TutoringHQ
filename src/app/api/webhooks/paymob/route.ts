@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isFeatureEnabled } from '@/lib/features';
 import { verifyPaymobHmac } from '@/lib/paymob';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { parseBodyWithLimit, ValidationError } from '@/lib/validate';
 
 /** Paymob and proxies expect HTTP 200 on all outcomes to limit retries. */
 function ack(body: Record<string, unknown> = {}) {
@@ -14,9 +15,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as { hmac?: string; obj?: Record<string, unknown> };
-    const hmac = body.hmac;
-    const obj = body.obj;
+    let body: unknown;
+    try {
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
+    } catch (e) {
+      if (e instanceof ValidationError) return ack({ error: 'invalid_payload' });
+      throw e;
+    }
+    const bodyTyped = body as { hmac?: string; obj?: Record<string, unknown> };
+    const hmac = bodyTyped.hmac;
+    const obj = bodyTyped.obj;
 
     if (!hmac || !obj) {
       return ack({ error: 'invalid_payload' });

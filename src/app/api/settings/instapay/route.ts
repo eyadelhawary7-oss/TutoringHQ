@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export async function PATCH(request: NextRequest) {
 
   let body: { instapay_number?: string };
   try {
-    body = (await request.json()) as typeof body;
+    body = (await parseBodyWithLimit(request, 65536)) as typeof body;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

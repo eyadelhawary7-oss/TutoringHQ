@@ -4,6 +4,7 @@ import { getAdminContext } from '@/lib/admin-auth';
 import { adminApprovePaymentSchema } from '@/lib/validations';
 import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = adminApprovePaymentSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';

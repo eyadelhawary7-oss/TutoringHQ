@@ -23,6 +23,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { sendPinDelivery } from '@/lib/centerNotify';
 import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
 import { resetPinPhoneRatelimit, rateLimitedResponse } from '@/lib/ratelimit';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 function generateSixDigitOtp(): string {
   const n = crypto.getRandomValues(new Uint32Array(1))[0] % 900000;
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
   try {
     let body: unknown;
     try {
-      body = await request.json();
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     } catch {
       return NextResponse.json({ success: true });
     }

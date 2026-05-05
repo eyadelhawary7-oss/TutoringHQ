@@ -14,6 +14,7 @@ import { getAdminPermissions } from '@/lib/admin-roles';
 import { PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
 import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 function calendarAddDays(baseYmd: string, delta: number): string {
   const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
@@ -632,7 +633,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = (await import('@/lib/validations')).adminCentersCreateSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
@@ -722,7 +723,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = (await import('@/lib/validations')).adminCentersUpdateSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';

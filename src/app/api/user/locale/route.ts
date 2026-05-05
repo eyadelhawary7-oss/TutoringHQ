@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
+    const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
     const { locale } = body;
 
-    if (!['ar', 'en'].includes(locale)) {
+    if (!['ar', 'en'].includes(String(locale))) {
       return Response.json({ success: false }, { status: 200 });
     }
 
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
 
     await supabaseAdmin
       .from('users')
-      .update({ preferred_locale: locale })
+      .update({ preferred_locale: String(locale) })
       .eq('id', user.id);
 
     return Response.json({ success: true }, { status: 200 });

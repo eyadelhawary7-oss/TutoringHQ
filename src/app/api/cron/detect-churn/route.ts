@@ -14,6 +14,7 @@ import { runChqInactivityAlertTemplates, sendInactivityAlert } from '@/lib/cente
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -180,7 +181,7 @@ export async function POST(request: Request) {
       body = {};
     } else {
       try {
-        body = await request.json();
+        body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
       } catch {
         throw new Error(tCronBackup('errorInvalidJson'));
       }

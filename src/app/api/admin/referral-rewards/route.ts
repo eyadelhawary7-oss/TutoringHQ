@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -210,7 +211,7 @@ export async function PATCH(request: Request) {
 
   let body: { record_ids?: unknown };
   try {
-    body = (await request.json()) as { record_ids?: unknown };
+    body = (await parseBodyWithLimit(request, 65536)) as { record_ids?: unknown };
   } catch {
     return NextResponse.json({ errorKey: 'referralRewards.errors.invalidBody' }, { status: 400 });
   }

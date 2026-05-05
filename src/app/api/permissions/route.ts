@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const VALID_KEYS = ['can_scan','can_view_payments','can_record_payments','can_view_dashboard','can_view_revenue','can_manage_students','can_manage_groups','can_allow_late_entry','can_manage_rooms','can_view_schedule','can_view_settings','is_active'];
 
@@ -47,7 +48,7 @@ export async function PUT(request: Request) {
     if (!validateCSRFRequest(request, ctx.caller.id)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = permissionsBodySchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';

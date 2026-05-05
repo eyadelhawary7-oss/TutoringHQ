@@ -1,6 +1,7 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth'
 import type { NotificationTypes } from '@/types/whatsapp-pack'
 import { NextResponse } from 'next/server'
+import { parseBodyWithLimit } from '@/lib/validate';
 
 interface PatchBody {
   scan?: boolean
@@ -49,7 +50,12 @@ export async function PATCH(request: Request) {
   }
 
   const current = configRow.value as NotificationTypes
-  const body = (await request.json()) as PatchBody
+  let body: PatchBody
+  try {
+    body = (await parseBodyWithLimit(request, 65536)) as PatchBody
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
 
   const merged: NotificationTypes = {
     scan: body.scan ?? current.scan,

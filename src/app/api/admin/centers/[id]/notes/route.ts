@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getAdminContext(request);
@@ -33,7 +34,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   let body: { body?: string; is_pinned?: boolean };
   try {
-    body = (await request.json()) as { body?: string; is_pinned?: boolean };
+    body = (await parseBodyWithLimit(request, 65536)) as { body?: string; is_pinned?: boolean };
   } catch {
     return NextResponse.json({ errorKey: 'centerNotes.errors.invalidJson' }, { status: 400 });
   }
@@ -73,7 +74,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   let payload: { note_id?: string; body?: string; is_pinned?: boolean };
   try {
-    payload = (await request.json()) as { note_id?: string; body?: string; is_pinned?: boolean };
+    payload = (await parseBodyWithLimit(request, 65536)) as { note_id?: string; body?: string; is_pinned?: boolean };
   } catch {
     return NextResponse.json({ errorKey: 'centerNotes.errors.invalidJson' }, { status: 400 });
   }
@@ -121,7 +122,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const { id } = await params;
   let payload: { note_id?: string };
   try {
-    payload = (await request.json()) as { note_id?: string };
+    payload = (await parseBodyWithLimit(request, 65536)) as { note_id?: string };
   } catch {
     return NextResponse.json({ errorKey: 'centerNotes.errors.invalidJson' }, { status: 400 });
   }

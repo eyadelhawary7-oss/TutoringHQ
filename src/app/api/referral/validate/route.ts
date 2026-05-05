@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = (await import('@/lib/validations')).referralValidateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ valid: false }, { status: 200 });

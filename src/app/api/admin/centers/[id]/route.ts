@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { formatDate } from '@/lib/formatNumber';
 import { createCommissionsForCenter, clawbackCommissions } from '@/lib/commissions';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const STRIP = [
   'action',
@@ -204,7 +205,7 @@ export async function PATCH(
 
   let body: Record<string, unknown>;
   try {
-    body = (await request.json()) as Record<string, unknown>;
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }

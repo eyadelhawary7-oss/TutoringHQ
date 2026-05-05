@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { PLANS, isPlanKey, type PlanKey } from '@/lib/pricing';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 async function getAuthContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only owners can add branches' }, { status: 403 });
     }
 
-    const body = await request.json().catch(() => ({}));
+    const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
     const name = typeof body.name === 'string' ? body.name.trim() : '';
     if (!name || name.length < 2) {
       return NextResponse.json({ error: 'Branch name required (min 2 characters)' }, { status: 400 });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 /** GET: List families for center */
 export async function GET(request: NextRequest) {
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     const auth = await requireCenterAuth(request);
     if (!auth.ok) return auth.response;
 
-    const body = await request.json().catch(() => ({}));
+    const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
     const familyName = typeof body.family_name === 'string' ? body.family_name.trim() : '';
     const parentPhone = typeof body.parent_phone === 'string' ? body.parent_phone.trim() : null;
     const parentName = typeof body.parent_name === 'string' ? body.parent_name.trim() : null;

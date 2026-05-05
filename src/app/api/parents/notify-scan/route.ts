@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendScanNotification } from '@/lib/whatsapp/flows/parentNotifications';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await request.json().catch(() => ({}));
+    const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
     const studentId = body.student_id as string | undefined;
     const result = (body.result as 'attended' | 'absent' | 'pending_payment') ?? 'attended';
 

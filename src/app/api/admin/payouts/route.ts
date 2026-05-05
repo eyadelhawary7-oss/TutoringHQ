@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -105,8 +106,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ errorKey: 'payouts.errors.forbidden' }, { status: 403 })
   }
 
-  const body = await request.json()
-  const { period, staff_id } = body
+  let body: unknown
+  try {
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+  const { period: periodRaw, staff_id: staffIdRaw } = body as { period?: unknown; staff_id?: unknown }
+  const period = periodRaw != null ? String(periodRaw) : ''
+  const staff_id = staffIdRaw != null ? String(staffIdRaw) : ''
 
   if (!period || !PERIOD_RE.test(period)) {
     return NextResponse.json({ errorKey: 'payouts.errors.invalidPeriod' }, { status: 400 })

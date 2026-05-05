@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getAdminContext(request);
@@ -13,7 +14,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   let body: { message?: string };
   try {
-    body = (await request.json()) as { message?: string };
+    body = (await parseBodyWithLimit(request, 65536)) as { message?: string };
   } catch {
     return NextResponse.json({ errorKey: 'manualWA.errors.invalidJson' }, { status: 400 });
   }

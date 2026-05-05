@@ -20,6 +20,7 @@ import {
 import { isFeatureEnabled } from '@/lib/features';
 import { todayISO } from '@/lib/parentPack';
 import { formatNumber } from '@/lib/formatNumber';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 function getTotalSignupAmount(planKey: PlanKey, period: BillingPeriod): number {
   return getPlanPrice(planKey, period);
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
 
     let body: SignupJson;
     try {
-      body = (await request.json()) as SignupJson;
+      body = (await parseBodyWithLimit(request, 65536)) as SignupJson;
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }

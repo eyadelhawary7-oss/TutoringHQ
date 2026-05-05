@@ -4,6 +4,7 @@ import { requireSuperAdminRow } from '@/lib/admin-access';
 import { sendWithdrawalProcessed } from '@/lib/centerNotify';
 import { formatNumber } from '@/lib/formatNumber';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const WA_AR = 'ar';
 
@@ -23,7 +24,7 @@ export async function PATCH(
 
   let body: { action?: string; notes?: string };
   try {
-    body = (await request.json()) as typeof body;
+    body = (await parseBodyWithLimit(request, 65536)) as typeof body;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

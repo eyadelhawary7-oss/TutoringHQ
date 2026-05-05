@@ -1,5 +1,6 @@
 import { requireInternalAdminApi } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function GET(request: Request) {
   const auth = await requireInternalAdminApi(request);
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
 
   let body: Record<string, unknown>;
   try {
-    body = await request.json();
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
@@ -72,7 +73,7 @@ export async function PATCH(request: Request) {
 
   let body: Record<string, unknown>;
   try {
-    body = await request.json();
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

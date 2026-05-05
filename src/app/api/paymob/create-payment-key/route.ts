@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       cardOrderId?: unknown;
     };
     try {
-      body = await request.json();
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }

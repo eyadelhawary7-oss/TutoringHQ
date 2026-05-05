@@ -3,6 +3,7 @@ import { requireCenterAuth } from '@/lib/centerAuth';
 import { isPaygCenter } from '@/lib/billingEngine';
 import { firstDayNextMonthCairoYmd } from '@/lib/paygBilling';
 import { normalizeBillingPeriod, type BillingPeriod } from '@/lib/pricing';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   let body: { action?: string; newPeriod?: string };
   try {
-    body = (await request.json()) as typeof body;
+    body = (await parseBodyWithLimit(request, 65536)) as typeof body;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

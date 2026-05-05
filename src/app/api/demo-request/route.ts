@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 /**
  * Public API for marketing website to submit demo requests.
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = (await import('@/lib/validations')).demoRequestSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';

@@ -25,6 +25,7 @@ import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { requireSuperAdminRow } from '@/lib/admin-access';
 import { PLATFORM_CONFIG_INSERT_DEFAULTS } from '@/lib/platformConfigUi';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 /** Accept boolean, number, string, null, or JSON-serializable object/array for jsonb. */
 function normalizePatchValue(
@@ -68,7 +69,7 @@ export async function PATCH(request: NextRequest) {
   // admin_users.role === 'super_admin'; can_approve_signups does not grant PATCH.
 
   try {
-    const body = (await request.json()) as { key?: string; value?: unknown };
+    const body = (await parseBodyWithLimit(request, 65536)) as { key?: string; value?: unknown };
     const key = typeof body.key === 'string' ? body.key.trim() : '';
     if (!key) {
       return NextResponse.json({ error: 'key is required' }, { status: 400 });

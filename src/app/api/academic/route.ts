@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response;
 
     const { centerId, supabaseAdmin } = auth;
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
 
     const action = body?.action as string;
     if (!action) return NextResponse.json({ error: 'Missing action' }, { status: 400 });
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Missing required period fields' }, { status: 400 });
       }
       const validTypes = ['exam', 'holiday', 'peak', 'normal'];
-      if (!validTypes.includes(period_type)) {
+      if (!validTypes.includes(String(period_type))) {
         return NextResponse.json({ error: 'Invalid period_type' }, { status: 400 });
       }
       const { data, error } = await supabaseAdmin

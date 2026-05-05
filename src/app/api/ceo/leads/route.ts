@@ -2,6 +2,7 @@ import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { createLead, getLeads } from '@/lib/ceo';
 import type { CreateLeadInput } from '@/types/ceo';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function GET(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const body = (await request.json()) as CreateLeadInput;
+    const body = (await parseBodyWithLimit(request, 65536)) as CreateLeadInput;
     if (!body.name || !body.phone) {
       return NextResponse.json({ error: 'name and phone required' }, { status: 400 });
     }

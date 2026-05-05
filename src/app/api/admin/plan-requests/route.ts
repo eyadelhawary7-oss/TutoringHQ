@@ -5,6 +5,7 @@ import { validateCSRFRequest } from '@/lib/csrf';
 import { getImpliedMonthlyMrr, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
 import { formatNumber } from '@/lib/formatNumber';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const ADMIN_UI_LOCALE = 'en';
 const WA_AR_LOCALE = 'ar';
@@ -121,7 +122,7 @@ export async function PUT(request: Request) {
     }
 
     const { supabaseAdmin, userId } = ctx;
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = adminPlanRequestsSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';

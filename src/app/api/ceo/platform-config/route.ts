@@ -1,5 +1,6 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const ALLOWED_CONFIG_KEYS = [
   'maintenance_mode',
@@ -16,7 +17,7 @@ export async function PATCH(request: NextRequest) {
   const supabaseAdmin = auth.supabaseAdmin;
 
   try {
-    const body = (await request.json()) as { key: string; value: unknown };
+    const body = (await parseBodyWithLimit(request, 65536)) as { key: string; value: unknown };
     if (!(ALLOWED_CONFIG_KEYS as readonly string[]).includes(body.key)) {
       return NextResponse.json({ error: 'Invalid config key' }, { status: 400 });
     }

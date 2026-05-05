@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { calculatePaygCharge } from '@/lib/payg-calculator';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 async function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,7 +30,7 @@ function getWeekBounds(): { start: string; end: string } {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
+    const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
     const { centerId } = body;
     const authHeader = request.headers.get('Authorization');
 

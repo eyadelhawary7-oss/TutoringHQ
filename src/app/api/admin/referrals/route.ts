@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 async function ensureAdmin(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
     const ctx = await ensureAdmin(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const { action, referrer_center_id } = body;
     if (action !== 'mark_paid' || !referrer_center_id) {
       return NextResponse.json({ error: 'Invalid action or referrer_center_id' }, { status: 400 });

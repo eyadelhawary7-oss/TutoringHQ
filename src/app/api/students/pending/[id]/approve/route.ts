@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { afterStudentWriteParentPackEffects } from '@/lib/studentParentPackWelcome';
 import { logAdminAction } from '@/lib/audit';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 type ApproveStudentRpcRow = {
   new_student_count?: number | null;
@@ -19,7 +20,7 @@ export async function POST(
   const { supabaseAdmin, centerId, userId } = auth;
   const { id: studentId } = await context.params;
 
-  const body = (await request.json().catch(() => ({}))) as { groupIds?: string[] };
+  const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as { groupIds?: string[] };
   const groupIds: string[] = body.groupIds ?? [];
 
   const { data: rpcResult, error: rpcErr } = await supabaseAdmin.rpc('approve_student_rpc', {

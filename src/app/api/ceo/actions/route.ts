@@ -2,6 +2,7 @@ import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { createAction, getActionQueue } from '@/lib/ceo';
 import type { CreateActionInput } from '@/types/ceo';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function GET(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const body = (await request.json()) as CreateActionInput;
+    const body = (await parseBodyWithLimit(request, 65536)) as CreateActionInput;
     if (!body.title || !body.type || !body.priority) {
       return NextResponse.json(
         { error: 'title, type, and priority required' },

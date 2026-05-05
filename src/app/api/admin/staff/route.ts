@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -133,7 +134,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ errorKey: 'staff.errors.forbidden' }, { status: 403 })
   }
 
-  const body = await request.json()
+  let body: unknown
+  try {
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
   const {
     name,
     phone,
@@ -145,12 +151,12 @@ export async function POST(request: Request) {
     hire_date,
     reports_to,
     notes,
-  } = body
+  } = body as Record<string, unknown>
 
   if (!name || !phone || !role || !city) {
     return NextResponse.json({ errorKey: 'staff.errors.missingRequired' }, { status: 400 })
   }
-  if (!['sm', 'sr'].includes(role)) {
+  if (!['sm', 'sr'].includes(String(role))) {
     return NextResponse.json({ errorKey: 'staff.errors.invalidRole' }, { status: 400 })
   }
 

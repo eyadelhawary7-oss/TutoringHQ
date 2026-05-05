@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { normalizePhone } from '@/lib/utils/phone';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 /**
  * Login lookup API: Find user by phone (public.users) and return auth email.
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
   try {
     let body: unknown;
     try {
-      body = await request.json();
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }

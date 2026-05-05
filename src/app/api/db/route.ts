@@ -6,6 +6,7 @@ import { afterStudentWriteParentPackEffects } from '@/lib/studentParentPackWelco
 import { validateCSRFRequest } from '@/lib/csrf';
 import { scanRatelimit, rateLimitedResponse } from '@/lib/ratelimit';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const ALLOWED_TABLES = [
   'payments', 'students', 'student_groups', 'attendance_scans',
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
 
     let body: Record<string, unknown>;
     try {
-      body = await request.json();
+      body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     } catch (parseErr) {
       logError('JSON parse failed', parseErr);
       return NextResponse.json({

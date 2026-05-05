@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/utils/phone';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 function generatePin(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -34,7 +35,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const body = (await request.json()) as { centerId?: unknown };
+    let body: { centerId?: unknown };
+    try {
+      body = (await parseBodyWithLimit(request, 65536)) as { centerId?: unknown };
+    } catch {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
 
     let supabaseAdmin: SupabaseClient;
     try {

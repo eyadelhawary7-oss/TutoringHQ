@@ -14,6 +14,7 @@ import {
   type BillingPeriod,
   type PlanKey,
 } from '@/lib/pricing';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 function planKeyOrStarter(plan: string | null | undefined): PlanKey {
   const k = String(plan || 'starter').toLowerCase();
@@ -269,7 +270,7 @@ export async function POST(request: Request) {
     }
 
     const { supabaseAdmin, userId } = ctx;
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = adminBillingRecordSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
@@ -350,7 +351,7 @@ export async function PUT(request: Request) {
     }
 
     const { supabaseAdmin, userId } = ctx;
-    const body = await request.json();
+    const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = adminBillingInvoiceSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';

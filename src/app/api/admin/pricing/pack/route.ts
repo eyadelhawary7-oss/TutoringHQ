@@ -2,6 +2,7 @@ import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { requireSuperAdminRow } from '@/lib/admin-access';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const KEY = 'pack_price_per_parent';
 const DEFAULT_PACK_PRICE = 12;
@@ -62,7 +63,7 @@ export async function PATCH(request: NextRequest) {
 
   let body: { pack_price_per_parent?: number };
   try {
-    body = (await request.json()) as { pack_price_per_parent?: number };
+    body = (await parseBodyWithLimit(request, 65536)) as { pack_price_per_parent?: number };
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

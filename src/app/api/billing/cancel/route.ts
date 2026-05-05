@@ -3,6 +3,7 @@ import { requireCenterAuth } from '@/lib/centerAuth';
 import { createAction } from '@/lib/ceo';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { formatDate } from '@/lib/formatNumber';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   let body: { reason?: string };
   try {
-    body = (await request.json()) as typeof body;
+    body = (await parseBodyWithLimit(request, 65536)) as typeof body;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

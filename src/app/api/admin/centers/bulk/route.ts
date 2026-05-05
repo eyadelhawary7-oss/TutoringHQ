@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { createCommissionsForCenter } from '@/lib/commissions';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { parseBodyWithLimit } from '@/lib/validate';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
 
   let body: Record<string, unknown>;
   try {
-    body = (await request.json()) as Record<string, unknown>;
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ errorKey: 'bulk.errors.invalidBody' }, { status: 400 });
   }
