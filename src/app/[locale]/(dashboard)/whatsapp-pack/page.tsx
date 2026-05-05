@@ -1,5 +1,5 @@
-import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@/lib/supabase/server';
 import WhatsAppPackClient from './WhatsAppPackClient';
 
@@ -27,10 +27,7 @@ export default async function WhatsAppPackPage({
 }) {
   const { locale } = await params;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
+  if (!supabaseAdmin) {
     redirect(`/${locale}/dashboard`);
   }
 
@@ -42,10 +39,6 @@ export default async function WhatsAppPackPage({
   if (!user) {
     redirect(`/${locale}/login`);
   }
-
-  const supabaseAdmin = createServiceClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   const { data: userRow } = await supabaseAdmin
     .from('users')

@@ -35,11 +35,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    let body: { centerId?: unknown };
+    let body: { centerId?: unknown; termsAccepted?: unknown };
     try {
-      body = (await parseBodyWithLimit(request, 65536)) as { centerId?: unknown };
+      body = (await parseBodyWithLimit(request, 65536)) as {
+        centerId?: unknown;
+        termsAccepted?: unknown;
+      };
     } catch {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
+
+    if (body.termsAccepted !== true) {
+      return NextResponse.json({ error: 'Terms must be accepted' }, { status: 400 });
     }
 
     let supabaseAdmin: SupabaseClient;

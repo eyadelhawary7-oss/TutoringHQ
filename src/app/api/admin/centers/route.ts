@@ -648,6 +648,8 @@ export async function POST(request: Request) {
         plan: plan || 'starter',
         subscription_status: 'active',
         status: 'active',
+        terms_version: 'v1-2026-05',
+        terms_accepted_at: new Date().toISOString(),
       })
       .select('id')
       .single();

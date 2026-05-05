@@ -14,10 +14,11 @@
  ],
  "scripts": {
   "dev": "next dev",
-  "build": "npm run setup-fonts && next build",
+  "build": "npm run setup-fonts && node --max-old-space-size=8192 node_modules/next/dist/bin/next build",
   "analyze": "ANALYZE=true npm run build",
   "start": "next start",
   "lint": "eslint",
+  "typecheck": "node --max-old-space-size=8192 node_modules/typescript/lib/tsc.js --noEmit",
   "generate-business-plan": "node scripts/generate-business-plan.mjs",
   "check-secrets": "node scripts/check-secret-rotation.js",
   "verify-backup": "node scripts/verify-backup.js",
