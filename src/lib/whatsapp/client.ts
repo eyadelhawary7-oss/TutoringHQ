@@ -3,10 +3,33 @@
  * Env: WHATSAPP_PHONE_ID, WHATSAPP_TOKEN
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { isTemplateApproved } from '@/lib/centerNotify';
 
 const API_VERSION = 'v19.0';
 const GRAPH_BASE = `https://graph.facebook.com/${API_VERSION}`;
+
+/** Mirrors centerNotify — Meta test / sandbox phone number ID. */
+const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
+
+function waPhoneNumberId(): string | null {
+  return process.env.PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_ID || null;
+}
+
+/** Same behavior as centerNotify.shouldSkipWaForTestPhoneId (recipient unused; signature for guard pattern). */
+function shouldSkipWaForTestPhoneId(_phone: string): boolean {
+  const id = waPhoneNumberId();
+  return !id || id === WHATSAPP_META_TEST_PHONE_NUMBER_ID;
+}
+
+async function waSendingEnabled(admin: SupabaseClient): Promise<boolean> {
+  const { data: cfg } = await admin
+    .from('platform_config')
+    .select('value')
+    .eq('key', 'wa_sending_enabled')
+    .maybeSingle();
+  return cfg?.value !== false;
+}
 
 function getConfig() {
   const phoneId = process.env.WHATSAPP_PHONE_ID;
@@ -100,6 +123,17 @@ export async function sendTemplateMessage(
   templateName: string,
   variables: Record<string, string> = {}
 ): Promise<SendTemplateResult> {
+  const admin = getSupabaseAdmin();
+  if (!(await isTemplateApproved(templateName, admin))) {
+    return { success: false, error: 'template_not_approved' };
+  }
+  if (!(await waSendingEnabled(admin))) {
+    return { success: false, error: 'wa_sending_disabled' };
+  }
+  if (shouldSkipWaForTestPhoneId(to)) {
+    return { success: false, error: 'skipped_meta_test_phone' };
+  }
+
   const { phoneId, token } = getConfig();
   const recipient = toRecipient(to);
   const normalizedTo = normalizePhone(to);
