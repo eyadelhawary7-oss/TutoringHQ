@@ -3,7 +3,7 @@ import puppeteer from 'puppeteer-core';
 import type { Browser } from 'puppeteer-core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatDate, formatDateTime, formatNumber, formatPercent } from '@/lib/formatNumber';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin, supabaseAdmin } from '@/lib/supabase-admin';
 import {
   buildInvoiceHtml,
   INVOICE_PREFIX,
@@ -744,6 +744,21 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
   if (!pdf) {
     throw new Error("PDF generation failed");
   }
+  void (async () => {
+    try {
+      if (!supabaseAdmin) return;
+      const storagePath = `invoices/${centerId}/${invoiceId}.pdf`;
+      const { error } = await supabaseAdmin.storage.from('invoice-pdfs').upload(storagePath, pdf, {
+        contentType: 'application/pdf',
+        upsert: true,
+      });
+      if (error) {
+        console.error('[generateInvoicePdf] storage upload:', error);
+      }
+    } catch (err) {
+      console.error('[generateInvoicePdf] storage upload:', err);
+    }
+  })();
   return pdf;
 }
 

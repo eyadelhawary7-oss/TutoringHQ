@@ -84,6 +84,49 @@ async function uploadToDrive(
   return res.data.id ?? '';
 }
 
+function escapeDriveQueryLiteral(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+async function uploadPdfToDrive(
+  drive: DriveClient,
+  folderId: string,
+  filename: string,
+  buffer: Buffer,
+): Promise<string> {
+  const stream = Readable.from(buffer);
+  const res = await drive.files.create({
+    requestBody: {
+      name: filename,
+      parents: [folderId],
+    },
+    media: {
+      mimeType: 'application/pdf',
+      body: stream,
+    },
+    fields: 'id,name,size',
+  });
+  return res.data.id ?? '';
+}
+
+async function loadDriveFileNamesInFolder(drive: DriveClient, folderId: string): Promise<Set<string>> {
+  const names = new Set<string>();
+  let pageToken: string | undefined;
+  do {
+    const res = await drive.files.list({
+      q: `'${escapeDriveQueryLiteral(folderId)}' in parents and trashed=false`,
+      fields: 'nextPageToken, files(name)',
+      pageSize: 1000,
+      pageToken,
+    });
+    for (const f of res.data.files ?? []) {
+      if (f.name) names.add(f.name);
+    }
+    pageToken = res.data.nextPageToken ?? undefined;
+  } while (pageToken);
+  return names;
+}
+
 async function getOrCreateFolder(
   drive: DriveClient,
   parentId: string,
@@ -107,6 +150,67 @@ async function getOrCreateFolder(
   return created.data.id!;
 }
 
+/** Backs up Storage `invoice-pdfs` to Drive under `<root>/invoice-pdfs/{center_id}/`. Never throws. */
+async function backupInvoicePdfsToDrive(drive: DriveClient, rootFolderId: string): Promise<void> {
+  const invoicePdfRoot = await getOrCreateFolder(drive, rootFolderId, 'invoice-pdfs');
+  const pageSize = 1000;
+  let centerOffset = 0;
+  for (;;) {
+    const { data: centerEntries, error: centerListErr } = await supabase.storage
+      .from('invoice-pdfs')
+      .list('invoices', { limit: pageSize, offset: centerOffset });
+    if (centerListErr) {
+      console.error('[googleDriveBackup] invoice-pdfs list invoices/:', centerListErr);
+      return;
+    }
+    if (!centerEntries?.length) break;
+
+    for (const entry of centerEntries) {
+      if (!entry.name || entry.name.endsWith('.pdf')) continue;
+      const centerId = entry.name;
+      const storagePrefix = `invoices/${centerId}`;
+      const centerDriveFolderId = await getOrCreateFolder(drive, invoicePdfRoot, centerId);
+      const existingOnDrive = await loadDriveFileNamesInFolder(drive, centerDriveFolderId);
+
+      let fileOffset = 0;
+      for (;;) {
+        const { data: files, error: fileListErr } = await supabase.storage
+          .from('invoice-pdfs')
+          .list(storagePrefix, { limit: pageSize, offset: fileOffset });
+        if (fileListErr) {
+          console.error(`[googleDriveBackup] invoice-pdfs list ${storagePrefix}:`, fileListErr);
+          break;
+        }
+        if (!files?.length) break;
+
+        for (const file of files) {
+          if (!file.name?.endsWith('.pdf')) continue;
+          if (existingOnDrive.has(file.name)) continue;
+          const objectPath = `${storagePrefix}/${file.name}`;
+          const { data: blob, error: dlErr } = await supabase.storage.from('invoice-pdfs').download(objectPath);
+          if (dlErr || !blob) {
+            console.error(`[googleDriveBackup] invoice-pdfs download ${objectPath}:`, dlErr);
+            continue;
+          }
+          const buf = Buffer.from(await blob.arrayBuffer());
+          try {
+            await uploadPdfToDrive(drive, centerDriveFolderId, file.name, buf);
+            existingOnDrive.add(file.name);
+          } catch (upErr) {
+            console.error(`[googleDriveBackup] invoice-pdfs Drive upload ${objectPath}:`, upErr);
+          }
+        }
+
+        if (files.length < pageSize) break;
+        fileOffset += files.length;
+      }
+    }
+
+    if (centerEntries.length < pageSize) break;
+    centerOffset += centerEntries.length;
+  }
+}
+
 const FULL_EXPORT_TABLES = [
   'centers',
   'invoices',
@@ -124,6 +228,46 @@ const FULL_EXPORT_TABLES = [
   'card_orders',
   'student_groups',
   'users',
+  'groups',
+  'schedule_slots',
+  'rooms',
+  'subjects',
+  'families',
+  'academic_years',
+  'academic_periods',
+  'holidays',
+  'announcement_blasts',
+  'center_expenses',
+  'center_notes',
+  'center_metrics_daily',
+  'mrr_snapshots',
+  'credit_ledger',
+  'parent_pack_billing',
+  'parent_pack_monthly_counts',
+  'payout_requests',
+  'upgrade_log',
+  'subscriptions',
+  'vendors',
+  'pricing_plans',
+  'referral_codes',
+  'referral_commissions',
+  'wa_templates',
+  'wa_meta_templates',
+  'wa_messages',
+  'whatsapp_messages',
+  'whatsapp_subscriptions',
+  'whatsapp_usage',
+  'webhook_inbox',
+  'dead_letter_queue',
+  'center_invites',
+  'pending_enrollments',
+  'student_group_members',
+  'student_notes',
+  'card_order_events',
+  { table: 'cron_health_log', orderBy: 'cron_name' },
+  'cron_log',
+  'admin_alerts',
+  'sales_leads',
 ] as const;
 
 const RECENT_EXPORT_TABLES = [
@@ -165,12 +309,14 @@ export async function runBackup(type: 'weekly' | 'monthly'): Promise<BackupResul
   const files: BackupResult['files'] = [];
   const errors: string[] = [];
 
-  for (const table of FULL_EXPORT_TABLES) {
+  for (const entry of FULL_EXPORT_TABLES) {
+    const table = typeof entry === 'string' ? entry : entry.table;
     try {
+      const orderColumn = typeof entry === 'string' ? 'id' : entry.orderBy;
       const { data, error } = await supabase
         .from(table)
         .select('*')
-        .order('id', { ascending: true })
+        .order(orderColumn, { ascending: true })
         .limit(500000);
 
       if (error) {
@@ -212,6 +358,12 @@ export async function runBackup(type: 'weekly' | 'monthly'): Promise<BackupResul
     } catch (err) {
       errors.push(`${table}: ${String(err)}`);
     }
+  }
+
+  try {
+    await backupInvoicePdfsToDrive(drive, rootFolderId);
+  } catch (err) {
+    console.error('[googleDriveBackup] invoice-pdfs storage backup:', err);
   }
 
   const totalRows = files.reduce((s, f) => s + f.rows, 0);
