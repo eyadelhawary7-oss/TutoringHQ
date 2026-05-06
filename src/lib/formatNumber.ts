@@ -126,14 +126,22 @@ function hour12AndPeriodTo24(hour12: number, period: string): number {
  */
 export function formatTime(timeInput: string | Date, locale: string): string {
   const l = isArabicLocale(locale) ? 'ar-EG' : 'en-US';
+  const timeFmtOpts: Intl.DateTimeFormatOptions = isArabicLocale(locale)
+    ? {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        numberingSystem: 'arab',
+      }
+    : {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      };
 
   if (timeInput instanceof Date) {
     if (Number.isNaN(timeInput.getTime())) return '';
-    return timeInput.toLocaleTimeString(l, {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+    return timeInput.toLocaleTimeString(l, timeFmtOpts);
   }
 
   const timeStr = String(timeInput).trim();
@@ -142,7 +150,7 @@ export function formatTime(timeInput: string | Date, locale: string): string {
   if (timeStr.includes('T')) {
     const d = new Date(timeStr);
     if (!Number.isNaN(d.getTime())) {
-      return d.toLocaleTimeString(l, { hour: 'numeric', minute: '2-digit', hour12: true });
+      return d.toLocaleTimeString(l, timeFmtOpts);
     }
   }
 
@@ -157,7 +165,7 @@ export function formatTime(timeInput: string | Date, locale: string): string {
       hour24 = hour12AndPeriodTo24(hour24, periodMatch[1]!);
     }
     const d = new Date(2000, 0, 1, hour24, mm, ss);
-    return d.toLocaleTimeString(l, { hour: 'numeric', minute: '2-digit', hour12: true });
+    return d.toLocaleTimeString(l, timeFmtOpts);
   }
 
   if (isArabicLocale(locale)) {

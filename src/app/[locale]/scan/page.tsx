@@ -46,13 +46,17 @@ interface RosterRow {
 }
 
 /** Fire-and-forget: notify parent of scan (async, no await). */
-function notifyParentScan(studentId: string, result: 'attended' | 'absent' | 'pending_payment') {
+function notifyParentScan(
+  studentId: string,
+  result: 'attended' | 'absent' | 'pending_payment',
+  scannedAt: string,
+) {
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (!session) return;
     fetch('/api/parents/notify-scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ student_id: studentId, result }),
+      body: JSON.stringify({ student_id: studentId, result, scanned_at: scannedAt }),
     }).catch(() => {});
   });
 }
@@ -81,7 +85,7 @@ function recordAttendanceInBackground(opts: {
     select: false,
   }).then(({ error }) => {
     if (error) console.error('Attendance scan insert FAILED:', error);
-    else notifyParentScan(opts.studentId, 'attended');
+    else notifyParentScan(opts.studentId, 'attended', opts.scannedAt);
   });
 }
 
@@ -814,7 +818,7 @@ export default function ScanPage() {
           },
           select: false,
         });
-        if (!scanErrLate) notifyParentScan(scannedStudent.id, 'pending_payment');
+        if (!scanErrLate) notifyParentScan(scannedStudent.id, 'pending_payment', scannedAt);
         const { data: lateData, error: lateErr } = await dbInsert({
           table: 'payments',
           data: {
@@ -907,7 +911,7 @@ export default function ScanPage() {
           select: false,
         });
         if (scanErr) console.error('Attendance scan insert FAILED:', scanErr);
-        else notifyParentScan(scannedStudent.id, isCash ? 'attended' : 'pending_payment');
+        else notifyParentScan(scannedStudent.id, isCash ? 'attended' : 'pending_payment', scannedAt);
         await auditLog({
           centerId,
           userId,
