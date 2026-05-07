@@ -109,6 +109,7 @@ export function AdminSidebar({
   const isOrders = activeRoute?.includes('admin/orders');
   const isVendors = activeRoute?.includes('admin/vendors');
   const isRenewals = activeRoute?.includes('admin/renewals');
+  const isFinance = activeRoute?.includes('admin/finance');
   const isPricing = activeRoute?.includes('admin/pricing');
   const isPlatformConfig = activeRoute?.includes('admin/platform-config');
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
@@ -125,6 +126,7 @@ export function AdminSidebar({
   const onDedicatedAdminSubpage =
     isWithdrawals ||
     isRenewals ||
+    isFinance ||
     isPricing ||
     isPlatformConfig ||
     isVendors ||
@@ -509,6 +511,18 @@ export function AdminSidebar({
                     <CalendarCheck size={18} className="shrink-0" />
                     <span>{t('renewals')}</span>
                   </button>,
+                  <button
+                    key="finance"
+                    type="button"
+                    onClick={() => {
+                      afterNavigate();
+                      router.push('/admin/finance');
+                    }}
+                    className={drawerBtn(!!isFinance)}
+                  >
+                    <TrendingUp size={18} className="shrink-0" />
+                    <span>{t('finance')}</span>
+                  </button>,
                 );
               }
               if (adminRole === 'super_admin') {
@@ -778,6 +792,23 @@ export function AdminSidebar({
                   >
                     <CalendarCheck size={18} />
                     <span>{t('renewals')}</span>
+                  </button>,
+                  <button
+                    key="finance"
+                    type="button"
+                    onClick={() => {
+                      closeMainSidebar?.();
+                      router.push('/admin/finance');
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
+                      isFinance
+                        ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
+                        : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
+                    )}
+                  >
+                    <TrendingUp size={18} />
+                    <span>{t('finance')}</span>
                   </button>,
                 );
               }
