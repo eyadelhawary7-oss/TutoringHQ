@@ -985,6 +985,8 @@
     "phoneHint": "Enter without the leading zero (10 digits)",
     "phoneLabel": "Phone Number",
     "phoneNotFound": "Phone Not Found",
+    "resumeSignupHint": "You started signing up but have not completed payment yet.",
+    "resumeSignupCta": "Resume signup",
     "phonePlaceholder": "Phone number",
     "pin": "Pin",
     "pinPlaceholder": "PIN",
@@ -1569,6 +1571,7 @@
     "sound_off": "Sound off",
     "connected": "Connected",
     "disconnected": "Disconnected",
+    "reconnecting": "Reconnecting…",
     "history_title": "Today's scan history",
     "history_empty": "No scans yet",
     "history_empty_hint": "Start scanning student cards",
@@ -1577,7 +1580,8 @@
     "scanSuccess": "Attendance recorded",
     "scanError": "Scan error",
     "manualEntry": "Enter student number",
-    "manualPlaceholder": "Student number (e.g. 1024 or #1024)",
+    "manualPlaceholder": "STU-00001",
+    "manualEntryHelper": "Use Latin letters STU- and five digits. Arabic numerals are accepted.",
     "manualSubmit": "Record",
     "checkIn": "Check In",
     "loadingRetry": "Loading Retry",
@@ -2731,7 +2735,20 @@
     "authNote": "By confirming, you authorize CenterHQ to charge {amount} EGP {period}.",
     "renewsMonthly": "Renews monthly at {amount} EGP",
     "renewsQuarterly": "Renews quarterly at {amount} EGP",
-    "renewsAnnually": "Renews annually at {amount} EGP"
+    "renewsAnnually": "Renews annually at {amount} EGP",
+    "processing": "Processing…",
+    "invalidPhoneIntl": "Use a valid Egyptian mobile number (+20 10/11/12/15 and 8 more digits).",
+    "invalidEmail": "Enter a valid email address or leave this field empty.",
+    "centerFieldInvalid": "Center name must be between 2 and 80 characters.",
+    "ownerFieldInvalid": "Owner name must be between 2 and 80 characters.",
+    "cityRequired": "Please select your city.",
+    "referralApplied": "Referral code applied: {code}",
+    "errors": {
+      "cardDeclined": "Your card was declined. Try another card or contact your bank.",
+      "insufficientFunds": "Insufficient funds. Try another payment method.",
+      "threeDsFailed": "3-D Secure verification failed. Try again or use another card.",
+      "paymentGeneric": "Online payment could not be completed. Try again or contact support."
+    }
   },
   "acceptInvite": {
     "title": "Accept Team Invitation",

@@ -9,6 +9,8 @@ export async function GET() {
   try {
     return NextResponse.json(
       {
+        ok: true,
+        t: Date.now(),
         status: 'ok',
         timestamp: new Date().toISOString(),
         paymob_mode: process.env.PAYMOB_API_KEY?.startsWith('Key_') ? 'live' : 'sandbox',
@@ -25,6 +27,8 @@ export async function GET() {
   } catch {
     return NextResponse.json(
       {
+        ok: true,
+        t: Date.now(),
         status: 'ok',
         timestamp: new Date().toISOString(),
         paymob_mode: 'sandbox',

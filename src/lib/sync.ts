@@ -1,5 +1,10 @@
 import { dbInsert } from './db-proxy';
-import { getUnsyncedScans, markScanSynced, clearSyncedScans } from './db';
+import {
+  getUnsyncedScans,
+  markScanSynced,
+  clearSyncedScans,
+  deletePendingScanLocal,
+} from './db';
 
 export type SyncStatus = 'online' | 'offline' | 'syncing';
 
@@ -10,6 +15,56 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
 
   for (const scan of unsyncedScans) {
     try {
+      const row = scan as Record<string, unknown>;
+      if (row.scan_kind === 'late_entry') {
+        const scanned_at = String(row.scanned_at);
+        const sessionDate = scanned_at.split('T')[0];
+        const fee = Number(row.late_fee ?? 0);
+        const groupId = (row.late_group_id as string | null | undefined) ?? null;
+
+        const { error: scanErrLate } = await dbInsert({
+          table: 'attendance_scans',
+          data: {
+            student_id: row.student_id,
+            center_id: row.center_id,
+            scanned_by: row.scanned_by,
+            scanned_at,
+            payment_status_at_scan: 'unpaid',
+            session_date: sessionDate,
+            payment_recorded: false,
+            group_id: groupId,
+          },
+          select: false,
+        });
+        if (scanErrLate) throw new Error(scanErrLate.message);
+
+        const { error: payLateErr } = await dbInsert({
+          table: 'payments',
+          data: {
+            student_id: row.student_id,
+            center_id: row.center_id,
+            amount: fee,
+            method: 'late_entry',
+            recorded_by: row.scanned_by,
+            paid_at: scanned_at,
+            status: 'late',
+            confirmed: false,
+            group_id: groupId,
+          },
+          select: false,
+        });
+        if (payLateErr) throw new Error(payLateErr.message);
+
+        const isLegacySyncQueue = Object.prototype.hasOwnProperty.call(scan, 'synced');
+        if (isLegacySyncQueue) {
+          await markScanSynced((scan as { localId: number }).localId);
+        } else {
+          await deletePendingScanLocal((scan as { localId: number }).localId);
+        }
+        synced++;
+        continue;
+      }
+
       // Insert attendance record
       const scanData: Record<string, unknown> = {
         student_id: scan.student_id,
@@ -59,7 +114,13 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
         });
       }
 
-      await markScanSynced(scan.localId);
+      const isLegacySyncQueue = Object.prototype.hasOwnProperty.call(scan, 'synced');
+
+      if (isLegacySyncQueue) {
+        await markScanSynced((scan as { localId: number }).localId);
+      } else {
+        await deletePendingScanLocal((scan as { localId: number }).localId);
+      }
       synced++;
     } catch {
       errors++;

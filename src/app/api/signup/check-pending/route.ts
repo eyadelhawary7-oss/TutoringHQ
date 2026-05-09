@@ -15,10 +15,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'phone required' }, { status: 400 });
     }
     const phone = normalizePhone(phoneParam.trim());
+    const nowIso = new Date().toISOString();
 
     const { data, error } = await supabaseAdmin
       .from('pending_signups')
-      .select('id, last_step_completed, completed_at')
+      .select(
+        'id, last_step_completed, completed_at, expires_at, center_name, owner_name, email, city, plan_key, billing_period, referral_code',
+      )
       .eq('phone', phone)
       .maybeSingle();
 
@@ -34,13 +37,37 @@ export async function GET(request: Request) {
       id: string;
       last_step_completed: number | null;
       completed_at: string | null;
+      expires_at: string;
+      center_name: string;
+      owner_name: string;
+      email: string | null;
+      city: string | null;
+      plan_key: string | null;
+      billing_period: string | null;
+      referral_code: string | null;
     };
+
+    const completed = row.completed_at != null;
+    const expired = row.expires_at <= nowIso;
 
     return NextResponse.json({
       exists: true,
       id: row.id,
       last_step_completed: row.last_step_completed ?? 1,
-      completed: row.completed_at != null,
+      completed,
+      expired,
+      pending:
+        !completed && !expired
+          ? {
+              center_name: row.center_name,
+              owner_name: row.owner_name,
+              email: row.email ?? '',
+              city: row.city ?? '',
+              plan_key: row.plan_key ?? 'starter',
+              billing_period: row.billing_period ?? 'quarterly',
+              referral_code: row.referral_code ?? '',
+            }
+          : null,
     });
   } catch {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 });

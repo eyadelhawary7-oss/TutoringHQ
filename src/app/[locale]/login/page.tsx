@@ -19,6 +19,18 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [shakePin, setShakePin] = useState(false);
+  const [resumeSignup, setResumeSignup] = useState<{
+    last_step_completed: number;
+    pending: {
+      center_name: string;
+      owner_name: string;
+      email: string;
+      city: string;
+      plan_key: string;
+      billing_period: string;
+      referral_code: string | null;
+    };
+  } | null>(null);
 
   const PLAYFAIR = {
     fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', Georgia, serif",
@@ -56,14 +68,45 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
       });
-      const lookupData = await lookupRes.json();
+      const lookupData = (await lookupRes.json()) as {
+        email?: string;
+        error?: string;
+      };
 
       if (!lookupRes.ok || !lookupData.email) {
-        setError(lookupData.error || t('phoneNotFound'));
+        let resume: typeof resumeSignup = null;
+        const errMsg =
+          typeof lookupData.error === 'string' ? lookupData.error : '';
+        if (errMsg === 'Phone number not registered') {
+          try {
+            const pr = await fetch(
+              `/api/signup/check-pending?phone=${encodeURIComponent(phone)}`,
+            );
+            const pd = (await pr.json()) as {
+              exists?: boolean;
+              completed?: boolean;
+              expired?: boolean;
+              pending?: NonNullable<typeof resumeSignup>['pending'];
+              last_step_completed?: number;
+            };
+            if (pd.exists && pd.pending && !pd.completed && !pd.expired) {
+              resume = {
+                last_step_completed: pd.last_step_completed ?? 1,
+                pending: pd.pending,
+              };
+            }
+          } catch {
+            //
+          }
+        }
+        setResumeSignup(resume);
+        setError(errMsg || t('phoneNotFound'));
         shakePinField();
         setIsLoading(false);
         return;
       }
+
+      setResumeSignup(null);
 
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email: lookupData.email,
@@ -140,6 +183,37 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResumeSignup = () => {
+    if (!resumeSignup) return;
+    const p = resumeSignup.pending;
+    const stage =
+      resumeSignup.last_step_completed >= 2
+        ? 'payment'
+        : resumeSignup.last_step_completed >= 1
+          ? 'plan'
+          : 'info';
+    try {
+      sessionStorage.setItem(
+        'chq_pending_signup_v1',
+        JSON.stringify({
+          centerName: p.center_name,
+          ownerName: p.owner_name,
+          phone,
+          email: p.email,
+          city: p.city,
+          plan: p.plan_key,
+          billingPeriod: p.billing_period,
+          referralCode: p.referral_code ?? '',
+          notes: '',
+          stage,
+        }),
+      );
+    } catch {
+      //
+    }
+    router.push('/signup');
   };
 
   return (
@@ -302,6 +376,7 @@ export default function LoginPage() {
                     setPhone(value);
                   }
                   setError('');
+                  setResumeSignup(null);
                 }}
                 placeholder="+20 1XXXXXXXXX"
                 autoComplete="tel"
@@ -426,19 +501,40 @@ export default function LoginPage() {
                 marginBottom: '16px',
                 padding: '10px 14px',
                 borderRadius: '10px',
-                border: '1px solid rgba(239,68,68,0.3)',
-                background: 'rgba(127,29,29,0.2)',
+                border: resumeSignup ? '1px solid rgba(45,212,191,0.35)' : '1px solid rgba(239,68,68,0.3)',
+                background: resumeSignup ? 'rgba(13,148,136,0.12)' : 'rgba(127,29,29,0.2)',
               }}
             >
               <p
                 style={{
                   ...SANS,
                   fontSize: '12px',
-                  color: '#f87171',
+                  color: resumeSignup ? '#99f6e4' : '#f87171',
+                  marginBottom: resumeSignup ? '10px' : 0,
                 }}
               >
-                {error}
+                {resumeSignup ? t('resumeSignupHint') : error}
               </p>
+              {resumeSignup ? (
+                <button
+                  type="button"
+                  onClick={handleResumeSignup}
+                  style={{
+                    ...PLAYFAIR,
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    background: '#0D9488',
+                    color: 'white',
+                    border: 'none',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('resumeSignupCta')}
+                </button>
+              ) : null}
             </div>
           ) : null}
 

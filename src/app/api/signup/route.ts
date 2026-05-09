@@ -61,6 +61,28 @@ function billingEndForPeriod(startYmd: string, period: BillingPeriod): string {
   return addMonthsToYmd(startYmd, 3);
 }
 
+/** Best-effort mapping from Paymob/third-party error text for client-side i18n. */
+function mapPaymobFailureCode(msg: string): 'invalid_card' | 'insufficient_funds' | '3ds_failed' | 'generic' {
+  const m = msg.toLowerCase();
+  if (m.includes('insufficient') || m.includes('not enough') || m.includes('balance')) {
+    return 'insufficient_funds';
+  }
+  if (m.includes('3ds') || m.includes('3-d') || m.includes('secure') || m.includes('authentication')) {
+    return '3ds_failed';
+  }
+  if (
+    m.includes('declin') ||
+    m.includes('reject') ||
+    (m.includes('invalid') && m.includes('card')) ||
+    m.includes('card') ||
+    m.includes('cvv') ||
+    m.includes('expired')
+  ) {
+    return 'invalid_card';
+  }
+  return 'generic';
+}
+
 async function phoneHasActiveCenter(supabase: SupabaseClient, formattedPhone: string): Promise<boolean> {
   const { data: userRows } = await supabase
     .from('users')
@@ -370,9 +392,11 @@ export async function POST(request: Request) {
         });
       } catch (payErr) {
         console.error('[signup] Paymob error:', payErr);
+        const msg = payErr instanceof Error ? payErr.message : 'Payment initiation failed';
+        const paymob_code = mapPaymobFailureCode(msg);
         return NextResponse.json(
-          { error: payErr instanceof Error ? payErr.message : 'Payment initiation failed' },
-          { status: 500 },
+          { error: 'payment_unavailable', paymob_code, detail: msg },
+          { status: 502 },
         );
       }
     }

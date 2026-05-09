@@ -4163,6 +4163,8 @@
     "phoneHint": "أدخل الرقم بدون الصفر في البداية (١٠ أرقام)",
     "phoneLabel": "رقم الهاتف",
     "phoneNotFound": "الهاتف مش Found",
+    "resumeSignupHint": "بدأت التسجيل لكن لم تكمل الدفع بعد.",
+    "resumeSignupCta": "متابعة التسجيل",
     "phonePlaceholder": "رقم الهاتف",
     "pin": "الرمز السري",
     "pinPlaceholder": "الرقم السري",
@@ -4717,6 +4719,7 @@
     "sound_off": "إيقاف الصوت",
     "connected": "متصل",
     "disconnected": "غير متصل",
+    "reconnecting": "جاري إعادة الاتصال…",
     "history_title": "سجل المسح اليوم",
     "history_empty": "لا توجد مسحات بعد",
     "history_empty_hint": "ابدأ بمسح بطاقات الطلاب",
@@ -4725,7 +4728,8 @@
     "scanSuccess": "تم تسجيل الحضور",
     "scanError": "مسح خطأ",
     "manualEntry": "أدخل رقم الطالب",
-    "manualPlaceholder": "رقم الطالب (مثال: ١٠٢٤ أو #١٠٢٤)",
+    "manualPlaceholder": "STU-00001",
+    "manualEntryHelper": "استخدم الحروف اللاتينية STU- ثم خمسة أرقام. يُقبل الرقم العربي أيضاً.",
     "manualSubmit": "تسجيل",
     "checkIn": "فحص في",
     "loadingRetry": "جاري التحميل إعادة",
@@ -5095,7 +5099,20 @@
     "authNote": "بالتأكيد تفوّض CenterHQ بخصم {amount} ج.م {period} تلقائياً",
     "renewsMonthly": "يتجدد شهرياً بـ {amount} ج.م",
     "renewsQuarterly": "يتجدد ربع سنوياً بـ {amount} ج.م",
-    "renewsAnnually": "يتجدد سنوياً بـ {amount} ج.م"
+    "renewsAnnually": "يتجدد سنوياً بـ {amount} ج.م",
+    "processing": "جاري المعالجة…",
+    "invalidPhoneIntl": "أدخل رقم مصري صحيح (+20 ثم 10 أو 11 أو 12 أو 15 ثم 8 أرقام).",
+    "invalidEmail": "أدخل بريداً صحيحاً أو اترك الحقل فارغاً.",
+    "centerFieldInvalid": "اسم المركز يجب أن يكون بين 2 و 80 حرفاً.",
+    "ownerFieldInvalid": "اسم المالك يجب أن يكون بين 2 و 80 حرفاً.",
+    "cityRequired": "يرجى اختيار المدينة.",
+    "referralApplied": "تم تطبيق كود الإحالة: {code}",
+    "errors": {
+      "cardDeclined": "تم رفض البطاقة. جرّب بطاقة أخرى أو تواصل مع البنك.",
+      "insufficientFunds": "رصيد غير كافٍ. جرّب وسيلة دفع أخرى.",
+      "threeDsFailed": "فشل التحقق 3-D Secure. أعد المحاولة أو استخدم بطاقة أخرى.",
+      "paymentGeneric": "تعذّر إتمام الدفع عبر الإنترنت. أعد المحاولة أو تواصل مع الدعم."
+    }
   },
   "students": {
     "allGroups": "كل المجموعات",

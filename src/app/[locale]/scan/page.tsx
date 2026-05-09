@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, auditLog } from '@/lib/db-proxy';
+import { dbSelect, auditLog } from '@/lib/db-proxy';
 import {
   syncStudentsToLocal,
   getAllStudentsOffline,
@@ -12,8 +12,11 @@ import {
   getUnsyncedCount,
   hasPaidTodayOffline,
   markPaidTodayOffline,
+  getDB,
 } from '@/lib/db';
 import { syncQueuedScans } from '@/lib/sync';
+import { useNetworkStatus } from '@/lib/scanner/networkStatus';
+import { normalizeStudentNumber, isValidCanonicalStudentNumber } from '@/lib/scanner/normalize';
 import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
@@ -45,7 +48,7 @@ interface RosterRow {
   center_id: string;
 }
 
-/** Fire-and-forget: notify parent of scan (async, no await). */
+/** Fire-and-forget parent notify after server accepts scan (call after successful sync). */
 function notifyParentScan(
   studentId: string,
   result: 'attended' | 'absent' | 'pending_payment',
@@ -58,34 +61,6 @@ function notifyParentScan(
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
       body: JSON.stringify({ student_id: studentId, result, scanned_at: scannedAt }),
     }).catch(() => {});
-  });
-}
-
-/** Fire-and-forget paid attendance write (same /api/db path as sync; SW queue unchanged for offline). */
-function recordAttendanceInBackground(opts: {
-  studentId: string;
-  centerId: string;
-  userId: string;
-  scannedAt: string;
-  groupId: string | null;
-}) {
-  if (typeof navigator === 'undefined' || !navigator.onLine) return;
-  void dbInsert({
-    table: 'attendance_scans',
-    data: {
-      student_id: opts.studentId,
-      center_id: opts.centerId,
-      scanned_by: opts.userId,
-      scanned_at: opts.scannedAt,
-      payment_status_at_scan: 'paid',
-      session_date: opts.scannedAt.split('T')[0],
-      payment_recorded: false,
-      group_id: opts.groupId,
-    },
-    select: false,
-  }).then(({ error }) => {
-    if (error) console.error('Attendance scan insert FAILED:', error);
-    else notifyParentScan(opts.studentId, 'attended', opts.scannedAt);
   });
 }
 
@@ -119,6 +94,10 @@ export default function ScanPage() {
   const { user, hasPermission } = useUser();
   const toast = useToast();
 
+  const { online: netOnline, probeOk, navOnline } = useNetworkStatus();
+  const showDisconnected = !probeOk;
+  const reconnecting = Boolean(navOnline && !probeOk);
+
   const [mode, setMode] = useState<ScanMode>(persistedMode);
   const [manualIdInput, setManualIdInput] = useState('');
   const manualInputRef = useRef<HTMLInputElement>(null);
@@ -135,7 +114,6 @@ export default function ScanPage() {
   const [rosterHydrated, setRosterHydrated] = useState(false);
   const studentMapByNumberRef = useRef<Map<string, RosterRow>>(new Map());
   const studentMapByIdRef = useRef<Map<string, RosterRow>>(new Map());
-  const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [addedAmountToBalance, setAddedAmountToBalance] = useState(0);
@@ -315,12 +293,14 @@ export default function ScanPage() {
     };
   }, [centerId]);
 
-  // Online/offline and pending count
   useEffect(() => {
-    setIsOnline(navigator.onLine);
+    void getDB();
+  }, []);
 
-    const handleOnline = async () => {
-      setIsOnline(true);
+  // Drain scan queue periodically while the health probe says we're online
+  useEffect(() => {
+    const run = async () => {
+      if (!netOnline) return;
       setIsSyncing(true);
       try {
         await syncQueuedScans();
@@ -332,12 +312,13 @@ export default function ScanPage() {
         setIsSyncing(false);
       }
     };
+    const id = setInterval(() => void run(), 30000);
+    void run();
+    return () => clearInterval(id);
+  }, [netOnline]);
 
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
+  // Online/offline and pending count
+  useEffect(() => {
     const updatePending = async () => {
       try {
         const count = await getUnsyncedCount();
@@ -350,8 +331,6 @@ export default function ScanPage() {
     const interval = setInterval(updatePending, 3000);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
       clearInterval(interval);
     };
   }, []);
@@ -396,22 +375,13 @@ export default function ScanPage() {
 
   const normalizeForLookup = (input: string): { byId: boolean; value: string } => {
     const trimmed = input.trim();
-
-    // UUID → look up by student ID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidRegex.test(trimmed)) return { byId: true, value: trimmed };
-
-    // Already has # prefix → use as-is
     if (trimmed.startsWith('#')) return { byId: false, value: trimmed };
-
-    // Plain number → add # prefix (DB stores as #1024)
+    const normalized = normalizeStudentNumber(trimmed);
+    if (normalized.startsWith('STU-')) return { byId: false, value: normalized };
     if (/^\d+$/.test(trimmed)) return { byId: false, value: '#' + trimmed };
-
-    // STU- legacy format → keep as-is
-    if (trimmed.toUpperCase().startsWith('STU-')) return { byId: false, value: trimmed.toUpperCase() };
-
-    // Anything else → pass through
-    return { byId: false, value: trimmed };
+    return { byId: false, value: normalized || trimmed };
   };
 
   const handleScan = useCallback(async (code: string) => {
@@ -433,7 +403,7 @@ export default function ScanPage() {
       const mapsHaveRows =
         studentMapByNumberRef.current.size > 0 || studentMapByIdRef.current.size > 0;
 
-      if (navigator.onLine && rosterHydrated && mapsHaveRows && !looksLikePhone) {
+      if (netOnline && rosterHydrated && mapsHaveRows && !looksLikePhone) {
         const row = byId
           ? studentMapByIdRef.current.get(value)
           : studentMapByNumberRef.current.get(value.toUpperCase());
@@ -454,7 +424,7 @@ export default function ScanPage() {
 
       if (!student) {
         // ONLINE: Try Supabase first (or roster still loading / empty / phone lookup)
-        if (navigator.onLine) {
+        if (netOnline) {
           try {
             const filters = byId
               ? [{ column: 'id', op: 'eq' as const, value }, { column: 'center_id', op: 'eq' as const, value: centerId }]
@@ -493,7 +463,7 @@ export default function ScanPage() {
       }
 
       // When online and not on IndexedDB fallback, ensure groups are loaded if missing
-      if (student && navigator.onLine && !usedOffline) {
+      if (student && netOnline && !usedOffline) {
         const needsGroupData = !student.groups || student.groups.length === 0;
         if (needsGroupData) {
           try {
@@ -542,7 +512,7 @@ export default function ScanPage() {
           [
             {
               id: Date.now().toString(),
-              studentName: ts('scan_error'),
+              studentName: ts('scanError'),
               time: new Date(),
               status: 'error' as const,
             },
@@ -575,7 +545,7 @@ export default function ScanPage() {
       // Per-session payment: check if paid TODAY for THIS GROUP (payments table is source of truth)
       let paidToday = false;
       let lastPaymentMethod: string | null = null;
-      if (navigator.onLine) {
+      if (netOnline) {
         paidToday = await hasPaidToday(student.id, centerId, grp?.id ?? null);
         if (paidToday) {
           const today = new Date().toISOString().split('T')[0];
@@ -612,23 +582,22 @@ export default function ScanPage() {
       const scannedAt = new Date().toISOString();
 
       if (paidToday) {
-        // Already paid today: record attendance only
-        if (navigator.onLine) {
-          recordAttendanceInBackground({
-            studentId: student.id,
-            centerId,
-            userId,
-            scannedAt,
-            groupId: grp?.id ?? null,
-          });
-        } else {
-          await queueScan({
-            student_id: student.id,
-            center_id: centerId,
-            scanned_by: userId,
-            scanned_at: scannedAt,
-          });
-          const count = await getUnsyncedCount();
+        await queueScan({
+          student_id: student.id,
+          center_id: centerId,
+          scanned_by: userId,
+          scanned_at: scannedAt,
+        });
+        let count = await getUnsyncedCount();
+        setPendingCount(count);
+        if (netOnline) {
+          try {
+            await syncQueuedScans();
+            notifyParentScan(student.id, 'attended', scannedAt);
+          } catch {
+            //
+          }
+          count = await getUnsyncedCount();
           setPendingCount(count);
         }
         setLastSuccessStudentName(studentForDisplay.name);
@@ -680,7 +649,7 @@ export default function ScanPage() {
         [
           {
             id: Date.now().toString(),
-            studentName: ts('scan_error'),
+            studentName: ts('scanError'),
             time: new Date(),
             status: 'error' as const,
           },
@@ -689,7 +658,7 @@ export default function ScanPage() {
       );
       isProcessingRef.current = false;
     }
-  }, [centerId, userId, rosterHydrated, students, t, ts, playBeep, vibrate, triggerAttendanceRecordedFeedback]);
+  }, [centerId, userId, rosterHydrated, students, t, ts, playBeep, vibrate, triggerAttendanceRecordedFeedback, netOnline]);
 
   const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee: number }) => {
     if (!scannedStudent || !centerId || !userId) return;
@@ -700,7 +669,7 @@ export default function ScanPage() {
     let paidToday = false;
     let lastPaymentMethod: string | null = null;
 
-    if (navigator.onLine) {
+    if (netOnline) {
       try {
         paidToday = await hasPaidToday(student.id, centerId, group.id);
         if (paidToday) {
@@ -740,22 +709,22 @@ export default function ScanPage() {
     const scannedAt = new Date().toISOString();
 
     if (paidToday) {
-      if (navigator.onLine) {
-        recordAttendanceInBackground({
-          studentId: student.id,
-          centerId,
-          userId,
-          scannedAt,
-          groupId: group.id,
-        });
-      } else {
-        await queueScan({
-          student_id: student.id,
-          center_id: centerId,
-          scanned_by: userId,
-          scanned_at: scannedAt,
-        });
-        const count = await getUnsyncedCount();
+      await queueScan({
+        student_id: student.id,
+        center_id: centerId,
+        scanned_by: userId,
+        scanned_at: scannedAt,
+      });
+      let count = await getUnsyncedCount();
+      setPendingCount(count);
+      if (netOnline) {
+        try {
+          await syncQueuedScans();
+          notifyParentScan(student.id, 'attended', scannedAt);
+        } catch {
+          //
+        }
+        count = await getUnsyncedCount();
         setPendingCount(count);
       }
       setLastSuccessStudentName(studentForDisplay.name);
@@ -792,7 +761,7 @@ export default function ScanPage() {
       setManualIdInput('');
       manualInputRef.current?.focus();
     }
-  }, [scannedStudent, centerId, userId, mode, playBeep, vibrate, triggerAttendanceRecordedFeedback]);
+  }, [scannedStudent, centerId, userId, mode, playBeep, vibrate, triggerAttendanceRecordedFeedback, netOnline]);
 
   const handleAllowLateEntry = async () => {
     if (!scannedStudent || !centerId || !userId || !canAllowLateEntry) return;
@@ -800,40 +769,28 @@ export default function ScanPage() {
     const grp = selectedGroup ?? scannedStudent.groups?.[0];
     const fee = grp?.fee ?? scannedStudent.fee ?? 0;
     const scannedAt = new Date().toISOString();
-    const sessionDate = scannedAt.split('T')[0];
 
     try {
-      if (navigator.onLine) {
-        const { error: scanErrLate } = await dbInsert({
-          table: 'attendance_scans',
-          data: {
-            student_id: scannedStudent.id,
-            center_id: centerId,
-            scanned_by: userId,
-            scanned_at: scannedAt,
-            payment_status_at_scan: 'unpaid',
-            session_date: sessionDate,
-            payment_recorded: false,
-            group_id: grp?.id ?? null,
-          },
-          select: false,
-        });
-        if (!scanErrLate) notifyParentScan(scannedStudent.id, 'pending_payment', scannedAt);
-        const { data: lateData, error: lateErr } = await dbInsert({
-          table: 'payments',
-          data: {
-            student_id: scannedStudent.id,
-            center_id: centerId,
-            amount: fee,
-            method: 'late_entry',
-            recorded_by: userId,
-            paid_at: scannedAt,
-            status: 'late',
-            confirmed: false,
-            group_id: grp?.id ?? null,
-          },
-          select: false,
-        });
+      await queueScan({
+        student_id: scannedStudent.id,
+        center_id: centerId,
+        scanned_by: userId,
+        scanned_at: scannedAt,
+        scan_kind: 'late_entry',
+        late_fee: fee,
+        late_group_id: grp?.id ?? null,
+      });
+      let count = await getUnsyncedCount();
+      setPendingCount(count);
+      if (netOnline) {
+        try {
+          await syncQueuedScans();
+          notifyParentScan(scannedStudent.id, 'pending_payment', scannedAt);
+        } catch {
+          //
+        }
+        count = await getUnsyncedCount();
+        setPendingCount(count);
       }
       setAddedAmountToBalance(fee);
       setScannedStudent({
@@ -863,78 +820,48 @@ export default function ScanPage() {
     setIsProcessing(true);
 
     const scannedAt = new Date().toISOString();
-    const sessionDate = scannedAt.split('T')[0];
     const isCash = method === 'cash' || method === 'نقدي';
     const paymentAmount = amount ?? scannedStudent.fee ?? 0;
     const effectiveGroupId = groupId ?? selectedGroup?.id ?? scannedStudent.groups?.[0]?.id ?? null;
 
     try {
-      if (navigator.onLine) {
-        const paymentData: Record<string, unknown> = {
-          student_id: scannedStudent.id,
-          center_id: centerId,
+      await queueScan({
+        student_id: scannedStudent.id,
+        center_id: centerId,
+        scanned_by: userId,
+        scanned_at: scannedAt,
+        payment_action: {
+          method,
           amount: paymentAmount,
-          method: method === 'نقدي' ? 'cash' : method,
-          recorded_by: userId,
-          paid_at: scannedAt,
-          status: isCash ? 'confirmed' : 'pending',
-          confirmed: isCash,
-          ...(isCash && { confirmed_at: scannedAt }),
-          group_id: effectiveGroupId,
-        };
+          isPending: !isCash,
+          group_id: effectiveGroupId ?? undefined,
+        },
+      });
+      await markPaidTodayOffline(centerId, scannedStudent.id);
+      let count = await getUnsyncedCount();
+      setPendingCount(count);
 
-        const { error: payErr } = await dbInsert({
-          table: 'payments',
-          data: paymentData,
-          select: false,
-        });
-        if (payErr) {
-          console.error('Payment insert FAILED:', payErr);
-          if (typeof alert !== 'undefined') alert('Payment error: ' + (payErr instanceof Error ? payErr.message : String(payErr)));
+      if (netOnline) {
+        try {
+          await syncQueuedScans();
+          notifyParentScan(scannedStudent.id, isCash ? 'attended' : 'pending_payment', scannedAt);
+          await auditLog({
+            centerId,
+            userId,
+            action: 'payment_on_scan',
+            entityType: 'payment',
+            entityId: scannedStudent.id,
+            details: {
+              method,
+              amount: paymentAmount,
+              group_id: effectiveGroupId,
+              status: method === 'cash' ? 'confirmed' : 'pending',
+            },
+          });
+        } catch {
+          //
         }
-
-        const scanData: Record<string, unknown> = {
-          student_id: scannedStudent.id,
-          center_id: centerId,
-          scanned_by: userId,
-          scanned_at: scannedAt,
-          payment_status_at_scan: 'unpaid',
-          payment_method: method,
-          session_date: sessionDate,
-          payment_recorded: true,
-          group_id: effectiveGroupId,
-        };
-
-        const { error: scanErr } = await dbInsert({
-          table: 'attendance_scans',
-          data: scanData,
-          select: false,
-        });
-        if (scanErr) console.error('Attendance scan insert FAILED:', scanErr);
-        else notifyParentScan(scannedStudent.id, isCash ? 'attended' : 'pending_payment', scannedAt);
-        await auditLog({
-          centerId,
-          userId,
-          action: 'payment_on_scan',
-          entityType: 'payment',
-          entityId: scannedStudent.id,
-          details: {
-            method,
-            amount: paymentAmount,
-            group_id: effectiveGroupId,
-            status: method === 'cash' ? 'confirmed' : 'pending',
-          },
-        });
-      } else {
-        await queueScan({
-          student_id: scannedStudent.id,
-          center_id: centerId,
-          scanned_by: userId,
-          scanned_at: scannedAt,
-          payment_action: { method, amount: paymentAmount, isPending: !isCash, group_id: effectiveGroupId ?? undefined },
-        });
-        await markPaidTodayOffline(centerId, scannedStudent.id);
-        const count = await getUnsyncedCount();
+        count = await getUnsyncedCount();
         setPendingCount(count);
       }
 
@@ -1009,11 +936,11 @@ export default function ScanPage() {
   return (
     <>
       {showFlash && <div className="chq-flash-success" aria-hidden />}
-      <div className="bg-[var(--color-surface-0)] min-h-screen w-full flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
-        {!isOnline && (
+      <div className="bg-[var(--color-surface-0)] min-h-screen w-full flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0 pt-[max(16px,env(safe-area-inset-top,0px))]">
+        {!probeOk && (
           <div className="chq-fade-in mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-amber-800/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-300 sm:mx-0">
             <div className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
-            <span>{ts('offline')}</span>
+            <span>{ts('disconnected')}</span>
           </div>
         )}
 
@@ -1061,10 +988,16 @@ export default function ScanPage() {
             ) : (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] shadow-sm">
                 <span
-                  className={`w-2 h-2 rounded-full ${isOnline ? 'bg-[var(--color-success)] animate-pulse' : 'bg-[var(--color-danger)]'}`}
+                  className={`w-2 h-2 rounded-full ${
+                    showDisconnected
+                      ? 'bg-[var(--color-danger)]'
+                      : reconnecting
+                        ? 'bg-[var(--color-warning)] animate-pulse'
+                        : 'bg-[var(--color-success)] animate-pulse'
+                  }`}
                 />
                 <span className="text-xs font-medium text-[var(--color-text-secondary)]">
-                  {isOnline ? ts('connected') : ts('disconnected')}
+                  {showDisconnected ? ts('disconnected') : reconnecting ? ts('reconnecting') : ts('connected')}
                 </span>
               </div>
             )}
@@ -1165,7 +1098,7 @@ export default function ScanPage() {
                       <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                   </div>
-                  <p className="text-sm font-semibold text-[var(--color-danger)]">{ts('scan_error')}</p>
+                  <p className="text-sm font-semibold text-[var(--color-danger)]">{ts('scanError')}</p>
                 </div>
               )}
             </div>
@@ -1203,6 +1136,15 @@ export default function ScanPage() {
                     }
                   }}
                 />
+                <p
+                  className={`text-[11px] text-center leading-snug ${
+                    isValidCanonicalStudentNumber(normalizeStudentNumber(manualIdInput))
+                      ? 'text-emerald-500'
+                      : 'text-[var(--color-text-tertiary)]'
+                  }`}
+                >
+                  {ts('manualEntryHelper')}
+                </p>
                 <button
                   type="button"
                   onClick={() => {

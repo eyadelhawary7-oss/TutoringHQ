@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       referral_code: typeof body.referral_code === 'string' ? body.referral_code.trim() || null : null,
       terms_accepted_at: typeof body.terms_accepted_at === 'string' ? body.terms_accepted_at : null,
       updated_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     };
 
     if (typeof body.last_step_completed === 'number' && Number.isFinite(body.last_step_completed)) {

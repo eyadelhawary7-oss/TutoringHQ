@@ -1,4 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb';
+import { normalizeStudentNumber } from '@/lib/scanner/normalize';
 
 const DB_NAME = 'centerhq-offline';
 const DB_VERSION = 3;
@@ -35,14 +36,6 @@ export function getDB() {
   return dbPromise;
 }
 
-/** Normalize input for student_number lookup */
-function normalizeStudentNumberInput(input: string): string {
-  const trimmed = input.trim();
-  if (/^\d+$/.test(trimmed)) return 'STU-' + trimmed.padStart(5, '0');
-  if (trimmed.toUpperCase().startsWith('STU-')) return trimmed.toUpperCase();
-  return trimmed;
-}
-
 // Sync all students for a center into IndexedDB (full object: id, name, phone, groups, balance_due, qr_code, student_number)
 export async function syncStudentsToLocal(
   students: (Record<string, unknown> & { id: string; student_number?: string | null })[],
@@ -72,7 +65,7 @@ export async function getStudentOffline(idOrStudentNumber: string): Promise<Reco
   }
 
   // Try by student_number (STU-00001)
-  const normalized = normalizeStudentNumberInput(idOrStudentNumber);
+  const normalized = normalizeStudentNumber(idOrStudentNumber);
   try {
     const byNum = await db.getFromIndex('students', 'by_student_number', normalized);
     if (byNum) return byNum as Record<string, unknown>;
@@ -94,7 +87,7 @@ export async function getAllStudentsOffline() {
   return await db.getAll('students');
 }
 
-// Queue a scan event for later sync (used when offline)
+/** Pending scan — written to `pending_scans` first (offline source of truth). */
 export async function queueScan(scanData: {
   student_id: string;
   center_id: string;
@@ -106,19 +99,29 @@ export async function queueScan(scanData: {
     isPending?: boolean;
     group_id?: string;
   };
-}) {
+  /** Offline late-entry path — synced by `syncQueuedScans` */
+  scan_kind?: 'late_entry';
+  late_fee?: number;
+  late_group_id?: string | null;
+}): Promise<number> {
   const db = await getDB();
-  await db.add('syncQueue', {
+  const localId = await db.add('pending_scans', {
     ...scanData,
-    synced: false,
     timestamp: Date.now(),
   });
+  return localId as number;
+}
+
+export async function deletePendingScanLocal(localId: number) {
+  const db = await getDB();
+  await db.delete('pending_scans', localId);
 }
 
 export async function getUnsyncedScans() {
   const db = await getDB();
-  const all = await db.getAll('syncQueue');
-  return all.filter((item: Record<string, unknown>) => !item.synced);
+  const pending = await db.getAll('pending_scans');
+  const legacy = (await db.getAll('syncQueue')).filter((item: Record<string, unknown>) => !item.synced);
+  return [...pending, ...legacy];
 }
 
 export async function markScanSynced(localId: number) {
@@ -134,8 +137,10 @@ export async function markScanSynced(localId: number) {
 
 export async function getUnsyncedCount(): Promise<number> {
   const db = await getDB();
-  const all = await db.getAll('syncQueue');
-  return all.filter((item: Record<string, unknown>) => !item.synced).length;
+  const pending = await db.getAll('pending_scans');
+  const legacy = await db.getAll('syncQueue');
+  const legacyUnsynced = legacy.filter((item: Record<string, unknown>) => !item.synced);
+  return pending.length + legacyUnsynced.length;
 }
 
 export async function markPaidTodayOffline(centerId: string, studentId: string) {

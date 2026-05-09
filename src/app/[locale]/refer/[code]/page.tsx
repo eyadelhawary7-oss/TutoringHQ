@@ -24,6 +24,7 @@ export default function ReferPage() {
       return;
     }
     localStorage.setItem('referral_code', code);
+    document.cookie = `chq_referral_code=${encodeURIComponent(code)}; Path=/; Max-Age=${60 * 60 * 24 * 90}; SameSite=Lax`;
     const url = new URL(window.location.href);
     url.searchParams.set('ref', code);
     window.history.replaceState({}, '', url.toString());
