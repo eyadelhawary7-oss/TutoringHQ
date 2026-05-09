@@ -10,6 +10,10 @@ import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { readRawBodyWithLimit, ValidationError } from '@/lib/validate';
 import { timingSafeEqualHex } from '@/lib/verifyHmac';
+import {
+  applyCardOrderTransition,
+  IllegalCardOrderTransitionError,
+} from '@/lib/cardOrderState';
 
 export const dynamic = 'force-dynamic';
 
@@ -214,17 +218,28 @@ async function processBostaEvent(payload: Record<string, unknown>): Promise<void
       if (shouldNotifyOrderShipped(prevBostaStatus, stateCode)) {
         void notifyOwnerOrderShipped(supabase, order, trackingUrl);
       }
-      const { error } = await supabase
-        .from('card_orders')
-        .update({
-          status: 'shipped',
-          bosta_status: stateCode,
-          bosta_updated_at: now,
-        })
-        .eq('id', order.id);
-      if (error) {
-        console.error('[bosta-webhook] OUT_FOR_DELIVERY update:', error);
-      } else {
+      try {
+        await applyCardOrderTransition(supabase, order.id, 'bosta_picked_up', {
+          actorRole: 'system',
+          extraColumns: {
+            bosta_status: stateCode,
+            bosta_updated_at: now,
+          },
+        });
+      } catch (e) {
+        if (e instanceof IllegalCardOrderTransitionError) {
+          const { error: fbErr } = await supabase
+            .from('card_orders')
+            .update({
+              bosta_status: stateCode,
+              bosta_updated_at: now,
+            })
+            .eq('id', order.id);
+          if (fbErr) console.error('[bosta-webhook] OUT_FOR_DELIVERY fallback:', fbErr);
+        } else {
+          console.error('[bosta-webhook] OUT_FOR_DELIVERY transition:', e);
+        }
+      }
         try {
           const trackingNum =
             order.tracking_number ??
@@ -262,7 +277,6 @@ async function processBostaEvent(payload: Record<string, unknown>): Promise<void
         } catch (e) {
           console.error('[bosta-webhook] invoice tracking writeback OUT_FOR_DELIVERY:', e);
         }
-      }
       break;
     }
 
@@ -271,20 +285,31 @@ async function processBostaEvent(payload: Record<string, unknown>): Promise<void
       if (shouldNotifyOrderShipped(prevBostaStatus, stateCode)) {
         void notifyOwnerOrderShipped(supabase, order, trackingUrl);
       }
-      const { error } = await supabase
-        .from('card_orders')
-        .update({
-          status: 'delivered',
-          bosta_status: stateCode,
-          bosta_updated_at: now,
-          delivered_at: now,
-        })
-        .eq('id', order.id);
-      if (error) {
-        console.error('[bosta-webhook] DELIVERED/DELIVERED_TO_SENDER update:', error);
-      } else {
-        // Write tracking number back to setup_fee invoice metadata
-        try {
+      try {
+        await applyCardOrderTransition(supabase, order.id, 'bosta_delivered', {
+          actorRole: 'system',
+          extraColumns: {
+            bosta_status: stateCode,
+            bosta_updated_at: now,
+            delivered_at: now,
+          },
+        });
+      } catch (e) {
+        if (e instanceof IllegalCardOrderTransitionError) {
+          const { error: fbErr } = await supabase
+            .from('card_orders')
+            .update({
+              bosta_status: stateCode,
+              bosta_updated_at: now,
+              delivered_at: now,
+            })
+            .eq('id', order.id);
+          if (fbErr) console.error('[bosta-webhook] DELIVERED fallback:', fbErr);
+        } else {
+          console.error('[bosta-webhook] DELIVERED transition:', e);
+        }
+      }
+      try {
           const trackingNum =
             order.tracking_number ??
             (typeof trackingNumber === 'string' ? trackingNumber : null);
@@ -324,7 +349,6 @@ async function processBostaEvent(payload: Record<string, unknown>): Promise<void
         } catch (e) {
           console.error('[bosta-webhook] invoice tracking writeback:', e);
         }
-      }
       break;
     }
 
@@ -394,7 +418,7 @@ async function processBostaEvent(payload: Record<string, unknown>): Promise<void
               price_per_card: fo.price_per_card ?? 62,
               delivery_fee: 0,
               total_amount: 0,
-              status: 'pending',
+              status: 'paid',
               payment_status: 'paid',
               delivery_address: fo.delivery_address,
               notes: `Replacement for lost order ${order.id}`,

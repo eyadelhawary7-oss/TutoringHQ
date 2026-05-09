@@ -4818,13 +4818,122 @@
       "track": "Track your order",
       "receipt": "View receipt",
       "orderMore": "Order more cards"
-    },
-    "orderDetail": {
-      "loading": "Loading order…",
-      "notFound": "We could not find this order.",
-      "title": "Order #{ref}",
-      "downloadReceipt": "Download receipt (PDF)"
     }
+  },
+  "orderDetail": {
+    "loading": "Loading order…",
+    "notFound": "We could not find this order.",
+    "title": "Order #{ref}",
+    "downloadReceipt": "Download receipt (PDF)",
+    "receiptUnavailable": "Receipt is available after payment completes.",
+    "orderedAt": "Ordered",
+    "sections": {
+      "items": "Items",
+      "delivery": "Delivery",
+      "tracking": "Tracking",
+      "pricing": "Pricing"
+    },
+    "blankLine": "Blank card",
+    "itemsFallback": "Line items not stored for this order.",
+    "trackBosta": "Track on Bosta",
+    "estimatedDelivery": "Estimated delivery",
+    "reorder": "Reorder",
+    "cancel": "Cancel order",
+    "markIssued": "Mark cards issued",
+    "reportIssue": "Report issue",
+    "status": {
+      "pending_payment": "Awaiting payment",
+      "paid": "Paid",
+      "vendor_assigned": "Vendor assigned",
+      "in_production": "In production",
+      "ready_for_pickup": "Ready for pickup",
+      "in_transit": "In transit",
+      "delivered": "Delivered",
+      "issued": "Issued",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded",
+      "failed": "Payment failed"
+    }
+  },
+  "orderTimeline": {
+    "aria": { "progress": "Order progress" },
+    "stage": {
+      "pending_payment": "Awaiting payment",
+      "paid": "Paid",
+      "vendor_assigned": "Vendor assigned",
+      "in_production": "In production",
+      "ready_for_pickup": "Ready for pickup",
+      "in_transit": "In transit",
+      "delivered": "Delivered",
+      "issued": "Issued"
+    },
+    "state": {
+      "completed": "Completed",
+      "active": "Current",
+      "pending": "Upcoming"
+    },
+    "banner": {
+      "cancelled": { "title": "Cancelled order" },
+      "refunded": { "title": "Refunded order" },
+      "refundPipeline": "Refund status: {status}",
+      "failed": "Payment failed — please retry checkout."
+    }
+  },
+  "reorder": {
+    "confirmTitle": "Add items to cart?",
+    "confirmBody": "We will add eligible students and blank cards from this order to your open cart, skipping anyone who already has an active card order.",
+    "back": "Back",
+    "confirm": "Add to cart",
+    "failed": "Could not reorder.",
+    "toastSuccess": "Added {count} students to cart"
+  },
+  "cardOrderCancel": {
+    "title": "Cancel this order?",
+    "warn": {
+      "pending_payment": "This order will be cancelled with no charge.",
+      "paid": "This order will be cancelled. If eligible, a full refund will be processed within 7–14 business days.",
+      "vendor_assigned": "This order was sent to the vendor but production has not started. If cancelled, a full refund will be processed within 7–14 business days. After production starts, refunds are no longer available."
+    },
+    "reasonLabel": "Reason",
+    "reason": {
+      "wrong_quantity": "Wrong quantity",
+      "wrong_students": "Wrong students",
+      "no_longer_needed": "No longer needed",
+      "other": "Other"
+    },
+    "otherDetailLabel": "Describe the issue",
+    "confirmTypeLabel": "Type CANCEL to confirm",
+    "back": "Close",
+    "confirm": "Cancel order",
+    "errors": { "generic": "Could not cancel order." }
+  },
+  "receipt": {
+    "header": "Receipt",
+    "items": "Items",
+    "pricing": "Pricing",
+    "shipping": "Shipping",
+    "total": "Total",
+    "paymob": "Paymob transaction",
+    "refund": "Refund",
+    "taxId": "Tax registration"
+  },
+  "orderHistory": {
+    "searchPlaceholder": "Search order ref or student name",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterDelivered": "Delivered",
+    "filterCancelled": "Cancelled",
+    "filterFailed": "Failed",
+    "colDate": "Date",
+    "colStatus": "Status",
+    "colItems": "Items",
+    "colTotal": "Total",
+    "sortAsc": "Ascending",
+    "sortDesc": "Descending",
+    "pagePrev": "Previous",
+    "pageNext": "Next",
+    "emptyFiltered": "No orders match your filters.",
+    "showing": "Showing {from}-{to} of {total}"
   },
   "cardOrders": {
     "orderIdCards": "Order ID Cards",
@@ -4926,6 +5035,13 @@
     "statusShipped": "Shipped",
     "statusDelivered": "Delivered",
     "statusCancelled": "Cancelled",
+    "statusVendorAssigned": "Vendor assigned",
+    "statusInProduction": "In production",
+    "statusReadyPickup": "Ready for pickup",
+    "statusInTransit": "In transit",
+    "statusIssued": "Issued",
+    "statusRefunded": "Refunded",
+    "statusFailed": "Payment failed",
     "newOrder": "New Order",
     "account": "Account",
     "activate": "Activate",

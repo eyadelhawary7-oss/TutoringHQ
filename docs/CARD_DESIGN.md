@@ -52,3 +52,46 @@ Dedicated URLs per step (browser back/forward and deep links work). All steps ex
 | 5 Success | `/[locale]/orders/checkout/success/[orderId]` | Confirmation, receipt download, track order → `/orders/[orderId]`. |
 
 Between steps the client **`PATCH /api/card-order-cart`** so cart row state survives refresh and back navigation. After step 3 the cart is marked **`submitted`** and linked to the new `card_orders` row.
+
+## Order State Machine
+
+`card_orders` carries **three independent columns** that must stay audit-consistent:
+
+| Column | Meaning |
+|--------|---------|
+| `status` | **Canonical lifecycle for UI** — where the physical/digital fulfilment is in the pipeline. |
+| `payment_status` | Money **in** (Paymob / unpaid / failed). Never shown directly in centre UI; kept for finance and chargebacks. |
+| `refund_status` | Money **back out** (`NULL` until a refund path exists, then `pending` → `approved` \| `rejected` → `paid`). Never shown as raw columns to owners except contextual refund copy on cancelled orders. |
+
+**Rule:** Every lifecycle write updates the triple **atomically** (single transaction / single `UPDATE`). Centre-facing surfaces read **`status` only** for progress (see `CardOrderStatusTimeline`). Use **`applyCardOrderTransition`** in `src/lib/cardOrderState.ts` — direct `UPDATE card_orders SET status = …` outside the helper is forbidden for production lifecycle paths.
+
+### Event → (`status`, `payment_status`, `refund_status`)
+
+| Event | `status` | `payment_status` | `refund_status` |
+|-------|----------|------------------|-----------------|
+| Cart submitted / Paymob pending | `pending_payment` | `unpaid` | `NULL` |
+| Paymob success | `paid` | `paid` | `NULL` |
+| Vendor assigned | `vendor_assigned` | `paid` | `NULL` |
+| In production | `in_production` | `paid` | `NULL` |
+| Ready for pickup | `ready_for_pickup` | `paid` | `NULL` |
+| Bosta picked up | `in_transit` | `paid` | `NULL` |
+| Bosta delivered | `delivered` | `paid` | `NULL` |
+| Centre confirms cards in hand | `issued` | `paid` | `NULL` |
+| Paymob declined | `failed` | `failed` | `NULL` |
+| Cancelled before payment | `cancelled` | `unpaid` | `NULL` |
+| Cancelled after payment (refund TBD) | `cancelled` | `paid` | `pending` |
+| Refund approved (admin) | `cancelled` | `paid` | `approved` |
+| Refund paid out | `refunded` | `paid` | `paid` |
+| Refund rejected | `cancelled` | `paid` | `rejected` |
+
+Row-level history: `card_order_status_transitions` (trigger on `status` changes); actor metadata is enriched post-insert when transitions go through the helper.
+
+## Receipt PDF
+
+- Generated server-side via `generateCardOrderReceiptPdf` → HTML from `src/lib/pdf/cardOrderReceiptTemplate.ts` → existing Puppeteer pipeline in `src/lib/generateInvoicePdf.ts`.
+- **Delivery lines** (governorate, street address, phone, notes) come from **`card_orders` at submission** — they are the legal snapshot of what was paid for.
+- **Centre display name / profile address** may still come from the live `centers` row until a dedicated billing snapshot column exists; delivery fields on the order remain authoritative for shipment.
+- Pricing uses **`buildLegalInvoiceLines`** (subtotal → service → stamp → VAT → total) for the card product; shipping is listed separately; grand total matches `total_amount`.
+- Footer / compliance: tax registration string from **`platform_config.ehg_tax_registration`** (placeholder until finance confirms).
+- If **`refund_status` is non-null**, the PDF includes a short refund block (status, optional payout date, amount).
+- **`GET /api/orders/[orderId]/receipt`** returns **422** while `status` is `pending_payment` or `failed`; successful PDF filename pattern **`centerhq-order-<LAST8>.pdf`**.

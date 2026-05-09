@@ -6,6 +6,11 @@ import type {
 } from '@/types/admin-card-orders';
 import { NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
+import {
+  applyCardOrderTransition,
+  IllegalCardOrderTransitionError,
+  legacyAdminStatusToEvent,
+} from '@/lib/cardOrderState';
 
 const VALID_STATUSES: CardOrderFulfillmentStatus[] = [
   'pending',
@@ -66,13 +71,26 @@ async function updateOrderStatus(
   supabaseAdmin: import('@supabase/supabase-js').SupabaseClient,
   orderId: string,
   status: string,
+  actorUserId: string,
+  actorRole: string,
 ): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
   if (!STATUS_UPDATE_ALLOWED.includes(status)) {
     return { ok: false, message: 'Invalid status', status: 400 };
   }
-  const { error } = await supabaseAdmin.from('card_orders').update({ status }).eq('id', orderId);
-  if (error) {
-    return { ok: false, message: error.message, status: 500 };
+  const event = legacyAdminStatusToEvent(status);
+  if (!event) {
+    return { ok: false, message: 'Unsupported status for lifecycle', status: 400 };
+  }
+  try {
+    await applyCardOrderTransition(supabaseAdmin, orderId, event, {
+      actorUserId,
+      actorRole,
+    });
+  } catch (e) {
+    const msg = e instanceof IllegalCardOrderTransitionError ? e.message : String(e);
+    const code = e instanceof IllegalCardOrderTransitionError ? e.code : 'transition_failed';
+    const http = code === 'not_found' ? 404 : 409;
+    return { ok: false, message: msg, status: http };
   }
   return { ok: true };
 }
@@ -112,7 +130,7 @@ export async function GET(request: Request) {
       shipping_zone
     `,
     )
-    .not('payment_status', 'in', '(pending_payment,failed)')
+    .not('payment_status', 'in', '(unpaid,failed)')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -177,7 +195,7 @@ async function handleOrderStatusUpdate(request: Request) {
     return NextResponse.json({ error: 'orderId and status required' }, { status: 400 });
   }
 
-  const result = await updateOrderStatus(ctx.supabaseAdmin, orderId, String(status));
+  const result = await updateOrderStatus(ctx.supabaseAdmin, orderId, String(status), ctx.userId, ctx.internalRole);
   if (!result.ok) {
     return NextResponse.json({ error: result.message }, { status: result.status });
   }

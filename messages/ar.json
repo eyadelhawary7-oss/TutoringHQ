@@ -3897,13 +3897,122 @@
       "track": "تتبع الطلب",
       "receipt": "عرض الإيصال",
       "orderMore": "اطلب المزيد من البطاقات"
-    },
-    "orderDetail": {
-      "loading": "جاري تحميل الطلب…",
-      "notFound": "لم يتم العثور على هذا الطلب.",
-      "title": "طلب #{ref}",
-      "downloadReceipt": "تنزيل الإيصال (PDF)"
     }
+  },
+  "orderDetail": {
+    "loading": "جاري تحميل الطلب…",
+    "notFound": "لم يتم العثور على هذا الطلب.",
+    "title": "طلب #{ref}",
+    "downloadReceipt": "تنزيل الإيصال (PDF)",
+    "receiptUnavailable": "يتاح الإيصال بعد اكتمال الدفع.",
+    "orderedAt": "تاريخ الطلب",
+    "sections": {
+      "items": "البنود",
+      "delivery": "التوصيل",
+      "tracking": "التتبع",
+      "pricing": "التسعير"
+    },
+    "blankLine": "بطاقة فارغة",
+    "itemsFallback": "لم تُحفظ بنود هذا الطلب.",
+    "trackBosta": "تتبع على Bosta",
+    "estimatedDelivery": "التسليم المتوقع",
+    "reorder": "إعادة الطلب",
+    "cancel": "إلغاء الطلب",
+    "markIssued": "تأكيد استلام البطاقات",
+    "reportIssue": "الإبلاغ عن مشكلة",
+    "status": {
+      "pending_payment": "بانتظار الدفع",
+      "paid": "مدفوع",
+      "vendor_assigned": "تم الإسناد للمورد",
+      "in_production": "قيد الإنتاج",
+      "ready_for_pickup": "جاهز للاستلام",
+      "in_transit": "قيد الشحن",
+      "delivered": "تم التسليم",
+      "issued": "تم التسليم للسنتر",
+      "cancelled": "ملغى",
+      "refunded": "تم الاسترداد",
+      "failed": "فشل الدفع"
+    }
+  },
+  "orderTimeline": {
+    "aria": { "progress": "تقدم الطلب" },
+    "stage": {
+      "pending_payment": "بانتظار الدفع",
+      "paid": "مدفوع",
+      "vendor_assigned": "إسناد المورد",
+      "in_production": "الإنتاج",
+      "ready_for_pickup": "جاهز للاستلام",
+      "in_transit": "في الشحن",
+      "delivered": "تم التسليم",
+      "issued": "تم التسليم للسنتر"
+    },
+    "state": {
+      "completed": "مكتمل",
+      "active": "المرحلة الحالية",
+      "pending": "قادم"
+    },
+    "banner": {
+      "cancelled": { "title": "طلب ملغى" },
+      "refunded": { "title": "طلب مسترد" },
+      "refundPipeline": "حالة الاسترداد: {status}",
+      "failed": "فشل الدفع — يرجى إعادة المحاولة."
+    }
+  },
+  "reorder": {
+    "confirmTitle": "إضافة العناصر إلى السلة؟",
+    "confirmBody": "سنضيف الطلاب المؤهلين والبطاقات الفارغة من هذا الطلب إلى سلتك المفتوحة، مع تخطي من لديهم طلب بطاقات نشط.",
+    "back": "رجوع",
+    "confirm": "أضف إلى السلة",
+    "failed": "تعذرت إعادة الطلب.",
+    "toastSuccess": "تمت إضافة {count} طالبًا إلى السلة"
+  },
+  "cardOrderCancel": {
+    "title": "إلغاء هذا الطلب؟",
+    "warn": {
+      "pending_payment": "سيتم إلغاء الطلب دون أي رسوم.",
+      "paid": "سيتم إلغاء الطلب. إن انطبقت الشروط، يُعالج الاسترداد الكامل خلال 7–14 يوم عمل.",
+      "vendor_assigned": "أُرسل الطلب للمورد ولم يبدأ الإنتاج بعد. عند الإلغاء، يُعالج استرداد كامل خلال 7–14 يوم عمل. بعد بدء الإنتاج لا يتوفر الاسترداد."
+    },
+    "reasonLabel": "السبب",
+    "reason": {
+      "wrong_quantity": "كمية خاطئة",
+      "wrong_students": "طلاب خاطئون",
+      "no_longer_needed": "لم يعد مطلوبًا",
+      "other": "أخرى"
+    },
+    "otherDetailLabel": "صف المشكلة",
+    "confirmTypeLabel": "اكتب CANCEL للتأكيد",
+    "back": "إغلاق",
+    "confirm": "إلغاء الطلب",
+    "errors": { "generic": "تعذر إلغاء الطلب." }
+  },
+  "receipt": {
+    "header": "إيصال",
+    "items": "البنود",
+    "pricing": "التسعير",
+    "shipping": "الشحن",
+    "total": "الإجمالي",
+    "paymob": "معاملة Paymob",
+    "refund": "استرداد",
+    "taxId": "الرقم الضريبي"
+  },
+  "orderHistory": {
+    "searchPlaceholder": "ابحث برقم الطلب أو اسم الطالب",
+    "filterAll": "الكل",
+    "filterActive": "نشط",
+    "filterDelivered": "تم التسليم",
+    "filterCancelled": "ملغى",
+    "filterFailed": "فشل",
+    "colDate": "التاريخ",
+    "colStatus": "الحالة",
+    "colItems": "البنود",
+    "colTotal": "الإجمالي",
+    "sortAsc": "تصاعدي",
+    "sortDesc": "تنازلي",
+    "pagePrev": "السابق",
+    "pageNext": "التالي",
+    "emptyFiltered": "لا توجد طلبات مطابقة.",
+    "showing": "عرض {from}-{to} من {total}"
   },
   "cardOrders": {
     "orderIdCards": "بطاقات معرّف الطلب",
@@ -4005,6 +4114,13 @@
     "statusShipped": "تم الشحن",
     "statusDelivered": "المستلمة",
     "statusCancelled": "تم الإلغاء",
+    "statusVendorAssigned": "تم الإسناد للمورد",
+    "statusInProduction": "قيد الإنتاج",
+    "statusReadyPickup": "جاهز للاستلام",
+    "statusInTransit": "قيد الشحن",
+    "statusIssued": "تم التسليم للسنتر",
+    "statusRefunded": "تم الاسترداد",
+    "statusFailed": "فشل الدفع",
     "newOrder": "طلب جديد",
     "account": "Account",
     "activate": "تفعيل",

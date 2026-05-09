@@ -66,18 +66,27 @@ function statusBadgeClass(status: string): string {
     case 'pending':
     case 'pending_payment':
       return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
-    case 'confirmed':
     case 'paid':
+    case 'vendor_assigned':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
     case 'printing':
     case 'processing':
+    case 'in_production':
       return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200';
+    case 'ready_for_pickup':
+      return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-200';
     case 'shipped':
+    case 'in_transit':
       return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-200';
     case 'delivered':
+    case 'issued':
+    case 'confirmed':
       return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200';
     case 'cancelled':
+    case 'refunded':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
+    case 'failed':
+      return 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200';
     default:
       return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border)]';
   }
@@ -89,13 +98,24 @@ type CardOrderStatusKey =
   | 'statusProcessing'
   | 'statusShipped'
   | 'statusDelivered'
-  | 'statusCancelled';
+  | 'statusCancelled'
+  | 'statusVendorAssigned'
+  | 'statusInProduction'
+  | 'statusReadyPickup'
+  | 'statusInTransit'
+  | 'statusIssued'
+  | 'statusRefunded'
+  | 'statusFailed';
 
 function statusLabelKey(status: string): CardOrderStatusKey {
-  if (status === 'confirmed') return 'statusConfirmed';
-  if (status === 'printing' || status === 'processing') return 'statusProcessing';
-  if (status === 'shipped') return 'statusShipped';
+  if (status === 'vendor_assigned') return 'statusVendorAssigned';
+  if (status === 'in_production' || status === 'printing' || status === 'processing') return 'statusInProduction';
+  if (status === 'ready_for_pickup') return 'statusReadyPickup';
+  if (status === 'in_transit' || status === 'shipped') return 'statusInTransit';
   if (status === 'delivered') return 'statusDelivered';
+  if (status === 'issued' || status === 'confirmed') return 'statusIssued';
+  if (status === 'refunded') return 'statusRefunded';
+  if (status === 'failed') return 'statusFailed';
   if (status === 'cancelled') return 'statusCancelled';
   return 'statusPending';
 }
@@ -110,6 +130,7 @@ export default function OrdersPageClient({
   bostaShippingRates: Record<string, number> | null;
 }) {
   const t = useTranslations('cardOrders');
+  const tHist = useTranslations('orderHistory');
   const tOrders = useTranslations('orders');
   const tCheckoutErr = useTranslations('checkout.errors');
   const locale = useLocale();
@@ -117,15 +138,36 @@ export default function OrdersPageClient({
   const { toast } = useToast();
   const { refresh } = useCardOrderCart();
 
+  const pageSize = 20;
+
   const [centerInfo, setCenterInfo] = useState<CenterInfoState | null>(null);
+  const [centerId, setCenterId] = useState<string | null>(null);
   const [students, setStudents] = useState<StudentLite[]>([]);
   const [orders, setOrders] = useState<CardOrderRow[]>([]);
+  const [ordersTotal, setOrdersTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [histLoading, setHistLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  const loadData = useCallback(async () => {
+  const [page, setPage] = useState(1);
+  const [histFilter, setHistFilter] = useState<'all' | 'active' | 'delivered' | 'cancelled' | 'failed'>('all');
+  const [sortCol, setSortCol] = useState<'created_at' | 'status' | 'quantity' | 'total_amount'>('created_at');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [searchQ, setSearchQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+
+  useEffect(() => {
+    const tid = window.setTimeout(() => setDebouncedQ(searchQ.trim()), 320);
+    return () => window.clearTimeout(tid);
+  }, [searchQ]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [histFilter, debouncedQ, sortCol, sortDir]);
+
+  const loadBootstrap = useCallback(async () => {
     setLoadError(null);
     setLoading(true);
     try {
@@ -149,30 +191,20 @@ export default function OrdersPageClient({
       }
 
       const cid = meData.user.center_id as string;
+      setCenterId(cid);
       setCenterInfo({
         governorate: meData.user.center?.governorate ?? null,
       });
 
-      const [studentsRes, ordersRes] = await Promise.all([
-        dbSelect({
-          table: 'students',
-          select: 'id, name, student_number',
-          filters: [{ column: 'center_id', op: 'eq', value: cid }],
-          order: { column: 'name', ascending: true },
-        }),
-        dbSelect({
-          table: 'card_orders',
-          select: '*',
-          filters: [{ column: 'center_id', op: 'eq', value: cid }],
-          order: { column: 'created_at', ascending: false },
-        }),
-      ]);
+      const studentsRes = await dbSelect({
+        table: 'students',
+        select: 'id, name, student_number',
+        filters: [{ column: 'center_id', op: 'eq', value: cid }],
+        order: { column: 'name', ascending: true },
+      });
 
       if (studentsRes.data && Array.isArray(studentsRes.data)) {
         setStudents(studentsRes.data as StudentLite[]);
-      }
-      if (ordersRes.data && Array.isArray(ordersRes.data)) {
-        setOrders(ordersRes.data as CardOrderRow[]);
       }
       await refresh();
     } catch {
@@ -182,9 +214,47 @@ export default function OrdersPageClient({
     }
   }, [t, refresh]);
 
+  const loadHistory = useCallback(async () => {
+    if (!centerId) return;
+    setHistLoading(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const params = new URLSearchParams({
+        page: String(page),
+        filter: histFilter,
+        sort: sortCol,
+        dir: sortDir,
+      });
+      if (debouncedQ) params.set('q', debouncedQ);
+
+      const res = await fetch(`/api/orders/history?${params}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) {
+        setLoadError(t('loadFailed'));
+        return;
+      }
+      const body = (await res.json()) as { orders?: CardOrderRow[]; total?: number };
+      setOrders(body.orders ?? []);
+      setOrdersTotal(Number(body.total ?? 0));
+    } catch {
+      setLoadError(t('loadFailed'));
+    } finally {
+      setHistLoading(false);
+    }
+  }, [centerId, page, histFilter, sortCol, sortDir, debouncedQ, t]);
+
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    void loadBootstrap();
+  }, [loadBootstrap]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
 
   useEffect(() => {
     if (!checkoutError?.trim()) return;
@@ -213,6 +283,22 @@ export default function OrdersPageClient({
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
+
+  const totalPages = Math.max(1, Math.ceil(ordersTotal / pageSize));
+  const rangeFrom = ordersTotal === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeTo = Math.min(page * pageSize, ordersTotal);
+
+  function onSort(col: typeof sortCol) {
+    if (sortCol === col) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortCol(col);
+      setSortDir(col === 'status' ? 'asc' : 'desc');
+    }
+  }
+
+  const trulyNoOrders =
+    ordersTotal === 0 && page === 1 && !debouncedQ && histFilter === 'all';
 
   const liveGov = centerInfo?.governorate?.trim();
   const showGovernorateHint = !loading && !!centerInfo && !liveGov?.length;
@@ -270,12 +356,66 @@ export default function OrdersPageClient({
         <div className="mt-10 border-t border-[var(--color-border-subtle)] pt-8">
           <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{t('orderHistorySection')}</h2>
 
+          {!loading ? (
+            <div className="space-y-3 mb-4">
+              <input
+                type="search"
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                placeholder={tHist('searchPlaceholder')}
+                className="w-full rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm"
+              />
+              <div className="flex flex-wrap gap-2">
+                {(['all', 'active', 'delivered', 'cancelled', 'failed'] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setHistFilter(f)}
+                    className={`text-xs font-semibold px-3 py-1 rounded-full border ${
+                      histFilter === f
+                        ? 'border-teal-600 bg-teal-600 text-white'
+                        : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]'
+                    }`}
+                  >
+                    {tHist(f === 'all' ? 'filterAll' : f === 'active' ? 'filterActive' : f === 'delivered' ? 'filterDelivered' : f === 'cancelled' ? 'filterCancelled' : 'filterFailed')}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-3 text-xs text-teal-700 dark:text-teal-300">
+                <button type="button" className="font-semibold underline-offset-2 hover:underline" onClick={() => onSort('created_at')}>
+                  {tHist('colDate')}
+                  {sortCol === 'created_at' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                </button>
+                <button type="button" className="font-semibold underline-offset-2 hover:underline" onClick={() => onSort('status')}>
+                  {tHist('colStatus')}
+                  {sortCol === 'status' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                </button>
+                <button type="button" className="font-semibold underline-offset-2 hover:underline" onClick={() => onSort('quantity')}>
+                  {tHist('colItems')}
+                  {sortCol === 'quantity' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                </button>
+                <button type="button" className="font-semibold underline-offset-2 hover:underline" onClick={() => onSort('total_amount')}>
+                  {tHist('colTotal')}
+                  {sortCol === 'total_amount' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                </button>
+              </div>
+              <p className="text-[11px] text-[var(--color-text-tertiary)]">
+                {tHist('showing', { from: rangeFrom, to: rangeTo, total: ordersTotal })}
+              </p>
+            </div>
+          ) : null}
+
           {loadError && !loading ? (
             <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100 mb-4">
               <p>{loadError}</p>
               <button
                 type="button"
-                onClick={() => startTransition(() => void loadData())}
+                onClick={() =>
+                  startTransition(() => {
+                    void loadBootstrap();
+                    if (centerId) void loadHistory();
+                  })
+                }
                 className="mt-2 text-xs font-semibold text-teal-400 underline"
               >
                 {t('tryAgain')}
@@ -290,12 +430,17 @@ export default function OrdersPageClient({
                 />
               ))}
             </div>
-          ) : orders.length === 0 ? (
+          ) : trulyNoOrders && !histLoading ? (
             <div className="card p-8 text-center border border-[var(--color-border-subtle)]">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('ordersEmpty')}</p>
             </div>
+          ) : orders.length === 0 && !histLoading ? (
+            <div className="card p-8 text-center border border-[var(--color-border-subtle)]">
+              <p className="text-sm text-[var(--color-text-secondary)]">{tHist('emptyFiltered')}</p>
+            </div>
           ) : (
-            <ul className="space-y-3">
+            <>
+              <ul className={`space-y-3 ${histLoading ? 'opacity-60 pointer-events-none' : ''}`}>
               {orders.map((order) => {
                 const shortId = order.id.replace(/-/g, '').slice(-8).toUpperCase();
                 const expanded = expandedId === order.id;
@@ -412,7 +557,31 @@ export default function OrdersPageClient({
                   </li>
                 );
               })}
-            </ul>
+              </ul>
+              {totalPages > 1 ? (
+                <div className="flex items-center justify-between gap-3 mt-4 text-sm">
+                  <button
+                    type="button"
+                    disabled={page <= 1 || histLoading}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1 rounded-lg border border-[var(--color-border-subtle)] disabled:opacity-40"
+                  >
+                    {tHist('pagePrev')}
+                  </button>
+                  <span className="text-[var(--color-text-secondary)]">
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={page >= totalPages || histLoading}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    className="px-3 py-1 rounded-lg border border-[var(--color-border-subtle)] disabled:opacity-40"
+                  >
+                    {tHist('pageNext')}
+                  </button>
+                </div>
+              ) : null}
+            </>
           )}
         </div>
       </div>

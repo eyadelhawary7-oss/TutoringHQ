@@ -3,6 +3,7 @@ import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { cardOrderProductInclusiveFromQty, explodeInclusive } from '@/lib/pricing/taxMath';
 import { notifyVendorOfNewOrder } from '@/lib/vendorNotify';
+import { applyCardOrderTransition } from '@/lib/cardOrderState';
 
 async function ensureCardOrderSetupFeeInvoice(
   supabaseAdmin: SupabaseClient,
@@ -113,28 +114,23 @@ export async function finalizeCardOrderPaymentSuccess(
   if (!order) return null;
 
   const row = order as { id: string; payment_status?: string | null };
+  const wasPaid = String(row.payment_status ?? '').toLowerCase() === 'paid';
 
-  if (row.payment_status === 'paid') {
-    await ensureCardOrderSetupFeeInvoice(supabaseAdmin, row.id, paymobOrderId, paymobTransactionId);
-    return { orderId: row.id };
-  }
-
-  const { error } = await supabaseAdmin
-    .from('card_orders')
-    .update({
-      payment_status: 'paid',
-      status: 'pending',
-      paymob_transaction_id: paymobTransactionId,
-    })
-    .eq('id', row.id);
-
-  if (error) {
-    console.error('[finalizeCardOrderPaymentSuccess]', error);
+  try {
+    await applyCardOrderTransition(supabaseAdmin, row.id, 'paymob_succeeded', {
+      actorRole: 'system',
+      extraColumns: { paymob_transaction_id: paymobTransactionId },
+    });
+  } catch (e) {
+    console.error('[finalizeCardOrderPaymentSuccess]', e);
     return null;
   }
 
   await ensureCardOrderSetupFeeInvoice(supabaseAdmin, row.id, paymobOrderId, paymobTransactionId);
-  void notifyVendorOfNewOrder(row.id);
+
+  if (!wasPaid) {
+    void notifyVendorOfNewOrder(row.id);
+  }
   return { orderId: row.id };
 }
 
@@ -142,8 +138,13 @@ export async function finalizeCardOrderPaymentFailure(
   supabaseAdmin: SupabaseClient,
   paymobOrderId: string,
 ): Promise<void> {
-  await supabaseAdmin
-    .from('card_orders')
-    .update({ payment_status: 'failed' })
-    .eq('paymob_order_id', paymobOrderId);
+  const { data: order } = await supabaseAdmin.from('card_orders').select('id').eq('paymob_order_id', paymobOrderId).maybeSingle();
+  if (!order) return;
+  try {
+    await applyCardOrderTransition(supabaseAdmin, (order as { id: string }).id, 'paymob_failed', {
+      actorRole: 'system',
+    });
+  } catch (e) {
+    console.error('[finalizeCardOrderPaymentFailure]', e);
+  }
 }

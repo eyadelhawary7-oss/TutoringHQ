@@ -10,6 +10,12 @@ import {
   type InvoiceRenderPayload,
   type InvoiceTemplateData,
 } from '@/lib/invoiceTemplates';
+import {
+  buildCardOrderReceiptInnerHtml,
+  type CardOrderReceiptLineItem,
+  type CardOrderReceiptModel,
+} from '@/lib/pdf/cardOrderReceiptTemplate';
+import { loadCardOrderDetailForCenter } from '@/lib/loadCardOrderDetail';
 
 const PDF_NUM_LOCALE = 'ar';
 
@@ -214,7 +220,7 @@ function referralStripHtml(qrDataUrl: string, codeSpaced: string, referUrl: stri
 </div>`;
 }
 
-async function htmlToPdfBuffer(
+export async function htmlToPdfBuffer(
   html: string,
   opts?: { waitUntil?: 'load' | 'networkidle0' },
 ): Promise<Buffer | null> {
@@ -1057,61 +1063,80 @@ export async function generateStaffCommissionPayoutPdf(
 }
 
 /** Owner-facing receipt for a centre card order (QR cards). */
-export async function generateCardOrderReceiptPdf(orderId: string, supabase: SupabaseClient): Promise<Buffer | null> {
-  const { data: ord, error } = await supabase
-    .from('card_orders')
-    .select(
-      'id, quantity, total_amount, delivery_fee, delivery_address, delivery_governorate, delivery_phone, notes, payment_status, status, created_at, card_style',
-    )
-    .eq('id', orderId)
-    .maybeSingle();
-
-  if (error || !ord) {
-    console.error('[generateCardOrderReceiptPdf] load:', error);
-    return null;
+export async function generateCardOrderReceiptPdf(
+  orderId: string,
+  supabase: SupabaseClient,
+  centerId: string,
+): Promise<
+  | { ok: true; buffer: Buffer }
+  | { ok: false; reason: 'not_found' | 'unavailable' }
+> {
+  const loaded = await loadCardOrderDetailForCenter(supabase, centerId, orderId);
+  if (!loaded.ok) {
+    return { ok: false, reason: 'not_found' };
   }
 
-  const o = ord as Record<string, unknown>;
-  const qty = Number(o.quantity ?? 0);
-  const total = Number(o.total_amount ?? 0);
+  const o = loaded.payload;
+  const st = String(o.status ?? '');
+  if (st === 'pending_payment' || st === 'failed') {
+    return { ok: false, reason: 'unavailable' };
+  }
+
+  const qty = Math.round(Number(o.quantity ?? 0));
   const ship = Number(o.delivery_fee ?? 0);
-  const paySt = String(o.payment_status ?? '');
-  const shortId = String(o.id ?? orderId).replace(/-/g, '').slice(0, 8).toUpperCase();
-  const addr = String(o.delivery_address ?? '—').trim();
-  const gov = String(o.delivery_governorate ?? '—').trim();
-  const phone = String(o.delivery_phone ?? '—').trim();
-  const notes = String(o.notes ?? '').trim();
-  const created = fmtDate(o.created_at != null ? String(o.created_at) : undefined);
+  const total = Number(o.total_amount ?? 0);
+  const productInclusive = Math.max(0, Math.round((total - ship) * 100) / 100);
 
-  const statusAr =
-    paySt === 'paid' ? 'مدفوع' : paySt === 'failed' ? 'فشل الدفع' : 'في انتظار الدفع';
+  const rawItems = (o.items as Array<Record<string, unknown>> | undefined) ?? [];
+  const lineItems: CardOrderReceiptLineItem[] = [];
+  for (const it of rawItems) {
+    if (it.kind === 'student') {
+      const name = String(it.student_name ?? 'طالب');
+      const num = it.student_number != null ? String(it.student_number) : '';
+      lineItems.push({ title: name, subtitle: num ? `#${num}` : undefined, qty: 1 });
+    } else if (it.kind === 'blank') {
+      lineItems.push({
+        title: 'بطاقة فارغة',
+        qty: Math.max(1, Math.round(Number(it.quantity ?? 1))),
+      });
+    }
+  }
 
-  const inner = `<div style="flex:1;padding:14mm 12mm;font-family:Cairo,sans-serif;direction:rtl;text-align:right;">
-    <div style="font-size:20px;font-weight:800;color:${TEAL};margin-bottom:4px;">إيصال طلب بطاقات QR</div>
-    <div style="font-size:11px;color:${MUTED};margin-bottom:16px;">CARD-${esc(shortId)}</div>
-    <div style="margin-bottom:14px;font-size:12px;font-weight:700;">${esc(statusAr)}</div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px;">
-      <tr><td style="padding:6px 0;color:${MUTED};width:38%;">تاريخ الطلب</td><td style="padding:6px 0;direction:ltr;text-align:right;">${esc(created)}</td></tr>
-      <tr><td style="padding:6px 0;color:${MUTED};">عدد البطاقات</td><td style="padding:6px 0;">${esc(String(qty))}</td></tr>
-      <tr><td style="padding:6px 0;color:${MUTED};">المحافظة</td><td style="padding:6px 0;">${esc(gov)}</td></tr>
-      <tr><td style="padding:6px 0;color:${MUTED};vertical-align:top;">العنوان</td><td style="padding:6px 0;white-space:pre-wrap;">${esc(addr)}</td></tr>
-      <tr><td style="padding:6px 0;color:${MUTED};">الهاتف</td><td style="padding:6px 0;direction:ltr;text-align:right;">${esc(phone)}</td></tr>
-      <tr><td style="padding:6px 0;color:${MUTED};vertical-align:top;">ملاحظات</td><td style="padding:6px 0;white-space:pre-wrap;">${notes ? esc(notes) : '—'}</td></tr>
-      <tr><td style="padding:6px 0;color:${MUTED};">تصميم البطاقة</td><td style="padding:6px 0;">${esc(String(o.card_style ?? '—'))}</td></tr>
-    </table>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:10px;background:${GRAY_BG};border:1px solid ${BORDER};margin-bottom:8px;font-size:13px;">
-      <span>الشحن</span><span dir="ltr">${fmtEgp(ship)}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-radius:12px;background:${GRAY_BG};border:1px solid ${BORDER};">
-      <span style="font-weight:800;font-size:15px;font-family:Cairo,sans-serif;">الإجمالي</span>
-      <span style="font-weight:800;font-size:18px;color:${TEAL};direction:ltr;">${fmtEgp(total)}</span>
-    </div>
-  </div>`;
+  const oid = String(o.id ?? orderId);
+  const shortRef = oid.replace(/-/g, '').slice(-8).toUpperCase();
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://centerhq.app').replace(/\/$/, '');
+  const logoUrl = `${baseUrl}/logo.png`;
 
+  const refundStatusStr = o.refund_status != null ? String(o.refund_status) : null;
+
+  const model: CardOrderReceiptModel = {
+    shortOrderRef: shortRef,
+    createdAtLabel: fmtDate(o.created_at != null ? String(o.created_at) : undefined),
+    centreName: (o.receipt_center_name as string | null) ?? null,
+    centreAddress: (o.receipt_center_address as string | null) ?? null,
+    deliveryGovernorate: String(o.delivery_governorate ?? '—').trim() || '—',
+    deliveryAddress: String(o.delivery_address ?? '—').trim() || '—',
+    deliveryPhone: String(o.delivery_phone ?? '—').trim() || '—',
+    notes: String(o.notes ?? '').trim(),
+    lineItems: lineItems.length ? lineItems : [{ title: 'بطاقات QR', qty: qty }],
+    productInclusive,
+    shippingFee: ship,
+    grandTotal: total,
+    paymobTransactionId: typeof o.paymob_transaction_id === 'string' ? o.paymob_transaction_id : null,
+    refundStatus: refundStatusStr,
+    refundPaidAtLabel: o.refund_paid_at ? fmtDateTime(String(o.refund_paid_at)) : null,
+    refundAmount: refundStatusStr ? total : null,
+    taxRegistration: typeof o.ehg_tax_registration === 'string' ? o.ehg_tax_registration : null,
+    logoUrl,
+  };
+
+  const inner = buildCardOrderReceiptInnerHtml(model);
   const html = wrapDocument(
     inner,
-    'CenterHQ · centerhq.app · An EHG Intelligence Product',
-    `CARD ORDER · ${esc(shortId)}`,
+    'EHG Intelligence Egypt · CenterHQ',
+    `Receipt · ${esc(shortRef)}`,
   );
-  return htmlToPdfBuffer(html);
+  const buf = await htmlToPdfBuffer(html);
+  if (!buf) return { ok: false, reason: 'not_found' };
+  return { ok: true, buffer: buf };
 }

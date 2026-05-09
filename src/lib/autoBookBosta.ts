@@ -3,6 +3,7 @@ import { createBostaDelivery } from '@/lib/bosta';
 import { getShippingFee } from '@/lib/bostaShipping';
 import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { applyCardOrderTransition, IllegalCardOrderTransitionError } from '@/lib/cardOrderState';
 
 export async function autoBookBosta(
   orderId: string,
@@ -79,20 +80,31 @@ export async function autoBookBosta(
 
     const shippedAt = new Date().toISOString();
     const existingFee = Number(o.delivery_fee ?? 0);
-    const updatePayload: Record<string, unknown> = {
+    const extraColumns: Record<string, unknown> = {
       bosta_order_id: result.bostaOrderId ?? 'booked',
       tracking_number: result.trackingNumber ?? null,
-      status: 'shipped',
       shipped_at: shippedAt,
     };
     if (!Number.isFinite(existingFee) || existingFee <= 0) {
-      updatePayload.delivery_fee = shippingFee;
+      extraColumns.delivery_fee = shippingFee;
     }
-    const { error: upErr } = await db.from('card_orders').update(updatePayload).eq('id', orderId);
 
-    if (upErr) {
-      console.error('[autoBookBosta] Update failed:', upErr);
-      return { success: false, error: upErr.message };
+    try {
+      await applyCardOrderTransition(db, orderId, 'bosta_picked_up', {
+        actorRole: 'system',
+        extraColumns,
+      });
+    } catch (e) {
+      if (e instanceof IllegalCardOrderTransitionError) {
+        const { error: upErr } = await db.from('card_orders').update(extraColumns).eq('id', orderId);
+        if (upErr) {
+          console.error('[autoBookBosta] Fallback update failed:', upErr);
+          return { success: false, error: upErr.message };
+        }
+      } else {
+        console.error('[autoBookBosta] Transition failed:', e);
+        return { success: false, error: String(e) };
+      }
     }
 
     console.info('[autoBookBosta] Booked for order:', orderId, 'tracking:', result.trackingNumber);

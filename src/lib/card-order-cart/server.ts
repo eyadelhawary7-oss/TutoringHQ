@@ -77,6 +77,47 @@ export async function fetchActorName(admin: SupabaseClient, userId: string): Pro
   return phone || null;
 }
 
+export async function ensureOpenCartId(admin: SupabaseClient, centerId: string, userId: string): Promise<string> {
+  const { data: open } = await admin
+    .from('card_order_carts')
+    .select('id')
+    .eq('center_id', centerId)
+    .eq('status', 'open')
+    .maybeSingle();
+
+  if (open && typeof (open as { id?: string }).id === 'string') {
+    return (open as { id: string }).id;
+  }
+
+  const actorName = await fetchActorName(admin, userId);
+  const { data: inserted, error } = await admin
+    .from('card_order_carts')
+    .insert({
+      center_id: centerId,
+      status: 'open',
+      last_modified_by: userId,
+      last_modified_by_name: actorName,
+    })
+    .select('id')
+    .single();
+
+  if (error || !inserted) {
+    throw new Error(error?.message ?? 'Could not create cart');
+  }
+  return (inserted as { id: string }).id;
+}
+
+export async function setCartActor(admin: SupabaseClient, cartId: string, userId: string): Promise<void> {
+  const actorName = await fetchActorName(admin, userId);
+  await admin
+    .from('card_order_carts')
+    .update({
+      last_modified_by: userId,
+      last_modified_by_name: actorName,
+    })
+    .eq('id', cartId);
+}
+
 export async function purgeStaleCartItemsForCart(admin: SupabaseClient, cartId: string, centerId: string): Promise<void> {
   const { data: items, error } = await admin
     .from('card_order_cart_items')

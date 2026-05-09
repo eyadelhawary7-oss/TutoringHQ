@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendOperationalWhatsappText } from '@/lib/centerNotify';
 import { autoBookBosta } from '@/lib/autoBookBosta';
+import { applyCardOrderTransition, IllegalCardOrderTransitionError } from '@/lib/cardOrderState';
 
 function digitsOnly(s: string): string {
   return s.replace(/\D/g, '');
@@ -117,7 +118,7 @@ export async function handleVendorTypedReadyMessage(
       .from('card_orders')
       .select('id')
       .eq('vendor_id', vendorRow.id)
-      .eq('status', 'confirmed')
+      .eq('status', 'in_production')
       .is('bosta_order_id', null)
       .not('payment_status', 'in', '(pending_payment,failed,unpaid)')
       .order('created_at', { ascending: false })
@@ -219,18 +220,21 @@ export async function handleVendorReadySignal(
       return;
     }
 
-    const { error: upErr } = await supabase
-      .from('card_orders')
-      .update({ status: 'ready_for_pickup' })
-      .eq('id', order.id)
-      .is('bosta_order_id', null);
-
-    if (upErr) {
-      console.error('[vendorWebhook] Status update failed:', upErr);
+    try {
+      await applyCardOrderTransition(supabase, order.id, 'ready_for_pickup', {
+        actorRole: 'vendor',
+        metadata: { source: 'whatsapp_ready' },
+      });
+    } catch (e) {
+      if (e instanceof IllegalCardOrderTransitionError) {
+        console.warn('[vendorWebhook] ready_for_pickup transition skipped:', e.code);
+        return;
+      }
+      console.error('[vendorWebhook] transition error:', e);
       return;
     }
 
-    console.warn('[vendorWebhook] Marked ready_for_pickup:', order.id);
+    console.info('[vendorWebhook] Marked ready_for_pickup:', order.id);
 
     await autoBookBosta(order.id, supabase);
   } catch (err) {

@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     shipping_zone: shippingZone,
     total_amount: payTotal,
     status: 'pending_payment',
-    payment_status: 'pending_payment',
+    payment_status: 'unpaid',
     delivery_address: cart.delivery_address.trim(),
     delivery_governorate: gov,
     delivery_phone: phoneNorm,
