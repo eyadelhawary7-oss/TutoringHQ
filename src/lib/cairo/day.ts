@@ -83,3 +83,45 @@ export function getCurrentCairoClock(now: Date = new Date()): { hour: number; mi
   const minute = parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
   return { hour: hour === 24 ? 0 : hour, minute };
 }
+
+/**
+ * First UTC instant that falls on Cairo calendar day `cairoYmd` (Africa/Cairo wall date).
+ * Used to bound `paid_at` / daily payment windows so evening Cairo matches `cairoDateKey()`.
+ */
+export function startOfUtcInstantForCairoCalendarDay(cairoYmd: string): Date {
+  const { y, m, d } = parseCairoYmd(cairoYmd);
+  let lo = Date.UTC(y, m - 1, d - 1, 12, 0, 0);
+  while (cairoDateKey(new Date(lo)) >= cairoYmd) {
+    lo -= 24 * 60 * 60 * 1000;
+  }
+  let hi = Date.UTC(y, m - 1, d, 12, 0, 0);
+  while (cairoDateKey(new Date(hi)) < cairoYmd) {
+    hi += 24 * 60 * 60 * 1000;
+  }
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (cairoDateKey(new Date(mid)) < cairoYmd) lo = mid;
+    else hi = mid;
+  }
+  return new Date(hi);
+}
+
+/** Inclusive-exclusive UTC range for the Cairo calendar day `cairoYmd`. */
+export function cairoPaidAtDayUtcBounds(cairoYmd: string): { start: Date; endExclusive: Date } {
+  const start = startOfUtcInstantForCairoCalendarDay(cairoYmd);
+  const endExclusive = startOfUtcInstantForCairoCalendarDay(cairoYmdPlusDays(cairoYmd, 1));
+  return { start, endExclusive };
+}
+
+/** Same Cairo day as `now` (per `cairoDateKey(now)`), for payment timestamp filters. */
+export function cairoPaidAtBoundsForScanInstant(now: Date = new Date()): { startIso: string; endExclusiveIso: string } {
+  const { start, endExclusive } = cairoPaidAtDayUtcBounds(cairoDateKey(now));
+  return { startIso: start.toISOString(), endExclusiveIso: endExclusive.toISOString() };
+}
+
+/** Whether `paidAt` falls on the same Cairo calendar day as `now` (scanner "paid today"). */
+export function isPaidAtWithinCairoDayOfInstant(paidAt: Date | string | number, now: Date): boolean {
+  const { startIso, endExclusiveIso } = cairoPaidAtBoundsForScanInstant(now);
+  const iso = typeof paidAt === 'string' ? paidAt : new Date(paidAt).toISOString();
+  return iso >= startIso && iso < endExclusiveIso;
+}

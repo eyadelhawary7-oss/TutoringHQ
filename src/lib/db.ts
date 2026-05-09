@@ -177,14 +177,14 @@ export async function getUnsyncedCount(): Promise<number> {
 }
 
 export async function markPaidTodayOffline(centerId: string, studentId: string) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = cairoDateKey();
   const key = `${centerId}:${studentId}:${today}`;
   const db = await getDB();
   await db.put('todayPayments', { key, studentId, centerId, paidAt: Date.now() });
 }
 
 export async function hasPaidTodayOffline(centerId: string, studentId: string): Promise<boolean> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = cairoDateKey();
   const key = `${centerId}:${studentId}:${today}`;
   const db = await getDB();
   const rec = await db.get('todayPayments', key);

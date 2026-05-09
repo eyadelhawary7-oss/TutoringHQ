@@ -26,6 +26,7 @@ import {
   Building2,
   Gauge,
   MessageCircle,
+  MessagesSquare,
   Gift,
 } from 'lucide-react';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
@@ -109,6 +110,7 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
     { key: 'scanner', href: '/scan', icon: QrCode, permission: 'can_scan' },
     { key: 'students', href: '/students', icon: Users, permission: 'can_manage_students' },
     { key: 'whatsappPack', href: '/whatsapp-pack', icon: MessageCircle, ownerAdminOnly: true },
+    { key: 'whatsappTemplates', href: '/whatsapp', icon: MessagesSquare, ownerAdminOnly: true },
     { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
     { key: 'attendance', href: '/attendance', icon: ClipboardList, permission: 'can_scan' },
     { key: 'groups', href: '/groups', icon: BookOpen, permission: 'can_manage_groups' },

@@ -29,7 +29,7 @@ import { Camera, Bluetooth, Hash, BookOpen, ChevronRight, Search, QrCode, X } fr
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/useToast';
 import { formatNumber, formatTime } from '@/lib/formatNumber';
-import { cairoDateKey } from '@/lib/cairo/day';
+import { cairoDateKey, cairoPaidAtBoundsForScanInstant } from '@/lib/cairo/day';
 import { useLayout } from '@/contexts/LayoutContext';
 import SyncStatusPanel from '@/components/scanner/SyncStatusPanel';
 import PendingSyncSheet from '@/components/scanner/PendingSyncSheet';
@@ -77,12 +77,12 @@ function notifyParentScan(
 
 /** Check if student paid TODAY for a specific group (per-session payment logic). payments table is source of truth. */
 async function hasPaidToday(studentId: string, centerId: string, groupId?: string | null): Promise<boolean> {
-  const today = new Date().toISOString().split('T')[0];
-  const filters: { column: string; op: 'eq' | 'gte' | 'lte'; value: string }[] = [
+  const { startIso, endExclusiveIso } = cairoPaidAtBoundsForScanInstant();
+  const filters: { column: string; op: 'eq' | 'gte' | 'lt' | 'lte'; value: string }[] = [
     { column: 'student_id', op: 'eq', value: studentId },
     { column: 'center_id', op: 'eq', value: centerId },
-    { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
-    { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
+    { column: 'paid_at', op: 'gte', value: startIso },
+    { column: 'paid_at', op: 'lt', value: endExclusiveIso },
   ];
   if (groupId) filters.push({ column: 'group_id', op: 'eq', value: groupId });
   const { data } = await dbSelect({
@@ -623,12 +623,12 @@ export default function ScanPage() {
       if (netOnline) {
         paidToday = await hasPaidToday(st.id, centerId, grp?.id ?? null);
         if (paidToday) {
-          const today = new Date().toISOString().split('T')[0];
-          const payFilters: { column: string; op: 'eq' | 'gte' | 'lte'; value: string }[] = [
+          const { startIso, endExclusiveIso } = cairoPaidAtBoundsForScanInstant();
+          const payFilters: { column: string; op: 'eq' | 'gte' | 'lt' | 'lte'; value: string }[] = [
             { column: 'student_id', op: 'eq', value: st.id },
             { column: 'center_id', op: 'eq', value: centerId },
-            { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
-            { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
+            { column: 'paid_at', op: 'gte', value: startIso },
+            { column: 'paid_at', op: 'lt', value: endExclusiveIso },
           ];
           if (grp?.id) payFilters.push({ column: 'group_id', op: 'eq', value: grp.id });
           const { data: todayPay } = await dbSelect({
@@ -819,7 +819,7 @@ export default function ScanPage() {
       try {
         paidToday = await hasPaidToday(student.id, centerId, group.id);
         if (paidToday) {
-          const today = new Date().toISOString().split('T')[0];
+          const { startIso, endExclusiveIso } = cairoPaidAtBoundsForScanInstant();
           const { data: todayPay } = await dbSelect({
             table: 'payments',
             select: 'method',
@@ -827,8 +827,8 @@ export default function ScanPage() {
               { column: 'student_id', op: 'eq', value: student.id },
               { column: 'center_id', op: 'eq', value: centerId },
               { column: 'group_id', op: 'eq', value: group.id },
-              { column: 'paid_at', op: 'gte', value: today + 'T00:00:00' },
-              { column: 'paid_at', op: 'lte', value: today + 'T23:59:59' },
+              { column: 'paid_at', op: 'gte', value: startIso },
+              { column: 'paid_at', op: 'lt', value: endExclusiveIso },
             ],
             order: { column: 'paid_at', ascending: false },
             limit: 1,
