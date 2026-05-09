@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 
@@ -14,9 +15,8 @@ const supabase = createClient(
 );
 
 export async function GET(request: Request) {
-  if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 30);

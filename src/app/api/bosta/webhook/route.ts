@@ -1,4 +1,5 @@
-import { createHmac, timingSafeEqual } from 'crypto';
+import * as Sentry from '@sentry/nextjs';
+import { createHmac } from 'crypto';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendOrderShipped } from '@/lib/centerNotify';
@@ -7,8 +8,12 @@ import { createAction } from '@/lib/ceo';
 import { notifyVendorOfNewOrder } from '@/lib/vendorNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { readRawBodyWithLimit, ValidationError } from '@/lib/validate';
+import { timingSafeEqualHex } from '@/lib/verifyHmac';
 
 export const dynamic = 'force-dynamic';
+
+const BODY_LIMIT = 32 * 1024;
 
 const MSG_DELIVERY_FAILED =
   'تعذر توصيل طلب بطاقات QR الخاص بك. يرجى التواصل معنا لإعادة الجدولة.';
@@ -486,27 +491,24 @@ async function processBostaEvent(payload: Record<string, unknown>): Promise<void
 
 export async function POST(request: Request) {
   try {
-    const rawBody = await request.text();
+    const rawBody = await readRawBodyWithLimit(request, BODY_LIMIT);
 
     // BOSTA_WEBHOOK_SECRET — Set in Vercel env vars — get from Bosta dashboard
     const secret = process.env.BOSTA_WEBHOOK_SECRET ?? '';
-    const sig = request.headers.get('Bosta-Signature') ?? '';
+    const sig = (request.headers.get('Bosta-Signature') ?? '').trim();
     const requireSecret =
       process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
     if (requireSecret && !secret) {
-      console.error('[bosta-webhook] BOSTA_WEBHOOK_SECRET is required in production');
-      return NextResponse.json({ received: true, error: 'misconfigured' }, { status: 200 });
+      Sentry.captureMessage('bosta webhook missing BOSTA_WEBHOOK_SECRET', {
+        level: 'warning',
+        tags: { provider: 'bosta' },
+      });
+      return new Response(null, { status: 401 });
     }
     if (secret) {
       const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-      const sigBuf = Buffer.from(sig);
-      const expectedBuf = Buffer.from(expected);
-      if (
-        sigBuf.length !== expectedBuf.length ||
-        !timingSafeEqual(sigBuf, expectedBuf)
-      ) {
-        console.warn('[bosta-webhook] Invalid signature');
-        return NextResponse.json({ received: true, error: 'invalid_signature' }, { status: 200 });
+      if (!timingSafeEqualHex(expected, sig)) {
+        return new Response(null, { status: 401 });
       }
     } else {
       console.warn(
@@ -518,8 +520,7 @@ export async function POST(request: Request) {
     try {
       payload = JSON.parse(rawBody) as Record<string, unknown>;
     } catch {
-      console.warn('[bosta-webhook] Invalid JSON body');
-      return NextResponse.json({ received: true, error: 'invalid_json' }, { status: 200 });
+      return new Response(null, { status: 401 });
     }
 
     const o1 = payload.order_id;
@@ -566,7 +567,15 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ received: true });
-  } catch {
-    return NextResponse.json({ received: true });
+  } catch (e) {
+    if (e instanceof ValidationError && e.message === 'Request payload too large') {
+      Sentry.captureMessage('bosta webhook payload limit exceeded', {
+        level: 'warning',
+        tags: { provider: 'bosta' },
+      });
+      return new Response(null, { status: 413 });
+    }
+    Sentry.captureException(e, { tags: { provider: 'bosta' } });
+    return new Response(null, { status: 401 });
   }
 }

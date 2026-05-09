@@ -15,7 +15,7 @@
 //    PAYMOB_HMAC_SECRET, PAYMOB_IFRAME_ID
 // 3. Deploy — the "ادفع الآن" button will appear for all centers
 // 4. Register webhook in Paymob dashboard:
-//    URL: https://centerhq.app/api/webhooks/paymob
+//    URL: https://centerhq.app/api/paymob/webhook
 
 export const FEATURES: { PAYMOB_ENABLED: boolean } = {
   PAYMOB_ENABLED: false, // Set to true to unlock for everyone

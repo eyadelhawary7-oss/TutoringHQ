@@ -35,7 +35,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if ((student as { center_id?: string }).center_id !== centerId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return new Response(null, { status: 404 });
     }
 
     const updateData: Record<string, unknown> = {

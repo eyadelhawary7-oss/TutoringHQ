@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin as supabaseAdminHealth } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -8,10 +9,8 @@ export async function POST(request: Request) {
   const cronStart = Date.now();
   const CRON_NAME = 'pack-request-check';
 
-  const auth = request.headers.get('authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

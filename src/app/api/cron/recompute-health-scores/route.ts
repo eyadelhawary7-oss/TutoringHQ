@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const maxDuration = 300;
@@ -25,10 +26,8 @@ type MetricsDailyRow = {
 };
 
 export async function GET(request: Request) {
-  const auth = request.headers.get('Authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });

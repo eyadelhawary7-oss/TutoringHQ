@@ -3,6 +3,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { sendWeeklyReport } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -51,10 +52,8 @@ type CenterRow = {
 };
 
 export async function POST(request: Request) {
-  const auth = request.headers.get('authorization') ?? request.headers.get('Authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });

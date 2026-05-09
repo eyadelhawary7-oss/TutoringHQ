@@ -3,6 +3,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { formatNumber } from '@/lib/formatNumber';
@@ -50,10 +51,8 @@ async function upsertCronHealth(admin: NonNullable<typeof supabaseAdmin>) {
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get('Authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });

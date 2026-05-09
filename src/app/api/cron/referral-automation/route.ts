@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
@@ -29,9 +30,8 @@ export async function GET(request: Request) {
   const cronStart = Date.now();
   const CRON_NAME = 'referral-automation';
 
-  if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   if (!supabaseAdmin) {
     return NextResponse.json({ success: false, error: tCronBackup('errorServerMisconfigured') }, { status: 500 });

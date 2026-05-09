@@ -687,3 +687,13 @@ export async function PATCH(
   }
   return NextResponse.json({ center: updatedRow });
 }
+
+/** DELETE not supported — authenticate first so unauthenticated callers never see 405. */
+export async function DELETE(
+  request: NextRequest,
+  _ctx: { params: Promise<{ id: string }> },
+) {
+  const ctx = await getAdminContext(request);
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return new Response(null, { status: 405 });
+}

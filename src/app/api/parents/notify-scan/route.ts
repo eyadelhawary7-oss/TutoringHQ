@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { sendScanNotification } from '@/lib/whatsapp/flows/parentNotifications';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { parseBodyWithLimit, ValidationError } from '@/lib/validate';
@@ -11,6 +12,13 @@ export async function POST(request: NextRequest) {
   try {
     body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
   } catch (e) {
+    if (e instanceof ValidationError && e.message === 'Request payload too large') {
+      Sentry.captureMessage('notify-scan payload limit', {
+        level: 'warning',
+        tags: { api: 'parents-notify-scan' },
+      });
+      return new Response(null, { status: 413 });
+    }
     const msg = e instanceof ValidationError ? e.message : 'Invalid request body';
     return NextResponse.json({ error: msg }, { status: 400 });
   }

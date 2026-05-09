@@ -58,15 +58,23 @@ export async function parseBodyWithLimit(
   request: Request,
   maxBytes: number = 65536,
 ): Promise<unknown> {
-  const contentLength = request.headers.get('content-length');
-  if (contentLength && parseInt(contentLength, 10) > maxBytes) {
-    throw new ValidationError('Request payload too large');
-  }
-  const text = await request.text();
-  if (text.length > maxBytes) throw new ValidationError('Request payload too large');
+  const text = await readRawBodyWithLimit(request, maxBytes);
   try {
     return JSON.parse(text) as unknown;
   } catch {
     throw new ValidationError('Invalid JSON payload');
   }
+}
+
+/** Raw UTF-8 body for HMAC verification; enforces max byte size. */
+export async function readRawBodyWithLimit(request: Request, maxBytes: number): Promise<string> {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+    throw new ValidationError('Request payload too large');
+  }
+  const text = await request.text();
+  if (Buffer.byteLength(text, 'utf8') > maxBytes) {
+    throw new ValidationError('Request payload too large');
+  }
+  return text;
 }

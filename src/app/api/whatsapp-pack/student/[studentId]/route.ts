@@ -68,7 +68,7 @@ export async function PATCH(
       .single()
 
     if (studentLookupError || !studentRow || studentRow.center_id !== centerId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return new Response(null, { status: 404 })
     }
 
     const body = (await parseBodyWithLimit(request, 65536)) as PatchStudentBody

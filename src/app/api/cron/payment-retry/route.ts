@@ -3,6 +3,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { createPaymentLink } from '@/lib/paymob';
 import { sendPaymentRetry } from '@/lib/centerNotify';
 import { FEATURES } from '@/lib/features';
@@ -47,10 +48,8 @@ function embeddedCenter(row: InvoiceRetryRow): CenterEmbed | null {
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get('authorization') ?? request.headers.get('Authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   if (!FEATURES.PAYMOB_ENABLED) {
     return NextResponse.json({

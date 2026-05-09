@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCardOrderPaymobHmac } from '@/lib/paymob';
 import { triggerT1Eligible, resumeCommissionClocks } from '@/lib/commissions';
@@ -6,16 +6,14 @@ import { sendPaymentConfirmed } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { readRawBodyWithLimit, ValidationError } from '@/lib/validate';
+import { hmacSha512Hex, timingSafeEqualHex } from '@/lib/verifyHmac';
 
 export const dynamic = 'force-dynamic';
 
 const paymentFailedEnabled = true; // chq_payment_failed — set to false if template gets rejected
 
-/** Paymob expects HTTP 200 even on bad payloads to avoid aggressive retries. */
-function paymobAck(body: Record<string, unknown> = {}) {
-  return NextResponse.json({ received: true, ...body }, { status: 200 });
-}
-
+const BODY_LIMIT = 32 * 1024;
 async function processPaymobEvent(payload: Record<string, unknown>): Promise<void> {
   let supabaseAdminLocal;
   try {
@@ -221,24 +219,22 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
 
 export async function POST(request: NextRequest) {
   try {
-    const rawBody = await request.text();
+    const rawBody = await readRawBodyWithLimit(request, BODY_LIMIT);
 
     const hmacSecret = process.env.PAYMOB_HMAC_SECRET;
     if (!hmacSecret) {
-      return NextResponse.json({ error: 'Config error' }, { status: 500 });
+      Sentry.captureMessage('paymob webhook missing PAYMOB_HMAC_SECRET', {
+        level: 'warning',
+        tags: { provider: 'paymob' },
+      });
+      return new Response(null, { status: 401 });
     }
 
     const receivedHeaderHmac = (request.headers.get('x-hmac-signature') ?? '').trim();
     if (receivedHeaderHmac) {
-      const computedHmac = crypto.createHmac('sha512', hmacSecret).update(rawBody, 'utf8').digest('hex');
-      try {
-        const a = Buffer.from(receivedHeaderHmac, 'hex');
-        const b = Buffer.from(computedHmac, 'hex');
-        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-        }
-      } catch {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      const computedHmac = hmacSha512Hex(hmacSecret, rawBody);
+      if (!timingSafeEqualHex(computedHmac, receivedHeaderHmac)) {
+        return new Response(null, { status: 401 });
       }
     }
 
@@ -246,7 +242,7 @@ export async function POST(request: NextRequest) {
     try {
       payload = JSON.parse(rawBody) as Record<string, unknown>;
     } catch {
-      return NextResponse.json({ received: true });
+      return new Response(null, { status: 401 });
     }
 
     if (!receivedHeaderHmac) {
@@ -255,12 +251,11 @@ export async function POST(request: NextRequest) {
       const obj = payload.obj;
 
       if (!hmac || !obj || typeof obj !== 'object') {
-        return paymobAck({ error: 'invalid_payload' });
+        return new Response(null, { status: 401 });
       }
 
       if (!verifyCardOrderPaymobHmac(obj as Record<string, unknown>, hmac)) {
-        console.warn('[paymob/webhook] Invalid HMAC');
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+        return new Response(null, { status: 401 });
       }
     }
 
@@ -311,7 +306,15 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch {
-    return NextResponse.json({ received: true });
+  } catch (e) {
+    if (e instanceof ValidationError && e.message === 'Request payload too large') {
+      Sentry.captureMessage('paymob webhook payload limit exceeded', {
+        level: 'warning',
+        tags: { provider: 'paymob' },
+      });
+      return new Response(null, { status: 413 });
+    }
+    Sentry.captureException(e, { tags: { provider: 'paymob' } });
+    return new Response(null, { status: 401 });
   }
 }

@@ -7,6 +7,8 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
+import { readRawBodyWithLimit, ValidationError } from '@/lib/validate';
+import { hmacSha256Hex, timingSafeEqualUtf8 } from '@/lib/verifyHmac';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -24,25 +26,7 @@ import {
 
 const HOLDING_HOURS = 4;
 
-/** HMAC-SHA256(raw body) as lowercase hex (Web Crypto — Edge + Node on Vercel). */
-async function computeHmacSha256(rawBody: string, secret: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
-  const msgData = encoder.encode(rawBody);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-
-  const sig = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
-  return Array.from(new Uint8Array(sig))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+const WA_BODY_LIMIT = 64 * 1024;
 
 /** Minimal type for wa_* table access (not in generated schema) */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -411,48 +395,57 @@ async function processWebhookPayload(body: Record<string, unknown>): Promise<voi
 }
 
 export async function POST(request: Request) {
-  const rawBody = await request.text();
-
-  const appSecret = process.env.WHATSAPP_APP_SECRET;
-  if (!appSecret) {
-    console.error('[WA webhook] WHATSAPP_APP_SECRET not set');
-    return NextResponse.json({ received: true });
-  }
-
-  const signatureHeader = request.headers.get('x-hub-signature-256');
-  if (!signatureHeader) {
-    console.error('[WA webhook] Missing x-hub-signature-256 header');
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
-  const expectedHex = await computeHmacSha256(rawBody, appSecret);
-  const expectedSignature = `sha256=${expectedHex}`;
-  const receivedNorm = signatureHeader.trim().toLowerCase();
-  const expectedNorm = expectedSignature.toLowerCase();
-  const isValid =
-    receivedNorm.length === expectedNorm.length &&
-    receivedNorm.split('').every((c, i) => c === expectedNorm[i]);
-
-  if (!isValid) {
-    console.error('[WA webhook] Signature mismatch', {
-      expected: `${expectedNorm.slice(0, 20)}...`,
-      received: `${receivedNorm.slice(0, 20)}...`,
-    });
-    Sentry.captureMessage('WhatsApp webhook signature mismatch', { level: 'warning' });
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
-  let payload: Record<string, unknown>;
   try {
-    payload = JSON.parse(rawBody) as Record<string, unknown>;
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    const rawBody = await readRawBodyWithLimit(request, WA_BODY_LIMIT);
+
+    const appSecret = process.env.WHATSAPP_APP_SECRET;
+    if (!appSecret) {
+      Sentry.captureMessage('whatsapp webhook missing WHATSAPP_APP_SECRET', {
+        level: 'warning',
+        tags: { provider: 'whatsapp' },
+      });
+      return new Response(null, { status: 401 });
+    }
+
+    const signatureHeader = request.headers.get('x-hub-signature-256');
+    if (!signatureHeader) {
+      return new Response(null, { status: 401 });
+    }
+
+    const expectedHex = hmacSha256Hex(appSecret, rawBody);
+    const expectedSignature = `sha256=${expectedHex}`;
+    const receivedNorm = signatureHeader.trim().toLowerCase();
+    const expectedNorm = expectedSignature.toLowerCase();
+    if (!timingSafeEqualUtf8(receivedNorm, expectedNorm)) {
+      Sentry.captureMessage('WhatsApp webhook signature mismatch', {
+        level: 'warning',
+        tags: { provider: 'whatsapp' },
+      });
+      return new Response(null, { status: 401 });
+    }
+
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch {
+      return new Response(null, { status: 401 });
+    }
+
+    processWebhookPayload(payload).catch((err) => {
+      console.error('[WhatsApp webhook] processWebhookPayload error:', err);
+      Sentry.captureException(err);
+    });
+
+    return NextResponse.json({ received: true });
+  } catch (e) {
+    if (e instanceof ValidationError && e.message === 'Request payload too large') {
+      Sentry.captureMessage('whatsapp webhook payload limit exceeded', {
+        level: 'warning',
+        tags: { provider: 'whatsapp' },
+      });
+      return new Response(null, { status: 413 });
+    }
+    Sentry.captureException(e, { tags: { provider: 'whatsapp' } });
+    return new Response(null, { status: 401 });
   }
-
-  processWebhookPayload(payload).catch((err) => {
-    console.error('[WhatsApp webhook] processWebhookPayload error:', err);
-    Sentry.captureException(err);
-  });
-
-  return NextResponse.json({ received: true });
 }

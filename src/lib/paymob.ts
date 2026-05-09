@@ -1,6 +1,7 @@
 import '@/lib/paymobProductionGuard';
 import crypto from 'crypto';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
+import { timingSafeEqualHex } from '@/lib/verifyHmac';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
@@ -133,7 +134,7 @@ export function verifyPaymobHmac(
   const secret = process.env.PAYMOB_HMAC_SECRET;
   if (!secret) return false;
   const hash = crypto.createHmac('sha512', secret).update(str).digest('hex');
-  return hash === receivedHmac;
+  return timingSafeEqualHex(hash, receivedHmac);
 }
 
 export function buildPaymobIframeUrl(paymentToken: string): string {
@@ -197,5 +198,5 @@ export function verifyCardOrderPaymobHmac(
   const secret = process.env.PAYMOB_HMAC_SECRET;
   if (!secret) return false;
   const hash = crypto.createHmac('sha512', secret).update(str).digest('hex');
-  return hash === receivedHmac;
+  return timingSafeEqualHex(hash, receivedHmac);
 }

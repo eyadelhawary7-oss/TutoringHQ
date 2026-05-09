@@ -3,6 +3,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import {
   sendOnboardingStep1Template,
   sendOnboardingStep2,
@@ -44,10 +45,8 @@ function isStalled(row: CenterStallRow, now: number): boolean {
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get('Authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });

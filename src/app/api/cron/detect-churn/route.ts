@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import {
   sendDay3InactivityAlert,
   sendDay7SalesManagerAlert,
@@ -137,10 +138,8 @@ export async function POST(request: Request) {
   const cronStart = Date.now();
   const CRON_NAME = 'detect-churn';
 
-  const auth = request.headers.get('authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });

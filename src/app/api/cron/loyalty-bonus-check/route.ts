@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
@@ -22,9 +23,8 @@ const supabase =
 
 /** Runs at 9am UTC daily. Loyalty unlocks after 365 actual active days (paused intervals excluded). */
 export async function GET(request: Request) {
-  if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: tCronBackup('errorUnauthorized') }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
 
   if (!supabase) {
     return NextResponse.json({ error: tCronBackup('errorServerMisconfigured') }, { status: 500 });
