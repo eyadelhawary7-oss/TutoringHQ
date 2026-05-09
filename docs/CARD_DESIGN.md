@@ -13,7 +13,7 @@
 
 Eyad confirmed **B/C labelling is intentional** (Option A deliberately omitted until a third preset ships).
 
-See also: `CardOrderModal`, `CardTemplatePreview`, `generateOrderPdf`, admin PDF route.
+See also: route-based **checkout** (`/orders/checkout/...`), `CardOrderStyleSampleMock`, `CardTemplatePreview`, `generateOrderPdf`, admin PDF route.
 
 ## Cart workflow
 
@@ -38,3 +38,17 @@ Vercel Cron calls `GET /api/cron/abandon-stale-carts` daily at **04:00 UTC** (06
 - `/orders`: cart-first layout, student picker drawer, blanks modal.
 - `/students` roster: bulk select → “Add to card cart”.
 - `/students/[id]`: single **Order card** action when the student has no delivered card yet.
+
+## Checkout flow (route-based)
+
+Dedicated URLs per step (browser back/forward and deep links work). All steps except **Pay** and **Success** require an **open** cart with active quantity ≥ platform minimum; otherwise the user is redirected to `/orders` with a toast (`checkout_error` query).
+
+| Step | Path | Purpose |
+|------|------|--------|
+| 1 Delivery | `/[locale]/orders/checkout` | Governorate, address, Egyptian mobile, optional delivery notes; shipping preview via Bosta rates; optional “save defaults” updates `centers`. |
+| 2 Customize | `/[locale]/orders/checkout/customize` | Card style (`dark` / `light`), optional vendor notes; optional “remember style” updates `centers.last_card_style`. |
+| 3 Review | `/[locale]/orders/checkout/review` | Summary, Egyptian legal pricing lines (`buildLegalInvoiceLines`), terms checkbox, `POST /api/card-order-cart/checkout`. |
+| 4 Pay | `/[locale]/orders/checkout/payment` | Paymob iframe; poll `GET /api/orders/[orderId]` until `payment_status === paid`. |
+| 5 Success | `/[locale]/orders/checkout/success/[orderId]` | Confirmation, receipt download, track order → `/orders/[orderId]`. |
+
+Between steps the client **`PATCH /api/card-order-cart`** so cart row state survives refresh and back navigation. After step 3 the cart is marked **`submitted`** and linked to the new `card_orders` row.

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useTransition } from 'react';
+import { useRouter } from '@/i18n/routing';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
@@ -15,6 +16,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CardOrderCartHeader } from '@/components/orders/CardOrderCartHeader';
 import { CardOrderCartContents } from '@/components/orders/CardOrderCartContents';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export type CardOrdersShippingQuote = {
   hasGovernorate: boolean;
@@ -99,15 +101,20 @@ function statusLabelKey(status: string): CardOrderStatusKey {
 }
 
 export default function OrdersPageClient({
+  checkoutError,
   initialShippingQuote,
   bostaShippingRates,
 }: {
+  checkoutError?: string | null;
   initialShippingQuote: CardOrdersShippingQuote | null;
   bostaShippingRates: Record<string, number> | null;
 }) {
   const t = useTranslations('cardOrders');
   const tOrders = useTranslations('orders');
+  const tCheckoutErr = useTranslations('checkout.errors');
   const locale = useLocale();
+  const router = useRouter();
+  const { toast } = useToast();
   const { refresh } = useCardOrderCart();
 
   const [centerInfo, setCenterInfo] = useState<CenterInfoState | null>(null);
@@ -178,6 +185,21 @@ export default function OrdersPageClient({
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!checkoutError?.trim()) return;
+    const key = checkoutError.trim();
+    const msg =
+      key === 'no_center'
+        ? tCheckoutErr('noCenter')
+        : key === 'no_cart'
+          ? tCheckoutErr('noCart')
+          : key === 'below_minimum'
+            ? tCheckoutErr('belowMinimum')
+            : tCheckoutErr('generic');
+    toast.error(msg);
+    router.replace('/orders');
+  }, [checkoutError, router, toast, tCheckoutErr]);
 
   useEffect(() => {
     if (!loading) return;

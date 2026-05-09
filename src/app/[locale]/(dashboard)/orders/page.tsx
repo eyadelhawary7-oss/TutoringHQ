@@ -4,7 +4,12 @@ import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import OrdersPageClient, { type CardOrdersShippingQuote } from './OrdersPageClient';
 
-export default async function OrdersPage() {
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout_error?: string }>;
+}) {
+  const sp = await searchParams;
   let initialShippingQuote: CardOrdersShippingQuote | null = null;
   const bostaShippingRates = supabaseAdmin ? await loadBostaShippingRates() : null;
 
@@ -39,6 +44,7 @@ export default async function OrdersPage() {
 
   return (
     <OrdersPageClient
+      checkoutError={sp.checkout_error ?? null}
       initialShippingQuote={initialShippingQuote}
       bostaShippingRates={bostaShippingRates}
     />

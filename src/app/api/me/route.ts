@@ -156,6 +156,7 @@ export async function GET(request: Request) {
       plan?: string;
       delivery_address?: Record<string, unknown>;
       card_color?: string;
+      last_card_style?: string | null;
       parent_pack_enabled?: boolean;
       parent_pack_active_parents?: number;
       pack_price_per_parent?: number | string;
@@ -181,7 +182,7 @@ export async function GET(request: Request) {
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
         .select(
-          'id, logo_url, name, phone, governorate, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, current_period_end, cancellation_reason, cancellation_requested_at, cancellation_approved_at, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, credit_reserved, instapay_number, upgrade_count_this_period, suspended_at, billing_type, pricing_type, payg_pending_switch, payg_switch_effective_date, payg_pending_target_period',
+          'id, logo_url, name, phone, governorate, last_card_style, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, current_period_end, cancellation_reason, cancellation_requested_at, cancellation_approved_at, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, credit_reserved, instapay_number, upgrade_count_this_period, suspended_at, billing_type, pricing_type, payg_pending_switch, payg_switch_effective_date, payg_pending_target_period',
         )
         .eq('id', userRecord.center_id)
         .single();
@@ -205,6 +206,7 @@ export async function GET(request: Request) {
           plan: centerRow.plan ?? undefined,
           delivery_address: centerRow.delivery_address ?? undefined,
           card_color: centerRow.card_color ?? undefined,
+          last_card_style: cr.last_card_style != null ? String(cr.last_card_style) : undefined,
           parent_pack_enabled: centerRow.parent_pack_enabled ?? undefined,
           parent_pack_active_parents:
             centerRow.parent_pack_active_parents != null

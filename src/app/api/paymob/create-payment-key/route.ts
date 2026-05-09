@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { parseBodyWithLimit } from '@/lib/validate';
 
-const PAYMOB_BASE = 'https://accept.paymob.com/api';
-
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireCenterAuth(request);
@@ -69,101 +67,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
     }
 
-    const amountCents = Math.round(amount * 100);
-
-    const authRes = await fetch(`${PAYMOB_BASE}/auth/tokens`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: apiKey }),
+    const billingDigits = centerPhone.replace(/\D/g, '');
+    const { issueCardOrderIframePayment } = await import('@/lib/paymob/issueCardOrderIframe');
+    const result = await issueCardOrderIframePayment({
+      supabaseAdmin: auth.supabaseAdmin,
+      centerId: auth.centerId,
+      cardOrderId,
+      amountEgp: amount,
+      centerName,
+      billingPhoneDigits: billingDigits.length >= 10 ? billingDigits : `20${billingDigits.replace(/^20/, '')}`,
     });
-    const authData = (await authRes.json()) as { token?: string };
-    if (!authRes.ok || !authData.token) {
-      return NextResponse.json({ error: 'Paymob auth failed' }, { status: 500 });
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
-    const token = authData.token;
-
-    const orderRes = await fetch(`${PAYMOB_BASE}/ecommerce/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        auth_token: token,
-        amount_cents: amountCents,
-        currency: 'EGP',
-        delivery_needed: false,
-        merchant_order_id: cardOrderId,
-        items: [],
-      }),
-    });
-    const orderJson = (await orderRes.json()) as { id?: number; message?: string };
-    if (!orderRes.ok || orderJson.id == null) {
-      return NextResponse.json(
-        { error: orderJson.message ?? 'Paymob order creation failed' },
-        { status: 500 }
-      );
-    }
-    const paymobOrderId = orderJson.id;
-
-    const keyRes = await fetch(`${PAYMOB_BASE}/acceptance/payment_keys`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        auth_token: token,
-        amount_cents: amountCents,
-        currency: 'EGP',
-        order_id: paymobOrderId,
-        billing_data: {
-          first_name: centerName,
-          last_name: '.',
-          phone_number: centerPhone,
-          email: 'NA',
-          street: 'NA',
-          building: 'NA',
-          floor: 'NA',
-          apartment: 'NA',
-          city: 'Cairo',
-          country: 'EG',
-          state: 'Cairo',
-          postal_code: 'NA',
-        },
-        integration_id: Number(integrationId),
-        lock_order_when_paid: false,
-      }),
-    });
-    const keyJson = (await keyRes.json()) as { token?: string; message?: string };
-    if (!keyRes.ok || !keyJson.token) {
-      return NextResponse.json(
-        { error: keyJson.message ?? 'Paymob payment key failed' },
-        { status: 500 }
-      );
-    }
-
-    const { error: updateErr } = await auth.supabaseAdmin
-      .from('card_orders')
-      .update({ paymob_order_id: String(paymobOrderId) })
-      .eq('id', cardOrderId)
-      .eq('center_id', auth.centerId);
-
-    if (updateErr) {
-      console.error('[create-payment-key] Failed to save paymob_order_id:', updateErr);
-      return NextResponse.json(
-        { error: 'Failed to update order' },
-        { status: 500 }
-      );
-    }
-
-    const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${encodeURIComponent(keyJson.token)}`;
 
     return NextResponse.json({
-      paymentKey: keyJson.token,
-      iframeId,
-      paymobOrderId: String(paymobOrderId),
-      iframeUrl,
+      paymentKey: result.paymentKey,
+      iframeId: result.iframeId,
+      paymobOrderId: result.paymobOrderId,
+      iframeUrl: result.iframeUrl,
     });
   } catch (e) {
     console.error('[create-payment-key]', e);

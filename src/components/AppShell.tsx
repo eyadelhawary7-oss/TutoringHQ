@@ -100,7 +100,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
     cleanPath.startsWith('/ceo-dashboard/');
   const showShell = !isPublic && !hideShell;
 
-  const pageTitleKey = PAGE_TITLE_MAP[cleanPath] || 'nav.dashboard';
+  const pageTitleKey =
+    PAGE_TITLE_MAP[cleanPath] ??
+    (cleanPath.startsWith('/orders/checkout') ? 'checkout.pageTitle' : 'nav.dashboard');
   const pageTitle = t(pageTitleKey);
 
   const handleLocaleToggle = () => {

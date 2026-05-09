@@ -4699,6 +4699,133 @@
       "removed": "Removed from cart"
     }
   },
+  "checkout": {
+    "pageTitle": "Checkout",
+    "loading": "Loading checkout…",
+    "stepsAria": "Checkout steps",
+    "stepDelivery": "Delivery",
+    "stepCustomize": "Customize",
+    "stepReview": "Review",
+    "stepPay": "Pay",
+    "summary": {
+      "title": "Order summary",
+      "cards": "Cards",
+      "subtotal": "Subtotal (incl. taxes)",
+      "shipping": "Shipping",
+      "total": "Total"
+    },
+    "errors": {
+      "noCenter": "Select a centre to continue checkout.",
+      "noCart": "Your cart is not available. Open checkout from the Orders page.",
+      "belowMinimum": "Add more cards to meet the minimum before checkout.",
+      "generic": "Checkout is unavailable right now."
+    },
+    "delivery": {
+      "title": "Delivery details",
+      "subtitle": "Where should we ship your cards?",
+      "governorate": "Governorate",
+      "governoratePlaceholder": "Select governorate",
+      "address": "Address",
+      "phone": "Mobile phone",
+      "phonePlaceholder": "+20 1XXXXXXXX",
+      "notes": "Delivery notes (optional)",
+      "saveDefaults": "Save as default for my centre",
+      "continue": "Continue",
+      "saving": "Saving…",
+      "shippingPreview": "Shipping: {amount}",
+      "errors": {
+        "governorate": "Choose a governorate.",
+        "addressMin": "Address must be at least 5 characters.",
+        "addressMax": "Address must be at most 200 characters.",
+        "phoneRequired": "Phone is required.",
+        "phoneInvalid": "Enter a valid Egyptian mobile (+20 10/11/12/15…).",
+        "notesMax": "Notes must be at most 200 characters.",
+        "generic": "Could not save delivery details."
+      }
+    },
+    "customize": {
+      "title": "Card style",
+      "subtitle": "Choose how your QR cards should look.",
+      "cardStyle": "Design",
+      "styles": {
+        "dark": "Dark (Option B)",
+        "light": "Light (Option C)"
+      },
+      "vendorNotes": "Special instructions for the vendor",
+      "vendorNotesHint": "Optional — max 200 characters.",
+      "rememberStyle": "Remember this style for next orders",
+      "continue": "Continue",
+      "saving": "Saving…",
+      "errors": {
+        "notesMax": "Vendor notes must be at most 200 characters.",
+        "generic": "Could not save customization."
+      }
+    },
+    "review": {
+      "title": "Review & pay",
+      "subtitle": "Confirm everything before placing your order.",
+      "sections": {
+        "items": "Items",
+        "delivery": "Delivery",
+        "customize": "Customization",
+        "pricing": "Pricing"
+      },
+      "edit": {
+        "items": "Edit items",
+        "delivery": "Edit delivery",
+        "customize": "Edit customize"
+      },
+      "itemsSummary": "{count, plural, one {# card} other {# cards}}",
+      "blanksLine": "{count, plural, one {# blank card} other {# blank cards}}",
+      "govLabel": "Governorate",
+      "addressLabel": "Address",
+      "phoneLabel": "Phone",
+      "deliveryNotesLabel": "Delivery notes",
+      "styleLabel": "Card style",
+      "styleDark": "Dark",
+      "styleLight": "Light",
+      "vendorNotesLabel": "Vendor notes",
+      "subtotalInclusive": "Subtotal inclusive (cards)",
+      "shippingLine": "Shipping ({zone})",
+      "grandTotal": "Total",
+      "perCardAllIn": "= {amount} per card all-in",
+      "terms": "I agree to the <link>terms</link>, including the no-refund policy after vendor production starts.",
+      "placeOrder": "Place order",
+      "placing": "Placing order…",
+      "errors": {
+        "generic": "Could not place order."
+      }
+    },
+    "payment": {
+      "orderRef": "Order #{ref}",
+      "timeout": "Session timer {mm}:{ss}",
+      "iframeWarning": "Do not refresh or close this window until payment completes.",
+      "iframeTitle": "Paymob payment",
+      "loadingIframe": "Loading payment…",
+      "missingSession": "Payment session expired. Open your order from Orders.",
+      "notAuthenticated": "Sign in again to continue payment.",
+      "orderNotFound": "Order not found.",
+      "recoverFailed": "Could not start payment."
+    },
+    "success": {
+      "title": "Order placed",
+      "orderNumber": "Reference #{ref}",
+      "summaryToggle": "Order summary",
+      "itemsCount": "{count, plural, one {# card} other {# cards}}",
+      "total": "Total paid",
+      "delivery": "Delivery",
+      "deliveryEta": "Your cards will arrive in 7–14 business days.",
+      "track": "Track your order",
+      "receipt": "View receipt",
+      "orderMore": "Order more cards"
+    },
+    "orderDetail": {
+      "loading": "Loading order…",
+      "notFound": "We could not find this order.",
+      "title": "Order #{ref}",
+      "downloadReceipt": "Download receipt (PDF)"
+    }
+  },
   "cardOrders": {
     "orderIdCards": "Order ID Cards",
     "selectStudents": "Select Students",

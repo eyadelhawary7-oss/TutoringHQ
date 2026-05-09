@@ -3778,6 +3778,133 @@
       "removed": "تمت الإزالة من السلة"
     }
   },
+  "checkout": {
+    "pageTitle": "إتمام الطلب",
+    "loading": "جاري تحميل الدفع…",
+    "stepsAria": "خطوات إتمام الطلب",
+    "stepDelivery": "التوصيل",
+    "stepCustomize": "التخصيص",
+    "stepReview": "المراجعة",
+    "stepPay": "الدفع",
+    "summary": {
+      "title": "ملخص الطلب",
+      "cards": "البطاقات",
+      "subtotal": "الإجمالي قبل الشحن (شامل الضرائب)",
+      "shipping": "الشحن",
+      "total": "الإجمالي"
+    },
+    "errors": {
+      "noCenter": "اختر مركزًا لمتابعة الدفع.",
+      "noCart": "سلة البطاقات غير متاحة. افتح الدفع من صفحة الطلبات.",
+      "belowMinimum": "أضف بطاقات أكثر لتلبية الحد الأدنى قبل الدفع.",
+      "generic": "إتمام الطلب غير متاح حاليًا."
+    },
+    "delivery": {
+      "title": "تفاصيل التوصيل",
+      "subtitle": "إلى أين نشحن بطاقاتك؟",
+      "governorate": "المحافظة",
+      "governoratePlaceholder": "اختر المحافظة",
+      "address": "العنوان",
+      "phone": "جوال",
+      "phonePlaceholder": "+20 1XXXXXXXX",
+      "notes": "ملاحظات التوصيل (اختياري)",
+      "saveDefaults": "حفظ كافتراضي لمركزي",
+      "continue": "متابعة",
+      "saving": "جاري الحفظ…",
+      "shippingPreview": "الشحن: {amount}",
+      "errors": {
+        "governorate": "اختر المحافظة.",
+        "addressMin": "العنوان يجب أن لا يقل عن 5 أحرف.",
+        "addressMax": "العنوان يجب أن لا يزيد عن 200 حرف.",
+        "phoneRequired": "رقم الجوال مطلوب.",
+        "phoneInvalid": "أدخل رقمًا مصريًا صالحًا (+20 10/11/12/15…).",
+        "notesMax": "الملاحظات بحد أقصى 200 حرف.",
+        "generic": "تعذّر حفظ التوصيل."
+      }
+    },
+    "customize": {
+      "title": "شكل البطاقة",
+      "subtitle": "اختر مظهر بطاقات QR.",
+      "cardStyle": "التصميم",
+      "styles": {
+        "dark": "داكن (خيار B)",
+        "light": "فاتح (خيار C)"
+      },
+      "vendorNotes": "تعليمات خاصة للمورد",
+      "vendorNotesHint": "اختياري — حتى 200 حرف.",
+      "rememberStyle": "تذكّر هذا الشكل للطلبات القادمة",
+      "continue": "متابعة",
+      "saving": "جاري الحفظ…",
+      "errors": {
+        "notesMax": "تعليمات المورد بحد أقصى 200 حرف.",
+        "generic": "تعذّر حفظ التخصيص."
+      }
+    },
+    "review": {
+      "title": "مراجعة ودفع",
+      "subtitle": "تأكد من كل شيء قبل تأكيد الطلب.",
+      "sections": {
+        "items": "العناصر",
+        "delivery": "التوصيل",
+        "customize": "التخصيص",
+        "pricing": "التسعير"
+      },
+      "edit": {
+        "items": "تعديل العناصر",
+        "delivery": "تعديل التوصيل",
+        "customize": "تعديل التخصيص"
+      },
+      "itemsSummary": "{count, plural, zero {# بطاقة} one {بطاقة واحدة} two {بطاقتان} few {# بطاقات} many {# بطاقة} other {# بطاقة}}",
+      "blanksLine": "{count, plural, zero {# بطاقة فارغة} one {بطاقة فارغة واحدة} two {بطاقتان فارغتان} few {# بطاقات فارغة} many {# بطاقة فارغة} other {# بطاقة فارغة}}",
+      "govLabel": "المحافظة",
+      "addressLabel": "العنوان",
+      "phoneLabel": "الجوال",
+      "deliveryNotesLabel": "ملاحظات التوصيل",
+      "styleLabel": "شكل البطاقة",
+      "styleDark": "داكن",
+      "styleLight": "فاتح",
+      "vendorNotesLabel": "تعليمات المورد",
+      "subtotalInclusive": "الإجمالي الشامل (البطاقات)",
+      "shippingLine": "الشحن ({zone})",
+      "grandTotal": "الإجمالي",
+      "perCardAllIn": "= {amount} للبطاقة الواحدة شاملًا كل شيء",
+      "terms": "أوافق على <link>الشروط</link>، بما في ذلك سياسة عدم الاسترداد بعد بدء إنتاج المورد.",
+      "placeOrder": "تأكيد الطلب",
+      "placing": "جاري تأكيد الطلب…",
+      "errors": {
+        "generic": "تعذّر تأكيد الطلب."
+      }
+    },
+    "payment": {
+      "orderRef": "طلب #{ref}",
+      "timeout": "المؤقت {mm}:{ss}",
+      "iframeWarning": "لا تقم بتحديث الصفحة أو إغلاقها حتى يكتمل الدفع.",
+      "iframeTitle": "دفع Paymob",
+      "loadingIframe": "جاري تحميل الدفع…",
+      "missingSession": "انتهت جلسة الدفع. افتح الطلب من صفحة الطلبات.",
+      "notAuthenticated": "سجّل الدخول مجددًا لمتابعة الدفع.",
+      "orderNotFound": "الطلب غير موجود.",
+      "recoverFailed": "تعذّر بدء الدفع."
+    },
+    "success": {
+      "title": "تم تأكيد الطلب",
+      "orderNumber": "المرجع #{ref}",
+      "summaryToggle": "ملخص الطلب",
+      "itemsCount": "{count, plural, zero {# بطاقة} one {بطاقة واحدة} two {بطاقتان} few {# بطاقات} many {# بطاقة} other {# بطاقة}}",
+      "total": "الإجمالي المدفوع",
+      "delivery": "التوصيل",
+      "deliveryEta": "تصل بطاقاتك خلال 7–14 يوم عمل.",
+      "track": "تتبع الطلب",
+      "receipt": "عرض الإيصال",
+      "orderMore": "اطلب المزيد من البطاقات"
+    },
+    "orderDetail": {
+      "loading": "جاري تحميل الطلب…",
+      "notFound": "لم يتم العثور على هذا الطلب.",
+      "title": "طلب #{ref}",
+      "downloadReceipt": "تنزيل الإيصال (PDF)"
+    }
+  },
   "cardOrders": {
     "orderIdCards": "بطاقات معرّف الطلب",
     "selectStudents": "اختر الطلاب،",

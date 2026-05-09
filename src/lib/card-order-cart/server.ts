@@ -14,6 +14,7 @@ export type CartRow = {
   delivery_address: string | null;
   delivery_phone: string | null;
   notes: string | null;
+  vendor_notes: string | null;
   version: number;
   created_at: string;
   updated_at: string;
