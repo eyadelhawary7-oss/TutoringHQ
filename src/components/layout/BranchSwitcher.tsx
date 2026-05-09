@@ -75,7 +75,7 @@ export function BranchSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 w-full text-left rounded-lg px-2 py-1.5 hover:bg-[var(--color-surface-2)] transition-colors group"
+        className="flex items-center gap-2 w-full text-start rounded-lg px-2 py-1.5 hover:bg-[var(--color-surface-2)] transition-colors group"
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label="Switch branch"
@@ -109,7 +109,7 @@ export function BranchSwitcher() {
                     setActiveCenterId(b.id);
                     setOpen(false);
                   }}
-                  className={`flex items-center gap-2 w-full px-3 py-2 text-left text-sm transition-colors ${b.id === activeCenterId ? 'bg-teal-600/10 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'}`}
+                  className={`flex items-center gap-2 w-full px-3 py-2 text-start text-sm transition-colors ${b.id === activeCenterId ? 'bg-teal-600/10 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'}`}
                 >
                   {b.logo_url ? (
                     <img src={b.logo_url} alt="" className="w-5 h-5 rounded object-contain shrink-0" />

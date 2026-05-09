@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { ChevronLeft, Inbox, Loader2 } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Modal } from '@/components/ui/Modal';
@@ -228,7 +229,7 @@ export default function PendingEnrollmentsPage() {
               href="/students"
               className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
             >
-              <ChevronLeft size={14} className={isRTL ? 'rotate-180' : ''} />
+              <DirectionalIcon icon={ChevronLeft} className="h-3.5 w-3.5 shrink-0" />
               {t('backToStudents')}
             </Link>
           </div>

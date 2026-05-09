@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { isRefreshTokenNotFoundError } from '@/lib/supabaseRefreshSilence';
 
 export type UserRole = 'owner' | 'admin' | 'assistant' | 'teacher' | 'super_admin';
 
@@ -72,7 +73,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const loadUser = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr) {
+        if (isRefreshTokenNotFoundError(sessionErr)) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        console.error('Failed to read auth session:', sessionErr);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       if (!session) {
         setUser(null);
         setLoading(false);

@@ -56,7 +56,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
       <hr className="border-black mb-4" />
 
       {/* Student Info */}
-      <div className="grid grid-cols-2 gap-2 mb-4 text-right">
+      <div className="grid grid-cols-2 gap-2 mb-4 text-end">
         <span className="text-[var(--color-text-secondary)]">الاسم</span>
         <span>{student.name}</span>
         <span className="text-[var(--color-text-secondary)]">رقم الطالب</span>
@@ -78,11 +78,11 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
       <table className="w-full text-sm mb-4">
         <thead>
           <tr className="border-b border-black">
-            <th className="text-right py-1">التاريخ</th>
-            <th className="text-right py-1">المبلغ (ج.م)</th>
-            <th className="text-right py-1">الطريقة</th>
-            <th className="text-right py-1">الحالة</th>
-            <th className="text-right py-1">سجّله</th>
+            <th className="text-end py-1">التاريخ</th>
+            <th className="text-end py-1">المبلغ (ج.م)</th>
+            <th className="text-end py-1">الطريقة</th>
+            <th className="text-end py-1">الحالة</th>
+            <th className="text-end py-1">سجّله</th>
           </tr>
         </thead>
         <tbody>
@@ -105,7 +105,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
                     year: 'numeric',
                   })}
                 </td>
-                <td className="py-1 font-bold font-mono text-right">
+                <td className="py-1 font-bold font-mono text-end">
                   {formatCurrency(p.amount, locale)}
                 </td>
                 <td className="py-1">{p.method}</td>
@@ -120,7 +120,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
       </table>
 
       {/* Summary */}
-      <div className="border-t-2 border-black pt-3 text-right font-bold space-y-1">
+      <div className="border-t-2 border-black pt-3 text-end font-bold space-y-1">
         <div>إجمالي المدفوع: {formatCurrency(confirmedTotal, locale)}</div>
         <div>إجمالي المعلق: {formatCurrency(pendingTotal, locale)}</div>
         <div>الرصيد الحالي: {formatCurrency(student.balance_due, locale)}</div>

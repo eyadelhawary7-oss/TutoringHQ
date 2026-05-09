@@ -32,7 +32,7 @@ export function Confetti({ active, count = 40 }: Props) {
       const piece = document.createElement('div');
       piece.className = 'confetti-piece';
       piece.style.cssText = `
-        left: ${Math.random() * 100}vw;
+        inset-inline-start: ${Math.random() * 100}vw;
         top: -10px;
         background: ${COLORS[Math.floor(Math.random() * COLORS.length)]};
         animation-delay: ${Math.random() * 0.8}s;

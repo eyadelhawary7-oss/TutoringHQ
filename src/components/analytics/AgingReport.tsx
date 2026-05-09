@@ -106,10 +106,10 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="text-right py-3 px-4 font-medium">{t('studentName')}</th>
-              <th className="text-right py-3 px-4 font-medium">{t('group')}</th>
-              <th className="text-right py-3 px-4 font-medium">{t('daysOverdue')}</th>
-              <th className="text-right py-3 px-4 font-medium">{t('amount')}</th>
+              <th className="text-end py-3 px-4 font-medium">{t('studentName')}</th>
+              <th className="text-end py-3 px-4 font-medium">{t('group')}</th>
+              <th className="text-end py-3 px-4 font-medium">{t('daysOverdue')}</th>
+              <th className="text-end py-3 px-4 font-medium">{t('amount')}</th>
               <th className="w-12" />
             </tr>
           </thead>

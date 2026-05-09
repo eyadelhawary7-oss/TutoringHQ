@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
-import { Plus, BookOpen, X, Users, ChevronRight, Search, Link as LinkIcon } from 'lucide-react';
+import { Plus, BookOpen, X, Users, Search, Link as LinkIcon } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';

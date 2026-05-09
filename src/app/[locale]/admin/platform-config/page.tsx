@@ -12,6 +12,7 @@ import { mergeMissingPlatformConfigRows } from '@/lib/platformConfigUi';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Settings } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 
 type ConfigRow = { key: string; value: unknown };
 
@@ -334,8 +335,8 @@ export default function PlatformConfigPage() {
               style={{ backgroundColor: checked ? '#0d9488' : '#64748b' }}
             >
               <span
-                className="absolute top-[3px] h-5 w-5 rounded-full bg-slate-200 shadow"
-                style={{ left: checked ? 25 : 3 }}
+                className="absolute top-[3px] h-5 w-5 rounded-full bg-slate-200 shadow transition-[inset-inline-start]"
+                style={{ insetInlineStart: checked ? 25 : 3 }}
               />
             </span>
             {busy ? <span className="text-xs text-[var(--color-text-secondary)]">{tCommon('loading')}</span> : null}
@@ -432,7 +433,7 @@ export default function PlatformConfigPage() {
           onClick={() => router.push('/admin')}
           className="inline-flex items-center gap-2 text-sm text-teal-700 dark:text-teal-400 hover:underline mb-4"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <DirectionalIcon icon={ArrowLeft} className="h-4 w-4" aria-hidden />
           {t('platformConfigBack')}
         </button>
 

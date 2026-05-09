@@ -80,7 +80,7 @@ export default function NaturalQueryBox() {
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between gap-2 p-4 text-right hover:bg-muted/50 transition-colors"
+        className="w-full flex items-center justify-between gap-2 p-4 text-end hover:bg-muted/50 transition-colors"
       >
         <span className="font-semibold text-lg">اسأل عن سنترك بالعربي 🤖</span>
         {expanded ? (
@@ -159,7 +159,7 @@ export default function NaturalQueryBox() {
                         {columns.map((col) => (
                           <th
                             key={col}
-                            className="px-4 py-2 text-right font-semibold"
+                            className="px-4 py-2 text-end font-semibold"
                           >
                             {col}
                           </th>
@@ -170,7 +170,7 @@ export default function NaturalQueryBox() {
                       {result.rows.map((row, i) => (
                         <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
                           {columns.map((col) => (
-                            <td key={col} className="px-4 py-2 text-right">
+                            <td key={col} className="px-4 py-2 text-end">
                               {String((row as Record<string, unknown>)[col] ?? '-')}
                             </td>
                           ))}

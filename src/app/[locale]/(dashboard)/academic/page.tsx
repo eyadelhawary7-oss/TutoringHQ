@@ -373,7 +373,7 @@ export default function AcademicPage() {
     const e = new Date(end + 'T12:00:00').getTime();
     const left = yearDays > 0 ? ((Math.max(s, yearStart) - yearStart) / (yearEnd - yearStart)) * 100 : 0;
     const width = yearDays > 0 ? ((Math.min(e, yearEnd) - Math.max(s, yearStart)) / (yearEnd - yearStart)) * 100 : 0;
-    return { left: `${left}%`, width: `${Math.max(0, width)}%` };
+    return { insetInlineStart: `${left}%`, width: `${Math.max(0, width)}%` };
   };
 
   const isCurrentWeek = (start: string, end: string) => {
@@ -517,7 +517,7 @@ export default function AcademicPage() {
               <div
                 className="absolute top-0 h-full bg-teal-400 animate-pulse"
                 style={{
-                  left: `${Math.max(0, ((todayMs - yearStart) / (yearEnd - yearStart)) * 100 - 1)}%`,
+                  insetInlineStart: `${Math.max(0, ((todayMs - yearStart) / (yearEnd - yearStart)) * 100 - 1)}%`,
                   width: '2%',
                 }}
               />

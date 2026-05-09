@@ -490,7 +490,7 @@ export default function SignupForm() {
     },
     {
       lineId: 'billing',
-      label: tb('changePeriod'),
+      label: tb('billingPeriodLabel'),
       val: tb(`period.${form.billingPeriod}.label` as 'billing.period.monthly.label'),
       serif: true,
     },
@@ -547,14 +547,26 @@ export default function SignupForm() {
           type="button"
           onClick={handleLocaleToggle}
           disabled={isPending}
+          aria-label={t('localeToggleAria')}
           className="flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-[10px] font-medium text-slate-300 transition-colors hover:text-white"
         >
-          <Globe size={13} />
-          <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
+          <Globe size={13} aria-hidden />
+          <span dir="ltr">{locale === 'ar' ? 'EN' : 'AR'}</span>
         </button>
       </div>
 
       <div className="relative z-10 mx-auto max-w-md px-6 pt-14 pb-20">
+        {(stage === 'info' || stage === 'plan' || stage === 'payment') ? (
+          <p
+            className="mb-6 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-teal-500/90"
+            style={SANS}
+          >
+            {t('stepProgress', {
+              step: stage === 'info' ? 1 : stage === 'plan' ? 2 : 3,
+              total: 3,
+            })}
+          </p>
+        ) : null}
         <div className="mb-12 flex flex-col items-center">
           <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 shadow-[0_0_20px_rgba(13,148,136,0.4)]">
             <span className="text-sm font-black text-white">CH</span>
@@ -734,7 +746,7 @@ export default function SignupForm() {
                   {t('totalDue')}
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div style={{ textAlign: 'end' }}>
                 <div
                   style={{
                     display: 'flex',
@@ -774,7 +786,7 @@ export default function SignupForm() {
                     fontSize: '10px',
                     color: '#334155',
                     marginTop: '4px',
-                    textAlign: 'right',
+                    textAlign: 'end',
                   }}
                 >
                   {t('allTaxesIncluded')}
@@ -786,7 +798,7 @@ export default function SignupForm() {
                       fontSize: '10px',
                       color: '#334155',
                       marginTop: '2px',
-                      textAlign: 'right',
+                      textAlign: 'end',
                     }}
                   >
                     {renewsKey === 'renewsMonthly'
@@ -897,25 +909,28 @@ export default function SignupForm() {
             </button>
 
             {!error ? (
-            <p
-              style={{
-                ...SANS,
-                textAlign: 'center',
-                fontSize: '10px',
-                color: '#1e293b',
-                marginTop: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '5px',
-              }}
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="1" y="11" width="22" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              {t('securedByPaymob')}
-            </p>
+              <div className="mt-2.5 flex w-full min-w-0 flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-1">
+                <p
+                  style={{
+                    ...SANS,
+                    textAlign: 'center',
+                    fontSize: '10px',
+                    color: '#94a3b8',
+                    marginTop: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '5px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                    <rect x="1" y="11" width="22" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <span className="max-w-full whitespace-normal">{t('securedByPaymob')}</span>
+                </p>
+              </div>
             ) : null}
 
             <p
@@ -955,9 +970,6 @@ export default function SignupForm() {
                   >
                     {t('stageOneTitle')}
                   </h1>
-                  <p className="text-[12px] text-slate-500" style={SANS}>
-                    {t('stageOneSubtitle')}
-                  </p>
                 </div>
 
                 <UnderlineInput
@@ -1208,14 +1220,14 @@ export default function SignupForm() {
                         <span
                           className={`ms-1 text-[9px] ${form.billingPeriod === p ? 'text-amber-400' : 'text-slate-700'}`}
                         >
-                          +15%
+                          {t('monthlyPremiumMark')}
                         </span>
                       ) : null}
                       {p === 'annual' ? (
                         <span
                           className={`ms-1 text-[9px] ${form.billingPeriod === p ? 'text-teal-400' : 'text-slate-700'}`}
                         >
-                          -15%
+                          {t('annualDiscountMark')}
                         </span>
                       ) : null}
                     </button>

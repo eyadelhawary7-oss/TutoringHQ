@@ -4,6 +4,7 @@ import { useState, FormEvent, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
+import { isRefreshTokenNotFoundError } from '@/lib/supabaseRefreshSilence';
 import { Globe } from 'lucide-react';
 
 export default function LoginPage() {
@@ -123,7 +124,11 @@ export default function LoginPage() {
       if (data.user) {
         const {
           data: { session },
+          error: sessionErr,
         } = await supabase.auth.getSession();
+        if (sessionErr && !isRefreshTokenNotFoundError(sessionErr)) {
+          /* non-public noise only */
+        }
         if (!session) return;
 
         const checkRes = await fetch('/api/admin/check', {
@@ -235,6 +240,7 @@ export default function LoginPage() {
           type="button"
           onClick={handleLocaleToggle}
           disabled={isPending}
+          aria-label={t('localeToggleAria')}
           style={{
             display: 'flex',
             alignItems: 'center',

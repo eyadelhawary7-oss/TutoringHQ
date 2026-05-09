@@ -102,7 +102,7 @@ export function AtRiskPanel() {
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-amber-100/50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-start hover:bg-amber-100/50 transition-colors"
       >
         <div className="flex items-center gap-2">
           <AlertTriangle size={18} className="text-amber-600 shrink-0" />

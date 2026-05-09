@@ -20,6 +20,31 @@
     "enterprise": "Enterprise",
     "top_centers": "Top Centers"
   },
+  "pricingPage": {
+    "metaTitle": "Pricing — CenterHQ",
+    "metaDescription": "Compare Solo through Enterprise plans and Top Centers. Transparent monthly, quarterly, and annual pricing for tutoring centres.",
+    "navHome": "Home",
+    "title": "Plans for every centre size",
+    "subtitle": "Monthly, quarterly, and annual billing. All amounts include VAT where applicable.",
+    "studentsCapEn": "Up to {count} students/week",
+    "studentsCapAr": "حتى {count} طالب/أسبوع",
+    "badgeEntry": "Entry level",
+    "badgePopular": "Most popular",
+    "colMonthly": "Monthly list",
+    "colQuarterly": "Quarterly (per month)",
+    "colAnnual": "Annual (effective / mo)",
+    "priceDisclaimer": "Figures follow our published price list; invoiced amounts prevail.",
+    "ctaSignup": "Get started",
+    "topCentersTitle": "Top Centers",
+    "topCentersSubtitle": "كبار السناتر",
+    "topCentersStudents": "2,000+ students/week",
+    "topCentersCta": "Custom pricing →",
+    "footerNote": "Questions? Email eyad@ehgintelligence.com",
+    "contactModalTitle": "Contact us about Top Centers",
+    "contactModalBody": "Tell us about your scale and we will follow up with a tailored quote.",
+    "contactModalEmail": "Email eyad@ehgintelligence.com",
+    "contactModalClose": "Close"
+  },
   "invoice": {
     "subtotal": "Subtotal",
     "serviceFee": "Service Fee (6%)",
@@ -996,7 +1021,8 @@
     "title": "Title",
     "welcomeBack": "Welcome back",
     "headline": "Sign in to your center",
-    "register": "Register your center"
+    "register": "Register your center",
+    "localeToggleAria": "Switch language"
   },
   "forgotPassword": {
     "title": "Reset PIN",
@@ -2823,6 +2849,9 @@
     "errorPhoneBlacklisted": "Registration is not available for this phone number.",
     "paymentUnavailable": "Online payment is temporarily unavailable. Please try again later or contact support.",
     "monthlyPremiumMark": "+15%",
+    "annualDiscountMark": "-15%",
+    "stepProgress": "Step {step} of {total}",
+    "localeToggleAria": "Switch language",
     "topCentersTitle": "Top Centers",
     "stageOneTitle": "Tell us about your center",
     "stageOneSubtitle": "Your request will be reviewed within minutes",
@@ -4212,6 +4241,7 @@
     "submitRequest": "Submit Request",
     "title": "Title",
     "changePeriod": "Billing period",
+    "billingPeriodLabel": "Billing period",
     "billedQuarterlyLine": "{amount} EGP · billed quarterly",
     "billedMonthlyLine": "{amount} EGP · billed monthly",
     "billedAnnuallyLine": "{amount} EGP · billed annually",
@@ -5056,7 +5086,15 @@
       "finalCtaButton": "Get started",
       "footerTagline": "CenterHQ, tutoring center management platform",
       "footerSupportLabel": "WhatsApp support",
-      "footerRights": "© 2026 EHG Intelligence. All rights reserved."
+      "footerRights": "© 2026 EHG Intelligence. All rights reserved.",
+      "openMenuAria": "Open menu",
+      "closeMenuAria": "Close menu",
+      "switchLocaleAria": "Switch language",
+      "trustBandKicker": "Trusted nationwide",
+      "trustBandTitle": "Built for tutoring centres that outgrow spreadsheets",
+      "trustBandBody": "Attendance, billing, parent messaging, and reporting in one platform — secure and ready to scale.",
+      "trustBandPricing": "View pricing",
+      "trustBandContact": "Contact us"
     },
     "title": "Title"
   },

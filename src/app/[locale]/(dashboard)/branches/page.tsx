@@ -227,11 +227,11 @@ export default function BranchesPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('branchName')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('students')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('monthlyRevenue')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('outstanding')}</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('staffCount')}</th>
+              <th className="text-start px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('branchName')}</th>
+              <th className="text-start px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('students')}</th>
+              <th className="text-start px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('monthlyRevenue')}</th>
+              <th className="text-start px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('outstanding')}</th>
+              <th className="text-start px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">{t('staffCount')}</th>
             </tr>
           </thead>
           <tbody>

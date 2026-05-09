@@ -1,6 +1,8 @@
 /**
  * Subscription tier rows — single source for `PLANS` in `@/lib/pricing.ts`.
  * Order = lowest → highest (excluding `top_centers`, defined only in pricing.ts).
+ *
+ * `annualEffectiveMonthly` — whole EGP/month when billed annually (docs/PRICING_SPEC.md).
  */
 export const SUBSCRIPTION_PLAN_DEFINITIONS = [
   {
@@ -10,6 +12,8 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 50,
     quarterlyAllIn: 999,
     monthlyListPrice: 1149,
+    annualEffectiveMonthly: 849,
+    landingBadge: 'entry' as const,
   },
   {
     key: 'nano',
@@ -18,6 +22,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 75,
     quarterlyAllIn: 1999,
     monthlyListPrice: 2499,
+    annualEffectiveMonthly: 1699,
   },
   {
     key: 'starter',
@@ -26,6 +31,8 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 150,
     quarterlyAllIn: 4499,
     monthlyListPrice: 5199,
+    annualEffectiveMonthly: 3824,
+    landingBadge: 'popular' as const,
   },
   {
     key: 'pro',
@@ -34,6 +41,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 500,
     quarterlyAllIn: 7999,
     monthlyListPrice: 9199,
+    annualEffectiveMonthly: 6799,
   },
   {
     key: 'business',
@@ -42,6 +50,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 1000,
     quarterlyAllIn: 12999,
     monthlyListPrice: 14999,
+    annualEffectiveMonthly: 11049,
   },
   {
     key: 'enterprise',
@@ -50,6 +59,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 2000,
     quarterlyAllIn: 18499,
     monthlyListPrice: 21299,
+    annualEffectiveMonthly: 15724,
     isMegaCenter: true,
   },
 ] as const;

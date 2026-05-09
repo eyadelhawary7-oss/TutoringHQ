@@ -652,14 +652,14 @@ export default function StudentsPage() {
         <style>
           body { margin: 0; padding: 10mm; font-family: system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .card { width: 85.6mm; height: 54mm; background: linear-gradient(135deg, #0D9488 0%, #1E293B 100%); position: relative; overflow: hidden; color: white; }
-          .top-bar { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 2.5mm 3mm; background: rgba(0,0,0,0.35); }
+          .top-bar { position: absolute; top: 0; inset-inline-start: 0; inset-inline-end: 0; display: flex; align-items: center; justify-content: space-between; padding: 2.5mm 3mm; background: rgba(0,0,0,0.35); }
           .center-name { font-size: 9px; font-weight: 500; opacity: 0.9; }
           .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
           .qr-wrap { width: 25mm; height: 25mm; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
           .qr-wrap img { width: 20mm; height: 20mm; }
           .name { font-size: 14px; font-weight: bold; margin-top: 2.5mm; text-align: center; }
           .num { font-size: 10px; opacity: 0.7; margin-top: 0.5mm; font-family: monospace; }
-          .bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 1.5mm; border-top: 1px solid rgba(255,255,255,0.2); text-align: center; font-size: 7px; opacity: 0.3; font-family: monospace; }
+          .bottom { position: absolute; bottom: 0; inset-inline-start: 0; inset-inline-end: 0; padding: 1.5mm; border-top: 1px solid rgba(255,255,255,0.2); text-align: center; font-size: 7px; opacity: 0.3; font-family: monospace; }
         </style>
       </head>
       <body>

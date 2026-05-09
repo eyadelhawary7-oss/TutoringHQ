@@ -465,22 +465,22 @@ export default function CenterAssignmentsPage() {
             <table className="w-full text-sm min-w-[800px]">
               <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
                 <tr className="text-[var(--color-text-muted)]">
-                  <th className={`px-4 py-3 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <th className={`px-4 py-3 font-medium text-start`}>
                     {t('centerAssignments.col_center')}
                   </th>
-                  <th className={`px-4 py-3 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <th className={`px-4 py-3 font-medium text-start`}>
                     {t('centerAssignments.col_sourced_by')}
                   </th>
-                  <th className={`px-4 py-3 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <th className={`px-4 py-3 font-medium text-start`}>
                     {t('centerAssignments.col_staff')}
                   </th>
-                  <th className={`px-4 py-3 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <th className={`px-4 py-3 font-medium text-start`}>
                     {t('centerAssignments.col_territory')}
                   </th>
-                  <th className={`px-4 py-3 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <th className={`px-4 py-3 font-medium text-start`}>
                     {t('centerAssignments.col_status')}
                   </th>
-                  <th className={`px-4 py-3 font-medium ${isRTL ? 'text-left' : 'text-right'}`}>
+                  <th className={`px-4 py-3 font-medium text-end`}>
                     {t('centerAssignments.col_actions')}
                   </th>
                 </tr>
@@ -499,7 +499,7 @@ export default function CenterAssignmentsPage() {
                             : 'bg-[var(--color-surface-1)]'
                       }`}
                     >
-                      <td className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <td className={`px-4 py-3 text-start`}>
                         <div className="font-medium text-[var(--color-text-primary)]">{cen?.name}</div>
                         <div className="text-xs text-[var(--color-text-muted)]">
                           {cen?.center_code} · {cen?.plan} · {cen?.city}
@@ -510,7 +510,7 @@ export default function CenterAssignmentsPage() {
                           </span>
                         ) : null}
                       </td>
-                      <td className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <td className={`px-4 py-3 text-start`}>
                         <span
                           className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${
                             SOURCED_BY_COLORS[a.sourced_by] ?? ''
@@ -519,10 +519,10 @@ export default function CenterAssignmentsPage() {
                           {t(`centerAssignments.sourced_${a.sourced_by}` as 'centerAssignments.sourced_eyad')}
                         </span>
                       </td>
-                      <td className={`px-4 py-3 text-[var(--color-text-primary)] ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <td className={`px-4 py-3 text-[var(--color-text-primary)] text-start`}>
                         {staffCellLabel(a)}
                       </td>
-                      <td className={`px-4 py-3 text-[var(--color-text-muted)] text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <td className={`px-4 py-3 text-[var(--color-text-muted)] text-xs text-start`}>
                         {a.territory_city ?? t('centerAssignments.value_empty')}
                         {a.territory_override_reason ? (
                           <div className="text-amber-600 dark:text-amber-400 mt-0.5">
@@ -531,7 +531,7 @@ export default function CenterAssignmentsPage() {
                           </div>
                         ) : null}
                       </td>
-                      <td className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <td className={`px-4 py-3 text-start`}>
                         <span
                           className={`inline-block px-2 py-0.5 rounded-md text-xs ${
                             STATUS_COLORS[a.assignment_status] ?? ''
@@ -543,8 +543,8 @@ export default function CenterAssignmentsPage() {
                           <div className="text-xs text-red-600 dark:text-red-400 mt-1">{a.dispute_notes}</div>
                         ) : null}
                       </td>
-                      <td className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-                        <div className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}>
+                      <td className="px-4 py-3 text-end">
+                        <div className="flex items-center gap-2 justify-end">
                           <button
                             type="button"
                             onClick={() => openEdit(a)}

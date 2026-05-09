@@ -9,6 +9,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Activity, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 type CronStatus = {
@@ -187,7 +188,7 @@ export default function AdminHealthPage() {
           onClick={() => router.push('/admin')}
           className="inline-flex items-center gap-2 text-sm text-teal-600 dark:text-teal-400 hover:underline mb-4"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <DirectionalIcon icon={ArrowLeft} className="h-4 w-4" />
           {t('healthBack')}
         </button>
 

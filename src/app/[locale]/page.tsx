@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { Link } from '@/i18n/routing';
-import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { PLANS, ORDERED_SUBSCRIPTION_PLAN_KEYS } from '@/lib/pricing';
 import {
   getSupportWhatsAppDisplayLabel,
@@ -14,197 +15,6 @@ import { Menu, X } from 'lucide-react';
 const WA_SUPPORT = getSupportWhatsAppWaMeBase();
 const WA_SUPPORT_LABEL = getSupportWhatsAppDisplayLabel();
 
-type DemoScreen = 'scanning' | 'scanned' | 'dashboard' | 'whatsapp' | 'payment';
-
-const SCREEN_SEQUENCE: DemoScreen[] = ['scanning', 'scanned', 'dashboard', 'whatsapp', 'payment'];
-
-const ScannerScreen = ({ demoScreen }: { demoScreen: DemoScreen }) => (
-  <div
-    className="absolute inset-0 flex items-center justify-center bg-[#080c14]"
-    style={{ background: 'radial-gradient(ellipse at center, #0d1520 0%, #050810 100%)' }}
-  >
-    {/* Student ID Card */}
-    <div
-      className="relative h-[108px] w-[180px]"
-      style={{
-        transform: demoScreen === 'scanned' ? 'rotate(0deg) scale(1.05)' : 'rotate(-3deg) scale(0.97)',
-        transition: 'transform 0.7s ease-out',
-      }}
-    >
-      <div className="h-full w-full overflow-hidden rounded-xl border border-slate-600 bg-gradient-to-br from-slate-700 to-slate-800 shadow-2xl">
-        <div className="flex h-7 items-center gap-2 bg-teal-700 px-3">
-          <span
-            className="text-[8px] tracking-widest text-white"
-            style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
-          >
-            <span className="text-white">CENTER</span>
-            <span className="text-teal-600">HQ</span>
-          </span>
-          <span className="ms-auto text-[7px] text-teal-200">طالب</span>
-        </div>
-        <div className="flex gap-2 p-2">
-          <div className="flex h-14 w-12 shrink-0 items-center justify-center rounded-md border border-slate-500 bg-slate-600">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5" aria-hidden>
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </div>
-          <div className="flex flex-col justify-center gap-1">
-            <div className="text-[9px] font-bold text-white">Mohamed Ahmed</div>
-            <div className="text-[8px] text-slate-400">#001-0042</div>
-            <div className="mt-0.5 text-[7px] text-teal-400">IB Year 1</div>
-            <div className="mt-1 flex gap-[2px]">
-              {Array.from({ length: 18 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-full bg-slate-500" style={{ width: i % 3 === 0 ? '2px' : '1px' }} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {demoScreen === 'scanned' ? (
-        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shadow-[0_0_30px_rgba(13,148,136,0.8)]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-        </div>
-      ) : null}
-    </div>
-
-    <div className="pointer-events-none absolute inset-6">
-      <div className="absolute start-0 top-0 h-8 w-8 rounded-ss-sm border-s-[3px] border-t-[3px] border-teal-400" />
-      <div className="absolute end-0 top-0 h-8 w-8 rounded-se-sm border-e-[3px] border-t-[3px] border-teal-400" />
-      <div className="absolute bottom-0 start-0 h-8 w-8 rounded-es-sm border-b-[3px] border-s-[3px] border-teal-400" />
-      <div className="absolute bottom-0 end-0 h-8 w-8 rounded-ee-sm border-b-[3px] border-e-[3px] border-teal-400" />
-    </div>
-
-    {demoScreen === 'scanning' ? (
-      <div className="pointer-events-none absolute inset-6 overflow-hidden [container-type:size]">
-        <div
-          className="chq-landing-scanline-bar absolute start-8 end-8 top-0 h-[2px] rounded-full"
-          style={{
-            background: 'linear-gradient(90deg,transparent,#0D9488,transparent)',
-            boxShadow: '0 0 12px 2px rgba(13,148,136,0.6)',
-          }}
-        />
-      </div>
-    ) : null}
-  </div>
-);
-
-const DashboardScreen = ({ locale }: { locale: string }) => (
-  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[var(--color-surface-0)] p-3">
-    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">لوحة التحكم</div>
-    <div className="grid grid-cols-2 gap-1.5">
-      <div className="rounded-lg bg-slate-800 p-2">
-        <div className="text-[8px] text-slate-500">الطلاب</div>
-        <div className="text-sm font-bold text-white">{formatNumber(247, locale)}</div>
-        <div className="text-[8px] text-teal-400">
-          ↑ {formatNumber(12, locale)} هذا الشهر
-        </div>
-      </div>
-      <div className="rounded-lg bg-slate-800 p-2">
-        <div className="text-[8px] text-slate-500">الإيرادات</div>
-        <div className="text-sm font-bold text-white leading-tight">{formatCurrency(21000, locale)}</div>
-        <div className="text-[8px] text-teal-400">{locale === 'ar' ? 'شهرياً' : '/mo'}</div>
-      </div>
-    </div>
-    <div className="rounded-lg bg-slate-800 p-2">
-      <div className="mb-1 flex justify-between">
-        <span className="text-[8px] text-slate-500">حضور اليوم</span>
-        <span className="text-[8px] text-teal-400">{formatPercent(87, locale)}</span>
-      </div>
-      <div className="h-1.5 rounded-full bg-slate-700">
-        <div className="h-full w-[87%] rounded-full bg-teal-500" />
-      </div>
-    </div>
-    <div className="flex flex-1 flex-col rounded-lg bg-slate-800 p-2">
-      <div className="mb-1.5 text-[8px] text-slate-500">آخر المسحات</div>
-      {['Ahmed K.', 'Sara M.', 'Omar H.'].map((name, i) => (
-        <div key={name} className="mb-1 flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-teal-500" />
-          <span className="text-[8px] text-slate-300">{name}</span>
-          <span className="ms-auto text-[7px] text-slate-600">الآن</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const WhatsAppScreen = () => (
-  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[#0a1628] p-3">
-    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">واتساب</div>
-    <div className="flex items-center gap-2 rounded-lg bg-[#128C7E] p-2">
-      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden>
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-        </svg>
-      </div>
-      <div>
-        <div
-          className="text-[9px] text-white"
-          style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
-        >
-          <span className="text-white">CENTER</span>
-          <span className="text-teal-600">HQ</span>
-        </div>
-        <div className="text-[7px] text-green-200">متصل الآن</div>
-      </div>
-    </div>
-    <div className="flex flex-1 flex-col gap-1.5">
-      <div className="max-w-[85%] rounded-lg rounded-tl-sm bg-white/10 p-2">
-        <div className="text-[8px] leading-relaxed text-white">تنبيه غياب: محمد أحمد لم يحضر جلسة اليوم</div>
-        <div className="mt-0.5 text-[7px] text-white/50">10:30</div>
-      </div>
-      <div className="max-w-[85%] rounded-lg rounded-tl-sm bg-white/10 p-2">
-        <div className="text-[8px] leading-relaxed text-white">تذكير: الاشتراك الشهري مستحق يوم الجمعة</div>
-        <div className="mt-0.5 text-[7px] text-white/50">10:31</div>
-      </div>
-      <div className="max-w-[85%] self-end rounded-lg rounded-tr-sm bg-teal-600 p-2">
-        <div className="text-[8px] text-white">شكراً، سيتم الدفع غداً</div>
-        <div className="mt-0.5 text-right text-[7px] text-white/70">10:35 ✓✓</div>
-      </div>
-    </div>
-  </div>
-);
-
-const PaymentScreen = ({ locale }: { locale: string }) => (
-  <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden bg-[var(--color-surface-0)] p-3">
-    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">المدفوعات</div>
-    <div className="flex items-center gap-3 rounded-xl border border-teal-700/50 bg-teal-900/40 p-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-teal-500 bg-teal-500/20">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </div>
-      <div>
-        <div className="text-[9px] font-bold text-teal-300">تم استلام الدفعة</div>
-        <div className="text-xs font-bold text-white">{formatCurrency(1500, locale)}</div>
-        <div className="text-[8px] text-slate-500">سنتر النخبة للغات</div>
-      </div>
-    </div>
-    <div className="flex flex-1 flex-col rounded-xl bg-slate-800 p-2">
-      <div className="mb-2 text-[8px] text-slate-500">آخر المدفوعات</div>
-      {[
-        { name: 'Ahmed K.', amount: 500, status: 'paid' as const },
-        { name: 'Sara M.', amount: 500, status: 'paid' as const },
-        { name: 'Omar H.', amount: 500, status: 'pending' as const },
-      ].map((p, i) => (
-        <div key={`${p.name}-${i}`} className="mb-1.5 flex items-center gap-2">
-          <div className={`h-1.5 w-1.5 rounded-full ${p.status === 'paid' ? 'bg-teal-500' : 'bg-amber-500'}`} />
-          <span className="flex-1 text-[8px] text-slate-300">{p.name}</span>
-          <span className="text-[8px] font-semibold text-white">{formatCurrency(p.amount, locale)}</span>
-        </div>
-      ))}
-    </div>
-    <div className="flex items-center justify-between rounded-lg bg-slate-800 p-2">
-      <span className="text-[8px] text-slate-500">إجمالي الشهر</span>
-      <span className="text-xs font-bold text-teal-400">{formatCurrency(21000, locale)}</span>
-    </div>
-  </div>
-);
 
 export default function LocaleHomePage() {
   const t = useTranslations('landing');
@@ -212,50 +22,6 @@ export default function LocaleHomePage() {
   const footerT = useTranslations('footer');
   const locale = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [demoScreen, setDemoScreen] = useState<DemoScreen>('scanning');
-  const [isVisible, setIsVisible] = useState(false);
-  const phoneDemoRef = useRef<HTMLDivElement | null>(null);
-
-  // Observe after layout so ref is always attached; avoid setState churn while intersecting.
-  useLayoutEffect(() => {
-    const el = phoneDemoRef.current;
-    if (typeof IntersectionObserver === 'undefined') {
-      setIsVisible(true);
-      return;
-    }
-    if (!el) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      const next = entry?.isIntersecting ?? false;
-      setIsVisible((prev) => (prev === next ? prev : next));
-    }, { threshold: 0.1 });
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // Per-screen delays; single timeout with cleanup - no timers while off-screen.
-  useEffect(() => {
-    if (!isVisible) return;
-
-    const timings: Record<DemoScreen, number> = {
-      scanning: 2500,
-      scanned: 1800,
-      dashboard: 3000,
-      whatsapp: 3000,
-      payment: 3000,
-    };
-
-    const timerId = window.setTimeout(() => {
-      setDemoScreen((current) => {
-        const idx = SCREEN_SEQUENCE.indexOf(current);
-        const next = (idx + 1) % SCREEN_SEQUENCE.length;
-        return SCREEN_SEQUENCE[next];
-      });
-    }, timings[demoScreen]);
-
-    return () => window.clearTimeout(timerId);
-  }, [demoScreen, isVisible]);
 
   const heroLines = t('heroTitle').split('\n').filter((line) => line.length > 0);
   const featureKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] as const;
@@ -300,7 +66,7 @@ export default function LocaleHomePage() {
             type="button"
             className="absolute start-4 top-1/2 z-10 inline-flex -translate-y-1/2 rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white md:hidden btn-press chq-focus [&_svg]:text-slate-300"
             aria-expanded={mobileOpen}
-            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-label={mobileOpen ? m('closeMenuAria') : m('openMenuAria')}
             onClick={() => setMobileOpen((o) => !o)}
           >
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -345,12 +111,12 @@ export default function LocaleHomePage() {
               >
                 {m('navFeatures')}
               </a>
-              <a
-                href="#pricing-preview"
+              <Link
+                href="/pricing"
                 className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
               >
                 {m('navPricing')}
-              </a>
+              </Link>
               {WA_SUPPORT ? (
                 <a
                   href={WA_SUPPORT}
@@ -370,8 +136,9 @@ export default function LocaleHomePage() {
                 href="/"
                 locale={locale === 'ar' ? 'en' : 'ar'}
                 className="inline-flex rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-300 hover:text-white btn-press chq-focus"
+                aria-label={m('switchLocaleAria')}
               >
-                {locale === 'ar' ? 'EN' : 'عر'}
+                <span dir="ltr">{locale === 'ar' ? 'EN' : 'AR'}</span>
               </Link>
               <Link
                 href="/login"
@@ -399,13 +166,13 @@ export default function LocaleHomePage() {
               >
                 {m('navFeatures')}
               </a>
-              <a
-                href="#pricing-preview"
+              <Link
+                href="/pricing"
                 className="rounded-xl px-3 py-3 text-slate-300 btn-press chq-focus"
                 onClick={() => setMobileOpen(false)}
               >
                 {m('navPricing')}
-              </a>
+              </Link>
               {WA_SUPPORT ? (
                 <a
                   href={WA_SUPPORT}
@@ -471,116 +238,15 @@ export default function LocaleHomePage() {
           </div>
 
           <div className="flex justify-center md:justify-end">
-            <div
-              ref={phoneDemoRef}
-              className="relative mx-auto h-[560px] w-[280px] shrink-0 [contain:layout_paint]"
-              style={{ willChange: 'transform', transform: 'translateZ(0)' }}
-              aria-hidden
-              dir="ltr"
-            >
-              {/* Outer phone frame */}
-              <div className="absolute inset-0 rounded-[48px] border border-slate-600 bg-slate-800 shadow-[0_0_80px_rgba(13,148,136,0.2)]" />
-
-              {/* Inner screen */}
-              <div className="absolute inset-[3px] flex flex-col overflow-hidden rounded-[46px] bg-[#0a0f1a]">
-                {/* Status bar */}
-                <div className="flex items-center justify-between px-6 pb-2 pt-4">
-                  <span className="text-[11px] font-semibold text-[var(--color-text-secondary)]">9:41</span>
-                  <div className="h-5 w-16 rounded-full bg-[var(--color-surface-3)]" />
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex h-3 items-end gap-[2px]">
-                      <div className="h-1 w-[3px] rounded-full bg-slate-500" />
-                      <div className="h-1.5 w-[3px] rounded-full bg-slate-500" />
-                      <div className="h-2 w-[3px] rounded-full bg-slate-400" />
-                      <div className="h-3 w-[3px] rounded-full bg-teal-400" />
-                    </div>
-                    <div className="relative h-2.5 w-5 rounded-[3px] border border-slate-400">
-                      <div className="absolute top-[2px] bottom-[2px] start-[2px] end-[4px] rounded-[1px] bg-teal-400" />
-                      <div className="absolute -end-[3px] top-1/2 h-[6px] w-[3px] -translate-y-1/2 rounded-e-full bg-slate-500" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* App header */}
-                <div className="flex items-center justify-center border-b border-slate-800 py-2">
-                  <span
-                    className="text-xs uppercase tracking-widest"
-                    style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
-                  >
-                    <span className="text-white">CENTER</span>
-                    <span className="text-teal-600">HQ</span>
-                  </span>
-                </div>
-
-                {/* Multi-screen demo - pause CSS animations when mockup is off-screen */}
-                <div
-                  className={
-                    isVisible
-                      ? 'relative min-h-0 flex-1 overflow-hidden bg-[#080c14]'
-                      : 'relative min-h-0 flex-1 overflow-hidden bg-[#080c14] [&_.animate-pulse]:![animation-play-state:paused] [&_.chq-landing-scanline-bar]:![animation-play-state:paused]'
-                  }
-                  style={{ willChange: 'transform', transform: 'translateZ(0)' }}
-                >
-                  {(demoScreen === 'scanning' || demoScreen === 'scanned') && <ScannerScreen demoScreen={demoScreen} />}
-                  {demoScreen === 'dashboard' ? <DashboardScreen locale={locale} /> : null}
-                  {demoScreen === 'whatsapp' ? <WhatsAppScreen /> : null}
-                  {demoScreen === 'payment' ? <PaymentScreen locale={locale} /> : null}
-                </div>
-
-                {demoScreen === 'scanned' ? (
-                  <div className="mx-3 mb-2 rounded-2xl border border-teal-900 bg-slate-800/90 p-3 transition-[opacity,transform] duration-500">
-                    <div className="flex items-center gap-3" dir="ltr">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-teal-700 bg-teal-900/60">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-semibold text-white">Mohamed Ahmed</p>
-                        <p className="text-[10px] text-teal-400">تم تسجيل الحضور</p>
-                      </div>
-                      <span className="text-[10px] text-[var(--color-text-muted)]">الآن</span>
-                    </div>
-                  </div>
-                ) : null}
-                {demoScreen === 'dashboard' ? (
-                  <div className="mx-3 mb-2 rounded-2xl border border-slate-700 bg-slate-800/90 p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 animate-pulse rounded-full bg-teal-500" />
-                      <p className="text-[10px] text-[var(--color-text-secondary)]">
-                        {formatNumber(247, locale)} طالب نشط اليوم
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-                {demoScreen === 'whatsapp' ? (
-                  <div className="mx-3 mb-2 rounded-2xl border border-[#128C7E]/40 bg-[#128C7E]/20 p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-                      <p className="text-[10px] text-green-300">
-                        تم إرسال {formatNumber(12, locale)} رسالة واتساب
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-                {demoScreen === 'payment' ? (
-                  <div className="mx-3 mb-2 rounded-2xl border border-teal-800/50 bg-teal-900/30 p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-teal-400" />
-                      <p className="text-[10px] text-teal-300">
-                        تم تحصيل {formatCurrency(21000, locale)} هذا الشهر
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-
-                {/* Bottom bar */}
-                <div className="flex items-center justify-center gap-2 border-t border-slate-800 bg-[#0a0f1a] py-3">
-                  <div className="h-2 w-2 rounded-full bg-teal-500" />
-                  <div className="h-2 w-2 rounded-full bg-slate-700" />
-                  <div className="h-2 w-2 rounded-full bg-slate-700" />
-                </div>
-              </div>
+            <div className="relative mx-auto h-[560px] w-[280px] shrink-0 drop-shadow-[0_0_80px_rgba(13,148,136,0.2)]">
+              <Image
+                src={locale === 'ar' ? '/landing/phone-mockup-ar.png' : '/landing/phone-mockup-en.png'}
+                alt=""
+                fill
+                className="object-contain object-center"
+                sizes="280px"
+                priority
+              />
             </div>
           </div>
         </div>
@@ -635,7 +301,7 @@ export default function LocaleHomePage() {
                   block,
                   <div
                     key={`line-${idx}`}
-                    className="hidden h-0 w-12 shrink-0 self-center border-t border-dashed border-teal-600/50 md:mx-4 md:mt-6 md:block md:w-16 lg:w-24"
+                    className="hidden h-0 w-12 shrink-0 self-center border-t-2 border-dashed border-stone-300 md:mx-4 md:mt-6 md:block md:w-16 lg:w-24"
                     aria-hidden
                   />,
                 ];
@@ -729,7 +395,7 @@ export default function LocaleHomePage() {
             })}
           </div>
           <Link
-            href="/signup"
+            href="/pricing"
             className="mt-10 inline-flex rounded-xl border border-slate-600 bg-[var(--color-surface-1)] px-6 py-3 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:border-slate-500 hover:bg-[var(--color-surface-2)] hover:text-white btn-press chq-focus"
           >
             {m('pricingCta')}
@@ -747,6 +413,39 @@ export default function LocaleHomePage() {
           >
             {m('finalCtaButton')}
           </Link>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-800/40 bg-[#0c1424] px-4 py-12 md:px-6 md:py-16">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-400">{m('trustBandKicker')}</p>
+          <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">{m('trustBandTitle')}</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-400">{m('trustBandBody')}</p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+            <Link
+              href="/pricing"
+              className="inline-flex rounded-xl border border-slate-600 bg-slate-800/80 px-6 py-3 text-sm font-semibold text-white transition-colors hover:border-teal-600/50 hover:bg-slate-800 btn-press chq-focus"
+            >
+              {m('trustBandPricing')}
+            </Link>
+            {WA_SUPPORT ? (
+              <a
+                href={WA_SUPPORT}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+              >
+                {m('trustBandContact')}
+              </a>
+            ) : (
+              <a
+                href="mailto:eyad@ehgintelligence.com"
+                className="inline-flex rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+              >
+                {m('trustBandContact')}
+              </a>
+            )}
+          </div>
         </div>
       </section>
 

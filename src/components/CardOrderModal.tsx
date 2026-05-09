@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
 import { X, Search, ChevronRight, ChevronLeft, Check, CreditCard, Lock, Minus, Plus } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import QRCode from 'qrcode';
 import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
@@ -1157,7 +1158,7 @@ export function CardOrderModal({
             >
               {step === 1 ? tCommon('cancel') : (
                 <span className="flex items-center gap-1">
-                  {isRTL ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                  <DirectionalIcon icon={ChevronLeft} className="h-4 w-4" />
                   {tCommon('back')}
                 </span>
               )}
@@ -1170,7 +1171,7 @@ export function CardOrderModal({
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary disabled:opacity-50 flex items-center gap-1"
               >
                 {tCommon('next')}
-                {isRTL ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                <DirectionalIcon icon={ChevronRight} className="h-4 w-4" />
               </button>
             ) : (
               <div className="w-24 shrink-0" aria-hidden />

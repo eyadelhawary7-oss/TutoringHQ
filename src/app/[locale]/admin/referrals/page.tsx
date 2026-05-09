@@ -10,6 +10,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { ArrowLeft, Gift, CheckCircle } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import {
   formatCurrency,
   formatDate,
@@ -310,7 +311,7 @@ export default function AdminReferralsPage() {
               className="rounded-lg p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700"
               aria-label={tCommon('back')}
             >
-              <ArrowLeft size={20} className="text-[var(--color-text-primary)]" />
+              <DirectionalIcon icon={ArrowLeft} className="h-5 w-5 text-[var(--color-text-primary)]" />
             </button>
             <Gift className="h-6 w-6 text-teal-600 dark:text-teal-400" aria-hidden />
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('pageTitle')}</h1>

@@ -7,6 +7,7 @@ import { useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Download, Gift, Link2 } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { PageHeader } from '@/components/shared';
 import { ReferralWithdrawalPanel } from '@/components/referrals/ReferralWithdrawalPanel';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
@@ -224,7 +225,7 @@ export default function SettingsReferralsPage() {
         onClick={() => router.push('/settings')}
         className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] mb-4"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <DirectionalIcon icon={ArrowLeft} className="w-4 h-4" aria-hidden />
         {tc('back')}
       </button>
 

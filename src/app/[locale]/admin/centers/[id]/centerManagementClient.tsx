@@ -72,13 +72,13 @@ const Toggle = ({
         style={{
           position: 'absolute',
           top: 3,
-          left: checked ? 25 : 3,
+          insetInlineStart: checked ? 25 : 3,
           width: 20,
           height: 20,
           borderRadius: '50%',
           backgroundColor: 'white',
           boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
-          transition: 'left 0.2s',
+          transition: 'inset-inline-start 0.2s',
         }}
       />
     </div>
@@ -2170,7 +2170,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   <p className="text-slate-500 dark:text-slate-400">{t('centerManagement.section4.noInvoices')}</p>
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
-                    <table className="w-full text-sm text-left text-slate-800 dark:text-slate-200 min-w-[720px]">
+                    <table className="w-full text-sm text-start text-slate-800 dark:text-slate-200 min-w-[720px]">
                       <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
                         <tr>
                           <th className="p-2 font-medium">{t('centerManagement.section4.invoiceNumber')}</th>

@@ -9,6 +9,7 @@ import { parseFile, autoDetectMapping, type ParsedData, type ColumnMapping } fro
 import { normalizePhone } from '@/lib/utils/phone';
 import QRCode from 'qrcode';
 import { Upload, Check, ArrowLeft } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { Progress } from '@/components/ui/progress';
 
 type ImportStep = 'upload' | 'map' | 'resolveGroups' | 'preview' | 'importing' | 'success';
@@ -328,8 +329,8 @@ export default function ImportStudentsPage() {
   return (
     <div className="p-4 md:p-6 space-y-5 animate-fade-in">
       <div className="flex items-center gap-3">
-        <Link href="/students" className="p-1.5 rounded-lg hover:bg-muted">
-          <ArrowLeft size={18} />
+        <Link href="/students" className="p-1.5 rounded-lg hover:bg-muted" aria-label={tCommon('back')}>
+          <DirectionalIcon icon={ArrowLeft} className="h-[18px] w-[18px]" />
         </Link>
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
       </div>

@@ -17,9 +17,13 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
+import { isRefreshTokenNotFoundError } from '@/lib/supabaseRefreshSilence';
 
 const PUBLIC_PATHS = [
   '/',
+  '/pricing',
+  '/terms',
+  '/privacy',
   '/login',
   '/signup',
   '/forgot-password',
@@ -104,14 +108,21 @@ export default function AppShell({ children }: { children: ReactNode }) {
       router.replace(pathname, { locale: newLocale as 'ar' | 'en' });
     });
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-      fetch('/api/user/locale', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ locale: newLocale }),
-      }).catch(() => undefined);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error && isRefreshTokenNotFoundError(error)) return;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+        fetch('/api/user/locale', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ locale: newLocale }),
+        }).catch(() => undefined);
+      } catch (e) {
+        if (!isRefreshTokenNotFoundError(e)) {
+          console.error('Locale sync failed:', e);
+        }
+      }
     })();
   };
 

@@ -138,7 +138,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   return (
     <div className="p-2 space-y-2" dir="ltr">
-      <p className="text-xs font-medium text-[var(--color-text-secondary)] text-right" dir="rtl">
+      <p className="text-xs font-medium text-[var(--color-text-secondary)] text-end" dir="rtl">
         الحضور - آخر {weeks} أسابيع
       </p>
 

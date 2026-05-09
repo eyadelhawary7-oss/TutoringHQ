@@ -11,6 +11,7 @@ import { Link } from '@/i18n/routing';
 import { PageHeader, RoleBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Package, Wallet } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
@@ -799,7 +800,7 @@ function SettingsPageContent() {
         >
           <Package className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
           <span className="font-medium text-sm flex-1 text-start">{tCardOrders('ordersNav')}</span>
-          <ChevronRight className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
+          <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
         </Link>
 
         <Link
@@ -808,7 +809,7 @@ function SettingsPageContent() {
         >
           <MessageCircle className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
           <span className="font-medium text-sm flex-1 text-start">{t('whatsappPack')}</span>
-          <ChevronRight className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
+          <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
         </Link>
 
         {/* Tabs */}
@@ -824,7 +825,7 @@ function SettingsPageContent() {
             className="btn-lift inline-flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors card-shadow"
           >
             {t('billing')}
-            <ChevronRight className="w-6 h-6 text-teal-600 dark:text-teal-400 rtl:rotate-180" aria-hidden />
+            <DirectionalIcon icon={ChevronRight} className="w-6 h-6 text-teal-600 dark:text-teal-400" aria-hidden />
           </Link>
           <button
             onClick={() => setActiveTab('team')}
@@ -1004,7 +1005,8 @@ function SettingsPageContent() {
               </div>
               <div className="p-6">
                 <button type="button" onClick={() => setActiveTab('team')} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit">
-                  <Users className="w-4 h-4" /> {t('manageTeam')} <ChevronRight className="w-4 h-4 ms-1" />
+                  <Users className="w-4 h-4" /> {t('manageTeam')}{' '}
+                  <DirectionalIcon icon={ChevronRight} className="inline w-4 h-4 ms-1 align-middle" />
                 </button>
               </div>
             </div>
@@ -1286,7 +1288,7 @@ function SettingsPageContent() {
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{t('billingCardTitle')}</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('billingDesc')}</p>
               </div>
-              <ChevronRight className="w-6 h-6 text-teal-600 dark:text-teal-400 shrink-0 rtl:rotate-180" aria-hidden />
+              <DirectionalIcon icon={ChevronRight} className="w-6 h-6 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden />
             </Link>
 
             {/* 7. WhatsApp Support */}

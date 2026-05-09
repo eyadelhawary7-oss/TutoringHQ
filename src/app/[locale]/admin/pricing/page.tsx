@@ -13,6 +13,7 @@ import { PACK_PLAN_MINIMUMS } from '@/lib/packBilling';
 import { getAnnualChargeRounded } from '@/lib/pricing';
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Banknote } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { formatNumber } from '@/lib/formatNumber';
 
 type PlanRow = {
@@ -301,7 +302,7 @@ export default function AdminPricingPage() {
               className="p-1.5 rounded-lg hover:bg-muted"
               aria-label={tCommon('back')}
             >
-              <ArrowLeft size={20} className={isRTL ? 'rotate-180' : ''} />
+              <DirectionalIcon icon={ArrowLeft} className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2">
               <Banknote className="h-6 w-6 text-[var(--color-brand-500)]" aria-hidden />

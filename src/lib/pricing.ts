@@ -36,6 +36,10 @@ export interface PlanConfig {
   quarterlyAllIn: number;
   /** Listed price if customer pays monthly (+15% tier; nano uses exact list). */
   monthlyListPrice: number;
+  /** Whole EGP/month equivalent on annual billing (PRICING_SPEC). */
+  annualEffectiveMonthly: number;
+  /** Marketing badge on public pricing grid only. */
+  landingBadge?: 'entry' | 'popular';
   isMegaCenter?: boolean;
 }
 
@@ -48,7 +52,9 @@ const PLANS_FROM_DEFS = Object.fromEntries(
       weeklyStudentLimit: d.weeklyStudentLimit,
       quarterlyAllIn: d.quarterlyAllIn,
       monthlyListPrice: d.monthlyListPrice,
+      annualEffectiveMonthly: d.annualEffectiveMonthly,
     };
+    if ('landingBadge' in d && d.landingBadge) cfg.landingBadge = d.landingBadge;
     if ('isMegaCenter' in d && d.isMegaCenter) cfg.isMegaCenter = true;
     return [d.key, cfg];
   }),
@@ -63,6 +69,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     weeklyStudentLimit: null,
     quarterlyAllIn: 0,
     monthlyListPrice: 0,
+    annualEffectiveMonthly: 0,
     isMegaCenter: true,
   },
 };
@@ -158,11 +165,11 @@ export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
   }
 }
 
-/** Per-month inclusive figure when customer pays annual (≈ quarterly × 0.85), whole EGP. */
+/** Per-month inclusive figure when customer pays annual — spec table in `plans.ts`. */
 export function getAnnualMonthlyEquivalent(planKey: PlanKey): number {
   const plan = PLANS[planKey];
   if (!plan || planKey === 'top_centers') return 0;
-  return Math.round(plan.quarterlyAllIn * 0.85);
+  return plan.annualEffectiveMonthly;
 }
 
 export function getQuarterlyCharge(planKey: PlanKey, period: BillingPeriod): number {

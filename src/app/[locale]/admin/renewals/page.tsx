@@ -18,6 +18,7 @@ import {
   X,
   ArrowLeft,
 } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 interface RenewalRow {
@@ -196,10 +197,12 @@ export default function AdminRenewalsPage() {
         <main className="flex-1 flex flex-col min-w-0 p-4 md:p-6 overflow-auto lg:ms-56">
         <div className="flex items-center gap-2 mb-4">
           <button
+            type="button"
             onClick={() => router.push('/admin')}
             className="p-1.5 rounded-lg hover:bg-muted"
+            aria-label={tCommon('back')}
           >
-            <ArrowLeft size={20} />
+            <DirectionalIcon icon={ArrowLeft} className="h-5 w-5" />
           </button>
           <h1 className="text-xl font-bold">{t('renewals')}</h1>
         </div>

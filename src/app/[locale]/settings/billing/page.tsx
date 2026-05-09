@@ -515,7 +515,7 @@ function PaygTab({
             <span
               key={b.plan}
               className="absolute -translate-x-1/2 text-center"
-              style={{ left: `${(b.maxStudents / 2000) * 100}%` }}
+              style={{ insetInlineStart: `${(b.maxStudents / 2000) * 100}%` }}
             >
               <span
                 className={tier.plan === b.plan ? 'font-bold text-teal-600' : ''}
@@ -1441,6 +1441,7 @@ export default function BillingPage() {
     if (v === 'pending') return t('status.pending');
     if (v === 'overdue') return t('status.overdue');
     if (v === 'cancelled' || v === 'canceled') return t('status.cancelled');
+    if (v === 'active') return t('status.active');
     return raw || tCommon('notSet');
   };
 

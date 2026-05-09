@@ -13,6 +13,7 @@ import {
   Target,
   ArrowRight,
 } from 'lucide-react';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import type { GrowthPanelResponse } from '@/types/founder-dash';
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
 
@@ -131,7 +132,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                     key={`conn-${stageKey}`}
                     className="flex flex-col items-center gap-0.5 text-[var(--color-text-secondary)] shrink-0"
                   >
-                    <ArrowRight className="h-4 w-4" aria-hidden />
+                    <DirectionalIcon icon={ArrowRight} className="h-4 w-4" aria-hidden />
                     <span className="text-[10px] rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 font-mono">
                       {convRate(count, nextCount)}
                     </span>

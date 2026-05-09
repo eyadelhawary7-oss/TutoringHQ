@@ -20,6 +20,31 @@
     "enterprise": "مؤسسات",
     "top_centers": "كبار السناتر"
   },
+  "pricingPage": {
+    "metaTitle": "الأسعار — CenterHQ",
+    "metaDescription": "قارِن خطط Solo إلى Enterprise وخطة كبار السناتر. أسعار شهرية وربع سنوية وسنوية شفافة لمراكز الدروس.",
+    "navHome": "الرئيسية",
+    "title": "خطط تناسب كل حجم سنتر",
+    "subtitle": "فوترة شهرية أو ربع سنوية أو سنوية. المبالغ تشمل ضريبة القيمة المضافة حيثما تنطبق.",
+    "studentsCapEn": "Up to {count} students/week",
+    "studentsCapAr": "حتى {count} طالب/أسبوع",
+    "badgeEntry": "مستوى البداية",
+    "badgePopular": "الأكثر شيوعاً",
+    "colMonthly": "السعر الشهري المعلن",
+    "colQuarterly": "ربع سنوي (شهرياً)",
+    "colAnnual": "سنوي (فعّال / شهر)",
+    "priceDisclaimer": "الأرقام وفق قائمة الأسعار المعتمدة؛ يُعتد بالفاتورة الصادرة.",
+    "ctaSignup": "ابدأ الآن",
+    "topCentersTitle": "Top Centers",
+    "topCentersSubtitle": "كبار السناتر",
+    "topCentersStudents": "+٢٬٠٠٠ طالب/أسبوع",
+    "topCentersCta": "تسعير حسب الطلب ←",
+    "footerNote": "استفسارات؟ eyad@ehgintelligence.com",
+    "contactModalTitle": "تواصل بخصوص كبار السناتر",
+    "contactModalBody": "أخبرنا بحجم التشغيل وسنعود إليك بعرض مناسب.",
+    "contactModalEmail": "راسل eyad@ehgintelligence.com",
+    "contactModalClose": "إغلاق"
+  },
   "invoice": {
     "subtotal": "المجموع الجزئي",
     "serviceFee": "رسوم الخدمة (6٪)",
@@ -1369,7 +1394,15 @@
       "finalCtaButton": "ابدأ الآن",
       "footerTagline": "CenterHQ، منصة إدارة السناتر التعليمية",
       "footerSupportLabel": "دعم واتساب",
-      "footerRights": "© ٢٠٢٦ EHG Intelligence. جميع الحقوق محفوظة."
+      "footerRights": "© ٢٠٢٦ EHG Intelligence. جميع الحقوق محفوظة.",
+      "openMenuAria": "فتح القائمة",
+      "closeMenuAria": "إغلاق القائمة",
+      "switchLocaleAria": "تغيير اللغة",
+      "trustBandKicker": "موثوق به على مستوى الوطن",
+      "trustBandTitle": "منصة لسناتر الدروس التي تتجاوز الجداول",
+      "trustBandBody": "حضور وفوترة ورسائل للأهل وتقارير في مكان واحد — جاهزة للتوسع بأمان.",
+      "trustBandPricing": "عرض الأسعار",
+      "trustBandContact": "تواصل معنا"
     },
     "title": "عنوان"
   },
@@ -3273,6 +3306,7 @@
     "submitRequest": "إرسال طلب",
     "title": "عنوان",
     "changePeriod": "فترة الدفع",
+    "billingPeriodLabel": "فترة الفوترة",
     "billedQuarterlyLine": "{amount} ج.م · يُحسب ربع سنوياً",
     "billedMonthlyLine": "{amount} ج.م · يُحسب شهرياً",
     "billedAnnuallyLine": "{amount} ج.م · يُحسب سنوياً",
@@ -4225,7 +4259,8 @@
     "title": "عنوان",
     "welcomeBack": "مرحباً بعودتك",
     "headline": "سجّل دخولك إلى مركزك",
-    "register": "سجل مركزك"
+    "register": "سجل مركزك",
+    "localeToggleAria": "تغيير اللغة"
   },
   "onboarding": {
     "title": "مرحبًا بك في CenterHQ",
@@ -5211,6 +5246,9 @@
     "errorPhoneBlacklisted": "التسجيل غير متاح لهذا الرقم.",
     "paymentUnavailable": "الدفع الإلكتروني غير متاح مؤقتاً. حاول لاحقاً أو تواصل مع الدعم.",
     "monthlyPremiumMark": "+١٥٪",
+    "annualDiscountMark": "وفّر ١٥٪",
+    "stepProgress": "الخطوة {step} من {total}",
+    "localeToggleAria": "تغيير اللغة",
     "topCentersTitle": "كبار السناتر",
     "stageOneTitle": "أخبرنا عن مركزك",
     "stageOneSubtitle": "سيتم مراجعة طلبك خلال دقائق",
