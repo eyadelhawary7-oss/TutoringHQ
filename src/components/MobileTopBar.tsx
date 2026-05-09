@@ -5,9 +5,10 @@ import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
-import { Globe, Menu, X } from 'lucide-react';
+import { Globe, Menu, X, ShoppingCart } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { supabase } from '@/lib/supabase';
+import { useCardOrderCartOptional } from '@/hooks/useCardOrderCart';
 
 interface MobileTopBarProps {
   openMenu: boolean;
@@ -19,6 +20,8 @@ export default function MobileTopBar({ openMenu, setOpenMenu }: MobileTopBarProp
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const cart = useCardOrderCartOptional();
+  const cartCount = cart?.activeItemCount ?? 0;
   const [isPending, startTransition] = useTransition();
 
   const centerName = user?.center?.name || user?.name || user?.phone || 'User';
@@ -67,6 +70,20 @@ export default function MobileTopBar({ openMenu, setOpenMenu }: MobileTopBarProp
       </Link>
 
       <div className="absolute end-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+        {user?.center_id ? (
+          <Link
+            href="/orders"
+            className="relative p-2 rounded-lg border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)]"
+            aria-label={locale.startsWith('ar') ? 'الطلبات' : 'Orders'}
+          >
+            <ShoppingCart size={18} />
+            {cartCount > 0 ? (
+              <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-teal-600 text-white text-[9px] font-bold leading-none">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            ) : null}
+          </Link>
+        ) : null}
         <ThemeToggle />
         <button
           onClick={handleLocaleToggle}

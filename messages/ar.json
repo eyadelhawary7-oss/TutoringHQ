@@ -115,6 +115,7 @@
     "whatsappPack": "باقة واتساب",
     "whatsappTemplates": "قوالب واتساب",
     "scanner": "الماسح",
+    "orders": "الطلبات",
     "payments": "المدفوعات",
     "attendance": "الحضور",
     "schedule": "المواعيد",
@@ -3706,6 +3707,77 @@
     "studentsByBranch": "الطلاب حسب الفرع",
     "revenueByBranch": "الإيرادات حسب الفرع"
   },
+  "cart": {
+    "title": "سلة البطاقات",
+    "empty": {
+      "title": "سلتك فارغة",
+      "cta": "إضافة طلاب",
+      "studentsWithoutCards": "طلاب بلا بطاقة بعد"
+    },
+    "itemCount": "{count, plural, zero {# بطاقة} one {بطاقة واحدة} two {# بطاقتين} few {# بطاقات} many {# بطاقة} other {# بطاقة}}",
+    "minimumProgress": "{current} من {minimum} كحد أدنى للبطاقات",
+    "minimumNotMet": "أضف {need} بطاقات أخرى للدفع",
+    "minimumMet": "جاهز للدفع",
+    "checkout": "إتمام الطلب",
+    "abandon": "إلغاء السلة",
+    "abandonConfirm": "تجاهل هذه السلة والبدء من جديد؟ ستُزال العناصر.",
+    "activeSection": "عناصر نشطة",
+    "savedSection": "محفوظ لاحقًا",
+    "startNewOrder": "بدء طلب جديد",
+    "studentRow": {
+      "removeFromCart": "إزالة",
+      "saveForLater": "حفظ لاحقًا",
+      "moveToCart": "نقل إلى السلة",
+      "removedFromCenter": "لم يعد في المركز",
+      "alreadyHasCard": "تم تسليم البطاقة",
+      "cardPending": "البطاقة قيد التنفيذ"
+    },
+    "blanks": {
+      "label": "بطاقات فارغة إضافية",
+      "add": "إضافة بطاقات فارغة",
+      "quantity": "الكمية"
+    },
+    "totals": {
+      "subtotal": "إجمالي البطاقات (شامل الضرائب)",
+      "shippingHint": "يُحسب الشحن عند إتمام الطلب."
+    },
+    "lastModifiedBy": "آخر تحديث بواسطة {name} · {timeAgo}",
+    "concurrency": {
+      "conflict": "تم تحديث السلة بواسطة {name} — تحديث؟",
+      "refreshCta": "تحديث السلة"
+    },
+    "picker": {
+      "title": "إضافة طلاب",
+      "search": "بحث بالاسم أو الرقم",
+      "filterAll": "الكل",
+      "filterWithoutCard": "بلا بطاقة بعد",
+      "filterInCart": "في السلة",
+      "filterSaved": "محفوظ لاحقًا",
+      "filterHasCard": "لديه بطاقة",
+      "addSelected": "إضافة {count}",
+      "selectAllFiltered": "تحديد الكل (المصفّى)",
+      "studentsAlreadyInCart": "{count, plural, zero {# طالب في السلة} one {طالب واحد في السلة} two {# طالبين في السلة} few {# طلاب في السلة} many {# طالبًا في السلة} other {# طالب في السلة}}",
+      "badgeInCart": "في السلة",
+      "badgeSaved": "محفوظ لاحقًا"
+    },
+    "studentDetail": {
+      "orderCard": "طلب بطاقة",
+      "inCart": "في السلة",
+      "back": "رجوع",
+      "notFound": "لم يُعثر على الطالب."
+    },
+    "nav": {
+      "viewCart": "عرض السلة",
+      "miniPreview": "معاينة السلة"
+    },
+    "toast": {
+      "added": "تمت الإضافة إلى سلة البطاقات",
+      "viewCart": "عرض السلة",
+      "savedForLater": "تم الحفظ لاحقًا",
+      "movedToCart": "تم النقل إلى السلة",
+      "removed": "تمت الإزالة من السلة"
+    }
+  },
   "cardOrders": {
     "orderIdCards": "بطاقات معرّف الطلب",
     "selectStudents": "اختر الطلاب،",
@@ -3788,6 +3860,8 @@
     "tryAgain": "جرب مرة أخرى",
     "awaitingPayment": "أكمِل عملية الدفع أدناه",
     "ordersTitle": "طلباتي",
+    "orderHistorySection": "سجل الطلبات",
+    "viewOrder": "عرض الطلب",
     "ordersSubtitle": "تتبع وإدارة طلبات بطاقتك",
     "ordersEmpty": "No orders yet. Place your first card order.",
     "ordersNav": "الطلبات",

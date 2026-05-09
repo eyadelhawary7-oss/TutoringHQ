@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp } from 'lucide-react';
-import { CardOrderModal } from '@/components/CardOrderModal';
+import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp } from 'lucide-react';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
 import EmptyState from '@/components/empty-states/EmptyState';
@@ -26,7 +25,6 @@ import {
 import { formatCurrency, formatNumber, formatPlainInteger } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
-const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 const STUDENTS_CACHE_KEY = 'chq_students_cache';
 const STUDENTS_PAGE_SIZE = 20;
 
@@ -150,13 +148,14 @@ function lifecycleStatusHelpKey(f: LifecycleFilter): StatusHelpKey {
 export default function StudentsPage() {
   const locale = useLocale();
   const ts = useTranslations('students');
+  const tCart = useTranslations('cart');
   const router = useRouter();
   const tCommon = useTranslations('common');
   const tToast = useTranslations('toasts');
   const { user, hasPermission, refreshUser } = useUser();
   const canViewPayments =
     user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || hasPermission('can_view_payments');
-  const { cart, addToCart, removeFromCart, clearCart, isInCart, cartCount } = useCardOrderCart();
+  const { activeItemCount, addItem, addItemsBatch, isStudentInCart } = useCardOrderCart();
   const { toast } = useToast();
 
   const [students, setStudents] = useState<Student[] | null>(() => readStudentsCache());
@@ -215,8 +214,6 @@ export default function StudentsPage() {
     announcement_balance?: string | number;
     parent_pack_active_parents?: number;
   } | null>(null);
-  const [showCardOrderModal, setShowCardOrderModal] = useState(false);
-  const [showCardCartModal, setShowCardCartModal] = useState(false);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const parentPhonePopoverRef = useRef<HTMLDivElement>(null);
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
@@ -224,6 +221,9 @@ export default function StudentsPage() {
   const [savingParentPhoneId, setSavingParentPhoneId] = useState<string | null>(null);
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
   const [studentListPage, setStudentListPage] = useState(1);
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+  const [studentCardDelivered, setStudentCardDelivered] = useState<Record<string, boolean>>({});
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
   const addToggling = (id: string) => setTogglingIds((prev) => new Set(prev).add(id));
   const removeToggling = (id: string) =>
@@ -513,6 +513,81 @@ export default function StudentsPage() {
     const start = (studentPageClamped - 1) * STUDENTS_PAGE_SIZE;
     return filteredStudents.slice(start, start + STUDENTS_PAGE_SIZE);
   }, [filteredStudents, studentPageClamped]);
+
+  useEffect(() => {
+    if (!centerId || studentsList.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.access_token || cancelled) return;
+        const ids = studentsList.map((s) => s.id);
+        const res = await fetch('/api/card-order-cart/student-card-status', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ids }),
+        });
+        if (!res.ok || cancelled) return;
+        const j = (await res.json()) as { statusByStudentId?: Record<string, string> };
+        const map: Record<string, boolean> = {};
+        for (const [id, st] of Object.entries(j.statusByStudentId ?? {})) {
+          map[id] = st === 'delivered';
+        }
+        if (!cancelled) setStudentCardDelivered(map);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [centerId, studentsList]);
+
+  const addStudentToCart = useCallback(
+    async (studentId: string) => {
+      if (isStudentInCart(studentId)) {
+        toast.info(ts('alreadyInOrder'));
+        return;
+      }
+      if (studentCardDelivered[studentId]) return;
+      try {
+        await addItem({ kind: 'student', student_id: studentId });
+        toast.success(tCart('toast.added'));
+      } catch {
+        toast.error(tToast('error'));
+      }
+    },
+    [isStudentInCart, studentCardDelivered, addItem, toast, ts, tCart, tToast],
+  );
+
+  const toggleBulkStudent = useCallback((id: string) => {
+    setBulkSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const bulkAddToCart = useCallback(async () => {
+    const ids = [...bulkSelected].filter((id) => !isStudentInCart(id) && !studentCardDelivered[id]);
+    if (ids.length === 0) return;
+    setBulkSubmitting(true);
+    try {
+      await addItemsBatch(ids.map((student_id) => ({ kind: 'student' as const, student_id })));
+      toast.success(tCart('toast.added'));
+      setBulkSelected(new Set());
+    } catch {
+      toast.error(tToast('error'));
+    } finally {
+      setBulkSubmitting(false);
+    }
+  }, [bulkSelected, isStudentInCart, studentCardDelivered, addItemsBatch, toast, tCart, tToast]);
 
   useEffect(() => {
     setStudentListPage(1);
@@ -947,26 +1022,19 @@ export default function StudentsPage() {
               >
                 <Upload size={16} /> {ts('import')}
               </Link>
-              <button
-                type="button"
-                onClick={() => setShowCardCartModal(true)}
+              <Link
+                href="/orders"
                 className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
-                aria-label={ts('cardOrderCart')}
+                aria-label={ts('order_cards')}
               >
                 <ShoppingCart size={16} />
-                {cartCount > 0 ? (
+                {ts('order_cards')}
+                {activeItemCount > 0 ? (
                   <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
-                    {cartCount > 99 ? '99+' : cartCount}
+                    {activeItemCount > 99 ? '99+' : activeItemCount}
                   </span>
                 ) : null}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCardOrderModal(true)}
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
-              >
-                <CreditCard size={16} /> {ts('order_cards')}
-              </button>
+              </Link>
               <Link
                 href="/students/pending"
                 className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
@@ -1272,6 +1340,35 @@ export default function StudentsPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-[var(--color-surface-2)]">
+                            <th className="px-2 py-3 w-10">
+                              <input
+                                type="checkbox"
+                                aria-label={tCart('picker.selectAllFiltered')}
+                                checked={
+                                  paginatedStudents.some((s) => !studentCardDelivered[s.id] && !isStudentInCart(s.id)) &&
+                                  paginatedStudents
+                                    .filter((s) => !studentCardDelivered[s.id] && !isStudentInCart(s.id))
+                                    .every((s) => bulkSelected.has(s.id))
+                                }
+                                disabled={paginatedStudents.every((s) => studentCardDelivered[s.id] || isStudentInCart(s.id))}
+                                onChange={() => {
+                                  const eligible = paginatedStudents.filter(
+                                    (st) => !studentCardDelivered[st.id] && !isStudentInCart(st.id),
+                                  );
+                                  const allOn =
+                                    eligible.length > 0 && eligible.every((st) => bulkSelected.has(st.id));
+                                  setBulkSelected((prev) => {
+                                    const next = new Set(prev);
+                                    if (allOn) {
+                                      for (const st of eligible) next.delete(st.id);
+                                    } else {
+                                      for (const st of eligible) next.add(st.id);
+                                    }
+                                    return next;
+                                  });
+                                }}
+                              />
+                            </th>
                             <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
                               {ts('name')}
                             </th>
@@ -1300,17 +1397,28 @@ export default function StudentsPage() {
                                 key={s.id}
                                 className="transition-colors duration-150 hover:bg-slate-700/50"
                               >
+                                <td className="px-2 py-4 align-top">
+                                  <input
+                                    type="checkbox"
+                                    checked={bulkSelected.has(s.id)}
+                                    disabled={studentCardDelivered[s.id] || isStudentInCart(s.id)}
+                                    onChange={() => toggleBulkStudent(s.id)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </td>
                                 <td className="px-4 py-4 align-top">
-                                  <button
-                                    type="button"
-                                    className="text-start btn-press chq-focus"
-                                    onClick={() => openQRModal(s)}
-                                  >
-                                    <span className="font-semibold text-[var(--color-text-primary)]">{s.name}</span>
+                                  <div className="text-start">
+                                    <Link
+                                      href={`/students/${s.id}`}
+                                      className="inline-block btn-press chq-focus rounded-md outline-offset-2"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <span className="font-semibold text-[var(--color-text-primary)]">{s.name}</span>
+                                    </Link>
                                     <div className="mt-1">
                                       <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey)} />
                                     </div>
-                                  </button>
+                                  </div>
                                 </td>
                                 <td className="px-4 py-4 align-top font-mono text-[var(--color-text-primary)]" dir="ltr">
                                   {s.student_number ? formatStudentNumberForDisplay(s.student_number) : tCommon('notSet')}
@@ -1443,15 +1551,11 @@ export default function StudentsPage() {
                           icon: (
                             <ShoppingCart
                               size={16}
-                              className={isInCart(s.id) ? 'text-teal-500 fill-teal-500' : 'text-[var(--color-text-muted)]'}
+                              className={isStudentInCart(s.id) ? 'text-teal-500 fill-teal-500' : 'text-[var(--color-text-muted)]'}
                             />
                           ),
                           onClick: () => {
-                            if (isInCart(s.id)) toast.info(ts('alreadyInOrder'));
-                            else {
-                              addToCart(s.id);
-                              toast.success(ts('addedToOrder'));
-                            }
+                            void addStudentToCart(s.id);
                           },
                         },
                         {
@@ -1499,12 +1603,26 @@ export default function StudentsPage() {
                         tabIndex={0}
                       >
                         <div className="flex items-center gap-3 mb-2">
+                          <input
+                            type="checkbox"
+                            className="mt-1 shrink-0"
+                            checked={bulkSelected.has(s.id)}
+                            disabled={studentCardDelivered[s.id] || isStudentInCart(s.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => toggleBulkStudent(s.id)}
+                          />
                           <div className="w-9 h-9 rounded-full shrink-0 bg-[rgba(13,148,136,0.12)] text-brand-400 font-semibold text-sm flex items-center justify-center">
                             {(s.name ?? '?').charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{s.name}</p>
+                              <Link
+                                href={`/students/${s.id}`}
+                                className="text-sm font-semibold text-[var(--color-text-primary)] truncate btn-press chq-focus rounded outline-offset-2"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {s.name}
+                              </Link>
                               <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey)} />
                               {s.parent_consent_given && (
                                 <span
@@ -1688,17 +1806,13 @@ export default function StudentsPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (isInCart(s.id)) toast.info(ts('alreadyInOrder'));
-                              else {
-                                addToCart(s.id);
-                                toast.success(ts('addedToOrder'));
-                              }
+                              void addStudentToCart(s.id);
                             }}
-                            className={`p-2 rounded-lg hover:bg-[var(--color-surface-2)] active:scale-95 transition-transform ${isInCart(s.id) ? 'text-teal-500' : 'text-[var(--color-text-muted)]'} btn-press chq-focus`}
+                            className={`p-2 rounded-lg hover:bg-[var(--color-surface-2)] active:scale-95 transition-transform ${isStudentInCart(s.id) ? 'text-teal-500' : 'text-[var(--color-text-muted)]'} btn-press chq-focus`}
                             aria-label={ts('addToCardOrder')}
                             title={ts('addToCardOrder')}
                           >
-                            <ShoppingCart size={14} className={isInCart(s.id) ? 'fill-teal-500' : ''} />
+                            <ShoppingCart size={14} className={isStudentInCart(s.id) ? 'fill-teal-500' : ''} />
                           </button>
                           {canViewPayments && (
                             <button
@@ -2157,87 +2271,22 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* Card order cart */}
-      {showCardCartModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setShowCardCartModal(false)}
-          role="presentation"
-        >
-          <div
-            className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full max-h-[85vh] overflow-hidden flex flex-col shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4 shrink-0">
-              <h3 className="font-bold text-[var(--color-text-primary)]">{ts('cardOrderCartTitle')}</h3>
-              <button type="button" onClick={() => setShowCardCartModal(false)} aria-label={tCommon('cancel')} className="btn-press chq-focus">
-                <X size={18} className="text-[var(--color-text-secondary)]" />
-              </button>
-            </div>
-            {cartCount === 0 ? (
-              <p className="text-sm text-[var(--color-text-secondary)] py-4">{ts('cardOrderCartEmpty')}</p>
-            ) : (
-              <ul className="space-y-2 overflow-y-auto flex-1 min-h-0 mb-4">
-                {cart.map((id) => {
-                  const st = studentsList.find((x) => x.id === id);
-                  return (
-                    <li
-                      key={id}
-                      className="flex items-center gap-2 justify-between py-2 border-b border-[var(--color-border-subtle)] last:border-0"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{st?.name ?? tCommon('notAvailable')}</p>
-                        <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
-                          {formatStudentNumberForDisplay(st?.student_number ?? '')}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFromCart(id)}
-                        className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] shrink-0 btn-press chq-focus"
-                        aria-label={tCommon('delete')}
-                      >
-                        <X size={16} />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <div className="flex flex-col gap-2 shrink-0">
-              {cartCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    clearCart();
-                    setShowCardCartModal(false);
-                  }}
-                  className="w-full py-2.5 rounded-xl text-sm font-medium border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                >
-                  {ts('cardOrderCartClearAll')}
-                </button>
-              )}
-              <button
-                type="button"
-                disabled={cartCount === 0}
-                onClick={() => {
-                  if (cart.length === 0) return;
-                  try {
-                    localStorage.setItem(CARD_ORDER_PENDING_KEY, JSON.stringify(cart));
-                  } catch {
-                    /* ignore */
-                  }
-                  setShowCardCartModal(false);
-                  setShowCardOrderModal(true);
-                }}
-                className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
-              >
-                {ts('order_cards')}
-              </button>
-            </div>
+      {bulkSelected.size > 0 ? (
+        <div className="fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom,0px))] md:bottom-6 z-[70] flex justify-center px-4 pointer-events-none">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-xl px-4 py-3 max-w-lg w-full">
+            <span className="text-sm text-[var(--color-text-secondary)] flex-1 tabular-nums">{bulkSelected.size}</span>
+            <button
+              type="button"
+              data-testid="students-bulk-add-cart"
+              disabled={bulkSubmitting}
+              className="px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 disabled:opacity-50 shrink-0"
+              onClick={() => void bulkAddToCart()}
+            >
+              {tCart('picker.addSelected', { count: bulkSelected.size })}
+            </button>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Print Statement Modal */}
       {printStudent && (
@@ -2297,32 +2346,6 @@ export default function StudentsPage() {
         </div>
       ) : null}
 
-      {/* Order ID Cards Modal */}
-      {centerId && (
-        <CardOrderModal
-          isOpen={showCardOrderModal}
-          onClose={() => setShowCardOrderModal(false)}
-          students={studentsList}
-          centerId={centerId}
-          centerInfo={centerInfo}
-          onSuccess={async () => {
-            clearCart();
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-              const meRes = await fetch('/api/me', { headers: { Authorization: `Bearer ${session.access_token}` } });
-              const meData = await meRes.json();
-              if (meData?.user?.center)
-                setCenterInfo({
-                  name: meData.user.center.name,
-                  logo_url: meData.user.center.logo_url,
-                  phone: meData.user.center.phone,
-                  governorate: meData.user.center.governorate,
-                  delivery_address: meData.user.center.delivery_address,
-                });
-            }
-          }}
-        />
-      )}
     </>
   );
 }

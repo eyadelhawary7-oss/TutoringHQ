@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * @deprecated — replaced by /orders cart view + /orders/checkout (Prompt 2). Keep until Prompt 2 lands, then delete.
+ */
+
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';

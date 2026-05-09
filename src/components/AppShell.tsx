@@ -12,6 +12,7 @@ import MobileTopBar from '@/components/MobileTopBar';
 import { BottomTabBar } from '@/components/shell/BottomTabBar';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import { SidebarProvider } from '@/contexts/SidebarContext';
+import { CardOrderCartProvider } from '@/hooks/useCardOrderCart';
 import { Globe } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useRouter } from '@/i18n/routing';
@@ -141,8 +142,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  return (
-    <SidebarProvider closeMainSidebar={closeMainSidebar}>
+  const shellBody = (
     <div className="flex min-h-screen w-full min-w-0 overflow-x-clip bg-[var(--color-surface-0)]">
       {!isAdminRoute && !kioskChromeHidden && (
         <Sidebar mobileDrawerOpen={openMenu} onClose={() => setOpenMenu(false)} />
@@ -209,6 +209,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
     </div>
+  );
+
+  return (
+    <SidebarProvider closeMainSidebar={closeMainSidebar}>
+      {user?.center_id && !isAdminRoute ? (
+        <CardOrderCartProvider>{shellBody}</CardOrderCartProvider>
+      ) : (
+        shellBody
+      )}
     </SidebarProvider>
   );
 }

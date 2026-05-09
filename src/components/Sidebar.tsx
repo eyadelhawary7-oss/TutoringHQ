@@ -28,9 +28,11 @@ import {
   MessageCircle,
   MessagesSquare,
   Gift,
+  ShoppingCart,
 } from 'lucide-react';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
+import { OrdersNavWithCartPreview } from '@/components/orders/OrdersNavWithCartPreview';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -112,6 +114,7 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
     { key: 'whatsappPack', href: '/whatsapp-pack', icon: MessageCircle, ownerAdminOnly: true },
     { key: 'whatsappTemplates', href: '/whatsapp', icon: MessagesSquare, ownerAdminOnly: true },
     { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
+    { key: 'orders', href: '/orders', icon: ShoppingCart, permission: 'can_manage_students' },
     { key: 'attendance', href: '/attendance', icon: ClipboardList, permission: 'can_scan' },
     { key: 'groups', href: '/groups', icon: BookOpen, permission: 'can_manage_groups' },
     { key: 'rooms', href: '/rooms', icon: DoorOpen, ownerAdminOnly: true },
@@ -199,6 +202,9 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
             </Link>
           )}
           {navItems.map(({ key, href, icon: Icon, showNewBadge }) => {
+            if (key === 'orders') {
+              return <OrdersNavWithCartPreview key={href} navLinkClass={navLinkClass} />;
+            }
             const isActive = pathname === href || pathname.startsWith(href + '/');
             const showBadge = showNewBadge && showBenchmarksNewBadge;
             return (

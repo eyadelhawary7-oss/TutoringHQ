@@ -115,6 +115,7 @@
     "whatsappPack": "WhatsApp Pack",
     "whatsappTemplates": "WhatsApp templates",
     "scanner": "Scanner",
+    "orders": "Orders",
     "payments": "Payments",
     "attendance": "Attendance",
     "schedule": "Schedule",
@@ -4627,6 +4628,77 @@
     "paymobIframeTitle": "Paymob checkout",
     "onlyOwnersCanManageTeam": "Only Owners Can Manage Team [TODO: AR review]"
   },
+  "cart": {
+    "title": "Card cart",
+    "empty": {
+      "title": "Your cart is empty",
+      "cta": "Add students",
+      "studentsWithoutCards": "Students without cards yet"
+    },
+    "itemCount": "{count, plural, one {# card} other {# cards}}",
+    "minimumProgress": "{current} of {minimum} minimum cards",
+    "minimumNotMet": "Add {need} more cards to checkout",
+    "minimumMet": "Ready to checkout",
+    "checkout": "Checkout",
+    "abandon": "Abandon cart",
+    "abandonConfirm": "Discard this cart and start fresh? Items will be removed.",
+    "activeSection": "Active items",
+    "savedSection": "Saved for later",
+    "startNewOrder": "Start a new order",
+    "studentRow": {
+      "removeFromCart": "Remove",
+      "saveForLater": "Save for later",
+      "moveToCart": "Move to cart",
+      "removedFromCenter": "Removed from centre",
+      "alreadyHasCard": "Has card delivered",
+      "cardPending": "Card pending"
+    },
+    "blanks": {
+      "label": "Extra blank cards",
+      "add": "Add blank cards",
+      "quantity": "Quantity"
+    },
+    "totals": {
+      "subtotal": "Cards subtotal (incl. taxes)",
+      "shippingHint": "Shipping is calculated at checkout."
+    },
+    "lastModifiedBy": "Updated by {name} · {timeAgo}",
+    "concurrency": {
+      "conflict": "Cart was updated by {name} — refresh?",
+      "refreshCta": "Refresh cart"
+    },
+    "picker": {
+      "title": "Add students",
+      "search": "Search name or number",
+      "filterAll": "All",
+      "filterWithoutCard": "Without card yet",
+      "filterInCart": "In cart",
+      "filterSaved": "Saved for later",
+      "filterHasCard": "Has card",
+      "addSelected": "Add {count}",
+      "selectAllFiltered": "Select all (filtered)",
+      "studentsAlreadyInCart": "{count, plural, one {# student already in cart} other {# students already in cart}}",
+      "badgeInCart": "Already in cart",
+      "badgeSaved": "Saved for later"
+    },
+    "studentDetail": {
+      "orderCard": "Order card",
+      "inCart": "In cart",
+      "back": "Back",
+      "notFound": "Student not found."
+    },
+    "nav": {
+      "viewCart": "View cart",
+      "miniPreview": "Cart preview"
+    },
+    "toast": {
+      "added": "Added to card cart",
+      "viewCart": "View cart",
+      "savedForLater": "Saved for later",
+      "movedToCart": "Moved to cart",
+      "removed": "Removed from cart"
+    }
+  },
   "cardOrders": {
     "orderIdCards": "Order ID Cards",
     "selectStudents": "Select Students",
@@ -4709,6 +4781,8 @@
     "tryAgain": "Try Again",
     "awaitingPayment": "Complete your payment below",
     "ordersTitle": "My Orders",
+    "orderHistorySection": "Order history",
+    "viewOrder": "View order",
     "ordersSubtitle": "Track and manage your card orders",
     "ordersEmpty": "No orders yet. Place your first card order.",
     "ordersNav": "Orders",

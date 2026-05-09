@@ -2,16 +2,19 @@
 
 import { useState, useEffect, useCallback, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
-import { CardOrderModal } from '@/components/CardOrderModal';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 import {
   formatShippingZoneForLocale,
   getShippingFee,
   getShippingZone,
 } from '@/lib/bostaShipping';
-import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { CardOrderCartHeader } from '@/components/orders/CardOrderCartHeader';
+import { CardOrderCartContents } from '@/components/orders/CardOrderCartContents';
+import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 
 export type CardOrdersShippingQuote = {
   hasGovernorate: boolean;
@@ -19,19 +22,14 @@ export type CardOrdersShippingQuote = {
   zoneEn: string;
 };
 
-interface Student {
+interface StudentLite {
   id: string;
   name: string;
   student_number?: string | null;
-  qr_code?: string | null;
 }
 
 interface CenterInfoState {
-  name?: string;
-  logo_url?: string;
-  phone?: string;
-  governorate?: string;
-  delivery_address?: Record<string, unknown>;
+  governorate?: string | null;
 }
 
 interface CardOrderRow {
@@ -64,8 +62,10 @@ function parseStudentLines(studentsJson: unknown): string[] {
 function statusBadgeClass(status: string): string {
   switch (status) {
     case 'pending':
+    case 'pending_payment':
       return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
     case 'confirmed':
+    case 'paid':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
     case 'printing':
     case 'processing':
@@ -98,8 +98,6 @@ function statusLabelKey(status: string): CardOrderStatusKey {
   return 'statusPending';
 }
 
-const PREVIEW_PRICE_PER_CARD = 62;
-
 export default function OrdersPageClient({
   initialShippingQuote,
   bostaShippingRates,
@@ -110,16 +108,15 @@ export default function OrdersPageClient({
   const t = useTranslations('cardOrders');
   const tOrders = useTranslations('orders');
   const locale = useLocale();
-  const [centerId, setCenterId] = useState<string | null>(null);
+  const { refresh } = useCardOrderCart();
+
   const [centerInfo, setCenterInfo] = useState<CenterInfoState | null>(null);
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<StudentLite[]>([]);
   const [orders, setOrders] = useState<CardOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [howOrdersOpen, setHowOrdersOpen] = useState(false);
-  const [isOpenPending, startOpenTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const loadData = useCallback(async () => {
     setLoadError(null);
@@ -145,23 +142,14 @@ export default function OrdersPageClient({
       }
 
       const cid = meData.user.center_id as string;
-      setCenterId(cid);
-      setCenterInfo(
-        meData.user.center
-          ? {
-              name: meData.user.center.name,
-              logo_url: meData.user.center.logo_url,
-              phone: meData.user.center.phone,
-              governorate: meData.user.center.governorate,
-              delivery_address: meData.user.center.delivery_address,
-            }
-          : null
-      );
+      setCenterInfo({
+        governorate: meData.user.center?.governorate ?? null,
+      });
 
       const [studentsRes, ordersRes] = await Promise.all([
         dbSelect({
           table: 'students',
-          select: 'id, name, student_number, qr_code',
+          select: 'id, name, student_number',
           filters: [{ column: 'center_id', op: 'eq', value: cid }],
           order: { column: 'name', ascending: true },
         }),
@@ -174,17 +162,18 @@ export default function OrdersPageClient({
       ]);
 
       if (studentsRes.data && Array.isArray(studentsRes.data)) {
-        setStudents(studentsRes.data as Student[]);
+        setStudents(studentsRes.data as StudentLite[]);
       }
       if (ordersRes.data && Array.isArray(ordersRes.data)) {
         setOrders(ordersRes.data as CardOrderRow[]);
       }
+      await refresh();
     } catch {
       setLoadError(t('loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, refresh]);
 
   useEffect(() => {
     void loadData();
@@ -204,29 +193,19 @@ export default function OrdersPageClient({
   };
 
   const liveGov = centerInfo?.governorate?.trim();
-  const showGovernorateHint = !loading && !!centerId && !liveGov?.length;
-  const showShippingEstimate = !loading && !!centerId && !!liveGov?.length;
+  const showGovernorateHint = !loading && !!centerInfo && !liveGov?.length;
+  const showShippingEstimate = !loading && !!centerInfo && !!liveGov?.length;
   const estimateFee = liveGov ? getShippingFee(liveGov, bostaShippingRates) : 0;
   const estimateZoneEn = liveGov ? getShippingZone(liveGov, bostaShippingRates) : '';
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
       <div className="px-4 pt-4 pb-6 max-w-3xl mx-auto w-full">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('ordersTitle')}</h1>
             <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('ordersSubtitle')}</p>
           </div>
-          {centerId && (
-            <button
-              type="button"
-              onClick={() => startOpenTransition(() => setShowModal(true))}
-              className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-primary-foreground text-sm font-semibold rounded-xl transition-colors shrink-0 disabled:opacity-70"
-              disabled={isOpenPending}
-            >
-              {t('newOrder')}
-            </button>
-          )}
         </div>
 
         {loading && initialShippingQuote?.hasGovernorate === false ? (
@@ -235,13 +214,13 @@ export default function OrdersPageClient({
           </div>
         ) : null}
 
-        {centerId && showGovernorateHint ? (
+        {centerInfo && showGovernorateHint ? (
           <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-950/25 px-4 py-3 text-sm text-amber-100">
             {t('governorateShippingHint')}
           </div>
         ) : null}
 
-        {centerId && showShippingEstimate ? (
+        {centerInfo && showShippingEstimate ? (
           <div className="mb-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-3 text-sm text-[var(--color-text-primary)] space-y-1">
             <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
               {t('shippingEstimateTitle')}
@@ -255,222 +234,166 @@ export default function OrdersPageClient({
             <p className="text-xs text-[var(--color-text-tertiary)]">
               {t('shippingEstimateExample', {
                 qty: 1,
-                cardTotal: formatCurrency(PREVIEW_PRICE_PER_CARD, locale),
+                cardTotal: formatCurrency(62, locale),
                 ship: formatCurrency(estimateFee, locale),
-                total: formatCurrency(PREVIEW_PRICE_PER_CARD + estimateFee, locale),
+                total: formatCurrency(62 + estimateFee, locale),
               })}
             </p>
           </div>
         ) : null}
 
-        {loadError && !loading ? (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
-            <p>{loadError}</p>
-            <button
-              type="button"
-              onClick={() => void loadData()}
-              className="mt-2 text-xs font-semibold text-teal-400 underline"
-            >
-              {t('tryAgain')}
-            </button>
-          </div>
-        ) : loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-24 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] animate-pulse"
-              />
-            ))}
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="card p-8 text-center border border-[var(--color-border-subtle)]">
-            <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t('ordersEmpty')}</p>
-            <button
-              type="button"
-              onClick={() => setHowOrdersOpen(true)}
-              className="text-[11px] text-[var(--color-text-tertiary)] underline decoration-[var(--color-border)] hover:text-[color:var(--color-teal)] mb-4 block w-full"
-            >
-              {t('howOrdersWorkLink')}
-            </button>
-            {centerId && (
+        <CardOrderCartHeader />
+        <CardOrderCartContents studentsForPicker={students} />
+
+        <div className="mt-10 border-t border-[var(--color-border-subtle)] pt-8">
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{t('orderHistorySection')}</h2>
+
+          {loadError && !loading ? (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100 mb-4">
+              <p>{loadError}</p>
               <button
                 type="button"
-                onClick={() => startOpenTransition(() => setShowModal(true))}
-                className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-primary-foreground text-sm font-semibold rounded-xl transition-colors disabled:opacity-70"
-                disabled={isOpenPending}
+                onClick={() => startTransition(() => void loadData())}
+                className="mt-2 text-xs font-semibold text-teal-400 underline"
               >
-                {t('newOrder')}
+                {t('tryAgain')}
               </button>
-            )}
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {orders.map((order) => {
-              const shortId = order.id.replace(/-/g, '').slice(-8).toUpperCase();
-              const expanded = expandedId === order.id;
-              const lines = parseStudentLines(order.students);
-              const pricePer = order.price_per_card ?? 62;
-              const deliveryFee = Number(order.delivery_fee ?? 0);
-              const subtotal = Math.round(order.quantity * pricePer * 100) / 100;
-              const zoneLabel =
-                order.shipping_zone != null && String(order.shipping_zone).trim()
-                  ? formatShippingZoneForLocale(String(order.shipping_zone), locale)
-                  : null;
+            </div>
+          ) : loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-24 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] animate-pulse"
+                />
+              ))}
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="card p-8 text-center border border-[var(--color-border-subtle)]">
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('ordersEmpty')}</p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {orders.map((order) => {
+                const shortId = order.id.replace(/-/g, '').slice(-8).toUpperCase();
+                const expanded = expandedId === order.id;
+                const lines = parseStudentLines(order.students);
+                const pricePer = order.price_per_card ?? 62;
+                const deliveryFee = Number(order.delivery_fee ?? 0);
+                const subtotal = Math.round(order.quantity * pricePer * 100) / 100;
+                const zoneLabel =
+                  order.shipping_zone != null && String(order.shipping_zone).trim()
+                    ? formatShippingZoneForLocale(String(order.shipping_zone), locale)
+                    : null;
 
-              return (
-                <li
-                  key={order.id}
-                  className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden"
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(order.id)}
-                    className="w-full flex items-center gap-3 p-4 text-start hover:bg-[var(--color-surface-0)]/50 transition-colors"
+                return (
+                  <li
+                    key={order.id}
+                    className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
-                          #{shortId}
-                        </span>
-                        <span
-                          className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadgeClass(order.status)}`}
-                        >
-                          {t(statusLabelKey(order.status))}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[var(--color-text-tertiary)]">
-                        {t('orderDate')}:{' '}
-                        {formatDate(order.created_at, locale, {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                      <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                        {formatNumber(order.quantity, locale)}{' '}
-                        {order.quantity === 1 ? tOrders('card') : tOrders('cards')} · {t('orderTotal')}:{' '}
-                        {formatCurrency(Number(order.total_amount), locale)}
-                      </p>
-                    </div>
-                    {expanded ? (
-                      <ChevronUp className="w-5 h-5 text-[var(--color-text-tertiary)] shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-[var(--color-text-tertiary)] shrink-0" />
-                    )}
-                  </button>
-                  {expanded && (
-                    <div className="px-4 pb-4 pt-0 border-t border-[var(--color-border-subtle)] space-y-3 text-sm">
-                      <div>
-                        <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
-                          {t('orderDetails')}
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(order.id)}
+                      className="w-full flex items-center gap-3 p-4 text-start hover:bg-[var(--color-surface-0)]/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
+                            #{shortId}
+                          </span>
+                          <span
+                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadgeClass(order.status)}`}
+                          >
+                            {t(statusLabelKey(order.status))}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">
+                          {t('orderDate')}:{' '}
+                          {formatDate(order.created_at, locale, {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
                         </p>
-                        <ul className="list-disc list-inside text-[var(--color-text-primary)] space-y-0.5">
-                          {lines.length > 0 ? (
-                            lines.map((line, i) => (
-                              <li key={i}>{line}</li>
-                            ))
-                          ) : (
-                            <li>-</li>
-                          )}
-                        </ul>
+                        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                          {formatNumber(order.quantity, locale)}{' '}
+                          {order.quantity === 1 ? tOrders('card') : tOrders('cards')} · {t('orderTotal')}:{' '}
+                          {formatCurrency(Number(order.total_amount), locale)}
+                        </p>
+                        <Link
+                          href={`/orders/${order.id}`}
+                          className="inline-block mt-2 text-xs font-semibold text-teal-600 dark:text-teal-400 underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {t('viewOrder')}
+                        </Link>
                       </div>
-                      {order.delivery_address ? (
+                      {expanded ? (
+                        <ChevronUp className="w-5 h-5 text-[var(--color-text-tertiary)] shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-[var(--color-text-tertiary)] shrink-0" />
+                      )}
+                    </button>
+                    {expanded && (
+                      <div className="px-4 pb-4 pt-0 border-t border-[var(--color-border-subtle)] space-y-3 text-sm">
                         <div>
                           <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
-                            {t('deliveryAddress')}
+                            {t('orderDetails')}
                           </p>
-                          <p className="text-[var(--color-text-primary)]">{order.delivery_address}</p>
+                          <ul className="list-disc list-inside text-[var(--color-text-primary)] space-y-0.5">
+                            {lines.length > 0 ? (
+                              lines.map((line, i) => <li key={i}>{line}</li>)
+                            ) : (
+                              <li>-</li>
+                            )}
+                          </ul>
                         </div>
-                      ) : null}
-                      <div className="rounded-lg border border-[var(--color-border-subtle)] p-3 space-y-1.5 bg-[var(--color-surface-0)]/40">
-                        <div className="flex justify-between gap-2">
-                          <span className="text-[var(--color-text-secondary)]">
-                            {t('orderLineCards', {
-                              qty: order.quantity,
-                              unit: formatCurrency(Number(pricePer), locale),
-                              sub: formatCurrency(subtotal, locale),
-                            })}
-                          </span>
+                        {order.delivery_address ? (
+                          <div>
+                            <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
+                              {t('deliveryAddress')}
+                            </p>
+                            <p className="text-[var(--color-text-primary)]">{order.delivery_address}</p>
+                          </div>
+                        ) : null}
+                        <div className="rounded-lg border border-[var(--color-border-subtle)] p-3 space-y-1.5 bg-[var(--color-surface-0)]/40">
+                          <div className="flex justify-between gap-2">
+                            <span className="text-[var(--color-text-secondary)]">
+                              {t('orderLineCards', {
+                                qty: order.quantity,
+                                unit: formatCurrency(Number(pricePer), locale),
+                                sub: formatCurrency(subtotal, locale),
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-[var(--color-text-secondary)]">
+                              {zoneLabel ? t('orderLineShippingZone', { zone: zoneLabel }) : t('deliveryFee')}
+                            </span>
+                            <span className="font-mono font-medium">{formatCurrency(deliveryFee, locale)}</span>
+                          </div>
+                          <div className="border-t border-[var(--color-border-subtle)] pt-1.5 flex justify-between gap-2 font-semibold">
+                            <span>{t('totalAmount')}</span>
+                            <span className="font-mono">{formatCurrency(Number(order.total_amount), locale)}</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between gap-2">
-                          <span className="text-[var(--color-text-secondary)]">
-                            {zoneLabel ? t('orderLineShippingZone', { zone: zoneLabel }) : t('deliveryFee')}
-                          </span>
-                          <span className="font-mono font-medium">{formatCurrency(deliveryFee, locale)}</span>
-                        </div>
-                        <div className="border-t border-[var(--color-border-subtle)] pt-1.5 flex justify-between gap-2 font-semibold">
-                          <span>{t('totalAmount')}</span>
-                          <span className="font-mono">{formatCurrency(Number(order.total_amount), locale)}</span>
-                        </div>
+                        {order.notes?.trim() ? (
+                          <div>
+                            <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
+                              {t('notesLabel')}
+                            </p>
+                            <p className="text-[var(--color-text-primary)]">{order.notes}</p>
+                          </div>
+                        ) : null}
                       </div>
-                      {order.notes?.trim() ? (
-                        <div>
-                          <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
-                            {t('notesLabel')}
-                          </p>
-                          <p className="text-[var(--color-text-primary)]">{order.notes}</p>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-
-      {centerId && (
-        <CardOrderModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          students={students}
-          centerId={centerId}
-          centerInfo={centerInfo}
-          bostaShippingRates={bostaShippingRates}
-          onSuccess={() => void loadData()}
-        />
-      )}
-
-      {howOrdersOpen ? (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="how-orders-title"
-          onClick={() => setHowOrdersOpen(false)}
-        >
-          <div
-            className="relative w-full max-w-md rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="absolute end-3 top-3 p-2 rounded-lg hover:bg-muted text-[var(--color-text-secondary)]"
-              onClick={() => setHowOrdersOpen(false)}
-              aria-label={t('howOrdersWorkClose')}
-            >
-              <X size={18} aria-hidden />
-            </button>
-            <h2 id="how-orders-title" className="text-lg font-bold text-[var(--color-text-primary)] pe-8 mb-4">
-              {t('howOrdersWorkTitle')}
-            </h2>
-            <ol className="list-decimal list-inside space-y-3 text-sm text-[var(--color-text-secondary)]">
-              <li>{t('howOrdersWorkStep1')}</li>
-              <li>{t('howOrdersWorkStep2')}</li>
-              <li>{t('howOrdersWorkStep3')}</li>
-            </ol>
-            <button
-              type="button"
-              className="mt-6 w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-[color:var(--color-teal)] hover:opacity-90"
-              onClick={() => setHowOrdersOpen(false)}
-            >
-              {t('howOrdersWorkClose')}
-            </button>
-          </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }
